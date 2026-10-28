@@ -22,6 +22,7 @@ export * from './portfolioModel.js';
 export * from './executor.js';
 export * from './brokerTerms.js';
 export * from './checks.js';
+export * from './rolls.js';
 export * from './funds.js';
 export * from './withdrawals.js';
 export * from './brokerMail.js';

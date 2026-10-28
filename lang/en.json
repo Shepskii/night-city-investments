@@ -233,6 +233,18 @@
       "Versus": "against",
       "Crit": { "success": "critical success", "fumble": "fumble" }
     },
+    "Roll": {
+      "Luck": "Luck",
+      "Help": "help",
+      "Approach": { "careful": "Careful", "standard": "Standard", "bold": "Bold" },
+      "ApproachHint": {
+        "careful": "DV −2, three quarters of the effect.",
+        "standard": "The DV and the effect as they are.",
+        "bold": "DV +3, a quarter more effect, and some risk later."
+      },
+      "Band": { "fumble": "Fumble", "failure": "Failure", "narrow": "Narrow success", "solid": "Solid success", "strong": "Strong success", "exceptional": "Exceptional success" },
+      "Hire": { "cheap": "A cheap hire", "good": "A good hire", "best": "The best money can buy" }
+    },
     "Mail": {
       "Days": { "one": "{n} day", "many": "{n} days" },
       "Sign": {

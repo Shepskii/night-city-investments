@@ -7,7 +7,7 @@
  *              dice, so Dice So Nice shows them, and a chat card records the check.
  */
 
-import { cprD10, evaluateCheck } from '../engine/index.js';
+import { cprD10, evaluateCheck, normalizeLevers, resolveRoll, HIRE_TIERS } from '../engine/index.js';
 import { MODULE_ID } from '../utils/constants.js';
 import { escapeHtml } from '../utils/text.js';
 import { L } from '../utils/helpers.js';
@@ -34,6 +34,104 @@ export const SkillAdapter = {
     const raw = actor?.system?.stats?.[statName];
     const stat = Number(raw?.value ?? raw ?? 0) || 0;
     return { found: !!item, level, stat, statName, total: stat + level };
+  },
+
+  /**
+   * A role ability's rank. Cyberpunk RED roles are Items of type 'role' (system.rank,
+   * system.mainRoleAbility); a character with two roles that share an ability uses the higher rank.
+   * @returns {{found: boolean, rank: number}}
+   */
+  readAbility(actor, ability) {
+    const ranks = (actor?.items?.filter?.((i) => i.type === 'role' && norm(i.system?.mainRoleAbility) === norm(ability)) ?? [])
+      .map((i) => Number(i.system?.rank) || 0);
+    return ranks.length ? { found: true, rank: Math.max(...ranks) } : { found: false, rank: 0 };
+  },
+
+  /** The character's LUCK pool now. */
+  luck(actor) {
+    const raw = actor?.system?.stats?.luck;
+    return Math.max(0, Number(raw?.value ?? raw ?? 0) || 0);
+  },
+
+  /**
+   * What a roll adds to the d10: stat + skill, a role ability's rank, or a hired professional's
+   * fixed base. `use` is `{kind: 'skill', skill, stat}`, `{kind: 'ability', ability}` or `{kind: 'hire', hire}`.
+   * @returns {{base: number, name: string, parts: string}} `parts` is the breakdown for the chat card
+   */
+  baseFor(actor, use) {
+    if (use.kind === 'hire') {
+      const base = HIRE_TIERS[use.hire] ?? HIRE_TIERS.cheap;
+      return { base, name: `hire:${use.hire}`, parts: `${L(`NCI.Roll.Hire.${use.hire}`)} ${base}` };
+    }
+    if (use.kind === 'ability') {
+      const { rank } = this.readAbility(actor, use.ability);
+      return { base: rank, name: use.ability, parts: `${escapeHtml(use.ability)} ${rank}` };
+    }
+    const s = this.read(actor, use.skill, use.stat);
+    return { base: s.total, name: use.skill, parts: `${escapeHtml(s.statName.toUpperCase())} ${s.stat} + ${escapeHtml(use.skill)} ${s.level}` };
+  },
+
+  /**
+   * Roll a business check with the levers the player chose (DESIGN §26), on the player's own client.
+   * Luck is spent from the sheet before the dice are rolled, as the rules have it, and the card
+   * records the pool beforehand so the GM can see it really went down.
+   * @param {Actor} actor
+   * @param {{dv: number, title: string, use: object, levers?: object}} o
+   * @returns {Promise<{result: object, roll: object, messageId: string|null}>}
+   */
+  async leverCheck(actor, { dv, title, use, levers = {} }) {
+    const l = normalizeLevers({ ...levers, hire: use.kind === 'hire' ? use.hire : null });
+    const base = this.baseFor(actor, use);
+    const luckBefore = this.luck(actor);
+    const luck = Math.min(l.luck, luckBefore);
+    if (luck > 0) await actor.update({ 'system.stats.luck.value': luckBefore - luck });
+
+    const first = await this.rollOne();
+    const dice = [first];
+    if (first.value === 10 || first.value === 1) dice.push(await this.rollOne());
+    const queue = dice.map((d) => d.value);
+    const roll = cprD10(() => queue.shift());
+    const result = resolveRoll({ base: base.base, roll, dv, levers: { ...l, luck } });
+
+    const messageId = await this._postLevers(actor, {
+      title, base, roll, result, dice: dice.map((d) => d.roll).filter(Boolean),
+      flag: {
+        actorId: actor.id, skill: base.name, kind: use.kind, dice: dice.map((d) => d.value),
+        levers: { approach: l.approach, luck, luckBefore, bonus: l.bonus, hire: l.hire },
+      },
+    });
+    return { result, roll, messageId };
+  },
+
+  /**
+   * GM side of `leverCheck`: read the card back as `verify` does, then the levers. The base is the
+   * GM's own (the sheet now, or the hire tier); Luck counts only if the pool went down by that much
+   * since the roll; the bonus only if the business has one waiting (`bonusAvailable`); a hired
+   * professional only where the action allows one.
+   * @param {Actor} actor
+   * @param {{rollId?: string, key: string, ts?: number}} request
+   * @param {{dv: number, use: object, bonusAvailable?: boolean, allowHire?: boolean}} spec
+   * @returns {Promise<{ok: true, result: object, levers: object, base: number} | {ok: false, reason: string}>}
+   */
+  async verifyLevers(actor, request, { dv, use, bonusAvailable = false, allowHire = false }) {
+    if (use.kind === 'hire' && !allowHire) return { ok: false, reason: 'hire-not-allowed' };
+    const name = use.kind === 'hire' ? `hire:${use.hire}` : use.kind === 'ability' ? use.ability : use.skill;
+    const card = await this._readCard(actor, request, name);
+    if (!card.ok) return card;
+
+    const claimed = card.flag.levers ?? {};
+    const luckClaimed = Math.max(0, Math.floor(Number(claimed.luck) || 0));
+    const before = Number(claimed.luckBefore);
+    const luckOk = use.kind !== 'hire' && luckClaimed > 0 && Number.isFinite(before) && luckClaimed <= before && this.luck(actor) <= before - luckClaimed;
+    const levers = normalizeLevers({
+      approach: claimed.approach,
+      luck: luckOk ? luckClaimed : 0,
+      bonus: bonusAvailable && Number(claimed.bonus) > 0 ? 1 : 0,
+      hire: use.kind === 'hire' ? use.hire : null,
+    });
+
+    const { base } = this.baseFor(actor, use);
+    return { ok: true, base, levers, result: resolveRoll({ base, roll: card.roll, dv, levers }) };
   },
 
   /** Roll one d10 with Foundry's dice. Overridden in tests. */
@@ -78,6 +176,19 @@ export const SkillAdapter = {
    * @returns {Promise<{ok: true, stat: number, level: number, dv: number, roll: object} | {ok: false, reason: string}>}
    */
   async verify(actor, request, { dv, skill: skillName = SKILL_NAME, stat = SKILL_STAT }) {
+    const card = await this._readCard(actor, request, skillName);
+    if (!card.ok) return card;
+    const skill = this.read(actor, skillName, stat);
+    return { ok: true, stat: skill.stat, level: skill.level, dv, roll: card.roll };
+  },
+
+  /**
+   * Find a request's roll card and check it: for this actor and this skill (or ability, or hire),
+   * posted by someone who owns the actor, recent, and unused (or used by this same request). Marks
+   * it used by the request and gives back its dice as a CPR roll.
+   * @returns {Promise<{ok: true, flag: object, roll: object} | {ok: false, reason: string}>}
+   */
+  async _readCard(actor, request, skillName) {
     const fail = (reason) => ({ ok: false, reason });
     if (!request.rollId) return fail('no-roll');
 
@@ -109,9 +220,33 @@ export const SkillAdapter = {
       }
     }
 
-    const skill = this.read(actor, skillName, stat);
     const queue = [...values];
-    return { ok: true, stat: skill.stat, level: skill.level, dv, roll: cprD10(() => queue.shift()) };
+    return { ok: true, flag, roll: cprD10(() => queue.shift()) };
+  },
+
+  async _postLevers(actor, { title, base, roll, result, dice, flag }) {
+    if (typeof ChatMessage === 'undefined') return null;
+    const crit = roll.crit ? ` (${L(`NCI.Check.Crit.${roll.crit}`)})` : '';
+    const extras = [
+      result.luck ? ` + ${L('NCI.Roll.Luck')} ${result.luck}` : '',
+      result.bonus ? ` + ${L('NCI.Roll.Help')} ${result.bonus}` : '',
+    ].join('');
+    const approach = result.approach === 'standard' ? '' : ` (${L(`NCI.Roll.Approach.${result.approach}`)})`;
+    const content = `<div class="nci-chat"><strong>${escapeHtml(title)}</strong><br>`
+      + `${base.parts}${extras} + d10 [${roll.rolls.join(', ')}]${crit} = <strong>${result.total}</strong>`
+      + ` ${L('NCI.Check.Versus')} DV ${result.dv}${approach}<br><strong>${escapeHtml(L(`NCI.Roll.Band.${result.band}`))}</strong></div>`;
+    try {
+      const message = await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker?.({ actor }),
+        content,
+        rolls: dice,
+        flags: { [MODULE_ID]: { [CHECK_FLAG]: flag } },
+      });
+      return message?.id ?? null;
+    } catch (error) {
+      console.warn('NCI | could not post the check to chat', error);
+      return null;
+    }
   },
 
   async _post(actor, { skill, skillName = SKILL_NAME, roll, check, title, dice, values = [] }) {
