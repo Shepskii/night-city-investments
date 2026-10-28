@@ -697,7 +697,7 @@ A rumour is mailed at the moment a gig outcome is tracked (`GigImpactService._ti
 
 ## 26. Proposal: syndicates and player-owned companies (not built)
 
-Decisions so far: Crew Tools cannot be changed, so everything is NCI-side or in a bridge. Hustle income stays personal and is unrelated to a company. Payouts are capped. Syndicate holdings are visible to every member. The GM approves every company charter. All durations are game days (§25) and all writes follow the request, GM-executor pattern. The operating period is **weekly** with **monthly** published reports, to match weekly game sessions (§26.4).
+Decisions so far: Crew Tools cannot be changed, so everything is NCI-side or in a bridge. Businesses start small and grow (§26.0): a side business needs no charter, and the charter and the listing are later stages a business earns. Hustle income stays personal and is unrelated to a company; a business's profit is separate, and reaches its owners only through capped draws or dividends. Payouts are capped. Syndicate holdings are visible to every member. The GM approves every company charter. All durations are game days (§25) and all writes follow the request, GM-executor pattern. The operating period is **weekly** with **monthly** published reports, to match weekly game sessions (§26.4).
 
 **Roll rule: every player roll is triggered by the player.** Nothing in this section rolls for a player. A roll happens only when the player presses its Roll button (charter, business actions, report preparation, layering or investigating ownership), and the work is never forced on them.
 - **Where it runs.** The roll is made on the player's own client as a normal Foundry roll with a chat card (and Dice So Nice), using `SkillAdapter.check` (stat + skill + 1d10, a 10 explodes, a 1 subtracts). The request carries the chat message id, not a total.
@@ -709,8 +709,9 @@ Decisions so far: Crew Tools cannot be changed, so everything is NCI-side or in 
 - **Who rolls.** Any officer (or, for the charter, any founder) may take a roll, so the crew chooses its best character for the job.
 - **Approach.** Before rolling, the player picks **Careful** (DV −2, the effect scaled down), **Standard**, or **Bold** (DV +3, the effect scaled up, and some Exposure). Aggressive reporting (§26.4) is the Bold approach to report preparation.
 - **Luck.** The player may spend LUCK points on the roll, as the rules allow. The roll dialog asks how many before rolling.
-- **Complementary skill (+1).** A successful related check earlier in the same operating period, by anyone in the crew, leaves a one-use +1 on the company for the matching action (for example Library Search as market research before a Business roll, Human Perception to read the counterparty before a Bribery roll, Local Expert before a Bureaucracy roll). At most one is used per roll. This replaces an ad-hoc crew-assist bonus, and gives characters who are not officers something to do.
+- **Complementary skill (+1).** A successful related check earlier in the same operating period, by anyone in the crew, leaves a one-use +1 on the company for the matching action (for example Library Search as market research before a Business roll, Human Perception to read the counterparty before a Bribery roll, Local Expert before a Bureaucracy roll). At most one is used per roll. A **role ability** can be the complementary check where it fits the action (a Fixer's Operator before Source supplies or a capital raise, a Media's Credibility before Promote, a Netrunner's Interface before due diligence), so every partner has a roll that matters each period without adding action slots. This replaces an ad-hoc crew-assist bonus, and gives characters who are not officers something to do.
 - **Extra time (+1).** Spending an extra downtime day on the action (through the Crew Tools bridge, §26.8, or the native allowance) adds +1, as the rules allow for taking extra time.
+- **Hired professionals.** A crew missing a skill an action needs (an Accounting roll for the charter, say) can hire an NPC professional for that one roll: an accountant, a lawyer, a broker. The fee is paid from the business (a Fixer's Operator lowers it), and the NPC's fixed base (GM table: about 10 for a cheap hire, 13 for a good one, 16 for the best) replaces the character's stat and skill. A player still presses Roll and may still add a complementary bonus, but not Luck, which is a character's own. It keeps every crew able to progress while rewarding characters who have the skill.
 - **Preview.** Before rolling, the dialog shows the DV, the approach's effect, and what each outcome band would mean, so who rolls and how much Luck to spend are informed choices.
 
 **DVs** follow the rulebook's ladder: Everyday 13, Difficult 15, Professional 17, Heroic 21, Incredible 24. A table maps each action, sector and size to a step on it, so a GM can tune by naming a step rather than a number.
@@ -730,6 +731,90 @@ Decisions so far: Crew Tools cannot be changed, so everything is NCI-side or in 
 
 **What the executor also verifies.** The roll card records the approach, the Luck spent, and any complementary bonus used. The executor checks that the actor's LUCK pool went down by the Luck claimed, consumes the stored complementary bonus (it cannot be used twice), applies the approach's DV, and recomputes the total from the raw dice as before. The roll itself is still never trusted.
 
+
+### 26.0 Stages: from side business to listed company
+
+Most player enterprises in Night City are small: a garage, a ripperdoc's back room, a bar, an info shop. They start with a little gear and a lot of hustle, and only a few grow big enough to justify a charter, let alone a listing. The design therefore has four stages, and a business moves up by meeting a stage's milestones and passing a step-up roll. Growing is meant to be the usual path to a large company, and the cheaper one (§26.2a).
+
+| Stage | What it is | To start or step up | Weekly profit (typical) | Action slots | Reporting | Money in |
+|---|---|---|---|---|---|---|
+| 0. Side business | unregistered: a stall, a garage bay, a back-room clinic | a founding agreement, one setup roll, 500 to 3,000 eb of gear and stock, no charter, GM approval by setting | 20 to 150 eb | 1 | weekly digest | owners' own money, fixer loans |
+| 1. Registered business | a licensed shop, bar, clinic or outfit | milestones below + a registration roll + a fee | 150 to 600 eb | 2 | private monthly ledger | + bank loans, private investors |
+| 2. Chartered company | §26.2: a company with a cap table and officers | milestones below + the charter (§26.2) | 600 eb and up | 2 to 4 by capacity (§26.4) | monthly report (§26.4) | + private placements, capital raises |
+| 3. Listed company | §26.4a | the listing requirements | market priced | as a company | public report | + IPO and the market |
+
+The profit bands are calibrated against the valuation (§26.4a): at a typical sector multiple of 10, a side business is worth about 12,000 to 80,000 eb, a registered business about 90,000 to 330,000, and a chartered company reaches the 500,000 eb listing threshold at around 850 eb of weekly profit. A registered business stays under the threshold even at the top sector multiple, so a listing always passes through the charter. As a design target, a well-run side business that reinvests should become eligible to list in about 30 to 40 operating periods; a GM **growth rate** setting scales every growth effect to fit the campaign's pace.
+
+**Ownership and partners.** A business has a cap table from the day it opens, so several characters can found it together and nothing has to be restructured as it grows:
+- **Units.** Each partner's contribution buys units at book value: cash at face value, and gear brought in (a surgical kit, a workshop's tools) at a book value the partners agree and the GM can review. Money put in later buys units at the current book value per unit, so early partners are not diluted unfairly. Units sit in the partners' portfolios like restricted shares (§26.3).
+- **The founding agreement**, made when the business opens and changed only unanimously, records:
+  - **Sweat equity:** an optional slice of units for the partner who will do most of the work (default 0%, capped at 10% as in §26.2a).
+  - **The decision rule:** majority of units for day-to-day choices, such as who takes each action slot, draws, loans and projects. Unanimity is needed to admit an investor, sell or close the business, step up a stage, or change the agreement. The partners may choose stricter rules, as a syndicate does (§26.1).
+  - **The buy-out rule.** Night City is lethal, so when a partner dies, leaves the campaign or wants out, the remaining partners may buy the stake at book value within 14 game days (from the till, their own money, or a loan). Otherwise it passes to whoever the character named, as non-voting units that still receive draws. The GM can apply it when a player leaves the table.
+- **Draws and decisions follow units.** A syndicate can be a partner, or own the whole business, acting by its own approval rules (§26.1).
+- **Into a company.** At the charter, units convert one-for-one into restricted shares, so the cap table carries straight on to the company and, later, the float (§26.2a).
+
+**Setting up.** Opening a side business takes one player-triggered roll, by any partner, using the archetype's trade skill, Business, or a role ability that fits (a Fixer's Operator finding the space and second-hand gear, a Tech's Maker building the equipment). The outcome band sets how much of the 500 to 3,000 eb setup cost the business needs and the Capacity it opens with. A failure costs a third of the setup money and a delay of 7 game days.
+
+**Archetypes.** A small business is created from an archetype, which sets its base takings and costs, the events it draws, and the **trade skills** that run it. Trade skills are what let any character, not only an Exec or Fixer, run a business:
+
+| Archetype | Trade skills | Roles that fit |
+|---|---|---|
+| Garage or chop shop | Basic Tech, Land Vehicle Tech | Tech, Nomad |
+| Ripperdoc clinic | Cybertech, Paramedic | Medtech, Tech |
+| Bar or club | Conversation, Persuasion, Play Instrument | Rockerboy, Fixer |
+| Boutique or salon | Wardrobe & Style, Personal Grooming | Media, Exec |
+| Gun shop | Weaponstech, Trading | Solo, Fixer |
+| Info shop or data broker | Library Search, Electronics/Security Tech | Netrunner, Fixer |
+| Courier service | Drive Land Vehicle, Local Expert | Nomad |
+| Security outfit | Tactics, Persuasion | Solo, Lawman |
+| Screamsheet or media outlet | Composition, Photography/Film | Media |
+| Food stall | Streetwise, Local Expert | anyone |
+
+The GM can add archetypes. A business at stage 2 or above maps its archetype to a market sector (§26.4) for the backdrop and the earnings multiple.
+
+**Location.** A small business has an address: a place on Night City Map (one of its locations, or a pin the GM adds). The district sets foot traffic (a multiplier on takings) and risk (how often shakedowns and gang trouble come up), so a stall in the Combat Zone is cheap and dangerous and a boutique in the Executive Zone is the reverse. Showing businesses on the map is a job for the map bridge.
+
+**The small business loop (stages 0 and 1).** It runs on the weekly operating period (§26.4) but is simpler than a company's: no officers (the partners decide by their founding agreement), no public report, and fewer, more personal actions. Partners who do not take the slot still play a part through complementary checks, including role abilities (the player levers above). Each action uses a slot and is an ordinary player-triggered roll with the levers (Luck, complementary +1, approach):
+
+| Action | Skills | Effect |
+|---|---|---|
+| Work the shop | the archetype's trade skills | the week's takings: the outcome band scales the archetype's base takings |
+| Promote | Persuasion, Wardrobe & Style, Composition; Media Credibility, Rockerboy Charismatic Impact | Reputation and foot traffic up for the next periods |
+| Source supplies | Trading, Streetwise; Fixer Operator | the Cost base down, or rare stock in |
+| Fix the place up | Basic Tech; Tech Maker | Capacity up (more takings possible) |
+| Keep it safe | event responses (§26.4), Tactics, Persuasion; Solo or Lawman | answers shakedowns, theft, gang trouble |
+
+An unrolled week is not a closed shop: takings default to the archetype's baseline, with neglect drift (§26.4). The business may also take on **expansion projects** (a second chair, a bigger bay, a second location) with a day requirement, tracked like §26.8's projects and paid from the till; finishing one raises Capacity.
+
+**Money at the small stages.**
+- **The till.** Takings go into the business's own account; rent, stock, wages, licence fees (registered only) and protection money (unregistered, or in rough districts) come out each period.
+- **Owner draws.** Owners may draw up to the last closed period's profit, split by units, into their wallet (stage 0) or brokerage balance (stage 1), as a request through the executor. This is the small-business equivalent of a capped dividend (§26.7): it cannot exceed what the business earned, and draining the till leaves nothing to grow with.
+- **Loans.** A **fixer loan** (stage 0 up): quick, no paperwork, a high weekly rate, and missed payments bring heat and a visit. A **bank loan** (stage 1 up): an Accounting or Business roll sets the rate and limit from the business's ledger; lower rates, and missed payments hurt Compliance. Repayments come out of the till each period.
+- **Private investors** (stage 1 up): another player, a syndicate, or an NPC angel buys new units for cash, admitted unanimously by the partners. A player or syndicate investor buys at book value per unit unless the partners agree a premium. An NPC angel's price comes from a Persuasion or Trading roll opposed by the angel's skill. Investors become holders, so a later charter starts with them on the cap table.
+- **Failure.** A till below zero for two periods with no loan to cover it closes the business; its gear sells for a fraction of its value. Owners can start again.
+
+**Stepping up.** Milestones are shown as a checklist, like listing eligibility (§26.4a), and the step-up roll is player-triggered:
+
+| Step | Milestones (defaults) | Roll | On failure |
+|---|---|---|---|
+| Side → Registered | 4 periods operating, average profit of 100 eb a week over the last 4, Reputation at or above the district baseline | Registration: Bureaucracy (Local Expert or Persuasion at DV +2), plus a fee of about 500 eb | the fee is spent and a delay of 7 game days; nothing is lost |
+| Registered → Chartered | 3 monthly ledgers, average profit of 400 eb a week over the last 4 periods, Capacity from at least one expansion | the charter (§26.2), with the business plan roll one DV step easier for a business with a track record | as §26.2 |
+| Chartered → Listed | §26.4a | the prospectus rolls (§26.4a) | as §26.4a |
+
+Registering lowers protection costs and shakedown risk, unlocks bank loans and investors, and brings licence fees and Compliance. A business can also stay at its stage for good; that is a normal choice.
+
+**Gigs and heat at the small stages.** Gigs naming the business as client affect its takings and Reputation as for companies (§26.5). A business has no share price until it is listed, so before then there is no insider-trading window; investors in a private business trade only privately.
+
+**Worked example: a Medtech and a Fixer.** Two characters open a back-room ripperdoc clinic in Watson and mean to take it public.
+1. **Founding (stage 0).** The Medtech puts in 1,000 eb and her surgical gear (book value 800); the Fixer puts in 1,500 eb. That is 1,800 units to 1,500, about 55% to 45%, and they agree a 5% sweat slice for the Medtech, who will do the surgery. The Fixer makes the setup roll with **Operator**, finding the space and second-hand gear, and a Strong result keeps the setup cost low.
+2. **Weekly, with one slot.** The Medtech takes **Work the shop** with Cybertech, which sets the week's takings. The Fixer rolls Streetwise to steer patients her way, a complementary check that adds +1 and uses no slot. When a gang comes for protection money, the response uses the slot that week: the Fixer answers with Persuasion, and the surgery waits. Draws split 55/45.
+3. **Registering (stage 1, two slots).** Neither partner has Bureaucracy, so the Fixer rolls Persuasion at DV +2. Now both act each week: the Medtech works the shop, and the Fixer sources chrome with Operator, takes a bank loan for a second chair (an expansion project), and brings in a Solo character as an investor, admitted unanimously, buying new units at book value.
+4. **Chartering (stage 2).** The clinic's net assets go toward the capital quote, and the units become restricted shares, the Solo included. The Fixer rolls the business plan (Business, or Persuasion at DV +2). With no Accounting in the crew, they hire a good accountant for the capital structure roll, the Fixer's Operator lowering the fee. Both partners are elected officers.
+5. **Listing (stage 3).** Once the requirements are met, the Fixer carries the prospectus **Trading** roll, and his Operator widens the NPC buyers for the float. The Medtech's part is the one that lifts the valuation: keeping the earnings up.
+
+Each role keeps a clear job the whole way: the Medtech makes the money, the Fixer makes the deals. If the Medtech is flatlined along the way, the buy-out rule lets the Fixer buy her stake at book value, or it passes to whoever she named.
+
 ### 26.1 Syndicates
 
 - **A shared account.** A syndicate is an actor flagged `syndicate` with an ordinary portfolio, so the terminal, executor, valuation and statements work unchanged. Every member sees its **holdings, positions, orders and ledger**. Members have ownership of the actor; writes still go through requests.
@@ -740,6 +825,8 @@ Decisions so far: Crew Tools cannot be changed, so everything is NCI-side or in 
 - **Later:** optional market impact for large pooled orders, and coordinated campaigns using Trading and Bribery rolls.
 
 ### 26.2 Forming a player company
+
+A company can be chartered from scratch or by growing a registered business (§26.0); the steps are the same, and a growing business brings its track record and its net assets (§26.2a).
 
 1. **Draft a charter:** name, ticker, sector, authorised capital, founders and their stakes (characters or a syndicate), and whether a listing is intended (a note only: listing must be earned, §26.4a).
 2. **Pay the filing fee** (scaled by sector and authorised capital). It is spent on the attempt whether or not it succeeds.
@@ -807,6 +894,8 @@ A failed roll always refuses the charter, with no exceptions and no GM override 
 
 **Afterwards.** Founding capital is the company's money, not the players'. It cannot be withdrawn, only paid out as capped dividends (§26.7) or bought back, and a lock-in (default 28 game days) stops a company being formed and drained straight away. Fees and the lock-in are the sinks that stop a quick eb machine.
 
+**Growing into a charter.** When a registered business is chartered (§26.0), its **net assets** (the till, gear and completed expansions, at book value, less debts) count toward the capital quote, so the owners pay in only the difference. Its units convert one-for-one into restricted shares, so partners and investors keep their stakes on the company's cap table. Earned capital is not new money, so the lock-in on valuation (§26.4a) does not apply to it; only cash newly paid in waits. This is what makes growing the cheaper path to a large company.
+
 **Interaction with the other rolls.** The Business and Bureaucracy margins do not change the quote; they set the starting Reputation, Revenue and Compliance (§26.2). A founder with a poor Accounting skill can improve the quote by having a better accountant make the roll, since any founder may take the slot, and by spending Luck or using a complementary bonus on it.
 
 ### 26.3 Ownership and control
@@ -818,6 +907,7 @@ A failed roll always refuses the charter, with no exceptions and no GM override 
 
 ### 26.4 Business activity
 
+- **Stage.** This loop is for chartered companies (stage 2 and up). Side and registered businesses use the simpler loop in §26.0, and a business keeps its state (Reputation, Capacity, Cost base and so on) when it steps up.
 - **State.** Visible to officers: Capital, Revenue run-rate, Cost base, Reputation, Compliance, Operating capacity. Hidden: **Exposure**, which comes from shortcuts and aggressive reporting, like heat.
 - **Cycle: weekly operating period, monthly report.**
   - **Weekly period.** One period is 7 game days, anchored to a GM-chosen weekday (default: the day of the weekly session) and run on the game-day clock, so the first tick on or after the boundary closes it. Catch-up after a calendar jump closes each missed period in order, up to a cap.
@@ -906,7 +996,7 @@ A player company stays **private** until it has earned a listing. The Draft char
 
 ### 26.5 Gigs for a player's own company
 
-When a gig run by players names a player company as its **client**, it is a **business activity**, not a market rumour:
+When a gig run by players names a player business or company as its **client** (at any stage, §26.0), it is a **business activity**, not a market rumour:
 - `resolveClient` matches the player company as it does any client, but the outcome is applied to the company's **business state** (reputation and revenue up on success, down on failure, scaled by reward and capped) instead of as a direct price impact. The company acquiring assets, contracts or goodwill is outside NCI and is handled in play.
 - The reward itself is paid or not by Night City Map as usual; NCI does not turn it into company cash.
 - The price follows only through the next report, so the usual delay applies. GM approval is on by default, with monthly caps and diminishing returns to stop self-dealing.
@@ -944,15 +1034,17 @@ Crew Tools exposes `api.downtime` (`getState`, `use`, `startNextSession`), `api.
 
 1. Syndicate account, with units, roles, votes and visible positions.
 2. Syndicate heat, broker and treasurer.
-3. Roll levers in `SkillAdapter`: the roll dialog with the DV preview, approach, Luck and complementary bonus; outcome bands; and the executor's checks for Luck and the stored bonus. Every later step uses them.
-4. Charter flow: fee, three rolls with the graded outcome, the starting state, delay, the capital quote and funding window, GM approval and a private company with its cap table.
-5. Business state, company action slots, the five skill actions with alternative skills, event responses and information rolls, and the weekly period with monthly reports, as player-triggered rolls verified from the chat message.
-6. Role abilities as company actions.
-7. Bridge module: Company Work through Crew Tools downtime (including extra time), and projects.
-8. Gigs for own company (runner knowledge for heat, H4, is built).
-9. Listing: the valuation and eligibility checklist (§26.4a), the prospectus rolls, monthly reports, earnings impacts, the IPO price from the prospectus rolls, capped payouts and liquidity.
-10. Control changes: takeovers, dilution, buybacks, insolvency.
-11. Hidden ownership: nominee, then syndicate chains, disclosure threshold, and opposed investigations.
+3. Roll levers in `SkillAdapter`: the roll dialog with the DV preview, approach, Luck and complementary bonus (role abilities included), hired professionals; outcome bands; and the executor's checks for Luck and the stored bonus. Every later step uses them.
+4. Small businesses (§26.0): partnership units and the founding agreement (with the buy-out rule), archetypes, location, the setup roll, the till and owner draws, the small business loop, fixer loans, failure, and registration as the first step up. This is the entry point most players will use.
+5. Bank loans, private investors, expansion projects, and the step-up checklist.
+6. Charter flow, from scratch or from a registered business (net assets toward the quote): fee, three rolls with the graded outcome, the starting state, delay, the capital quote and funding window, GM approval and a private company with its cap table.
+7. Business state, company action slots, the five skill actions with alternative skills, event responses and information rolls, and the weekly period with monthly reports, as player-triggered rolls verified from the chat message.
+8. Role abilities as company and business actions.
+9. Bridge module: Company Work through Crew Tools downtime (including extra time), and projects; businesses shown on Night City Map.
+10. Gigs for own business or company (runner knowledge for heat, H4, is built).
+11. Listing: the valuation and eligibility checklist (§26.4a), the prospectus rolls, monthly reports, earnings impacts, the IPO price from the prospectus rolls, capped payouts and liquidity.
+12. Control changes: takeovers, dilution, buybacks, insolvency.
+13. Hidden ownership: nominee, then syndicate chains, disclosure threshold, and opposed investigations.
 
 ## 27. After-tick order and dividend records (unreleased)
 
