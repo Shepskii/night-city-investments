@@ -247,7 +247,7 @@ test('a discarded gig opens no window', async () => {
 test('approving a pending gig opens its window from the day it was reported', async () => {
   env.store.set('gigImpactApproval', true);
   const reportedAt = tick();
-  const out = await report({ gigId: 'h8', outcome: 'done', client: 'Kang Tao', reward: 3000 });
+  const out = await report({ gigId: 'h8', outcome: 'done', client: 'Kang Tao', reward: 3000, runners: [bob.id] });
   await trade(alice, 'buy', 'KAN', 40);
   await advance(1);
   assert.equal(windowFor('gig:h8:done'), undefined);
@@ -255,6 +255,7 @@ test('approving a pending gig opens its window from the day it was reported', as
   await settle();
   const w = windowFor('gig:h8:done');
   assert.equal(w.openTick, reportedAt, 'the window runs from the report, so a trade made while it waited is caught');
+  assert.deepEqual(w.runners, [bob.id], 'and the runners wait with it');
   await advance(6);
   assert.ok(auditOf('gig:h8:done').results.some((r) => r.name === 'Alice'));
   env.store.set('gigImpactApproval', false);
@@ -295,6 +296,18 @@ test('two medium trades in one window are enough for the first warning bracket; 
   await advance(5);
   const kir = Object.fromEntries(auditOf('gig:h12:done').results.map((r) => [r.name, r]));
   assert.ok(kir.Bob.gain > kir.Alice.gain * 2, `a trade three times the size draws far more: ${kir.Bob.gain} vs ${kir.Alice.gain}`);
+});
+
+test('the characters who ran a gig are its runners, and their trades count as the best informed', async () => {
+  await advance(1);
+  const out = await report({ gigId: 'h-run', outcome: 'done', client: 'Militech', reward: 3000, runners: [carol.id, 'nobody', carol.id] });
+  assert.equal(out.status, 'applied');
+  assert.deepEqual(windowFor('gig:h-run:done').runners, [carol.id], 'an unknown id is dropped, and a repeat counted once');
+  await trade(carol, 'buy', 'MIL', 30);
+  await advance(5);
+  const carols = auditOf('gig:h-run:done').results.find((r) => r.name === 'Carol');
+  assert.equal(carols.trades[0].knowledge, 'runner');
+  assert.ok(carols.gain > 0);
 });
 
 test('a market reset clears heat, windows and audits', async () => {

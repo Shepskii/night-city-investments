@@ -94,7 +94,8 @@ class GigImpactServiceImpl {
 
   /**
    * A gig was completed or failed.
-   * @param {{gigId?: string, sourceKey?: string, outcome: 'done'|'failed', client?: string, reward?: number|string, title?: string, notes?: string, desc?: string}} payload
+   * @param {{gigId?: string, sourceKey?: string, outcome: 'done'|'failed', client?: string, reward?: number|string, title?: string, notes?: string, desc?: string, runners?: string[]}} payload
+   *        `runners` are the ids of the characters who ran the gig; their trades count as the best informed
    * @returns {Promise<{ok: boolean, status: 'applied'|'pending'|'unmatched'|'ignored'|'duplicate'|'disabled'|'invalid'|'not-gm'|'failed', id?: string, companyId?: string, percent?: number, delayDays?: number}>}
    */
   report(payload) {
@@ -134,6 +135,7 @@ class GigImpactServiceImpl {
       reward: parseReward(p.reward),
       tick: timeOf(pub),
       date: MarketClock.dateString(),
+      runners: this._runners(p.runners),
     };
     const res = resolveClient(
       { client: p.client, notes: p.notes, text: [p.title, p.desc, p.notes].filter(Boolean).join(' ') },
@@ -162,6 +164,12 @@ class GigImpactServiceImpl {
     this._notice('Mapping', queued);
     Hooks.callAll(HOOKS.GIG_IMPACT, { status: 'unmatched', record: queued });
     return { ok: true, status: 'unmatched', id: queued.id };
+  }
+
+  /** The characters among a report's runners. Anything else (an unknown id, an NPC) is dropped. */
+  _runners(ids) {
+    if (!Array.isArray(ids)) return [];
+    return [...new Set(ids.map(String))].filter((id) => game.actors.get(id)?.type === 'character').slice(0, 10);
   }
 
   /** A record with its size, delay and headline filled in. */
@@ -243,11 +251,11 @@ class GigImpactServiceImpl {
     });
   }
 
-  /** After an impact is queued: send any rumours, then open a heat watch window recording who was tipped off. */
+  /** After an impact is queued: send any rumours, then open a heat watch window recording who was tipped off and who ran it. */
   async _afterApply(rec) {
     const tipped = await this._tip(rec);
     try {
-      await HeatService.openWindow(rec, { tipped });
+      await HeatService.openWindow(rec, { tipped, runners: rec.runners ?? [] });
     } catch (error) {
       log.error('Opening a heat window failed', error);
     }

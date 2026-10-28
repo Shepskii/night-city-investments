@@ -78,6 +78,7 @@ const out = await api.events.reportImpact({
   title: 'Courier job',
   notes: '[NCI: ARA]',        // optional: name the company outright, or [NCI: ignore]
   desc: '',
+  runners: ['actorId'],       // optional: the characters who ran it; their trades count as the best informed
 });
 // out: { ok, status, id?, companyId?, percent?, delayDays? }
 // status: applied | pending | unmatched | ignored | duplicate | disabled | invalid | not-gm | failed
