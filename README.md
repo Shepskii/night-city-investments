@@ -1,10 +1,27 @@
 # Night City Investments
 
-Stock market, portfolios, brokers and dividends for Cyberpunk RED in Foundry VTT. Works with Night City Messenger. The optional [Night City Map bridge](https://github.com/Shepskii/night-city-map-night-city-investments-bridge) links Night City Map gig outcomes to share prices.
+Stock market, portfolios, brokers and dividends for Cyberpunk RED in Foundry VTT. Works with Night City Messenger. If using the Night City Map module, adding the  Night City Map Night City Investments Bridge allows gig outcomes to influence share prices.
 
-**Status: v0.9.6, all planned phases built.** Brokers, direct terminal trading, pooled funds, mail notifications, IPOs, undo, previews, glides, price alerts, statements, fund rebalancing, settlement delays, distributing funds, a ticker strip, gig outcomes from Night City Map, insider-trading heat, and a GM Tools tab (self-check, macros, company suggestions, trade log) are in. New here? Start with [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md). See [docs/DESIGN.md](docs/DESIGN.md) for the design and roadmap, [docs/PRICE-MODEL.md](docs/PRICE-MODEL.md) for how prices move, and [docs/API.md](docs/API.md) for macros and other modules.
+## Requirements
 
-**After updating the module, hard-reload your browser (Ctrl+Shift+R) once.** Foundry does not cache-bust module scripts, so a normal reload can run the previous version's code.
+- Foundry VTT v12
+- Cyberpunk RED Core
+- [Night City Messenger](https://github.com/christinophrappuccino/night-city-messenger)
+
+### Optional
+- [Night City Map](https://github.com/samroaleksej-bit/night-city-map) (checked against v0.21.0)
+- [Night City Map Night City Investments Bridge](https://github.com/Shepskii/night-city-map-night-city-investments-bridge)
+
+## Installation
+
+Unzip the release folder to the `Data\Modules` folder in your Foundry instance - `Data/modules/night-city-map-night-city-messenger-bridge`. Enable the module . 
+
+Or install through Foundry with the manifest: https://github.com/Shepskii/night-city-investments/releases/latest/download/module.json
+
+While loaded in your World, enable Night City Investments in the Module Management.
+
+Start with [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md).
+See [docs/PRICE-MODEL.md](docs/PRICE-MODEL.md) for how prices move, and [docs/API.md](docs/API.md) for macros and other modules.
 
 **Where the buttons are:** in the scene controls' **Token Controls** group (the first one), after the other buttons: "Market Terminal" (chart icon) for everyone and "Market GM Console" (sliders icon) for GMs.
 
@@ -62,7 +79,7 @@ The CorpNet connection is held in the player's browser by Night City Messenger, 
 
 ## Gig outcomes
 
-Install and enable [night-city-map-night-city-investments-bridge](https://github.com/Shepskii/night-city-map-night-city-investments-bridge) alongside Night City Map. It reports each gig you mark Completed or Failed. Then in the GM Console's **Gigs** tab:
+Install and enable [night-city-map-night-city-investments-bridge](https://github.com/Shepskii/night-city-map-night-city-investments-bridge) alongside [Night City Map](https://github.com/samroaleksej-bit/night-city-map). It reports each gig you mark Completed or Failed. Then in the GM Console's **Gigs** tab:
 
 - **Needs a company:** a client that does not match any company by name, ticker or alias waits here. Pick a company (or "Ignore this client"). The choice is saved, and settles every other waiting gig from the same client. Add aliases in the Company Editor to avoid most of this.
 - **Waiting for approval:** the default. Change the size, the delay or the headline, then approve. Turn "GM approves gig impacts" off in settings to apply a confidently matched client at once; a near-miss spelling or a company only mentioned in the gig text always waits for you.
@@ -72,11 +89,6 @@ Install and enable [night-city-map-night-city-investments-bridge](https://github
 
 Each gig can move the market only once, whatever happens to the bridge. Gigs that were already finished before the bridge was installed are not reported; use "Report an outcome by hand".
 
-## Requirements
-
-- Foundry VTT v12
-- Cyberpunk RED Core system (`cyberpunk-red-core`)
-- Night City Messenger (`night-city-messenger`)
 
 ## Development
 
