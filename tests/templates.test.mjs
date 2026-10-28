@@ -4,9 +4,11 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
 import Handlebars from 'handlebars';
+import { registerPartials, withPartials } from './helpers/partials.mjs';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+registerPartials(Handlebars, root);
 const lang = JSON.parse(readFileSync(join(root, 'lang', 'en.json'), 'utf8'));
 
 const env = installFakeFoundry({ actors: [['Alice', 50000, true]] });
@@ -178,7 +180,7 @@ test('every data-action in a template is a real action of its window, and none i
     ['templates/dialogs/trade.hbs', Trade],
   ];
   for (const [file, App] of pairs) {
-    const used = [...readFileSync(join(root, file), 'utf8').matchAll(/data-action="([^"]+)"/g)].map((m) => m[1]);
+    const used = [...withPartials(root, file).matchAll(/data-action="([^"]+)"/g)].map((m) => m[1]);
     assert.ok(used.length > 0, `${file} has actions`);
     const defined = Object.keys(App.DEFAULT_OPTIONS.actions ?? {});
     for (const action of used) {

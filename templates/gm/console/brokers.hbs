@@ -1,0 +1,71 @@
+<div class="nci-block">
+  <h3>{{localize "NCI.GMConsole.DirectTerms"}}</h3>
+  <p class="nci-hint">{{localize "NCI.GMConsole.DirectTermsHint" commission=broker.direct.commission flatFee=broker.direct.flatFee dv=broker.direct.dv network=broker.direct.network}}</p>
+</div>
+
+<div class="nci-block nci-form">
+  <h3>{{localize "NCI.GMConsole.Brokers"}}</h3>
+  <p class="nci-hint">{{localize "NCI.GMConsole.BrokersHint"}}</p>
+  <div class="nci-actions">
+    <select name="brokerActor">{{#each broker.actorOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+    <button type="button" data-action="addBrokerActor"><i class="fas fa-user-plus"></i> {{localize "NCI.GMConsole.BrokerFromActor"}}</button>
+  </div>
+  {{#if broker.contactOptions.length}}
+  <div class="nci-actions">
+    <select name="brokerContact">{{#each broker.contactOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+    <button type="button" data-action="addBrokerContact"><i class="fas fa-address-book"></i> {{localize "NCI.GMConsole.BrokerFromContact"}}</button>
+  </div>
+  {{/if}}
+
+  {{#if broker.brokers.length}}
+  <table class="nci-market">
+    <thead>
+      <tr>
+        <th>{{localize "NCI.GMConsole.BrokerName"}}</th>
+        <th>{{localize "NCI.Access.Skill"}}</th>
+        <th>{{localize "NCI.Access.Fees"}}</th>
+        <th>{{localize "NCI.Access.Speed"}}</th>
+        <th class="num">{{localize "NCI.GMConsole.MinWithdrawal"}}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each broker.brokers}}
+      <tr>
+        <td><strong>{{name}}</strong>{{#unless enabled}} <span class="nci-badge">{{localize "NCI.GMConsole.Disabled"}}</span>{{/unless}}<br><span class="nci-muted" title="{{localize 'NCI.Voice.Hint'}}">{{localize "NCI.Voice.Label"}}: {{voice}}</span>{{#if inUse}}<br><span class="nci-muted">{{inUse}}</span>{{/if}}</td>
+        <td>
+          {{grade}} ({{total}}) <span class="nci-muted">{{source}}</span>
+          {{#if noSkillItem}}<span class="nci-badge">{{localize "NCI.Access.NoSkillItem"}}</span>{{/if}}
+          {{#if manual}}<input type="number" name="manualTotal" value="{{total}}" min="0" max="30" step="1" class="nci-days" title="{{localize 'NCI.GMConsole.ManualRating'}}">{{/if}}
+        </td>
+        <td>{{commission}} + {{flatFee}} eb</td>
+        <td>{{days}} {{localize "NCI.Access.DaysUnit"}}</td>
+        <td class="num"><input type="number" name="minWithdrawal" value="{{minWithdrawal}}" min="0" step="100" class="nci-days"></td>
+        <td class="nci-rowbtns">
+          <button type="button" data-action="saveBroker" data-id="{{id}}" title="{{localize 'NCI.Editor.Save'}}"><i class="fas fa-save"></i></button>
+          <button type="button" data-action="toggleBroker" data-id="{{id}}" data-enabled="{{enabled}}" title="{{localize 'NCI.GMConsole.ToggleBroker'}}"><i class="fas fa-power-off"></i></button>
+          <button type="button" data-action="removeBroker" data-id="{{id}}" title="{{localize 'NCI.GMConsole.RemoveBrokerHint'}}" {{#unless canRemove}}disabled{{/unless}}><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="nci-empty">{{localize "NCI.GMConsole.NoBrokers"}}</p>
+  {{/if}}
+</div>
+
+{{#if broker.terminalMode}}
+<div class="nci-block">
+  <h3>{{localize "NCI.GMConsole.TerminalGrants"}}</h3>
+  <p class="nci-hint">{{localize "NCI.GMConsole.TerminalGrantsHint"}}</p>
+  <table class="nci-market"><tbody>
+    {{#each broker.grants}}
+    <tr>
+      <td>{{name}}</td>
+      <td class="nci-rowbtns"><button type="button" data-action="toggleGrant" data-id="{{id}}" class="{{#if granted}}active{{/if}}">{{#if granted}}{{localize "NCI.GMConsole.GrantOn"}}{{else}}{{localize "NCI.GMConsole.GrantOff"}}{{/if}}</button></td>
+    </tr>
+    {{/each}}
+  </tbody></table>
+</div>
+{{/if}}

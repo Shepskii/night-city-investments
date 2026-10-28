@@ -1,0 +1,41 @@
+<div class="nci-block">
+  <p class="nci-hint">{{localize "NCI.GMConsole.FundsHint"}}</p>
+  <div class="nci-actions">
+    <button type="button" data-action="newFund"><i class="fas fa-plus"></i> {{localize "NCI.GMConsole.NewFund"}}</button>
+    <button type="button" data-action="importFunds"><i class="fas fa-download"></i> {{localize "NCI.GMConsole.ImportFunds"}}</button>
+  </div>
+
+  {{#if funds.length}}
+  <table class="nci-market">
+    <thead>
+      <tr>
+        <th>{{localize "NCI.Terminal.Ticker"}}</th>
+        <th>{{localize "NCI.Fund.Name"}}</th>
+        <th>{{localize "NCI.Fund.Kind"}}</th>
+        <th class="num">{{localize "NCI.Fund.Nav"}}</th>
+        <th class="num">{{localize "NCI.GMConsole.Holdings"}}</th>
+        <th>{{localize "NCI.GMConsole.Fees"}}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each funds}}
+      <tr>
+        <td><strong>{{ticker}}</strong></td>
+        <td>{{name}}</td>
+        <td class="nci-muted">{{kind}}</td>
+        <td class="num">{{nav}}</td>
+        <td class="num">{{holdings}}</td>
+        <td class="nci-muted">{{fees}}</td>
+        <td class="nci-rowbtns">
+          <button type="button" data-action="editFund" data-id="{{id}}" title="{{localize 'NCI.GMConsole.Edit'}}"><i class="fas fa-pen"></i></button>
+          <button type="button" data-action="closeFund" data-id="{{id}}" title="{{localize 'NCI.GMConsole.CloseFund'}}"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="nci-empty">{{localize "NCI.GMConsole.NoFunds"}}</p>
+  {{/if}}
+</div>

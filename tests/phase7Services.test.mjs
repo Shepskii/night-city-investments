@@ -4,9 +4,11 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
 import Handlebars from 'handlebars';
+import { registerPartials } from './helpers/partials.mjs';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+registerPartials(Handlebars, root);
 const lang = JSON.parse(readFileSync(join(root, 'lang', 'en.json'), 'utf8'));
 
 const env = installFakeFoundry({ actors: [['Alice', 90000, true], ['Bob', 90000, true]] });
@@ -283,7 +285,7 @@ test('the Tools tab shows the self-check, macros, suggestions and the trade log'
   assert.equal((await app._prepareContext()).tabs.find((x) => x.id === 'tools').label, 'Tools');
 
   app.render = () => {};
-  Apps.GMConsole._onRunCheck.call(app);
+  Apps.GMConsole.DEFAULT_OPTIONS.actions.runCheck.call(app);
   html = render('templates/gm/console.hbs', await app._prepareContext());
   t = text(html);
   for (const bad of BAD) assert.equal(html.includes(bad), false, `report contains "${bad}"`);
@@ -298,7 +300,7 @@ test('creating from a suggestion opens a filled-in editor, and ignoring one remo
   const opened = [];
   const original = Apps.CompanyEditor.edit;
   Apps.CompanyEditor.edit = (id, prefill) => { opened.push([id, prefill]); };
-  Apps.GMConsole._onCreateSuggested.call(app, null, { dataset: { name: 'Hexagon Logistics', ticker: 'HEX' } });
+  Apps.GMConsole.DEFAULT_OPTIONS.actions.createSuggested.call(app, null, { dataset: { name: 'Hexagon Logistics', ticker: 'HEX' } });
   Apps.CompanyEditor.edit = original;
   assert.deepEqual(opened, [[null, { name: 'Hexagon Logistics', ticker: 'HEX' }]]);
 
@@ -308,7 +310,7 @@ test('creating from a suggestion opens a filled-in editor, and ignoring one remo
   const blank = await new Apps.CompanyEditor({ id: 'y' })._prepareContext();
   assert.equal(blank.company.name, '');
 
-  await Apps.GMConsole._onIgnoreSuggested.call(app, null, { dataset: { name: 'Hexagon Logistics' } });
+  await Apps.GMConsole.DEFAULT_OPTIONS.actions.ignoreSuggested.call(app, null, { dataset: { name: 'Hexagon Logistics' } });
   assert.deepEqual(S.Diagnostics.suggestions().map((s) => s.name), ['Cobalt Freight']);
   assert.equal(S.MarketStore.getGigs().mappings['hexagon logistics'].companyId, 'ignore');
 });
@@ -316,7 +318,7 @@ test('creating from a suggestion opens a filled-in editor, and ignoring one remo
 test('the create-macros button reports what it did', async () => {
   const app = new Apps.GMConsole();
   env.notices.length = 0;
-  await Apps.GMConsole._onCreateMacros.call(app);
+  await Apps.GMConsole.DEFAULT_OPTIONS.actions.createMacros.call(app);
   assert.ok(env.notices.some(([, m]) => m === 'Macros: 0 created, 4 already there.'), JSON.stringify(env.notices));
 });
 

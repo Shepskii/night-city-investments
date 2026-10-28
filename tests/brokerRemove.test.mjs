@@ -4,9 +4,11 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
 import Handlebars from 'handlebars';
+import { registerPartials } from './helpers/partials.mjs';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+registerPartials(Handlebars, root);
 const lang = JSON.parse(readFileSync(join(root, 'lang', 'en.json'), 'utf8'));
 const MOD = 'night-city-investments';
 
@@ -136,17 +138,17 @@ test('the Brokers tab offers a remove button, disabled while a broker is in use'
   assert.equal(typeof GMConsole.DEFAULT_OPTIONS.actions.removeBroker, 'function');
 
   env.notices.length = 0;
-  await GMConsole._onRemoveBroker.call(app, null, { dataset: { id: 'c_old' } });
+  await GMConsole.DEFAULT_OPTIONS.actions.removeBroker.call(app, null, { dataset: { id: 'c_old' } });
   assert.ok(env.notices.some(([k, m]) => k === 'warn' && m.includes('Bob')), 'told why');
   assert.deepEqual(ids(), ['c_fix', 'c_old']);
 
   confirmAnswer = false;
-  await GMConsole._onRemoveBroker.call(app, null, { dataset: { id: 'c_fix' } });
+  await GMConsole.DEFAULT_OPTIONS.actions.removeBroker.call(app, null, { dataset: { id: 'c_fix' } });
   assert.deepEqual(ids(), ['c_fix', 'c_old'], 'declining the confirmation removes nothing');
 
   confirmAnswer = true;
   env.notices.length = 0;
-  await GMConsole._onRemoveBroker.call(app, null, { dataset: { id: 'c_fix' } });
+  await GMConsole.DEFAULT_OPTIONS.actions.removeBroker.call(app, null, { dataset: { id: 'c_fix' } });
   assert.deepEqual(ids(), ['c_old']);
   assert.ok(env.notices.some(([k, m]) => k === 'info' && m === 'Fixer is no longer a broker.'));
 

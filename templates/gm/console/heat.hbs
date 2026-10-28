@@ -1,0 +1,92 @@
+<div class="nci-block">
+  <h3>{{localize "NCI.Heat.Title"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Heat.Intro"}}</p>
+  {{#unless heat.enabled}}<p class="nci-warn">{{localize "NCI.Heat.Off"}}</p>{{/unless}}
+  {{#if heat.enabled}}<p class="nci-hint">{{localize "NCI.Heat.PhaseNote"}}</p>{{/if}}
+  <table class="nci-market"><tbody>
+    {{#each heat.tiers}}<tr><td><strong>{{label}}</strong></td><td class="nci-muted">{{hint}}</td></tr>{{/each}}
+  </tbody></table>
+</div>
+
+<div class="nci-block">
+  <h3>{{localize "NCI.Heat.Penalties"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Heat.PenaltiesHint"}}</p>
+  {{#each heat.pendingPenalties}}
+  <div class="nci-gig">
+    <div class="nci-gigtop"><strong>{{name}}</strong><span class="nci-down">{{text}}</span><span class="nci-muted">{{line}}</span></div>
+    <div class="nci-actions">
+      {{#if isFine}}<label>{{localize "NCI.Heat.FineAmount"}}<input type="number" name="penaltyAmount" min="0" step="10" value="{{amount}}"></label>{{else}}<label>{{daysLabel}}<input type="number" name="penaltyDays" min="0" max="30" step="1" value="{{days}}"></label>{{/if}}
+      <button type="button" data-action="heatApprove" data-id="{{id}}"><i class="fas fa-check"></i> {{localize "NCI.Heat.Approve"}}</button>
+      <button type="button" data-action="heatDismiss" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.Heat.Dismiss"}}</button>
+    </div>
+  </div>
+  {{else}}<p class="nci-empty">{{localize "NCI.Heat.NoPenalties"}}</p>{{/each}}
+  {{#if heat.penaltyHistory.length}}
+  <table class="nci-market"><tbody>
+    {{#each heat.penaltyHistory}}
+    <tr><td>{{name}}</td><td>{{text}}</td><td class="nci-muted">{{status}}{{#if done}} &middot; {{done}}{{/if}}</td><td class="nci-muted">{{line}}</td></tr>
+    {{/each}}
+  </tbody></table>
+  {{/if}}
+</div>
+
+<div class="nci-block">
+  <h3>{{localize "NCI.Heat.Characters"}}</h3>
+  {{#if heat.characters.length}}
+  <table class="nci-market">
+    <thead><tr><th>{{localize "NCI.Heat.Character"}}</th><th>{{localize "NCI.Heat.Level"}}</th><th>{{localize "NCI.Heat.TierLabel"}}</th><th>{{localize "NCI.Heat.Latest"}}</th><th></th></tr></thead>
+    <tbody>
+      {{#each heat.characters}}
+      <tr>
+        <td><strong>{{name}}</strong></td>
+        <td><span class="nci-heatbar"><span class="nci-heatfill nci-heat-{{tier}}" style="width: {{width}}%"></span></span> {{heat}}</td>
+        <td>{{tierLabel}}{{#if cover}}<div class="nci-muted">{{cover}}</div>{{/if}}</td>
+        <td class="nci-muted">{{last}}</td>
+        <td class="nci-rowbtns">
+          <input type="number" name="heatValue" min="0" max="100" step="1" value="{{heat}}" class="nci-days" title="{{localize 'NCI.Heat.SetHeatHint'}}">
+          <button type="button" data-action="heatSet" data-id="{{actorId}}" title="{{localize 'NCI.Heat.SetHeatHint'}}"><i class="fas fa-save"></i></button>
+          <button type="button" data-action="heatClear" data-id="{{actorId}}" title="{{localize 'NCI.Heat.ClearHeat'}}"><i class="fas fa-eraser"></i></button>
+        </td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  {{else}}<p class="nci-empty">{{localize "NCI.Heat.NoCharacters"}}</p>{{/if}}
+</div>
+
+<div class="nci-block">
+  <h3>{{localize "NCI.Heat.Windows"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Heat.WindowsHint"}}</p>
+  {{#if heat.open.length}}
+  <table class="nci-market"><tbody>
+    {{#each heat.open}}
+    <tr>
+      <td>{{company}}</td>
+      <td class="{{#if up}}nci-up{{else}}nci-down{{/if}}">{{direction}}</td>
+      <td class="nci-muted">{{closes}}</td>
+      <td class="nci-muted">{{#if tipped}}{{localize "NCI.Heat.Tipped"}}: {{tipped}}{{/if}}</td>
+      <td class="nci-muted">{{opened}}</td>
+    </tr>
+    {{/each}}
+  </tbody></table>
+  {{else}}<p class="nci-empty">{{localize "NCI.Heat.NoWindows"}}</p>{{/if}}
+</div>
+
+<div class="nci-block">
+  <h3>{{localize "NCI.Heat.Audits"}}</h3>
+  {{#each heat.audits}}
+  <div class="nci-gig">
+    <div class="nci-gigtop">
+      <strong>{{company}}</strong>
+      <span class="{{#if up}}nci-up{{else}}nci-down{{/if}}">{{direction}}</span>
+      <span class="nci-muted">{{date}}</span>
+    </div>
+    {{#if quiet}}<div class="nci-muted">{{localize "NCI.Heat.AuditClean"}}</div>{{/if}}
+    {{#each results}}
+    <div><strong>{{name}}</strong> +{{gain}}{{#if covered}} <span class="nci-muted">({{covered}})</span>{{/if}}
+      {{#each trades}}<div class="nci-muted">{{this}}</div>{{/each}}
+    </div>
+    {{/each}}
+  </div>
+  {{else}}<p class="nci-empty">{{localize "NCI.Heat.NoAudits"}}</p>{{/each}}
+</div>

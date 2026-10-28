@@ -4,9 +4,11 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
 import Handlebars from 'handlebars';
+import { registerPartials, withPartials } from './helpers/partials.mjs';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+registerPartials(Handlebars, root);
 const lang = JSON.parse(readFileSync(join(root, 'lang', 'en.json'), 'utf8'));
 
 const env = installFakeFoundry({ actors: [['Alice', 50000, true], ['Fixer', 0, false]] });
@@ -211,9 +213,9 @@ test('GM console funds and brokers tabs, and the fund editor, render', async () 
   app.tab = 'brokers';
   app.render = () => {};
   assert.equal(S.TerminalAccess.granted(alice), false);
-  await Apps.GMConsole._onToggleGrant.call(app, null, { dataset: { id: alice.id } });
+  await Apps.GMConsole.DEFAULT_OPTIONS.actions.toggleGrant.call(app, null, { dataset: { id: alice.id } });
   assert.equal(S.TerminalAccess.granted(alice), true, 'the GM can grant terminal access');
-  await Apps.GMConsole._onToggleGrant.call(app, null, { dataset: { id: alice.id } });
+  await Apps.GMConsole.DEFAULT_OPTIONS.actions.toggleGrant.call(app, null, { dataset: { id: alice.id } });
   assert.equal(S.TerminalAccess.granted(alice), false);
 
   const fund = FundRepository.all()[0];
@@ -286,7 +288,7 @@ test('the GM console shows previews, glides and undo, and the terminal lists upc
   assert.equal(text(html).split('Close preview').length - 1, 1, 'only one Close preview on the page');
 
   const target = { closest: () => ({ querySelector: () => null }) };
-  Apps.GMConsole._onPreviewGlide.call(app, null, target);
+  Apps.GMConsole.DEFAULT_OPTIONS.actions.previewGlide.call(app, null, target);
   assert.equal(app.preview, null, 'pressing it again closes the preview');
   html = render('templates/gm/console.hbs', await app._prepareContext());
   assert.equal(html.includes('class="nci-preview"'), false);
@@ -471,7 +473,7 @@ test('the GM console Gigs tab shows what needs mapping, what awaits approval, ma
   const [first] = ctx.gig.review;
   assert.equal((await GigImpactService.approve(first.id, { percent: 3, delayDays: 1 })).status, 'applied');
   await settle();
-  app.tab = 'market';
+  app.tab = 'events';
   ctx = await app._prepareContext();
   assert.ok(ctx.impacts.some((i) => i.persistence === 'Gig' && i.label.includes('+3%')), 'the events queue labels it as a gig impact');
   assert.ok(ctx.log.some((l) => l.text.includes('Gig outcome on ARA')), 'and the log records it');
@@ -631,7 +633,7 @@ test('every data-action in the new templates has a handler and none is reserved'
     ['templates/dialogs/trade.hbs', Apps.Trade],
   ];
   for (const [file, App] of pairs) {
-    const used = [...readFileSync(join(root, file), 'utf8').matchAll(/data-action="([^"]+)"/g)].map((m) => m[1]);
+    const used = [...withPartials(root, file).matchAll(/data-action="([^"]+)"/g)].map((m) => m[1]);
     const defined = Object.keys(App.DEFAULT_OPTIONS.actions ?? {});
     for (const action of used) {
       assert.equal(RESERVED.includes(action), false, `${file}: "${action}" is reserved`);

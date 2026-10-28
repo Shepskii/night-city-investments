@@ -1,0 +1,9 @@
+{{#if p}}
+<div class="nci-preview">
+  <h4>{{p.title}}</h4>
+  <div class="nci-chartbox">{{{p.chart}}}</div>
+  <p class="nci-hint"><span class="nci-up">&#9644;</span> {{localize "NCI.Preview.WithChange"}} &nbsp; <span class="nci-muted">&#9644;</span> {{localize "NCI.Preview.Without"}}</p>
+  <p>{{p.summary}}</p>
+  <p class="nci-hint">{{localize "NCI.Preview.Note"}}</p>
+</div>
+{{/if}}

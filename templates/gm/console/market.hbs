@@ -1,0 +1,71 @@
+<div class="nci-block nci-form">
+  <h3>{{localize "NCI.GMConsole.Clock"}}</h3>
+  <div class="nci-kv">
+    <span>{{localize "NCI.GMConsole.Date"}}</span><strong>{{date}}</strong>
+    <span>{{localize "NCI.GMConsole.TickMode"}}</span><strong>{{mode}}</strong>
+    <span>{{localize "NCI.Terminal.Tick"}}</span><strong>{{tick}}</strong>
+    <span>{{localize "NCI.GMConsole.GameDay"}}</span><strong>{{gameDay}}</strong>
+    <span>{{localize "NCI.GMConsole.PlayerMood"}}</span><strong>{{mood}}</strong>
+    <span>{{localize "NCI.GMConsole.TrueRegime"}}</span><strong>{{regime}}</strong>
+  </div>
+  <div class="nci-actions">
+    <button type="button" data-action="advance" data-days="1">{{localize "NCI.GMConsole.Advance1"}}</button>
+    <button type="button" data-action="advance" data-days="7">{{localize "NCI.GMConsole.Advance7"}}</button>
+    <button type="button" data-action="advance" data-days="30">{{localize "NCI.GMConsole.Advance30"}}</button>
+    <button type="button" data-action="advanceDay" data-days="1" title="{{localize 'NCI.GMConsole.AdvanceDayHint'}}"><i class="fas fa-forward"></i> {{localize "NCI.GMConsole.AdvanceDay"}}</button>
+    <input type="number" name="customDays" min="1" max="365" value="14" class="nci-days">
+    <button type="button" data-action="advanceCustom">{{localize "NCI.GMConsole.AdvanceCustom"}}</button>
+    <button type="button" data-action="undoTick" title="{{localize 'NCI.GMConsole.UndoHint'}}" {{#unless canUndo}}class="nci-dim"{{/unless}}><i class="fas fa-rotate-left"></i> {{localize "NCI.GMConsole.UndoTick"}}</button>
+    <button type="button" data-action="resetMarket" class="nci-danger">{{localize "NCI.GMConsole.Reset"}}</button>
+  </div>
+</div>
+
+<div class="nci-block nci-form">
+  <h3>{{localize "NCI.Controls.Sentiment"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Controls.SentimentHint"}}</p>
+  <div class="nci-actions">
+    <select name="biasTarget">{{#each targets}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+    <input type="number" name="biasValue" min="-3" max="3" step="0.25" value="0.5" class="nci-days" title="{{localize 'NCI.Controls.Strength'}}">
+    <input type="number" name="biasDays" min="1" max="365" value="10" class="nci-days" title="{{localize 'NCI.Controls.Days'}}">
+    <select name="biasDecay">
+      <option value="flat">{{localize "NCI.Controls.Decay.flat"}}</option>
+      <option value="linear">{{localize "NCI.Controls.Decay.linear"}}</option>
+    </select>
+    <button type="button" data-action="addBias"><i class="fas fa-plus"></i> {{localize "NCI.Controls.Apply"}}</button>
+    <button type="button" data-action="previewBias" class="{{#if previewBias}}active{{/if}}">{{#if previewBias}}<i class="fas fa-xmark"></i> {{localize "NCI.Preview.Dismiss"}}{{else}}<i class="fas fa-chart-area"></i> {{localize "NCI.Preview.Button"}}{{/if}}</button>
+  </div>
+  {{> "modules/night-city-investments/templates/gm/console/preview.hbs" p=previewBias}}
+  {{#if biases.length}}
+  <table class="nci-market"><tbody>
+    {{#each biases}}
+    <tr>
+      <td>{{label}}{{#if pending}} <span class="nci-badge">{{localize "NCI.Controls.Pending"}}</span>{{/if}}</td>
+      <td class="nci-muted">{{decay}} &middot; {{left}} {{localize "NCI.Controls.DaysLeft"}}</td>
+      <td class="nci-rowbtns"><button type="button" data-action="removeBias" data-id="{{id}}"><i class="fas fa-xmark"></i></button></td>
+    </tr>
+    {{/each}}
+  </tbody></table>
+  {{else}}<p class="nci-empty">{{localize "NCI.Controls.NoBiases"}}</p>{{/if}}
+</div>
+
+<div class="nci-block nci-form">
+  <h3>{{localize "NCI.Controls.RegimeTitle"}}</h3>
+  <div class="nci-actions">
+    <select name="regime">{{#each regimes}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+    <input type="number" name="regimeDays" min="1" max="365" value="5" class="nci-days" title="{{localize 'NCI.Controls.Days'}}">
+    <button type="button" data-action="forceRegime">{{localize "NCI.Controls.Force"}}</button>
+    {{#if forcedRegime}}<button type="button" data-action="clearRegime">{{localize "NCI.Controls.Clear"}}</button>{{/if}}
+  </div>
+  {{#if forcedRegime}}<p class="nci-warn">{{forcedRegime}}</p>{{/if}}
+</div>
+
+<div class="nci-block nci-form">
+  <h3>{{localize "NCI.Controls.VolatilityTitle"}}</h3>
+  <div class="nci-actions">
+    <input type="number" name="volMult" min="0.25" max="4" step="0.25" value="{{volMult}}" class="nci-days">
+    <button type="button" data-action="setVolatility">{{localize "NCI.Controls.Apply"}}</button>
+    <button type="button" data-action="toggleHalt" data-halted="{{haltAll}}" class="{{#if haltAll}}active{{/if}} nci-danger">
+      {{#if haltAll}}{{localize "NCI.Controls.ResumeMarket"}}{{else}}{{localize "NCI.Controls.HaltMarket"}}{{/if}}
+    </button>
+  </div>
+</div>

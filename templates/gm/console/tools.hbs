@@ -1,0 +1,55 @@
+<div class="nci-block">
+  <h3>{{localize "NCI.Tools.CheckTitle"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Tools.CheckHint"}} {{tools.schema}}</p>
+  <div class="nci-actions"><button type="button" data-action="runCheck"><i class="fas fa-stethoscope"></i> {{localize "NCI.Tools.RunCheck"}}</button></div>
+  {{#if tools.report}}
+  <p class="{{tools.report.cls}}">{{tools.report.summary}}</p>
+  <table class="nci-market"><tbody>
+    {{#each tools.report.checks}}
+    <tr><td><strong>{{label}}</strong></td><td class="{{cls}}">{{levelLabel}}</td><td class="nci-muted">{{detail}}</td></tr>
+    {{/each}}
+  </tbody></table>
+  {{else}}<p class="nci-empty">{{localize "NCI.Tools.NoReport"}}</p>{{/if}}
+</div>
+
+<div class="nci-block">
+  <h3>{{localize "NCI.Tools.MacrosTitle"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Tools.MacrosHint"}}</p>
+  <div class="nci-actions"><button type="button" data-action="createMacros"><i class="fas fa-terminal"></i> {{localize "NCI.Tools.CreateMacros"}}</button></div>
+</div>
+
+<div class="nci-block">
+  <h3>{{localize "NCI.Tools.SuggestTitle"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Tools.SuggestHint"}}</p>
+  {{#if tools.suggestions.length}}
+  <table class="nci-market"><tbody>
+    {{#each tools.suggestions}}
+    <tr>
+      <td><strong>{{name}}</strong> <span class="nci-muted">({{ticker}})</span></td>
+      <td class="nci-muted">{{seen}}</td>
+      <td class="nci-rowbtns">
+        <button type="button" data-action="createSuggested" data-name="{{name}}" data-ticker="{{ticker}}"><i class="fas fa-plus"></i> {{localize "NCI.Tools.Create"}}</button>
+        <button type="button" data-action="ignoreSuggested" data-name="{{name}}"><i class="fas fa-eye-slash"></i> {{localize "NCI.Tools.Ignore"}}</button>
+      </td>
+    </tr>
+    {{/each}}
+  </tbody></table>
+  {{else}}<p class="nci-empty">{{localize "NCI.Tools.NoSuggestions"}}</p>{{/if}}
+</div>
+
+<div class="nci-block">
+  <h3>{{localize "NCI.Tools.TradeLogTitle"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Tools.TradeLogHint"}}</p>
+  {{#if tools.trades.length}}
+  <table class="nci-market">
+    <thead><tr><th>{{localize "NCI.Tools.Day"}}</th><th>{{localize "NCI.Tools.Who"}}</th><th>{{localize "NCI.Tools.Side"}}</th><th>{{localize "NCI.Terminal.Ticker"}}</th><th>{{localize "NCI.Tools.Qty"}}</th><th>{{localize "NCI.Terminal.Price"}}</th><th>{{localize "NCI.Tools.Gross"}}</th><th>{{localize "NCI.Tools.Fees"}}</th><th></th></tr></thead>
+    <tbody>
+      {{#each tools.trades}}
+      <tr>
+        <td class="nci-muted">{{tick}}</td><td>{{name}}</td><td class="{{cls}}">{{side}}</td><td>{{asset}}</td><td>{{qty}}</td><td>{{price}}</td><td>{{gross}}</td><td class="nci-muted">{{fees}}</td><td class="nci-muted">{{route}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  {{else}}<p class="nci-empty">{{localize "NCI.Tools.NoTrades"}}</p>{{/if}}
+</div>

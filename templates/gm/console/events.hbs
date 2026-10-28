@@ -1,0 +1,92 @@
+<div class="nci-block nci-form">
+  <h3>{{localize "NCI.Controls.ShockTitle"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Controls.ShockHint"}}</p>
+  <div class="nci-grid">
+    <label>{{localize "NCI.Controls.Target"}}<select name="shockTarget">{{#each targets}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+    <label>{{localize "NCI.Controls.Percent"}}<input type="number" name="shockPercent" step="0.5" value="5"></label>
+    <label>{{localize "NCI.Controls.DelayDays"}}<input type="number" name="shockDelay" min="0" max="60" value="1"></label>
+    <label>{{localize "NCI.Controls.PersistenceLabel"}}<select name="shockPersistence">{{#each persistences}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label class="wide">{{localize "NCI.Controls.Headline"}}<input type="text" name="shockHeadline" placeholder="{{localize 'NCI.Controls.HeadlineHint'}}"></label>
+  </div>
+  <div class="nci-actions">
+    <button type="button" data-action="addShock"><i class="fas fa-bolt"></i> {{localize "NCI.Controls.QueueShock"}}</button>
+    <button type="button" data-action="previewShock" class="{{#if previewShock}}active{{/if}}">{{#if previewShock}}<i class="fas fa-xmark"></i> {{localize "NCI.Preview.Dismiss"}}{{else}}<i class="fas fa-chart-area"></i> {{localize "NCI.Preview.Button"}}{{/if}}</button>
+  </div>
+  {{> "modules/night-city-investments/templates/gm/console/preview.hbs" p=previewShock}}
+
+  <h3>{{localize "NCI.Controls.Queue"}}</h3>
+  {{#if impacts.length}}
+  <table class="nci-market"><tbody>
+    {{#each impacts}}
+    <tr>
+      <td>{{label}}</td>
+      <td class="nci-muted">{{persistence}} &middot; {{starts}}</td>
+      <td class="nci-rowbtns"><button type="button" data-action="removeImpact" data-id="{{id}}"><i class="fas fa-xmark"></i></button></td>
+    </tr>
+    {{/each}}
+  </tbody></table>
+  {{else}}<p class="nci-empty">{{localize "NCI.Controls.NoImpacts"}}</p>{{/if}}
+</div>
+
+<div class="nci-block nci-form">
+  <h3>{{localize "NCI.Glide.Title"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Glide.Hint"}}</p>
+  <div class="nci-actions">
+    <select name="glideCompany">{{#each companyOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+    <input type="number" name="glideTarget" min="1" step="0.01" value="100" class="nci-days" title="{{localize 'NCI.Glide.Target'}}">
+    <input type="number" name="glideDays" min="1" max="180" value="14" class="nci-days" title="{{localize 'NCI.Controls.Days'}}">
+    <select name="glideNoise" title="{{localize 'NCI.Glide.Noise'}}">{{#each glideNoises}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
+    <button type="button" data-action="addGlide"><i class="fas fa-route"></i> {{localize "NCI.Glide.Start"}}</button>
+    <button type="button" data-action="previewGlide" class="{{#if previewGlide}}active{{/if}}">{{#if previewGlide}}<i class="fas fa-xmark"></i> {{localize "NCI.Preview.Dismiss"}}{{else}}<i class="fas fa-chart-area"></i> {{localize "NCI.Preview.Button"}}{{/if}}</button>
+  </div>
+  {{> "modules/night-city-investments/templates/gm/console/preview.hbs" p=previewGlide}}
+  {{#if glides.length}}
+  <table class="nci-market"><tbody>
+    {{#each glides}}
+    <tr>
+      <td>{{label}}</td>
+      <td class="nci-muted">{{status}}</td>
+      <td class="nci-rowbtns"><button type="button" data-action="removeGlide" data-id="{{id}}"><i class="fas fa-xmark"></i></button></td>
+    </tr>
+    {{/each}}
+  </tbody></table>
+  {{else}}<p class="nci-empty">{{localize "NCI.Glide.None"}}</p>{{/if}}
+</div>
+
+<div class="nci-block nci-form">
+  <h3>{{localize "NCI.Controls.NewsTitle"}}</h3>
+  <div class="nci-grid">
+    <label class="wide">{{localize "NCI.Controls.Headline"}}<input type="text" name="newsHeadline"></label>
+    <label>{{localize "NCI.Controls.NewsCompany"}}
+      <select name="newsCompany"><option value="">{{localize "NCI.Controls.WholeMarket"}}</option>{{#each companyOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+    </label>
+    <label>{{localize "NCI.Controls.Tone"}}
+      <select name="newsTone">
+        <option value="neutral">{{localize "NCI.Controls.ToneNeutral"}}</option>
+        <option value="up">{{localize "NCI.Controls.ToneUp"}}</option>
+        <option value="down">{{localize "NCI.Controls.ToneDown"}}</option>
+      </select>
+    </label>
+  </div>
+  <div class="nci-actions"><button type="button" data-action="postNews"><i class="fas fa-newspaper"></i> {{localize "NCI.Controls.Publish"}}</button></div>
+</div>
+
+<div class="nci-block nci-form">
+  <h3>{{localize "NCI.Controls.SetPriceTitle"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Controls.SetPriceHint"}}</p>
+  <div class="nci-actions">
+    <select name="priceCompany">{{#each companyOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+    <input type="number" name="priceValue" min="1" step="0.01" value="100" class="nci-days">
+    <label class="nci-check"><input type="checkbox" name="priceFair" checked> {{localize "NCI.Controls.MoveFair"}}</label>
+    <button type="button" data-action="setPrice" class="nci-danger">{{localize "NCI.Controls.SetPrice"}}</button>
+  </div>
+</div>
+
+{{#if log.length}}
+<div class="nci-block">
+  <h3>{{localize "NCI.Controls.LogTitle"}}</h3>
+  <table class="nci-market"><tbody>
+    {{#each log}}<tr><td class="nci-muted">{{localize "NCI.Terminal.Day"}} {{tick}}</td><td>{{text}}</td></tr>{{/each}}
+  </tbody></table>
+</div>
+{{/if}}

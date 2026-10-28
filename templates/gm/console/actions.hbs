@@ -1,0 +1,39 @@
+<div class="nci-block nci-form">
+  <h3>{{localize "NCI.Actions.SpecialDividend"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Actions.SpecialDividendHint"}}</p>
+  <div class="nci-actions">
+    <select name="divCompany">{{#each companyOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+    <input type="number" name="divAmount" min="0.01" step="0.01" value="1" class="nci-days" title="{{localize 'NCI.Editor.PerShare'}}">
+    <button type="button" data-action="specialDividend">{{localize "NCI.Actions.Pay"}}</button>
+  </div>
+</div>
+
+<div class="nci-block nci-form">
+  <h3>{{localize "NCI.Actions.Split"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Actions.SplitHint"}}</p>
+  <div class="nci-actions">
+    <select name="splitCompany">{{#each companyOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+    <input type="number" name="splitRatio" min="2" max="20" step="1" value="2" class="nci-days" title="{{localize 'NCI.Actions.Ratio'}}">
+    <button type="button" data-action="splitStock">{{localize "NCI.Actions.Split"}}</button>
+  </div>
+</div>
+
+<div class="nci-block nci-form">
+  <h3>{{localize "NCI.Actions.Buyout"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Actions.BuyoutHint"}}</p>
+  <div class="nci-actions">
+    <select name="buyoutCompany">{{#each companyOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+    <input type="number" name="buyoutPrice" min="1" step="0.01" value="100" class="nci-days" title="{{localize 'NCI.Actions.PricePerShare'}}">
+    <button type="button" data-action="buyoutStock" class="nci-danger">{{localize "NCI.Actions.Buyout"}}</button>
+  </div>
+</div>
+
+<div class="nci-block nci-form">
+  <h3>{{localize "NCI.Actions.EndTitle"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Actions.EndHint"}}</p>
+  <div class="nci-actions">
+    <select name="endCompany">{{#each companyOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+    <button type="button" data-action="delistStock" class="nci-danger">{{localize "NCI.Actions.Delist"}}</button>
+    <button type="button" data-action="bankruptStock" class="nci-danger">{{localize "NCI.Actions.Bankrupt"}}</button>
+  </div>
+</div>

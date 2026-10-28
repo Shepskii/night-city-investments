@@ -1,0 +1,39 @@
+<div class="nci-block">
+  <div class="nci-actions">
+    <button type="button" data-action="newCompany"><i class="fas fa-plus"></i> {{localize "NCI.GMConsole.NewCompany"}}</button>
+    <button type="button" data-action="importStarter"><i class="fas fa-download"></i> {{localize "NCI.GMConsole.ImportStarter"}}</button>
+  </div>
+
+  {{#if companies.length}}
+  <table class="nci-market">
+    <thead>
+      <tr>
+        <th>{{localize "NCI.Terminal.Ticker"}}</th>
+        <th>{{localize "NCI.Terminal.Company"}}</th>
+        <th>{{localize "NCI.Terminal.Sector"}}</th>
+        <th class="num">{{localize "NCI.Terminal.Price"}}</th>
+        <th>{{localize "NCI.Editor.Status"}}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each companies}}
+      <tr>
+        <td><strong>{{ticker}}</strong></td>
+        <td>{{name}}{{#unless listed}} <span class="nci-badge">{{localize "NCI.Terminal.Unlisted"}}</span>{{/unless}}{{#if ipoText}} <span class="nci-badge">{{ipoText}}</span>{{/if}}</td>
+        <td class="nci-muted">{{sector}}</td>
+        <td class="num">{{price}}</td>
+        <td>{{status}}</td>
+        <td class="nci-rowbtns">
+          {{#if canList}}<button type="button" data-action="listNow" data-id="{{id}}" title="{{localize 'NCI.Ipo.ListNow'}}"><i class="fas fa-bullhorn"></i></button>{{/if}}
+          <button type="button" data-action="editCompany" data-id="{{id}}" title="{{localize 'NCI.GMConsole.Edit'}}"><i class="fas fa-pen"></i></button>
+          <button type="button" data-action="deleteCompany" data-id="{{id}}" title="{{localize 'NCI.GMConsole.DeleteCompany'}}"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="nci-empty">{{localize "NCI.GMConsole.NoCompanies"}}</p>
+  {{/if}}
+</div>
