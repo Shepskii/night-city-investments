@@ -137,3 +137,17 @@ test('a card for one skill does not verify as another', async () => {
   assert.equal(out.reason, 'roll-mismatch');
   assert.ok(fake.messages.size > 0);
 });
+
+test('a skill the sheet qualifies, such as Local Expert (Your Home), counts at its best level', () => {
+  const sheet = {
+    system: { stats: { int: { value: 6 } } },
+    items: [
+      { type: 'skill', name: 'Local Expert (Your Home)', system: { level: 2, stat: 'int' } },
+      { type: 'skill', name: 'Local Expert (Old Corp Center)', system: { level: 5, stat: 'int' } },
+      { type: 'skill', name: 'Library Search', system: { level: 3, stat: 'int' } },
+    ],
+  };
+  assert.deepEqual([SkillAdapter.read(sheet, 'Local Expert', 'int').level, SkillAdapter.read(sheet, 'Local Expert', 'int').total], [5, 11]);
+  assert.equal(SkillAdapter.read(sheet, 'Library Search', 'int').level, 3, 'an exact name is still read as it is');
+  assert.equal(SkillAdapter.read(sheet, 'Local', 'int').found, false, 'only the whole skill name before the qualifier matches');
+});

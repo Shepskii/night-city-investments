@@ -27,8 +27,13 @@ for (const actor of env.actors) {
 }
 installFakeChat();
 
+// Like ApplicationV2, some properties are read-only getters: assigning to one throws.
 class StubApplication {
   constructor(options = {}) { this.options = options; }
+  get title() { return this.options.window?.title ?? ''; }
+  get element() { return null; }
+  get id() { return this.options.id ?? ''; }
+  get rendered() { return false; }
 }
 globalThis.foundry.applications = { api: { ApplicationV2: StubApplication, HandlebarsApplicationMixin: (Base) => Base } };
 
@@ -111,7 +116,7 @@ test('once everyone has answered, the setup roll is offered, with a preview', as
   assert.match(html, /data-action="setupRoll"/);
 
   const b = S.BusinessRepository.all()[0];
-  const dialog = new Apps.Roll({ actorId: fix.id, businessId: b.id, request: { type: 'setupRoll', businessId: b.id }, title: 'Setting up' });
+  const dialog = new Apps.Roll({ actorId: fix.id, businessId: b.id, request: { type: 'setupRoll', businessId: b.id }, rollTitle: 'Setting up' });
   const roll = render('templates/dialogs/roll.hbs', await dialog._prepareContext());
   assertClean(roll, 'setup roll dialog');
   assert.match(text(roll), /Operator \(rank 4\)/, 'the role ability is offered at its rank');
@@ -149,7 +154,7 @@ test('open: every tab renders, and the week offers its five actions', async () =
   assert.match(partners, /Book value per unit/);
 
   const b = S.BusinessRepository.all()[0];
-  const dialog = new Apps.Roll({ actorId: fix.id, businessId: b.id, request: { type: 'assist', businessId: b.id, forAction: 'work' }, title: 'Helping' });
+  const dialog = new Apps.Roll({ actorId: fix.id, businessId: b.id, request: { type: 'assist', businessId: b.id, forAction: 'work' }, rollTitle: 'Helping' });
   const help = render('templates/dialogs/roll.hbs', await dialog._prepareContext());
   assertClean(help, 'complementary check dialog');
   assert.doesNotMatch(text(help), /hire/i, 'no hired professional for a complementary check');

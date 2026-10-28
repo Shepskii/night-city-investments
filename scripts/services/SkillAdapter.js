@@ -28,12 +28,27 @@ export const SkillAdapter = {
    * @returns {{found: boolean, level: number, stat: number, statName: string, total: number}}
    */
   read(actor, skill = SKILL_NAME, defaultStat = SKILL_STAT) {
-    const item = actor?.items?.find?.((i) => i.type === 'skill' && norm(i.name) === norm(skill));
+    const item = this._skillItem(actor, skill);
     const level = Number(item?.system?.level ?? item?.system?.value ?? 0) || 0;
     const statName = String(item?.system?.stat ?? defaultStat).toLowerCase();
     const raw = actor?.system?.stats?.[statName];
     const stat = Number(raw?.value ?? raw ?? 0) || 0;
     return { found: !!item, level, stat, statName, total: stat + level };
+  },
+
+  /**
+   * A skill item by name. Some Cyberpunk RED skills carry a qualifier on the sheet, such as
+   * "Local Expert (Your Home)" or "Play Instrument (Guitar)": an exact name wins, and otherwise the
+   * character's best qualified version of the skill counts.
+   */
+  _skillItem(actor, skill) {
+    const skills = actor?.items?.filter?.((i) => i.type === 'skill') ?? [];
+    const exact = skills.find((i) => norm(i.name) === norm(skill));
+    if (exact) return exact;
+    const level = (i) => Number(i.system?.level ?? i.system?.value ?? 0) || 0;
+    return skills
+      .filter((i) => /\(.*\)\s*$/.test(i.name) && norm(i.name.replace(/\s*\(.*\)\s*$/, '')) === norm(skill))
+      .sort((a, b) => level(b) - level(a))[0] ?? null;
   },
 
   /**

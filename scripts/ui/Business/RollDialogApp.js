@@ -31,7 +31,7 @@ export class RollDialogApp extends BaseApplication {
 
   /** Open the dialog for one roll. */
   static ask({ actorId, businessId, request, title }) {
-    const app = new RollDialogApp({ id: `nci-roll-${actorId}-${businessId}`, actorId, businessId, request, title });
+    const app = new RollDialogApp({ id: `nci-roll-${actorId}-${businessId}`, actorId, businessId, request, rollTitle: title });
     app.render({ force: true });
     return app;
   }
@@ -41,7 +41,7 @@ export class RollDialogApp extends BaseApplication {
     this.actorId = options.actorId;
     this.businessId = options.businessId;
     this.request = options.request;
-    this.title = options.title;
+    this.rollTitle = options.rollTitle;
     /** What the player has chosen so far: `use` is a use key, or `hire:<tier>`. */
     this.choice = { use: null, approach: 'standard', luck: 0, bonus: true };
   }
@@ -97,7 +97,7 @@ export class RollDialogApp extends BaseApplication {
     const option = spec?.ok ? this._options(spec).find((o) => o.key === this.choice.use) ?? this._options(spec)[0] : null;
     if (!option) return ui.notifications.warn(L('NCI.Roll.NothingToRoll'));
     await BusinessClient.roll(actor, business, { ...this.request, use: option.use }, {
-      title: this.title,
+      title: this.rollTitle,
       levers: { approach: this.choice.approach, luck: this.choice.luck, bonus: this.choice.bonus ? 1 : 0 },
     });
     await this.close();
@@ -111,9 +111,9 @@ export class RollDialogApp extends BaseApplication {
   async _prepareContext() {
     const actor = this.actor;
     const business = this.business;
-    if (!actor || !business) return { title: this.title, blocked: L('NCI.Business.Reason.no-business') };
+    if (!actor || !business) return { title: this.rollTitle, blocked: L('NCI.Business.Reason.no-business') };
     const full = this._spec();
-    if (!full.ok) return { title: this.title, blocked: L(`NCI.Business.Reason.${full.reason}`) };
+    if (!full.ok) return { title: this.rollTitle, blocked: L(`NCI.Business.Reason.${full.reason}`) };
 
     const options = this._options(full);
     const chosen = options.find((o) => o.key === this.choice.use) ?? options[0];
@@ -127,7 +127,7 @@ export class RollDialogApp extends BaseApplication {
     const meaning = this.request.type === 'action' ? this.request.action : this.request.type;
 
     return {
-      title: this.title,
+      title: this.rollTitle,
       actorName: actor.name,
       uses: options.map((o) => ({ key: o.key, label: o.label, selected: o.key === chosen?.key })),
       approaches: Object.keys(APPROACHES).map((id) => ({ id, label: L(`NCI.Roll.Approach.${id}`), hint: L(`NCI.Roll.ApproachHint.${id}`), checked: id === levers.approach })),
