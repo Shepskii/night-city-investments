@@ -444,7 +444,16 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | 6 | **Done (v0.6.0), see §20.** Night City Map bridge (gig outcome → impact), approval queue, client mapping, Gigs tab. The bridge is a separate module, `night-city-map-night-city-investments-bridge` |
 | 7 | **Done (v0.9.0), see §23.** Starter pack (already in since phase 1), API docs, self-check, trade log, company suggestions, starter macros, keybindings, data migrations. The macro importer was dropped: it will not be needed |
 | 6b | Insider-trading heat, in stages (§22). **H1 done (v0.7.0, retuned in v0.7.1):** hidden heat recorded from audited gig windows, GM Heat tab. **H2 and H3 done (v0.8.0):** warnings, NCPD enquiries, fines, freezes and dropped brokers with GM approval, and skill-roll cover-up actions. H4 (gig runner from the bridge) done, unreleased |
-| Later | Player syndicates, short selling and margin, options |
+| 0.9.7 | Release the unreleased work: the after-tick sequence and dividend-records fix (§27), the market date, price paths and cleanups (§28), and gig runners for heat (H4) |
+| B0 | Groundwork for player businesses and syndicates (§26.9): the Crew Tools spike, the business growth simulator, the storage schema |
+| B1 | **v0.10, see §26.9.** Side businesses: the roll levers, the Business window and the GM's Businesses tab, partnerships, four archetypes, the weekly loop |
+| B2 | **v0.11.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
+| B3 | **v0.12, alongside B1 and B2.** Player syndicates, and syndicates owning or investing in businesses |
+| B4 | **v0.13.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
+| B5 | **v0.14.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
+| B6 | **v0.15.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
+| B7 | Downtime bridge (separate module, after B2): company work through Crew Tools downtime, businesses on Night City Map |
+| Later | Short selling and margin, options |
 
 ## 15. Decisions
 
@@ -1059,21 +1068,71 @@ Everything a player does here is a request through the executor, like the termin
 
 **Data.** Business records live apart from the market's: the player-visible part in a per-business document its owners can read, and the hidden part (Exposure, NPC investors' skills, the stored totals for opposed rolls) in the GM-only control journal, as the market's hidden state is (§4). The market's company list gains an entry only when a listing is approved.
 
-### 26.9 Build order
+### 26.9 Development phases
 
-1. Syndicate account, with units, roles, votes and visible positions.
-2. Syndicate heat, broker and treasurer.
-3. Roll levers in `SkillAdapter`: the roll dialog with the DV preview, approach, Luck and complementary bonus (role abilities included), hired professionals; outcome bands; and the executor's checks for Luck and the stored bonus. Every later step uses them.
-4. The Business window (§26.8a) with its Overview, This week, Ledger and Partners tabs, the Start a business flow, and the GM Console's Businesses tab. Small businesses (§26.0): partnership units and the founding agreement (with the buy-out rule), archetypes, location, the setup roll, the till and owner draws, the small business loop, fixer loans, failure, and registration as the first step up. This is the entry point most players will use.
-5. Bank loans, private investors, expansion projects, and the step-up checklist (the Projects and Growth tabs); private holdings in the terminal's portfolio.
-6. Charter flow, from scratch or from a registered business (net assets toward the quote): fee, three rolls with the graded outcome, the starting state, delay, the capital quote and funding window, GM approval and a private company with its cap table.
-7. Business state, company action slots, the five skill actions with alternative skills, event responses and information rolls, and the weekly period with monthly reports, as player-triggered rolls verified from the chat message.
-8. Role abilities as company and business actions.
-9. Bridge module: Company Work through Crew Tools downtime (including extra time), and projects; businesses shown on Night City Map.
-10. Gigs for own business or company (runner knowledge for heat, H4, is built).
-11. Listing: the valuation and eligibility checklist (§26.4a), the prospectus rolls, monthly reports, earnings impacts, the IPO price from the prospectus rolls, capped payouts and liquidity; creating the market entry on approval, and the links between the Business window and the terminal.
-12. Control changes: takeovers, dilution, buybacks, insolvency.
-13. Hidden ownership: nominee, then syndicate chains, disclosure threshold, and opposed investigations.
+The work is split into phases that each end with something usable at the table. Syndicates are not first: small businesses are where most players will start, so the first playable phase is a side business. Syndicates do not depend on businesses and run as a parallel track, joining up when a syndicate owns or invests in one. The phases are labelled B0 to B7 in the roadmap (§14).
+
+**Before B0:** release the work already done as **v0.9.7** (§27 and §28, and the gig runners for heat, H4), so the phases start from a released, tested base.
+
+| Phase | Version | Playable outcome |
+|---|---|---|
+| B0 Groundwork | none | nothing for players; the questions below are answered |
+| B1 Side businesses | v0.10 | the Medtech and Fixer open the clinic and earn from it |
+| B2 Growing | v0.11 | the clinic registers, takes a loan, opens a second chair and brings in an investor |
+| B3 Syndicates (parallel) | v0.12 | a crew pools money and trades as one account |
+| B4 Chartered companies | v0.13 | the clinic becomes a company with officers and monthly reports |
+| B5 Going public | v0.14 | an IPO other players subscribe to in the terminal |
+| B6 Corporate play | v0.15 | takeovers, buybacks, hidden owners and investigations |
+| B7 Downtime bridge (separate module) | after B2 | company work spends Crew Tools downtime |
+
+**B0 Groundwork.**
+- **Crew Tools spike** (§26.8): the signature of `downtime.use`, whether it returns an event id, whether a player client may call it, and how free-form events appear. The B7 design depends on it.
+- **Business growth simulator:** extend `tools/simulate.mjs` to run a business over many operating periods, check the target of 30 to 40 periods from side business to listing eligibility (§26.0), and tune the profit bands before any of it ships.
+- **Storage:** one document per business that its owners can read, with hidden fields in the control journal (§26.8a); the schema version and migration path.
+
+**B1 Side businesses (v0.10).**
+- **Roll levers** in `SkillAdapter` (§26): the roll dialog with the DV preview, approach, Luck, the complementary bonus (role abilities included) and hired professionals; outcome bands and the DV ladder; the executor's checks for Luck and stored bonuses. Every later phase uses them.
+- **The Business window** (§26.8a): Overview, This week, Ledger and Partners tabs, and the Start a business flow; the GM Console's Businesses tab, with approvals and each business's true state.
+- **Ownership** (§26.0): partnership units, and the founding agreement with sweat equity, decision rule and buy-out rule.
+- **Archetypes:** four to start (ripperdoc clinic, garage, bar, info shop) and the setup roll.
+- **The weekly loop:** the five actions, the till, upkeep, capped owner draws, neglect drift, and failure and closure.
+
+**B2 Growing (v0.11).**
+- Weekly events and event responses.
+- Fixer loans; registration as the first step up (stage 1, two action slots); bank loans; private investors (players, and NPC angels through an opposed roll).
+- Expansion projects; the Projects and Growth tabs with the step-up checklist.
+- Private holdings, read-only, in the terminal's Portfolio tab (§26.8a).
+- Location: district foot traffic and risk.
+- Role abilities as business actions.
+- Gigs for a player's own business (§26.5); the runners already come from the bridge.
+- The remaining six archetypes.
+
+**B3 Syndicates (v0.12, alongside B1 and B2).**
+- The syndicate account (§26.1): units and NAV, roles, proposals and votes with deadlines, the broker and treasurer, and collective heat.
+- Integration: a syndicate as a business partner or owner, with private stakes valued at book value or *V* in its NAV.
+
+**B4 Chartered companies (v0.13).**
+- The charter (§26.2, §26.2a): three rolls with the graded outcome, the starting state, the capital quote, the funding window and escrow, net assets credited for a growing business, and units converting to restricted shares.
+- The company loop (§26.4): action slots by capacity, the five skill actions with alternative skills, report preparation (Bold reporting included), private monthly reports, Compliance and Exposure.
+- Information rolls: internal audit and due diligence.
+- Officers, elections and control (§26.3).
+
+**B5 Going public (v0.14).**
+- The valuation *V*, the listing checklist, the listing application and the prospectus rolls (§26.4a).
+- On approval, the company's market entry and the standard IPO flow.
+- Earnings impacts on fair value, capped dividends and the liquidity cap (§26.7), insider windows for officers (§26.4), and the delisting review.
+- The links between the Business window and the terminal: Manage company and View on market (§26.8a).
+
+**B6 Corporate play (v0.15).**
+- Takeovers, dilution, buybacks and insolvency for companies.
+- Hidden ownership (§26.6): nominees, syndicate chains, the disclosure threshold, opposed investigations, and Netrunner espionage.
+- Coordinated syndicate campaigns.
+
+**B7 Downtime bridge (a separate module, any time after B2).**
+- Company Work through Crew Tools downtime (§26.8): extra time (+1), crew days on projects, and the expiry rules. Until it ships, B2's native allowance of business days stands in.
+- Businesses shown on Night City Map through the map bridge.
+
+**Every phase finishes the same way:** node tests for the pure parts and flow tests against the fake Foundry, as the existing suite does; a schema migration if stored data changes; a run in the test world before release; and, from B1, a simulator check against the growth target.
 
 ## 27. After-tick order and dividend records (unreleased)
 
