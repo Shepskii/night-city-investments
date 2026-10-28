@@ -1030,19 +1030,48 @@ Crew Tools exposes `api.downtime` (`getState`, `use`, `startNextSession`), `api.
 - **Risks to confirm in a spike:** the exact signature of `use`, whether it returns an event id, whether a player client may call it, and how free-form events appear in the journal.
 - **Other links, read-only:** rent and lifestyle as company overhead, HQ improvements as capacity, faction reputation as a bias on company reputation, `appendPayoutRecord` for dividends if you want one ledger.
 
+### 26.8a The Business window, separate from the market
+
+Running a business is a different activity from trading shares, so it has its own window, the **Business window**, and the Market Terminal stays the stock market. A private business never appears in the market at all; the two windows meet only where a business touches the market: its owners' holdings, a listing, and a listed company's own page.
+
+**Opening it.** A Business button beside the market buttons in the Token Controls, a keybinding (unbound by default, like the others), a starter macro, and, through the map bridge, the business's place on Night City Map. A player sees only the businesses their characters hold units or shares in, with a picker when there are several; anyone else's private business is invisible to them. A character with none sees **Start a business**, which opens the founding flow.
+
+**Tabs**, following the business loop (§26.0, §26.4):
+
+| Tab | Shows | Actions |
+|---|---|---|
+| Overview | stage, archetype, location, the state as bands (Reputation, Capacity, Cost base, Compliance), the till, the next step-up's checklist | |
+| This week | the operating period: action slots and who has taken each, complementary bonuses waiting, event prompts with their deadline | take a slot and roll (with the dialog's preview and levers, §26), make a complementary check, answer an event |
+| Ledger | takings, costs, draws, loan payments, and each period's digest; monthly ledgers or reports from stage 1 | draw, take or repay a loan |
+| Partners | the cap table (units, or shares from stage 2) and the founding agreement; officers from stage 2 | propose and vote (admit an investor, change the agreement, elect officers), buy out a stake, transfer units privately |
+| Projects | expansion projects and their progress, including crew days from downtime (§26.8) | start, fund or add days to a project |
+| Growth | the step-up checklist and, from stage 2, the listing checklist (§26.4a) | step up, apply for a listing, make the prospectus rolls |
+
+Everything a player does here is a request through the executor, like the terminal's, and every roll is player-triggered (§26).
+
+**Where it links into the market.**
+- **Private holdings in the portfolio.** The terminal's Portfolio tab lists a character's stakes in private businesses in their own section, valued at book value (stages 0 and 1) or *V* (stage 2, §26.4a), read-only and clearly marked as not tradable, each with **Manage in Business window**. They count toward the portfolio's value and statements but cannot be ordered on the market.
+- **Applying for a listing.** When the Growth tab's listing checklist is complete, officers apply there, pay the listing fee and make the prospectus rolls (§26.4a). On the GM's approval, NCI creates the company's market entry from the business record (name, ticker, sector, description, offer price, float) and runs the standard announced IPO (§19): it appears in the terminal's upcoming IPOs, and any character, including other players, subscribes there as for any IPO. Until then the market knows nothing about the business.
+- **Once listed.** The terminal's company page shows **Manage company** to the company's officers, opening the Business window on it, and the Business window's Overview shows **View on market**, opening the terminal at the company's page. Founders' shares stay restricted through the lock-up, then trade like any shares, from the terminal.
+- **Delisting** (§26.4a) removes the market entry; the company stays in the Business window as a private company.
+
+**The GM's side.** A **Businesses** tab in the GM Console lists every business at every stage, with its true state (Exposure included) and owners, and holds what needs the GM: setups and step-ups awaiting approval (by setting), charters, listing applications, loan reviews, event draws, buy-outs and disputes. The GM can open any business in the Business window to see it as its owners do.
+
+**Data.** Business records live apart from the market's: the player-visible part in a per-business document its owners can read, and the hidden part (Exposure, NPC investors' skills, the stored totals for opposed rolls) in the GM-only control journal, as the market's hidden state is (§4). The market's company list gains an entry only when a listing is approved.
+
 ### 26.9 Build order
 
 1. Syndicate account, with units, roles, votes and visible positions.
 2. Syndicate heat, broker and treasurer.
 3. Roll levers in `SkillAdapter`: the roll dialog with the DV preview, approach, Luck and complementary bonus (role abilities included), hired professionals; outcome bands; and the executor's checks for Luck and the stored bonus. Every later step uses them.
-4. Small businesses (§26.0): partnership units and the founding agreement (with the buy-out rule), archetypes, location, the setup roll, the till and owner draws, the small business loop, fixer loans, failure, and registration as the first step up. This is the entry point most players will use.
-5. Bank loans, private investors, expansion projects, and the step-up checklist.
+4. The Business window (§26.8a) with its Overview, This week, Ledger and Partners tabs, the Start a business flow, and the GM Console's Businesses tab. Small businesses (§26.0): partnership units and the founding agreement (with the buy-out rule), archetypes, location, the setup roll, the till and owner draws, the small business loop, fixer loans, failure, and registration as the first step up. This is the entry point most players will use.
+5. Bank loans, private investors, expansion projects, and the step-up checklist (the Projects and Growth tabs); private holdings in the terminal's portfolio.
 6. Charter flow, from scratch or from a registered business (net assets toward the quote): fee, three rolls with the graded outcome, the starting state, delay, the capital quote and funding window, GM approval and a private company with its cap table.
 7. Business state, company action slots, the five skill actions with alternative skills, event responses and information rolls, and the weekly period with monthly reports, as player-triggered rolls verified from the chat message.
 8. Role abilities as company and business actions.
 9. Bridge module: Company Work through Crew Tools downtime (including extra time), and projects; businesses shown on Night City Map.
 10. Gigs for own business or company (runner knowledge for heat, H4, is built).
-11. Listing: the valuation and eligibility checklist (§26.4a), the prospectus rolls, monthly reports, earnings impacts, the IPO price from the prospectus rolls, capped payouts and liquidity.
+11. Listing: the valuation and eligibility checklist (§26.4a), the prospectus rolls, monthly reports, earnings impacts, the IPO price from the prospectus rolls, capped payouts and liquidity; creating the market entry on approval, and the links between the Business window and the terminal.
 12. Control changes: takeovers, dilution, buybacks, insolvency.
 13. Hidden ownership: nominee, then syndicate chains, disclosure threshold, and opposed investigations.
 
