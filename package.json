@@ -6,7 +6,8 @@
   "description": "Stock market and investments for Cyberpunk RED in Foundry VTT",
   "scripts": {
     "test": "node --test",
-    "simulate": "node tools/simulate.mjs"
+    "simulate": "node tools/simulate.mjs",
+    "simulate:business": "node tools/simulate-business.mjs"
   },
   "license": "MIT",
   "devDependencies": {
