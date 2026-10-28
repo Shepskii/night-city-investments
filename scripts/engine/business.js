@@ -187,15 +187,16 @@ export function stateBands(b, p = BUSINESS_DEFAULTS) {
 /**
  * Everything the GM's service must know before it reads a roll card: whether the request could go
  * ahead at all (so a request that would be refused does not use up the card), the DV, the ways it
- * may be rolled, whether a hire is allowed, and whether a complementary bonus is waiting.
- * @returns {{ok: true, dv: number, uses: object[], allowHire: boolean, bonusAvailable: boolean} | {ok: false, reason: string}}
+ * may be rolled, whether a hire is allowed, and whether a complementary bonus is waiting. With no
+ * `use` in the request it only says whether the roll can be made and how (the roll dialog asks
+ * this); with one it also checks the use, and gives it back with the business's own stat.
+ * @returns {{ok: true, dv: number, uses: object[], use?: object, allowHire: boolean, bonusAvailable: boolean} | {ok: false, reason: string}}
  */
 export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p = BUSINESS_DEFAULTS } = {}) {
   const arch = archetypeOf(b);
   const me = partnerOf(b, actorId);
-  const use = request.use;
-  if (!use || !['skill', 'ability', 'hire'].includes(use.kind)) return fail('bad-use');
-  if (use.kind === 'hire' && !HIRE_TIERS[use.hire]) return fail('bad-use');
+  const use = request.use ?? null;
+  if (use && (!['skill', 'ability', 'hire'].includes(use.kind) || (use.kind === 'hire' && !HIRE_TIERS[use.hire]))) return fail('bad-use');
 
   if (request.type === 'setupRoll') {
     if (b.status !== 'forming') return fail('not-forming');
@@ -204,8 +205,7 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     if (b.setup?.passed) return fail('setup-done');
     if (b.setup?.retryDay != null && day < b.setup.retryDay) return fail('setup-delay');
     if (!holders(b).some((x) => x.cash + gearValue(x) > 0)) return fail('no-contribution');
-    if (use.kind === 'hire' && b.escrow < hireFee(use.hire, operatorRank, p)) return fail('no-funds');
-    return allowed(setupUses(arch), use, { dv: dvOf(p.setupDv), allowHire: true, bonusAvailable: false });
+    return allowed(setupUses(arch), use, { dv: dvOf(p.setupDv), allowHire: true, bonusAvailable: false, funds: b.escrow, operatorRank, p });
   }
 
   if (b.status !== 'open') return fail('not-open');
@@ -216,26 +216,28 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     const slots = p.stages[b.stage]?.slots ?? 1;
     if (b.period.slots.length >= slots) return fail('no-slot');
     if (b.period.slots.some((s) => s.action === request.action)) return fail('action-taken');
-    if (use.kind === 'hire' && b.till < hireFee(use.hire, operatorRank, p)) return fail('no-funds');
     const bonusAvailable = b.period.bonuses.some((x) => x.action === request.action && !x.used);
-    return allowed(actionUses(request.action, arch), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable });
+    return allowed(actionUses(request.action, arch), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable, funds: b.till, operatorRank, p });
   }
 
   if (request.type === 'assist') {
     if (!ACTIONS[request.forAction]) return fail('bad-action');
     if (b.period.helpers.includes(actorId)) return fail('helped');
     if (b.period.slots.some((s) => s.action === request.forAction)) return fail('action-taken');
-    if (use.kind === 'hire') return fail('hire-not-allowed');
     return allowed(helpUses(request.forAction, arch), use, { dv: dvOf(p.helpDv), allowHire: false, bonusAvailable: false });
   }
   return fail('bad-request');
 }
 
-function allowed(uses, use, spec) {
-  if (use.kind !== 'hire' && !usesInclude(uses, use)) return fail('bad-use');
+function allowed(uses, use, { funds = 0, operatorRank = 0, p = BUSINESS_DEFAULTS, ...spec }) {
+  if (use?.kind === 'hire') {
+    if (!spec.allowHire) return fail('hire-not-allowed');
+    if (funds < hireFee(use.hire, operatorRank, p)) return fail('no-funds');
+    return { ok: true, uses, use, ...spec };
+  }
+  if (use && !usesInclude(uses, use)) return fail('bad-use');
   // The skill's stat is the business's own, not what the request says.
-  const own = use.kind === 'skill' ? uses.find((u) => useKey(u) === useKey(use)) : use;
-  return { ok: true, uses, use: own, ...spec };
+  return { ok: true, uses, ...(use ? { use: uses.find((u) => useKey(u) === useKey(use)) } : {}), ...spec };
 }
 
 function fail(reason) {
@@ -278,6 +280,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
   }
 
   if (!business) return fail('no-business');
+  if (ROLL_REQUESTS.includes(request.type) && !request.use) return fail('bad-use');
   const b = structuredClone(normalizeBusiness(business));
   const me = partnerOf(b, actor.id);
   const log = (kind, amount, note = {}) => addLedger(b, { day, kind, amount, actorId: actor.id, ...note }, p);

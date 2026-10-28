@@ -3,10 +3,11 @@
  * @file scripts/init/registerUIComponents.js
  */
 
-import { MODULE_ID } from '../utils/constants.js';
+import { MODULE_ID, SETTINGS } from '../utils/constants.js';
 import { log, isGM } from '../utils/helpers.js';
 import { MarketTerminalApp } from '../ui/MarketTerminal/MarketTerminalApp.js';
 import { GMConsoleApp } from '../ui/GMConsole/GMConsoleApp.js';
+import { BusinessApp } from '../ui/Business/BusinessApp.js';
 import { MarketTicker } from '../ui/MarketTicker.js';
 import { addMarketControls } from '../ui/sceneControls.js';
 
@@ -24,6 +25,16 @@ export function registerUIComponents(initializer) {
           onClick: () => MarketTerminalApp.open(),
         },
       ];
+
+      if (game.settings.get(MODULE_ID, SETTINGS.BUSINESSES_ENABLED) !== false) {
+        tools.push({
+          name: 'nci-business',
+          title: game.i18n.localize('NCI.SceneControls.OpenBusiness'),
+          icon: 'fas fa-store',
+          button: true,
+          onClick: () => BusinessApp.open(),
+        });
+      }
 
       if (isGM()) {
         tools.push({
@@ -43,6 +54,7 @@ export function registerUIComponents(initializer) {
     const api = game.modules.get(MODULE_ID)?.api;
     if (!api) return;
     api.open = () => MarketTerminalApp.open();
+    api.openBusiness = (options) => BusinessApp.open(options);
     api.openGM = () => {
       if (!isGM()) return ui.notifications.warn('GM only');
       return GMConsoleApp.open();

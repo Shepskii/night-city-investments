@@ -96,7 +96,7 @@ class BusinessServiceImpl {
     const day = this.day();
     const context = this.context(business);
     let check = null;
-    if (business && ROLL_REQUESTS.includes(request.type)) {
+    if (business && ROLL_REQUESTS.includes(request.type) && request.use) {
       // The same checks the engine makes, first, so a request that would be refused does not use up its card.
       const spec = rollSpec(business, request, actor.id, { day, operatorRank: context.operatorRank });
       if (spec.ok) {

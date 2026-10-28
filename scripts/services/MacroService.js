@@ -12,6 +12,7 @@ import { L } from '../utils/helpers.js';
 
 export const MACROS = Object.freeze([
   { key: 'terminal', img: 'icons/svg/coins.svg', everyone: true, command: 'game.nightcity.investments.open();' },
+  { key: 'business', img: 'icons/svg/house.svg', everyone: true, command: 'game.nightcity.investments.openBusiness();' },
   { key: 'console', img: 'icons/svg/cog.svg', everyone: false, command: 'game.nightcity.investments.openGM();' },
   {
     key: 'advance',

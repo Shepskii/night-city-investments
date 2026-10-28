@@ -1,0 +1,51 @@
+<div class="nci-editor nci-roll">
+  <h3>{{title}}</h3>
+  {{#if blocked}}
+  <p class="nci-warn">{{blocked}}</p>
+  <footer class="nci-footer">
+    <button type="button" data-action="cancel">{{localize "NCI.Editor.Cancel"}}</button>
+  </footer>
+  {{else}}
+  <p class="nci-muted">{{actorName}}</p>
+
+  <div class="nci-grid">
+    <label>{{localize "NCI.Roll.RollWith"}}
+      <select name="use">
+        {{#each uses}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+      </select>
+    </label>
+    {{#unless noLuck}}
+    <label>{{localize "NCI.Roll.Luck"}} <span class="nci-muted">(0–{{luckMax}})</span>
+      <input type="number" name="luck" value="{{luck}}" min="0" max="{{luckMax}}" step="1">
+    </label>
+    {{/unless}}
+  </div>
+
+  <fieldset class="nci-approach">
+    <legend>{{localize "NCI.Roll.ApproachLabel"}}</legend>
+    {{#each approaches}}
+    <label title="{{hint}}"><input type="radio" name="approach" value="{{id}}" {{#if checked}}checked{{/if}}> {{label}} <span class="nci-muted">{{hint}}</span></label>
+    {{/each}}
+  </fieldset>
+
+  {{#if bonusAvailable}}
+  <label><input type="checkbox" name="bonus" {{#if bonus}}checked{{/if}}> {{localize "NCI.Roll.UseBonus"}}</label>
+  {{/if}}
+  {{#if hireNote}}<p class="nci-hint">{{hireNote}}</p>{{/if}}
+
+  <div class="nci-kv">
+    <span>DV</span><strong>{{dv}}</strong>
+    <span>{{localize "NCI.Roll.Chance"}}</span><strong>{{chance}}</strong>
+  </div>
+  <p class="nci-hint">{{needed}}</p>
+  <table class="nci-market"><tbody>
+    {{#each bands}}<tr><td><strong>{{label}}</strong></td><td>{{chance}}</td><td class="nci-muted">{{meaning}}</td></tr>{{/each}}
+  </tbody></table>
+  <p class="nci-hint">{{localize "NCI.Roll.Hint"}}</p>
+
+  <footer class="nci-footer">
+    <button type="submit"><i class="fas fa-dice-d10"></i> {{localize "NCI.Roll.Roll"}}</button>
+    <button type="button" data-action="cancel">{{localize "NCI.Editor.Cancel"}}</button>
+  </footer>
+  {{/if}}
+</div>

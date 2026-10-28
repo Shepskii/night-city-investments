@@ -171,7 +171,7 @@ test('only the active GM migrates, and a failure leaves the version alone', asyn
 
 test('keybindings are registered unbound, and the GM one is restricted', async () => {
   await initTools.runPhase('init');
-  assert.deepEqual(keybindings.map((k) => k.key), ['openTerminal', 'openConsole']);
+  assert.deepEqual(keybindings.map((k) => k.key), ['openTerminal', 'openBusiness', 'openConsole']);
   for (const k of keybindings) {
     assert.equal(k.m, MOD);
     assert.deepEqual(k.def.editable, [], 'no default key');
@@ -179,7 +179,8 @@ test('keybindings are registered unbound, and the GM one is restricted', async (
     assert.ok(lookup(k.def.name) && lookup(k.def.hint), 'name and hint exist in the language file');
   }
   assert.equal(keybindings[0].def.restricted, undefined);
-  assert.equal(keybindings[1].def.restricted, true);
+  assert.equal(keybindings[1].def.restricted, undefined);
+  assert.equal(keybindings[2].def.restricted, true);
 });
 
 test('the tools API is published for macros and other modules', () => {
@@ -193,17 +194,18 @@ test('the tools API is published for macros and other modules', () => {
 
 test('starter macros are created once, with the right permissions', async () => {
   const first = await S.Macros.createDefaults();
-  assert.deepEqual(first, { created: 4, skipped: 0 });
-  assert.equal(game.macros.length, 4);
+  assert.deepEqual(first, { created: 5, skipped: 0 });
+  assert.equal(game.macros.length, 5);
   const byKey = Object.fromEntries(game.macros.map((m) => [m.flags[MOD].macro, m]));
   assert.equal(byKey.terminal.ownership.default, 2, 'players can see the terminal macro');
+  assert.equal(byKey.business.ownership.default, 2, 'and the business macro');
   for (const k of ['console', 'advance', 'check']) assert.equal(byKey[k].ownership.default, 0, `${k} is GM only`);
   assert.ok(game.macros.every((m) => m.type === 'script' && m.command.includes('game.nightcity.investments')));
   assert.ok(byKey.advance.command.includes('isGM'), 'the advance macro checks for a GM itself');
   assert.equal(byKey.terminal.name, 'NCI: Open Market Terminal');
 
   game.macros.splice(game.macros.indexOf(byKey.check), 1);
-  assert.deepEqual(await S.Macros.createDefaults(), { created: 1, skipped: 3 }, 'only the deleted one is made again');
+  assert.deepEqual(await S.Macros.createDefaults(), { created: 1, skipped: 4 }, 'only the deleted one is made again');
 
   game.user.isGM = false;
   assert.deepEqual(await S.Macros.createDefaults(), { created: 0, skipped: 0 });
@@ -319,7 +321,7 @@ test('the create-macros button reports what it did', async () => {
   const app = new Apps.GMConsole();
   env.notices.length = 0;
   await Apps.GMConsole.DEFAULT_OPTIONS.actions.createMacros.call(app);
-  assert.ok(env.notices.some(([, m]) => m === 'Macros: 0 created, 4 already there.'), JSON.stringify(env.notices));
+  assert.ok(env.notices.some(([, m]) => m === 'Macros: 0 created, 5 already there.'), JSON.stringify(env.notices));
 });
 
 // ── Portfolio holdings open their market page ────────────────────────────────

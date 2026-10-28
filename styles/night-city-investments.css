@@ -217,3 +217,13 @@
 .nci-app .nci-hint { color: #777; font-size: 11px; }
 .nci-app .nci-notify { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
 .nci-app .nci-notify label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--nci-label); }
+
+/* The Business window and the roll dialog. */
+.nci-app .nci-business .nci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-bottom: 8px; }
+.nci-app .nci-business label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--nci-label); }
+.nci-app .nci-business fieldset { border: 1px solid var(--nci-accent-dim); margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.nci-app .nci-business fieldset label { flex-direction: row; align-items: center; gap: 6px; }
+.nci-app .nci-business legend { color: var(--nci-accent-bright); }
+.nci-app .nci-business .nci-block button { width: auto; padding: 0 12px; }
+.nci-app .nci-roll .nci-approach label { flex-direction: row; align-items: baseline; gap: 6px; }
+.nci-app .nci-roll .nci-approach .nci-muted { font-size: 11px; }

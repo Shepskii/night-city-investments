@@ -10,6 +10,7 @@ import { DiagnosticsService } from '../services/DiagnosticsService.js';
 import { MacroService } from '../services/MacroService.js';
 import { MarketTerminalApp } from '../ui/MarketTerminal/MarketTerminalApp.js';
 import { GMConsoleApp } from '../ui/GMConsole/GMConsoleApp.js';
+import { BusinessApp } from '../ui/Business/BusinessApp.js';
 
 export function registerToolsSystem(initializer) {
   // Unbound by default so it cannot clash with a key the table already uses.
@@ -20,6 +21,15 @@ export function registerToolsSystem(initializer) {
       editable: [],
       onDown: () => {
         MarketTerminalApp.open();
+        return true;
+      },
+    });
+    game.keybindings.register(MODULE_ID, 'openBusiness', {
+      name: 'NCI.Keybindings.OpenBusiness',
+      hint: 'NCI.Keybindings.OpenBusinessHint',
+      editable: [],
+      onDown: () => {
+        BusinessApp.open();
         return true;
       },
     });

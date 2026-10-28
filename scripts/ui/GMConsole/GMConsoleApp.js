@@ -18,10 +18,11 @@ import * as funds from './tabs/funds.js';
 import * as brokers from './tabs/brokers.js';
 import * as gigs from './tabs/gigs.js';
 import * as heat from './tabs/heat.js';
+import * as businesses from './tabs/businesses.js';
 import * as tools from './tabs/tools.js';
 
 /** In display order. */
-const TABS = { market, events, actions, companies, funds, brokers, gigs, heat, tools };
+const TABS = { market, events, actions, companies, funds, brokers, gigs, heat, businesses, tools };
 const PARTIALS = `modules/${MODULE_ID}/templates/gm/console`;
 
 export class GMConsoleApp extends BaseApplication {
@@ -54,6 +55,7 @@ export class GMConsoleApp extends BaseApplication {
     Hooks.on(HOOKS.COMPANIES_CHANGED, this._refresh);
     Hooks.on(HOOKS.GIGS_CHANGED, this._refresh);
     Hooks.on(HOOKS.HEAT_CHANGED, this._refresh);
+    Hooks.on(HOOKS.BUSINESSES_CHANGED, this._refresh);
   }
 
   _onClose(options) {
@@ -61,6 +63,7 @@ export class GMConsoleApp extends BaseApplication {
     Hooks.off(HOOKS.COMPANIES_CHANGED, this._refresh);
     Hooks.off(HOOKS.GIGS_CHANGED, this._refresh);
     Hooks.off(HOOKS.HEAT_CHANGED, this._refresh);
+    Hooks.off(HOOKS.BUSINESSES_CHANGED, this._refresh);
     super._onClose?.(options);
   }
 
@@ -110,12 +113,12 @@ export class GMConsoleApp extends BaseApplication {
 
   async _prepareContext() {
     const gigCounts = GigImpactService.counts();
-    const waiting = gigCounts.review + gigCounts.mapping;
+    const waiting = { gigs: gigCounts.review + gigCounts.mapping, businesses: businesses.waiting() };
     const context = {
       tab: this.tab,
       tabs: Object.keys(TABS).map((t) => ({
         id: t,
-        label: t === 'gigs' && waiting ? `${L('NCI.GMConsole.Tab.gigs')} (${waiting})` : L(`NCI.GMConsole.Tab.${t}`),
+        label: waiting[t] ? `${L(`NCI.GMConsole.Tab.${t}`)} (${waiting[t]})` : L(`NCI.GMConsole.Tab.${t}`),
         active: t === this.tab,
       })),
       activeGM: game.user.id === game.users.activeGM?.id,
