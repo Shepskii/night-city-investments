@@ -8,6 +8,7 @@
     <span>{{localize "NCI.GMConsole.PlayerMood"}}</span><strong>{{mood}}</strong>
     <span>{{localize "NCI.GMConsole.TrueRegime"}}</span><strong>{{regime}}</strong>
   </div>
+  {{#if calendarNote}}<p class="nci-hint">{{calendarNote}}</p>{{/if}}
   <div class="nci-actions">
     <button type="button" data-action="advance" data-days="1">{{localize "NCI.GMConsole.Advance1"}}</button>
     <button type="button" data-action="advance" data-days="7">{{localize "NCI.GMConsole.Advance7"}}</button>

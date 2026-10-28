@@ -101,11 +101,15 @@ export function context(app) {
   // Every duration below is on the market clock, in game days.
   const time = timeOf(pub);
   const tickMode = game.settings.get(MODULE_ID, SETTINGS.TICK_MODE);
+  const calendar = MarketClock.dateString(MarketClock.calendarMs());
+  const lead = pub.lead ?? 0;
   return {
     previewBias: app.preview?.kind === 'bias' ? app.preview : null,
     canUndo: UndoService.available(),
     mode: L(`NCI.Settings.TickMode.${{ worldTime: 'WorldTime', realTime: 'RealTime', manual: 'Manual' }[tickMode]}`),
     date: MarketClock.dateString(),
+    calendarNote: tickMode === 'manual' ? L('NCI.GMConsole.CalendarManual', { calendar })
+      : lead > 0 ? L('NCI.GMConsole.CalendarAhead', { calendar, days: lead }) : '',
     tick: pub.tickIndex ?? 0,
     gameDay: Math.floor(time + 1e-6),
     mood: pub.mood ? L(`NCI.Mood.${pub.mood}`) : '—',

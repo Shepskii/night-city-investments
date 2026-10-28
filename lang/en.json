@@ -613,7 +613,9 @@
     "GMConsole": {
       "Title": "Market GM Console",
       "Clock": "Market clock",
-      "Date": "In-world date",
+      "Date": "Market date",
+      "CalendarAhead": "Hand advances have taken the market {days} day(s) past the calendar ({calendar}). Dividends, fund distributions, IPOs and statements fall due on the market date.",
+      "CalendarManual": "In manual mode the market date moves only when you advance the market; the calendar shows {calendar}. Dividends, fund distributions, IPOs and statements fall due on the market date.",
       "TickMode": "Tick mode",
       "GameDay": "Game day",
       "PlayerMood": "Mood shown to players",

@@ -7,6 +7,8 @@
  *              Pure; no Foundry globals.
  */
 
+import { timeOf } from './clock.js';
+
 export const MOODS = {
   bull: 'risk-on',
   sideways: 'steady',
@@ -24,7 +26,7 @@ export const marketMood = (regime) => MOODS[regime] ?? 'steady';
  * @returns {{pub: object, hidden: object}}
  */
 export function splitState(state, lastDay) {
-  const pub = { schema: 1, tickIndex: state.tickIndex, time: state.time ?? state.tickIndex, lastDay, mood: marketMood(state.regime), companies: {} };
+  const pub = { schema: 1, tickIndex: state.tickIndex, time: timeOf(state), lastDay, lead: state.lead ?? 0, mood: marketMood(state.regime), companies: {} };
   const hidden = { schema: 1, regime: state.regime, regimeAge: state.regimeAge, companies: {} };
   for (const [id, c] of Object.entries(state.companies)) {
     pub.companies[id] = { price: c.price, prevClose: c.prevClose };
@@ -37,7 +39,9 @@ export function splitState(state, lastDay) {
 export function mergeState(pub, hidden) {
   const state = {
     tickIndex: pub?.tickIndex ?? 0,
-    time: pub?.time ?? pub?.tickIndex ?? 0,
+    time: timeOf(pub),
+    // Game days a GM has moved the market's date on by hand (see `marketDay`).
+    lead: pub?.lead ?? 0,
     regime: hidden?.regime ?? 'sideways',
     regimeAge: hidden?.regimeAge ?? 0,
     companies: {},

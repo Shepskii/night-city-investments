@@ -1,6 +1,7 @@
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
+import { daysUntil, nextQuarter, quarterKey } from './helpers/marketDate.mjs';
 
 const DAY = 86_400_000;
 const env = installFakeFoundry({ actors: [['Alice', 90000, true], ['Bob', 90000, true], ['Fixer', 0, false]] });
@@ -72,7 +73,7 @@ before(async () => {
 const settle = async () => {
   for (let i = 0; i < 8; i++) {
     await new Promise((r) => setTimeout(r, 3));
-    for (const q of [S.TickService._queue, S.PortfolioClient._chain, S.PortfolioService._queue, S.DividendService._queue,
+    for (const q of [S.TickService._queue, (await import('../scripts/init/registerTickSequence.js')).TickSequence._queue, S.PortfolioClient._chain, S.PortfolioService._queue, S.DividendService._queue,
       S.CorporateActionService._queue, S.NewsService._queue]) await q;
   }
 };
@@ -196,26 +197,36 @@ test('a distributing fund pays its income out as cash once a quarter', async () 
   assert.equal(held(alice, 'SAFE'), 10);
   const navBefore = pub().funds.SAFE.nav;
 
-  await S.TickService.advance(60);
+  // The next quarter fixes a distribution of what has built up so far.
+  const q1 = await nextQuarter();
+  await S.TickService.advanceDays(await daysUntil(...q1));
+  await settle();
+  assert.equal(pub().funds.SAFE.lastDist?.key, quarterKey(q1), 'a new quarter fixes a distribution');
+  const paidSoFar = () => pf(alice).ledger.filter((e) => e.kind === 'dividend' && e.assetId === 'SAFE').length;
+  const paidBefore = paidSoFar();
+
+  // Through that quarter income builds up, but nothing more is paid until it ends.
+  const q2 = await nextQuarter();
+  await S.TickService.advanceDays(await daysUntil(...q2) - 1);
   await settle();
   assert.ok(pub().funds.SAFE.owed > 0.2, `income has been set aside: ${pub().funds.SAFE.owed}`);
-  assert.equal(pub().funds.SAFE.lastDist ?? null, null, 'but nothing is paid mid-quarter');
+  assert.equal(pub().funds.SAFE.lastDist.key, quarterKey(q1), 'but nothing is paid mid-quarter');
+  assert.equal(paidSoFar(), paidBefore);
   assert.ok(navBefore > 0);
 
   const cash0 = pf(alice).cash;
   const ledgerBefore = pf(alice).ledger.length;
   const mailsBefore = mails(alice, 'Dividend.Subject').length;
-  env.clock.ms += 120 * DAY;
-  await S.TickService.advance(1);
+  await S.TickService.advanceDays(1);
   await settle();
 
   const dist = pub().funds.SAFE.lastDist;
   assert.ok(dist && dist.perUnit > 0.2, `a distribution was fixed: ${JSON.stringify(dist)}`);
-  assert.equal(dist.key, '2045-Q3');
+  assert.equal(dist.key, quarterKey(q2));
   const paid = pf(alice).ledger.filter((e) => e.kind === 'dividend' && e.assetId === 'SAFE');
-  assert.equal(paid.length, 1);
-  assert.equal(paid[0].amount, Math.round(10 * dist.perUnit));
-  // The date jump also paid ARA's scheduled dividend, so add up everything that came in.
+  assert.equal(paid.length, paidBefore + 1);
+  assert.equal(paid.at(-1).amount, Math.round(10 * dist.perUnit));
+  // The new quarter also paid ARA's scheduled dividend, so add up everything that came in.
   const income = pf(alice).ledger.slice(ledgerBefore).filter((e) => e.kind === 'dividend').reduce((s, e) => s + e.amount, 0);
   assert.equal(pf(alice).cash, cash0 + income, 'paid as cash');
   assert.equal(pf(bob).ledger.some((e) => e.assetId === 'SAFE'), false, 'only holders are paid');
@@ -224,16 +235,20 @@ test('a distributing fund pays its income out as cash once a quarter', async () 
 
   await S.TickService.advance(2);
   await settle();
-  assert.equal(pf(alice).ledger.filter((e) => e.kind === 'dividend' && e.assetId === 'SAFE').length, 1, 'never paid twice');
-  assert.equal(pub().funds.SAFE.lastDist.key, '2045-Q3');
+  assert.equal(paidSoFar(), paidBefore + 1, 'never paid twice');
+  assert.equal(pub().funds.SAFE.lastDist.key, quarterKey(q2));
 });
 
 test('a fund distribution and a stock dividend on the same tick both keep their records', async () => {
-  // The quarter jump above paid ARA's dividend and SAFE's distribution on one tick. Both services
+  // Each new quarter above paid ARA's dividend and SAFE's distribution on one tick. Both services
   // write the dividend records, so neither may write back a copy it read before the other wrote.
   const records = S.MarketStore.getDividendRecords();
-  assert.equal(records.SAFE?.lastKey, 'dist-2045-Q3', 'the distribution is recorded');
+  assert.equal(records.SAFE?.lastKey, `dist-${pub().funds.SAFE.lastDist.key}`, 'the distribution is recorded');
   assert.ok(records.ARA?.lastKey, 'and so is the dividend');
-  const headlines = S.MarketStore.getNews().items.filter((n) => n.headline.includes('FundDistribution'));
-  assert.equal(headlines.length, 1, 'the distribution is announced once');
+  // A lost record would announce the same distribution again on a later tick.
+  const keys = env.hooksFired
+    .filter((h) => h.name === 'night-city-investments.dividendPaid' && h.args[0].companyId === 'SAFE')
+    .map((h) => h.args[0].key);
+  assert.ok(keys.length >= 2);
+  assert.equal(new Set(keys).size, keys.length, `each distribution is announced once: ${keys}`);
 });

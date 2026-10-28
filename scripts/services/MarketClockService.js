@@ -1,14 +1,19 @@
 /**
- * Market clock: in-world time for ticking.
+ * Market clock: the calendar, and the market's own date on it.
  * @file scripts/services/MarketClockService.js
- * @description Uses Night City Messenger's time provider so the market and the messenger share one
- *              clock. Falls back to Foundry world time if the provider is not ready.
+ * @description The calendar comes from Night City Messenger's time provider, so the market and the
+ *              messenger share one clock, falling back to Foundry world time if the provider is not
+ *              ready. Only the tick service reads the calendar directly; everything else uses the
+ *              market's date (`marketDay`), which runs ahead of the calendar by the days a GM has
+ *              advanced the market by hand, and in manual mode moves only with the market.
  */
 
-import { msToDate } from '../engine/index.js';
+import { msToDate, dayIndex, marketDay, DAY_MS } from '../engine/index.js';
+import { MarketStore } from '../data/MarketStore.js';
 
 export const MarketClock = {
-  nowMs() {
+  /** The in-world calendar, in milliseconds. */
+  calendarMs() {
     try {
       const ms = game.modules.get('night-city-messenger')?.api?.time?.getCurrentTimeMs?.();
       if (Number.isFinite(ms)) return ms;
@@ -18,7 +23,15 @@ export const MarketClock = {
     return Math.floor(game.time.worldTime * 1000);
   },
 
-  /** Current in-world calendar date. */
+  /** The market's now: the calendar's time of day on the market's date. */
+  nowMs() {
+    const calendar = this.calendarMs();
+    const pub = MarketStore.getPublic();
+    if (!pub.schema) return calendar;
+    return calendar + (marketDay(pub, dayIndex(calendar)) - dayIndex(calendar)) * DAY_MS;
+  },
+
+  /** The market's date. */
   date() {
     return msToDate(this.nowMs());
   },

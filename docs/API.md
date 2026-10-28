@@ -34,7 +34,7 @@ Hooks.once('night-city-investments.ready', (api) => { /* api.market, api.portfol
 | `api.market.state()` | Public state: `{ tickIndex, time, mood, companies: { [id]: { price, prevClose, ... } }, funds: { [id]: { nav, prevNav } } }`. `time` is the market clock in game days (a float); `prevClose` is the previous game day's close. Fair values and the true regime are never in it. |
 | `api.market.history()` | Price history `{ series: { [id]: [...] } }`. |
 | `api.market.news()` | The public news feed. |
-| `api.market.advance(ticks = 1)` | **GM.** Advance the market by that many ticks (each a fraction of a game day in the in-world clock mode, a whole day otherwise). |
+| `api.market.advance(ticks = 1)` | **GM.** Advance the market by that many ticks (each a fraction of a game day in the in-world clock mode, a whole day otherwise). The game days they cover move the market's date on past the calendar's. |
 
 ## Portfolios (the calling user's own characters)
 

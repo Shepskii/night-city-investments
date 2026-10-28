@@ -1,6 +1,7 @@
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
+import { daysUntil } from './helpers/marketDate.mjs';
 
 const env = installFakeFoundry({ actors: [['Alice', 50000, true], ['Bob', 50000, true]] });
 const [alice, bob] = env.actors;
@@ -41,6 +42,7 @@ const DAY = 86_400_000;
 const settle = async () => {
   for (let i = 0; i < 3; i++) {
     await S.TickService._queue;
+    await (await import('../scripts/init/registerTickSequence.js')).TickSequence._queue;
     await S.PortfolioClient._chain;
     await S.PortfolioService._queue;
     await S.DividendService._queue;
@@ -80,8 +82,8 @@ test('dividends: the first sight of a company records its period without paying'
 
 test('dividends: a new quarter pays holders once, announces it, and does not repeat', async () => {
   const cash = portfolio(alice).cash;
-  env.clock.ms = Date.UTC(2045, 3, 5, 12); // 5 April: Q2
-  await advance(1);
+  await S.TickService.advanceDays(await daysUntil(2045, 4, 5)); // 5 April: Q2
+  await settle();
 
   assert.equal(portfolio(alice).cash, cash + 20, '10 shares x 2 eb');
   assert.equal(portfolio(alice).stats.dividends, 20);
@@ -105,8 +107,8 @@ test('dividends: non-holders are untouched and a reinvesting holder buys shares'
   assert.equal(portfolio(bob).drip.ARA, true);
 
   const sharesBefore = portfolio(bob).lots.filter((l) => l.assetId === 'ARA').reduce((s, l) => s + l.qty, 0);
-  env.clock.ms = Date.UTC(2045, 6, 5, 12); // July: Q3
-  await advance(1);
+  await S.TickService.advanceDays(await daysUntil(2045, 7, 5)); // July: Q3
+  await settle();
   const sharesAfter = portfolio(bob).lots.filter((l) => l.assetId === 'ARA').reduce((s, l) => s + l.qty, 0);
   assert.equal(sharesBefore, 20);
   assert.ok(sharesAfter >= 20, 'dividend reinvested into whole shares when the payout covers one');

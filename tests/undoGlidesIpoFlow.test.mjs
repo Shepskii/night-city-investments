@@ -1,6 +1,7 @@
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
+import { marketDateIn } from './helpers/marketDate.mjs';
 
 const DAY = 86_400_000;
 const env = installFakeFoundry({ actors: [['Alice', 50000, true], ['Bob', 50000, true]] });
@@ -43,7 +44,7 @@ before(async () => {
 const settle = async () => {
   for (let i = 0; i < 6; i++) {
     await new Promise((r) => setTimeout(r, 3));
-    for (const q of [S.TickService._queue, S.PortfolioClient._chain, S.PortfolioService._queue, S.DividendService._queue,
+    for (const q of [S.TickService._queue, (await import('../scripts/init/registerTickSequence.js')).TickSequence._queue, S.PortfolioClient._chain, S.PortfolioService._queue, S.DividendService._queue,
       S.CorporateActionService._queue, S.NewsService._queue, S.IpoService._queue]) await q;
   }
 };
@@ -153,7 +154,7 @@ test('the preview service runs against the live market without changing it', asy
 // ── IPO ──────────────────────────────────────────────────────────────────────
 
 test('an IPO: subscriptions open in the window, then the listing fills them pro rata', async () => {
-  const date = S.MarketClock.dateString(env.clock.ms + 4 * DAY);
+  const date = await marketDateIn(4);
   const saved = await S.CompanyRepository.save({
     name: 'Newco', ticker: 'NEWC', sector: 'tech', initialPrice: 40, listed: false,
     ipo: { date, price: 50, windowDays: 5, allocation: 100 },
@@ -180,8 +181,7 @@ test('an IPO: subscriptions open in the window, then the listing fills them pro 
   assert.equal(portfolio(alice).cash, cashA, 'cash is held, not spent');
 
   // The date arrives.
-  env.clock.ms += 4 * DAY;
-  await S.TickService.advance(1);
+  await S.TickService.advanceDays(4);
   await settle();
 
   const company = S.CompanyRepository.get('NEWC');
@@ -209,7 +209,7 @@ test('an IPO: subscriptions open in the window, then the listing fills them pro 
 });
 
 test('subscriptions outside the window are refused, and the GM can list a company early', async () => {
-  const date = S.MarketClock.dateString(env.clock.ms + 40 * DAY);
+  const date = await marketDateIn(40);
   await S.CompanyRepository.save({ name: 'Laterco', ticker: 'LATE', sector: 'media', initialPrice: 25, listed: false, ipo: { date, price: null, windowDays: 3, allocation: 0 } });
   await S.TickService.syncCompanies();
   await settle();

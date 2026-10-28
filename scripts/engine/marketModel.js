@@ -44,7 +44,7 @@ function freshCompanyState(company) {
  * @param {object[]} o.companies - each needs `id` and `initialPrice`
  */
 export function createInitialState({ companies, tickIndex = 0, regime = 'sideways' }) {
-  const state = { tickIndex, time: tickIndex, regime, regimeAge: 0, companies: {} };
+  const state = { tickIndex, time: tickIndex, lead: 0, regime, regimeAge: 0, companies: {} };
   for (const c of companies) state.companies[c.id] = freshCompanyState(c);
   return state;
 }
@@ -168,6 +168,7 @@ export function stepMarket({ state, companies, seed, config = DEFAULT_MODEL_CONF
     state: {
       tickIndex: tick,
       time,
+      lead: state.lead ?? 0,
       regime,
       regimeAge: regimeChanged ? 0 : state.regimeAge + 1,
       companies: nextCompanies,

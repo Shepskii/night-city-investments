@@ -92,7 +92,7 @@ before(async () => {
 const settle = async () => {
   for (let i = 0; i < 6; i++) {
     await new Promise((r) => setTimeout(r, 3));
-    for (const q of [S.TickService._queue, S.PortfolioClient._chain, S.PortfolioService._queue, S.DividendService._queue, S.NewsService._queue]) await q;
+    for (const q of [S.TickService._queue, (await import('../scripts/init/registerTickSequence.js')).TickSequence._queue, S.PortfolioClient._chain, S.PortfolioService._queue, S.DividendService._queue, S.NewsService._queue]) await q;
   }
 };
 

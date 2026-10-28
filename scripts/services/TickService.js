@@ -13,7 +13,7 @@ import {
   appendClose, pruneHistory, replaceLastClose, splitState, mergeState, pruneState,
   normalizeControls, resolveControls, pruneControls, dropImpacts, collectImpacts,
   makeFundState, stepFundState, refreshFundState, rebaseFundState, fundPrices, truncateHistory, restoreExpired, logEntry,
-  fundTargets, rebalanceDue, applyRebalance, distributionDue, applyDistribution, timeOf,
+  fundTargets, rebalanceDue, applyRebalance, distributionDue, applyDistribution, timeOf, msToDate, DAY_MS,
 } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
 import { log, isActiveGM } from '../utils/helpers.js';
@@ -90,7 +90,7 @@ class TickServiceImpl {
     return this._queue.run(async () => {
       await this._sync();
       if (!MarketStore.hasState()) return;
-      await this._runTicks(n, MarketStore.getPublic().lastDay ?? dayIndex(MarketClock.nowMs()));
+      await this._runTicks(n, MarketStore.getPublic().lastDay ?? dayIndex(MarketClock.calendarMs()));
     });
   }
 
@@ -108,7 +108,7 @@ class TickServiceImpl {
     return this._queue.run(async () => {
       await this._sync();
       if (!MarketStore.hasState()) return;
-      await this._runTicks(n, MarketStore.getPublic().lastDay ?? dayIndex(MarketClock.nowMs()), undefined, 1);
+      await this._runTicks(n, MarketStore.getPublic().lastDay ?? dayIndex(MarketClock.calendarMs()), undefined, 1);
     });
   }
 
@@ -275,21 +275,22 @@ class TickServiceImpl {
     if (mode === 'realTime') {
       const pub = MarketStore.getPublic();
       const minutes = Math.max(1, Number(game.settings.get(MODULE_ID, SETTINGS.REAL_TIME_MINUTES)) || 10);
-      const due = realTimeDue({ lastDay: pub.lastDay ?? null, lastMs: pub.lastMs ?? null, nowMs: MarketClock.nowMs(), intervalMs: minutes * 60_000 });
+      const due = realTimeDue({ lastDay: pub.lastDay ?? null, lastMs: pub.lastMs ?? null, nowMs: MarketClock.calendarMs(), intervalMs: minutes * 60_000 });
       if (due.resync) {
         if (pub.lastDay !== due.day || pub.lastMs !== due.ms) await MarketStore.setPublic({ ...pub, lastDay: due.day, lastMs: due.ms });
         return;
       }
       if (due.skipped) log.warn(`Market skipped ${due.skipped} steps of a calendar jump; simulating the most recent ones`);
-      if (due.dayTicks > 0) await this._runTicks(due.dayTicks, due.day, due.ticks > 0 ? undefined : due.ms, 1);
-      if (due.ticks > 0) await this._runTicks(due.ticks, due.day, due.ms);
+      const onCalendar = () => due.day;
+      if (due.dayTicks > 0) await this._runTicks(due.dayTicks, due.day, due.ticks > 0 ? undefined : due.ms, 1, onCalendar);
+      if (due.ticks > 0) await this._runTicks(due.ticks, due.day, due.ms, null, onCalendar);
       // A date that changed with no tick due still gives the market its new date.
       if (!due.dayTicks && !due.ticks && pub.lastDay !== due.day) await MarketStore.setPublic({ ...pub, lastDay: due.day });
       return;
     }
 
     const pub = MarketStore.getPublic();
-    const due = ticksDue({ lastDay: pub.lastDay ?? null, nowMs: MarketClock.nowMs() });
+    const due = ticksDue({ lastDay: pub.lastDay ?? null, nowMs: MarketClock.calendarMs() });
     if (due.rebaseline) {
       await MarketStore.setPublic({ ...pub, lastDay: due.day });
       return;
@@ -300,7 +301,8 @@ class TickServiceImpl {
     }
     this._notedAhead = 0;
     if (due.skipped) log.warn(`Market skipped ${due.skipped} days; simulating the most recent ${due.ticks}`);
-    if (due.ticks > 0) await this._runTicks(due.ticks, due.day);
+    // One tick per calendar day, the last on today.
+    if (due.ticks > 0) await this._runTicks(due.ticks, due.day, undefined, null, (i) => due.day - due.ticks + 1 + i);
   }
 
   async _seed() {
@@ -326,7 +328,7 @@ class TickServiceImpl {
       for (const c of companies) history = appendClose(history, c.id, 0, state.companies[c.id].price);
       await this._ensureTargets(state);
       const f = this._fundStates({ state, prevFunds: {}, history, mode: 'sync' });
-      await this._write(state, dayIndex(MarketClock.nowMs()), f.history, f.funds, MarketClock.nowMs());
+      await this._write(state, dayIndex(MarketClock.calendarMs()), f.history, f.funds, MarketClock.calendarMs());
       log.info(`Market created with ${companies.length} companies`);
       return;
     }
@@ -373,9 +375,10 @@ class TickServiceImpl {
    *   step:    one tick: dividends accrue in, the expense ratio comes out, the manager's alpha is added,
    *            a due rebalance is made, and a close is recorded
    * @param {object[]} [o.defs] - fund definitions to use instead of the stored ones (a rebalance earlier in the same run)
+   * @param {object} [o.date] - the market's date for this step (a tick in a run has its own); the current one if left out
    * @returns {{funds: object, history: object, defs: object[], rebalanced: object[]}}
    */
-  _fundStates({ state, prevFunds, history, mode, defs: given = null, dt = 1, newDay = true }) {
+  _fundStates({ state, prevFunds, history, mode, defs: given = null, dt = 1, newDay = true, date = MarketClock.date() }) {
     const ctx = this._fundContext(state);
     const { byId, prices } = ctx;
     const defs = given ?? ctx.defs;
@@ -391,7 +394,7 @@ class TickServiceImpl {
         h = appendClose(h, def.id, dayOf(state.time), funds[def.id].nav);
       } else if (mode === 'step') {
         let next = stepFundState(prev, def, prices, byId, { dt, newDay });
-        const due = rebalanceDue(def, next, MarketClock.date());
+        const due = rebalanceDue(def, next, date);
         if (due.due) {
           const out = applyRebalance(def, next, prices, due.key);
           current = out.fund;
@@ -400,7 +403,7 @@ class TickServiceImpl {
         } else if (due.mark) {
           next = { ...next, rebalanceKey: due.mark };
         }
-        const dist = distributionDue(def, next, MarketClock.date());
+        const dist = distributionDue(def, next, date);
         if (dist.due) next = applyDistribution(next, dist.key, state.time);
         else if (dist.mark) next = { ...next, distKey: dist.mark };
         funds[def.id] = next;
@@ -424,7 +427,13 @@ class TickServiceImpl {
     }
   }
 
-  async _runTicks(n, day, ms, dtOverride = null) {
+  /**
+   * Run `n` ticks. `day` is the calendar day to record as the last tick's.
+   * @param {(i: number) => number} [calendarDayOf] - the calendar day of tick `i`, when the ticks follow
+   *        the calendar. Without it the GM is moving the market on by hand, and its date (`lead`)
+   *        moves with the game days the ticks cover.
+   */
+  async _runTicks(n, day, ms, dtOverride = null, calendarDayOf = null) {
     const companies = CompanyRepository.all({ includeUnlisted: true });
     if (!companies.length) return;
     const seed = await this._seed();
@@ -447,13 +456,15 @@ class TickServiceImpl {
       last = stepMarket({
         state, companies, seed, config: DEFAULT_MODEL_CONFIG, controls: resolveControls(controls, time, dt), impacts, dt,
       });
-      state = last.state;
+      const lead = (state.lead ?? 0) + (calendarDayOf ? 0 : dayOf(timeOf(last.state)) - dayOf(timeOf(state)));
+      state = { ...last.state, lead };
+      const date = msToDate(((calendarDayOf ? calendarDayOf(i) : day) + lead) * DAY_MS);
       newDay ||= last.newDay;
       controls = pruneControls(dropImpacts(controls, impacts.expired), time, dt);
       for (const [id, s] of Object.entries(state.companies)) {
         history = appendClose(history, id, dayOf(state.time), s.price);
       }
-      const f = this._fundStates({ state, prevFunds: funds, history, mode: 'step', defs, dt, newDay: last.newDay });
+      const f = this._fundStates({ state, prevFunds: funds, history, mode: 'step', defs, dt, newDay: last.newDay, date });
       funds = f.funds;
       history = f.history;
       defs = f.defs;

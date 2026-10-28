@@ -33,6 +33,16 @@ export const minutesToDays = (minutes) => minutes / 1440;
 /** Whole days since the epoch for a timestamp in milliseconds. */
 export const dayIndex = (ms) => Math.floor(ms / DAY_MS);
 
+/**
+ * The market's date, as a day index: the calendar day of its last tick (`lastDay`), plus the game
+ * days a GM has moved it on by hand (`lead`). With no hand advances, in the in-world clock modes,
+ * it is the calendar's date; in manual mode it moves only with the market. Dividends, fund
+ * distributions and rebalances, IPOs and statements all fall due on this date.
+ * @param {{lastDay?: number|null, lead?: number}} pub - the public market state
+ * @param {number} calendarDay - today on the calendar, for a market that has not ticked yet
+ */
+export const marketDay = (pub, calendarDay) => (pub?.lastDay ?? calendarDay) + (pub?.lead ?? 0);
+
 /** Calendar date (UTC) for a timestamp in milliseconds; month is 1-12. */
 export function msToDate(ms) {
   const d = new Date(ms);

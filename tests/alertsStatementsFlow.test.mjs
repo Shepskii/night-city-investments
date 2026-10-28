@@ -1,6 +1,7 @@
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
+import { daysUntil } from './helpers/marketDate.mjs';
 
 const DAY = 86_400_000;
 const env = installFakeFoundry({ actors: [['Alice', 90000, true], ['Bob', 90000, true], ['Fixer', 0, false]] });
@@ -78,7 +79,7 @@ before(async () => {
 const settle = async () => {
   for (let i = 0; i < 6; i++) {
     await new Promise((r) => setTimeout(r, 3));
-    for (const q of [S.TickService._queue, S.PortfolioClient._chain, S.PortfolioService._queue, S.DividendService._queue,
+    for (const q of [S.TickService._queue, (await import('../scripts/init/registerTickSequence.js')).TickSequence._queue, S.PortfolioClient._chain, S.PortfolioService._queue, S.DividendService._queue,
       S.CorporateActionService._queue, S.NewsService._queue]) await q;
   }
 };
@@ -185,8 +186,8 @@ test('a new month sends monthly statements to those who opted in, and rebalances
 
   const alicePrev = mailsTo(alice, 'Statement.Subject').length;
   const prevState = S.MarketStore.getPublic().funds.NC12;
-  env.clock.ms += 31 * DAY;
-  await S.TickService.advance(1);
+  // Run the market to the first of April: a new month and a new quarter.
+  await S.TickService.advanceDays(await daysUntil(2045, 4, 1));
   await settle();
   const undoAfterRebalance = S.UndoService.available();
   assert.equal(mailsTo(alice, 'Statement.Subject').length, alicePrev + 1, 'Alice opted in and gets last month\'s statement');
@@ -216,14 +217,15 @@ test('a new month sends monthly statements to those who opted in, and rebalances
 });
 
 test('a rebalance does not move the NAV: it equals what the old holdings would have given', async () => {
-  // Another quarter on; compare the fund with the same tick run on the old holdings.
+  // Run to the eve of the next quarter, then compare its first tick with the same tick run on the old holdings.
+  await S.TickService.advanceDays(await daysUntil(2045, 6, 30));
+  await settle();
   const before = S.FundRepository.get('NC12');
   const prevState = S.MarketStore.getPublic().funds.NC12;
   await S.CorporateActionService.setPrice('MIL', Math.round(price('MIL') * 1.4));
   await settle();
   const state = S.MarketStore.getPublic().funds.NC12;
-  env.clock.ms += 92 * DAY;
-  await S.TickService.advance(1);
+  await S.TickService.advanceDays(1);
   await settle();
 
   const pub = S.MarketStore.getPublic();

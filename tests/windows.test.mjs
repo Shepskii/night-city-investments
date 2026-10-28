@@ -6,6 +6,7 @@ import { join, dirname } from 'node:path';
 import Handlebars from 'handlebars';
 import { registerPartials, withPartials } from './helpers/partials.mjs';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
+import { marketDateIn } from './helpers/marketDate.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 registerPartials(Handlebars, root);
@@ -110,7 +111,7 @@ before(async () => {
 
 const settle = async () => {
   for (let i = 0; i < 3; i++) {
-    for (const q of [S.TickService._queue, S.PortfolioClient._chain, S.PortfolioService._queue, S.DividendService._queue, S.CorporateActionService._queue, S.NewsService._queue]) await q;
+    for (const q of [S.TickService._queue, (await import('../scripts/init/registerTickSequence.js')).TickSequence._queue, S.PortfolioClient._chain, S.PortfolioService._queue, S.DividendService._queue, S.CorporateActionService._queue, S.NewsService._queue]) await q;
   }
 };
 
@@ -296,7 +297,7 @@ test('the GM console shows previews, glides and undo, and the terminal lists upc
 });
 
 test('IPO fields in the company editor, the GM list and the player terminal', async () => {
-  const date = S.MarketClock.dateString(Date.UTC(2045, 2, 15, 12) + 3 * 86_400_000);
+  const date = await marketDateIn(3);
   await S.CompanyRepository.save({
     name: 'Newco', ticker: 'NEWC', sector: 'tech', initialPrice: 40, listed: false, ipo: { date, price: 50, windowDays: 5, allocation: 200 },
   });
