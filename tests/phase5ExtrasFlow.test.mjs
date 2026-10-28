@@ -60,6 +60,7 @@ before(async () => {
   const init = new ModuleInitializer();
   (await load('../scripts/init/registerMarketSystem.js')).registerMarketSystem(init);
   (await load('../scripts/init/registerPortfolioSystem.js')).registerPortfolioSystem(init);
+  (await import('../scripts/init/registerTickSequence.js')).registerTickSequence(init);
   (await load('../scripts/init/registerBrokerSystem.js')).registerBrokerSystem(init);
   await init.runPhase('init');
 
@@ -225,4 +226,14 @@ test('a distributing fund pays its income out as cash once a quarter', async () 
   await settle();
   assert.equal(pf(alice).ledger.filter((e) => e.kind === 'dividend' && e.assetId === 'SAFE').length, 1, 'never paid twice');
   assert.equal(pub().funds.SAFE.lastDist.key, '2045-Q3');
+});
+
+test('a fund distribution and a stock dividend on the same tick both keep their records', async () => {
+  // The quarter jump above paid ARA's dividend and SAFE's distribution on one tick. Both services
+  // write the dividend records, so neither may write back a copy it read before the other wrote.
+  const records = S.MarketStore.getDividendRecords();
+  assert.equal(records.SAFE?.lastKey, 'dist-2045-Q3', 'the distribution is recorded');
+  assert.ok(records.ARA?.lastKey, 'and so is the dividend');
+  const headlines = S.MarketStore.getNews().items.filter((n) => n.headline.includes('FundDistribution'));
+  assert.equal(headlines.length, 1, 'the distribution is announced once');
 });

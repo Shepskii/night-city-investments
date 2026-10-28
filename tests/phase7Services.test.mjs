@@ -98,6 +98,7 @@ before(async () => {
   const init = new ModuleInitializer();
   (await load('../scripts/init/registerMarketSystem.js')).registerMarketSystem(init);
   (await load('../scripts/init/registerPortfolioSystem.js')).registerPortfolioSystem(init);
+  (await import('../scripts/init/registerTickSequence.js')).registerTickSequence(init);
   await init.runPhase('init');
 
   initTools = new ModuleInitializer();

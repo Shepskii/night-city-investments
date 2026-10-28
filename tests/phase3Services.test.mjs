@@ -30,6 +30,7 @@ before(async () => {
   const init = new S.ModuleInitializer();
   S.registerMarketSystem(init);
   S.registerPortfolioSystem(init);
+  (await import('../scripts/init/registerTickSequence.js')).registerTickSequence(init);
   await init.runPhase('init');
 
   await S.ImportService.importStarter();

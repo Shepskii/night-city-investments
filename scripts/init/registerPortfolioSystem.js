@@ -3,13 +3,12 @@
  * @file scripts/init/registerPortfolioSystem.js
  */
 
-import { MODULE_ID, FLAGS, HOOKS } from '../utils/constants.js';
+import { MODULE_ID, FLAGS } from '../utils/constants.js';
 import { isActiveGM } from '../utils/helpers.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { PortfolioService } from '../services/PortfolioService.js';
 import { PortfolioClient } from '../services/PortfolioClient.js';
 import { PortfolioWatcher } from '../services/PortfolioWatcher.js';
-import { HeatService } from '../services/HeatService.js';
 
 export function registerPortfolioSystem(initializer) {
   initializer.register('init', 40, 'Portfolio hooks', () => {
@@ -20,12 +19,7 @@ export function registerPortfolioSystem(initializer) {
         PortfolioService.processActor(actor);
       }
     });
-
-    // After each market tick the active GM works open orders, then the heat audit looks at what filled
-    // (so it never waits a tick for an order that is about to fill).
-    Hooks.on(HOOKS.PRICE_TICK, () => {
-      if (isActiveGM()) PortfolioService.onTick().then(() => HeatService.onTick());
-    });
+    // Working open orders after each tick is part of registerTickSequence.js.
   });
 
   initializer.register('ready', 45, 'Portfolio startup', async () => {

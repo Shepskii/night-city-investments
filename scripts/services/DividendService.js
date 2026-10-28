@@ -46,13 +46,15 @@ class DividendServiceImpl {
       const amount = Math.round(Number(perShare) * 100) / 100;
       if (!company || !(amount > 0) || !pub.companies?.[companyId]) return 0;
 
-      const records = MarketStore.getDividendRecords();
-      const count = (records[companyId]?.specials ?? 0) + 1;
+      let count = 0;
       // The schedule key is left alone; only the "last paid" details change.
-      records[companyId] = {
-        ...records[companyId], specials: count, perShare: amount, tick: pub.time ?? pub.tickIndex ?? 0, date: MarketClock.dateString(),
-      };
-      await MarketStore.setDividendRecords(records);
+      await MarketStore.updateDividendRecords((records) => {
+        count = (records[companyId]?.specials ?? 0) + 1;
+        return {
+          ...records,
+          [companyId]: { ...records[companyId], specials: count, perShare: amount, tick: pub.time ?? pub.tickIndex ?? 0, date: MarketClock.dateString() },
+        };
+      });
       return this._pay(company, amount, `special-${count}`, pub.companies[companyId].price, pub.time ?? pub.tickIndex ?? 0, true);
     });
   }
@@ -63,8 +65,9 @@ class DividendServiceImpl {
 
     const date = MarketClock.date();
     const tick = pub.time ?? pub.tickIndex ?? 0;
+    // Read once to decide; every write goes through `updateDividendRecords`, which merges into a fresh read.
     const records = MarketStore.getDividendRecords();
-    let changed = false;
+    const marks = {};
 
     for (const company of CompanyRepository.all({ includeUnlisted: true })) {
       const d = company.dividend;
@@ -74,8 +77,7 @@ class DividendServiceImpl {
 
       const record = records[company.id];
       if (!record?.lastKey) {
-        records[company.id] = { ...record, lastKey: periodKey(d.frequency, date) };
-        changed = true;
+        marks[company.id] = periodKey(d.frequency, date);
         continue;
       }
 
@@ -83,13 +85,19 @@ class DividendServiceImpl {
       if (!due.due) continue;
 
       const perShare = dividendPerShare(company, price);
-      records[company.id] = { ...record, lastKey: due.key, perShare, tick, date: MarketClock.dateString() };
-      changed = true;
-      await MarketStore.setDividendRecords(records);
+      await MarketStore.updateDividendRecords((current) => ({
+        ...current, [company.id]: { ...current[company.id], lastKey: due.key, perShare, tick, date: MarketClock.dateString() },
+      }));
       if (perShare > 0) await this._pay(company, perShare, due.key, price, tick, false);
     }
 
-    if (changed) await MarketStore.setDividendRecords(records);
+    if (Object.keys(marks).length) {
+      await MarketStore.updateDividendRecords((current) => {
+        const next = { ...current };
+        for (const [id, lastKey] of Object.entries(marks)) next[id] = { ...current[id], lastKey };
+        return next;
+      });
+    }
   }
 
   /** Pay every portfolio and announce it. */

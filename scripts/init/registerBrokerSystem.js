@@ -32,11 +32,7 @@ export function registerBrokerSystem(initializer) {
     Hooks.on(HOOKS.NEWS_POSTED, (item) => {
       if (isActiveGM()) NotificationService.onHeadline(item);
     });
-    Hooks.on(HOOKS.PRICE_TICK, (data) => {
-      if (!isActiveGM()) return;
-      NotificationService.onTick(data);
-      StatementService.onTick();
-    });
+    // The daily digest and monthly statements after each tick are part of registerTickSequence.js.
   });
 
   initializer.register('ready', 55, 'Broker API', () => {

@@ -11,6 +11,7 @@ import { registerMarketSystem } from './init/registerMarketSystem.js';
 import { registerPortfolioSystem } from './init/registerPortfolioSystem.js';
 import { registerBrokerSystem } from './init/registerBrokerSystem.js';
 import { registerToolsSystem } from './init/registerToolsSystem.js';
+import { registerTickSequence } from './init/registerTickSequence.js';
 
 const initializer = new ModuleInitializer();
 
@@ -20,6 +21,7 @@ registerMarketSystem(initializer);
 registerPortfolioSystem(initializer);
 registerBrokerSystem(initializer);
 registerToolsSystem(initializer);
+registerTickSequence(initializer);
 
 Hooks.once('init', async () => {
   log.info('Initializing Night City Investments');

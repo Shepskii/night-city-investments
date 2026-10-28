@@ -86,7 +86,7 @@ globalThis.game = {
   },
 };
 
-let TickService, PortfolioService, PortfolioClient, PortfolioRepository, MarketStore, ImportService, ModuleInitializer, registerPortfolioSystem;
+let TickService, PortfolioService, PortfolioClient, PortfolioRepository, MarketStore, ImportService, ModuleInitializer, registerPortfolioSystem, TickSequence;
 
 before(async () => {
   ({ TickService } = await import('../scripts/services/TickService.js'));
@@ -100,6 +100,9 @@ before(async () => {
 
   const init = new ModuleInitializer();
   registerPortfolioSystem(init);
+  const sequence = await import('../scripts/init/registerTickSequence.js');
+  sequence.registerTickSequence(init);
+  ({ TickSequence } = sequence);
   await init.runPhase('init');
   await init.runPhase('ready');
 
@@ -109,6 +112,8 @@ before(async () => {
 
 const settle = async () => {
   await PortfolioClient._chain;
+  await TickService._queue;
+  await TickSequence._queue;
   await PortfolioService._queue;
   await PortfolioClient._chain;
   await PortfolioService._queue;

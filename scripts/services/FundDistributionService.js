@@ -44,10 +44,10 @@ export const FundDistributionService = {
     });
 
     // Announce each distribution once, whoever was paid.
-    const records = MarketStore.getDividendRecords();
-    if (records[fund.id]?.lastKey === paidKey) return;
-    records[fund.id] = { ...records[fund.id], lastKey: paidKey, perShare: perUnit, tick, date: MarketClock.dateString() };
-    await MarketStore.setDividendRecords(records);
+    const recorded = await MarketStore.updateDividendRecords((records) => (records[fund.id]?.lastKey === paidKey ? null : {
+      ...records, [fund.id]: { ...records[fund.id], lastKey: paidKey, perShare: perUnit, tick, date: MarketClock.dateString() },
+    }));
+    if (!recorded) return;
     await NewsService.post({ headline: L('NCI.News.FundDistribution', { name: fund.name, amount: perUnit.toFixed(2) }), tone: 'up' });
     Hooks.callAll(HOOKS.DIVIDEND_PAID, { companyId: fund.id, perShare: perUnit, key: paidKey, portfolios, payouts });
   },

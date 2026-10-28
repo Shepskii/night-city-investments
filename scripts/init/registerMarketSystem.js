@@ -9,7 +9,6 @@ import { CompanyRepository } from '../data/CompanyRepository.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { TickService } from '../services/TickService.js';
 import { DividendService } from '../services/DividendService.js';
-import { FundDistributionService } from '../services/FundDistributionService.js';
 import { CorporateActionService } from '../services/CorporateActionService.js';
 import { MarketControlService } from '../services/MarketControlService.js';
 import { NewsService } from '../services/NewsService.js';
@@ -37,19 +36,10 @@ export function registerMarketSystem(initializer) {
       Hooks.on(hook, (page) => onJournalChange(page.parent));
     }
 
-    // After each tick the active GM checks dividend schedules and auto-split thresholds.
     Hooks.on(HOOKS.PORTFOLIO_EVENTS, (data) => {
       if (isActiveGM()) HeatService.onPortfolioEvents(data);
     });
-    Hooks.on(HOOKS.PRICE_TICK, () => {
-      if (!isActiveGM()) return;
-      IpoService.onTick();
-      DividendService.onTick();
-      FundDistributionService.onTick();
-      CorporateActionService.onTick();
-      GigImpactService.onTick();
-      // The heat audit runs from the portfolio system's tick hook, after orders have been worked.
-    });
+    // What runs after each tick is in registerTickSequence.js.
   });
 
   initializer.register('ready', 40, 'Market API', () => {

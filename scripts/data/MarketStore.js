@@ -11,6 +11,9 @@ import { MODULE_ID, SETTINGS, FLAGS, CONTROL_JOURNAL_NAME } from '../utils/const
 
 const clone = (v) => foundry.utils.deepClone(v);
 
+/** Serialises changes to the dividend records, which the dividend and fund distribution services both write. */
+let recordsQueue = Promise.resolve();
+
 export const MarketStore = {
   /** Public state; an empty object until the market has been initialised. */
   getPublic() {
@@ -161,5 +164,22 @@ export const MarketStore = {
 
   setDividendRecords(value) {
     return game.settings.set(MODULE_ID, SETTINGS.DIVIDEND_RECORDS, value);
+  },
+
+  /**
+   * Change the dividend records against a fresh read, after any change already under way, so two
+   * writers never save a copy that misses the other's change.
+   * @param {(records: object) => (object|null)} fn - the new records, or null to leave them as they are
+   * @returns {Promise<boolean>} whether the records were written
+   */
+  updateDividendRecords(fn) {
+    const task = recordsQueue.then(async () => {
+      const next = fn(this.getDividendRecords());
+      if (!next) return false;
+      await this.setDividendRecords(next);
+      return true;
+    });
+    recordsQueue = task.catch(() => undefined);
+    return task;
   },
 };
