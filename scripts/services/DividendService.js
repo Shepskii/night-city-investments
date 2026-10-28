@@ -7,31 +7,26 @@
  *              does not trigger an instant payout.
  */
 
-import { dividendDue, dividendPerShare, periodKey, payDividend } from '../engine/index.js';
+import { dividendDue, dividendPerShare, periodKey, payDividend, timeOf } from '../engine/index.js';
 import { HOOKS } from '../utils/constants.js';
-import { log, isActiveGM } from '../utils/helpers.js';
+import { isActiveGM, L } from '../utils/helpers.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
 import { PortfolioService } from './PortfolioService.js';
 import { NewsService } from './NewsService.js';
+import { SerialQueue } from '../utils/queue.js';
 
-const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 
 class DividendServiceImpl {
   constructor() {
-    this._queue = Promise.resolve();
-  }
-
-  _enqueue(fn) {
-    this._queue = this._queue.then(fn).catch((error) => log.error('Dividend service task failed', error));
-    return this._queue;
+    this._queue = new SerialQueue('Dividend service task');
   }
 
   /** Check every schedule after a market tick. */
   onTick() {
     if (!isActiveGM()) return Promise.resolve();
-    return this._enqueue(() => this._check());
+    return this._queue.run(() => this._check());
   }
 
   /**
@@ -40,7 +35,7 @@ class DividendServiceImpl {
    */
   declareSpecial(companyId, perShare) {
     if (!isActiveGM()) return Promise.resolve(0);
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       const company = CompanyRepository.get(companyId);
       const pub = MarketStore.getPublic();
       const amount = Math.round(Number(perShare) * 100) / 100;
@@ -52,10 +47,10 @@ class DividendServiceImpl {
         count = (records[companyId]?.specials ?? 0) + 1;
         return {
           ...records,
-          [companyId]: { ...records[companyId], specials: count, perShare: amount, tick: pub.time ?? pub.tickIndex ?? 0, date: MarketClock.dateString() },
+          [companyId]: { ...records[companyId], specials: count, perShare: amount, tick: timeOf(pub), date: MarketClock.dateString() },
         };
       });
-      return this._pay(company, amount, `special-${count}`, pub.companies[companyId].price, pub.time ?? pub.tickIndex ?? 0, true);
+      return this._pay(company, amount, `special-${count}`, pub.companies[companyId].price, timeOf(pub), true);
     });
   }
 
@@ -64,7 +59,7 @@ class DividendServiceImpl {
     if (!pub.schema) return;
 
     const date = MarketClock.date();
-    const tick = pub.time ?? pub.tickIndex ?? 0;
+    const tick = timeOf(pub);
     // Read once to decide; every write goes through `updateDividendRecords`, which merges into a fresh read.
     const records = MarketStore.getDividendRecords();
     const marks = {};

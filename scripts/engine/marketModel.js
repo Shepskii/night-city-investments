@@ -15,7 +15,7 @@
 
 import { createRng } from './rng.js';
 import { DEFAULT_MODEL_CONFIG, COMPANY_DEFAULTS } from './config.js';
-import { addTime, dayOf } from './clock.js';
+import { addTime, dayOf, timeOf } from './clock.js';
 
 const round2 = (n) => Math.round(n * 100) / 100;
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
@@ -78,8 +78,8 @@ export function nextRegime(current, rng, config = DEFAULT_MODEL_CONFIG, dt = 1) 
  */
 export function stepMarket({ state, companies, seed, config = DEFAULT_MODEL_CONFIG, controls = {}, impacts = null, dt = 1 }) {
   const tick = state.tickIndex + 1;
-  const time = addTime(state.time ?? state.tickIndex, dt);
-  const newDay = dayOf(time) > dayOf(state.time ?? state.tickIndex);
+  const time = addTime(timeOf(state), dt);
+  const newDay = dayOf(time) > dayOf(timeOf(state));
   const rootDt = Math.sqrt(dt);
   const defs = companies.map(normalizeCompany).sort((a, b) => (a.id < b.id ? -1 : 1));
 
@@ -192,7 +192,7 @@ export function runTicks({ state, companies, seed, ticks, config, controlsAt, im
   const steps = [];
   for (let i = 0; i < ticks; i++) {
     const t = current.tickIndex + 1;
-    const time = addTime(current.time ?? current.tickIndex, dt);
+    const time = addTime(timeOf(current), dt);
     const step = stepMarket({
       state: current,
       companies,

@@ -7,8 +7,8 @@
  */
 
 import { MODULE_ID, FLAGS } from '../utils/constants.js';
+import { L } from '../utils/helpers.js';
 
-const L = (key) => game.i18n.localize(key);
 
 export const MACROS = Object.freeze([
   { key: 'terminal', img: 'icons/svg/coins.svg', everyone: true, command: 'game.nightcity.investments.open();' },

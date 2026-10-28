@@ -3,8 +3,8 @@
  * @file scripts/services/FundService.js
  */
 
-import { cashOutPortfolio, splitFundComponents } from '../engine/index.js';
-import { log, isActiveGM } from '../utils/helpers.js';
+import { cashOutPortfolio, splitFundComponents, timeOf } from '../engine/index.js';
+import { log, isActiveGM, L } from '../utils/helpers.js';
 import { FundRepository } from '../data/FundRepository.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { STARTER_FUNDS } from '../data/starter-funds.js';
@@ -12,7 +12,6 @@ import { TickService } from './TickService.js';
 import { PortfolioService } from './PortfolioService.js';
 import { NewsService } from './NewsService.js';
 
-const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 
 export const FundService = {
   /**
@@ -54,7 +53,7 @@ export const FundService = {
     const nav = pub.funds?.[id]?.nav;
     if (!fund || !(nav > 0)) return { ok: false };
 
-    const tick = pub.time ?? pub.tickIndex ?? 0;
+    const tick = timeOf(pub);
     const portfolios = await PortfolioService.transformAll((p) => cashOutPortfolio(p, id, nav, 'delist', tick));
     await FundRepository.remove(id);
     await TickService.syncCompanies();

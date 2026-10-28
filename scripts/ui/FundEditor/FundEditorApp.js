@@ -8,8 +8,8 @@ import { MODULE_ID } from '../../utils/constants.js';
 import { FundRepository } from '../../data/FundRepository.js';
 import { FundService } from '../../services/FundService.js';
 import { BaseApplication } from '../BaseApplication.js';
+import { L } from '../../utils/helpers.js';
 
-const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 
 const DEFAULTS = {
   name: '',

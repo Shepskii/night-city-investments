@@ -6,7 +6,7 @@
  *   hidden engine state     -> a GM-only journal flag (fair value, true regime): never sent to players
  */
 
-import { emptyHistory, emptyNews, emptyGigs, emptyHeat, normalizeControls, normalizeGigs, normalizeHeat } from '../engine/index.js';
+import { emptyHistory, emptyNews, emptyGigs, emptyHeat, normalizeControls, normalizeGigs, normalizeHeat, timeOf } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, FLAGS, CONTROL_JOURNAL_NAME } from '../utils/constants.js';
 
 const clone = (v) => foundry.utils.deepClone(v);
@@ -37,8 +37,7 @@ export const MarketStore = {
    * one day per tick.
    */
   time() {
-    const pub = this.getPublic();
-    return pub.time ?? pub.tickIndex ?? 0;
+    return timeOf(this.getPublic());
   },
 
   setPublic(value) {

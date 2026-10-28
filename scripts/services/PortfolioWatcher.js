@@ -8,8 +8,8 @@ import { CompanyRepository } from '../data/CompanyRepository.js';
 import { FundRepository } from '../data/FundRepository.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { PortfolioClient } from './PortfolioClient.js';
+import { L } from '../utils/helpers.js';
 
-const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 const eb = (n) => `${Math.round(n).toLocaleString()} eb`;
 const price = (n) => Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 

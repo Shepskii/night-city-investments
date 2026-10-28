@@ -13,7 +13,7 @@ import {
   appendClose, pruneHistory, replaceLastClose, splitState, mergeState, pruneState,
   normalizeControls, resolveControls, pruneControls, dropImpacts, collectImpacts,
   makeFundState, stepFundState, refreshFundState, rebaseFundState, fundPrices, truncateHistory, restoreExpired, logEntry,
-  fundTargets, rebalanceDue, applyRebalance, distributionDue, applyDistribution,
+  fundTargets, rebalanceDue, applyRebalance, distributionDue, applyDistribution, timeOf,
 } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
 import { log, isActiveGM } from '../utils/helpers.js';
@@ -21,6 +21,7 @@ import { CompanyRepository } from '../data/CompanyRepository.js';
 import { FundRepository } from '../data/FundRepository.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
+import { SerialQueue } from '../utils/queue.js';
 
 const CLOCK_POLL_MS = 15_000;
 const MAX_MANUAL_TICKS = 365;
@@ -29,7 +30,7 @@ export const SNAPSHOT_CAP = 5;
 
 class TickServiceImpl {
   constructor() {
-    this._queue = Promise.resolve();
+    this._queue = new SerialQueue('Tick service task');
     this._started = false;
     /** Days the market is ahead of the calendar that the GM has already been told about. */
     this._notedAhead = 0;
@@ -53,11 +54,6 @@ class TickServiceImpl {
     this.checkClock();
   }
 
-  _enqueue(fn) {
-    this._queue = this._queue.then(fn).catch((error) => log.error('Tick service task failed', error));
-    return this._queue;
-  }
-
   get mode() {
     return game.settings.get(MODULE_ID, SETTINGS.TICK_MODE);
   }
@@ -75,13 +71,13 @@ class TickServiceImpl {
   /** Look at the clock and run any ticks that are due. */
   checkClock() {
     if (!isActiveGM()) return Promise.resolve();
-    return this._enqueue(() => this._checkClock());
+    return this._queue.run(() => this._checkClock());
   }
 
   /** Add or remove companies in the market to match the journals. */
   syncCompanies() {
     if (!isActiveGM()) return Promise.resolve();
-    return this._enqueue(() => this._sync());
+    return this._queue.run(() => this._sync());
   }
 
   /** GM-triggered ticks, regardless of tick mode. */
@@ -91,7 +87,7 @@ class TickServiceImpl {
       return Promise.resolve();
     }
     const n = Math.min(MAX_MANUAL_TICKS, Math.max(1, Math.floor(ticks)));
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       await this._sync();
       if (!MarketStore.hasState()) return;
       await this._runTicks(n, MarketStore.getPublic().lastDay ?? dayIndex(MarketClock.nowMs()));
@@ -109,7 +105,7 @@ class TickServiceImpl {
       return Promise.resolve();
     }
     const n = Math.min(MAX_MANUAL_TICKS, Math.max(1, Math.floor(days)));
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       await this._sync();
       if (!MarketStore.hasState()) return;
       await this._runTicks(n, MarketStore.getPublic().lastDay ?? dayIndex(MarketClock.nowMs()), undefined, 1);
@@ -123,7 +119,7 @@ class TickServiceImpl {
    */
   updateControls(fn) {
     if (!isActiveGM()) return Promise.resolve();
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       await MarketStore.setControls(fn(normalizeControls(MarketStore.getControls()), {
         tick: MarketStore.time(), dt: this.tickDays, tickIndex: MarketStore.getPublic().tickIndex ?? 0,
       }));
@@ -137,13 +133,13 @@ class TickServiceImpl {
    */
   mutateState(fn) {
     if (!isActiveGM()) return Promise.resolve();
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       await this._sync();
       const pub = MarketStore.getPublic();
       if (!pub.schema) return;
       const state = mergeState(pub, MarketStore.getHidden());
       const history = MarketStore.getHistory();
-      const out = (await fn({ state, history, tick: state.time ?? state.tickIndex })) ?? {};
+      const out = (await fn({ state, history, tick: timeOf(state) })) ?? {};
       const next = out.state ?? state;
       const f = this._fundStates({ state: next, prevFunds: pub.funds ?? {}, history: out.history ?? history, mode: 'refresh' });
       await this._dropSnapshots();
@@ -169,7 +165,7 @@ class TickServiceImpl {
    */
   undoLastTick(isSettled = this._settledCheck) {
     if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-active-gm' });
-    return this._enqueue(() => this._undoOne({ isSettled, moveClock: false }));
+    return this._queue.run(() => this._undoOne({ isSettled, moveClock: false }));
   }
 
   /**
@@ -237,7 +233,7 @@ class TickServiceImpl {
    */
   saveFund(def) {
     if (!isActiveGM()) return Promise.resolve();
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       await this._sync();
       const pub = MarketStore.getPublic();
       const prev = pub.funds?.[def.id];
@@ -260,7 +256,7 @@ class TickServiceImpl {
   /** Wipe the market and start again from each company's initial price, with a new seed. */
   reset() {
     if (!isActiveGM()) return Promise.resolve();
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       await MarketStore.clearAll();
       await game.settings.set(MODULE_ID, SETTINGS.WORLD_SEED, foundry.utils.randomID(16));
       await this._sync();

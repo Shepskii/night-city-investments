@@ -18,6 +18,12 @@ export const TIME_EPS = 1e-6;
 /** Whole game days elapsed at `time`, forgiving the rounding in a sum of many small steps. */
 export const dayOf = (time) => Math.floor(time + TIME_EPS);
 
+/**
+ * A market state's clock in game days. A state from before the clock existed has only a tick count,
+ * which was one day per tick.
+ */
+export const timeOf = (state) => state?.time ?? state?.tickIndex ?? 0;
+
 /** `time` plus `dt` days, snapped so that a day's worth of small steps lands on the whole number. */
 export const addTime = (time, dt) => Math.round((time + dt) * 1e9) / 1e9;
 

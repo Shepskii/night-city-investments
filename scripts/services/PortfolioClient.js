@@ -8,22 +8,21 @@
 
 import { MODULE_ID, FLAGS, SETTINGS, OUTBOX_LIMIT } from '../utils/constants.js';
 import { moverThreshold, HEAT_ACTIONS, canAttempt } from '../engine/index.js';
-import { log } from '../utils/helpers.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { SkillAdapter } from './SkillAdapter.js';
 import { TerminalAccess } from './TerminalAccess.js';
+import { SerialQueue } from '../utils/queue.js';
 
 class PortfolioClientImpl {
   constructor() {
-    this._chain = Promise.resolve();
+    this._chain = new SerialQueue('Portfolio client write');
     /** Keys submitted from this client, so results can be announced to the right person. */
     this.submitted = new Set();
   }
 
   _write(fn) {
-    this._chain = this._chain.then(fn).catch((error) => log.error('Portfolio client write failed', error));
-    return this._chain;
+    return this._chain.run(fn);
   }
 
   /**

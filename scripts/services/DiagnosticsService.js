@@ -6,7 +6,7 @@
  */
 
 import { MODULE_ID, SETTINGS, WIRE_TAG, BROKER_TAG } from '../utils/constants.js';
-import { log } from '../utils/helpers.js';
+import { log, L } from '../utils/helpers.js';
 import { verifyWorld, tradeLog, suggestCompanies } from '../engine/index.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
 import { FundRepository } from '../data/FundRepository.js';
@@ -16,7 +16,6 @@ import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { NcmAdapter } from '../integrations/NcmAdapter.js';
 import { MigrationService } from './MigrationService.js';
 
-const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 
 export const DiagnosticsService = {
   /** Every character that has a portfolio, with the portfolio. */

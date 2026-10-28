@@ -10,14 +10,13 @@
 
 import { payDividend } from '../engine/index.js';
 import { HOOKS } from '../utils/constants.js';
-import { isActiveGM } from '../utils/helpers.js';
+import { isActiveGM, L } from '../utils/helpers.js';
 import { FundRepository } from '../data/FundRepository.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
 import { PortfolioService } from './PortfolioService.js';
 import { NewsService } from './NewsService.js';
 
-const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 
 export const FundDistributionService = {
   /** After a market tick: pay any distribution that has been fixed. */

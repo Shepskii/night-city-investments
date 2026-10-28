@@ -4,7 +4,7 @@
  */
 
 import {
-  quote, estimateOrder, committedCash, reservedShares, heldQty, sessionActive, describeTerms, feeProfileOf,
+  quote, estimateOrder, committedCash, reservedShares, heldQty, sessionActive, describeTerms, feeProfileOf, timeOf,
 } from '../../engine/index.js';
 import { MODULE_ID } from '../../utils/constants.js';
 import { CompanyRepository } from '../../data/CompanyRepository.js';
@@ -126,7 +126,7 @@ export class TradeDialogApp extends BaseApplication {
     const actor = game.actors.get(this.actorId);
     const p = PortfolioRepository.get(actor);
     const held = heldQty(p.lots, this.assetId);
-    const tick = pub.time ?? pub.tickIndex ?? 0;
+    const tick = timeOf(pub);
 
     const routes = this._routes({ isFund, portfolio: p, tick, fund });
     const settleDays = Math.max(TradingSettings.settlementDays(), isFund ? (fund.redeemDelay ?? 0) : 0);

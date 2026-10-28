@@ -7,8 +7,8 @@ import { SECTORS, DIVIDEND_POLICIES, DIVIDEND_FREQUENCIES, COMPANY_STATUSES } fr
 import { MODULE_ID } from '../../utils/constants.js';
 import { CompanyRepository } from '../../data/CompanyRepository.js';
 import { BaseApplication } from '../BaseApplication.js';
+import { L } from '../../utils/helpers.js';
 
-const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 
 const choices = (values, prefix) => Object.fromEntries(values.map((v) => [v, L(`${prefix}.${v}`)]));
 

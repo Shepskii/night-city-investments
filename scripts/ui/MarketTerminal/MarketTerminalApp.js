@@ -4,7 +4,7 @@
  */
 
 import {
-  quote, getSeries, rangeStats, equalWeightIndex, valuePortfolio, latestNews, OPEN,
+  quote, getSeries, rangeStats, equalWeightIndex, valuePortfolio, latestNews, OPEN, timeOf,
 } from '../../engine/index.js';
 import { MODULE_ID, HOOKS } from '../../utils/constants.js';
 import { CompanyRepository } from '../../data/CompanyRepository.js';
@@ -378,7 +378,7 @@ export class MarketTerminalApp extends BaseApplication {
       ...Object.fromEntries(Object.entries(pub.funds ?? {}).map(([id, s]) => [id, s.nav])),
     };
     const v = valuePortfolio(p, prices);
-    const tick = pub.time ?? pub.tickIndex ?? 0;
+    const tick = timeOf(pub);
     const tickerOf = (id) => byId.get(id)?.ticker ?? id;
 
     const positions = v.positions.map((pos) => ({

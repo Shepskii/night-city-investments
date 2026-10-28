@@ -6,13 +6,11 @@
  */
 
 import { MODULE_ID, SETTINGS, FLAGS } from '../utils/constants.js';
-import { log, isActiveGM } from '../utils/helpers.js';
+import { log, isActiveGM, L } from '../utils/helpers.js';
 import { runMigrations, latestSchemaVersion } from '../engine/index.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
 
-const clone = (v) => (v === undefined || v === null ? v : foundry.utils.deepClone(v));
-const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 
 const STORE_FLAGS = { controls: FLAGS.CONTROLS, gigs: FLAGS.GIGS, heat: FLAGS.HEAT };
 const STORE_SETTERS = { controls: 'setControls', gigs: 'setGigs', heat: 'setHeat' };

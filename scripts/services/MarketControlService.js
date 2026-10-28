@@ -9,13 +9,12 @@
 import {
   makeBias, makeImpact, parseTarget, percentToAmount, SHOCK_PERSISTENCE, logEntry, REGIMES, makeGlide, glideFeasible, GLIDE_NOISE,
 } from '../engine/index.js';
-import { isActiveGM } from '../utils/helpers.js';
+import { isActiveGM, L } from '../utils/helpers.js';
 import { TickService } from './TickService.js';
 import { NewsService } from './NewsService.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
 import { MarketStore } from '../data/MarketStore.js';
 
-const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 const newId = () => foundry.utils.randomID(8);
 const stamp = (tick, kind, extra = {}) => ({ ts: Date.now(), tick, kind, ...extra });
 

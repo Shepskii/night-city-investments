@@ -13,8 +13,8 @@ import { CompanyRepository } from '../data/CompanyRepository.js';
 import { FundRepository } from '../data/FundRepository.js';
 import { BrokerRepository } from '../data/BrokerRepository.js';
 import { NcmAdapter } from '../integrations/NcmAdapter.js';
+import { L } from '../utils/helpers.js';
 
-const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 const eb = (n) => Math.round(n).toLocaleString();
 const price = (n) => Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const days = (n) => L(n === 1 ? 'NCI.Mail.Days.one' : 'NCI.Mail.Days.many', { n });

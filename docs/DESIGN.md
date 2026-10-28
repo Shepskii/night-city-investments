@@ -897,3 +897,4 @@ Crew Tools exposes `api.downtime` (`getState`, `use`, `startNextSession`), `api.
 ## 28. Market date, price paths and cleanups (unreleased)
 
 - **One-write saves.** GM records in the control journal and portfolios on actors are stored wrapped in a one-element array, which Foundry replaces rather than merges, so a save is a single write and removed keys cannot linger. Readers accept the old unwrapped form; `MarketStore.readRecord` and `PortfolioRepository.raw` are the readers the migrations use.
+- **Shared helpers.** `L` lives in `utils/helpers.js` (`ui/format.js` re-exports it); `timeOf(state)` in `engine/clock.js` replaces the `time ?? tickIndex ?? 0` fallbacks; `utils/queue.js` `SerialQueue` replaces the hand-written queues. Awaiting a queue waits for everything queued so far, so `await X._queue` keeps working.

@@ -11,7 +11,7 @@
 import { stepMarket } from './marketModel.js';
 import { collectImpacts, makeImpact } from './impactKernel.js';
 import { DEFAULT_MODEL_CONFIG } from './config.js';
-import { addTime } from './clock.js';
+import { addTime, timeOf } from './clock.js';
 import {
   normalizeControls, resolveControls, pruneControls, dropImpacts, makeBias, makeGlide, parseTarget,
   percentToAmount, SHOCK_PERSISTENCE, glideFeasible,
@@ -84,7 +84,7 @@ export function simulatePaths({ state, companies, seed, controls, ticks, paths, 
     const series = [];
     for (let t = 0; t < ticks; t++) {
       // The preview steps a game day at a time, starting from where the real clock is.
-      const time = addTime(s.time ?? s.tickIndex, 1);
+      const time = addTime(timeOf(s), 1);
       const impacts = collectImpacts(c.impacts, companies, time, 1);
       const step = stepMarket({ state: s, companies, seed: pathSeed, config, controls: resolveControls(c, time, 1), impacts });
       s = step.state;

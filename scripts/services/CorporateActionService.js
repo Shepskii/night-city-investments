@@ -7,37 +7,29 @@
 
 import {
   isValidSplitRatio, autoSplitRatio, splitMarketState, scaleHistory, splitPortfolio, cashOutPortfolio,
-  writeOffPortfolio, setCompanyPrice, replaceLastClose, logEntry,
+  writeOffPortfolio, setCompanyPrice, replaceLastClose, logEntry, timeOf,
 } from '../engine/index.js';
 import { HOOKS } from '../utils/constants.js';
-import { log, isActiveGM } from '../utils/helpers.js';
+import { isActiveGM, L } from '../utils/helpers.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { TickService } from './TickService.js';
 import { PortfolioService } from './PortfolioService.js';
 import { NewsService } from './NewsService.js';
 import { FundService } from './FundService.js';
+import { SerialQueue } from '../utils/queue.js';
 
-const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 const eb = (n) => Number(n).toFixed(2);
 
 class CorporateActionServiceImpl {
   constructor() {
-    this._queue = Promise.resolve();
-  }
-
-  _enqueue(fn) {
-    this._queue = this._queue.then(fn).catch((error) => {
-      log.error('Corporate action failed', error);
-      return { ok: false, error: 'failed' };
-    });
-    return this._queue;
+    this._queue = new SerialQueue('Corporate action', { ok: false, error: 'failed' });
   }
 
   /** After a market tick: split any company whose auto-split threshold has been reached. */
   onTick() {
     if (!isActiveGM()) return Promise.resolve();
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       const pub = MarketStore.getPublic();
       for (const company of CompanyRepository.all({ includeUnlisted: true })) {
         const price = pub.companies?.[company.id]?.price;
@@ -50,7 +42,7 @@ class CorporateActionServiceImpl {
   /** N-for-1 stock split. */
   split(companyId, ratio) {
     if (!isActiveGM()) return Promise.resolve({ ok: false, error: 'not-active-gm' });
-    return this._enqueue(() => this._split(companyId, Number(ratio)));
+    return this._queue.run(() => this._split(companyId, Number(ratio)));
   }
 
   /** The company is bought out: holders are paid `price` per share in cash. */
@@ -66,7 +58,7 @@ class CorporateActionServiceImpl {
   /** The company fails: shares become worthless. */
   bankrupt(companyId) {
     if (!isActiveGM()) return Promise.resolve({ ok: false, error: 'not-active-gm' });
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       const company = CompanyRepository.get(companyId);
       if (!company) return { ok: false, error: 'unknown-asset' };
       const tick = MarketStore.time();
@@ -84,7 +76,7 @@ class CorporateActionServiceImpl {
    */
   setPrice(companyId, price, { alsoFair = true } = {}) {
     if (!isActiveGM()) return Promise.resolve({ ok: false, error: 'not-active-gm' });
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       const company = CompanyRepository.get(companyId);
       const next = Math.round(Number(price) * 100) / 100;
       if (!company || !(next >= 1)) return { ok: false, error: 'price-invalid' };
@@ -125,14 +117,14 @@ class CorporateActionServiceImpl {
 
   _cashOut(companyId, kind, price) {
     if (!isActiveGM()) return Promise.resolve({ ok: false, error: 'not-active-gm' });
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       const company = CompanyRepository.get(companyId);
       const pub = MarketStore.getPublic();
       if (!company || !pub.companies?.[companyId]) return { ok: false, error: 'unknown-asset' };
 
       const payPrice = kind === 'buyout' ? Math.round(price * 100) / 100 : pub.companies[companyId].price;
       if (!(payPrice > 0)) return { ok: false, error: 'price-invalid' };
-      const tick = pub.time ?? pub.tickIndex ?? 0;
+      const tick = timeOf(pub);
 
       await CompanyRepository.save({ ...company, status: kind === 'buyout' ? 'acquired' : 'delisted' });
       const portfolios = await PortfolioService.transformAll((p) => cashOutPortfolio(p, companyId, payPrice, kind, tick));

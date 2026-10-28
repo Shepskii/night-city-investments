@@ -18,6 +18,9 @@ export const log = {
   },
 };
 
+/** Localise a key, formatting it when there is data to fill in. */
+export const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
+
 export function isGM() {
   return game.user?.isGM ?? false;
 }

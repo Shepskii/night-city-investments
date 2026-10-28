@@ -3,7 +3,7 @@
  * @file scripts/ui/format.js
  */
 
-export const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
+export { L } from '../utils/helpers.js';
 
 export const money = (n) => Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 

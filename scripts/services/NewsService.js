@@ -5,13 +5,14 @@
 
 import { makeNewsItem, addNews } from '../engine/index.js';
 import { HOOKS } from '../utils/constants.js';
-import { isActiveGM, log } from '../utils/helpers.js';
+import { isActiveGM } from '../utils/helpers.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
+import { SerialQueue } from '../utils/queue.js';
 
 class NewsServiceImpl {
   constructor() {
-    this._queue = Promise.resolve();
+    this._queue = new SerialQueue('Posting news', null);
   }
 
   /**
@@ -20,7 +21,7 @@ class NewsServiceImpl {
    */
   post({ headline, tone = 'neutral', companyIds = [], source = null }) {
     if (!isActiveGM() || !String(headline ?? '').trim()) return Promise.resolve(null);
-    this._queue = this._queue.then(async () => {
+    return this._queue.run(async () => {
       const item = makeNewsItem({
         id: foundry.utils.randomID(10),
         tick: MarketStore.time(),
@@ -32,11 +33,7 @@ class NewsServiceImpl {
       await MarketStore.setNews(addNews(MarketStore.getNews(), item));
       Hooks.callAll(HOOKS.NEWS_POSTED, source ? { ...item, source } : item);
       return item;
-    }).catch((error) => {
-      log.error('Posting news failed', error);
-      return null;
     });
-    return this._queue;
   }
 }
 

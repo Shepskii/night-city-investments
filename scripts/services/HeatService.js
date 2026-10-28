@@ -20,35 +20,27 @@
 import {
   makeWindow, addWindow, windowReady, auditWindow, applyAudit, currentHeat, heatTier, valuePortfolio, normalizeHeat, HEAT_TUNING,
   warningsFor, tierRank, planInvestigation, makePenalty, sanitizePenaltyEdits, applyFine, applyFreeze, applyBrokerDrop, PENALTY_TUNING,
-  applyHeatEffect, setCharacterHeat, setWarned, upsertPenalty,
+  applyHeatEffect, setCharacterHeat, setWarned, upsertPenalty, timeOf,
 } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
-import { log, isActiveGM } from '../utils/helpers.js';
+import { log, isActiveGM, L } from '../utils/helpers.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { BrokerRepository } from '../data/BrokerRepository.js';
 import { MarketClock } from './MarketClockService.js';
 import { MailService } from './MailService.js';
 import { PortfolioService } from './PortfolioService.js';
+import { SerialQueue } from '../utils/queue.js';
 
 const setting = (key) => game.settings.get(MODULE_ID, key);
 const newId = () => foundry.utils.randomID(8);
-const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 
 /** Characters with a portfolio. GM-run and non-character actors have none. */
 const traders = () => game.actors.filter((a) => a.type === 'character' && PortfolioRepository.hasPortfolio(a));
 
 class HeatServiceImpl {
   constructor() {
-    this._queue = Promise.resolve();
-  }
-
-  _enqueue(fn) {
-    this._queue = this._queue.then(fn).catch((error) => {
-      log.error('Heat service task failed', error);
-      return { ok: false };
-    });
-    return this._queue;
+    this._queue = new SerialQueue('Heat service task', { ok: false });
   }
 
   enabled() {
@@ -88,7 +80,7 @@ class HeatServiceImpl {
    */
   openWindow(rec, { tipped = [], runners = [] } = {}) {
     if (!isActiveGM() || !this.enabled()) return Promise.resolve(null);
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       const impact = MarketStore.getControls().impacts.find((i) => i.sourceKey === rec.sourceKey);
       const nowTick = this.tick();
       const window = makeWindow({
@@ -114,9 +106,9 @@ class HeatServiceImpl {
   /** After a tick: audit every window that has closed, apply players' cover-up results, and let warnings re-arm. */
   onTick() {
     if (!isActiveGM() || !this.enabled()) return Promise.resolve();
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       const pub = MarketStore.getPublic();
-      const tick = pub.time ?? pub.tickIndex ?? 0;
+      const tick = timeOf(pub);
       const actors = traders();
       for (const actor of actors) await this._reconcile(actor);
 
@@ -251,7 +243,7 @@ class HeatServiceImpl {
    */
   approvePenalty(id, edits = {}) {
     if (!isActiveGM()) return Promise.resolve({ ok: false, status: 'not-gm' });
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       const penalty = MarketStore.getHeat().penalties.find((p) => p.id === id && p.status === 'pending');
       if (!penalty) return { ok: false, status: 'unknown' };
       const fixed = sanitizePenaltyEdits(penalty.kind, { amount: edits.amount ?? penalty.params.amount, days: edits.days ?? penalty.params.days ?? penalty.params.banDays });
@@ -263,7 +255,7 @@ class HeatServiceImpl {
 
   dismissPenalty(id) {
     if (!isActiveGM()) return Promise.resolve({ ok: false, status: 'not-gm' });
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       const penalty = MarketStore.getHeat().penalties.find((p) => p.id === id && p.status === 'pending');
       if (!penalty) return { ok: false, status: 'unknown' };
       await MarketStore.setHeat(upsertPenalty(MarketStore.getHeat(), { ...penalty, status: 'dismissed', appliedTick: this.tick() }));
@@ -279,7 +271,7 @@ class HeatServiceImpl {
     const actor = game.actors.get(actorId);
     const v = Number(value);
     if (!actor || !Number.isFinite(v)) return Promise.resolve({ ok: false, status: 'invalid' });
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       let heat = setCharacterHeat(MarketStore.getHeat(), { actorId, name: actor.name, value: v, tick: this.tick(), date: MarketClock.dateString() });
       const entry = heat.characters[actorId];
       const rank = tierRank(heatTier(currentHeat(entry, this.tick())));
@@ -297,7 +289,7 @@ class HeatServiceImpl {
     if (!isActiveGM() || !this.enabled() || !results.some((r) => r.type === 'heatAction')) return Promise.resolve();
     const actor = game.actors.get(actorId);
     if (!actor) return Promise.resolve();
-    return this._enqueue(() => this._reconcile(actor));
+    return this._queue.run(() => this._reconcile(actor));
   }
 
   /**

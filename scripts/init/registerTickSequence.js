@@ -8,6 +8,7 @@
 
 import { HOOKS } from '../utils/constants.js';
 import { log, isActiveGM } from '../utils/helpers.js';
+import { SerialQueue } from '../utils/queue.js';
 import { IpoService } from '../services/IpoService.js';
 import { CorporateActionService } from '../services/CorporateActionService.js';
 import { DividendService } from '../services/DividendService.js';
@@ -34,11 +35,11 @@ const STEPS = [
 ];
 
 export const TickSequence = {
-  _queue: Promise.resolve(),
+  _queue: new SerialQueue('After-tick sequence'),
 
   /** Run every step for one tick, after any earlier tick's sequence has finished. */
   run(data) {
-    this._queue = this._queue.then(async () => {
+    return this._queue.run(async () => {
       for (const [name, step] of STEPS) {
         try {
           await step(data);
@@ -47,7 +48,6 @@ export const TickSequence = {
         }
       }
     });
-    return this._queue;
   },
 };
 

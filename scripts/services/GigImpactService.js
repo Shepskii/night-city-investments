@@ -11,10 +11,10 @@
 import {
   GIG_OUTCOMES, resolveClient, parseReward, planGigImpact, gigHeadlineKey, recentGigAbs, isKnownGig,
   addPending, removePending, addHistory, setMapping, removeMapping, sanitizeGigEdits, normalizeName,
-  makeImpact, percentToAmount, logEntry,
+  makeImpact, percentToAmount, logEntry, timeOf,
 } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
-import { log, isActiveGM } from '../utils/helpers.js';
+import { log, isActiveGM, L } from '../utils/helpers.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
@@ -24,8 +24,8 @@ import { NewsService } from './NewsService.js';
 import { NotificationService } from './NotificationService.js';
 import { HeatService } from './HeatService.js';
 import { MailService } from './MailService.js';
+import { SerialQueue } from '../utils/queue.js';
 
-const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 const newId = () => foundry.utils.randomID(8);
 const setting = (key) => game.settings.get(MODULE_ID, key);
 
@@ -51,15 +51,7 @@ const historyEntry = (rec, status, extra = {}) => ({
 
 class GigImpactServiceImpl {
   constructor() {
-    this._queue = Promise.resolve();
-  }
-
-  _enqueue(fn) {
-    this._queue = this._queue.then(fn).catch((error) => {
-      log.error('Gig impact task failed', error);
-      return { ok: false, status: 'failed' };
-    });
-    return this._queue;
+    this._queue = new SerialQueue('Gig impact task', { ok: false, status: 'failed' });
   }
 
   // ── Settings ───────────────────────────────────────────────────────────────
@@ -111,7 +103,7 @@ class GigImpactServiceImpl {
     const sourceKey = String(payload?.sourceKey ?? (payload?.gigId ? `gig:${payload.gigId}:${outcome}` : ''));
     if (!GIG_OUTCOMES.includes(outcome) || !sourceKey) return Promise.resolve({ ok: false, status: 'invalid' });
     if (!this.enabled()) return Promise.resolve({ ok: true, status: 'disabled' });
-    return this._enqueue(() => this._report({ ...payload, outcome, sourceKey }));
+    return this._queue.run(() => this._report({ ...payload, outcome, sourceKey }));
   }
 
   /** GM Console form: report an outcome by hand, optionally naming the company outright. */
@@ -140,7 +132,7 @@ class GigImpactServiceImpl {
       client: String(p.client ?? '').slice(0, 120),
       outcome: p.outcome,
       reward: parseReward(p.reward),
-      tick: pub.time ?? pub.tickIndex ?? 0,
+      tick: timeOf(pub),
       date: MarketClock.dateString(),
     };
     const res = resolveClient(
@@ -238,7 +230,7 @@ class GigImpactServiceImpl {
   /** After a tick: publish the headline of any gig impact that has just started to show. */
   onTick() {
     if (!isActiveGM()) return Promise.resolve();
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       const tick = MarketStore.time();
       const due = MarketStore.getControls().impacts.filter((i) => i.source === 'gig' && i.meta?.headline && !i.meta.headlinePosted && tick > i.onsetTick);
       if (!due.length) return;
@@ -294,7 +286,7 @@ class GigImpactServiceImpl {
    */
   approve(id, edits = {}) {
     if (!isActiveGM()) return Promise.resolve({ ok: false, status: 'not-gm' });
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       const gigs = MarketStore.getGigs();
       const rec = gigs.pending.find((p) => p.id === id && p.kind === 'review');
       if (!rec || !tradable(CompanyRepository.get(rec.companyId), MarketStore.getPublic())) return { ok: false, status: 'unknown' };
@@ -315,7 +307,7 @@ class GigImpactServiceImpl {
   /** Throw a queued item away: nothing happens to the market. */
   discard(id) {
     if (!isActiveGM()) return Promise.resolve({ ok: false, status: 'not-gm' });
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       const gigs = MarketStore.getGigs();
       const rec = gigs.pending.find((p) => p.id === id);
       if (!rec) return { ok: false, status: 'unknown' };
@@ -331,7 +323,7 @@ class GigImpactServiceImpl {
    */
   mapClient(id, target, { remember = true } = {}) {
     if (!isActiveGM()) return Promise.resolve({ ok: false, status: 'not-gm' });
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       let gigs = MarketStore.getGigs();
       const rec = gigs.pending.find((p) => p.id === id && p.kind === 'mapping');
       if (!rec || !this._validTarget(target)) return { ok: false, status: 'unknown' };
@@ -349,7 +341,7 @@ class GigImpactServiceImpl {
     if (!isActiveGM()) return Promise.resolve({ ok: false, status: 'not-gm' });
     const clientKey = normalizeName(client);
     if (!clientKey || !this._validTarget(target)) return Promise.resolve({ ok: false, status: 'invalid' });
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       const gigs = setMapping(MarketStore.getGigs(), clientKey, target, String(client).trim());
       return this._settle(gigs, gigs.pending.filter((p) => p.kind === 'mapping' && p.clientKey === clientKey), target);
     });
@@ -357,7 +349,7 @@ class GigImpactServiceImpl {
 
   removeMapping(clientKey) {
     if (!isActiveGM()) return Promise.resolve({ ok: false, status: 'not-gm' });
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       await this._commit(removeMapping(MarketStore.getGigs(), clientKey));
       return { ok: true, status: 'removed' };
     });
@@ -365,7 +357,7 @@ class GigImpactServiceImpl {
 
   clearHistory() {
     if (!isActiveGM()) return Promise.resolve({ ok: false, status: 'not-gm' });
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       await this._commit({ ...MarketStore.getGigs(), history: [] });
       return { ok: true, status: 'cleared' };
     });

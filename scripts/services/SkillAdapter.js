@@ -10,6 +10,7 @@
 import { cprD10, evaluateCheck } from '../engine/index.js';
 import { MODULE_ID } from '../utils/constants.js';
 import { escapeHtml } from '../utils/text.js';
+import { L } from '../utils/helpers.js';
 
 const norm = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
@@ -17,7 +18,6 @@ const norm = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const ROLL_MAX_AGE_MS = 10 * 60 * 1000;
 const ROLL_SKEW_MS = 60 * 1000;
 const CHECK_FLAG = 'check';
-const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 
 export const SKILL_NAME = 'Accounting';
 export const SKILL_STAT = 'int';

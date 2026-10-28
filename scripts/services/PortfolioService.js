@@ -25,17 +25,11 @@ import { SkillAdapter } from './SkillAdapter.js';
 import { MailService } from './MailService.js';
 import { MarketClock } from './MarketClockService.js';
 import { TickService } from './TickService.js';
+import { SerialQueue } from '../utils/queue.js';
 
 class PortfolioServiceImpl {
   constructor() {
-    this._queue = Promise.resolve();
-  }
-
-  /** Run a task after the ones already queued. Resolves with the task's own result. */
-  _enqueue(fn) {
-    const task = this._queue.then(fn);
-    this._queue = task.catch((error) => log.error('Portfolio service task failed', error));
-    return task.catch(() => undefined);
+    this._queue = new SerialQueue('Portfolio service task');
   }
 
   /** assetId -> { listed, active, price, liquidity, kind?, fund?, ipo? } for every company and fund that has a price. */
@@ -106,13 +100,13 @@ class PortfolioServiceImpl {
   /** Handle whatever is waiting in one actor's outbox. */
   processActor(actor) {
     if (!isActiveGM()) return Promise.resolve();
-    return this._enqueue(() => this._process(actor));
+    return this._queue.run(() => this._process(actor));
   }
 
   /** Handle every actor's outbox, and pay any withdrawals that are due. Run at startup. */
   sweepAll() {
     if (!isActiveGM()) return Promise.resolve();
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       for (const actor of this._characters()) {
         await this._process(actor);
         await this._payWithdrawals(actor);
@@ -123,7 +117,7 @@ class PortfolioServiceImpl {
   /** Work every open order against the new prices, check price alerts, then pay withdrawals that are due. */
   onTick() {
     if (!isActiveGM()) return Promise.resolve();
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       for (const actor of this._characters()) {
         await this._release(actor);
         await this._process(actor);
@@ -161,7 +155,7 @@ class PortfolioServiceImpl {
    */
   applyNow(actor, request) {
     if (!isActiveGM()) return Promise.resolve(null);
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       const portfolio = PortfolioRepository.get(actor);
       const wealth = WealthAdapter.get(actor);
       const out = applyRequests({
@@ -182,7 +176,7 @@ class PortfolioServiceImpl {
   /** Remember that a mail has been handled, even if it produced no request. */
   markProcessed(actor, key) {
     if (!isActiveGM()) return Promise.resolve();
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       const p = PortfolioRepository.get(actor);
       if (p.processed.includes(key)) return;
       await PortfolioRepository.save(actor, { ...p, processed: [...p.processed, key].slice(-PROCESSED_CAP) });
@@ -197,7 +191,7 @@ class PortfolioServiceImpl {
    */
   transformAll(fn) {
     if (!isActiveGM()) return Promise.resolve(0);
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       let changedCount = 0;
       for (const actor of this._characters()) {
         if (!PortfolioRepository.hasPortfolio(actor)) continue;
@@ -218,7 +212,7 @@ class PortfolioServiceImpl {
    */
   transformActor(actor, fn) {
     if (!isActiveGM()) return Promise.resolve(null);
-    return this._enqueue(async () => {
+    return this._queue.run(async () => {
       const out = fn(PortfolioRepository.get(actor));
       if (out?.portfolio && out.changed !== false) await PortfolioRepository.save(actor, out.portfolio);
       return out ?? null;
