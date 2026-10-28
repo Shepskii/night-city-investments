@@ -1277,6 +1277,86 @@
       "DebugMode": {
         "Name": "Debug logging",
         "Hint": "Write extra diagnostics to the browser console."
+      },
+      "BusinessesEnabled": {
+        "Name": "Player businesses",
+        "Hint": "Let players found and run their own businesses, with the Business window. Turning this off stops their weeks closing and refuses new requests; nothing is deleted."
+      },
+      "BusinessApproval": {
+        "Name": "New businesses need GM approval",
+        "Hint": "A business that has passed its setup roll and has its money waits in the GM Console's Businesses tab until the GM lets it open."
+      },
+      "BusinessWeekday": {
+        "Name": "Business week ends on",
+        "Hint": "Every business's operating week closes on the first market tick on or after this day. The day of your weekly session works well."
+      },
+      "BusinessGrowthRate": {
+        "Name": "Business growth rate",
+        "Hint": "Scales how fast businesses build Reputation and Capacity. 1 is the calibrated pace; 1.5 suits a campaign that wants players' businesses to grow sooner."
+      }
+    },
+    "Weekday": { "0": "Sunday", "1": "Monday", "2": "Tuesday", "3": "Wednesday", "4": "Thursday", "5": "Friday", "6": "Saturday" },
+    "Business": {
+      "Refused": "Your business request was refused: {reason}",
+      "Done": {
+        "found": "Business founded. Your partners can now join.",
+        "join": "You are a partner now.",
+        "decline": "Invitation declined.",
+        "contribute": "Contribution made.",
+        "withdraw": "You have taken your money back out.",
+        "setupRoll": "Setup roll recorded.",
+        "action": "This week's action is recorded.",
+        "assist": "Your check is recorded.",
+        "draw": "Draw paid.",
+        "setHeir": "Heir recorded.",
+        "leave": "Your stake is on offer to your partners.",
+        "buyout": "Stake bought.",
+        "proposeClose": "Proposal made.",
+        "vote": "Vote recorded."
+      },
+      "Reason": {
+        "bad-use": "that skill does not fit this roll",
+        "not-forming": "the business is no longer being set up",
+        "not-partner": "this character is not a partner who can do that",
+        "invites-pending": "someone has not answered their invitation yet",
+        "setup-done": "the setup roll has already passed",
+        "setup-delay": "the setup cannot be tried again yet",
+        "no-contribution": "nobody has put any money or gear in yet",
+        "no-funds": "the business cannot pay for that",
+        "not-open": "the business is not open",
+        "bad-action": "there is no such action",
+        "no-slot": "this week's action slots are all taken",
+        "action-taken": "that action has already been taken this week",
+        "helped": "this character has already helped this week",
+        "hire-not-allowed": "a hired professional cannot do that",
+        "bad-request": "the request was not understood",
+        "no-business": "that business no longer exists",
+        "not-invited": "this character was not invited",
+        "bad-amount": "that amount is not allowed",
+        "over-allowance": "that is more than your share of last week's profit",
+        "bad-heir": "that heir cannot be named",
+        "only-partner": "the only partner cannot leave; close the business instead",
+        "not-for-sale": "that stake is not on offer",
+        "insufficient-funds": "not enough eddies",
+        "proposal-open": "a proposal is already open",
+        "no-proposal": "that proposal has ended",
+        "bad-name": "the business needs a name",
+        "bad-archetype": "that kind of business does not exist",
+        "too-many-partners": "too many partners",
+        "bad-partner": "one of those partners is not a character",
+        "bad-sweat": "sweat equity must go to a founder, at no more than 10%",
+        "bad-gear": "the gear list is not allowed",
+        "not-pending": "the business is not waiting for approval",
+        "no-roll": "no roll came with the request",
+        "roll-missing": "the roll could not be found",
+        "roll-mismatch": "the roll was not for this character or skill",
+        "roll-stale": "the roll was too old",
+        "roll-used": "that roll has already been used",
+        "roll-invalid": "the roll's dice were not valid",
+        "roll-unverified": "the roll could not be checked",
+        "disabled": "player businesses are turned off",
+        "error": "something went wrong; the GM can see the details in the console",
+        "not-gm": "only the active GM can do that"
       }
     }
   }

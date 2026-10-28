@@ -6,6 +6,7 @@
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
 
 const notifyMarketUpdated = () => Hooks.callAll(HOOKS.MARKET_UPDATED);
+const notifyBusinessesChanged = () => Hooks.callAll(HOOKS.BUSINESSES_CHANGED);
 
 export function registerSettings() {
   const s = game.settings;
@@ -297,6 +298,46 @@ export function registerSettings() {
     type: Object,
     default: {},
     onChange: notifyMarketUpdated,
+  });
+
+  s.register(MODULE_ID, SETTINGS.BUSINESSES_ENABLED, {
+    name: 'NCI.Settings.BusinessesEnabled.Name',
+    hint: 'NCI.Settings.BusinessesEnabled.Hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true,
+    onChange: notifyBusinessesChanged,
+  });
+
+  s.register(MODULE_ID, SETTINGS.BUSINESS_APPROVAL, {
+    name: 'NCI.Settings.BusinessApproval.Name',
+    hint: 'NCI.Settings.BusinessApproval.Hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
+  s.register(MODULE_ID, SETTINGS.BUSINESS_WEEKDAY, {
+    name: 'NCI.Settings.BusinessWeekday.Name',
+    hint: 'NCI.Settings.BusinessWeekday.Hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 1,
+    choices: Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map((d) => [d, `NCI.Weekday.${d}`])),
+    onChange: notifyBusinessesChanged,
+  });
+
+  s.register(MODULE_ID, SETTINGS.BUSINESS_GROWTH_RATE, {
+    name: 'NCI.Settings.BusinessGrowthRate.Name',
+    hint: 'NCI.Settings.BusinessGrowthRate.Hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 1,
+    range: { min: 0.5, max: 2, step: 0.25 },
   });
 
   s.register(MODULE_ID, SETTINGS.DEBUG_MODE, {

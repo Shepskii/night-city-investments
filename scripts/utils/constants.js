@@ -44,6 +44,10 @@ export const SETTINGS = Object.freeze({
   NEWS_FEED: 'newsFeed',
   DIVIDEND_RECORDS: 'dividendRecords',
   DEBUG_MODE: 'debugMode',
+  BUSINESSES_ENABLED: 'businessesEnabled',
+  BUSINESS_APPROVAL: 'businessApproval',
+  BUSINESS_WEEKDAY: 'businessWeekday',
+  BUSINESS_GROWTH_RATE: 'businessGrowthRate',
 });
 
 /** Flag keys under flags[MODULE_ID] on journals. */
@@ -69,6 +73,14 @@ export const FLAGS = Object.freeze({
   PREFS: 'prefs',
   /** On actors. Written only by the GM: the character is at a terminal with CorpNet access. */
   GRANT: 'terminalGrant',
+  /** On a business's journal: its record, which its partners can read. Written only by the GM. */
+  BUSINESS: 'business',
+  /** On the GM-only control journal: each business's hidden state (Exposure), by business id. */
+  BUSINESSES: 'businesses',
+  /** On actors. Business requests, written only by the owning player. */
+  BUSINESS_OUTBOX: 'businessOutbox',
+  /** On actors. Which business requests the GM has handled, and how. Written only by the GM. */
+  BUSINESS_RECEIPTS: 'businessReceipts',
 });
 
 /** Tag on an NCM master contact that makes it a broker. */
@@ -101,10 +113,15 @@ export const HOOKS = Object.freeze({
   /** A penalty was proposed, approved or dismissed: `{penalty}`. */
   HEAT_PENALTY: `${MODULE_ID}.heatPenalty`,
   HEAT_CHANGED: `${MODULE_ID}.heatChanged`,
+  /** A business record was created, changed or removed, or a character's business receipts changed. */
+  BUSINESSES_CHANGED: `${MODULE_ID}.businessesChanged`,
+  /** A business's week closed: `{businessId, digest}`. */
+  BUSINESS_PERIOD: `${MODULE_ID}.businessPeriod`,
 });
 
 /** Most unprocessed requests a player may have waiting at once. */
 export const OUTBOX_LIMIT = 30;
 
 export const COMPANY_FOLDER_NAME = 'Night City Investments';
+export const BUSINESS_FOLDER_NAME = 'NCI Businesses';
 export const CONTROL_JOURNAL_NAME = 'NCI GM Control';

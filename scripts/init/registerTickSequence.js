@@ -18,6 +18,7 @@ import { PortfolioService } from '../services/PortfolioService.js';
 import { HeatService } from '../services/HeatService.js';
 import { NotificationService } from '../services/NotificationService.js';
 import { StatementService } from '../services/StatementService.js';
+import { BusinessService } from '../services/BusinessService.js';
 
 /** In order. `data` is the `priceTick` hook's payload. */
 const STEPS = [
@@ -32,6 +33,8 @@ const STEPS = [
   ['Heat audit', () => HeatService.onTick()],
   ['Notifications', (data) => NotificationService.onTick(data)],
   ['Statements', () => StatementService.onTick()],
+  // Player businesses close their weeks on the market's date; nothing above depends on them.
+  ['Businesses', () => BusinessService.onTick()],
 ];
 
 export const TickSequence = {

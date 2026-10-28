@@ -149,6 +149,15 @@ export const MarketStore = {
     return this._writeRecord(FLAGS.HEAT, value);
   },
 
+  /** Each player business's hidden state, by business id: `{ [id]: { exposure } }`. GM only. */
+  getBusinessesHidden() {
+    return this.readRecord(FLAGS.BUSINESSES) ?? {};
+  },
+
+  setBusinessesHidden(value) {
+    return this._writeRecord(FLAGS.BUSINESSES, value);
+  },
+
   getNews() {
     const feed = clone(game.settings.get(MODULE_ID, SETTINGS.NEWS_FEED) ?? {});
     return feed.items ? feed : emptyNews();
