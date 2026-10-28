@@ -443,8 +443,8 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | 5 | **Done (v0.5.0, extras in v0.5.1), see §18 and §19.** Price alerts, brokerage statements (on request and monthly), fund rebalancing and manager alpha, then settlement and redemption delays, distributing funds, a movers notification and a ticker strip. Capital-gains tax was left out on purpose. (Funds and watchlists shipped earlier, in Phase 4 and Phase 2) |
 | 6 | **Done (v0.6.0), see §20.** Night City Map bridge (gig outcome → impact), approval queue, client mapping, Gigs tab. The bridge is a separate module, `night-city-map-night-city-investments-bridge` |
 | 7 | **Done (v0.9.0), see §23.** Starter pack (already in since phase 1), API docs, self-check, trade log, company suggestions, starter macros, keybindings, data migrations. The macro importer was dropped: it will not be needed |
-| 6b | Insider-trading heat, in stages (§22). **H1 done (v0.7.0, retuned in v0.7.1):** hidden heat recorded from audited gig windows, GM Heat tab. **H2 and H3 done (v0.8.0):** warnings, NCPD enquiries, fines, freezes and dropped brokers with GM approval, and skill-roll cover-up actions. H4 (gig runner from the bridge) done, unreleased |
-| 0.9.7 | Release the unreleased work: the after-tick sequence and dividend-records fix (§27), the market date, price paths and cleanups (§28), and gig runners for heat (H4) |
+| 6b | Insider-trading heat, in stages (§22). **H1 done (v0.7.0, retuned in v0.7.1):** hidden heat recorded from audited gig windows, GM Heat tab. **H2 and H3 done (v0.8.0):** warnings, NCPD enquiries, fines, freezes and dropped brokers with GM approval, and skill-roll cover-up actions. H4 (gig runner from the bridge) done (v0.9.7) |
+| 0.9.7 | **Done (v0.9.7).** Released the work that had been unreleased: the after-tick sequence and dividend-records fix (§27), the market date, price paths and cleanups (§28), and gig runners for heat (H4) |
 | B0 | Groundwork for player businesses and syndicates (§26.9): the Crew Tools spike, the business growth simulator, the storage schema |
 | B1 | **v0.10, see §26.9.** Side businesses: the roll levers, the Business window and the GM's Businesses tab, partnerships, four archetypes, the weekly loop |
 | B2 | **v0.11.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
@@ -1072,7 +1072,7 @@ Everything a player does here is a request through the executor, like the termin
 
 The work is split into phases that each end with something usable at the table. Syndicates are not first: small businesses are where most players will start, so the first playable phase is a side business. Syndicates do not depend on businesses and run as a parallel track, joining up when a syndicate owns or invests in one. The phases are labelled B0 to B7 in the roadmap (§14).
 
-**Before B0:** release the work already done as **v0.9.7** (§27 and §28, and the gig runners for heat, H4), so the phases start from a released, tested base.
+**Before B0:** the work already done was released as **v0.9.7** (§27 and §28, and the gig runners for heat, H4), so the phases start from a released, tested base.
 
 | Phase | Version | Playable outcome |
 |---|---|---|
@@ -1134,12 +1134,12 @@ The work is split into phases that each end with something usable at the table. 
 
 **Every phase finishes the same way:** node tests for the pure parts and flow tests against the fake Foundry, as the existing suite does; a schema migration if stored data changes; a run in the test world before release; and, from B1, a simulator check against the growth target.
 
-## 27. After-tick order and dividend records (unreleased)
+## 27. After-tick order and dividend records (v0.9.7)
 
 - **One after-tick sequence** (`init/registerTickSequence.js`). What the active GM runs after a market tick used to hang off three `priceTick` listeners in the market, portfolio and broker registrars, all started at once and none awaited. It is now one list, run in order with each step awaited: IPO listings, automatic splits, dividends, fund distributions, gig headlines, orders (with alerts and withdrawals), the heat audit, notifications, statements. Each tick's sequence waits for the previous one, and a failing step is logged without stopping the rest. Corporate events come first so orders are worked against the listings and splits as they now stand.
 - **Dividend records are changed through `MarketStore.updateDividendRecords(fn)`**, which applies `fn` to a fresh read inside a queue. The dividend service used to write back, at the end of its check, a copy it had read at the start, which could erase a fund distribution recorded meanwhile; the fund's distribution was then announced again on the next tick. `settlementDistributionsFlow.test.mjs` covers the case.
 
-## 28. Market date, price paths and cleanups (unreleased)
+## 28. Market date, price paths and cleanups (v0.9.7)
 
 - **The market's own date** (`marketDay` in `engine/clock.js`). It is `lastDay` (the calendar day of the last tick) plus `lead`, the game days a GM has advanced the market by hand. `lead` is engine state, so undo and calendar rollback restore it. Ticks that follow the calendar leave `lead` alone and take each tick's date from the calendar (one per day in the day mode, today in the in-world clock mode); `advance`/`advanceDays` add the whole game days they cover. `MarketClock.nowMs()`, `date()` and `dateString()` now give the market's date, and only the tick service reads the calendar itself, through `MarketClock.calendarMs()`. Dividends, fund rebalances and distributions (now dated per tick inside a run), IPO dates, monthly statements and the dates on news, heat and records all follow it. Before, a manual-mode advance moved prices but nothing that fell due on a date. The Market tab is relabelled "Market date" and says when the market is ahead of the calendar or in manual mode.
 - **Gig runners (H4).** `api.events.reportImpact` takes `runners`, the ids of the characters who ran the gig; the bridge (v0.2.0) sends them. See §22.
