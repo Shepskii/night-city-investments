@@ -22,6 +22,7 @@ Hooks.once('night-city-investments.ready', (api) => { /* api.market, api.portfol
 |---|---|
 | `api.open()` | Open the Market Terminal. |
 | `api.openGM()` | Open the GM Console (GM only). |
+| `api.openBusiness({ businessId }?)` | Open the Business window, optionally on one business. |
 | `api.verify({ silent })` | **GM.** Self-check of companies, funds, the market, portfolios and the NCM link. Returns `{ ok, counts, checks: [{ id, level, detail }] }` (levels: `ok`, `info`, `warn`, `fail`). Unless `silent`, it also logs a summary and shows a notification. |
 | `api.schemaVersion` | The stored-data schema this module version expects. |
 
@@ -55,6 +56,24 @@ api.portfolio.get(actor);   // { cash, lots, orders, ledger, ... }
 | `api.portfolio.withdraw(actor, amount)` | Back to the wallet. With a broker it is delayed and paid by mail. |
 | `api.portfolio.placeOrder(actor, order)` | `order`: `route` (`'direct'` or `'broker'`), `side` (`'buy'` or `'sell'`), `assetId` (a company or fund id), `qty`, `orderType` (`'market'`, `'limit'`, `'stop'`), `limit` (for limit and stop), `expiry` (`'day'` or `'gtc'`). |
 | `api.portfolio.cancelOrder(actor, orderId)` | Cancel an open order. |
+
+## Businesses (the calling user's own characters)
+
+Player businesses (DESIGN §26, built so far: side businesses, B1). As with portfolios, a player only ever writes a request into their character's business outbox (`flags.night-city-investments.businessOutbox`); the active GM's client carries it out and records the result in `businessReceipts`. Rolls are made on the calling client when the player chooses to roll, and the GM reads the dice back from the chat card.
+
+```js
+const med = game.actors.getName('Doc');
+await api.businesses.submit(med, 'found', { name: 'Back Room', archetype: 'clinic', cash: 1000, invite: [fixer.id] });
+const [clinic] = api.businesses.forActor(med);
+await api.businesses.roll(fixer, clinic, { type: 'setupRoll', businessId: clinic.id, use: { kind: 'ability', ability: 'Operator' } }, { title: 'Setting up' });
+```
+
+| Call | Notes |
+|---|---|
+| `api.businesses.list()` / `.get(id)` | Every business this client can read: a player sees only those their characters are partners in (or invited to). |
+| `api.businesses.forActor(actorOrId)` | One character's businesses, closed ones included. |
+| `api.businesses.submit(actor, type, payload)` | Queue a request. `type` is one of `found`, `join`, `decline`, `contribute`, `withdraw`, `draw`, `setHeir`, `leave`, `buyout`, `proposeClose`, `vote` (the fields are listed at the top of `scripts/engine/business.js`). Returns the request key, or `null` if the outbox is full. |
+| `api.businesses.roll(actor, business, request, { title, levers })` | Make a roll and send it: `request.type` is `setupRoll`, `action` (with `action`: `work`, `promote`, `source`, `fixUp`, `keepSafe`) or `assist` (with `forAction`); `request.use` is `{ kind: 'skill', skill, stat }`, `{ kind: 'ability', ability }` or `{ kind: 'hire', hire: 'cheap' \| 'good' \| 'best' }`. `levers`: `{ approach: 'careful' \| 'standard' \| 'bold', luck, bonus }`. Checked on the calling client first, so a roll that could not count is not made. |
 
 ## Brokers, funds, terminal
 
@@ -134,6 +153,8 @@ Fired with `Hooks.callAll`, on every client unless noted. Names are prefixed `ni
 | `heatAudit` | `{ window, results }` | **GM client.** A heat audit finished. |
 | `heatPenalty` | `{ penalty }` | **GM client.** A penalty was proposed, approved or dismissed. |
 | `heatChanged` | none | Heat changed. |
+| `businessesChanged` | `{ businessId?, actorId?, events? }` | A business record, or a character's business requests or receipts, changed. |
+| `businessPeriod` | `{ businessId, digest }` | **GM client.** A business's operating week closed: `digest` has `takings`, `upkeep`, `profit`, `till` and the week's actions. |
 
 Night City Messenger's `night-city-messenger.message:sent` hook is how a broker notices mail from a player.
 
@@ -142,6 +163,8 @@ Night City Messenger's `night-city-messenger.message:sent` hook is how a broker 
 - Company: a journal flagged `flags.night-city-investments.company` (config) with the lore as its text page.
 - Portfolio: `actor.flags.night-city-investments.portfolio`. **Written only by the GM executor.** Do not write it yourself.
 - Outbox: `actor.flags.night-city-investments.outbox`. Written only by the owning player through `api.portfolio`.
+- Business: a journal in the "NCI Businesses" folder flagged `flags.night-city-investments.business` (the record, wrapped in a one-element array). Only its partners' players can read it. **Written only by the GM.**
+- Business requests and receipts: `actor.flags.night-city-investments.businessOutbox` (the owning player) and `businessReceipts` (the GM).
 - Settings: world settings under `night-city-investments`.
 - The journal named "NCI GM Control" holds hidden state (fair values, the regime, heat, gig queue). It is GM-only. Do not expose it.
 
