@@ -705,10 +705,35 @@ Decisions so far: Crew Tools cannot be changed, so everything is NCI-side or in 
 - **Not rolling is a valid choice.** An action nobody rolls simply does not happen. The weekly result is then the baseline (§26.4), with at most a small GM-tunable drift. The system's own event draw is not a player roll and stays on the engine.
 - **One roll, one use.** A roll belongs to the action it was made for and cannot be reused. Retries, fees and delays are counted from the roll, in game days.
 
+**Player levers on every roll.** A roll is a decision, not only a button. Cyberpunk RED's own levers apply, and the player sees what is at stake before rolling.
+- **Who rolls.** Any officer (or, for the charter, any founder) may take a roll, so the crew chooses its best character for the job.
+- **Approach.** Before rolling, the player picks **Careful** (DV −2, the effect scaled down), **Standard**, or **Bold** (DV +3, the effect scaled up, and some Exposure). Aggressive reporting (§26.4) is the Bold approach to report preparation.
+- **Luck.** The player may spend LUCK points on the roll, as the rules allow. The roll dialog asks how many before rolling.
+- **Complementary skill (+1).** A successful related check earlier in the same operating period, by anyone in the crew, leaves a one-use +1 on the company for the matching action (for example Library Search as market research before a Business roll, Human Perception to read the counterparty before a Bribery roll, Local Expert before a Bureaucracy roll). At most one is used per roll. This replaces an ad-hoc crew-assist bonus, and gives characters who are not officers something to do.
+- **Extra time (+1).** Spending an extra downtime day on the action (through the Crew Tools bridge, §26.8, or the native allowance) adds +1, as the rules allow for taking extra time.
+- **Preview.** Before rolling, the dialog shows the DV, the approach's effect, and what each outcome band would mean, so who rolls and how much Luck to spend are informed choices.
+
+**DVs** follow the rulebook's ladder: Everyday 13, Difficult 15, Professional 17, Heroic 21, Incredible 24. A table maps each action, sector and size to a step on it, so a GM can tune by naming a step rather than a number.
+
+**Outcome bands.** Every check uses the same bands, so the margin (total minus DV) always matters, as it already does for the capital quote (§26.2a):
+
+| Band | Margin | Meaning |
+|---|---|---|
+| Fumble | natural 1 that fails | the action's fumble effect |
+| Failure | below 0 | no effect; the cost is still paid |
+| Narrow | 0 to 1 | a quarter of the effect |
+| Solid | 2 to 5 | the effect |
+| Strong | 6 to 7 | one and a half times the effect |
+| Exceptional | 8 or more, or a critical | double the effect |
+
+**Opposed rolls** are used where a person opposes the action, as the rules do: the acting roll must beat the opponent's skill total, which may be a stored total from an earlier roll (§26.6) or an NPC's skill from a GM table.
+
+**What the executor also verifies.** The roll card records the approach, the Luck spent, and any complementary bonus used. The executor checks that the actor's LUCK pool went down by the Luck claimed, consumes the stored complementary bonus (it cannot be used twice), applies the approach's DV, and recomputes the total from the raw dice as before. The roll itself is still never trusted.
+
 ### 26.1 Syndicates
 
 - **A shared account.** A syndicate is an actor flagged `syndicate` with an ordinary portfolio, so the terminal, executor, valuation and statements work unchanged. Every member sees its **holdings, positions, orders and ledger**. Members have ownership of the actor; writes still go through requests.
-- **Units.** A member's deposit buys units at the current NAV (fund arithmetic), and a stake is units × NAV. Withdrawals are pro rata, by vote or by redemption request, with the usual delays. Fees (founder's cut, management fee) are GM-tunable sinks.
+- **Units.** A member's deposit buys units at the current NAV (fund arithmetic), and a stake is units × NAV. Restricted shares of a private player company have no market price, so they count in the NAV at the company's valuation *V* per share (§26.4a), updated at each monthly report. Withdrawals are pro rata, by vote or by redemption request, with the usual delays. Fees (founder's cut, management fee) are GM-tunable sinks.
 - **Roles and rules.** Founder, officer, member. Each syndicate picks an approval rule per action type (any officer, majority of officers, majority of units) for trades above a size, withdrawals, admission and removal, rule changes and dissolution. Proposals have a game-day deadline and are voted on in the terminal. The GM can force or veto.
 - **Broker and treasurer.** One assigned broker. A designated treasurer's Accounting skill sets terms, or "best member's" if the syndicate prefers.
 - **Heat is collective.** A rumour sent to one member is knowledge for all (`tipped`). Same-day orders by members add up for the size factor, so splitting trades does not avoid heat. Penalties land on the account, and the GM may pass them to members.
@@ -726,13 +751,21 @@ Decisions so far: Crew Tools cannot be changed, so everything is NCI-side or in 
    | Registration | Bureaucracy | licences, permits, jurisdiction |
    | Capital structure | Accounting | books, share structure, filings |
 
-   Founders can share the three rolls between them, with a capped crew-assist bonus.
-4. **Outcome.** All three must pass. A failure costs the fee and sets a **refiling delay** (default 7 game days). Rolls that passed are kept for 30 game days and the retry fee is lower, so a failure is a setback and not a dead end. A fumble adds to the delay. A pass sets the **capital quote** (§26.2a).
+   Founders can share the three rolls between them. Help from the rest of the crew uses the complementary skill rule (+1, see the player levers above), not a separate bonus.
+4. **Outcome.** Only the **capital structure (Accounting)** roll must pass for the charter to proceed: a failure there costs the fee and sets a **refiling delay** (default 7 game days), and a fumble adds to the delay. A failed **business plan** or **registration** roll is a setback, not a refusal: the company starts weaker (see below), and a failed registration adds a delay of 3 game days and a surcharge on the fee. Rolls that passed are kept for 30 game days and the retry fee is lower. Requiring all three to pass would refuse most ordinary crews: a character with stat 6 and skill 4 passes DV 15 about 60% of the time, so all three pass only about 22% of the time. A passed Accounting roll sets the **capital quote** (§26.2a).
 5. **GM approval.** The GM reviews the charter, the rolls and the quote, and may edit the terms, approve or reject (a rejection can refund the fee, by setting).
 6. **Fund it.** Players deposit the quoted starting capital into the company account within the funding window (§26.2a). Nothing is formed until it is fully funded.
 7. **Signed.** The company is formed as **private**, with a cap table made of restricted shares in the contributors' portfolios.
 
-**Charter quality.** The margins of the three rolls add up to a quality score *Q*, clamped to a band. *Q* sets the **IPO offering price**: price = the company's market valuation per share (§26.4a) × a *Q* factor (about ±15%), and also the size of the float that investors will take. An optional prospectus roll at listing (Trading for the offering, Accounting for the filing) can nudge it further. This price applies only once the company has met the listing requirements (§26.4a).
+**Starting state.** Each charter roll's outcome band (see the player levers) sets where the company starts, so the rolls matter from day one rather than months later at a listing:
+
+| Roll | Sets |
+|---|---|
+| Business plan (Business) | starting Reputation and Revenue run-rate |
+| Registration (Bureaucracy) | starting Compliance |
+| Capital structure (Accounting) | the capital quote (§26.2a) |
+
+A failed business plan or registration starts that part of the state below the sector baseline; an exceptional one starts it above. The IPO price, if the company ever lists, comes from the prospectus rolls at that time (§26.4a), not from the charter.
 
 ### 26.2a Starting capital
 
@@ -774,7 +807,7 @@ A failed roll always refuses the charter, with no exceptions and no GM override 
 
 **Afterwards.** Founding capital is the company's money, not the players'. It cannot be withdrawn, only paid out as capped dividends (§26.7) or bought back, and a lock-in (default 28 game days) stops a company being formed and drained straight away. Fees and the lock-in are the sinks that stop a quick eb machine.
 
-**Interaction with the other rolls.** The Business and Bureaucracy margins do not change the quote; they only feed *Q* (the IPO price). A founder with a poor Accounting skill can improve the quote by having a better accountant make the roll, since any founder may take the slot.
+**Interaction with the other rolls.** The Business and Bureaucracy margins do not change the quote; they set the starting Reputation, Revenue and Compliance (§26.2). A founder with a poor Accounting skill can improve the quote by having a better accountant make the roll, since any founder may take the slot, and by spending Luck or using a complementary bonus on it.
 
 ### 26.3 Ownership and control
 
@@ -790,8 +823,9 @@ A failed roll always refuses the charter, with no exceptions and no GM override 
   - **Weekly period.** One period is 7 game days, anchored to a GM-chosen weekday (default: the day of the weekly session) and run on the game-day clock, so the first tick on or after the boundary closes it. Catch-up after a calendar jump closes each missed period in order, up to a cap.
   - **What closes a week.** Outcome = state + the sector's backdrop + the actions the officers rolled that week + the GM-editable event tables. It updates the business state and is **private to officers** as a short weekly digest in the terminal. It does not move the share price.
   - **Monthly report.** On the in-world month boundary (the same rule as statements and monthly dividends; every 28 game days if there is no calendar), the company publishes a report that sums the weeks closed in that month (four or five). The result is a headline and an **earnings impact** on fair value (the surprise against expectations), with delay and decay. Dividends follow the report, still capped (§26.7).
-  - **Actions per week.** Each officer may take actions with a per-period allowance (default one roll per skill per week, a GM setting), so the old per-action cooldown is replaced by the period. Costs are paid from company capital. The allowance resets when a period closes.
-  - **Report preparation.** In the last week of the month an officer may roll Accounting to prepare the report. No roll means standard reporting: no bonus and no risk. Aggressive reporting is an Accounting option for a bigger surprise now and more Exposure later.
+  - **Actions per week.** The **company** has a number of action slots each operating period, set by its Operating capacity (default 2 for a startup, 3 for a small company, 4 for an established one; a GM setting). The officers decide together who takes each slot and rolls, so the question is who is best at the job, and adding officers does not add actions. Costs are paid from company capital. The slots reset when a period closes. Complementary checks (the player levers) do not use a slot.
+  - **Report preparation.** In the last week of the month an officer may roll Accounting to prepare the report. No roll means standard reporting: no bonus and no risk. Aggressive reporting is the Bold approach: a bigger surprise now and more Exposure later. The roll's total is stored, and a later regulator audit of that report is an opposed check against it (§26.6).
+  - **Event responses.** When the weekly event draw produces an event (a strike, a supply shortage, a PR crisis, a rival's move), officers get a prompt in the terminal before the week closes, naming the skills that can answer it (for example Persuasion to calm the union, Business to find a new supplier, Bureaucracy to contest a fine). A response uses an action slot and is an ordinary player-triggered roll. If nobody responds, the event's default outcome applies, so not rolling stays a valid choice.
   - **Neglect.** With no actions in a period, reputation, compliance and capacity drift slightly toward the sector baseline. The drift is small and GM-tunable (it can be set to zero).
 - **Skill actions** (a player-triggered roll with DV, cost and a weekly allowance):
 
@@ -803,7 +837,36 @@ A failed roll always refuses the charter, with no exceptions and no GM override 
   | Bureaucracy | permits, compliance, licences | unlocks steps, less regulatory drag | delay, fine |
   | Bribery | shortcuts and rivals | large, fast gain | Exposure up, scandal, NCPD interest |
 
-  A critical success multiplies the effect. Reporting integrity is an Accounting roll: aggressive reporting lifts the stock now and raises audit risk later.
+  The outcome band scales the effect (a critical is Exceptional). Reporting integrity is an Accounting roll: aggressive reporting lifts the stock now and raises audit risk later. Bribery against a person (an official, a rival's employee) is opposed by that person's skill from a GM table rather than a fixed DV.
+- **Alternative skills.** Business, Bureaucracy and Accounting are mostly Exec and Fixer skills, so each action also accepts a related skill at DV +2, and a crew without those roles can still run a company:
+
+  | Action | Alternatives at DV +2 |
+  |---|---|
+  | Business: chase contracts | Persuasion, Trading |
+  | Bureaucracy: permits | Local Expert, Persuasion |
+  | Accounting: tighten the books | Business |
+  | Trading: investor relations | Persuasion, Wardrobe & Style |
+  | Bribery: shortcuts | Streetwise |
+
+- **Role abilities.** Each role's special ability gives the company something only that character can do. An action using a role ability takes a slot and is rolled with the ability's rank as the rules describe:
+
+  | Role | Ability | In a player company |
+  |---|---|---|
+  | Exec | Teamwork | the Exec's team works for the company: one extra action slot each period, or Rank/2 added to a Business roll |
+  | Fixer | Operator | better deals: lower fees and capital quote, an easier capital raise, more NPC buyers for a thin stock (§26.7) |
+  | Media | Credibility | plant a story: Reputation up, a bad report softened, or a rival smeared, through the news feed |
+  | Netrunner | Interface | corporate espionage: reveal a rival's Exposure band or one of its ownership layers (§26.6) |
+  | Rockerboy | Charismatic Impact | an endorsement: a Reputation and sales boost, strongest for media and retail |
+  | Tech | Maker | product development: Operating capacity or Revenue up |
+  | Nomad | Moto | logistics: the Cost base down |
+  | Lawman | Backup | a friend on the force: an NCPD audit or penalty softened |
+  | Solo, Medtech | — | security and staff care: a defence roll against sabotage and accident events |
+
+- **Information rolls.** Some rolls reveal rather than change, so hidden state can be found by playing:
+  - **Internal audit** (Accounting): reveals the company's own Exposure band, and on a Strong or Exceptional result reduces it, at a cost from capital.
+  - **Due diligence** (Library Search or Business): reveals a rival company's business state bands, or a private company's valuation range before a deal.
+  - **Read the room** (Human Perception): before a negotiation or a vote, reveals whether the counterparty is bluffing; succeeding gives the complementary +1 to the negotiating roll.
+  - **Street talk** (Streetwise): surfaces a market rumour about a sector or company.
 - **Insider windows.** An owner trading before their own results is the strongest heat case. Officers see weekly digests, so for them the window opens at the first weekly close of the month, with weight rising each week, and ends at publication. Other holders get the usual window from the final weekly close to publication (default 2 game days, a GM setting). Both run on the existing engine.
 
 ### 26.4a Going public: listing eligibility
@@ -827,14 +890,14 @@ A player company stays **private** until it has earned a listing. The Draft char
 | Sustained | at or above it on 3 consecutive monthly reports (a single spike does not count) |
 | Track record | at least 3 published monthly reports and 56 game days since formation |
 | Compliance | at or above the GM's minimum, with no open audit finding |
-| Exposure | hidden Exposure below its cap. High Exposure delays a listing without telling the officers why |
+| Exposure | hidden Exposure below its cap. The checklist shows this as "unresolved compliance concerns" without the number; an internal audit (§26.4) reveals the band and can bring it down |
 | Float | the founders agree to float at least 20% of the shares, and to keep a 28-day lock-up on the rest |
 
 **The steps.**
 1. **Eligibility is shown, not rolled.** Officers see a checklist of the requirements and their current standing. Nothing in it is a roll.
 2. **Apply for listing.** An officer pays a listing fee (a percentage of *V*, a sink) and the GM approves.
-3. **Prospectus rolls, player-triggered.** An officer rolls Accounting (the filing) and Trading (the offering). A pass is required for each. A failure costs the fee and a refiling delay (default 14 game days). The margins feed the offering price with *Q* (§26.2).
-4. **Offering price and float.** Price = *V* per share × a *Q* factor (about ±15%, so market reality dominates), and the float size is capped by NPC demand (§26.7).
+3. **Prospectus rolls, player-triggered.** An officer rolls Accounting (the filing) and Trading (the offering), with the usual levers (Luck, complementary bonus, approach). A pass is required for each. A failure costs the fee and a refiling delay (default 14 game days).
+4. **Offering price and float.** Price = *V* per share × a prospectus factor from the two rolls' outcome bands (about ±15%, so market reality dominates; a Bold offering widens it). The float size is capped by NPC demand (§26.7), which the Trading roll's band also sets.
 5. **IPO flow.** The company then runs through the standard announced IPO and subscription window. The first price comes from that offering, and its first day of trading starts the usual price model.
 
 **After listing.** *V* is replaced by the market price. A **delisting review** applies hysteresis: a market capitalisation under 60% of the threshold for 3 consecutive reports (a GM setting) puts the company under review, and the GM can delist it or give it time. A company that fails the requirements after applying simply does not proceed, with no penalty beyond the fee.
@@ -855,7 +918,7 @@ When a gig run by players names a player company as its **client**, it is a **bu
 Yes, with layers and costs, so concealment is a game and not a switch.
 - **Layers.** (a) **Nominee through a broker:** the shares are held in the broker's nominee account and the public register shows the broker. (b) **A syndicate:** the register shows its name, and the member list is visible to members only. (c) **A syndicate holding a syndicate:** a chain, with each layer costing fees and a Bureaucracy or Accounting roll. Control rights still work through a nominee.
 - **Rules that make it risky.** There is a disclosure threshold (default 5% of a listed company). Staying hidden above it is concealment, which adds Exposure and heat, and it fails if the regulator looks. A concealed holder trading around company events has a heat multiplier.
-- **Uncovering.** Other players can investigate (a downtime-driven Library Search, Streetwise or Bribery roll, started and rolled by the investigator, against a DV that rises with each layer). Building a layer is a roll by its owner. A regulator's audit is decided by the engine or GM, not by a player roll. Brokers and syndicate members can leak by chance (engine), or be bribed by a player who chooses to roll Bribery. A takeover or an audit can unmask.
+- **Uncovering.** Building a layer is a roll by its owner (Bureaucracy or Accounting), and its total is stored with the layer. Other players can investigate with a downtime-driven Library Search, Streetwise or Bribery roll, or a Netrunner's Interface (§26.4), started and rolled by the investigator. It is an **opposed** check: the investigator must beat the stored total of the layer they are trying to see through, plus 2 for each layer above it, so a well-built shell stays hard to crack and a careless one does not. A regulator's audit is decided by the engine or GM, not by a player roll; where it tests a report, it is opposed by that report's stored preparation total (§26.4). Brokers and syndicate members can leak by chance (engine), or be bribed by a player who chooses to roll Bribery. A takeover or an audit can unmask.
 - **Where the truth lives.** The real holder is always in the GM-readable portfolio. Players' clients never receive other portfolios, and the register players see is computed by the GM and published as a public setting containing only what is disclosed.
 
 ### 26.7 Capped payouts
@@ -863,7 +926,7 @@ Yes, with layers and costs, so concealment is a game and not a switch.
 - **Dividends** = min(declared, profit-based, a GM sector ceiling × company size, a per-holder monthly eb cap). The excess stays in the company as capital, and its effect on the price is itself capped.
 - **Sinks:** filing and registration fees, the listing fee, a withholding rate on dividends, broker commissions.
 - **IPO proceeds:** a new issue raises company capital, not player cash. A sale of founders' shares pays real eb only as far as buyers exist; NPC demand per IPO is capped.
-- **Liquidity:** a player company has limited depth. The market's usual infinite liquidity is replaced by a per-game-day NPC absorption cap sized by float and *Q*, with market impact on, so a thin stock cannot be used as an eb machine.
+- **Liquidity:** a player company has limited depth. The market's usual infinite liquidity is replaced by a per-game-day NPC absorption cap sized by float and the offering's Trading band (raised by a Fixer's Operator, §26.4), with market impact on, so a thin stock cannot be used as an eb machine.
 
 ### 26.8 Downtime with Crew Tools, bridge only
 
@@ -881,13 +944,15 @@ Crew Tools exposes `api.downtime` (`getState`, `use`, `startNextSession`), `api.
 
 1. Syndicate account, with units, roles, votes and visible positions.
 2. Syndicate heat, broker and treasurer.
-3. Charter flow: fee, three rolls, delay, the capital quote and funding window, GM approval and a private company with its cap table.
-4. Business state, the five skill actions and the weekly period with monthly reports, as player-triggered rolls verified from the chat message.
-5. Bridge module: Company Work through Crew Tools downtime, and projects.
-6. Gigs for own company, and runner knowledge for heat (H4).
-7. Listing: the valuation and eligibility checklist (§26.4a), the prospectus rolls, monthly reports, earnings impacts, the IPO price from *Q*, capped payouts and liquidity.
-8. Control changes: takeovers, dilution, buybacks, insolvency.
-9. Hidden ownership: nominee, then syndicate chains, disclosure threshold, and investigations.
+3. Roll levers in `SkillAdapter`: the roll dialog with the DV preview, approach, Luck and complementary bonus; outcome bands; and the executor's checks for Luck and the stored bonus. Every later step uses them.
+4. Charter flow: fee, three rolls with the graded outcome, the starting state, delay, the capital quote and funding window, GM approval and a private company with its cap table.
+5. Business state, company action slots, the five skill actions with alternative skills, event responses and information rolls, and the weekly period with monthly reports, as player-triggered rolls verified from the chat message.
+6. Role abilities as company actions.
+7. Bridge module: Company Work through Crew Tools downtime (including extra time), and projects.
+8. Gigs for own company (runner knowledge for heat, H4, is built).
+9. Listing: the valuation and eligibility checklist (§26.4a), the prospectus rolls, monthly reports, earnings impacts, the IPO price from the prospectus rolls, capped payouts and liquidity.
+10. Control changes: takeovers, dilution, buybacks, insolvency.
+11. Hidden ownership: nominee, then syndicate chains, disclosure threshold, and opposed investigations.
 
 ## 27. After-tick order and dividend records (unreleased)
 
