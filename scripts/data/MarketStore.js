@@ -11,6 +11,13 @@ import { MODULE_ID, SETTINGS, FLAGS, CONTROL_JOURNAL_NAME } from '../utils/const
 
 const clone = (v) => foundry.utils.deepClone(v);
 
+/**
+ * GM-only records are stored wrapped in a one-element array. Foundry merges an object into the flag
+ * already there, so a key removed from the record would linger; an array always replaces the old
+ * value, so one write saves the record exactly. Unwrapped values are from before v0.9.7.
+ */
+const unwrap = (stored) => (Array.isArray(stored) ? stored[0] : stored);
+
 /** Serialises changes to the dividend records, which the dividend and fund distribution services both write. */
 let recordsQueue = Promise.resolve();
 
@@ -65,17 +72,24 @@ export const MarketStore = {
 
   /** Hidden engine state, or null (always null on a player client). */
   getHidden() {
-    const journal = this.controlJournal();
-    const hidden = journal?.getFlag(MODULE_ID, FLAGS.ENGINE);
-    return hidden ? clone(hidden) : null;
+    return this.readRecord(FLAGS.ENGINE);
   },
 
-  async setHidden(value) {
+  setHidden(value) {
+    return this._writeRecord(FLAGS.ENGINE, value);
+  },
+
+  /** A GM-only record from the control journal, or null. */
+  readRecord(flag) {
+    const stored = unwrap(this.controlJournal()?.getFlag(MODULE_ID, flag));
+    return stored ? clone(stored) : null;
+  },
+
+  /** Replace a GM-only record in one write. */
+  async _writeRecord(flag, value) {
     const journal = await this.ensureControlJournal();
     if (!journal) return;
-    // Replace rather than merge, so removed companies do not linger.
-    await journal.unsetFlag(MODULE_ID, FLAGS.ENGINE);
-    await journal.setFlag(MODULE_ID, FLAGS.ENGINE, value);
+    await journal.setFlag(MODULE_ID, flag, [value]);
   },
 
   async clearAll() {
@@ -89,8 +103,8 @@ export const MarketStore = {
       await journal.unsetFlag(MODULE_ID, FLAGS.CONTROLS);
       await journal.unsetFlag(MODULE_ID, FLAGS.SNAPSHOTS);
       // Ticks start again from zero, so the queue and history would no longer line up; mappings stay.
-      const gigs = journal.getFlag(MODULE_ID, FLAGS.GIGS);
-      if (gigs) await this.setGigs({ ...emptyGigs(), mappings: normalizeGigs(clone(gigs)).mappings });
+      const gigs = this.readRecord(FLAGS.GIGS);
+      if (gigs) await this.setGigs({ ...emptyGigs(), mappings: normalizeGigs(gigs).mappings });
       // Heat is measured in ticks too, so it starts again with them.
       if (journal.getFlag(MODULE_ID, FLAGS.HEAT)) await this.setHeat(emptyHeat());
     }
@@ -102,50 +116,38 @@ export const MarketStore = {
     return Array.isArray(stored) ? clone(stored) : [];
   },
 
+  /** The list is an array already, so Foundry replaces it outright. */
   async setSnapshots(list) {
     const journal = await this.ensureControlJournal();
     if (!journal) return;
-    await journal.unsetFlag(MODULE_ID, FLAGS.SNAPSHOTS);
-    if (list.length) await journal.setFlag(MODULE_ID, FLAGS.SNAPSHOTS, list);
+    await journal.setFlag(MODULE_ID, FLAGS.SNAPSHOTS, list);
   },
 
   /** GM control state (biases, impacts, forced regime). Only the GM can read it. */
   getControls() {
-    const stored = this.controlJournal()?.getFlag(MODULE_ID, FLAGS.CONTROLS);
-    return normalizeControls(stored ? clone(stored) : null);
+    return normalizeControls(this.readRecord(FLAGS.CONTROLS));
   },
 
-  async setControls(value) {
-    const journal = await this.ensureControlJournal();
-    if (!journal) return;
-    await journal.unsetFlag(MODULE_ID, FLAGS.CONTROLS);
-    await journal.setFlag(MODULE_ID, FLAGS.CONTROLS, value);
+  setControls(value) {
+    return this._writeRecord(FLAGS.CONTROLS, value);
   },
 
   /** Gig outcomes: the approval queue, the history and the client mappings. GM only. */
   getGigs() {
-    const stored = this.controlJournal()?.getFlag(MODULE_ID, FLAGS.GIGS);
-    return normalizeGigs(stored ? clone(stored) : null);
+    return normalizeGigs(this.readRecord(FLAGS.GIGS));
   },
 
-  async setGigs(value) {
-    const journal = await this.ensureControlJournal();
-    if (!journal) return;
-    await journal.unsetFlag(MODULE_ID, FLAGS.GIGS);
-    await journal.setFlag(MODULE_ID, FLAGS.GIGS, value);
+  setGigs(value) {
+    return this._writeRecord(FLAGS.GIGS, value);
   },
 
   /** Insider-trading heat, the watch windows and the audits. GM only: players cannot read the control journal. */
   getHeat() {
-    const stored = this.controlJournal()?.getFlag(MODULE_ID, FLAGS.HEAT);
-    return normalizeHeat(stored ? clone(stored) : null);
+    return normalizeHeat(this.readRecord(FLAGS.HEAT));
   },
 
-  async setHeat(value) {
-    const journal = await this.ensureControlJournal();
-    if (!journal) return;
-    await journal.unsetFlag(MODULE_ID, FLAGS.HEAT);
-    await journal.setFlag(MODULE_ID, FLAGS.HEAT, value);
+  setHeat(value) {
+    return this._writeRecord(FLAGS.HEAT, value);
   },
 
   getNews() {

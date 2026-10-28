@@ -30,12 +30,9 @@ export const MigrationService = {
     return {
       portfolios: () => game.actors
         .filter((a) => PortfolioRepository.hasPortfolio(a))
-        .map((a) => ({ id: a.id, name: a.name, data: clone(a.getFlag(MODULE_ID, FLAGS.PORTFOLIO)) })),
+        .map((a) => ({ id: a.id, name: a.name, data: PortfolioRepository.raw(a) })),
       savePortfolio: (id, data) => PortfolioRepository.save(game.actors.get(id), data),
-      stores: () => {
-        const journal = MarketStore.controlJournal();
-        return Object.fromEntries(Object.entries(STORE_FLAGS).map(([name, flag]) => [name, clone(journal?.getFlag(MODULE_ID, flag)) ?? null]));
-      },
+      stores: () => Object.fromEntries(Object.entries(STORE_FLAGS).map(([name, flag]) => [name, MarketStore.readRecord(flag)])),
       saveStore: (name, data) => MarketStore[STORE_SETTERS[name]](data),
       saveVersion: (n) => game.settings.set(MODULE_ID, SETTINGS.SCHEMA_VERSION, n),
     };

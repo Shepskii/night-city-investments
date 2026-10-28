@@ -893,3 +893,7 @@ Crew Tools exposes `api.downtime` (`getState`, `use`, `startNextSession`), `api.
 
 - **One after-tick sequence** (`init/registerTickSequence.js`). What the active GM runs after a market tick used to hang off three `priceTick` listeners in the market, portfolio and broker registrars, all started at once and none awaited. It is now one list, run in order with each step awaited: IPO listings, automatic splits, dividends, fund distributions, gig headlines, orders (with alerts and withdrawals), the heat audit, notifications, statements. Each tick's sequence waits for the previous one, and a failing step is logged without stopping the rest. Corporate events come first so orders are worked against the listings and splits as they now stand.
 - **Dividend records are changed through `MarketStore.updateDividendRecords(fn)`**, which applies `fn` to a fresh read inside a queue. The dividend service used to write back, at the end of its check, a copy it had read at the start, which could erase a fund distribution recorded meanwhile; the fund's distribution was then announced again on the next tick. `phase5ExtrasFlow.test.mjs` covers the case.
+
+## 28. Market date, price paths and cleanups (unreleased)
+
+- **One-write saves.** GM records in the control journal and portfolios on actors are stored wrapped in a one-element array, which Foundry replaces rather than merges, so a save is a single write and removed keys cannot linger. Readers accept the old unwrapped form; `MarketStore.readRecord` and `PortfolioRepository.raw` are the readers the migrations use.

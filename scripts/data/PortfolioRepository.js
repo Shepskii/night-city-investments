@@ -12,13 +12,25 @@ import { MODULE_ID, FLAGS } from '../utils/constants.js';
 
 const clone = (v) => foundry.utils.deepClone(v);
 
+/**
+ * The portfolio is stored wrapped in a one-element array, so a save replaces it outright instead of
+ * being merged into the old one. An unwrapped portfolio is from before v0.9.7.
+ */
+const unwrap = (stored) => (Array.isArray(stored) ? stored[0] : stored);
+
 export const PortfolioRepository = {
   get(actor) {
-    return normalizePortfolio(clone(actor?.getFlag(MODULE_ID, FLAGS.PORTFOLIO) ?? null));
+    return normalizePortfolio(this.raw(actor));
+  },
+
+  /** The stored portfolio as it is, before normalising, or null. */
+  raw(actor) {
+    const stored = unwrap(actor?.getFlag(MODULE_ID, FLAGS.PORTFOLIO));
+    return stored ? clone(stored) : null;
   },
 
   hasPortfolio(actor) {
-    return !!actor?.getFlag(MODULE_ID, FLAGS.PORTFOLIO);
+    return !!unwrap(actor?.getFlag(MODULE_ID, FLAGS.PORTFOLIO));
   },
 
   /** Every request the player has submitted that the executor has not handled yet. */
@@ -33,7 +45,7 @@ export const PortfolioRepository = {
 
   /** GM executor only. */
   save(actor, portfolio) {
-    return actor.setFlag(MODULE_ID, FLAGS.PORTFOLIO, portfolio);
+    return actor.setFlag(MODULE_ID, FLAGS.PORTFOLIO, [portfolio]);
   },
 
   watchlist(actor) {

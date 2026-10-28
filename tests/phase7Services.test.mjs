@@ -131,16 +131,17 @@ test('on load the active GM brings old stored data up to date, once', async () =
   await initTools.runPhase('ready');
 
   assert.equal(S.Migration.version(), S.engine.latestSchemaVersion());
-  const saved = alice.flags[MOD].portfolio;
+  assert.ok(Array.isArray(alice.flags[MOD].portfolio), 'saved in the wrapped form');
+  const saved = alice.flags[MOD].portfolio[0];
   assert.equal(saved.cash, 700);
   assert.deepEqual([saved.unsettled, saved.heatAware, saved.brokerBans], [[], false, {}], 'new fields are written back');
   assert.equal(bob.flags[MOD]?.portfolio, undefined, 'a character with no portfolio is not given one');
-  assert.deepEqual(journal.flags[MOD].heat.windows, []);
-  assert.ok(Array.isArray(journal.flags[MOD].controls.glides));
+  assert.deepEqual(S.MarketStore.getHeat().windows, []);
+  assert.ok(Array.isArray(S.MarketStore.getControls().glides));
 
-  alice.flags[MOD].portfolio.cash = 701;
+  alice.flags[MOD].portfolio[0].cash = 701;
   const again = await S.Migration.run();
-  assert.deepEqual([again.ok, again.applied.length, alice.flags[MOD].portfolio.cash], [true, 0, 701], 'a second run does nothing');
+  assert.deepEqual([again.ok, again.applied.length, alice.flags[MOD].portfolio[0].cash], [true, 0, 701], 'a second run does nothing');
 });
 
 test('only the active GM migrates, and a failure leaves the version alone', async () => {

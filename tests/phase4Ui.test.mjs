@@ -326,7 +326,7 @@ test('IPO fields in the company editor, the GM list and the player terminal', as
   await settle();
   const key = await S.PortfolioClient.submit(alice, 'subscribeIpo', { assetId: 'NEWC', qty: 10 });
   await settle();
-  assert.equal(alice.getFlag('night-city-investments', 'portfolio').results.find((r) => r.key === key).ok, true);
+  assert.equal(S.PortfolioRepository.get(alice).results.find((r) => r.key === key).ok, true);
   terminal.tab = 'portfolio';
   const pf = text(render('templates/terminal/market.hbs', await terminal._prepareContext()));
   assert.ok(pf.includes('Subscribe 10 NEWC at 50.00 eb (IPO)') && pf.includes('Waiting for the listing'), 'the subscription shows in open orders');
