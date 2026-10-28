@@ -1,0 +1,1269 @@
+{
+  "NCI": {
+    "SceneControls": {
+      "OpenTerminal": "Market Terminal",
+      "OpenGMConsole": "Market GM Console"
+    },
+    "Terminal": {
+      "Title": "Night City Market",
+      "Index": "NC Index",
+      "Mood": "Market mood",
+      "Tick": "Tick",
+      "Day": "Day",
+      "Back": "Back to market",
+      "BackPortfolio": "Back to portfolio",
+      "OpenAsset": "Open the market page",
+      "Ticker": "Ticker",
+      "Company": "Company",
+      "Sector": "Sector",
+      "Price": "Price (eb)",
+      "Change": "Change",
+      "Bid": "Bid",
+      "Ask": "Ask",
+      "Trend": "30-day trend",
+      "High": "52-wk high",
+      "Low": "52-wk low",
+      "MarketCap": "Market cap",
+      "Volatility": "Volatility",
+      "Beta": "Beta",
+      "Dividend": "Dividend",
+      "HQ": "Headquarters",
+      "CEO": "CEO",
+      "Unlisted": "Unlisted",
+      "NoDividend": "No dividend",
+      "DividendFixed": "{amount} eb per share, {freq}",
+      "DividendYield": "{pct}% yield, {freq}",
+      "Days": "{n}d",
+      "WaitingForTick": "The market opens with the next tick.",
+      "EmptyGM": "No companies yet. Open the Market GM Console to import the starter corporations or create your own.",
+      "EmptyPlayer": "No companies are listed yet.",
+      "TabNews": "News",
+      "NoNews": "No headlines yet.",
+      "LastDividend": "last {amount} eb on {date}",
+      "CompanyNews": "Latest news",
+      "TabMarket": "Market",
+      "TabPortfolio": "Portfolio",
+      "Watch": "Watch"
+    },
+    "Portfolio": {
+      "Cash": "Brokerage balance",
+      "Reinvest": "Reinvest dividends",
+      "ReinvestHint": "Use dividends from this holding to buy more shares automatically.",
+      "On": "On",
+      "Off": "Off",
+      "Holdings": "Holdings",
+      "Total": "Total value",
+      "Unrealized": "Unrealised P&L",
+      "Realized": "Realised P&L",
+      "Settling": "Settling",
+      "SettlingLine": "Sale of {ticker}: {amount} eb",
+      "SettlesIn": "spendable in {n} day(s)",
+      "DividendsIncome": "Dividends received",
+      "Weight": "Share",
+      "Wallet": "In your wallet",
+      "Amount": "Amount (eb)",
+      "Deposit": "Deposit",
+      "Withdraw": "Withdraw",
+      "Positions": "Positions",
+      "Qty": "Shares",
+      "AvgCost": "Avg cost",
+      "Value": "Value",
+      "PnL": "P&L",
+      "NoPositions": "No holdings yet. Open a company on the Market tab to buy shares.",
+      "OpenOrders": "Open orders",
+      "NoOrders": "No open orders.",
+      "RecentOrders": "Recent orders",
+      "Ledger": "Account ledger",
+      "Cancel": "Cancel order",
+      "NextTick": "Executes next tick",
+      "EtaDays": "Due in {n} day(s)",
+      "Working": "Working",
+      "PendingRequests": "Requests waiting for the GM",
+      "NoGM": "No GM is online. Your requests are saved and will be handled when one connects."
+    },
+    "Trade": {
+      "Title": "Place order",
+      "Side": "Side",
+      "Quantity": "Shares",
+      "Type": "Order type",
+      "LimitPrice": "Limit / stop price",
+      "Expiry": "Expires",
+      "Held": "Held",
+      "Free": "free",
+      "EstCost": "Estimated cost",
+      "EstProceeds": "Estimated proceeds",
+      "Fees": "fees",
+      "Submit": "Send order",
+      "Route": "Trade through",
+      "SettleNote": "Sale proceeds take {n} day(s) to reach your balance. Until then they count towards your total value but cannot be spent or withdrawn.",
+      "BrokerNote": "Your broker fills this in about {days} day(s). Lower fees than a direct trade.",
+      "NoBroker": "You have no broker. Choose one on the Portfolio tab to trade this way.",
+      "DirectNote": "Fills immediately at the highest fees.",
+      "DirectLocked": "Direct trading needs a CorpNet terminal session. Connect from the Portfolio tab first.",
+      "Hint": "Market orders fill at the price when they execute, which may differ from the quote shown. Limit and stop orders need a price."
+    },
+    "Route": {
+      "broker": "Through my broker",
+      "brokerNamed": "Through {name} (broker)",
+      "direct": "Direct (terminal)"
+    },
+    "Grade": {
+      "rookie": "Rookie",
+      "competent": "Competent",
+      "seasoned": "Seasoned",
+      "expert": "Expert",
+      "elite": "Elite"
+    },
+    "FundKind": {
+      "index": "Index fund",
+      "sector": "Sector fund",
+      "themed": "Themed fund",
+      "managed": "Managed fund"
+    },
+    "Fund": {
+      "Title": "Funds",
+      "Name": "Fund",
+      "Kind": "Type",
+      "Nav": "Unit value",
+      "NavNote": "Unit value follows the companies the fund holds.",
+      "BrokerOnly": "Funds can only be bought and sold through a broker, and only at market.",
+      "Expense": "Annual expense ratio",
+      "MinBuy": "Minimum buy",
+      "Load": "Entry charge",
+      "Exit": "Exit charge",
+      "Rebalance": "Rebalancing",
+      "Income": "Income",
+      "Redemption": "Redemption",
+      "RedeemNone": "Paid at once",
+      "RedeemDays": "{n} day(s) after a sale",
+      "Alpha": "Manager's edge",
+      "PerYear": "a year",
+      "Holdings": "What it holds"
+    },
+    "FundRebalance": { "none": "Never", "monthly": "Monthly", "quarterly": "Quarterly" },
+    "FundDistribution": {
+      "accumulating": "Reinvested in the fund",
+      "distributing": "Paid out {freq}",
+      "Option": { "accumulating": "Accumulating (reinvested in the fund)", "distributing": "Distributing (paid out as cash)" }
+    },
+    "Alerts": {
+      "Title": "Price alerts",
+      "Hint": "Get told when a stock or fund passes a price, or moves a lot in one day. Alerts are checked after each market tick.",
+      "Value": "Value",
+      "ValueHint": "A price in eb, or for a daily move a percentage (0.5 to 50)",
+      "OnceLabel": "Once only",
+      "Add": "Add alert",
+      "Remove": "Remove alert",
+      "Waiting": "waiting to reset",
+      "None": "No alerts set.",
+      "Once": "once",
+      "Repeat": "repeating",
+      "Kind": { "above": "Rises above", "below": "Falls below", "move": "Moves by (%)" },
+      "Line": {
+        "above": "{ticker} rises above {price} eb",
+        "below": "{ticker} falls below {price} eb",
+        "move": "{ticker} moves {value}% or more in a day"
+      },
+      "Fired": {
+        "above": "{ticker} rose to {price} eb (alert: above {value})",
+        "below": "{ticker} fell to {price} eb (alert: below {value})",
+        "move": "{ticker} moved {pct} to {price} eb"
+      }
+    },
+    "Statement": {
+      "Request": "Send me a statement",
+      "Hint": "Mailed by your broker, or by the market wire if you have none. Turn on monthly statements under Notifications."
+    },
+    "FundEditor": {
+      "Title": "Fund",
+      "ExpensePct": "Annual expense ratio (%)",
+      "LoadBps": "Entry charge (basis points)",
+      "ExitBps": "Exit charge (basis points)",
+      "InitialNav": "Starting unit value (eb)",
+      "Rebalance": "Rebalance back to its starting mix",
+      "Distribution": "Dividend income",
+      "DistributionFrequency": "Pay out every",
+      "RedeemDelay": "Redemption delay (days)",
+      "DistributionHint": "An accumulating fund adds its holdings' dividends to its unit value. A distributing one sets them aside and pays holders cash each month or quarter (or reinvests it for those who switch reinvestment on). A redemption delay holds sellers' money for that many days after they sell.",
+      "AlphaPct": "Manager's edge (% a year)",
+      "RebalanceHint": "Rebalancing resets the holdings to the mix the fund had when it was created or last edited, so winners do not take over. The manager's edge adds (or, if negative, subtracts) that much a year on top of what the holdings earn. Use it for an actively managed fund.",
+      "Components": "Holdings",
+      "ComponentsHint": "One company per line: ticker and weight, for example ARA 30. Weights are shared out in proportion.",
+      "Unknown": "Not on this market: {list}"
+    },
+    "Access": {
+      "Title": "Trading access",
+      "BrokerTitle": "Your broker",
+      "NoBroker": "No broker",
+      "ChooseBroker": "Choose a broker to trade funds and to place cheaper, slower orders.",
+      "NoBrokersExist": "No brokers are available yet. Ask your GM.",
+      "Skill": "Accounting",
+      "NoSkillItem": "no Accounting skill on sheet",
+      "Fees": "Fees",
+      "Speed": "Speed",
+      "DaysUnit": "day(s)",
+      "Instant": "Instant",
+      "Stocks": "Stocks only, market or limit orders",
+      "FundEdge": "Fund entry and exit charges waived",
+      "LoadWaived": "(better with skill)",
+      "MailHint": "You can also mail your broker: BUY 10 ARA, SELL 5 MIL, WITHDRAW 5000, STATUS, CANCEL and an order reference.",
+      "WithdrawViaBroker": "Your broker handles withdrawals. They are slower and arrive as eddies by mail.",
+      "WithdrawDirect": "With no broker, withdrawals go straight to your wallet. A broker makes them slower but cheaper.",
+      "DirectTitle": "Direct trading",
+      "SessionOpen": "Terminal session open",
+      "Through": "through day",
+      "LockedOut": "Locked out until day",
+      "Connect": "Connect to the market terminal",
+      "GrantedByGM": "Your GM has granted you terminal access.",
+      "OnNetwork": "This device is on the CorpNet network.",
+      "NeedsCorpnet": "You need a terminal connected to the CorpNet network.",
+      "NeedTerminal": "You cannot connect. {reason}",
+      "OpenMode": "Direct trading is open to everyone. No terminal session is needed.",
+      "SourceGrant": "GM access",
+      "SourceNetwork": "CorpNet",
+      "PendingWithdrawals": "Withdrawals in progress",
+      "WithdrawalLine": "{amount} eb (broker fee {fee} eb)",
+      "WithdrawalDue": "Being paid",
+      "WithdrawalIn": "In about {n} day(s)"
+    },
+    "Check": {
+      "Title": "Market terminal: Accounting",
+      "Success": "Access granted",
+      "Failure": "Access denied",
+      "Versus": "against",
+      "Crit": { "success": "critical success", "fumble": "fumble" }
+    },
+    "Mail": {
+      "Days": { "one": "{n} day", "many": "{n} days" },
+      "Sign": {
+        "rookie": "Cheers, fingers crossed.",
+        "competent": "Regards.",
+        "seasoned": "Always a pleasure.",
+        "expert": "Handled, as ever.",
+        "elite": "Consider it done."
+      },
+      "Accepted": {
+        "Subject": "Order {ref} received",
+        "Line1": "I have your request: {side} {qty} {name} ({ticker}).",
+        "Line2": "Expect it to complete in about {days}.",
+        "Line3": "Reference {ref}. Mail CANCEL {ref} to withdraw it."
+      },
+      "Filled": {
+        "Subject": "Order {ref} filled",
+        "Line1": "Done: {side} {qty} {name} at {price} eb each.",
+        "Line2": "Fees {fees} eb. Net {total} eb.",
+        "TimingBetter": "I got you {bps} basis points better than the quoted value.",
+        "TimingWorse": "The timing went {bps} basis points against you.",
+        "Realized": "Realised result: {pnl} eb.",
+        "Settles": "The money reaches your balance in {days}."
+      },
+      "Rejected": {
+        "Subject": "Order {ref} rejected",
+        "Line1": "I could not do {side} {qty} {name}.",
+        "Line2": "{reason}"
+      },
+      "Expired": {
+        "Subject": "Order {ref} expired",
+        "Line1": "Your {side} {qty} {name} order lapsed unfilled."
+      },
+      "WithdrawalQueued": {
+        "Subject": "Withdrawal {ref} received",
+        "Line1": "I am pulling {amount} eb from your account. My fee is {fee} eb.",
+        "Line2": "Expect the money in about {days}. Reference {ref}."
+      },
+      "WithdrawalPaid": {
+        "Subject": "Your {amount} eb",
+        "Line1": "Here is your {amount} eb. Claim it from this message.",
+        "Line2": "My fee was {fee} eb."
+      },
+      "WithdrawalFailed": {
+        "Subject": "Withdrawal could not be paid",
+        "Line1": "I could not deliver your withdrawal. {amount} eb is back in your account."
+      },
+      "Cancelled": {
+        "Subject": "Cancelled: {ref}",
+        "order": "Order {ref} is cancelled.",
+        "withdrawal": "Withdrawal {ref} is cancelled and the money is back in your account."
+      },
+      "RejectedRequest": {
+        "Subject": "I could not do that",
+        "Line1": "{reason} {ticker}"
+      },
+      "Unrecognised": {
+        "Subject": "Not sure what you mean",
+        "Line1": "I did not follow that."
+      },
+      "Help": {
+        "Subject": "What I can do",
+        "Line1": "Mail me an order, one command per line.",
+        "Commands": "BUY 10 ARA / SELL 5 MIL / SELL ALL ARA / SELL 5 MIL @ 80 / WITHDRAW 5000 / STATUS / STATEMENT / CANCEL ref / HELP",
+        "Line2": "I work at my own pace, so allow a few days."
+      },
+      "NotClient": {
+        "Subject": "We do not work together",
+        "Line1": "You have not hired me. Choose a broker in your portfolio first."
+      },
+      "Status": {
+        "Subject": "Your account",
+        "Line1": "Balance {cash} eb, holdings {holdings} eb, {orders} open order(s).",
+        "Position": "{ticker}: {qty} units, {value} eb ({pnl})"
+      },
+      "Dividend": {
+        "Subject": "Dividend from {name}",
+        "Line1": "{name} paid {perShare} eb per share.",
+        "Line2": "You received {payout} eb."
+      },
+      "Digest": {
+        "Subject": "Your portfolio digest",
+        "Line1": "Holdings {holdings} eb, change {change} eb ({pct}).",
+        "Mover": "{ticker} {pct} ({delta} eb)"
+      },
+      "Movers": {
+        "Subject": "Big movers in your holdings",
+        "Line1": "These holdings moved {pct}% or more today:",
+        "Mover": "{ticker} {pct} to {price} eb ({delta} eb on your position)"
+      },
+      "Tip": {
+        "Subject": {
+          "1": "Word on the street: {name}",
+          "2": "A quiet word about {name}",
+          "3": "Something I heard about {ticker}",
+          "4": "Rumour: {name}"
+        },
+        "Up": {
+          "1": "I'm hearing good things behind the scenes at {name} ({ticker}). Something has gone their way, and it may not be in the price yet.",
+          "2": "There's a good story going round about {name}. Nothing official, but the people who know {ticker} are in a better mood than usual.",
+          "3": "A contact close to {name} sounded pleased with themselves this week. I'd keep an eye on {ticker}.",
+          "4": "Chatter on the desks says {name} has had a win it hasn't announced. {ticker} may not have caught up yet.",
+          "5": "Somebody who should know says {ticker} is on firmer ground than the price suggests.",
+          "6": "I've heard {name} did something right, and the market hasn't noticed. Not for long, I'd guess.",
+          "7": "The mood around {name} has turned. Quietly, and for the better. Worth knowing if you hold {ticker}.",
+          "8": "There's a smile going round the {ticker} crowd. I can't tell you why, only that it's a good one."
+        },
+        "Down": {
+          "1": "I'm hearing bad things behind the scenes at {name} ({ticker}). Something has gone wrong for them, and it may not be in the price yet.",
+          "2": "There's an ugly story going round about {name}. Nothing official, but the people who know {ticker} are quieter than usual.",
+          "3": "A contact close to {name} sounded rattled this week. I'd keep an eye on {ticker}.",
+          "4": "Chatter on the desks says {name} has had a setback it hasn't announced. {ticker} may not have caught up yet.",
+          "5": "Somebody who should know says {ticker} is on shakier ground than the price suggests.",
+          "6": "I've heard {name} got something badly wrong, and the market hasn't noticed. Not for long, I'd guess.",
+          "7": "The mood around {name} has turned. Quietly, and for the worse. Worth knowing if you hold {ticker}.",
+          "8": "There's a long face going round the {ticker} crowd. I can't tell you why, only that it's a bad one."
+        },
+        "Hedge": {
+          "1": "Rumours only, and I never said it. It can take a few days to show, if it shows at all.",
+          "2": "Take it with a pinch of salt. These things are right more often than they should be, and wrong just often enough to hurt.",
+          "3": "I can't prove any of it. Do what you like with it.",
+          "4": "It might be nothing. It might take a week to matter. Watch the price.",
+          "5": "You didn't hear this from me.",
+          "6": "Nothing is certain until it's in the price, and by then it's too late to care."
+        }
+      },
+      "Heat": {
+        "WarningSubject": {
+          "1": "A word of caution",
+          "2": "Between us",
+          "3": "You should know something",
+          "4": "A friendly warning"
+        },
+        "WarningLine": {
+          "1": "Some of your recent trades have lined up very neatly with news that came out afterwards. I am not accusing anyone, but people in my line of work notice that sort of thing.",
+          "2": "I have been hearing questions about the timing of certain trades, and some of them are yours.",
+          "3": "Your account has been looked at. Nothing official, but looked at, and I would rather you heard it from me.",
+          "4": "There is talk about how well your trades have been timed around corporate news. Talk like that has a way of becoming more than talk."
+        },
+        "WarningAdvice": {
+          "1": "If I were you I would trade less around company news for a while.",
+          "2": "Keep your head down for a bit and let it blow over.",
+          "3": "I would think hard before you do that again."
+        },
+        "EnquirySubject": {
+          "1": "Routine enquiry: recent trading activity",
+          "2": "NCPD Financial Crimes: a few questions"
+        },
+        "EnquiryLine": {
+          "1": "NCPD Financial Crimes is carrying out a routine review of trading activity around a number of recent corporate announcements. Your account has come up. No action is being taken at this time.",
+          "2": "This is a courtesy notice. Trades on your account have been flagged for review as part of an ordinary enquiry into the timing of trades around company news.",
+          "3": "Your recent trading has been selected for a routine compliance review. You are not required to respond, and no finding has been made."
+        },
+        "EnquiryAdvice": {
+          "1": "We would remind you that trading on information not available to the public is an offence.",
+          "2": "Further activity of this kind may result in a formal investigation."
+        },
+        "Fine": {
+          "Subject": "Notice of penalty",
+          "Line1": "Following a review of your trading around recent corporate announcements, a penalty of {amount} eb has been taken from your brokerage balance.",
+          "Short": "Your balance did not cover it. {amount} eb remains unpaid and has been noted against your name.",
+          "Line2": "This notice is final. Further activity of this kind will be referred for prosecution."
+        },
+        "Freeze": {
+          "Subject": "Account restriction",
+          "Line1": "Your brokerage account has been frozen for {days} while we complete a review of your trading. You cannot place orders or withdraw funds in that time. Open orders have been voided.",
+          "Line2": "You may still pay money in. The restriction will lift on its own."
+        },
+        "Dropped": {
+          "Subject": "Our arrangement",
+          "Line1": "Your broker can no longer act for you. Any orders still open through them have been cancelled.",
+          "Line2": "You are free to choose another broker, though this one will not take you back for some time."
+        }
+      },
+      "Alert": {
+        "Subject": "Price alert: {ticker}",
+        "Above": "{name} ({ticker}) has risen to {price} eb, past your alert price of {value} eb.",
+        "Below": "{name} ({ticker}) has fallen to {price} eb, past your alert price of {value} eb.",
+        "Move": "{name} ({ticker}) moved {pct} today, to {price} eb. You asked to hear about moves of {value}% or more."
+      },
+      "Statement": {
+        "Subject": "Brokerage statement, day {to}",
+        "Period": "Covers day {from} to day {to}.",
+        "PeriodAll": "Covers everything since the account opened, to day {to}.",
+        "Opening": "Opening value: {opening} eb.",
+        "Value": "Account value now: {total} eb ({cash} eb cash and {holdings} eb in holdings).",
+        "Settling": "Of that, {amount} eb is sale proceeds still settling.",
+        "Flows": "Paid in {deposits} eb and out {withdrawals} eb. Bought {bought} eb, sold {sold} eb, fees {fees} eb.",
+        "Income": "Dividends received: {dividends} eb ({reinvested} eb of it reinvested).",
+        "Performance": "Performance after deposits and withdrawals: {gain} eb ({pct}).",
+        "Realized": "Realised profit this period: {realized} eb. Unrealised on current holdings: {unrealized} eb.",
+        "OpenOrders": "Open orders: {n}.",
+        "NoPositions": "No holdings.",
+        "Position": "{ticker}: {qty} units at {price} eb, worth {value} eb ({weight} of holdings), {pnl} eb ({pnlpct})."
+      }
+    },
+    "Side": { "buy": "Buy", "sell": "Sell" },
+    "OrderType": { "market": "Market", "limit": "Limit", "stop": "Stop" },
+    "Expiry": { "day": "End of day", "gtc": "Good till cancelled" },
+    "OrderStatus": {
+      "open": "Open",
+      "filled": "Filled",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled",
+      "expired": "Expired"
+    },
+    "Ledger": {
+      "deposit": "Deposit",
+      "withdraw": "Withdrawal",
+      "buy": "Bought",
+      "sell": "Sold",
+      "fee": "Fee",
+      "dividend": "Dividend",
+      "drip": "Dividend reinvested",
+      "split": "Stock split",
+      "buyout": "Buyout payout",
+      "delist": "Delisting payout",
+      "writeoff": "Written off (bankrupt)",
+      "withdraw-refund": "Withdrawal returned"
+    },
+    "Reasons": {
+      "invalid-amount": "Enter a whole number of eb, 1 or more.",
+      "insufficient-wealth": "You do not have that much eb in your wallet.",
+      "below-fee": "The amount does not cover the fee.",
+      "insufficient-balance": "Your brokerage balance is too low.",
+      "invalid-side": "Choose buy or sell.",
+      "invalid-order": "That order type is not valid.",
+      "invalid-qty": "Enter a whole number of shares, 1 or more.",
+      "invalid-limit": "Enter a limit or stop price above zero.",
+      "unknown-asset": "That company is not listed.",
+      "halted": "Trading in that company is halted.",
+      "insufficient-funds": "Not enough uncommitted funds in your brokerage balance.",
+      "insufficient-shares": "You do not hold enough free shares.",
+      "not-found": "That order is no longer open.",
+      "unknown-request": "The request was not recognised.",
+      "below-minimum": "The order is below the minimum size.",
+      "buyout": "The company was bought out.",
+      "delist": "The company was delisted.",
+      "bankrupt": "The company went bankrupt.",
+      "invalid-route": "Choose a broker or a direct trade.",
+      "no-terminal-session": "Direct trading needs an open CorpNet terminal session.",
+      "no-broker": "You have no broker. Pick one on the Portfolio tab.",
+      "unknown-broker": "That broker is not available.",
+      "fund-needs-broker": "Funds can only be traded through a broker.",
+      "fund-market-only": "Funds only take market orders.",
+      "locked-out": "The terminal has locked you out after a failed attempt. Try again later.",
+      "no-terminal": "The terminal check could not be run. Ask the GM.",
+      "no-network": "This device is not connected to the CorpNet network.",
+      "not-authenticated": "You are connected to CorpNet but not signed in.",
+      "not-required": "Direct trading is open. No terminal session is needed.",
+      "unrecognised": "I did not understand that request.",
+      "ipo-closed": "That offer is not open for subscriptions.",
+      "ipo-already": "You have already subscribed. Cancel that subscription first to change it.",
+      "ipo-no-allocation": "The offer was oversubscribed and your share rounded to nothing.",
+      "invalid-alert": "Enter a price above zero, or for a daily move a percentage from 0.5 to 50.",
+      "alert-duplicate": "You already have that alert.",
+      "alert-already-met": "That price has already been reached. Choose one beyond the current price.",
+      "too-many-alerts": "You have too many alerts. Remove one first.",
+      "account-frozen": "Your account is frozen. It will lift by itself.",
+      "broker-refuses": "That broker will not take you on again just yet.",
+      "on-cooldown": "You tried that too recently. Give it a few days.",
+      "heat-off": "That is not available.",
+      "unknown-action": "That is not something you can do.",
+      "no-check": "No roll came with that request. Press the button again to roll.",
+      "no-roll": "No roll came with that request. Press Connect again to roll.",
+      "roll-missing": "The roll could not be found in chat. Roll again.",
+      "roll-mismatch": "That roll was not made by you for this check. Roll again.",
+      "roll-stale": "That roll is too old. Roll again.",
+      "roll-used": "That roll has already been used. Roll again.",
+      "roll-invalid": "That roll could not be read. Roll again.",
+      "roll-unverified": "That roll could not be confirmed. Try again."
+    },
+    "Notify": {
+      "Deposited": "Deposit complete: {amount}.",
+      "Withdrawn": "Withdrawal complete: {amount}.",
+      "OrderPlaced": "Order accepted.",
+      "OrderCancelled": "Order cancelled.",
+      "OrderFilled": "Filled: {order} at {price} eb.",
+      "OrderRejected": "Rejected: {order}. {reason}",
+      "OrderExpired": "Expired: {order}.",
+      "DripOn": "Dividend reinvestment switched on.",
+      "DripOff": "Dividend reinvestment switched off.",
+      "RequestFailed": "Request failed. {reason}",
+      "QueuedNoGM": "No GM is online. Your request is saved and will run when one connects.",
+      "BrokerSet": "Broker assigned.",
+      "BrokerCleared": "You no longer have a broker.",
+      "SessionAlready": "Your terminal session is already open.",
+      "SessionOpen": "Terminal session open. Accounting check {total} against DV {dv}.",
+      "SessionFailed": "Terminal check failed: {total} against DV {dv}. You are locked out for now.",
+      "OrderSentToBroker": "Order sent to your broker. Expect it in about {days}.",
+      "WithdrawalQueued": "Withdrawal of {amount} eb queued with your broker. Expect it in about {days}.",
+      "WithdrawalCancelled": "Withdrawal cancelled and returned to your balance.",
+      "IpoSubscribed": "Subscription received. {amount} is held until the company lists.",
+      "AlertSet": "Price alert set.",
+      "AlertRemoved": "Price alert removed.",
+      "StatementRequested": "Statement requested. It will arrive by mail.",
+      "Title": "Notifications",
+      "MoverPct": "Count a holding as a big mover at (% a day)",
+      "Hint": "Choose how you hear about market activity. Mail arrives in Night City Messenger. Withdrawals paid through a broker are always mailed, because they carry the money.",
+      "Category": {
+        "fills": "Order results",
+        "dividends": "Dividends",
+        "alerts": "Price alerts",
+        "statements": "Monthly statement",
+        "movers": "Big movers in your holdings",
+        "tips": "Rumours about companies you hold or watch",
+        "headlines": "Market headlines",
+        "digest": "Daily portfolio digest"
+      },
+      "Channel": { "mail": "Mail", "chat": "Chat", "off": "Off" }
+    },
+    "Mood": {
+      "risk-on": "Risk-on",
+      "steady": "Steady",
+      "risk-off": "Risk-off",
+      "panic": "Panic",
+      "rebounding": "Rebounding"
+    },
+    "Regime": {
+      "bull": "Bull",
+      "sideways": "Sideways",
+      "bear": "Bear",
+      "crash": "Crash",
+      "recovery": "Recovery"
+    },
+    "Sector": {
+      "security": "Security",
+      "arms": "Arms",
+      "biotech": "Biotech",
+      "tech": "Technology",
+      "energy": "Energy",
+      "finance": "Finance",
+      "transport": "Transport",
+      "media": "Media",
+      "health": "Healthcare",
+      "consumer": "Consumer",
+      "construction": "Construction",
+      "other": "Other"
+    },
+    "Vol": {
+      "1": "Very stable",
+      "2": "Stable",
+      "3": "Moderate",
+      "4": "Volatile",
+      "5": "Extremely volatile"
+    },
+    "Status": {
+      "active": "Active",
+      "halted": "Halted",
+      "delisted": "Delisted",
+      "bankrupt": "Bankrupt",
+      "acquired": "Acquired",
+      "closed": "Closed"
+    },
+    "Frequency": {
+      "monthly": "monthly",
+      "quarterly": "quarterly",
+      "annual": "annual"
+    },
+    "DividendPolicy": {
+      "none": "None",
+      "fixed": "Fixed per share",
+      "yield": "Yield on price"
+    },
+    "Errors": {
+      "NotActiveGM": "Only the active GM can run the market. Another GM is currently the active one.",
+      "gm-only": "Only a GM can do that.",
+      "name-required": "A company name is required.",
+      "ticker-invalid": "The ticker needs at least 2 letters or digits.",
+      "price-invalid": "The initial price must be at least 1 eb.",
+      "ticker-taken": "That ticker is already used by another company or fund.",
+      "components-invalid": "A fund needs at least one holding, written like ARA 30.",
+      "components-unknown": "Some holdings are not companies on this market.",
+      "not-active-gm": "Only the active GM can do that.",
+      "NoActor": "No character is available. Ask your GM to assign you a character.",
+      "OutboxFull": "You have too many requests waiting. Wait for the GM to process them."
+    },
+    "GMConsole": {
+      "Title": "Market GM Console",
+      "Clock": "Market clock",
+      "Date": "In-world date",
+      "TickMode": "Tick mode",
+      "GameDay": "Game day",
+      "PlayerMood": "Mood shown to players",
+      "TrueRegime": "True regime (GM only)",
+      "Advance1": "Advance 1 tick",
+      "Advance7": "Advance 7 ticks",
+      "Advance30": "Advance 30 ticks",
+      "AdvanceDay": "Advance 1 day",
+      "AdvanceDayHint": "Move game time on by one whole day in a single step. Delays, sentiment changes and heat windows count it as a day. In the in-world clock mode a tick is only a few minutes of one.",
+      "AdvanceCustom": "Advance",
+      "InvalidDays": "Enter a whole number of ticks, 1 or more.",
+      "Reset": "Reset market",
+      "ResetConfirm": "This erases all prices and history and starts every company again from its initial price. Player portfolios are not affected. Continue?",
+      "Companies": "Companies",
+      "NewCompany": "New company",
+      "ImportStarter": "Import starter corporations",
+      "ImportDone": "Starter import: {created} created, {skipped} already present.",
+      "Edit": "Edit",
+      "DeleteCompany": "Delete company",
+      "DeleteConfirm": "Delete {name}? Its journal is removed and the company leaves the market.",
+      "NoCompanies": "No companies yet.",
+      "ActionOk": "Done.",
+      "ActionFailed": "That did not work. Check the values and that you are the active GM.",
+      "Tab": {
+        "market": "Market", "events": "Events", "actions": "Corporate actions", "companies": "Companies",
+        "funds": "Funds", "brokers": "Brokers", "gigs": "Gigs", "heat": "Heat", "tools": "Tools"
+      },
+      "FundsHint": "Funds pool several companies into one tradable unit. Their value follows the companies' prices. Players can only trade them through a broker.",
+      "NewFund": "New fund",
+      "ImportFunds": "Import starter funds",
+      "CloseFund": "Close fund",
+      "CloseFundConfirm": "Close {name}? Every holder is paid the current value in cash and the fund is removed.",
+      "NoFunds": "No funds yet.",
+      "Holdings": "Holdings",
+      "Fees": "Fees",
+      "DirectTerms": "Direct trading",
+      "DirectTermsHint": "Direct trades fill at once and cost {commission} plus {flatFee} eb, from a CorpNet terminal after an Accounting check at DV {dv} (network: {network}). Brokers are always slower and cheaper. Change these in module settings.",
+      "Brokers": "Brokers",
+      "BrokersHint": "A broker's speed and fees come from their Accounting skill (INT plus level) on their character sheet. A contact with no sheet uses the rating set here.",
+      "BrokerFromActor": "Make broker from character",
+      "BrokerFromContact": "Make broker from contact",
+      "BrokerName": "Broker",
+      "MinWithdrawal": "Min. withdrawal",
+      "Disabled": "Disabled",
+      "ManualRating": "Accounting rating (INT + level)",
+      "ToggleBroker": "Enable or disable",
+      "RemoveBroker": "Remove broker",
+      "RemoveBrokerHint": "Remove this broker from the market. Their character and Night City Messenger contact are not changed. Only possible when no character is using them.",
+      "RemoveBrokerConfirm": "Remove {name} as a broker? Their character and Night City Messenger contact stay exactly as they are, and you can make them a broker again later.",
+      "RemoveBrokerRefused": {
+        "assigned": "Cannot remove this broker while characters use them: {names}. They must choose another broker first.",
+        "busy": "Cannot remove this broker yet: {names} still have orders or a withdrawal with them. Wait for those to finish.",
+        "unknown": "That broker is no longer there.",
+        "gm-only": "Only a GM can do that."
+      },
+      "BrokerRemoved": "{name} is no longer a broker.",
+      "BrokerInUse": "In use: {names}",
+      "NoBrokers": "No brokers yet. Make a character or contact a broker to let players hire them.",
+      "SkillSheet": "from sheet",
+      "SkillManual": "set by GM",
+      "TerminalGrants": "Terminal access",
+      "TerminalGrantsHint": "Characters on a CorpNet-connected device can open a trading session. Grant access here for a terminal that is not on the network.",
+      "GrantOn": "Granted",
+      "GrantOff": "Not granted",
+      "UndoTick": "Undo last tick",
+      "UndoHint": "Step the market back one tick. Not possible once a player's money has moved because of that tick, or after a split, price change or new company.",
+      "UndoDone": "The market is back at tick {tick}. Advancing again re-runs the tick, with the same random numbers unless you change the controls first.",
+      "Undo": {
+        "not-active-gm": "Only the active GM can undo a tick.",
+        "nothing-to-undo": "There is no tick to undo.",
+        "settled": "Players' money has already moved because of that tick (a fill, a dividend or a paid withdrawal), so it cannot be undone."
+      }
+    },
+    "Editor": {
+      "Title": "Company",
+      "Name": "Name",
+      "Ticker": "Ticker",
+      "Status": "Status",
+      "Aliases": "Aliases",
+      "AliasesHint": "Comma-separated. Other names this company goes by, such as the client name on a gig.",
+      "Market": "Market",
+      "InitialPrice": "Initial price (eb)",
+      "Shares": "Shares outstanding",
+      "Liquidity": "Liquidity (1 thin, 5 deep)",
+      "Listed": "Listed (visible to players)",
+      "Policy": "Policy",
+      "Frequency": "Frequency",
+      "PerShare": "Per share (eb)",
+      "Yield": "Annual yield (0 to 1)",
+      "PayoutDay": "Payout day (1-28)",
+      "Lore": "Description (shown to players)",
+      "SplitTitle": "Automatic stock split",
+      "SplitAuto": "Split automatically",
+      "SplitAbove": "When price reaches (eb)",
+      "SplitRatio": "Split ratio (N-for-1)",
+      "LoreHint": "Plain text. Blank lines start a new paragraph. Edit the journal itself for rich formatting.",
+      "Save": "Save",
+      "Description": "Description",
+      "Cancel": "Cancel",
+      "Saved": "{name} saved."
+    },
+    "News": {
+      "Dividend": "{name} declares a dividend of {amount} eb per share.",
+      "SpecialDividend": "{name} announces a special dividend of {amount} eb per share.",
+      "Split": "{name} announces a {ratio}-for-1 stock split.",
+      "Buyout": "{name} is acquired. Shareholders are paid {price} eb per share.",
+      "Delist": "{name} is delisted. Shareholders are paid {price} eb per share.",
+      "Bankrupt": "{name} files for bankruptcy. Shares are now worthless.",
+      "HaltAll": "Trading is halted across the market.",
+      "ResumeAll": "Trading resumes across the market.",
+      "FundClosed": "{name} is closed. Unit holders are paid {price} eb per unit.",
+      "FundDistribution": "{name} pays a distribution of {amount} eb per unit.",
+      "Ipo": "{name} ({ticker}) goes public today at {price} eb per share.",
+      "IpoOversubscribed": "The {name} offer was oversubscribed. Each subscription was filled at {pct}%."
+    },
+    "Controls": {
+      "WholeMarket": "Whole market",
+      "Sentiment": "Market sentiment",
+      "SentimentHint": "A bias nudges prices up or down each day for a while, in units of each stock's normal daily swing. Strength is -3 to 3. Try 0.5 for a gentle push.",
+      "Strength": "Strength (-3 to 3)",
+      "Days": "Days",
+      "Apply": "Apply",
+      "Pending": "starts at the next tick",
+      "DaysLeft": "days left",
+      "NoBiases": "No active sentiment changes.",
+      "Decay": { "flat": "Steady", "linear": "Fades out" },
+      "RegimeTitle": "Market regime",
+      "Force": "Force regime",
+      "Clear": "Clear",
+      "ForcedRegime": "{regime} forced for {n} more days.",
+      "VolatilityTitle": "Volatility and halt",
+      "HaltMarket": "Halt market",
+      "ResumeMarket": "Resume market",
+      "Halted": "halted",
+      "Resumed": "resumed",
+      "ShockTitle": "Queue a market event",
+      "ShockHint": "A one-off shock. The price eases toward the new level after the delay, then partly settles back. Use the percentage the price should move by.",
+      "Target": "Target",
+      "Percent": "Change (%)",
+      "DelayDays": "Delay (days)",
+      "PersistenceLabel": "How lasting",
+      "Persistence": { "temporary": "Temporary", "standard": "Standard", "lasting": "Lasting" },
+      "Headline": "Public headline (optional)",
+      "HeadlineHint": "Shown to players in the News tab",
+      "QueueShock": "Queue event",
+      "Queue": "Event queue",
+      "NoImpacts": "No queued events.",
+      "StartsIn": "starts in {n} days",
+      "Active": "active",
+      "NewsTitle": "Post a headline",
+      "NewsCompany": "About",
+      "Tone": "Tone",
+      "ToneNeutral": "Neutral",
+      "ToneUp": "Good news",
+      "ToneDown": "Bad news",
+      "Publish": "Publish",
+      "SetPriceTitle": "Set a price directly",
+      "SetPriceHint": "A blunt tool: the price changes at once and is logged. Moving fair value too stops the market pulling the price straight back.",
+      "MoveFair": "Move fair value too",
+      "SetPrice": "Set price",
+      "LogTitle": "Recent GM actions"
+    },
+    "Actions": {
+      "SpecialDividend": "Special dividend",
+      "SpecialDividendHint": "Pays every holder now, once. Shares bought today do not qualify.",
+      "Pay": "Pay dividend",
+      "Split": "Stock split",
+      "SplitHint": "An N-for-1 split: holders get N times the shares, the price divides by N, and cost per share adjusts. Charts stay continuous.",
+      "SplitConfirm": "Split {name} {ratio}-for-1? Every holder's shares and open orders are adjusted.",
+      "Ratio": "Ratio (N-for-1)",
+      "Buyout": "Buyout",
+      "BuyoutHint": "The company is acquired. Holders are paid in cash at this price and the stock is retired.",
+      "BuyoutConfirm": "Buy out {name} at {price} eb per share? Holders are paid and open orders are cancelled.",
+      "PricePerShare": "Price per share (eb)",
+      "EndTitle": "Delist or bankruptcy",
+      "EndHint": "Delisting pays holders the last price. Bankruptcy pays nothing and records the loss.",
+      "Delist": "Delist",
+      "DelistConfirm": "Delist {name}? Holders are paid its last price in cash.",
+      "Bankrupt": "Bankrupt",
+      "BankruptConfirm": "Declare {name} bankrupt? Every holder loses their position with no payout."
+    },
+    "Gig": {
+      "Title": "Gig outcomes",
+      "Intro": "When a gig is completed or failed in Night City Map, the bridge sends the result here. The client is matched to a company and its share price reacts after a short delay: a success helps a little, a failure hurts more, and a bigger reward moves it further.",
+      "BridgeMissing": "The Night City Map bridge module is not active, so gigs will not arrive by themselves. You can still report an outcome by hand below.",
+      "ApprovalOn": "Impacts wait for your approval. Change this in module settings.",
+      "ApprovalOff": "Impacts are applied automatically once the client is matched.",
+      "Source": "Gig",
+      "NeedsMapping": "Needs a company",
+      "NeedsMappingHint": "These clients could not be matched to a company. Pick one, or ignore the client. The choice is remembered for later gigs from the same client.",
+      "NoMapping": "Nothing is waiting for a company.",
+      "Review": "Waiting for approval",
+      "ReviewHint": "Change the size, the delay or the headline if you like, then approve. The headline is published when the price starts to move.",
+      "NoReview": "Nothing is waiting for approval.",
+      "Mappings": "Client mappings",
+      "MappingsHint": "A saved mapping always wins over name matching. You can also tag a gig's notes with [NCI: ARA] to name its company, or [NCI: ignore] to skip it.",
+      "NoMappings": "No saved mappings.",
+      "AddMapping": "Save mapping",
+      "ClientName": "Client name",
+      "Company": "Company",
+      "ChooseCompany": "Choose a company...",
+      "Ignore": "Ignore this client",
+      "Remember": "Remember for this client",
+      "Approve": "Approve",
+      "Discard": "Discard",
+      "Map": "Map",
+      "Percent": "Move (%)",
+      "Delay": "Shows after (days)",
+      "HeadlineLabel": "Headline",
+      "HeadlineHint": "Leave blank for no headline",
+      "ReportTitle": "Report an outcome by hand",
+      "ReportHint": "For gigs that were not run through the map. Leave the company blank to find it from the client name.",
+      "Client": "Client",
+      "OutcomeLabel": "Outcome",
+      "Reward": "Reward (eb)",
+      "AnyCompany": "Find from the client name",
+      "Report": "Report",
+      "History": "Recent gig outcomes",
+      "NoHistory": "No gig outcomes yet.",
+      "ClearHistory": "Clear history",
+      "Possible": "Could be: {names}",
+      "Outcome": {
+        "done": "Completed",
+        "failed": "Failed"
+      },
+      "Status": {
+        "applied": "Applied",
+        "discarded": "Discarded",
+        "ignored": "Ignored"
+      },
+      "Reason": {
+        "approval": "Approval is switched on",
+        "fuzzy": "Close spelling only: check it is the right company",
+        "mention": "The company is named in the gig text, not as the client",
+        "ambiguous": "Matches more than one company",
+        "unmatched": "No company found",
+        "mapping": "Ignored by your mapping",
+        "tag": "Skipped by a tag in the gig notes",
+        "not-tradable": "That company is not trading"
+      },
+      "How": {
+        "tag": "tagged in the gig notes",
+        "mapping": "your saved mapping",
+        "exact": "exact name",
+        "contains": "name inside the client text",
+        "fuzzy": "close spelling",
+        "mention": "named in the gig text"
+      },
+      "Notice": {
+        "Review": "A gig {outcome} for {client} ({name}) is waiting for your approval in the Gigs tab.",
+        "Mapping": "A gig for \"{client}\" needs a company. Open the Gigs tab to choose one."
+      },
+      "Result": {
+        "applied": "Impact queued. It shows in about {days} day(s).",
+        "pending": "Waiting for your approval.",
+        "unmatched": "The client was not recognised. Pick a company for it.",
+        "ignored": "Ignored.",
+        "duplicate": "That outcome was already handled.",
+        "disabled": "Gig outcomes are switched off in settings.",
+        "invalid": "Enter an outcome and a client or company.",
+        "not-gm": "Only the active GM can do that.",
+        "failed": "That did not work."
+      },
+      "Headline": {
+        "done": {
+          "mild": {
+            "1": "{name} shares edge up on talk of a quiet win.",
+            "2": "{name} ticks higher as traders note a good run.",
+            "3": "Steady buying in {name} after a smooth stretch.",
+            "4": "{name} gains modestly as sentiment improves.",
+            "5": "Small but steady demand lifts {name}.",
+            "6": "Traders nudge {name} higher on encouraging chatter.",
+            "7": "{name} firms up after a calm, productive spell.",
+            "8": "A little more confidence in {name} today."
+          },
+          "strong": {
+            "1": "{name} jumps as the market warms to its recent run.",
+            "2": "Strong demand lifts {name} after a very good spell.",
+            "3": "{name} rallies, with traders pointing to a clear win.",
+            "4": "{name} surges on word of a standout result.",
+            "5": "Buyers pile into {name} after a very strong spell.",
+            "6": "{name} leaps as the street reconsiders its prospects.",
+            "7": "A burst of optimism sends {name} climbing.",
+            "8": "{name} takes off, and the desks are scrambling to keep up."
+          }
+        },
+        "failed": {
+          "mild": {
+            "1": "{name} slips amid whispers of a setback.",
+            "2": "{name} drifts lower as traders weigh a rough patch.",
+            "3": "Light selling in {name} after a messy stretch.",
+            "4": "{name} softens as sentiment cools.",
+            "5": "A little selling pressure on {name} after an awkward stretch.",
+            "6": "Traders trim {name} on unflattering chatter.",
+            "7": "{name} eases back after an uneven spell.",
+            "8": "A shade less confidence in {name} today."
+          },
+          "strong": {
+            "1": "{name} falls sharply as bad news spreads.",
+            "2": "Heavy selling hits {name} after a damaging spell.",
+            "3": "{name} sinks as the market punishes a clear failure.",
+            "4": "{name} tumbles on word of a serious misstep.",
+            "5": "Sellers pile out of {name} after a damaging spell.",
+            "6": "{name} lurches lower as the street reconsiders its prospects.",
+            "7": "A wave of pessimism sends {name} sliding.",
+            "8": "{name} drops hard, and the desks are scrambling to keep up."
+          }
+        }
+      }
+    },
+    "Heat": {
+      "Title": "Insider-trading heat",
+      "Intro": "A gig outcome is private until its price effect starts to show. A character who buys the client before good news, or sells before bad news, in that gap draws heat. Heat is hidden from players, runs from 0 to 100, and halves about every week.",
+      "Off": "Heat tracking is switched off in module settings, so nothing is being recorded.",
+      "PhaseNote": "Players are warned as heat builds: a nervous word from their broker, then a routine enquiry from NCPD Financial Crimes. At the top a penalty is chosen: a fine, a frozen account, or a broker who walks away. Anything that costs a player something waits here for you, unless you turn approval off in settings.",
+      "Characters": "Characters",
+      "Character": "Character",
+      "Level": "Heat",
+      "TierLabel": "Tier",
+      "Latest": "Latest",
+      "NoCharacters": "Nobody has any heat.",
+      "LastGain": "{gain} on {company}, {date}",
+      "LastAction": "{gain} from {what}, {date}",
+      "CoverHalved": "cover cut {gain}",
+      "ActionName": { "mask": "masking trades", "books": "cooking the books", "front": "a front company", "bribe": "a bribe", "gm": "the GM" },
+      "SetHeat": "Set",
+      "ClearHeat": "Clear",
+      "SetHeatHint": "Set this character's heat directly. Zero clears it.",
+      "Covered": "Cover for {n} more day(s)",
+      "Penalties": "Penalties",
+      "PenaltiesHint": "What an investigation found. Change the amount or length if you like, then approve; dismiss to let it go. Approving carries it out at once and tells the player.",
+      "NoPenalties": "Nothing has been proposed.",
+      "Approve": "Approve",
+      "Dismiss": "Dismiss",
+      "FineAmount": "Fine (eb)",
+      "FreezeDays": "Days frozen",
+      "BanDays": "Days it will not take them back",
+      "Status": { "pending": "Waiting for you", "applied": "Carried out", "dismissed": "Dismissed" },
+      "Penalty": {
+        "fine": "Fine of {amount} eb",
+        "freeze": "Account frozen for {days} day(s)",
+        "dropBroker": "Their broker walks away, and will not take them back for {days} days"
+      },
+      "PenaltyDone": {
+        "fine": "Took {paid} eb{short}",
+        "freeze": "Frozen until day {until}",
+        "dropBroker": "Broker dropped them",
+        "dropBrokerNone": "They had no broker"
+      },
+      "ShortBy": ", {amount} eb short",
+      "PenaltyLine": "{kind} (heat {heat}, {date})",
+      "Result": { "ok": "Done.", "unknown": "That is no longer waiting.", "invalid": "Check the number.", "not-gm": "Only the active GM can do that." },
+      "Notice": { "Pending": "An investigation into {name} has found something. It is waiting for your approval in the Heat tab." },
+      "Windows": "Watch windows",
+      "WindowsHint": "Open from the moment a gig outcome is reported until its effect shows on the price. Trades placed inside are checked once it closes and any orders placed in it have filled.",
+      "NoWindows": "No open windows.",
+      "Tipped": "Sent a rumour",
+      "ClosesIn": "closes in {n} day(s)",
+      "AwaitingFills": "closed, waiting for orders to fill",
+      "Audits": "Recent audits",
+      "AuditClean": "Nobody traded suspiciously.",
+      "NoAudits": "No audits yet.",
+      "Trade": "{side}, {gross} eb, {route}, {knowledge}: +{gain}",
+      "Direction": { "up": "Good news coming", "down": "Bad news coming" },
+      "Knowledge": { "general": "no inside knowledge", "tipped": "followed a rumour", "runner": "ran the gig" },
+      "Tier": { "quiet": "Quiet", "noticed": "Noticed", "flagged": "Flagged", "investigated": "Investigated" },
+      "TierHint": {
+        "quiet": "0-24. Nothing to see.",
+        "noticed": "25-49. Their broker sends a nervous warning.",
+        "flagged": "50-74. NCPD sends an enquiry, and broker orders are a day slower and cost half as much again.",
+        "investigated": "75 and up. A penalty is chosen: a fine, a frozen account, or a broker who walks away."
+      },
+      "Panel": {
+        "Title": "Cover your tracks",
+        "Intro": "People have noticed how you trade. You can try to make it go away, but each try takes a skill roll and costs money whether it works or not, and cannot be repeated for a while. A bribe that is refused makes things worse.",
+        "Skill": "{skill} {total} against DV {dv}",
+        "Cost": "{cost} eb",
+        "Ready": "Ready",
+        "ReadyIn": "Ready in {n} day(s)",
+        "Try": "Try",
+        "TooPoor": "Not enough in your account",
+        "Frozen": "Your account is frozen until day {until}. You cannot trade or withdraw until then, but you can still pay money in.",
+        "BrokerBan": "Your old broker will not take you back until day {until}."
+      },
+      "Action": {
+        "CheckTitle": "Cover your tracks: {action}",
+        "Result": {
+          "critical": "{action}: a perfect job. The trail goes cold. ({total} against DV {dv}; {cost} spent.)",
+          "success": "{action}: it works. Things should quiet down. ({total} against DV {dv}; {cost} spent.)",
+          "failure": "{action}: it does not take. Nothing changes. ({total} against DV {dv}; {cost} spent.)",
+          "fumble": "{action}: it goes badly, and people will have noticed. ({total} against DV {dv}; {cost} spent.)"
+        },
+        "mask": { "Name": "Mask the pattern", "Desc": "Run offsetting trades so the pattern is harder to read. Cheap, and you can do it often, but it only takes a little off." },
+        "books": { "Name": "Cook the books", "Desc": "Make the paperwork tell a different story. A solid reduction for a modest price." },
+        "front": { "Name": "Front company", "Desc": "Route your trades through a front. Takes a little off now, and halves the heat from any new audit for a week." },
+        "bribe": { "Name": "Pay someone off", "Desc": "Put eddies in the right pocket. Takes the most off, but it is dear, hard to pull off, and a refusal gets talked about." }
+      }
+    },
+    "Tools": {
+      "Title": "Tools",
+      "Schema": "Stored data is on schema v{version}.",
+      "CheckTitle": "Self-check",
+      "CheckHint": "Looks over companies, funds, the market, portfolios and the Night City Messenger link for anything broken or odd. Nothing is changed.",
+      "RunCheck": "Run self-check",
+      "NoReport": "Not run yet.",
+      "MacrosTitle": "Macros",
+      "MacrosHint": "Creates macros for opening the terminal and console, advancing the market a day and running the self-check. Foundry only lets Trusted players and above run script macros, so players can also use the button in the scene controls. Macros that already exist are left alone.",
+      "CreateMacros": "Create macros",
+      "MacrosDone": "Macros: {created} created, {skipped} already there.",
+      "SuggestTitle": "Companies to consider",
+      "SuggestHint": "Organisations named on Night City Messenger contacts and on gigs that are not companies on this market yet. Create one to open the company editor with the name filled in, or ignore it (gigs for an ignored client move no price).",
+      "NoSuggestions": "Nothing to suggest.",
+      "Seen": "{count} mention(s) from {from}",
+      "From": { "contact": "contacts", "gig": "gigs" },
+      "Create": "Create",
+      "Ignore": "Ignore",
+      "TradeLogTitle": "Recent trades",
+      "TradeLogHint": "The latest fills across every portfolio. Each portfolio only keeps its last 40 closed orders, so older ones drop off.",
+      "NoTrades": "No trades yet.",
+      "Who": "Character",
+      "Day": "Day",
+      "Side": "Side",
+      "Qty": "Qty",
+      "Gross": "Value",
+      "Fees": "Fees"
+    },
+    "Verify": {
+      "Check": {
+        "schema": "Stored data version",
+        "ncm": "Night City Messenger mail",
+        "wire": "Market Wire contact",
+        "seed": "World seed",
+        "control": "GM control journal",
+        "companies": "Companies",
+        "market": "Market state",
+        "funds": "Funds",
+        "brokers": "Brokers",
+        "portfolios": "Portfolios",
+        "holdings": "Holdings and open orders",
+        "heat": "Insider-trading heat"
+      },
+      "Level": { "ok": "OK", "info": "Note", "warn": "Warning", "fail": "Problem" },
+      "SummaryOk": "Self-check passed.",
+      "SummaryWarn": "Self-check found {warn} warning(s). See the Tools tab or the console.",
+      "SummaryFail": "Self-check found {fail} problem(s) and {warn} warning(s). See the Tools tab or the console."
+    },
+    "Clock": {
+      "RolledBack": "The calendar went back, so the market went back with it, to tick {tick}. Ticking resumes as the date moves forward again.",
+      "RolledBackAhead": "The calendar went back. The market rolled back {n} tick(s) but could go no further, so it is still {ahead} day(s) ahead of the calendar and will wait for the date to catch up.",
+      "Ahead": "The calendar went back, but the market could not be rolled back (the ticks were too old, or players' money has moved). It is {ahead} day(s) ahead and will wait for the date to catch up."
+    },
+    "Migration": {
+      "Failed": "Night City Investments could not update its stored data to schema v{version}. See the console. Nothing has been lost."
+    },
+    "Macros": {
+      "terminal": "NCI: Open Market Terminal",
+      "console": "NCI: Open Market GM Console",
+      "advance": "NCI: Advance Market One Tick",
+      "check": "NCI: Self-check"
+    },
+    "Keybindings": {
+      "OpenTerminal": "Open the Market Terminal",
+      "OpenTerminalHint": "Not bound by default. Choose a key to open the market from anywhere.",
+      "OpenConsole": "Open the Market GM Console",
+      "OpenConsoleHint": "GM only. Not bound by default."
+    },
+    "Voice": {
+      "Label": "Voice",
+      "Hint": "Brokers with a character sheet write in the voice of the Personality on it. Others use the standard wording.",
+      "standard": "Standard",
+      "shy": "Shy and secretive",
+      "rebellious": "Rebellious and antisocial",
+      "arrogant": "Arrogant and aloof",
+      "moody": "Moody and rash",
+      "picky": "Picky and nervous",
+      "stable": "Stable and serious",
+      "silly": "Silly and fluff-headed",
+      "sneaky": "Sneaky and deceptive",
+      "intellectual": "Intellectual and detached",
+      "friendly": "Friendly and outgoing"
+    },
+    "Log": {
+      "bias": "Sentiment {value} on {target} for {days} days",
+      "regime": "Forced {regime} for {days} days",
+      "volatility": "Volatility set to x{value}",
+      "halt": "Market {halted}",
+      "shock": "Event queued on {target}: {percent}%",
+      "setPrice": "{company} price set from {from} to {to}",
+      "glide": "{company} glide scripted from {from} to {to} over {days} days",
+      "gig": "Gig outcome on {company}: {percent}%, showing in {days} day(s)",
+      "undo": "Undid tick {from}; the market is back at tick {to}"
+    },
+    "Preview": {
+      "Button": "Preview",
+      "Title": "Preview: {title} ({days} days ahead)",
+      "WithChange": "with this change",
+      "Without": "without it",
+      "Dismiss": "Close preview",
+      "SummarySingle": "Typical result (median): {median}, against {base} without it. Nine times in ten it lands between {low} and {high}. In {higher}% of {paths} simulated futures it ends higher than it would have without the change.",
+      "SummaryGroup": "The average of the companies affected: {median} (median), against {base} without it. Nine times in ten between {low} and {high}. Higher than without the change in {higher}% of {paths} futures.",
+      "Note": "The shaded bands are the middle 80% of simulated futures. They use their own random numbers, so this shows what is likely, not what will happen.",
+      "Reason": {
+        "not-active-gm": "Only the active GM can run a preview.",
+        "no-market": "The market has not started yet.",
+        "no-targets": "That target has no companies in it.",
+        "glide-too-steep": "That glide asks for too big a move per day. Give it more days or a closer target."
+      }
+    },
+    "Glide": {
+      "Title": "Scripted glide",
+      "Hint": "Steer one company toward a target price over a number of days, landing on it exactly on the last day. Noise is how much of the usual day-to-day movement is kept on the way. Fair value follows, so the price does not snap back afterwards.",
+      "Target": "Target price (eb)",
+      "Noise": "Noise on the way",
+      "NoiseLevel": { "low": "Smooth", "medium": "Natural", "high": "Wild" },
+      "Start": "Start glide",
+      "Started": "Glide scheduled. It starts on the next tick.",
+      "None": "No glides running.",
+      "Line": "{company} to {target} eb",
+      "StartsIn": "starts next tick, runs {days} days",
+      "Left": "{n} day(s) left after today"
+    },
+    "Ipo": {
+      "Title": "Upcoming IPOs",
+      "Lists": "Lists",
+      "OfferPrice": "Offer price",
+      "Status": "Status",
+      "Subscribe": "Subscribe",
+      "SubscribeTitle": "Subscribe: {ticker}",
+      "SubscribeHint": "Shares are offered at {price} eb each. Your money is held, not spent, until the company lists. If the offer is oversubscribed you may receive fewer shares.",
+      "Shares": "Shares",
+      "WindowOpen": "Subscriptions open, lists in {n} day(s)",
+      "ListingToday": "Lists today",
+      "OpensIn": "Subscriptions open in {n} day(s)",
+      "ListsOn": "Lists {date}",
+      "Capped": "{n} shares on offer",
+      "YouAsked": "you asked for {qty}",
+      "OrderText": "Subscribe {qty} {ticker} at {price} eb (IPO)",
+      "AwaitingListing": "Waiting for the listing",
+      "Offer": "IPO",
+      "ListNow": "List now",
+      "ListNowConfirm": "List {name} on the market now and fill every subscription?",
+      "EditorTitle": "IPO",
+      "EditorHint": "To launch a company later, untick Listed above and set a date. It lists on that in-world date. Leave the date empty for no IPO.",
+      "Date": "Listing date (YYYY-MM-DD)",
+      "WindowDays": "Subscription window (days before)",
+      "Allocation": "Shares for players (0 = no limit)"
+    },
+    "Ticker": { "Index": "NC", "Open": "Open the Market Terminal" },
+    "Settings": {
+      "SettlementDays": {
+        "Name": "Sale settlement delay (days)",
+        "Hint": "How long the proceeds of a sale take to become spendable. 0 is at once. While settling they count towards a portfolio's value but cannot be spent or withdrawn."
+      },
+      "ShowTicker": {
+        "Name": "Show the market ticker strip",
+        "Hint": "A small strip at the top of the screen with the NC index and either the companies you have starred (up to four) or, if you have none, the day's biggest movers. Click it to open the Market Terminal. This setting is only for you."
+      },
+      "TickMode": {
+        "Name": "Market tick mode",
+        "Hint": "How the market advances. In-world clock: one tick every set number of minutes of Simple Calendar time (below). If the calendar jumps forward the market catches up a game day at a time; if it goes back, the market just takes the new date. In-world day: one tick per day the calendar moves forward, and the market rolls back if the date is rolled back. Manual: only when the GM advances it.",
+        "WorldTime": "In-world day",
+        "RealTime": "In-world clock, every few minutes (recommended)",
+        "Manual": "Manual only"
+      },
+      "RealTimeMinutes": {
+        "Name": "Tick interval (in-world minutes)",
+        "Hint": "Only used when the tick mode is the in-world clock. One tick for every this many minutes of Simple Calendar time (24 hours of 60 minutes), however fast the clock runs. Anything that lasts days (a gig's delay, a sentiment change, a heat window, a broker's speed) is counted in game days, so this only sets how finely prices move."
+      },
+      "GigImpactApproval": {
+        "Name": "GM approves gig impacts",
+        "Hint": "When on, market impacts from Night City Map gig outcomes wait for GM approval in the Gigs tab. When off they are applied automatically (a client that needs mapping, or only a close match, still waits)."
+      },
+      "GigImpacts": {
+        "Name": "Gig outcomes move the market",
+        "Hint": "Needs the Night City Map bridge module. When off, completed and failed gigs are ignored."
+      },
+      "GigImpactScale": {
+        "Name": "Gig impact strength",
+        "Hint": "Scales every gig impact. 1 is normal: a 1,000 eb job moves its client by about 1.5%, and a failure by more."
+      },
+      "HeatEnabled": {
+        "Name": "Track insider-trading heat",
+        "Hint": "Watch for trades on a gig's client in the gap before its effect shows on the price, and record a hidden heat score for each character (see the Heat tab). What the heat does to players is set by the next two settings."
+      },
+      "HeatConsequences": {
+        "Name": "Warn and penalise suspicious trading",
+        "Hint": "When on, rising heat has consequences: a warning from the player's broker, an enquiry from NCPD, slower and dearer broker orders while flagged, and at the top a penalty. It also lets warned players try to cover their tracks. When off, heat is only recorded."
+      },
+      "HeatPenaltyApproval": {
+        "Name": "GM approves penalties",
+        "Hint": "When on (the default), a fine, account freeze or dropped broker waits in the Heat tab for you to approve, change or dismiss. When off, penalties are carried out as soon as they are found. Warnings and enquiries are always sent."
+      },
+      "HeatStrength": {
+        "Name": "Heat strength",
+        "Hint": "Scales how much heat each suspicious trade adds. 1 is normal: a medium trade (about 3,000 eb) is worth around 14 heat, two or three of them reach the first warning bracket, and larger trades draw more."
+      },
+      "GigTips": {
+        "Name": "Mail rumours before a gig shows in the price",
+        "Hint": "Players who hold or watch the client and have turned on \"Rumours\" get a vague mail from their broker before the effect lands."
+      },
+      "BrokerOrderMode": {
+        "Name": "Broker order handling",
+        "Hint": "Auto: orders mailed to a broker are processed automatically after the broker's delay. Manual: each order waits in the GM queue.",
+        "Auto": "Automatic",
+        "Manual": "GM approves each order"
+      },
+      "DepositFee": {
+        "Name": "Deposit fee (eb)",
+        "Hint": "Flat fee charged when a player deposits funds into their brokerage balance."
+      },
+      "DirectExecution": {
+        "Name": "Direct order execution",
+        "Hint": "Only used when direct trading access is Open: when a player trades directly, fill at the next market tick or immediately at the current quote.",
+        "NextTick": "Next market tick",
+        "Instant": "Immediately"
+      },
+      "DirectCommission": {
+        "Name": "Direct trading commission (basis points)",
+        "Hint": "Commission on direct terminal trades, the most expensive way to trade. 100 basis points is 1%. Broker fees are always a share of this, set by the broker's Accounting skill."
+      },
+      "DirectMode": {
+        "Name": "Direct trading access",
+        "Hint": "Terminal: direct trades need a CorpNet terminal and a passed Accounting check. Open: anyone can trade directly with no check (the older behaviour).",
+        "Terminal": "CorpNet terminal and Accounting check",
+        "Open": "Open to everyone"
+      },
+      "DirectFlatFee": {
+        "Name": "Direct trading flat fee (eb)",
+        "Hint": "Charged on every direct trade. Brokers charge a lower share of this."
+      },
+      "CorpnetDV": {
+        "Name": "Terminal check DV",
+        "Hint": "The Accounting check a character must beat (INT + Accounting + 1d10) to open a direct trading session."
+      },
+      "CorpnetNetwork": {
+        "Name": "Terminal network",
+        "Hint": "The Night City Messenger network a device must be connected to for direct trading. Use the network's id, for example CORPNET."
+      },
+      "SessionTicks": {
+        "Name": "Session length (market days)",
+        "Hint": "How many market days a passed check keeps direct trading open."
+      },
+      "LockoutTicks": {
+        "Name": "Lockout after a failed check (market days)",
+        "Hint": "How long a character is locked out after failing the check. A fumble doubles it."
+      },
+      "DebugMode": {
+        "Name": "Debug logging",
+        "Hint": "Write extra diagnostics to the browser console."
+      }
+    }
+  }
+}

@@ -1,0 +1,219 @@
+/* Night City Investments: dark Cyberpunk RED theme (black with red accents) */
+
+.nci-app,
+.nci-ticker {
+  /* Accent reds. Change these to re-theme the whole module. */
+  --nci-accent: #c8102e;
+  --nci-accent-bright: #ff2a44;
+  --nci-accent-dim: #5c121c;
+  --nci-accent-bg: #1a0a0d;
+  --nci-label: #d9606e;
+
+  /* Meaning, not decoration: gains, losses and cautions keep their own colours. */
+  --nci-up: #3ddc84;
+  --nci-down: #ff6a4d;
+  --nci-warn: #ffb347;
+}
+
+.nci-app {
+  max-height: 95vh;
+}
+
+/* The optional market ticker strip (a client setting). */
+.nci-ticker {
+  position: fixed;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  max-width: 70vw;
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 3px 12px;
+  background: rgba(11, 8, 9, 0.88);
+  border: 1px solid var(--nci-accent-dim);
+  border-bottom: 2px solid var(--nci-accent);
+  border-radius: 3px;
+  color: #d8d8d8;
+  font-family: monospace;
+  font-size: 12px;
+  cursor: pointer;
+}
+.nci-ticker:hover { border-color: var(--nci-accent-bright); }
+.nci-ticker .nci-up { color: var(--nci-up); }
+.nci-ticker .nci-down { color: var(--nci-down); }
+.nci-ticker .nci-flat { color: #888; }
+.nci-ticker .nci-tk-index { color: #fff; font-weight: bold; }
+.nci-ticker .nci-tk-watched::before { content: "\2605\00a0"; color: var(--nci-accent-bright); }
+
+.nci-app .window-content {
+  background: #0b0809;
+  color: #d8d8d8;
+  font-family: monospace;
+  min-height: 0;
+  padding: 10px 16px 14px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--nci-accent-dim) #0b0809;
+}
+
+/* Content keeps its natural height, so the window scrolls instead of squashing it. */
+.nci-app .window-content > * {
+  flex-shrink: 0;
+}
+
+.nci-app .nci-panel {
+  padding: 12px 16px;
+}
+
+.nci-app h2 {
+  color: var(--nci-accent-bright);
+  border-bottom: 1px solid var(--nci-accent-dim);
+}
+
+.nci-app .nci-muted {
+  color: #777;
+  font-size: 11px;
+}
+
+.nci-up { color: var(--nci-up); }
+.nci-down { color: var(--nci-down); }
+.nci-flat { color: #888; }
+
+.nci-app .nci-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--nci-accent-dim);
+  margin-bottom: 8px;
+}
+
+.nci-app table { width: 100%; border-collapse: collapse; }
+.nci-app th { text-align: left; color: var(--nci-label); font-weight: normal; border-bottom: 1px solid var(--nci-accent-dim); padding: 4px 6px; }
+.nci-app td { padding: 4px 6px; border-bottom: 1px solid #1a1415; }
+.nci-app .num { text-align: right; font-variant-numeric: tabular-nums; }
+.nci-app tr.nci-row { cursor: pointer; }
+.nci-app tr.nci-row:hover { background: var(--nci-accent-bg); }
+
+.nci-app .nci-badge {
+  font-size: 10px;
+  color: var(--nci-warn);
+  border: 1px solid var(--nci-warn);
+  border-radius: 3px;
+  padding: 0 4px;
+  margin-left: 4px;
+}
+
+.nci-app .nci-empty { padding: 24px; color: #888; text-align: center; }
+.nci-app .nci-warn { color: var(--nci-warn); }
+
+.nci-app button {
+  background: var(--nci-accent-bg) !important;
+  color: #d8d8d8 !important;
+  border: 1px solid var(--nci-accent-dim);
+  cursor: pointer;
+  width: auto;
+  height: auto;
+  line-height: 1.4;
+  padding: 2px 10px;
+}
+.nci-app button:hover { border-color: var(--nci-accent-bright); color: #fff !important; }
+.nci-app button.active { border-color: var(--nci-accent-bright); background: var(--nci-accent-dim) !important; color: #fff !important; }
+.nci-app button.nci-danger { border-color: var(--nci-accent); }
+.nci-app button.nci-danger:hover { background: var(--nci-accent) !important; border-color: var(--nci-accent-bright); color: #fff !important; }
+.nci-app button.nci-dim { opacity: 0.55; }
+
+/* Other UI themes stretch inputs and enlarge headings; keep the layout compact. */
+.nci-app h2 { font-size: 18px; margin: 6px 0; }
+.nci-app h3 { font-size: 14px; }
+.nci-app input[type="number"], .nci-app input[type="text"], .nci-app select, .nci-app textarea {
+  height: auto;
+  min-height: 24px;
+  background: #120e0f !important;
+  color: #d8d8d8 !important;
+  border: 1px solid var(--nci-accent-dim);
+}
+.nci-app input:focus, .nci-app select:focus, .nci-app textarea:focus {
+  outline: none;
+  border-color: var(--nci-accent-bright);
+  box-shadow: 0 0 4px rgba(255, 42, 68, 0.45);
+}
+.nci-app .nci-actions input, .nci-app .nci-actions select, .nci-app .nci-cashbox input { width: auto !important; flex: 0 0 auto; max-width: 240px; }
+.nci-app .nci-actions input.nci-days { width: 72px !important; }
+.nci-app .nci-tabs select.nci-actor { width: auto; flex: 0 0 auto; }
+
+.nci-app .nci-quote { display: flex; align-items: baseline; gap: 14px; margin: 6px 0; }
+.nci-app .nci-price { font-size: 24px; color: #fff; }
+.nci-app .nci-ranges { display: flex; align-items: center; gap: 6px; margin: 8px 0; }
+.nci-app .nci-ranges button { width: auto; padding: 0 10px; }
+.nci-app .nci-chartbox { background: #0e0b0c; border: 1px solid #231a1c; padding: 4px; margin-bottom: 8px; }
+.nci-app .nci-chartbox svg { width: 100%; height: auto; display: block; }
+.nci-app .nci-stats th { width: 18%; }
+.nci-app .nci-lore { margin-top: 10px; padding: 8px 10px; border-left: 2px solid var(--nci-accent); color: #bbb; }
+
+.nci-app .nci-star { color: #ffcc33; font-size: 10px; }
+
+.nci-app .nci-tabs { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+.nci-app .nci-tabs button { width: auto; padding: 0 12px; }
+.nci-app .nci-actor { margin-left: auto; max-width: 220px; }
+
+.nci-app .nci-summary { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 6px 0 10px; }
+.nci-app .nci-summary div { display: flex; flex-direction: column; }
+.nci-app .nci-summary span { color: var(--nci-label); font-size: 11px; }
+.nci-app .nci-summary strong { font-size: 16px; }
+.nci-app .nci-cashbox { display: flex; gap: 8px; align-items: center; padding: 8px; border: 1px solid var(--nci-accent-dim); margin-bottom: 8px; }
+.nci-app .nci-cashbox input { width: 130px; }
+.nci-app .nci-cashbox button { width: auto; padding: 0 12px; }
+.nci-app .nci-portfolio h3 { color: var(--nci-label); margin: 14px 0 4px; border: none; }
+.nci-app .nci-estimate { color: var(--nci-accent-bright); min-height: 1.4em; }
+
+.nci-app .nci-news { list-style: none; margin: 4px 0; padding: 0; }
+.nci-app .nci-news li { padding: 4px 2px; border-bottom: 1px solid #1a1415; }
+.nci-app .nci-subhead { color: var(--nci-label); margin: 14px 0 4px; border: none; }
+.nci-app .nci-console h3 { color: var(--nci-label); margin: 4px 0; border: none; }
+.nci-app .nci-console .nci-hint { color: #777; font-size: 11px; margin: 0 0 6px; }
+.nci-app .nci-console .nci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-bottom: 8px; }
+.nci-app .nci-console label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--nci-label); }
+.nci-app .nci-console label.wide { grid-column: 1 / -1; }
+.nci-app .nci-console label.nci-check { flex-direction: row; align-items: center; gap: 6px; }
+
+.nci-app .nci-block { margin-bottom: 16px; }
+.nci-app .nci-heatbar { display: inline-block; width: 90px; height: 8px; background: #1a1415; border: 1px solid var(--nci-accent-dim); vertical-align: middle; }
+.nci-app .nci-heatfill { display: block; height: 100%; background: var(--nci-up); }
+.nci-app .nci-heatfill.nci-heat-noticed { background: var(--nci-warn, #ffb347); }
+.nci-app .nci-heatfill.nci-heat-flagged { background: var(--nci-down); }
+.nci-app .nci-heatfill.nci-heat-investigated { background: var(--nci-accent-bright); }
+.nci-app .nci-gig { border: 1px solid var(--nci-accent-dim); border-left: 3px solid var(--nci-accent); padding: 6px 10px; margin: 6px 0; background: var(--nci-accent-bg); }
+.nci-app .nci-gigtop { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.nci-app .nci-kv { display: grid; grid-template-columns: max-content 1fr; gap: 2px 16px; margin-bottom: 8px; }
+.nci-app .nci-kv span { color: var(--nci-label); }
+.nci-app .nci-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; }
+.nci-app .nci-actions button { width: auto; padding: 0 10px; }
+.nci-app .nci-days { width: 64px; }
+.nci-app .nci-rowbtns { white-space: nowrap; text-align: right; }
+.nci-app .nci-rowbtns button { width: 26px; padding: 0; }
+
+.nci-app .nci-editor label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--nci-label); }
+.nci-app .nci-editor .nci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-bottom: 8px; }
+.nci-app .nci-editor .wide { grid-column: 1 / -1; margin-bottom: 8px; }
+.nci-app .nci-editor .nci-check { flex-direction: row; align-items: center; gap: 6px; }
+.nci-app .nci-editor fieldset { border: 1px solid var(--nci-accent-dim); margin-bottom: 8px; }
+.nci-app .nci-editor legend { color: var(--nci-accent-bright); }
+.nci-app .nci-editor .nci-hint { color: #777; font-size: 10px; }
+.nci-app .nci-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.nci-app .nci-footer button { width: auto; padding: 0 14px; }
+
+/* Trading access cards on the Portfolio tab. */
+.nci-app .nci-access { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+.nci-app .nci-access-card { border: 1px solid var(--nci-accent-dim); border-left: 3px solid var(--nci-accent); padding: 8px 10px; background: #0e0a0b; }
+.nci-app .nci-terms { margin: 6px 0; padding-left: 16px; }
+.nci-app .nci-hint { color: #777; font-size: 11px; }
+.nci-app .nci-notify { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+.nci-app .nci-notify label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--nci-label); }

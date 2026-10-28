@@ -1,0 +1,310 @@
+/**
+ * Module settings
+ * @file scripts/core/SettingsManager.js
+ */
+
+import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
+
+const notifyMarketUpdated = () => Hooks.callAll(HOOKS.MARKET_UPDATED);
+
+export function registerSettings() {
+  const s = game.settings;
+
+  s.register(MODULE_ID, SETTINGS.TICK_MODE, {
+    name: 'NCI.Settings.TickMode.Name',
+    hint: 'NCI.Settings.TickMode.Hint',
+    scope: 'world',
+    config: true,
+    type: String,
+    default: 'realTime',
+    choices: {
+      realTime: 'NCI.Settings.TickMode.RealTime',
+      worldTime: 'NCI.Settings.TickMode.WorldTime',
+      manual: 'NCI.Settings.TickMode.Manual',
+    },
+  });
+
+  s.register(MODULE_ID, SETTINGS.REAL_TIME_MINUTES, {
+    name: 'NCI.Settings.RealTimeMinutes.Name',
+    hint: 'NCI.Settings.RealTimeMinutes.Hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 10,
+    range: { min: 1, max: 240, step: 1 },
+  });
+
+  s.register(MODULE_ID, SETTINGS.GIG_IMPACTS, {
+    name: 'NCI.Settings.GigImpacts.Name',
+    hint: 'NCI.Settings.GigImpacts.Hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
+  s.register(MODULE_ID, SETTINGS.GIG_IMPACT_APPROVAL, {
+    name: 'NCI.Settings.GigImpactApproval.Name',
+    hint: 'NCI.Settings.GigImpactApproval.Hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
+  s.register(MODULE_ID, SETTINGS.GIG_IMPACT_SCALE, {
+    name: 'NCI.Settings.GigImpactScale.Name',
+    hint: 'NCI.Settings.GigImpactScale.Hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 1,
+    range: { min: 0.25, max: 3, step: 0.25 },
+  });
+
+  s.register(MODULE_ID, SETTINGS.HEAT_ENABLED, {
+    name: 'NCI.Settings.HeatEnabled.Name',
+    hint: 'NCI.Settings.HeatEnabled.Hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+
+  s.register(MODULE_ID, SETTINGS.HEAT_STRENGTH, {
+    name: 'NCI.Settings.HeatStrength.Name',
+    hint: 'NCI.Settings.HeatStrength.Hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 1,
+    range: { min: 0.25, max: 3, step: 0.25 },
+  });
+
+  s.register(MODULE_ID, SETTINGS.HEAT_CONSEQUENCES, {
+    name: 'NCI.Settings.HeatConsequences.Name',
+    hint: 'NCI.Settings.HeatConsequences.Hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
+  s.register(MODULE_ID, SETTINGS.HEAT_PENALTY_APPROVAL, {
+    name: 'NCI.Settings.HeatPenaltyApproval.Name',
+    hint: 'NCI.Settings.HeatPenaltyApproval.Hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
+  s.register(MODULE_ID, SETTINGS.GIG_TIPS, {
+    name: 'NCI.Settings.GigTips.Name',
+    hint: 'NCI.Settings.GigTips.Hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+
+  s.register(MODULE_ID, SETTINGS.BROKER_ORDER_MODE, {
+    name: 'NCI.Settings.BrokerOrderMode.Name',
+    hint: 'NCI.Settings.BrokerOrderMode.Hint',
+    scope: 'world',
+    config: true,
+    type: String,
+    default: 'auto',
+    choices: {
+      auto: 'NCI.Settings.BrokerOrderMode.Auto',
+      manual: 'NCI.Settings.BrokerOrderMode.Manual',
+    },
+  });
+
+  s.register(MODULE_ID, SETTINGS.DEPOSIT_FEE, {
+    name: 'NCI.Settings.DepositFee.Name',
+    hint: 'NCI.Settings.DepositFee.Hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 0,
+  });
+
+  s.register(MODULE_ID, SETTINGS.DIRECT_MODE, {
+    name: 'NCI.Settings.DirectMode.Name',
+    hint: 'NCI.Settings.DirectMode.Hint',
+    scope: 'world',
+    config: true,
+    type: String,
+    default: 'terminal',
+    choices: {
+      terminal: 'NCI.Settings.DirectMode.Terminal',
+      open: 'NCI.Settings.DirectMode.Open',
+    },
+  });
+
+  s.register(MODULE_ID, SETTINGS.DIRECT_EXECUTION, {
+    name: 'NCI.Settings.DirectExecution.Name',
+    hint: 'NCI.Settings.DirectExecution.Hint',
+    scope: 'world',
+    config: true,
+    type: String,
+    default: 'nextTick',
+    choices: {
+      nextTick: 'NCI.Settings.DirectExecution.NextTick',
+      instant: 'NCI.Settings.DirectExecution.Instant',
+    },
+  });
+
+  s.register(MODULE_ID, SETTINGS.DIRECT_COMMISSION_BPS, {
+    name: 'NCI.Settings.DirectCommission.Name',
+    hint: 'NCI.Settings.DirectCommission.Hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 200,
+    range: { min: 25, max: 500, step: 5 },
+  });
+
+  s.register(MODULE_ID, SETTINGS.DIRECT_FLAT_FEE, {
+    name: 'NCI.Settings.DirectFlatFee.Name',
+    hint: 'NCI.Settings.DirectFlatFee.Hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 5,
+  });
+
+  s.register(MODULE_ID, SETTINGS.CORPNET_DV, {
+    name: 'NCI.Settings.CorpnetDV.Name',
+    hint: 'NCI.Settings.CorpnetDV.Hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 13,
+    range: { min: 5, max: 30, step: 1 },
+  });
+
+  s.register(MODULE_ID, SETTINGS.CORPNET_NETWORK, {
+    name: 'NCI.Settings.CorpnetNetwork.Name',
+    hint: 'NCI.Settings.CorpnetNetwork.Hint',
+    scope: 'world',
+    config: true,
+    type: String,
+    default: 'CORPNET',
+  });
+
+  s.register(MODULE_ID, SETTINGS.SESSION_TICKS, {
+    name: 'NCI.Settings.SessionTicks.Name',
+    hint: 'NCI.Settings.SessionTicks.Hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 1,
+    range: { min: 1, max: 14, step: 1 },
+  });
+
+  s.register(MODULE_ID, SETTINGS.LOCKOUT_TICKS, {
+    name: 'NCI.Settings.LockoutTicks.Name',
+    hint: 'NCI.Settings.LockoutTicks.Hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 1,
+    range: { min: 1, max: 14, step: 1 },
+  });
+
+  s.register(MODULE_ID, SETTINGS.SETTLEMENT_DAYS, {
+    name: 'NCI.Settings.SettlementDays.Name',
+    hint: 'NCI.Settings.SettlementDays.Hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 0,
+    range: { min: 0, max: 5, step: 1 },
+  });
+
+  s.register(MODULE_ID, SETTINGS.SHOW_TICKER, {
+    name: 'NCI.Settings.ShowTicker.Name',
+    hint: 'NCI.Settings.ShowTicker.Hint',
+    scope: 'client',
+    config: true,
+    type: Boolean,
+    default: false,
+    onChange: notifyMarketUpdated,
+  });
+
+  // GM-managed data, kept out of the settings screen.
+  s.register(MODULE_ID, SETTINGS.BROKER_DEFS, {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {},
+    onChange: notifyMarketUpdated,
+  });
+
+  s.register(MODULE_ID, SETTINGS.FUND_DEFS, {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {},
+    onChange: notifyMarketUpdated,
+  });
+
+  s.register(MODULE_ID, SETTINGS.SCHEMA_VERSION, {
+    scope: 'world',
+    config: false,
+    type: Number,
+    default: 1,
+  });
+
+  s.register(MODULE_ID, SETTINGS.WORLD_SEED, {
+    scope: 'world',
+    config: false,
+    type: String,
+    default: '',
+  });
+
+  // Public market data. Players read these; only the active GM writes them.
+  s.register(MODULE_ID, SETTINGS.MARKET_STATE, {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {},
+    onChange: notifyMarketUpdated,
+  });
+
+  s.register(MODULE_ID, SETTINGS.MARKET_HISTORY, {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {},
+    onChange: notifyMarketUpdated,
+  });
+
+  // Public headlines, and the record of the last dividend declared for each company.
+  s.register(MODULE_ID, SETTINGS.NEWS_FEED, {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {},
+    onChange: notifyMarketUpdated,
+  });
+
+  s.register(MODULE_ID, SETTINGS.DIVIDEND_RECORDS, {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {},
+    onChange: notifyMarketUpdated,
+  });
+
+  s.register(MODULE_ID, SETTINGS.DEBUG_MODE, {
+    name: 'NCI.Settings.DebugMode.Name',
+    hint: 'NCI.Settings.DebugMode.Hint',
+    scope: 'client',
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+}

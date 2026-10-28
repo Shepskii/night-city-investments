@@ -1,0 +1,43 @@
+/**
+ * Engine public surface (pure; no Foundry globals).
+ * @file scripts/engine/index.js
+ */
+
+export * from './rng.js';
+export * from './config.js';
+export * from './marketModel.js';
+export * from './impactKernel.js';
+export * from './quotes.js';
+export * from './orderEngine.js';
+export * from './cash.js';
+export * from './dividends.js';
+export * from './fundNav.js';
+export * from './orderParser.js';
+export * from './companyConfig.js';
+export * from './history.js';
+export * from './clock.js';
+export * from './stateSplit.js';
+export * from './portfolioModel.js';
+export * from './executor.js';
+export * from './brokerTerms.js';
+export * from './checks.js';
+export * from './funds.js';
+export * from './withdrawals.js';
+export * from './brokerMail.js';
+export * from './notifyPrefs.js';
+export * from './corporateActions.js';
+export * from './marketControls.js';
+export * from './preview.js';
+export * from './ipo.js';
+export * from './alerts.js';
+export * from './statements.js';
+export * from './gigImpact.js';
+export * from './brokerVoice.js';
+export * from './heat.js';
+export * from './heatPenalty.js';
+export * from './heatActions.js';
+export * from './newsFeed.js';
+export * from './migrations.js';
+export * from './tradeLog.js';
+export * from './suggest.js';
+export * from './verify.js';

@@ -1,0 +1,42 @@
+<div class="nci-editor nci-trade">
+  <h3>{{ticker}} <span class="nci-muted">{{name}}</span></h3>
+  <p class="nci-muted">{{actorName}}</p>
+
+  <div class="nci-kv">
+    <span>{{#if isFund}}{{localize "NCI.Fund.Nav"}}{{else}}{{localize "NCI.Terminal.Price"}}{{/if}}</span><strong>{{price}}</strong>
+    {{#unless isFund}}<span>{{localize "NCI.Terminal.Bid"}} / {{localize "NCI.Terminal.Ask"}}</span><strong>{{bidText}} / {{askText}}</strong>{{/unless}}
+    <span>{{localize "NCI.Portfolio.Cash"}}</span><strong>{{cash}} eb</strong>
+    <span>{{localize "NCI.Trade.Held"}}</span><strong>{{held}} ({{available}} {{localize "NCI.Trade.Free"}})</strong>
+  </div>
+
+  <div class="nci-grid">
+    <label>{{localize "NCI.Trade.Route"}}
+      <select name="route">{{selectOptions routeOptions selected=route}}</select>
+    </label>
+    <label>{{localize "NCI.Trade.Side"}}
+      <select name="side">{{selectOptions sides selected=side}}</select>
+    </label>
+    <label>{{localize "NCI.Trade.Quantity"}}
+      <input type="number" name="qty" value="1" min="1" step="1">
+    </label>
+    <label>{{localize "NCI.Trade.Type"}}
+      <select name="orderType">{{selectOptions orderTypes selected="market"}}</select>
+    </label>
+    <label>{{localize "NCI.Trade.LimitPrice"}}
+      <input type="number" name="limit" value="" min="0" step="0.01">
+    </label>
+    <label>{{localize "NCI.Trade.Expiry"}}
+      <select name="expiry">{{selectOptions expiries selected="day"}}</select>
+    </label>
+  </div>
+
+  {{#each routeNotes}}<p class="nci-hint" data-route-note="{{key}}">{{note}}</p>{{/each}}
+  {{#if settleNote}}<p class="nci-hint">{{settleNote}}</p>{{/if}}
+  <p class="nci-estimate">—</p>
+  <p class="nci-hint">{{localize "NCI.Trade.Hint"}}</p>
+
+  <footer class="nci-footer">
+    <button type="submit"><i class="fas fa-paper-plane"></i> {{localize "NCI.Trade.Submit"}}</button>
+    <button type="button" data-action="cancel">{{localize "NCI.Editor.Cancel"}}</button>
+  </footer>
+</div>

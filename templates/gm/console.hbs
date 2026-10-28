@@ -1,0 +1,659 @@
+{{#*inline "previewBlock"}}
+  {{#if p}}
+  <div class="nci-preview">
+    <h4>{{p.title}}</h4>
+    <div class="nci-chartbox">{{{p.chart}}}</div>
+    <p class="nci-hint"><span class="nci-up">&#9644;</span> {{localize "NCI.Preview.WithChange"}} &nbsp; <span class="nci-muted">&#9644;</span> {{localize "NCI.Preview.Without"}}</p>
+    <p>{{p.summary}}</p>
+    <p class="nci-hint">{{localize "NCI.Preview.Note"}}</p>
+  </div>
+  {{/if}}
+{{/inline}}
+<section class="nci-console">
+  <nav class="nci-tabs">
+    {{#each tabs}}
+    <button type="button" data-action="switchTab" data-tab="{{id}}" class="{{#if active}}active{{/if}}">{{label}}</button>
+    {{/each}}
+  </nav>
+
+  {{#unless activeGM}}<p class="nci-warn">{{localize "NCI.Errors.NotActiveGM"}}</p>{{/unless}}
+
+  {{#if isMarket}}
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.GMConsole.Clock"}}</h3>
+    <div class="nci-kv">
+      <span>{{localize "NCI.GMConsole.Date"}}</span><strong>{{date}}</strong>
+      <span>{{localize "NCI.GMConsole.TickMode"}}</span><strong>{{mode}}</strong>
+      <span>{{localize "NCI.Terminal.Tick"}}</span><strong>{{tick}}</strong>
+      <span>{{localize "NCI.GMConsole.GameDay"}}</span><strong>{{gameDay}}</strong>
+      <span>{{localize "NCI.GMConsole.PlayerMood"}}</span><strong>{{mood}}</strong>
+      <span>{{localize "NCI.GMConsole.TrueRegime"}}</span><strong>{{regime}}</strong>
+    </div>
+    <div class="nci-actions">
+      <button type="button" data-action="advance" data-days="1">{{localize "NCI.GMConsole.Advance1"}}</button>
+      <button type="button" data-action="advance" data-days="7">{{localize "NCI.GMConsole.Advance7"}}</button>
+      <button type="button" data-action="advance" data-days="30">{{localize "NCI.GMConsole.Advance30"}}</button>
+      <button type="button" data-action="advanceDay" data-days="1" title="{{localize 'NCI.GMConsole.AdvanceDayHint'}}"><i class="fas fa-forward"></i> {{localize "NCI.GMConsole.AdvanceDay"}}</button>
+      <input type="number" name="customDays" min="1" max="365" value="14" class="nci-days">
+      <button type="button" data-action="advanceCustom">{{localize "NCI.GMConsole.AdvanceCustom"}}</button>
+      <button type="button" data-action="undoTick" title="{{localize 'NCI.GMConsole.UndoHint'}}" {{#unless canUndo}}class="nci-dim"{{/unless}}><i class="fas fa-rotate-left"></i> {{localize "NCI.GMConsole.UndoTick"}}</button>
+      <button type="button" data-action="resetMarket" class="nci-danger">{{localize "NCI.GMConsole.Reset"}}</button>
+    </div>
+  </div>
+
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Controls.Sentiment"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Controls.SentimentHint"}}</p>
+    <div class="nci-actions">
+      <select name="biasTarget">{{#each targets}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+      <input type="number" name="biasValue" min="-3" max="3" step="0.25" value="0.5" class="nci-days" title="{{localize 'NCI.Controls.Strength'}}">
+      <input type="number" name="biasDays" min="1" max="365" value="10" class="nci-days" title="{{localize 'NCI.Controls.Days'}}">
+      <select name="biasDecay">
+        <option value="flat">{{localize "NCI.Controls.Decay.flat"}}</option>
+        <option value="linear">{{localize "NCI.Controls.Decay.linear"}}</option>
+      </select>
+      <button type="button" data-action="addBias"><i class="fas fa-plus"></i> {{localize "NCI.Controls.Apply"}}</button>
+      <button type="button" data-action="previewBias" class="{{#if previewBias}}active{{/if}}">{{#if previewBias}}<i class="fas fa-xmark"></i> {{localize "NCI.Preview.Dismiss"}}{{else}}<i class="fas fa-chart-area"></i> {{localize "NCI.Preview.Button"}}{{/if}}</button>
+    </div>
+    {{> previewBlock p=previewBias}}
+    {{#if biases.length}}
+    <table class="nci-market"><tbody>
+      {{#each biases}}
+      <tr>
+        <td>{{label}}{{#if pending}} <span class="nci-badge">{{localize "NCI.Controls.Pending"}}</span>{{/if}}</td>
+        <td class="nci-muted">{{decay}} &middot; {{left}} {{localize "NCI.Controls.DaysLeft"}}</td>
+        <td class="nci-rowbtns"><button type="button" data-action="removeBias" data-id="{{id}}"><i class="fas fa-xmark"></i></button></td>
+      </tr>
+      {{/each}}
+    </tbody></table>
+    {{else}}<p class="nci-empty">{{localize "NCI.Controls.NoBiases"}}</p>{{/if}}
+  </div>
+
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Controls.RegimeTitle"}}</h3>
+    <div class="nci-actions">
+      <select name="regime">{{#each regimes}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+      <input type="number" name="regimeDays" min="1" max="365" value="5" class="nci-days" title="{{localize 'NCI.Controls.Days'}}">
+      <button type="button" data-action="forceRegime">{{localize "NCI.Controls.Force"}}</button>
+      {{#if forcedRegime}}<button type="button" data-action="clearRegime">{{localize "NCI.Controls.Clear"}}</button>{{/if}}
+    </div>
+    {{#if forcedRegime}}<p class="nci-warn">{{forcedRegime}}</p>{{/if}}
+  </div>
+
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Controls.VolatilityTitle"}}</h3>
+    <div class="nci-actions">
+      <input type="number" name="volMult" min="0.25" max="4" step="0.25" value="{{volMult}}" class="nci-days">
+      <button type="button" data-action="setVolatility">{{localize "NCI.Controls.Apply"}}</button>
+      <button type="button" data-action="toggleHalt" data-halted="{{haltAll}}" class="{{#if haltAll}}active{{/if}} nci-danger">
+        {{#if haltAll}}{{localize "NCI.Controls.ResumeMarket"}}{{else}}{{localize "NCI.Controls.HaltMarket"}}{{/if}}
+      </button>
+    </div>
+  </div>
+  {{/if}}
+
+  {{#if isEvents}}
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Controls.ShockTitle"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Controls.ShockHint"}}</p>
+    <div class="nci-grid">
+      <label>{{localize "NCI.Controls.Target"}}<select name="shockTarget">{{#each targets}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+      <label>{{localize "NCI.Controls.Percent"}}<input type="number" name="shockPercent" step="0.5" value="5"></label>
+      <label>{{localize "NCI.Controls.DelayDays"}}<input type="number" name="shockDelay" min="0" max="60" value="1"></label>
+      <label>{{localize "NCI.Controls.PersistenceLabel"}}<select name="shockPersistence">{{#each persistences}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+      <label class="wide">{{localize "NCI.Controls.Headline"}}<input type="text" name="shockHeadline" placeholder="{{localize 'NCI.Controls.HeadlineHint'}}"></label>
+    </div>
+    <div class="nci-actions">
+      <button type="button" data-action="addShock"><i class="fas fa-bolt"></i> {{localize "NCI.Controls.QueueShock"}}</button>
+      <button type="button" data-action="previewShock" class="{{#if previewShock}}active{{/if}}">{{#if previewShock}}<i class="fas fa-xmark"></i> {{localize "NCI.Preview.Dismiss"}}{{else}}<i class="fas fa-chart-area"></i> {{localize "NCI.Preview.Button"}}{{/if}}</button>
+    </div>
+    {{> previewBlock p=previewShock}}
+
+    <h3>{{localize "NCI.Controls.Queue"}}</h3>
+    {{#if impacts.length}}
+    <table class="nci-market"><tbody>
+      {{#each impacts}}
+      <tr>
+        <td>{{label}}</td>
+        <td class="nci-muted">{{persistence}} &middot; {{starts}}</td>
+        <td class="nci-rowbtns"><button type="button" data-action="removeImpact" data-id="{{id}}"><i class="fas fa-xmark"></i></button></td>
+      </tr>
+      {{/each}}
+    </tbody></table>
+    {{else}}<p class="nci-empty">{{localize "NCI.Controls.NoImpacts"}}</p>{{/if}}
+  </div>
+
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Glide.Title"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Glide.Hint"}}</p>
+    <div class="nci-actions">
+      <select name="glideCompany">{{#each companyOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+      <input type="number" name="glideTarget" min="1" step="0.01" value="100" class="nci-days" title="{{localize 'NCI.Glide.Target'}}">
+      <input type="number" name="glideDays" min="1" max="180" value="14" class="nci-days" title="{{localize 'NCI.Controls.Days'}}">
+      <select name="glideNoise" title="{{localize 'NCI.Glide.Noise'}}">{{#each glideNoises}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
+      <button type="button" data-action="addGlide"><i class="fas fa-route"></i> {{localize "NCI.Glide.Start"}}</button>
+      <button type="button" data-action="previewGlide" class="{{#if previewGlide}}active{{/if}}">{{#if previewGlide}}<i class="fas fa-xmark"></i> {{localize "NCI.Preview.Dismiss"}}{{else}}<i class="fas fa-chart-area"></i> {{localize "NCI.Preview.Button"}}{{/if}}</button>
+    </div>
+    {{> previewBlock p=previewGlide}}
+    {{#if glides.length}}
+    <table class="nci-market"><tbody>
+      {{#each glides}}
+      <tr>
+        <td>{{label}}</td>
+        <td class="nci-muted">{{status}}</td>
+        <td class="nci-rowbtns"><button type="button" data-action="removeGlide" data-id="{{id}}"><i class="fas fa-xmark"></i></button></td>
+      </tr>
+      {{/each}}
+    </tbody></table>
+    {{else}}<p class="nci-empty">{{localize "NCI.Glide.None"}}</p>{{/if}}
+  </div>
+
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Controls.NewsTitle"}}</h3>
+    <div class="nci-grid">
+      <label class="wide">{{localize "NCI.Controls.Headline"}}<input type="text" name="newsHeadline"></label>
+      <label>{{localize "NCI.Controls.NewsCompany"}}
+        <select name="newsCompany"><option value="">{{localize "NCI.Controls.WholeMarket"}}</option>{{#each companyOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+      </label>
+      <label>{{localize "NCI.Controls.Tone"}}
+        <select name="newsTone">
+          <option value="neutral">{{localize "NCI.Controls.ToneNeutral"}}</option>
+          <option value="up">{{localize "NCI.Controls.ToneUp"}}</option>
+          <option value="down">{{localize "NCI.Controls.ToneDown"}}</option>
+        </select>
+      </label>
+    </div>
+    <div class="nci-actions"><button type="button" data-action="postNews"><i class="fas fa-newspaper"></i> {{localize "NCI.Controls.Publish"}}</button></div>
+  </div>
+
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Controls.SetPriceTitle"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Controls.SetPriceHint"}}</p>
+    <div class="nci-actions">
+      <select name="priceCompany">{{#each companyOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+      <input type="number" name="priceValue" min="1" step="0.01" value="100" class="nci-days">
+      <label class="nci-check"><input type="checkbox" name="priceFair" checked> {{localize "NCI.Controls.MoveFair"}}</label>
+      <button type="button" data-action="setPrice" class="nci-danger">{{localize "NCI.Controls.SetPrice"}}</button>
+    </div>
+  </div>
+
+  {{#if log.length}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.Controls.LogTitle"}}</h3>
+    <table class="nci-market"><tbody>
+      {{#each log}}<tr><td class="nci-muted">{{localize "NCI.Terminal.Day"}} {{tick}}</td><td>{{text}}</td></tr>{{/each}}
+    </tbody></table>
+  </div>
+  {{/if}}
+  {{/if}}
+
+  {{#if isActions}}
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Actions.SpecialDividend"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Actions.SpecialDividendHint"}}</p>
+    <div class="nci-actions">
+      <select name="divCompany">{{#each companyOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+      <input type="number" name="divAmount" min="0.01" step="0.01" value="1" class="nci-days" title="{{localize 'NCI.Editor.PerShare'}}">
+      <button type="button" data-action="specialDividend">{{localize "NCI.Actions.Pay"}}</button>
+    </div>
+  </div>
+
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Actions.Split"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Actions.SplitHint"}}</p>
+    <div class="nci-actions">
+      <select name="splitCompany">{{#each companyOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+      <input type="number" name="splitRatio" min="2" max="20" step="1" value="2" class="nci-days" title="{{localize 'NCI.Actions.Ratio'}}">
+      <button type="button" data-action="splitStock">{{localize "NCI.Actions.Split"}}</button>
+    </div>
+  </div>
+
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Actions.Buyout"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Actions.BuyoutHint"}}</p>
+    <div class="nci-actions">
+      <select name="buyoutCompany">{{#each companyOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+      <input type="number" name="buyoutPrice" min="1" step="0.01" value="100" class="nci-days" title="{{localize 'NCI.Actions.PricePerShare'}}">
+      <button type="button" data-action="buyoutStock" class="nci-danger">{{localize "NCI.Actions.Buyout"}}</button>
+    </div>
+  </div>
+
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Actions.EndTitle"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Actions.EndHint"}}</p>
+    <div class="nci-actions">
+      <select name="endCompany">{{#each companyOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+      <button type="button" data-action="delistStock" class="nci-danger">{{localize "NCI.Actions.Delist"}}</button>
+      <button type="button" data-action="bankruptStock" class="nci-danger">{{localize "NCI.Actions.Bankrupt"}}</button>
+    </div>
+  </div>
+  {{/if}}
+
+  {{#if isCompanies}}
+  <div class="nci-block">
+    <div class="nci-actions">
+      <button type="button" data-action="newCompany"><i class="fas fa-plus"></i> {{localize "NCI.GMConsole.NewCompany"}}</button>
+      <button type="button" data-action="importStarter"><i class="fas fa-download"></i> {{localize "NCI.GMConsole.ImportStarter"}}</button>
+    </div>
+
+    {{#if companies.length}}
+    <table class="nci-market">
+      <thead>
+        <tr>
+          <th>{{localize "NCI.Terminal.Ticker"}}</th>
+          <th>{{localize "NCI.Terminal.Company"}}</th>
+          <th>{{localize "NCI.Terminal.Sector"}}</th>
+          <th class="num">{{localize "NCI.Terminal.Price"}}</th>
+          <th>{{localize "NCI.Editor.Status"}}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each companies}}
+        <tr>
+          <td><strong>{{ticker}}</strong></td>
+          <td>{{name}}{{#unless listed}} <span class="nci-badge">{{localize "NCI.Terminal.Unlisted"}}</span>{{/unless}}{{#if ipoText}} <span class="nci-badge">{{ipoText}}</span>{{/if}}</td>
+          <td class="nci-muted">{{sector}}</td>
+          <td class="num">{{price}}</td>
+          <td>{{status}}</td>
+          <td class="nci-rowbtns">
+            {{#if canList}}<button type="button" data-action="listNow" data-id="{{id}}" title="{{localize 'NCI.Ipo.ListNow'}}"><i class="fas fa-bullhorn"></i></button>{{/if}}
+            <button type="button" data-action="editCompany" data-id="{{id}}" title="{{localize 'NCI.GMConsole.Edit'}}"><i class="fas fa-pen"></i></button>
+            <button type="button" data-action="deleteCompany" data-id="{{id}}" title="{{localize 'NCI.GMConsole.DeleteCompany'}}"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    {{else}}
+    <p class="nci-empty">{{localize "NCI.GMConsole.NoCompanies"}}</p>
+    {{/if}}
+  </div>
+  {{/if}}
+
+  {{#if isFunds}}
+  <div class="nci-block">
+    <p class="nci-hint">{{localize "NCI.GMConsole.FundsHint"}}</p>
+    <div class="nci-actions">
+      <button type="button" data-action="newFund"><i class="fas fa-plus"></i> {{localize "NCI.GMConsole.NewFund"}}</button>
+      <button type="button" data-action="importFunds"><i class="fas fa-download"></i> {{localize "NCI.GMConsole.ImportFunds"}}</button>
+    </div>
+
+    {{#if funds.length}}
+    <table class="nci-market">
+      <thead>
+        <tr>
+          <th>{{localize "NCI.Terminal.Ticker"}}</th>
+          <th>{{localize "NCI.Fund.Name"}}</th>
+          <th>{{localize "NCI.Fund.Kind"}}</th>
+          <th class="num">{{localize "NCI.Fund.Nav"}}</th>
+          <th class="num">{{localize "NCI.GMConsole.Holdings"}}</th>
+          <th>{{localize "NCI.GMConsole.Fees"}}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each funds}}
+        <tr>
+          <td><strong>{{ticker}}</strong></td>
+          <td>{{name}}</td>
+          <td class="nci-muted">{{kind}}</td>
+          <td class="num">{{nav}}</td>
+          <td class="num">{{holdings}}</td>
+          <td class="nci-muted">{{fees}}</td>
+          <td class="nci-rowbtns">
+            <button type="button" data-action="editFund" data-id="{{id}}" title="{{localize 'NCI.GMConsole.Edit'}}"><i class="fas fa-pen"></i></button>
+            <button type="button" data-action="closeFund" data-id="{{id}}" title="{{localize 'NCI.GMConsole.CloseFund'}}"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    {{else}}
+    <p class="nci-empty">{{localize "NCI.GMConsole.NoFunds"}}</p>
+    {{/if}}
+  </div>
+  {{/if}}
+
+  {{#if isBrokers}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.GMConsole.DirectTerms"}}</h3>
+    <p class="nci-hint">{{localize "NCI.GMConsole.DirectTermsHint" commission=broker.direct.commission flatFee=broker.direct.flatFee dv=broker.direct.dv network=broker.direct.network}}</p>
+  </div>
+
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.GMConsole.Brokers"}}</h3>
+    <p class="nci-hint">{{localize "NCI.GMConsole.BrokersHint"}}</p>
+    <div class="nci-actions">
+      <select name="brokerActor">{{#each broker.actorOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+      <button type="button" data-action="addBrokerActor"><i class="fas fa-user-plus"></i> {{localize "NCI.GMConsole.BrokerFromActor"}}</button>
+    </div>
+    {{#if broker.contactOptions.length}}
+    <div class="nci-actions">
+      <select name="brokerContact">{{#each broker.contactOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+      <button type="button" data-action="addBrokerContact"><i class="fas fa-address-book"></i> {{localize "NCI.GMConsole.BrokerFromContact"}}</button>
+    </div>
+    {{/if}}
+
+    {{#if broker.brokers.length}}
+    <table class="nci-market">
+      <thead>
+        <tr>
+          <th>{{localize "NCI.GMConsole.BrokerName"}}</th>
+          <th>{{localize "NCI.Access.Skill"}}</th>
+          <th>{{localize "NCI.Access.Fees"}}</th>
+          <th>{{localize "NCI.Access.Speed"}}</th>
+          <th class="num">{{localize "NCI.GMConsole.MinWithdrawal"}}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each broker.brokers}}
+        <tr>
+          <td><strong>{{name}}</strong>{{#unless enabled}} <span class="nci-badge">{{localize "NCI.GMConsole.Disabled"}}</span>{{/unless}}<br><span class="nci-muted" title="{{localize 'NCI.Voice.Hint'}}">{{localize "NCI.Voice.Label"}}: {{voice}}</span>{{#if inUse}}<br><span class="nci-muted">{{inUse}}</span>{{/if}}</td>
+          <td>
+            {{grade}} ({{total}}) <span class="nci-muted">{{source}}</span>
+            {{#if noSkillItem}}<span class="nci-badge">{{localize "NCI.Access.NoSkillItem"}}</span>{{/if}}
+            {{#if manual}}<input type="number" name="manualTotal" value="{{total}}" min="0" max="30" step="1" class="nci-days" title="{{localize 'NCI.GMConsole.ManualRating'}}">{{/if}}
+          </td>
+          <td>{{commission}} + {{flatFee}} eb</td>
+          <td>{{days}} {{localize "NCI.Access.DaysUnit"}}</td>
+          <td class="num"><input type="number" name="minWithdrawal" value="{{minWithdrawal}}" min="0" step="100" class="nci-days"></td>
+          <td class="nci-rowbtns">
+            <button type="button" data-action="saveBroker" data-id="{{id}}" title="{{localize 'NCI.Editor.Save'}}"><i class="fas fa-save"></i></button>
+            <button type="button" data-action="toggleBroker" data-id="{{id}}" data-enabled="{{enabled}}" title="{{localize 'NCI.GMConsole.ToggleBroker'}}"><i class="fas fa-power-off"></i></button>
+            <button type="button" data-action="removeBroker" data-id="{{id}}" title="{{localize 'NCI.GMConsole.RemoveBrokerHint'}}" {{#unless canRemove}}disabled{{/unless}}><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    {{else}}
+    <p class="nci-empty">{{localize "NCI.GMConsole.NoBrokers"}}</p>
+    {{/if}}
+  </div>
+
+  {{#if broker.terminalMode}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.GMConsole.TerminalGrants"}}</h3>
+    <p class="nci-hint">{{localize "NCI.GMConsole.TerminalGrantsHint"}}</p>
+    <table class="nci-market"><tbody>
+      {{#each broker.grants}}
+      <tr>
+        <td>{{name}}</td>
+        <td class="nci-rowbtns"><button type="button" data-action="toggleGrant" data-id="{{id}}" class="{{#if granted}}active{{/if}}">{{#if granted}}{{localize "NCI.GMConsole.GrantOn"}}{{else}}{{localize "NCI.GMConsole.GrantOff"}}{{/if}}</button></td>
+      </tr>
+      {{/each}}
+    </tbody></table>
+  </div>
+  {{/if}}
+  {{/if}}
+
+  {{#if isGigs}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.Gig.Title"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Gig.Intro"}}</p>
+    {{#unless gig.bridge}}<p class="nci-warn">{{localize "NCI.Gig.BridgeMissing"}}</p>{{/unless}}
+    <p class="nci-hint">{{#if gig.approval}}{{localize "NCI.Gig.ApprovalOn"}}{{else}}{{localize "NCI.Gig.ApprovalOff"}}{{/if}}</p>
+  </div>
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Gig.NeedsMapping"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Gig.NeedsMappingHint"}}</p>
+    {{#each gig.needsMapping}}
+    <div class="nci-gig">
+      <div class="nci-gigtop">
+        <strong>{{client}}</strong>
+        <span class="{{#if up}}nci-up{{else}}nci-down{{/if}}">{{outcome}}</span>
+        <span class="nci-muted">{{reward}} eb &middot; {{date}}</span>
+      </div>
+      {{#if title}}<div class="nci-muted">{{title}}</div>{{/if}}
+      <div class="nci-muted">{{reason}} {{possible}}</div>
+      <div class="nci-actions">
+        <select name="gigCompany">
+          <option value="">{{localize "NCI.Gig.ChooseCompany"}}</option>
+          <option value="ignore">{{localize "NCI.Gig.Ignore"}}</option>
+          {{#each options}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+        <label class="nci-check"><input type="checkbox" name="gigRemember" checked> {{localize "NCI.Gig.Remember"}}</label>
+        <button type="button" data-action="gigMap" data-id="{{id}}"><i class="fas fa-link"></i> {{localize "NCI.Gig.Map"}}</button>
+        <button type="button" data-action="gigDiscard" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.Gig.Discard"}}</button>
+      </div>
+    </div>
+    {{else}}<p class="nci-empty">{{localize "NCI.Gig.NoMapping"}}</p>{{/each}}
+  </div>
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Gig.Review"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Gig.ReviewHint"}}</p>
+    {{#each gig.review}}
+    <div class="nci-gig">
+      <div class="nci-gigtop">
+        <strong>{{company}}</strong>
+        <span class="{{#if up}}nci-up{{else}}nci-down{{/if}}">{{outcome}}</span>
+        <span class="nci-muted">{{reward}} eb &middot; {{date}}</span>
+      </div>
+      <div class="nci-muted">{{client}}{{#if title}} &middot; {{title}}{{/if}} &middot; {{how}}</div>
+      {{#if reason}}<div class="nci-muted">{{reason}}</div>{{/if}}
+      <div class="nci-grid">
+        <label>{{localize "NCI.Gig.Percent"}}<input type="number" name="gigPercent" step="0.1" value="{{percent}}"></label>
+        <label>{{localize "NCI.Gig.Delay"}}<input type="number" name="gigDelay" min="0" max="30" step="1" value="{{delayDays}}"></label>
+        <label class="wide">{{localize "NCI.Gig.HeadlineLabel"}}<input type="text" name="gigHeadline" value="{{headline}}" placeholder="{{localize 'NCI.Gig.HeadlineHint'}}"></label>
+      </div>
+      <div class="nci-actions">
+        <button type="button" data-action="gigApprove" data-id="{{id}}"><i class="fas fa-check"></i> {{localize "NCI.Gig.Approve"}}</button>
+        <button type="button" data-action="gigDiscard" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.Gig.Discard"}}</button>
+      </div>
+    </div>
+    {{else}}<p class="nci-empty">{{localize "NCI.Gig.NoReview"}}</p>{{/each}}
+  </div>
+
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Gig.Mappings"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Gig.MappingsHint"}}</p>
+    {{#if gig.mappings.length}}
+    <table class="nci-market"><tbody>
+      {{#each gig.mappings}}
+      <tr>
+        <td>{{label}}</td>
+        <td>{{target}}</td>
+        <td class="nci-rowbtns"><button type="button" data-action="gigRemoveMapping" data-key="{{key}}"><i class="fas fa-xmark"></i></button></td>
+      </tr>
+      {{/each}}
+    </tbody></table>
+    {{else}}<p class="nci-empty">{{localize "NCI.Gig.NoMappings"}}</p>{{/if}}
+    <div class="nci-actions">
+      <input type="text" name="mapClientName" placeholder="{{localize 'NCI.Gig.ClientName'}}">
+      <select name="mapCompany">
+        <option value="">{{localize "NCI.Gig.ChooseCompany"}}</option>
+        <option value="ignore">{{localize "NCI.Gig.Ignore"}}</option>
+        {{#each companyOptions}}<option value="{{value}}">{{label}}</option>{{/each}}
+      </select>
+      <button type="button" data-action="gigAddMapping"><i class="fas fa-link"></i> {{localize "NCI.Gig.AddMapping"}}</button>
+    </div>
+  </div>
+
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Gig.ReportTitle"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Gig.ReportHint"}}</p>
+    <div class="nci-grid">
+      <label>{{localize "NCI.Gig.Client"}}<input type="text" name="reportClient"></label>
+      <label>{{localize "NCI.Gig.Company"}}<select name="reportCompany"><option value="">{{localize "NCI.Gig.AnyCompany"}}</option>{{#each companyOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+      <label>{{localize "NCI.Gig.OutcomeLabel"}}<select name="reportOutcome">{{#each gig.outcomes}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+      <label>{{localize "NCI.Gig.Reward"}}<input type="number" name="reportReward" min="0" step="100" value="1000"></label>
+    </div>
+    <div class="nci-actions"><button type="button" data-action="gigReport"><i class="fas fa-paper-plane"></i> {{localize "NCI.Gig.Report"}}</button></div>
+  </div>
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Gig.History"}}</h3>
+    {{#if gig.history.length}}
+    <table class="nci-market"><tbody>
+      {{#each gig.history}}
+      <tr>
+        <td>{{date}}</td>
+        <td>{{company}}</td>
+        <td class="{{#if up}}nci-up{{else}}nci-down{{/if}}">{{outcome}}</td>
+        <td>{{status}}{{#if effect}} <span class="nci-muted">{{effect}}</span>{{/if}}</td>
+        <td class="nci-muted">{{client}}</td>
+      </tr>
+      {{/each}}
+    </tbody></table>
+    <div class="nci-actions"><button type="button" data-action="gigClearHistory">{{localize "NCI.Gig.ClearHistory"}}</button></div>
+    {{else}}<p class="nci-empty">{{localize "NCI.Gig.NoHistory"}}</p>{{/if}}
+  </div>
+  {{/if}}
+
+  {{#if isHeat}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.Heat.Title"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Heat.Intro"}}</p>
+    {{#unless heat.enabled}}<p class="nci-warn">{{localize "NCI.Heat.Off"}}</p>{{/unless}}
+    {{#if heat.enabled}}<p class="nci-hint">{{localize "NCI.Heat.PhaseNote"}}</p>{{/if}}
+    <table class="nci-market"><tbody>
+      {{#each heat.tiers}}<tr><td><strong>{{label}}</strong></td><td class="nci-muted">{{hint}}</td></tr>{{/each}}
+    </tbody></table>
+  </div>
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Heat.Penalties"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Heat.PenaltiesHint"}}</p>
+    {{#each heat.pendingPenalties}}
+    <div class="nci-gig">
+      <div class="nci-gigtop"><strong>{{name}}</strong><span class="nci-down">{{text}}</span><span class="nci-muted">{{line}}</span></div>
+      <div class="nci-actions">
+        {{#if isFine}}<label>{{localize "NCI.Heat.FineAmount"}}<input type="number" name="penaltyAmount" min="0" step="10" value="{{amount}}"></label>{{else}}<label>{{daysLabel}}<input type="number" name="penaltyDays" min="0" max="30" step="1" value="{{days}}"></label>{{/if}}
+        <button type="button" data-action="heatApprove" data-id="{{id}}"><i class="fas fa-check"></i> {{localize "NCI.Heat.Approve"}}</button>
+        <button type="button" data-action="heatDismiss" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.Heat.Dismiss"}}</button>
+      </div>
+    </div>
+    {{else}}<p class="nci-empty">{{localize "NCI.Heat.NoPenalties"}}</p>{{/each}}
+    {{#if heat.penaltyHistory.length}}
+    <table class="nci-market"><tbody>
+      {{#each heat.penaltyHistory}}
+      <tr><td>{{name}}</td><td>{{text}}</td><td class="nci-muted">{{status}}{{#if done}} &middot; {{done}}{{/if}}</td><td class="nci-muted">{{line}}</td></tr>
+      {{/each}}
+    </tbody></table>
+    {{/if}}
+  </div>
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Heat.Characters"}}</h3>
+    {{#if heat.characters.length}}
+    <table class="nci-market">
+      <thead><tr><th>{{localize "NCI.Heat.Character"}}</th><th>{{localize "NCI.Heat.Level"}}</th><th>{{localize "NCI.Heat.TierLabel"}}</th><th>{{localize "NCI.Heat.Latest"}}</th><th></th></tr></thead>
+      <tbody>
+        {{#each heat.characters}}
+        <tr>
+          <td><strong>{{name}}</strong></td>
+          <td><span class="nci-heatbar"><span class="nci-heatfill nci-heat-{{tier}}" style="width: {{width}}%"></span></span> {{heat}}</td>
+          <td>{{tierLabel}}{{#if cover}}<div class="nci-muted">{{cover}}</div>{{/if}}</td>
+          <td class="nci-muted">{{last}}</td>
+          <td class="nci-rowbtns">
+            <input type="number" name="heatValue" min="0" max="100" step="1" value="{{heat}}" class="nci-days" title="{{localize 'NCI.Heat.SetHeatHint'}}">
+            <button type="button" data-action="heatSet" data-id="{{actorId}}" title="{{localize 'NCI.Heat.SetHeatHint'}}"><i class="fas fa-save"></i></button>
+            <button type="button" data-action="heatClear" data-id="{{actorId}}" title="{{localize 'NCI.Heat.ClearHeat'}}"><i class="fas fa-eraser"></i></button>
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    {{else}}<p class="nci-empty">{{localize "NCI.Heat.NoCharacters"}}</p>{{/if}}
+  </div>
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Heat.Windows"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Heat.WindowsHint"}}</p>
+    {{#if heat.open.length}}
+    <table class="nci-market"><tbody>
+      {{#each heat.open}}
+      <tr>
+        <td>{{company}}</td>
+        <td class="{{#if up}}nci-up{{else}}nci-down{{/if}}">{{direction}}</td>
+        <td class="nci-muted">{{closes}}</td>
+        <td class="nci-muted">{{#if tipped}}{{localize "NCI.Heat.Tipped"}}: {{tipped}}{{/if}}</td>
+        <td class="nci-muted">{{opened}}</td>
+      </tr>
+      {{/each}}
+    </tbody></table>
+    {{else}}<p class="nci-empty">{{localize "NCI.Heat.NoWindows"}}</p>{{/if}}
+  </div>
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Heat.Audits"}}</h3>
+    {{#each heat.audits}}
+    <div class="nci-gig">
+      <div class="nci-gigtop">
+        <strong>{{company}}</strong>
+        <span class="{{#if up}}nci-up{{else}}nci-down{{/if}}">{{direction}}</span>
+        <span class="nci-muted">{{date}}</span>
+      </div>
+      {{#if quiet}}<div class="nci-muted">{{localize "NCI.Heat.AuditClean"}}</div>{{/if}}
+      {{#each results}}
+      <div><strong>{{name}}</strong> +{{gain}}{{#if covered}} <span class="nci-muted">({{covered}})</span>{{/if}}
+        {{#each trades}}<div class="nci-muted">{{this}}</div>{{/each}}
+      </div>
+      {{/each}}
+    </div>
+    {{else}}<p class="nci-empty">{{localize "NCI.Heat.NoAudits"}}</p>{{/each}}
+  </div>
+  {{/if}}
+
+  {{#if isTools}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.Tools.CheckTitle"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Tools.CheckHint"}} {{tools.schema}}</p>
+    <div class="nci-actions"><button type="button" data-action="runCheck"><i class="fas fa-stethoscope"></i> {{localize "NCI.Tools.RunCheck"}}</button></div>
+    {{#if tools.report}}
+    <p class="{{tools.report.cls}}">{{tools.report.summary}}</p>
+    <table class="nci-market"><tbody>
+      {{#each tools.report.checks}}
+      <tr><td><strong>{{label}}</strong></td><td class="{{cls}}">{{levelLabel}}</td><td class="nci-muted">{{detail}}</td></tr>
+      {{/each}}
+    </tbody></table>
+    {{else}}<p class="nci-empty">{{localize "NCI.Tools.NoReport"}}</p>{{/if}}
+  </div>
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Tools.MacrosTitle"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Tools.MacrosHint"}}</p>
+    <div class="nci-actions"><button type="button" data-action="createMacros"><i class="fas fa-terminal"></i> {{localize "NCI.Tools.CreateMacros"}}</button></div>
+  </div>
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Tools.SuggestTitle"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Tools.SuggestHint"}}</p>
+    {{#if tools.suggestions.length}}
+    <table class="nci-market"><tbody>
+      {{#each tools.suggestions}}
+      <tr>
+        <td><strong>{{name}}</strong> <span class="nci-muted">({{ticker}})</span></td>
+        <td class="nci-muted">{{seen}}</td>
+        <td class="nci-rowbtns">
+          <button type="button" data-action="createSuggested" data-name="{{name}}" data-ticker="{{ticker}}"><i class="fas fa-plus"></i> {{localize "NCI.Tools.Create"}}</button>
+          <button type="button" data-action="ignoreSuggested" data-name="{{name}}"><i class="fas fa-eye-slash"></i> {{localize "NCI.Tools.Ignore"}}</button>
+        </td>
+      </tr>
+      {{/each}}
+    </tbody></table>
+    {{else}}<p class="nci-empty">{{localize "NCI.Tools.NoSuggestions"}}</p>{{/if}}
+  </div>
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Tools.TradeLogTitle"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Tools.TradeLogHint"}}</p>
+    {{#if tools.trades.length}}
+    <table class="nci-market">
+      <thead><tr><th>{{localize "NCI.Tools.Day"}}</th><th>{{localize "NCI.Tools.Who"}}</th><th>{{localize "NCI.Tools.Side"}}</th><th>{{localize "NCI.Terminal.Ticker"}}</th><th>{{localize "NCI.Tools.Qty"}}</th><th>{{localize "NCI.Terminal.Price"}}</th><th>{{localize "NCI.Tools.Gross"}}</th><th>{{localize "NCI.Tools.Fees"}}</th><th></th></tr></thead>
+      <tbody>
+        {{#each tools.trades}}
+        <tr>
+          <td class="nci-muted">{{tick}}</td><td>{{name}}</td><td class="{{cls}}">{{side}}</td><td>{{asset}}</td><td>{{qty}}</td><td>{{price}}</td><td>{{gross}}</td><td class="nci-muted">{{fees}}</td><td class="nci-muted">{{route}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    {{else}}<p class="nci-empty">{{localize "NCI.Tools.NoTrades"}}</p>{{/if}}
+  </div>
+  {{/if}}
+</section>

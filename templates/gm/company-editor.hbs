@@ -1,0 +1,83 @@
+<div class="nci-editor">
+  <div class="nci-grid">
+    <label>{{localize "NCI.Editor.Name"}}<input type="text" name="name" value="{{company.name}}" required></label>
+    <label>{{localize "NCI.Editor.Ticker"}}<input type="text" name="ticker" value="{{company.ticker}}" maxlength="6" required></label>
+
+    <label>{{localize "NCI.Terminal.Sector"}}
+      <select name="sector">{{selectOptions sectors selected=company.sector}}</select>
+    </label>
+    <label>{{localize "NCI.Editor.Status"}}
+      <select name="status">{{selectOptions statuses selected=company.status}}</select>
+    </label>
+
+    <label>{{localize "NCI.Terminal.HQ"}}<input type="text" name="hq" value="{{company.hq}}"></label>
+    <label>{{localize "NCI.Terminal.CEO"}}<input type="text" name="ceo" value="{{company.ceo}}"></label>
+
+    <label class="wide">{{localize "NCI.Editor.Aliases"}}
+      <input type="text" name="aliases" value="{{company.aliases}}">
+      <span class="nci-hint">{{localize "NCI.Editor.AliasesHint"}}</span>
+    </label>
+  </div>
+
+  <fieldset>
+    <legend>{{localize "NCI.Editor.Market"}}</legend>
+    <div class="nci-grid">
+      <label>{{localize "NCI.Editor.InitialPrice"}}<input type="number" name="initialPrice" value="{{company.initialPrice}}" min="1" step="0.01"></label>
+      <label>{{localize "NCI.Editor.Shares"}}<input type="number" name="sharesOutstanding" value="{{company.sharesOutstanding}}" min="0" step="1000"></label>
+      <label>{{localize "NCI.Terminal.Volatility"}}
+        <select name="volatility">{{selectOptions volatilities selected=company.volatility}}</select>
+      </label>
+      <label>{{localize "NCI.Terminal.Beta"}}<input type="number" name="beta" value="{{company.beta}}" min="0" max="3" step="0.05"></label>
+      <label>{{localize "NCI.Editor.Liquidity"}}
+        <select name="liquidity">{{selectOptions ratings selected=company.liquidity}}</select>
+      </label>
+      <label class="nci-check"><input type="checkbox" name="listed" {{checked company.listed}}> {{localize "NCI.Editor.Listed"}}</label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>{{localize "NCI.Terminal.Dividend"}}</legend>
+    <div class="nci-grid">
+      <label>{{localize "NCI.Editor.Policy"}}
+        <select name="dividend.policy">{{selectOptions policies selected=company.dividend.policy}}</select>
+      </label>
+      <label>{{localize "NCI.Editor.Frequency"}}
+        <select name="dividend.frequency">{{selectOptions frequencies selected=company.dividend.frequency}}</select>
+      </label>
+      <label>{{localize "NCI.Editor.PerShare"}}<input type="number" name="dividend.perShare" value="{{company.dividend.perShare}}" min="0" step="0.01"></label>
+      <label>{{localize "NCI.Editor.Yield"}}<input type="number" name="dividend.yield" value="{{company.dividend.yield}}" min="0" max="1" step="0.005"></label>
+      <label>{{localize "NCI.Editor.PayoutDay"}}<input type="number" name="dividend.payoutDay" value="{{company.dividend.payoutDay}}" min="1" max="28"></label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>{{localize "NCI.Editor.SplitTitle"}}</legend>
+    <div class="nci-grid">
+      <label class="nci-check"><input type="checkbox" name="split.auto" {{checked company.split.auto}}> {{localize "NCI.Editor.SplitAuto"}}</label>
+      <label>{{localize "NCI.Editor.SplitAbove"}}<input type="number" name="split.above" value="{{company.split.above}}" min="1" step="1"></label>
+      <label>{{localize "NCI.Editor.SplitRatio"}}<input type="number" name="split.ratio" value="{{company.split.ratio}}" min="2" max="20" step="1"></label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>{{localize "NCI.Ipo.EditorTitle"}}</legend>
+    <p class="nci-hint">{{localize "NCI.Ipo.EditorHint"}}</p>
+    <div class="nci-grid">
+      <label>{{localize "NCI.Ipo.Date"}}<input type="text" name="ipo.date" value="{{company.ipo.date}}" placeholder="2045-06-01" pattern="\d{4}-\d{2}-\d{2}"></label>
+      <label>{{localize "NCI.Ipo.OfferPrice"}}<input type="number" name="ipo.price" value="{{company.ipo.price}}" min="1" step="0.01" placeholder="{{company.initialPrice}}"></label>
+      <label>{{localize "NCI.Ipo.WindowDays"}}<input type="number" name="ipo.windowDays" value="{{company.ipo.windowDays}}" min="0" max="30" step="1"></label>
+      <label>{{localize "NCI.Ipo.Allocation"}}<input type="number" name="ipo.allocation" value="{{company.ipo.allocation}}" min="0" step="100"></label>
+    </div>
+  </fieldset>
+
+  <label class="wide">{{localize "NCI.Editor.Lore"}}
+    <textarea name="lore" rows="6">{{company.loreText}}</textarea>
+    <span class="nci-hint">{{localize "NCI.Editor.LoreHint"}}</span>
+  </label>
+  <input type="hidden" name="loreOriginal" value="{{company.loreText}}">
+
+  <footer class="nci-footer">
+    <button type="submit"><i class="fas fa-save"></i> {{localize "NCI.Editor.Save"}}</button>
+    <button type="button" data-action="cancel">{{localize "NCI.Editor.Cancel"}}</button>
+  </footer>
+</div>
