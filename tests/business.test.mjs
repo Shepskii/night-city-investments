@@ -251,3 +251,10 @@ test('a complementary check must be a different, related skill from the action\'
   assert.equal(rollSpec(b, { type: 'assist', forAction: 'fixUp', use: { kind: 'ability', ability: 'Maker' } }, 'med', { day: DAY }).reason, 'bad-use', 'Maker fixes the place up itself');
   assert.equal(rollSpec(b, { type: 'assist', forAction: 'work', use: { kind: 'ability', ability: 'Maker' } }, 'med', { day: DAY }).ok, true, 'but can help with the work');
 });
+
+test('a failed setup never loses more than half the money put in', () => {
+  let b = apply(null, { type: 'found', name: 'Garage', archetype: 'garage', cash: 400 }, MED).business;
+  b = apply(b, { type: 'setupRoll', businessId: 'b1', use: SKILLS.basicTech }, MED, { check: check(8, -4, 13) }).business;
+  assert.equal(b.setup.band, 'fumble');
+  assert.equal(b.escrow, 200, 'half of 400, not the 400 that half the lowest setup cost would take');
+});

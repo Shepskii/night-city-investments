@@ -104,6 +104,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
   /** A failed setup loses this share of the archetype's lowest setup cost and waits this many game days. */
   setupFailure: Object.freeze({ loss: 1 / 3, delay: 7 }),
   setupFumble: Object.freeze({ loss: 1 / 2, delay: 14 }),
+  /** Either loss is capped at this share of the money held for the business. */
+  setupLossCap: 0.5,
   helpDv: 'everyday',
   /** A hired professional's fee by tier, from the till; a Fixer's Operator takes 5% off per rank, up to 40%. */
   hireFees: Object.freeze({ cheap: 50, good: 150, best: 400 }),

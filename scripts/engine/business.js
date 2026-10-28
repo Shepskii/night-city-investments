@@ -348,7 +348,8 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
         tryOpen(b, day, ctx, out.events, p);
       } else {
         const rule = r.band === 'fumble' ? p.setupFumble : p.setupFailure;
-        const loss = Math.min(b.escrow, Math.round(arch.setup[0] * rule.loss));
+        // Never more than half of what the partners have put in, so one bad roll cannot wipe them out.
+        const loss = Math.min(Math.floor(b.escrow * p.setupLossCap), Math.round(arch.setup[0] * rule.loss));
         b.escrow -= loss;
         b.setup = { passed: false, band: r.band, retryDay: day + rule.delay, by: actor.id, day };
         if (loss) log('setupLoss', -loss);

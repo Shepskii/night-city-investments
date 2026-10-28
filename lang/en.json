@@ -262,8 +262,8 @@
       "HireNote": "A hired professional's fixed base replaces your stat and skill. Their fee is paid from the business even if the roll fails, and Luck cannot be spent on their roll.",
       "Meaning": {
         "setupRoll": {
-          "fumble": "The setup falls through: half the lowest setup cost is lost, and you can try again in 14 days.",
-          "failure": "The setup falls through: a third of the lowest setup cost is lost, and you can try again in 7 days.",
+          "fumble": "The setup falls through: half the lowest setup cost is lost (never more than half the money put in), and you can try again in 14 days.",
+          "failure": "The setup falls through: a third of the lowest setup cost is lost (never more than half the money put in), and you can try again in 7 days.",
           "narrow": "It opens, but the setup costs close to the top of the range, at 85% Capacity.",
           "solid": "It opens at a fair setup cost, at full Capacity.",
           "strong": "It opens cheaply, with 10% more Capacity.",
