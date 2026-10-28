@@ -134,11 +134,16 @@ export function actionUses(actionId, archetype) {
   return [...own, ...action.abilities];
 }
 
-/** Every way a complementary check for an action may be rolled: the action's own, its `help`, and the archetype's abilities. */
+/**
+ * Every way a complementary check for an action may be rolled: its `help` skills and the archetype's
+ * abilities. As in the rules, a complementary check is a different, related skill, so the action's
+ * own skills and abilities are left out (otherwise a lone owner would help themselves each week).
+ */
 export function helpUses(actionId, archetype) {
   const action = ACTIONS[actionId];
   if (!action) return [];
-  return dedupeUses([...actionUses(actionId, archetype), ...action.help, ...(archetype?.abilities ?? [])]);
+  const own = new Set(actionUses(actionId, archetype).map(useKey));
+  return dedupeUses([...action.help, ...(archetype?.abilities ?? [])]).filter((u) => !own.has(useKey(u)));
 }
 
 /** Every way the setup roll may be rolled: the trade skills, Business, the archetype's abilities, Operator and Maker. */

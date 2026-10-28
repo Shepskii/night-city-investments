@@ -243,3 +243,11 @@ test('hired professionals cost the till, less a Fixer\'s Operator', () => {
   const out = apply(b, { type: 'action', businessId: 'b1', action: 'work', use: { kind: 'hire', hire: 'good' } }, MED, { check: check(13, 5, 13), context: { operatorRank: 4 } });
   assert.equal(out.business.till, b.till - 120);
 });
+
+test('a complementary check must be a different, related skill from the action\'s own', () => {
+  const b = openClinic();
+  assert.equal(rollSpec(b, { type: 'assist', forAction: 'work', use: cybertech }, 'med', { day: DAY }).reason, 'bad-use', 'Cybertech works the shop, so it cannot help it');
+  assert.equal(rollSpec(b, { type: 'assist', forAction: 'work', use: SKILLS.humanPerception }, 'med', { day: DAY }).ok, true);
+  assert.equal(rollSpec(b, { type: 'assist', forAction: 'fixUp', use: { kind: 'ability', ability: 'Maker' } }, 'med', { day: DAY }).reason, 'bad-use', 'Maker fixes the place up itself');
+  assert.equal(rollSpec(b, { type: 'assist', forAction: 'work', use: { kind: 'ability', ability: 'Maker' } }, 'med', { day: DAY }).ok, true, 'but can help with the work');
+});

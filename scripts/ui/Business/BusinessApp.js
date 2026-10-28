@@ -81,10 +81,13 @@ export class BusinessApp extends BaseApplication {
   _onFirstRender(context, options) {
     super._onFirstRender?.(context, options);
     Hooks.on(HOOKS.BUSINESSES_CHANGED, this._refresh);
+    // The "no GM online" warning follows who is connected.
+    Hooks.on('userConnected', this._refresh);
   }
 
   _onClose(options) {
     Hooks.off(HOOKS.BUSINESSES_CHANGED, this._refresh);
+    Hooks.off('userConnected', this._refresh);
     super._onClose?.(options);
   }
 

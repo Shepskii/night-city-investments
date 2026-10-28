@@ -81,7 +81,10 @@ export class RollDialogApp extends BaseApplication {
       const { base } = SkillAdapter.baseFor(actor, use);
       const kind = use.kind === 'ability' ? L('NCI.Roll.AbilityRank', { rank: base }) : L('NCI.Roll.SkillBase', { base });
       return { key: useKey(use), use, base, label: `${useLabel(use)} (${kind})` };
-    }).sort((a, b) => b.base - a.base);
+    })
+      // A role ability the character does not have is not offered; a skill at 0 still rolls on its stat.
+      .filter((o) => o.use.kind !== 'ability' || o.base > 0)
+      .sort((a, b) => b.base - a.base);
     const hires = spec.allowHire
       ? Object.entries(HIRE_TIERS).map(([tier, base]) => ({
         key: `hire:${tier}`, use: { kind: 'hire', hire: tier }, base, label: L('NCI.Roll.HireOption', { who: L(`NCI.Roll.Hire.${tier}`), base, fee: whole(hireFee(tier, rank)) }),
@@ -138,7 +141,8 @@ export class RollDialogApp extends BaseApplication {
       bonus: !!levers.bonus,
       dv: preview.dv,
       chance: pct(preview.chance),
-      needed: L('NCI.Roll.Needed', { n: Math.max(1, preview.needed) }),
+      // A 1 is a fumble roll and a 10 adds a die, so "or more" only reads true between them.
+      needed: preview.needed <= 2 ? L('NCI.Roll.NeededAny') : preview.needed > 10 ? L('NCI.Roll.NeededCrit') : L('NCI.Roll.Needed', { n: preview.needed }),
       bands: preview.bands.filter((b) => b.chance > 0).reverse().map((b) => ({
         label: L(`NCI.Roll.Band.${b.band}`), chance: pct(b.chance), meaning: L(`NCI.Roll.Meaning.${meaning}.${b.band}`),
       })),

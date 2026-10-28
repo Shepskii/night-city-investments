@@ -251,6 +251,8 @@
       "UseBonus": "Use the +1 a partner's check left for this",
       "Chance": "Chance to succeed",
       "Needed": "Needs {n} or more on the d10.",
+      "NeededAny": "Passes on anything but a 1.",
+      "NeededCrit": "Needs a 10 on the d10, and then a good second die.",
       "Hint": "A 10 adds a second d10 and a 1 takes one away, as usual. Luck is spent from your sheet when you roll, whatever happens. Nothing is rolled until you press Roll.",
       "Roll": "Roll",
       "NothingToRoll": "There is nothing this character can roll for that.",
