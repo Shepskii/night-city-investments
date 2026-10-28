@@ -125,7 +125,7 @@ export function previewScenario({ state, companies, seed, controls, scenario, ti
 
   const args = { state, companies, seed, ticks: n, paths, trackIds, config };
   const base = simulatePaths({ ...args, controls });
-  const test = simulatePaths({ ...args, controls: applyScenario(controls, scenario, state.time ?? state.tickIndex) });
+  const test = simulatePaths({ ...args, controls: applyScenario(controls, scenario, timeOf(state)) });
 
   const single = trackIds.length === 1;
   const start = single ? state.companies[trackIds[0]].price : 100;

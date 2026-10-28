@@ -13,18 +13,22 @@
  */
 
 import { normalizePortfolio } from './portfolioModel.js';
+import { pathRange } from './pricePath.js';
 
 export const ALERT_KINDS = ['above', 'below', 'move'];
 export const MAX_ALERTS = 20;
 export const ALERT_LOG_CAP = 10;
 export const MOVE_RANGE = { min: 0.5, max: 50 };
 
-/** Is the alert's condition true for this quote? */
-export function alertMet(alert, quote) {
+/**
+ * Is the alert's condition true for this quote? A price alert also counts the lowest and highest
+ * prices of the run of ticks just made (`range`), so a price that crossed and came back still fires.
+ */
+export function alertMet(alert, quote, range = null) {
   if (!quote || !(quote.price > 0)) return false;
   switch (alert.kind) {
-    case 'above': return quote.price >= alert.value;
-    case 'below': return quote.price <= alert.value;
+    case 'above': return Math.max(quote.price, range?.high ?? 0) >= alert.value;
+    case 'below': return Math.min(quote.price, range?.low ?? Infinity) <= alert.value;
     case 'move': {
       if (!(quote.prevClose > 0)) return false;
       return (Math.abs(quote.price - quote.prevClose) / quote.prevClose) * 100 >= alert.value;
@@ -62,11 +66,12 @@ export function removeAlert(portfolio, alertId) {
 }
 
 /**
- * Check every alert against today's quotes.
+ * Check every alert against today's quotes, and the prices along the run of ticks just made.
  * @param {Object<string, {price: number, prevClose: number}>} quotes - assetId -> quote
+ * @param {object} [path] - pricePath.js; only the part since an alert was set counts for it
  * @returns {{portfolio: object, fired: object[], changed: boolean}}
  */
-export function checkAlerts(portfolio, quotes, tick) {
+export function checkAlerts(portfolio, quotes, tick, path = null) {
   const p = normalizePortfolio(portfolio);
   if (!p.alerts.length) return { portfolio: p, fired: [], changed: false };
 
@@ -80,9 +85,12 @@ export function checkAlerts(portfolio, quotes, tick) {
       alerts.push(a);
       continue;
     }
-    const met = alertMet(a, q);
+    const range = path ? pathRange(path, a.assetId, a.createdTick) : null;
+    const met = alertMet(a, q, range);
     if (a.armed && met) {
-      fired.push({ alertId: a.id, assetId: a.assetId, kind: a.kind, value: a.value, price: q.price, prevClose: q.prevClose, tick });
+      // Report the price that set it off: the run's high or low, when the price has since come back.
+      const reached = a.kind === 'above' && q.price < a.value ? range.high : a.kind === 'below' && q.price > a.value ? range.low : q.price;
+      fired.push({ alertId: a.id, assetId: a.assetId, kind: a.kind, value: a.value, price: reached, prevClose: q.prevClose, tick });
       changed = true;
       if (!a.once) alerts.push({ ...a, armed: false });
       continue;

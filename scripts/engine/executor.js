@@ -33,6 +33,7 @@
  */
 
 import { quote } from './quotes.js';
+import { pathRange } from './pricePath.js';
 import { TIME_EPS } from './clock.js';
 import { checkTrigger, validateOrder, executeFill, computeFees } from './orderEngine.js';
 import { planDeposit, planDirectWithdrawal } from './cash.js';
@@ -85,9 +86,10 @@ function recordResult(p, request, tick, result) {
  * @param {string[]} [o.onlyIds] - restrict to these order ids (used for instant execution)
  * @param {object} [o.feeProfile] - fallback fee profile for orders that carry none
  * @param {number} [o.settleDays] - sale proceeds wait this many ticks (funds can wait longer: their own redemption delay)
+ * @param {object} [o.path] - the prices along the run of ticks just made (pricePath.js), so a limit or stop reached during it fills
  * @returns {{portfolio: object, events: object[]}}
  */
-export function runOrders({ portfolio, tick, market, feeProfile = {}, onlyIds = null, seed = 'nci', settleDays = 0 }) {
+export function runOrders({ portfolio, tick, market, feeProfile = {}, onlyIds = null, seed = 'nci', settleDays = 0, path = null }) {
   let p = normalizePortfolio(portfolio);
   const events = [];
 
@@ -119,7 +121,9 @@ export function runOrders({ portfolio, tick, market, feeProfile = {}, onlyIds = 
       price = priced.price;
       timingBps = priced.timingBps;
     } else {
-      const trig = checkTrigger(order, quote(asset.price, asset.liquidity));
+      // Only the part of the run while the order was live counts.
+      const range = path ? pathRange(path, order.assetId, order.eligibleTick, order.expiresTick ?? Infinity) : null;
+      const trig = checkTrigger(order, quote(asset.price, asset.liquidity), range);
       if (!trig.triggered) {
         if (tick >= order.expiresTick - TIME_EPS) {
           close(order, { status: 'expired', closedTick: tick });

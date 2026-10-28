@@ -13,7 +13,7 @@ import {
   appendClose, pruneHistory, replaceLastClose, splitState, mergeState, pruneState,
   normalizeControls, resolveControls, pruneControls, dropImpacts, collectImpacts,
   makeFundState, stepFundState, refreshFundState, rebaseFundState, fundPrices, truncateHistory, restoreExpired, logEntry,
-  fundTargets, rebalanceDue, applyRebalance, distributionDue, applyDistribution, timeOf, msToDate, DAY_MS,
+  fundTargets, rebalanceDue, applyRebalance, distributionDue, applyDistribution, timeOf, msToDate, DAY_MS, emptyPath, addToPath,
 } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
 import { log, isActiveGM } from '../utils/helpers.js';
@@ -449,6 +449,8 @@ class TickServiceImpl {
     const startDay = dayOf(state.time);
     const dt = dtOverride ?? this.tickDays;
     const snapshots = [];
+    // Where prices went during the run, for the orders and alerts worked once it is over.
+    const path = emptyPath();
     for (let i = 0; i < n; i++) {
       snapshots.push({ tickIndex: state.tickIndex, time: state.time, state, funds, controls });
       const time = addTime(state.time, dt);
@@ -468,6 +470,10 @@ class TickServiceImpl {
       funds = f.funds;
       history = f.history;
       defs = f.defs;
+      addToPath(path, timeOf(state), {
+        ...Object.fromEntries(Object.entries(state.companies).map(([id, c]) => [id, c.price])),
+        ...Object.fromEntries(Object.entries(funds).map(([id, fs]) => [id, fs.nav])),
+      });
       for (const def of f.rebalanced) rebalancedDefs.set(def.id, def);
     }
 
@@ -478,7 +484,7 @@ class TickServiceImpl {
     if (rebalancedDefs.size) await this._dropSnapshots();
     else await MarketStore.setSnapshots([...MarketStore.getSnapshots(), ...snapshots].slice(-SNAPSHOT_CAP));
     Hooks.callAll(HOOKS.PRICE_TICK, {
-      tickIndex: state.tickIndex, time: state.time, ticks: n, dt, newDay, days: dayOf(state.time) - startDay, results: last?.results ?? {},
+      tickIndex: state.tickIndex, time: state.time, ticks: n, dt, newDay, days: dayOf(state.time) - startDay, results: last?.results ?? {}, path,
     });
     log.debug(`Advanced ${n} tick(s) to ${state.tickIndex}`);
   }

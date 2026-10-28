@@ -6,6 +6,7 @@
  */
 
 const round = Math.round;
+const round2 = (n) => Math.round(n * 100) / 100;
 
 /** Broker fee for a gross amount: flatFee + commissionBps. Whole eb. */
 export function computeFees(gross, profile = {}) {
@@ -16,19 +17,27 @@ export function computeFees(gross, profile = {}) {
 
 /**
  * Decide whether an order can execute against the current quote.
- * Buys execute at the ask and sells at the bid.
+ * Buys execute at the ask and sells at the bid. When the order is worked after a run of several
+ * ticks, `range` is the lowest and highest price it could have traded at during the run: a limit or
+ * stop the price reached and then left still executes, at its limit (a stop at its level, across
+ * the spread), as if the market had been watched all along.
+ * @param {{low: number, high: number} | null} [range]
  * @returns {{triggered: boolean, price: number}}
  */
-export function checkTrigger(order, quote) {
+export function checkTrigger(order, quote, range = null) {
   const ref = order.side === 'buy' ? quote.ask : quote.bid;
+  const buy = order.side === 'buy';
+  const half = (quote.spread ?? 0) / 2;
   switch (order.type ?? 'market') {
     case 'limit': {
-      const ok = order.side === 'buy' ? ref <= order.limit : ref >= order.limit;
-      return { triggered: ok, price: ref };
+      if (buy ? ref <= order.limit : ref >= order.limit) return { triggered: true, price: ref };
+      const touched = range && (buy ? range.low * (1 + half) <= order.limit : range.high * (1 - half) >= order.limit);
+      return touched ? { triggered: true, price: order.limit } : { triggered: false, price: ref };
     }
     case 'stop': {
-      const ok = order.side === 'buy' ? quote.mid >= order.limit : quote.mid <= order.limit;
-      return { triggered: ok, price: ref };
+      if (buy ? quote.mid >= order.limit : quote.mid <= order.limit) return { triggered: true, price: ref };
+      const touched = range && (buy ? range.high >= order.limit : range.low <= order.limit);
+      return touched ? { triggered: true, price: round2(order.limit * (buy ? 1 + half : 1 - half)) } : { triggered: false, price: ref };
     }
     default:
       return { triggered: true, price: ref };

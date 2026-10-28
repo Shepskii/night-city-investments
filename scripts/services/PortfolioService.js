@@ -114,15 +114,19 @@ class PortfolioServiceImpl {
     });
   }
 
-  /** Work every open order against the new prices, check price alerts, then pay withdrawals that are due. */
-  onTick() {
+  /**
+   * Work every open order against the new prices, check price alerts, then pay withdrawals that are due.
+   * @param {{path?: object}} [tick] - the `priceTick` payload; its `path` holds the prices along the run
+   */
+  onTick(tick = null) {
     if (!isActiveGM()) return Promise.resolve();
+    const path = tick?.path ?? null;
     return this._queue.run(async () => {
       for (const actor of this._characters()) {
         await this._release(actor);
         await this._process(actor);
-        await this._runOrders(actor);
-        await this._checkAlerts(actor);
+        await this._runOrders(actor, path);
+        await this._checkAlerts(actor, path);
         await this._payWithdrawals(actor);
       }
     });
@@ -139,11 +143,11 @@ class PortfolioServiceImpl {
   }
 
   /** Tell the player about any price alert that has just come true. */
-  async _checkAlerts(actor) {
+  async _checkAlerts(actor, path = null) {
     const portfolio = PortfolioRepository.get(actor);
     if (!portfolio.alerts.length) return;
     const quotes = Object.fromEntries(Object.entries(this.market()).map(([id, m]) => [id, { price: m.price, prevClose: m.prevClose }]));
-    const out = checkAlerts(portfolio, quotes, this.tick());
+    const out = checkAlerts(portfolio, quotes, this.tick(), path);
     if (!out.changed) return;
     await PortfolioRepository.save(actor, out.portfolio);
     this._emit(actor, out.fired.map((f) => ({ type: 'alertFired', ...f })), []);
@@ -271,7 +275,7 @@ class PortfolioServiceImpl {
     this._emit(actor, result.events, result.portfolio.results.filter((r) => keys.has(r.key)));
   }
 
-  async _runOrders(actor) {
+  async _runOrders(actor, path = null) {
     const portfolio = PortfolioRepository.get(actor);
     if (!portfolio.orders.some((o) => o.status === OPEN)) return;
 
@@ -279,6 +283,7 @@ class PortfolioServiceImpl {
       portfolio,
       tick: this.tick(),
       market: this.market(),
+      path,
       feeProfile: TradingSettings.forExecutor().direct,
       seed: TradingSettings.seed(),
       settleDays: TradingSettings.settlementDays(),

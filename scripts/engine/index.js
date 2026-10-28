@@ -8,6 +8,7 @@ export * from './config.js';
 export * from './marketModel.js';
 export * from './impactKernel.js';
 export * from './quotes.js';
+export * from './pricePath.js';
 export * from './orderEngine.js';
 export * from './cash.js';
 export * from './dividends.js';

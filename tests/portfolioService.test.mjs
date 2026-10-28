@@ -250,3 +250,30 @@ test('player-owned outboxes are pruned once their requests are processed', async
   assert.equal(PortfolioRepository.pending(alice).length, 0);
   assert.equal(PortfolioRepository.outbox(alice).length, 0);
 });
+
+test('a multi-tick advance passes on its price path, and a limit the path reached fills from it', async () => {
+  const seen = [];
+  Hooks.on('night-city-investments.priceTick', (data) => seen.push(data));
+  await TickService.advance(3);
+  await settle();
+  const { path } = seen.at(-1);
+  assert.equal(path.times.length, 3, 'one point a tick');
+  assert.equal(path.prices.ARA.length, 3);
+
+  // A limit buy under the price, then a run that dipped below it and came back.
+  const price = MarketStore.getPublic().companies.ARA.price;
+  const limit = Math.floor(price * 0.8);
+  const key = await PortfolioClient.submit(alice, 'placeOrder', { side: 'buy', assetId: 'ARA', qty: 1, orderType: 'limit', limit, expiry: 'gtc' });
+  await settle();
+  assert.equal(PortfolioRepository.get(alice).results.find((r) => r.key === key).ok, true);
+  const order = PortfolioRepository.get(alice).orders.find((o) => o.type === 'limit' && o.status === 'open');
+  // Once it is live, a run whose prices dipped under the limit and came back.
+  await TickService.advance(1);
+  await settle();
+  assert.equal(PortfolioRepository.get(alice).orders.find((o) => o.id === order.id).status, 'open', 'the end price alone does not fill it');
+  const t = order.eligibleTick;
+  await PortfolioService.onTick({ path: { times: [t], prices: { ARA: [limit * 0.9] } } });
+  await settle();
+  const done = PortfolioRepository.get(alice).orders.find((o) => o.id === order.id);
+  assert.equal(done.status, 'filled', 'filled at the dip, though the price is back up');
+});

@@ -27,7 +27,7 @@ const STEPS = [
   ['Dividends', () => DividendService.onTick()],
   ['Fund distributions', () => FundDistributionService.onTick()],
   ['Gig headlines', () => GigImpactService.onTick()],
-  ['Orders, alerts and withdrawals', () => PortfolioService.onTick()],
+  ['Orders, alerts and withdrawals', (data) => PortfolioService.onTick(data)],
   // After orders have been worked, so the audit never waits a tick for an order that is about to fill.
   ['Heat audit', () => HeatService.onTick()],
   ['Notifications', (data) => NotificationService.onTick(data)],
