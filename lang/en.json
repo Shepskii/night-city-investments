@@ -1515,6 +1515,8 @@
       "Shortfall": "{amount} eb more is needed before it can open.",
       "WaitingFor": "Waiting for: {names}.",
       "AddMore": "Put more in",
+      "TopUpHint": "Eddies go into the till and gear into the fit-out. Nobody's units change, so every holder's stake gains in proportion; you are not given a bigger share for it.",
+      "GearLeavesForGood": "leaves your sheet for good",
       "Contribute": "Put it in",
       "Withdraw": "Take my money back out",
       "WithdrawConfirm": "Take your share of the money back out and leave the business before it opens?",

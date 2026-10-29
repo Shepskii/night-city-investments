@@ -186,6 +186,22 @@ test('owners draw up to their share of last week\'s profit, once', () => {
   assert.equal(apply(out.business, { type: 'draw', businessId: 'b1', amount: 1 }, FIX, { expect: false }).reason, 'over-allowance');
 });
 
+test('a partner tops up a running business: money to the till, gear to the fit-out, and nobody\'s units change', () => {
+  const b = openClinic();
+  const units = b.partners.map((x) => x.units);
+  const out = apply(b, { type: 'contribute', businessId: 'b1', cash: 1000 }, FIX, { context: { gear: [{ name: 'Autoclave', value: 400 }] } });
+  assert.deepEqual(out.wealth, { fix: -1000 });
+  assert.equal(out.business.till, b.till + 1000);
+  assert.equal(out.business.assets, b.assets + 400);
+  assert.deepEqual(out.business.partners.map((x) => x.units), units, 'a top-up buys no units');
+  assert.ok(unitValue(out.business) > unitValue(b), 'so every holder\'s stake is worth more');
+  assert.equal(out.business.ledger.at(-1).kind, 'contribution');
+  assert.equal(out.business.ledger.at(-1).gear, 400);
+  assert.equal(apply(b, { type: 'contribute', businessId: 'b1', cash: 99999 }, FIX, { expect: false }).reason, 'insufficient-funds');
+  assert.equal(apply(b, { type: 'contribute', businessId: 'b1', cash: 0 }, FIX, { expect: false }).reason, 'bad-amount');
+  assert.equal(apply(b, { type: 'contribute', businessId: 'b1', cash: 100 }, SOLO, { expect: false }).reason, 'not-partner');
+});
+
 test('a leaving partner\'s stake can be bought at book value', () => {
   let b = apply(openClinic(), { type: 'leave', businessId: 'b1' }, MED).business;
   const price = Math.round(b.partners[0].units * unitValue(b));

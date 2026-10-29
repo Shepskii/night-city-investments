@@ -240,6 +240,7 @@ function ledgerContext(business, actor) {
     allowance,
     allowanceText: allowance > 0 ? L('NCI.Business.DrawAllowance', { amount: whole(allowance) }) : L('NCI.Business.NoDraw'),
     canDraw: business.status === 'open' && allowance > 0,
+    canTopUp: business.status === 'open' && (actor ? partnerOf(business, actor.id)?.status === 'active' : false),
     money: business.status === 'open' ? moneyContext(business, actor) : null,
   };
 }

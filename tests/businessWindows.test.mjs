@@ -197,6 +197,8 @@ test('a registered business shows its loans, the bank, investors and an angel', 
   assert.match(ledger, /A fixer(&#x27;|')s loan: 800 eb owed at 5\.0% a week/);
   assert.match(ledger, /1 payment\(s\) missed/);
   assert.match(ledger, /Propose going to a bank/);
+  assert.match(ledger, /Put more in/);
+  assert.match(await renderBusiness(windowFor(med, 'ledger')), /data-gear="contribute"/, 'a running business takes top-ups, with gear dragged in');
   const partners = text(await renderBusiness(windowFor(med, 'partners')));
   assertClean(await renderBusiness(windowFor(med, 'partners')), 'registered partners');
   assert.match(partners, /Mira Sato will hear your pitch \(their skill: 17\)/);

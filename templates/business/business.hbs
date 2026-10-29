@@ -248,6 +248,23 @@
     <button type="button" data-action="draw"><i class="fas fa-hand-holding-dollar"></i> {{localize "NCI.Business.Draw"}}</button>
     {{/if}}
   </div>
+  {{#if canTopUp}}
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Business.AddMore"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Business.TopUpHint"}}</p>
+    <div class="nci-grid">
+      <label>{{localize "NCI.Business.Cash"}}<input type="number" name="cash" min="0" step="50" value="0"></label>
+    </div>
+    <div class="nci-drop" data-gear="contribute">
+      <p class="nci-hint"><i class="fas fa-hand-pointer"></i> {{localize "NCI.Business.GearDrop"}}</p>
+      {{#each @root.gearDrafts.contribute}}
+      <div class="nci-gearrow">{{#if img}}<img src="{{img}}" alt="">{{/if}}<span>{{name}}</span><strong>{{value}} eb</strong>{{#if fromActor}}<span class="nci-muted">{{localize "NCI.Business.GearLeavesForGood"}}</span>{{/if}}
+        <button type="button" data-action="removeGear" data-form="contribute" data-index="{{@index}}" title="{{localize 'NCI.Business.GearRemove'}}"><i class="fas fa-xmark"></i></button></div>
+      {{/each}}
+    </div>
+    <button type="button" data-action="contribute"><i class="fas fa-coins"></i> {{localize "NCI.Business.Contribute"}}</button>
+  </div>
+  {{/if}}
   {{#with money}}
   <div class="nci-block nci-form">
     <h3>{{localize "NCI.Business.Loans"}}</h3>

@@ -11,7 +11,7 @@
  *   { key, type: 'found', name, archetype, location?, cash, gear?, invite?, sweat?, heirId? }
  *   { key, type: 'join', businessId, cash, gear?, heirId? }      an invited character accepts
  *   { key, type: 'decline', businessId }
- *   { key, type: 'contribute', businessId, cash, gear? }         while forming
+ *   { key, type: 'contribute', businessId, cash, gear? }         while forming, or a top-up once open
  *
  * `gear` in a request is `[{uuid}]`, Foundry items dragged in. The GM's service looks each one up
  * and passes what it found as `context.gear` (see `itemGear`); a name or value in the request itself
@@ -254,18 +254,27 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       me.status = 'declined';
       break;
     case 'contribute': {
-      if (b.status !== 'forming') return fail('not-forming');
+      const running = b.status === 'open';
+      if (!running && b.status !== 'forming') return fail('not-forming');
       if (me?.status !== 'active') return fail('not-partner');
       const money = contribution(request, actor, p, p.maxGearItems - me.gear.length, ctx.gear);
       if (!money.ok) return money;
       if (!money.cash && !money.gear.length) return fail('bad-amount');
+      const worth = money.gear.reduce((a, g) => a + g.value, 0);
       take(out, actor.id, money.gear);
       me.cash += money.cash;
       me.gear.push(...money.gear);
-      b.escrow += money.cash;
       pay(actor.id, -money.cash);
-      log('contribution', money.cash, { gear: money.gear.reduce((a, g) => a + g.value, 0) });
-      tryOpen(b, day, ctx, out.events, p);
+      log('contribution', money.cash, { gear: worth });
+      if (running) {
+        // A top-up: the money goes into the till and the gear into the fit-out. Nobody's units
+        // change, so every holder gains in proportion to their stake.
+        b.till += money.cash;
+        b.assets += worth;
+      } else {
+        b.escrow += money.cash;
+        tryOpen(b, day, ctx, out.events, p);
+      }
       break;
     }
     case 'withdraw': {
