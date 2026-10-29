@@ -9,6 +9,11 @@
   --nci-accent-bg: #1a0a0d;
   --nci-label: #d9606e;
 
+  /* Clickable rows: two shades, both lighter than the window (#0b0809), and a hover that stands out from both. */
+  --nci-row: #1a1315;
+  --nci-row-alt: #271c20;
+  --nci-row-hover: #3d141d;
+
   /* Meaning, not decoration: gains, losses and cautions keep their own colours. */
   --nci-up: #3ddc84;
   --nci-down: #ff6a4d;
@@ -99,8 +104,9 @@
 .nci-app th { text-align: left; color: var(--nci-label); font-weight: normal; border-bottom: 1px solid var(--nci-accent-dim); padding: 4px 6px; }
 .nci-app td { padding: 4px 6px; border-bottom: 1px solid #1a1415; }
 .nci-app .num { text-align: right; font-variant-numeric: tabular-nums; }
-.nci-app tr.nci-row { cursor: pointer; }
-.nci-app tr.nci-row:hover { background: var(--nci-accent-bg); }
+.nci-app tr.nci-row { cursor: pointer; background: var(--nci-row); }
+.nci-app tr.nci-row:nth-child(even) { background: var(--nci-row-alt); }
+.nci-app tr.nci-row:hover { background: var(--nci-row-hover); }
 
 .nci-app .nci-badge {
   font-size: 10px;
