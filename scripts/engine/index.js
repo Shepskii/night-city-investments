@@ -25,6 +25,7 @@ export * from './checks.js';
 export * from './rolls.js';
 export * from './businessConfig.js';
 export * from './business.js';
+export * from './syndicate.js';
 export * from './businessEvents.js';
 export * from './funds.js';
 export * from './withdrawals.js';

@@ -448,7 +448,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B0 | **Done, see §26.9 (B0 findings).** Groundwork for player businesses and syndicates: the business growth simulator (`tools/business-model.mjs`), the storage schema, and the Crew Tools spike (from its source; a run in the test world is still to do) |
 | B1 | **Done (v0.10.0), see §29.** Side businesses: the roll levers, the Business window and the GM's Businesses tab, partnerships, four archetypes, the weekly loop |
 | B2 | **Done (v0.11.0), see §30.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
-| B3 | **v0.12, alongside B1 and B2.** Player syndicates, and syndicates owning or investing in businesses |
+| B3 | **Building (v0.12), see §31.** Player syndicates, and syndicates owning or investing in businesses |
 | B4 | **v0.13.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
 | B5 | **v0.14.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
 | B6 | **v0.15.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
@@ -1257,3 +1257,40 @@ B2 as built, with the decisions made while building it. The design it follows is
 **Not built yet:** chartering and everything after it (B4 to B6); the GM editing the event tables; statements counting private stakes; moving a business to another district; Crew Tools downtime in place of business days (B7).
 
 **Tested in the test world** (Foundry 12.343, Cyberpunk RED Core v0.92.4): gear dragged from a sheet (one item and several), valued from the item, leaving the sheet and coming back when the business was cancelled; founding in a district; a fixer's loan, an expansion finished with business days, answering events (a shortage, a breakdown, debt collectors) with extra time and Luck; weekly closes with interest, a missed payment and the collectors; the registration checklist, agreement and roll with a hired professional; a bank loan; finding an angel and a failed pitch; a character invited as an investor accepting from their own window; private stakes in the Portfolio tab. It found and fixed: loaded ammunition refused as installed and priced per round; a player's stale copy of a business they had left; a loan payment checked before the week's takings came in; the dialog offering a hire the till could not pay. Not tried live: a successful angel pitch, an inspection, a gig for a player's business, and the registered business's second slot (all covered by tests).
+
+## 31. Phase B3: syndicates (building for v0.12)
+
+A syndicate is a crew's shared brokerage account: members pool money, officers trade it on the market, and everyone holds units in it. This section turns §26.1 into what is built, with the choices made at the start of B3. It is built in two steps: **B3a**, the account (below), then **B3b**, syndicates as partners and owners of businesses.
+
+**Choices made for B3** (decided before building):
+- **Control.** Officers trade freely up to a size limit the members set. A bigger trade, admitting or removing a member, making someone an officer or not, changing the limit, and dissolving all go to a **vote by units**, open for 7 game days. This replaces §26.1's per-action approval rules, which would have needed a rules editor and more to explain.
+- **Money in** comes from a member's own **brokerage balance**, not their eddies: a deposit moves cash from the member's account into the syndicate's and buys units at the current value per unit (NAV). A member who wants to pay in eddies deposits them into their own account first.
+- **Money out.** A member redeems units at NAV. The money goes back into the member's brokerage balance after the market's settlement delay, from the syndicate's cash; if there is not enough cash, the redemption waits until the officers sell enough. Leaving is redeeming every unit.
+- **Founding.** A player founds a syndicate from the terminal and invites members. A setting, on by default as for businesses, makes the GM approve it first.
+
+**Storage.** A syndicate is a JournalEntry in an "NCI Syndicates" folder, as a business is, and not an actor as §26.1 first said: a journal keeps it out of the Actors directory, off character sheets and out of every list of characters, and its users' access is the business pattern (ownership None, Observer for the users of its invited and active members). The journal carries two flags, both saved in the one-write wrapped form (§28): `syndicate`, the record, and `portfolio`, an ordinary portfolio. Because the portfolio is ordinary, the executor, orders, fees, brokers, terminal sessions, dividends, splits, IPO subscriptions, alerts and statements all work on it unchanged.
+
+**The record.** `{ schema, id, name, status, founderId, createdDay, members, rules, proposals, redemptions, ledger, closedDay }`.
+- `status` is `pending` (waiting for the GM), `active` or `closed`.
+- Each member is `{ actorId, name, role: 'officer'|'member', status: 'invited'|'active'|'declined'|'left', units, joinedDay }`. The founder starts as an officer.
+- `rules` is `{ tradeLimit, proposalDays }`: 5,000 eb and 7 days to start.
+
+**Units and NAV.** NAV per unit is the syndicate portfolio's total value (cash, unsettled proceeds and positions at market, as the terminal values any portfolio) divided by the units in issue, and 1 eb while no units exist. Units are kept to two decimals. A deposit buys `amount / NAV` units; a redemption pays `units × NAV` at the time it is paid.
+
+**Requests.** Members never write the syndicate's flags. A member's character carries a `syndicateOutbox`, as it carries a business outbox, and every request names the syndicate. So the GM always knows which member asked, which a shared outbox on the syndicate could not show.
+- `found { name, invite }`, then `join` or `decline` for the invited.
+- `deposit { amount }` and `redeem { units }` (all of them to leave).
+- `trade { request }`, officers only: one of the terminal's own requests (place or cancel an order, choose a broker, connect to the terminal, dividend reinvestment, price alerts, a statement, an IPO subscription), run by the executor on the syndicate's portfolio. An order whose estimated cost is over the trade limit is refused with "over the limit", and the officer proposes it instead.
+- `propose { kind, ... }` and `vote { proposalId, yes }`. The kinds are `trade` (an order over the limit, placed as soon as it passes), `admit` (invite a character), `remove` (a member, whose units are redeemed), `role` (make a member an officer, or not), `limit` (a new trade limit) and `dissolve`.
+
+**Votes.** A proposal passes when members holding more than half the units say yes, and fails once half or more say no; it lapses after `proposalDays`. While no units exist, each active member has one vote. Dissolving needs the portfolio to hold no positions and no open orders (the officers sell first); when it passes, the cash is paid out by units into the members' brokerage balances and the syndicate closes.
+
+**Trading.** In the terminal the account picker lists each syndicate a user's characters belong to, as "*Syndicate* (as *character*)", beside the characters themselves. With a syndicate chosen, the Market and Portfolio tabs show the syndicate's account, and the trade dialog, broker choice, alerts and orders send `trade` requests through the member's character. Direct trading needs the syndicate's own terminal session, opened by an officer's Accounting roll; the broker's terms are the broker's own, so §26.1's treasurer is not needed. The Portfolio tab gains a Syndicate panel: members, units and stakes, NAV, deposit and redeem, waiting redemptions, proposals and votes, the trade limit, and invitations.
+
+**Heat is collective.** The syndicate's trades are audited as one account and recorded under the syndicate's id. It counts as the gig's runner if any member ran it, and as tipped if any member was sent the rumour. Freezes and dropped brokers land on the syndicate's account; warnings and NCPD mail go to every active member. Cover-up actions stay with characters. Adding members' personal trades to the syndicate's for the size factor (§26.1) waits for coordinated campaigns (B6).
+
+**Mail.** Anything the market would mail to an account (fills by broker, statements, alerts, paid withdrawals) goes to every active member of a syndicate.
+
+**GM Console.** A Syndicates tab: each syndicate with its members, units, NAV and portfolio, approving or refusing pending ones, passing or vetoing a proposal, and closing a syndicate.
+
+**B3b (after B3a).** A syndicate as a business partner or owner: it founds, joins or invests in a business through an officer, pays from its cash, receives draws and payouts into its cash, and votes through its officers; its stake counts in NAV at book value (and at *V* once B4 brings companies).
