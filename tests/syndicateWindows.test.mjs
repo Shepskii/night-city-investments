@@ -120,6 +120,7 @@ test('the invited character sees the invitation; once a member, the syndicate jo
   const mine = await portfolioTab(med.id);
   assert.match(text(mine), /Back Room Capital \(syndicate, as Medtech\)/);
   assert.match(mine, new RegExp(`data-action="synOpen" data-key="${key(med)}"`));
+  assert.match(text(mine), /Back Room Capital officer 1\.00 eb 9,000 eb 6,000 6,000 eb/, 'value per unit, the account value, my units and my stake');
 });
 
 test('picked as a member, the Portfolio tab is the syndicate\'s account with its panel, and no wallet box', async () => {

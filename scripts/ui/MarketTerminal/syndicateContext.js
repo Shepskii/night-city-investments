@@ -3,7 +3,7 @@
  * @file scripts/ui/MarketTerminal/syndicateContext.js
  */
 
-import { navOf, memberOf, freeCash, freeUnits, isLiquid, syndicateUnits, activeMembers } from '../../engine/index.js';
+import { navOf, memberOf, freeCash, freeUnits, isLiquid, syndicateUnits, activeMembers, shareOf, bookValue } from '../../engine/index.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { PortfolioRepository } from '../../data/PortfolioRepository.js';
 import { SyndicateRepository } from '../../data/SyndicateRepository.js';
@@ -123,20 +123,37 @@ export function syndicateContext(account, portfolio, prices, stakes = 0) {
   };
 }
 
-/** For a character's own account: invitations to answer, syndicates they are in, and founding a new one. */
-export function characterSyndicates(actor) {
+/** A syndicate's stakes in open businesses, at book value times its share. */
+export function syndicateStakes(id) {
+  return Math.round(BusinessRepository.all().filter((b) => b.status === 'open').reduce((sum, b) => sum + shareOf(b, id) * bookValue(b), 0));
+}
+
+/**
+ * For a character's own account: invitations to answer, syndicates they are in (with the value per
+ * unit, the account's value and the character's units), and founding a new one.
+ * @param {Object<string, number>} [prices]
+ */
+export function characterSyndicates(actor, prices = {}) {
   if (game.settings.get(MODULE_ID, SETTINGS.SYNDICATES_ENABLED) === false) return null;
   const mine = SyndicateRepository.forActor(actor.id).filter((s) => s.status !== 'closed');
   return {
     invitations: mine.filter((s) => memberOf(s, actor.id)?.status === 'invited').map((s) => ({
       id: s.id, name: s.name, founder: memberOf(s, s.founderId)?.name ?? '?', pending: s.status === 'pending',
     })),
-    memberships: mine.filter((s) => memberOf(s, actor.id)?.status === 'active').map((s) => ({
-      key: syndicateKey(s.id, actor.id),
-      name: s.name,
-      pending: s.status === 'pending',
-      role: L(`NCI.Syndicate.Role.${memberOf(s, actor.id).role}`),
-    })),
+    memberships: mine.filter((s) => memberOf(s, actor.id)?.status === 'active').map((s) => {
+      const { total, nav } = navOf(s, SyndicateRepository.portfolio(s.id), prices, syndicateStakes(s.id));
+      const mineUnits = memberOf(s, actor.id).units;
+      return {
+        key: syndicateKey(s.id, actor.id),
+        name: s.name,
+        pending: s.status === 'pending',
+        role: L(`NCI.Syndicate.Role.${memberOf(s, actor.id).role}`),
+        nav: money(nav),
+        total: whole(total),
+        units: units(mineUnits),
+        value: whole(mineUnits * nav),
+      };
+    }),
     inviteOptions: game.actors
       .filter((a) => a.type === 'character' && a.hasPlayerOwner && a.id !== actor.id)
       .sort((a, b) => a.name.localeCompare(b.name))

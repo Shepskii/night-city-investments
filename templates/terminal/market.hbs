@@ -184,12 +184,22 @@
       <button type="button" class="nci-labelled" data-action="synDecline" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.Syndicate.Decline"}}</button></p>
     {{/each}}
     {{#if memberships.length}}
-    <table class="nci-market"><tbody>
+    <table class="nci-market">
+      <thead><tr>
+        <th>{{localize "NCI.Syndicate.Heading"}}</th>
+        <th class="num">{{localize "NCI.Syndicate.Nav"}}</th>
+        <th class="num">{{localize "NCI.Syndicate.Value"}}</th>
+        <th class="num">{{localize "NCI.Syndicate.YourUnits"}}</th>
+        <th class="num">{{localize "NCI.Syndicate.YourStake"}}</th>
+      </tr></thead>
+      <tbody>
       {{#each memberships}}
       <tr{{#unless pending}} data-action="synOpen" data-key="{{key}}" class="nci-row" title="{{localize 'NCI.Syndicate.Open'}}"{{/unless}}>
-        <td><strong>{{name}}</strong></td><td>{{role}}</td><td class="nci-muted">{{#if pending}}{{localize "NCI.Syndicate.AwaitingGM"}}{{/if}}</td></tr>
+        <td><strong>{{name}}</strong> <span class="nci-muted">{{role}}{{#if pending}}, {{localize "NCI.Syndicate.AwaitingGM"}}{{/if}}</span></td>
+        <td class="num">{{nav}} eb</td><td class="num">{{total}} eb</td><td class="num">{{units}}</td><td class="num">{{value}} eb</td></tr>
       {{/each}}
-    </tbody></table>
+      </tbody>
+    </table>
     {{/if}}
     <div class="nci-block nci-found">
       <h3>{{localize "NCI.Syndicate.Found"}}</h3>

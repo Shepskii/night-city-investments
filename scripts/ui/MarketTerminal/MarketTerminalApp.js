@@ -565,7 +565,7 @@ export class MarketTerminalApp extends BaseApplication {
     return {
       wealth: whole(ownerOf(actor).system?.wealth?.value ?? 0),
       syndicate: actor.isSyndicate ? syndicateContext(actor, p, prices, stakesValue) : null,
-      syndicates: actor.isSyndicate ? null : characterSyndicates(actor),
+      syndicates: actor.isSyndicate ? null : characterSyndicates(actor, prices),
       cash: whole(v.cash),
       unsettled: whole(v.unsettled),
       settling,
