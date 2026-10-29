@@ -447,7 +447,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | 0.9.7 | **Done (v0.9.7).** Released the work that had been unreleased: the after-tick sequence and dividend-records fix (§27), the market date, price paths and cleanups (§28), and gig runners for heat (H4) |
 | B0 | **Done, see §26.9 (B0 findings).** Groundwork for player businesses and syndicates: the business growth simulator (`tools/business-model.mjs`), the storage schema, and the Crew Tools spike (from its source; a run in the test world is still to do) |
 | B1 | **Done (v0.10.0), see §29.** Side businesses: the roll levers, the Business window and the GM's Businesses tab, partnerships, four archetypes, the weekly loop |
-| B2 | **v0.11. Built, see §30; to be released after a run in the test world.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
+| B2 | **Done (v0.11.0), see §30.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
 | B3 | **v0.12, alongside B1 and B2.** Player syndicates, and syndicates owning or investing in businesses |
 | B4 | **v0.13.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
 | B5 | **v0.14.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
@@ -1209,7 +1209,7 @@ B1 as built, with the decisions made while building it. The design it follows is
 
 **Tested in the test world** (Foundry 12.343, Cyberpunk RED Core v0.92.4) before release: founding, invitations and joining, the setup roll (a real fumble included), GM approval, complementary checks, an action with Luck and the +1 on a real sheet, the weekly close and catch-up over a 14-day jump, draws, a refused close vote, leaving, a buy-out and closing; a business journal reaching only its partners' players. It found and fixed: the roll dialog failing to open (`title` is read-only on ApplicationV2), qualified skills such as Local Expert (Your Home) reading as 0, a lone owner helping themselves with the action's own skill, abilities at rank 0 in the dialog, a stale "no GM online" warning, a fumble taking the whole escrow (now capped at half), and a closed business reappearing for partners who had sold out. Not tried live: failure after two losing weeks, and a stake passing to an heir or lapsing (both covered by tests).
 
-## 30. Phase B2: growing (built for v0.11)
+## 30. Phase B2: growing (v0.11.0)
 
 B2 as built, with the decisions made while building it. The design it follows is §26.0, §26.4 (events) and §26.5 (gigs). The engine is now split into `businessRecord.js` (the record and its readers), `business.js` (requests, proposals and the week), `businessGrowth.js`, `businessEvents.js` and `businessFinance.js`.
 

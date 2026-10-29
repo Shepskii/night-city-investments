@@ -14,7 +14,7 @@ Wait for the `night-city-investments.ready` hook if you load early. It fires onc
 Hooks.once('night-city-investments.ready', (api) => { /* api.market, api.portfolio, api.gm ... */ });
 ```
 
-`api.apiVersion` is the module version (`"0.10.0"`). Pieces are added as the module starts, so read them at `ready` or later. Anything marked **GM** only works on the **active GM's** client and quietly refuses elsewhere (it returns `null`, `[]` or `{ ok: false, status: 'not-gm' }`). Players never write market state: they can only make requests for their own characters.
+`api.apiVersion` is the module version (`"0.11.0"`). Pieces are added as the module starts, so read them at `ready` or later. Anything marked **GM** only works on the **active GM's** client and quietly refuses elsewhere (it returns `null`, `[]` or `{ ok: false, status: 'not-gm' }`). Players never write market state: they can only make requests for their own characters.
 
 ## Windows and checks
 
