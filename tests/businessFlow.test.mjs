@@ -139,4 +139,16 @@ test('when the partners close the clinic, its money is paid out and the record s
   assert.equal(business().status, 'closed');
   assert.ok(wealth(med) > m && wealth(fix) > f);
   assert.ok(BusinessRepository.forActor(med.id).length === 1, 'a closed business still shows to its partners');
+  assert.deepEqual(BusinessRepository.journalOf(business().id).ownership, { default: 0, u_med: 2, u_fix: 2 }, 'and only to them');
+});
+
+test('a partner who sold out does not get the record back when the business closes', async () => {
+  await send(med, 'found', { name: 'Second Shop', archetype: 'garage', cash: 500, gear: [{ name: 'Rig', value: 2500 }], invite: [solo.id] });
+  const id = BusinessRepository.all().find((b) => b.name === 'Second Shop').id;
+  await send(solo, 'decline', { businessId: id });
+  assert.deepEqual(BusinessRepository.journalOf(id).ownership, { default: 0, u_med: 2, '-=u_solo': null }, 'the decline removes the Solo\'s player');
+  await BusinessService.reject(id);
+  const ownership = BusinessRepository.journalOf(id).ownership;
+  assert.equal(ownership.u_solo, undefined, 'closing does not give it back');
+  assert.equal(ownership.u_med, 2);
 });

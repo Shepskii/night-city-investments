@@ -14,7 +14,11 @@ import { MODULE_ID, FLAGS, BUSINESS_FOLDER_NAME } from '../utils/constants.js';
 const LEVELS = () => CONST.DOCUMENT_OWNERSHIP_LEVELS;
 const unwrap = (stored) => (Array.isArray(stored) ? stored[0] : stored);
 
-/** Partners whose players should see the business: everyone but those who declined or left. */
+/**
+ * Partners whose players should see the business: those invited and those holding units. A partner
+ * who declined, or left (bought out, or before it opened), loses it. Holders stay `active` when a
+ * business closes, so its last partners keep the record and nobody else regains it.
+ */
 const SEEN_BY = new Set(['invited', 'active', 'leaving']);
 
 export const BusinessRepository = {
@@ -38,15 +42,15 @@ export const BusinessRepository = {
     return this.journals().find((j) => unwrap(j.getFlag(MODULE_ID, FLAGS.BUSINESS))?.id === id) ?? null;
   },
 
-  /** Businesses a character is part of (or invited to), and those they were part of that have closed. */
+  /** Businesses a character is part of or invited to, closed ones included if they were a partner at the end. */
   forActor(actorId) {
-    return this.all().filter((b) => b.partners.some((p) => p.actorId === actorId && (SEEN_BY.has(p.status) || b.status === 'closed')));
+    return this.all().filter((b) => b.partners.some((p) => p.actorId === actorId && SEEN_BY.has(p.status)));
   },
 
   /** The ownership a business's journal should have: Observer for the users of its partners' characters. */
   ownershipFor(business) {
     const ownership = { default: LEVELS().NONE };
-    for (const p of business.partners.filter((x) => SEEN_BY.has(x.status) || business.status === 'closed')) {
+    for (const p of business.partners.filter((x) => SEEN_BY.has(x.status))) {
       const actor = game.actors.get(p.actorId);
       for (const user of game.users?.filter?.((u) => !u.isGM && actor?.testUserPermission?.(u, 'OWNER')) ?? []) {
         ownership[user.id] = LEVELS().OBSERVER;
