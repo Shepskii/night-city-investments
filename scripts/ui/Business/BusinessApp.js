@@ -33,6 +33,7 @@ export class BusinessApp extends BaseApplication {
     actions: {
       switchTab: BusinessApp._onTab,
       startNew: BusinessApp._onStartNew,
+      cancelStart: BusinessApp._onCancelStart,
       found: BusinessApp._onFound,
       join: BusinessApp._onJoin,
       decline: BusinessApp._onDecline,
@@ -189,6 +190,14 @@ export class BusinessApp extends BaseApplication {
   static _onStartNew() {
     this.starting = true;
     this.render();
+  }
+
+  /** Leave the Start a business form: back to the business it was opened from, or close the window if there is none. */
+  static _onCancelStart() {
+    this.starting = false;
+    this.gearDrafts.start = [];
+    if (!this.business) return this.close();
+    return this.render();
   }
 
   static async _onFound(event, target) {

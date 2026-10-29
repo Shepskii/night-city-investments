@@ -1652,6 +1652,7 @@
       "Me": "Me",
       "SweatHint": "An optional slice of units for the partner who will do most of the work. Decisions follow units; closing the business, and changing the agreement, need every partner.",
       "Found": "Found it",
+      "CancelStart": "Cancel",
       "Invitation": "You are invited",
       "InvitationIntro": "You have been asked to be a partner in {name}. Put in what you like; your units follow what you put in.",
       "Join": "Join",

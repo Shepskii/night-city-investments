@@ -8,6 +8,8 @@
   --nci-accent-dim: #5c121c;
   --nci-accent-bg: #1a0a0d;
   --nci-label: #d9606e;
+  /* The line under section headings: the Cyberpunk RED system's own heading rule. */
+  --nci-rule: #ad2e32;
 
   /* Clickable rows: two shades, both lighter than the window (#0b0809), and a hover that stands out from both. */
   --nci-row: #1a1315;
@@ -142,7 +144,9 @@
 
 /* Other UI themes stretch inputs and enlarge headings; keep the layout compact. */
 .nci-app h2 { font-size: 18px; margin: 6px 0; }
-.nci-app h3 { font-size: 14px; }
+/* Section headings, the same in every window: the label red, with a line under them. */
+.nci-app h3 { font-size: 14px; color: var(--nci-label); border-bottom: 1px solid var(--nci-rule); padding-bottom: 2px; }
+.nci-app h4 { color: var(--nci-label); }
 .nci-app input[type="number"], .nci-app input[type="text"], .nci-app select, .nci-app textarea {
   height: auto;
   min-height: 24px;
@@ -187,13 +191,13 @@
 /* A syndicate's pay-in and redeem boxes: the same label width, so their fields and buttons line up. */
 .nci-app .nci-synbox > span:first-child { flex: 0 0 240px; }
 .nci-app .nci-synbox input { flex: 0 0 130px; }
-.nci-app .nci-portfolio h3 { color: var(--nci-label); margin: 14px 0 4px; border: none; }
+.nci-app .nci-portfolio h3 { margin: 14px 0 6px; }
 .nci-app .nci-estimate { color: var(--nci-accent-bright); min-height: 1.4em; }
 
 .nci-app .nci-news { list-style: none; margin: 4px 0; padding: 0; }
 .nci-app .nci-news li { padding: 4px 2px; border-bottom: 1px solid #1a1415; }
-.nci-app .nci-subhead { color: var(--nci-label); margin: 14px 0 4px; border: none; }
-.nci-app .nci-console h3 { color: var(--nci-label); margin: 4px 0; border: none; }
+.nci-app .nci-subhead { margin: 14px 0 6px; }
+.nci-app .nci-console h3 { margin: 8px 0 6px; }
 .nci-app .nci-console .nci-hint { color: #777; font-size: 11px; margin: 0 0 6px; }
 .nci-app .nci-console .nci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-bottom: 8px; }
 .nci-app .nci-console label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--nci-label); }

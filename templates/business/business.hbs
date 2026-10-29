@@ -62,7 +62,10 @@
       </label>
     </div>
     <p class="nci-hint">{{localize "NCI.Business.SweatHint"}}</p>
-    <footer class="nci-footer"><button type="button" data-action="found"><i class="fas fa-store"></i> {{localize "NCI.Business.Found"}}</button></footer>
+    <footer class="nci-footer">
+      <button type="button" data-action="cancelStart"><i class="fas fa-xmark"></i> {{localize "NCI.Business.CancelStart"}}</button>
+      <button type="button" data-action="found"><i class="fas fa-store"></i> {{localize "NCI.Business.Found"}}</button>
+    </footer>
   </div>
   {{/if}}
 
