@@ -63,6 +63,8 @@ export function normalizeBusiness(raw) {
       voting: p.voting !== false,
       heirId: p.heirId ?? null,
       leavingSince: p.leavingSince ?? null,
+      ...(p.offer ? { offer: { amount: int(p.offer.amount), price: Number(p.offer.price) } } : {}),
+      ...(p.npc ? { npc: true } : {}),
     })),
     agreement: {
       sweat: b.agreement?.sweat?.actorId ? { actorId: b.agreement.sweat.actorId, pct: clamp(int(b.agreement.sweat.pct), 0, 100) } : null,
@@ -88,6 +90,13 @@ export function normalizeBusiness(raw) {
     projects: b.projects ?? [],
     /** The partners' agreement to step up, and when a failed registration may be tried again. */
     stepUp: b.stepUp ?? null,
+    loans: b.loans ?? [],
+    /** What the partners have agreed to and not yet rolled for: `bankLoan` (true), `angel` ({total, name}). */
+    approved: b.approved ?? {},
+    /** When a refused bank loan or angel may be asked again, as a market day. */
+    retry: b.retry ?? {},
+    /** A fixer's payment was missed: collectors come next week. */
+    collectors: b.collectors === true,
   };
 }
 

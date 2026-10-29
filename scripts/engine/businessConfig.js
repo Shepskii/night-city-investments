@@ -13,6 +13,7 @@ const ability = (name) => Object.freeze({ kind: 'ability', ability: name });
 
 /** Cyberpunk RED skills the business loop uses, with the stat each falls back on. */
 export const SKILLS = Object.freeze({
+  accounting: skill('Accounting', 'int'),
   basicTech: skill('Basic Tech', 'tech'),
   bribery: skill('Bribery', 'cool'),
   bureaucracy: skill('Bureaucracy', 'int'),
@@ -176,6 +177,35 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     /** A windfall answered well adds this share of the week's takings, by band. */
     windfall: byBand([0, 0, 0.05, 0.15, 0.2, 0.3]),
   }),
+  /**
+   * Money from outside (DESIGN §26.0). A fixer lends quickly at a steep weekly rate; a bank, to a
+   * registered business only, after an Accounting or Business roll whose band sets the limit (in
+   * weeks of average profit) and the rate. Repayments come out of the till as each week closes;
+   * interest counts against the week's profit, the principal does not.
+   */
+  loans: Object.freeze({
+    fixer: Object.freeze({ limits: Object.freeze([2000, 4000]), rate: 0.05, weeks: 10, lateFee: 0.1, reputation: -2 }),
+    bank: Object.freeze({
+      minStage: 1, dv: 'difficult', uses: Object.freeze([SKILLS.accounting, SKILLS.business]), weeks: 20, lateFee: 0.05, compliance: -10, delay: 14,
+      limitWeeks: byBand([0, 0, 6, 10, 14, 20]),
+      rate: byBand([0, 0, 0.015, 0.012, 0.01, 0.008]),
+    }),
+  }),
+  /**
+   * Investors, for registered businesses. A character buys new units at the price the partners
+   * agreed. An NPC angel is won with a Persuasion or Trading roll against the angel's 12 + d10: the
+   * band sets how much of the book value it puts in and the premium or discount on the unit price.
+   */
+  investors: Object.freeze({
+    minStage: 1,
+    angel: Object.freeze({
+      base: 12, delay: 14, uses: Object.freeze([SKILLS.persuasion, SKILLS.trading]),
+      /** Who the angel turns out to be. */
+      names: Object.freeze(['Mira Sato', 'Dex Okafor', 'Lena Varga', 'Tomas Reyes', 'Ilse Brandt', 'Kai Mendoza', 'Yuki Hart', 'Rafael Quist']),
+      share: byBand([0, 0, 0.2, 0.3, 0.4, 0.5]),
+      premium: byBand([0, 0, -0.1, 0, 0.1, 0.2]),
+    }),
+  }),
   /** The most weekly closes run at once after the calendar jumps. */
   catchUpPeriods: 8,
   digestCap: 12,
@@ -199,6 +229,8 @@ export const EVENTS = Object.freeze({
   trouble: Object.freeze({ weight: 2, trade: true, uses: [S.humanPerception, S.persuasion, S.conversation], hit: Object.freeze({ reputation: -2 }) }),
   inspection: Object.freeze({ weight: 2, stage: 1, uses: [S.bureaucracy, Object.freeze({ ...S.localExpert, dvAdd: 2 }), Object.freeze({ ...S.bribery, dvAdd: 2 }), A.backup], hit: Object.freeze({ compliance: -8 }) }),
   windfall: Object.freeze({ weight: 2, good: true, trade: true, uses: [S.business, S.trading, A.operator], hit: Object.freeze({}) }),
+  /** Never drawn: it comes the week after a missed fixer-loan payment. */
+  collectors: Object.freeze({ weight: 0, security: true, uses: [S.persuasion, S.streetwise, S.trading, A.combatAwareness, A.operator], hit: Object.freeze({ reputation: -3 }) }),
 });
 
 /** The DV for a stage's actions. */

@@ -7,6 +7,7 @@ import {
   ARCHETYPES, ACTION_IDS, partnerOf, holders, totalUnits, unitValue, shareOf, bookValue, drawAllowance, fundingShortfall,
   stateBands, lastDigest, weekdayOf, gearValue, rollSpec, BUSINESS_DEFAULTS,
   daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
+  openLoans, bankCheck, angelCheck, averageProfit,
 } from '../../engine/index.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
@@ -87,6 +88,7 @@ export function businessContext(business, actor) {
     isClosed: status === 'closed',
     closed: status === 'closed' ? L(`NCI.Business.Closed.${business.closeReason ?? 'closed'}`, { date: dayText(business.closedDay ?? 0) }) : '',
     invited: me?.status === 'invited',
+    offer: me?.status === 'invited' && me.offer ? L('NCI.Business.InvestOffer', { amount: whole(me.offer.amount), price: me.offer.price.toFixed(2), units: whole(Math.floor(me.offer.amount / me.offer.price)) }) : '',
     canAct,
     isPartner: !!me && ['active', 'leaving'].includes(me.status),
     bands: Object.entries(bands).map(([key, band]) => ({ label: L(`NCI.Business.State.${key}`), value: L(`NCI.Business.Band.${key}.${band}`) })),
@@ -238,6 +240,38 @@ function ledgerContext(business, actor) {
     allowance,
     allowanceText: allowance > 0 ? L('NCI.Business.DrawAllowance', { amount: whole(allowance) }) : L('NCI.Business.NoDraw'),
     canDraw: business.status === 'open' && allowance > 0,
+    money: business.status === 'open' ? moneyContext(business, actor) : null,
+  };
+}
+
+/** Loans: those running, and what the partners can ask for. */
+function moneyContext(business, actor) {
+  const canAct = !!actor && BusinessClient.canAct(business, actor.id);
+  const day = BusinessClient.day();
+  const f = BUSINESS_DEFAULTS.loans.fixer;
+  const limit = f.limits[Math.min(business.stage, f.limits.length - 1)];
+  const loans = openLoans(business);
+  const pending = (kind) => business.proposals.some((x) => x.kind === kind);
+  const bank = actor ? bankCheck(business, actor.id, day) : null;
+  const registered = business.stage >= BUSINESS_DEFAULTS.loans.bank.minStage;
+  return {
+    loans: loans.map((l) => ({
+      id: l.id,
+      text: L(`NCI.Business.Loan.${l.kind}`, { balance: whole(l.balance), rate: (l.rate * 100).toFixed(1), payment: whole(l.payment) }),
+      missed: l.missed ? L('NCI.Business.LoanMissed', { n: l.missed }) : '',
+      canRepay: canAct && business.till > 0,
+      max: Math.min(l.balance, business.till),
+    })),
+    fixerText: L('NCI.Business.FixerTerms', { limit: whole(limit), rate: f.rate * 100, weeks: f.weeks }),
+    canFixer: canAct && !loans.some((l) => l.kind === 'fixer') && !pending('fixerLoan'),
+    fixerLimit: limit,
+    bankText: registered
+      ? L('NCI.Business.BankTerms', { profit: whole(averageProfit(business)) })
+      : L('NCI.Business.BankLater'),
+    canProposeBank: canAct && registered && !business.approved.bankLoan && !loans.some((l) => l.kind === 'bank') && !pending('bankLoan'),
+    canRollBank: canAct && !!bank?.ok,
+    bankRetry: business.retry.bankLoan != null && day < business.retry.bankLoan ? L('NCI.Business.BankRetry', { date: dayText(business.retry.bankLoan) }) : '',
+    pending: ['fixerLoan', 'bankLoan'].some(pending) ? L('NCI.Business.LoanPending') : '',
   };
 }
 
@@ -254,6 +288,31 @@ function digestRow(business, d) {
       ? d.actions.map((a) => L('NCI.Business.DigestAction', { action: L(a.action === 'respond' ? 'NCI.Business.Answer' : `NCI.Business.Action.${a.action}.Name`), name: nameOf(business, a.by), band: L(`NCI.Roll.Band.${a.band}`) })).join('; ')
       : L('NCI.Business.NoActions'),
     event: d.event ? L(`NCI.Business.EventOutcome.${d.event.outcome}`, { event: L(`NCI.Event.${d.event.kind}.Name`), change: signed(d.event.change) }) : '',
+    loans: d.interest || d.repaid || d.missed?.length
+      ? [L('NCI.Business.DigestLoans', { interest: whole(d.interest ?? 0), repaid: whole(d.repaid ?? 0) }), ...(d.missed ?? []).map((k) => L(`NCI.Business.DigestMissed.${k}`))].join(' ')
+      : '',
+  };
+}
+
+/** Investors: a character the partners invite, and an NPC angel found and pitched. */
+function investorsContext(business, actor, canAct) {
+  const registered = business.stage >= BUSINESS_DEFAULTS.investors.minStage;
+  const day = BusinessClient.day();
+  const pending = (kind) => business.proposals.some((x) => x.kind === kind);
+  const angel = business.approved.angel;
+  const check = actor ? angelCheck(business, actor.id, day) : null;
+  const taken = new Set(business.partners.filter((x) => ['invited', 'active', 'leaving'].includes(x.status)).map((x) => x.actorId));
+  return {
+    registered,
+    later: registered ? '' : L('NCI.Business.InvestorsLater'),
+    candidates: game.actors.filter((a) => a.type === 'character' && !taken.has(a.id)).sort((a, b) => a.name.localeCompare(b.name)).map((a) => ({ value: a.id, label: a.name })),
+    bookPrice: unitValue(business).toFixed(2),
+    canInvite: canAct && registered && !pending('investor'),
+    canSeekAngel: canAct && registered && !angel && !pending('angel'),
+    angel: angel ? L('NCI.Business.AngelFound', { name: angel.name, total: angel.total }) : '',
+    canPitch: canAct && !!check?.ok,
+    angelRetry: business.retry.angel != null && day < business.retry.angel ? L('NCI.Business.AngelRetry', { date: dayText(business.retry.angel) }) : '',
+    holders: business.partners.filter((x) => x.npc).map((x) => x.name).join(', '),
   };
 }
 
@@ -290,6 +349,7 @@ function partnersContext(business, actor) {
     canSetHeir: !!me && ['active', 'leaving', 'invited'].includes(me.status),
     canLeave: open && me?.status === 'active' && holders(business).length > 1,
     canPropose: open && canAct && !business.proposals.some((x) => x.kind === 'close'),
+    investors: open ? investorsContext(business, actor, canAct) : null,
     proposals: business.proposals.map((proposal) => ({
       id: proposal.id,
       text: L(`NCI.Business.Proposed.${proposal.kind}`, { name: nameOf(business, proposal.by) }),

@@ -30,6 +30,10 @@
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import { drawEvent, eventUses, settleEvent } from './businessEvents.js';
 import {
+  fixerOffer, takeFixerLoan, bankCheck, applyBankRoll, repayLoan, payLoans, investorOffer, inviteInvestor, acceptInvestment,
+  angelCheck, findAngel, applyAngelRoll, openLoans, averageProfit,
+} from './businessFinance.js';
+import {
   ARCHETYPES, ACTIONS, BUSINESS_DEFAULTS, DISTRICTS, EVENTS, districtOf, stageDv, actionUses, helpUses, setupUses, usesInclude, useKey,
 } from './businessConfig.js';
 import {
@@ -42,6 +46,7 @@ import {
 } from './businessGrowth.js';
 
 export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck };
+export { fixerOffer, bankCheck, angelCheck, openLoans, averageProfit };
 
 export {
   BUSINESS_SCHEMA, BUSINESS_STATUS, weekdayOf, nextBoundary, normalizeBusiness, archetypeOf, holders, voters,
@@ -50,17 +55,19 @@ export {
 
 export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
-  'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond',
+  'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan',
 ]);
 
 /** Requests that carry a roll. */
-export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond']);
+export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll']);
 
 /**
  * What each kind of proposal needs to pass (DESIGN §26.0): closing and stepping up need every partner
  * with a vote; starting an expansion is a day-to-day choice, a majority of the voting units.
  */
-export const PROPOSAL_RULES = Object.freeze({ close: 'unanimous', stepUp: 'unanimous', expansion: 'majority' });
+export const PROPOSAL_RULES = Object.freeze({
+  close: 'unanimous', stepUp: 'unanimous', expansion: 'majority', fixerLoan: 'majority', bankLoan: 'majority', investor: 'unanimous', angel: 'unanimous',
+});
 
 // ── What a roll needs ────────────────────────────────────────────────────────
 
@@ -98,6 +105,12 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     const check = stepUpCheck(b, actorId, day, p);
     if (!check.ok) return check;
     return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - p.registration.fee, operatorRank, p });
+  }
+
+  if (request.type === 'loanRoll' || request.type === 'angelRoll') {
+    const can = request.type === 'loanRoll' ? bankCheck(b, actorId, day, p) : angelCheck(b, actorId, day, p);
+    if (!can.ok) return can;
+    return allowed(can.uses, use, { dv: can.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p });
   }
 
   if (request.type === 'respond') {
@@ -181,8 +194,17 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
 
   switch (request.type) {
     case 'join': {
-      if (b.status !== 'forming') return fail('not-forming');
       if (me?.status !== 'invited') return fail('not-invited');
+      if (b.status === 'open' && me.offer) {
+        // An investor buying in on the terms the partners agreed.
+        const done = acceptInvestment(b, me, actor.wealth, day, p);
+        if (!done.ok) return done;
+        me.name = actor.name;
+        me.heirId = heirOf(request.heirId, actor.id, ctx);
+        pay(actor.id, -done.amount);
+        break;
+      }
+      if (b.status !== 'forming') return fail('not-forming');
       const money = contribution(request, actor, p);
       if (!money.ok) return money;
       Object.assign(me, { status: 'active', name: actor.name, cash: money.cash, gear: money.gear, heirId: heirOf(request.heirId, actor.id, ctx) });
@@ -329,10 +351,10 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (me?.status !== 'active' || !me.voting) return fail('not-partner');
       if (!PROPOSAL_RULES[kind]) return fail('bad-request');
       if (b.proposals.some((x) => x.kind === kind)) return fail('proposal-open');
-      const can = canPropose(b, kind, p);
+      const can = canPropose(b, kind, request, ctx, p);
       if (!can.ok) return can;
-      b.proposals.push({ id: request.key, kind, by: actor.id, day, expires: day + p.proposalDays, votes: { [actor.id]: true } });
-      settleProposals(b, day, out, p);
+      b.proposals.push({ id: request.key, kind, by: actor.id, day, expires: day + p.proposalDays, votes: { [actor.id]: true }, ...(can.terms ? { terms: can.terms } : {}) });
+      settleProposals(b, day, out, p, ctx);
       break;
     }
     case 'stepUpRoll': {
@@ -367,6 +389,34 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       out.events.push({ type: 'roll', action: 'respond', band: r.band, exposure: r.exposure });
       break;
     }
+    case 'loanRoll':
+    case 'angelRoll': {
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
+      if (!spec.ok) return spec;
+      if (!check?.ok) return fail(check?.reason ?? 'no-roll');
+      if (request.use.kind === 'hire') {
+        const fee = hireFee(request.use.hire, ctx.operatorRank, p);
+        b.till -= fee;
+        log('hire', -fee);
+      }
+      const r = check.result;
+      if (r.extra) spendDays(b, actor.id, 1);
+      if (request.type === 'loanRoll') {
+        const loan = applyBankRoll(b, { id: request.key, result: r, amount: request.amount, day }, p);
+        out.events.push({ type: 'roll', action: 'bankLoan', band: r.band, exposure: r.exposure }, { type: 'bankLoan', ...loan });
+      } else {
+        const angel = applyAngelRoll(b, { id: request.key, result: r, day }, p);
+        out.events.push({ type: 'roll', action: 'angel', band: r.band, exposure: r.exposure }, { type: 'angel', ...angel });
+      }
+      break;
+    }
+    case 'repayLoan': {
+      if (b.status !== 'open') return fail('not-open');
+      if (me?.status !== 'active' || !me.voting) return fail('not-partner');
+      const paid = repayLoan(b, request.loanId, request.amount, day, p);
+      if (!paid.ok) return paid;
+      break;
+    }
     case 'addDays': {
       if (b.status !== 'open') return fail('not-open');
       if (me?.status !== 'active' || !me.voting) return fail('not-partner');
@@ -381,7 +431,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       const proposal = b.proposals.find((x) => x.id === request.proposalId);
       if (!proposal) return fail('no-proposal');
       proposal.votes[actor.id] = request.yes === true;
-      settleProposals(b, day, out, p);
+      settleProposals(b, day, out, p, ctx);
       break;
     }
     default:
@@ -542,16 +592,41 @@ function liquidate(b, day, reason, out, p) {
   out.events.push({ type: 'closed', reason, paid });
 }
 
-/** Whether a proposal of this kind could pass now (checked again when it does). */
-function canPropose(b, kind, p) {
-  if (kind === 'stepUp') {
-    if (b.stepUp?.approved) return fail('already-agreed');
-    const m = milestones(b, p);
-    if (!m.available) return fail('no-step-up');
-    if (!m.met) return fail('milestones');
+/**
+ * Whether a proposal of this kind could pass now (checked again when it does), and its terms: the
+ * amount of a fixer's loan, or who an investor is, how much they put in and at what price per unit.
+ */
+function canPropose(b, kind, request, ctx, p) {
+  switch (kind) {
+    case 'stepUp': {
+      if (b.stepUp?.approved) return fail('already-agreed');
+      const m = milestones(b, p);
+      if (!m.available) return fail('no-step-up');
+      if (!m.met) return fail('milestones');
+      return { ok: true };
+    }
+    case 'expansion':
+      return expansionOffer(b, p);
+    case 'fixerLoan': {
+      const offer = fixerOffer(b, request.amount, p);
+      return offer.ok ? { ok: true, terms: { amount: offer.amount } } : offer;
+    }
+    case 'bankLoan':
+      if (b.stage < p.loans.bank.minStage) return fail('not-registered');
+      if (b.approved.bankLoan) return fail('already-agreed');
+      if (openLoans(b).some((l) => l.kind === 'bank')) return fail('loan-open');
+      return { ok: true };
+    case 'investor': {
+      const offer = investorOffer(b, request, ctx.actors, p);
+      return offer.ok ? { ok: true, terms: { actorId: offer.actorId, amount: offer.amount, price: offer.price } } : offer;
+    }
+    case 'angel':
+      if (b.stage < p.investors.minStage) return fail('not-registered');
+      if (b.approved.angel) return fail('already-agreed');
+      return { ok: true };
+    default:
+      return { ok: true };
   }
-  if (kind === 'expansion') return expansionOffer(b, p);
-  return { ok: true };
 }
 
 /**
@@ -559,7 +634,7 @@ function canPropose(b, kind, p) {
  * and one no ends it. Majority: more than half the voting units say yes; it ends once half or more
  * say no. A proposal that passes takes effect at once.
  */
-function settleProposals(b, day, out, p) {
+function settleProposals(b, day, out, p, ctx = {}) {
   const all = votingUnits(b);
   for (const proposal of [...b.proposals]) {
     const vs = voters(b);
@@ -576,10 +651,29 @@ function settleProposals(b, day, out, p) {
     out.events.push({ type: 'proposalPassed', kind: proposal.kind });
     if (proposal.kind === 'close') liquidate(b, day, 'closed', out, p);
     if (proposal.kind === 'stepUp') b.stepUp = { approved: true, retryDay: null };
-    if (proposal.kind === 'expansion') {
-      const started = startExpansion(b, proposal.id, day, p);
-      if (!started.ok) out.events.push({ type: 'proposalVoid', kind: proposal.kind, reason: started.reason });
-    }
+    const done = enact(b, proposal, day, p, ctx);
+    if (!done.ok) out.events.push({ type: 'proposalVoid', kind: proposal.kind, reason: done.reason });
+  }
+}
+
+/** What a proposal that has passed does. */
+function enact(b, proposal, day, p, ctx) {
+  switch (proposal.kind) {
+    case 'expansion':
+      return startExpansion(b, proposal.id, day, p);
+    case 'fixerLoan':
+      return takeFixerLoan(b, proposal.id, proposal.terms.amount, day, p);
+    case 'bankLoan':
+      b.approved = { ...b.approved, bankLoan: true };
+      return { ok: true };
+    case 'investor':
+      inviteInvestor(b, proposal.terms, ctx.actors ?? {});
+      return { ok: true };
+    case 'angel':
+      findAngel(b, ctx.seed ?? 'nci', proposal.id, p.investors.angel.names, p);
+      return { ok: true };
+    default:
+      return { ok: true };
   }
 }
 
@@ -645,7 +739,13 @@ const traffic = (rep) => 0.6 + (clamp(rep, 0, 100) / 100) * 0.8;
 function startPeriod(b, index, startDay, weekday, seed, p) {
   b.period = newPeriod(index, startDay, weekday);
   const event = drawEvent(b, seed, p);
-  if (event) b.period.event = event;
+  if (b.collectors) {
+    // A missed payment to a fixer: the collectors come in place of whatever else the week held.
+    b.period.event = { kind: 'collectors' };
+    b.collectors = false;
+  } else if (event) {
+    b.period.event = event;
+  }
 }
 
 function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
@@ -679,8 +779,9 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
   const takings = Math.max(0, base + (event?.change ?? 0));
   const fixed = (stage.rent + (stage.licence ?? 0)) * district.rent + stage.protection * protection * district.risk;
   const upkeep = Math.round((arch.costs * b.state.capacity ** 0.85 * b.state.costFactor + fixed) * part);
-  const profit = takings - upkeep;
-  b.till += profit;
+  const loans = payLoans(b, b.period.endDay, p);
+  const profit = takings - upkeep - loans.interest;
+  b.till += profit - loans.principal;
 
   const digest = {
     index: b.period.index,
@@ -690,6 +791,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
     upkeep,
     profit,
     till: b.till,
+    ...(loans.interest || loans.principal || loans.missed.length ? { interest: loans.interest, repaid: loans.principal, missed: loans.missed } : {}),
     worked: !!work,
     ...(event ? { event } : {}),
     actions: b.period.slots.map((s) => ({ action: s.action, by: s.by, band: s.band })),

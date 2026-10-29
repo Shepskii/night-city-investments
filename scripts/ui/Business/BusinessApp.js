@@ -55,6 +55,13 @@ export class BusinessApp extends BaseApplication {
       proposeStepUp: BusinessApp._onProposeStepUp,
       stepUpRoll: BusinessApp._onStepUpRoll,
       respond: BusinessApp._onRespond,
+      proposeFixerLoan: BusinessApp._onProposeFixerLoan,
+      proposeBankLoan: BusinessApp._onProposeBankLoan,
+      loanRoll: BusinessApp._onLoanRoll,
+      repayLoan: BusinessApp._onRepayLoan,
+      proposeInvestor: BusinessApp._onProposeInvestor,
+      proposeAngel: BusinessApp._onProposeAngel,
+      angelRoll: BusinessApp._onAngelRoll,
     },
   };
 
@@ -223,6 +230,35 @@ export class BusinessApp extends BaseApplication {
   static _onRespond() {
     const kind = this.business?.period?.event?.kind;
     this._roll({ type: 'respond' }, L('NCI.Business.AnswerTitle', { event: kind ? L(`NCI.Event.${kind}.Name`) : '' }));
+  }
+
+  static _onProposeFixerLoan(event, target) {
+    return this._send('propose', { kind: 'fixerLoan', amount: amount(target, 'loanAmount') });
+  }
+
+  static _onProposeBankLoan() {
+    return this._send('propose', { kind: 'bankLoan' });
+  }
+
+  static _onLoanRoll(event, target) {
+    this._roll({ type: 'loanRoll', amount: amount(target, 'bankAmount') }, L('NCI.Business.BankTitle', { name: this.business?.name ?? '' }));
+  }
+
+  static _onRepayLoan(event, target) {
+    return this._send('repayLoan', { loanId: target.dataset.id, amount: Math.floor(Number(target.closest('.nci-gig')?.querySelector('[name="repay"]')?.value) || 0) });
+  }
+
+  static _onProposeInvestor(event, target) {
+    const price = Number(value(target, 'investPrice'));
+    return this._send('propose', { kind: 'investor', actorId: value(target, 'investor'), amount: amount(target, 'investAmount'), ...(price > 0 ? { price } : {}) });
+  }
+
+  static _onProposeAngel() {
+    return this._send('propose', { kind: 'angel' });
+  }
+
+  static _onAngelRoll() {
+    this._roll({ type: 'angelRoll' }, L('NCI.Business.AngelTitle', { name: this.business?.approved?.angel?.name ?? '' }));
   }
 
   static _onStepUpRoll() {

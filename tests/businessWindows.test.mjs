@@ -181,3 +181,23 @@ test('after a week closes, the ledger shows the digest and the draw', async () =
   assertClean(gm, 'GM tab with an open business');
   assert.match(text(gm), /Exposure/);
 });
+
+test('a registered business shows its loans, the bank, investors and an angel', async () => {
+  const b = S.BusinessRepository.all()[0];
+  await S.BusinessRepository.save({
+    ...b, stage: 1, state: { ...b.state, compliance: 55 },
+    loans: [{ id: 'l1', kind: 'fixer', principal: 1000, balance: 800, rate: 0.05, payment: 100, startedDay: b.period.startDay, missed: 1 }],
+    approved: { angel: { total: 17, name: 'Mira Sato' } },
+  });
+  const ledger = text(await renderBusiness(windowFor(med, 'ledger')));
+  assertClean(await renderBusiness(windowFor(med, 'ledger')), 'registered ledger');
+  assert.match(ledger, /A fixer(&#x27;|')s loan: 800 eb owed at 5\.0% a week/);
+  assert.match(ledger, /1 payment\(s\) missed/);
+  assert.match(ledger, /Propose going to a bank/);
+  const partners = text(await renderBusiness(windowFor(med, 'partners')));
+  assertClean(await renderBusiness(windowFor(med, 'partners')), 'registered partners');
+  assert.match(partners, /Mira Sato will hear your pitch \(their skill: 17\)/);
+  assert.match(partners, /Pitch to the angel/);
+  const overview = text(await renderBusiness(windowFor(med, 'overview')));
+  assert.match(overview, /Compliance/);
+});

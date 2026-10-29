@@ -328,6 +328,22 @@
           "strong": "20% more takings this week.",
           "exceptional": "30% more takings this week."
         },
+        "loanRoll": {
+          "fumble": "Refused, and you will not be welcome back for 14 days.",
+          "failure": "Refused; you can ask again in 14 days.",
+          "narrow": "Up to 6 weeks of average profit, at 1.5% a week.",
+          "solid": "Up to 10 weeks of average profit, at 1.2% a week.",
+          "strong": "Up to 14 weeks of average profit, at 1% a week.",
+          "exceptional": "Up to 20 weeks of average profit, at 0.8% a week."
+        },
+        "angelRoll": {
+          "fumble": "The angel walks away; another will listen in 14 days.",
+          "failure": "The angel walks away; another will listen in 14 days.",
+          "narrow": "20% of the book value, at 10% under book.",
+          "solid": "30% of the book value, at book.",
+          "strong": "40% of the book value, at 10% over book.",
+          "exceptional": "50% of the book value, at 20% over book."
+        },
         "stepUpRoll": {
           "fumble": "Refused, and the paperwork is a mess: the fee is spent and you can try again in 14 days.",
           "failure": "Refused: the fee is spent and you can try again in 7 days.",
@@ -1438,6 +1454,7 @@
       "breakdown": { "Name": "Something breaks", "Hint": "The kit the business runs on has given out." },
       "shortage": { "Name": "A supply shortage", "Hint": "The usual supplier cannot deliver this week." },
       "rival": { "Name": "A rival opens nearby", "Hint": "A competitor is undercutting you and talking you down." },
+      "collectors": { "Name": "Debt collectors", "Hint": "The fixer wants the payment you missed, and has sent people to make the point." },
       "trouble": { "Name": "Trouble with a customer", "Hint": "A customer, or a job, has gone wrong in a way people will talk about." },
       "inspection": { "Name": "An inspection", "Hint": "The city's inspectors want to see the books and the licences." },
       "windfall": { "Name": "A big order", "Hint": "Someone with money wants something done this week, if you can deliver." }
@@ -1543,7 +1560,12 @@
         "liquidation": "Closed: paid out to the partners ({salvage} eb from the gear)",
         "expansion": "An expansion started",
         "registrationFee": "Registration fee, paid by {name}",
-        "registered": "Registered"
+        "registered": "Registered",
+        "loan": "A loan",
+        "repay": "A loan paid off early",
+        "missedPayment": "A loan payment missed",
+        "investment": "{name} bought in",
+        "angel": "An angel investor bought in"
       },
       "CapTable": "Partners",
       "Partner": "Partner",
@@ -1609,7 +1631,11 @@
       "Proposed": {
         "close": "{name} proposes closing the business.",
         "stepUp": "{name} proposes registering the business.",
-        "expansion": "{name} proposes an expansion."
+        "expansion": "{name} proposes an expansion.",
+        "fixerLoan": "{name} proposes a fixer's loan.",
+        "bankLoan": "{name} proposes going to a bank.",
+        "investor": "{name} proposes bringing in an investor.",
+        "angel": "{name} proposes finding an angel investor."
       },
       "Rule": {
         "unanimous": "Needs every partner; lapses after {date}.",
@@ -1643,6 +1669,40 @@
         "media": { "Name": "Screamsheet or media outlet", "Hint": "Composition or Photography/Film; good for a Media." },
         "foodStall": { "Name": "Food stall", "Hint": "Streetwise or Local Expert; anyone can run one, and it is cheap to start." }
       },
+      "Loans": "Loans",
+      "Loan": {
+        "fixer": "A fixer's loan: {balance} eb owed at {rate}% a week, {payment} eb of it repaid each week.",
+        "bank": "A bank loan: {balance} eb owed at {rate}% a week, {payment} eb of it repaid each week."
+      },
+      "LoanMissed": "{n} payment(s) missed",
+      "Repay": "Pay off early",
+      "LoanAmount": "Amount (eb)",
+      "FixerTerms": "A fixer lends up to {limit} eb with no questions asked, at {rate}% a week, repaid over {weeks} weeks. A missed payment costs a late fee and Reputation, and the fixer's collectors come calling. It needs a majority of the voting units.",
+      "ProposeFixer": "Propose a fixer's loan",
+      "BankTerms": "A bank lends to a registered business after an Accounting or Business roll at DV 15: the better the roll, the more (6 to 20 weeks of average profit, now {profit} eb a week) and the cheaper. A missed payment costs Compliance. It needs a majority of the voting units, then any partner rolls.",
+      "BankLater": "Banks only lend to registered businesses.",
+      "BankRetry": "The bank said no; it will listen again from {date}.",
+      "ProposeBank": "Propose going to a bank",
+      "BankRoll": "Make the case to the bank",
+      "BankTitle": "{name}: a bank loan",
+      "LoanPending": "A loan is waiting for the partners' votes on the Partners tab.",
+      "DigestLoans": "Loans: {interest} eb interest, {repaid} eb repaid.",
+      "DigestMissed": { "fixer": "A fixer's payment was missed.", "bank": "A bank payment was missed." },
+      "Investors": "Investors",
+      "InvestorsLater": "Investors only buy into registered businesses.",
+      "Investor": "Invite",
+      "InvestAmount": "Who puts in (eb)",
+      "InvestPrice": "Price per unit (book value {price})",
+      "ProposeInvestor": "Propose this investor",
+      "InvestOffer": "The partners offer you {units} units for {amount} eb, at {price} eb a unit. You would have a vote like any partner.",
+      "Accept": "Accept and pay",
+      "AngelIntro": "An angel is an outside backer. Once every partner agrees to look for one, you will know who you are pitching to; any partner then rolls Persuasion or Trading against the angel's skill. The better the pitch, the more they put in and the better the price. An angel takes units without a vote, and is paid out like any holder if the business closes.",
+      "AngelFound": "{name} will hear your pitch (their skill: {total}).",
+      "AngelRetry": "The last angel walked away; another will listen from {date}.",
+      "AngelHolders": "Angel investors: {names}.",
+      "ProposeAngel": "Propose finding an angel",
+      "AngelRoll": "Pitch to the angel",
+      "AngelTitle": "Pitching to {name}",
       "District": "District",
       "NoDistrict": "None (average traffic, rent and risk)",
       "Opportunity": "an opportunity",
@@ -1681,7 +1741,10 @@
         "propose": "Proposal made.",
         "stepUpRoll": "Registration roll recorded.",
         "addDays": "Business days put in.",
-        "respond": "Your answer is recorded."
+        "respond": "Your answer is recorded.",
+        "loanRoll": "Your case to the bank is recorded.",
+        "angelRoll": "Your pitch is recorded.",
+        "repayLoan": "Paid off."
       },
       "Reason": {
         "bad-use": "that skill does not fit this roll",
@@ -1737,6 +1800,13 @@
         "step-up-delay": "the registration cannot be tried again yet",
         "no-event": "there is nothing to answer this week",
         "event-answered": "this week's event has already been answered",
+        "loan-open": "a loan of that kind is already running",
+        "not-registered": "only a registered business can do that",
+        "bank-delay": "the bank will not listen again yet",
+        "no-loan": "that loan is paid off",
+        "already-partner": "that character is already a partner or invited",
+        "bad-price": "that price is not allowed",
+        "angel-delay": "no angel will listen yet",
         "already-agreed": "the partners have already agreed"
       }
     }

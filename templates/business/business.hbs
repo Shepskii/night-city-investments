@@ -68,6 +68,14 @@
   {{#if invited}}
   <div class="nci-block nci-form">
     <h3>{{localize "NCI.Business.Invitation"}}</h3>
+    {{#if offer}}
+    <p>{{offer}}</p>
+    <footer class="nci-footer">
+      <button type="button" data-action="join"><i class="fas fa-handshake"></i> {{localize "NCI.Business.Accept"}}</button>
+      <button type="button" data-action="decline"><i class="fas fa-xmark"></i> {{localize "NCI.Business.Decline"}}</button>
+    </footer>
+  </div>
+  {{else}}
     <p class="nci-hint">{{localize "NCI.Business.InvitationIntro" name=name}}</p>
     <div class="nci-grid">
       <label>{{localize "NCI.Business.Cash"}}<input type="number" name="cash" min="0" step="50" value="0"></label>
@@ -79,6 +87,7 @@
       <button type="button" data-action="decline"><i class="fas fa-xmark"></i> {{localize "NCI.Business.Decline"}}</button>
     </footer>
   </div>
+  {{/if}}
   {{else}}
 
   {{#if ../isOverview}}
@@ -222,6 +231,30 @@
     <button type="button" data-action="draw"><i class="fas fa-hand-holding-dollar"></i> {{localize "NCI.Business.Draw"}}</button>
     {{/if}}
   </div>
+  {{#with money}}
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Business.Loans"}}</h3>
+    {{#each loans}}
+    <div class="nci-gig">
+      <div>{{text}}{{#if missed}} <span class="nci-down">{{missed}}</span>{{/if}}</div>
+      {{#if canRepay}}<div class="nci-actions"><input type="number" name="repay" min="1" max="{{max}}" step="10" value="{{max}}" class="nci-days"><button type="button" data-action="repayLoan" data-id="{{id}}">{{localize "NCI.Business.Repay"}}</button></div>{{/if}}
+    </div>
+    {{/each}}
+    {{#if pending}}<p class="nci-warn">{{pending}}</p>{{/if}}
+    <p class="nci-hint">{{fixerText}}</p>
+    {{#if canFixer}}
+    <label>{{localize "NCI.Business.LoanAmount"}}<input type="number" name="loanAmount" min="100" max="{{fixerLimit}}" step="100" value="500" class="nci-days"></label>
+    <button type="button" data-action="proposeFixerLoan"><i class="fas fa-handshake-simple"></i> {{localize "NCI.Business.ProposeFixer"}}</button>
+    {{/if}}
+    <p class="nci-hint">{{bankText}}</p>
+    {{#if bankRetry}}<p class="nci-warn">{{bankRetry}}</p>{{/if}}
+    {{#if canProposeBank}}<button type="button" data-action="proposeBankLoan"><i class="fas fa-building-columns"></i> {{localize "NCI.Business.ProposeBank"}}</button>{{/if}}
+    {{#if canRollBank}}
+    <label>{{localize "NCI.Business.LoanAmount"}}<input type="number" name="bankAmount" min="100" step="100" value="1000" class="nci-days"></label>
+    <button type="button" data-action="loanRoll"><i class="fas fa-dice-d10"></i> {{localize "NCI.Business.BankRoll"}}</button>
+    {{/if}}
+  </div>
+  {{/with}}
   <div class="nci-block">
     <h3>{{localize "NCI.Business.Weeks"}}</h3>
     {{#if digests.length}}
@@ -229,7 +262,7 @@
       <thead><tr><th>{{localize "NCI.Business.WeekLabel"}}</th><th>{{localize "NCI.Business.Takings"}}</th><th>{{localize "NCI.Business.Upkeep"}}</th><th>{{localize "NCI.Business.Profit"}}</th><th>{{localize "NCI.Business.Till"}}</th></tr></thead>
       <tbody>
         {{#each digests}}
-        <tr><td>{{week}}<div class="nci-muted">{{dates}}</div><div class="nci-muted">{{actions}}</div>{{#if event}}<div class="nci-muted">{{event}}</div>{{/if}}</td><td>{{takings}}</td><td>{{upkeep}}</td><td class="{{cls}}">{{profit}}</td><td>{{till}}</td></tr>
+        <tr><td>{{week}}<div class="nci-muted">{{dates}}</div><div class="nci-muted">{{actions}}</div>{{#if event}}<div class="nci-muted">{{event}}</div>{{/if}}{{#if loans}}<div class="nci-muted">{{loans}}</div>{{/if}}</td><td>{{takings}}</td><td>{{upkeep}}</td><td class="{{cls}}">{{profit}}</td><td>{{till}}</td></tr>
         {{/each}}
       </tbody>
     </table>
@@ -280,6 +313,27 @@
     <p class="nci-hint">{{localize "NCI.Business.HeirHint"}}</p>
     {{/if}}
   </div>
+  {{#with investors}}
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Business.Investors"}}</h3>
+    {{#if later}}<p class="nci-muted">{{later}}</p>{{else}}
+    {{#if holders}}<p class="nci-muted">{{localize "NCI.Business.AngelHolders" names=holders}}</p>{{/if}}
+    {{#if canInvite}}
+    <div class="nci-grid">
+      <label>{{localize "NCI.Business.Investor"}}<select name="investor">{{#each candidates}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+      <label>{{localize "NCI.Business.InvestAmount"}}<input type="number" name="investAmount" min="100" step="100" value="1000"></label>
+      <label>{{localize "NCI.Business.InvestPrice" price=bookPrice}}<input type="number" name="investPrice" min="0" step="0.01" placeholder="{{bookPrice}}"></label>
+    </div>
+    <button type="button" data-action="proposeInvestor"><i class="fas fa-user-plus"></i> {{localize "NCI.Business.ProposeInvestor"}}</button>
+    {{/if}}
+    <p class="nci-hint">{{localize "NCI.Business.AngelIntro"}}</p>
+    {{#if angel}}<p><strong>{{angel}}</strong></p>{{/if}}
+    {{#if angelRetry}}<p class="nci-warn">{{angelRetry}}</p>{{/if}}
+    {{#if canSeekAngel}}<button type="button" data-action="proposeAngel"><i class="fas fa-feather"></i> {{localize "NCI.Business.ProposeAngel"}}</button>{{/if}}
+    {{#if canPitch}}<button type="button" data-action="angelRoll"><i class="fas fa-dice-d10"></i> {{localize "NCI.Business.AngelRoll"}}</button>{{/if}}
+    {{/if}}
+  </div>
+  {{/with}}
   <div class="nci-block">
     <h3>{{localize "NCI.Business.Decisions"}}</h3>
     {{#each proposals}}
