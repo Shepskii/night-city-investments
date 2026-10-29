@@ -2,7 +2,7 @@
   "id": "night-city-investments",
   "title": "Night City Investments",
   "description": "Stock market, portfolios, brokers and dividends for Cyberpunk RED. Integrates with Night City Messenger.",
-  "version": "0.9.7",
+  "version": "0.10.0",
   "authors": [
     {
       "name": "Shepskii"
@@ -43,7 +43,7 @@
   "socket": true,
   "url": "https://github.com/Shepskii/night-city-investments",
   "manifest": "https://github.com/Shepskii/night-city-investments/releases/latest/download/module.json",
-  "download": "https://github.com/Shepskii/night-city-investments/releases/latest/download/night-city-investments.zip",
+  "download": "https://github.com/Shepskii/night-city-investments/releases/latest/download/module.zip",
   "bugs": "https://github.com/Shepskii/night-city-investments/issues",
   "readme": "https://github.com/Shepskii/night-city-investments#readme",
   "license": "LICENSE"

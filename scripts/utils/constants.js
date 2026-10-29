@@ -7,7 +7,7 @@ export const MODULE_ID = 'night-city-investments';
 export const MODULE_TITLE = 'Night City Investments';
 export const MODULE_SHORT = 'NCI';
 export const SOCKET = `module.${MODULE_ID}`;
-export const API_VERSION = '0.9.7';
+export const API_VERSION = '0.10.0';
 
 /** Schema version for every persisted store; each bump has a step in engine/migrations.js. */
 export const SCHEMA_VERSION = 2;

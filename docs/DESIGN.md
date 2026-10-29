@@ -446,7 +446,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | 6b | Insider-trading heat, in stages (§22). **H1 done (v0.7.0, retuned in v0.7.1):** hidden heat recorded from audited gig windows, GM Heat tab. **H2 and H3 done (v0.8.0):** warnings, NCPD enquiries, fines, freezes and dropped brokers with GM approval, and skill-roll cover-up actions. H4 (gig runner from the bridge) done (v0.9.7) |
 | 0.9.7 | **Done (v0.9.7).** Released the work that had been unreleased: the after-tick sequence and dividend-records fix (§27), the market date, price paths and cleanups (§28), and gig runners for heat (H4) |
 | B0 | **Done, see §26.9 (B0 findings).** Groundwork for player businesses and syndicates: the business growth simulator (`tools/business-model.mjs`), the storage schema, and the Crew Tools spike (from its source; a run in the test world is still to do) |
-| B1 | **v0.10, see §26.9. Built, see §29; to be released once it has been run in the test world.** Side businesses: the roll levers, the Business window and the GM's Businesses tab, partnerships, four archetypes, the weekly loop |
+| B1 | **Done (v0.10.0), see §29.** Side businesses: the roll levers, the Business window and the GM's Businesses tab, partnerships, four archetypes, the weekly loop |
 | B2 | **v0.11.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
 | B3 | **v0.12, alongside B1 and B2.** Player syndicates, and syndicates owning or investing in businesses |
 | B4 | **v0.13.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
@@ -1170,7 +1170,7 @@ The work is split into phases that each end with something usable at the table. 
 - **GM Console split** into `ui/GMConsole/tabs/<tab>.js` (each exports `actions` and `context(app)`) and `templates/gm/console/<tab>.hbs` partials, preloaded through the part's `templates`. Only the open tab's data is built.
 - **Tests renamed by feature** (`brokersFlow`, `dividendsSplits`, `windows`...). Tests move the market's date with the market (`tests/helpers/marketDate.mjs`), not with the fake calendar, and their `settle` helpers wait for the after-tick sequence.
 
-## 29. Phase B1: side businesses (built for v0.10)
+## 29. Phase B1: side businesses (v0.10.0)
 
 B1 as built, with the decisions made while building it. The design it follows is §26 and §26.0; what is not built yet is listed at the end.
 
@@ -1207,4 +1207,4 @@ B1 as built, with the decisions made while building it. The design it follows is
 
 **Not built yet** (B2 unless noted): weekly events and event responses; registration and the later stages; loans and investors; expansion projects and the Projects and Growth tabs; location effects (the location is a note for now); role abilities as actions (they can be used for the setup roll and complementary checks); the six other archetypes; extra time from downtime (B7); private holdings in the Portfolio tab.
 
-**Still to check in a live Foundry v12 world** (none of it has been run there): that a player's client really receives a business journal only once it is shared with them, and loses it when removed; Luck spending on a real Cyberpunk RED sheet; role-ability ranks on real role items; the Business window and roll dialog at real sizes; and Dice So Nice on the cards.
+**Tested in the test world** (Foundry 12.343, Cyberpunk RED Core v0.92.4) before release: founding, invitations and joining, the setup roll (a real fumble included), GM approval, complementary checks, an action with Luck and the +1 on a real sheet, the weekly close and catch-up over a 14-day jump, draws, a refused close vote, leaving, a buy-out and closing; a business journal reaching only its partners' players. It found and fixed: the roll dialog failing to open (`title` is read-only on ApplicationV2), qualified skills such as Local Expert (Your Home) reading as 0, a lone owner helping themselves with the action's own skill, abilities at rank 0 in the dialog, a stale "no GM online" warning, a fumble taking the whole escrow (now capped at half), and a closed business reappearing for partners who had sold out. Not tried live: failure after two losing weeks, and a stake passing to an heir or lapsing (both covered by tests).
