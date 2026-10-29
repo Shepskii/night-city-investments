@@ -780,7 +780,7 @@
       "ActionFailed": "That did not work. Check the values and that you are the active GM.",
       "Tab": {
         "market": "Market", "events": "Events", "actions": "Corporate actions", "companies": "Companies",
-        "funds": "Funds", "brokers": "Brokers", "gigs": "Gigs", "heat": "Heat", "businesses": "Businesses", "tools": "Tools"
+        "funds": "Funds", "brokers": "Brokers", "gigs": "Gigs", "heat": "Heat", "businesses": "Businesses", "syndicates": "Syndicates", "tools": "Tools"
       },
       "FundsHint": "Funds pool several companies into one tradable unit. Their value follows the companies' prices. Players can only trade them through a broker.",
       "NewFund": "New fund",
@@ -1437,6 +1437,33 @@
       "BusinessGrowthRate": {
         "Name": "Business growth rate",
         "Hint": "Scales how fast businesses build Reputation and Capacity. 1 is the calibrated pace; 1.5 suits a campaign that wants players' businesses to grow sooner."
+      }
+    },
+    "GMSyndicate": {
+      "Title": "Player syndicates",
+      "Intro": "Each syndicate's members, its account and what is waiting. You can pass or veto any proposal, and close a syndicate whose account holds nothing but cash (it is paid out by units).",
+      "Disabled": "Player syndicates are switched off in the module settings. Existing syndicates keep their holdings.",
+      "Waiting": "Waiting for approval",
+      "NoneWaiting": "No syndicate is waiting.",
+      "Active": "Trading",
+      "NoneActive": "No syndicate is trading yet.",
+      "Closed": "Dissolved",
+      "Approve": "Approve",
+      "Reject": "Turn down",
+      "RejectConfirm": "Turn this syndicate down? Nothing has been paid in yet, so it is simply removed.",
+      "Pass": "Pass",
+      "Veto": "Veto",
+      "Close": "Close and pay out",
+      "CloseConfirm": "Close this syndicate? Its cash is paid into the members' brokerage balances by units, and it stops trading.",
+      "CloseLater": "To close it, its account must first hold nothing but cash.",
+      "Money": "Cash {cash} eb · value {total} eb · {nav} eb a unit · officers' limit {limit} eb",
+      "NoHoldings": "No holdings.",
+      "Heat": "Heat {heat} ({tier})",
+      "WaitingRedemptions": "Redemptions waiting for cash: {n}",
+      "Status": {
+        "pending": "waiting for approval",
+        "active": "trading",
+        "closed": "dissolved"
       }
     },
     "GMBusiness": {

@@ -67,6 +67,7 @@ before(async () => {
   Apps = {
     Terminal: (await load('../scripts/ui/MarketTerminal/MarketTerminalApp.js')).MarketTerminalApp,
     Trade: (await load('../scripts/ui/TradeDialog/TradeDialogApp.js')).TradeDialogApp,
+    GMConsole: (await load('../scripts/ui/GMConsole/GMConsoleApp.js')).GMConsoleApp,
   };
   await S.ImportService.importStarter();
   await S.TickService.syncCompanies();
@@ -150,4 +151,20 @@ test('the trade dialog tells an officer the limit, and a member that only office
   };
   assert.match(await dialog(med), /Officers trade up to 5,000 eb an order; a bigger one is sent to the members/);
   assert.match(await dialog(fix), /Only the syndicate's officers can trade its account/);
+});
+
+test('the GM Console Syndicates tab shows each syndicate, its account and its open proposals', async () => {
+  const app = new Apps.GMConsole();
+  app.tab = 'syndicates';
+  const html = render('templates/gm/console.hbs', await app._prepareContext());
+  assertClean(html, 'syndicates tab');
+  const t = text(html);
+  assert.match(t, /Back Room Capital trading/);
+  assert.match(t, /Medtech \(officer, 67%\), Fixer \(member, 33%\)/);
+  assert.match(t, /Cash 9,000 eb · value 9,000 eb · 1\.00 eb a unit · officers' limit 5,000 eb/);
+  assert.match(t, /Set the officers' limit to 8,000 eb an order/);
+  assert.match(html, /data-action="syndicatePass"/);
+  assert.match(html, /data-action="syndicateVeto"/);
+  assert.match(html, /data-action="syndicateClose"/, 'an account of nothing but cash can be closed');
+  assert.match(t, /Syndicates/);
 });

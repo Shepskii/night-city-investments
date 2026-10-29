@@ -19,10 +19,11 @@ import * as brokers from './tabs/brokers.js';
 import * as gigs from './tabs/gigs.js';
 import * as heat from './tabs/heat.js';
 import * as businesses from './tabs/businesses.js';
+import * as syndicates from './tabs/syndicates.js';
 import * as tools from './tabs/tools.js';
 
 /** In display order. */
-const TABS = { market, events, actions, companies, funds, brokers, gigs, heat, businesses, tools };
+const TABS = { market, events, actions, companies, funds, brokers, gigs, heat, businesses, syndicates, tools };
 const PARTIALS = `modules/${MODULE_ID}/templates/gm/console`;
 
 export class GMConsoleApp extends BaseApplication {
@@ -113,7 +114,7 @@ export class GMConsoleApp extends BaseApplication {
 
   async _prepareContext() {
     const gigCounts = GigImpactService.counts();
-    const waiting = { gigs: gigCounts.review + gigCounts.mapping, businesses: businesses.waiting() };
+    const waiting = { gigs: gigCounts.review + gigCounts.mapping, businesses: businesses.waiting(), syndicates: syndicates.waiting() };
     const context = {
       tab: this.tab,
       tabs: Object.keys(TABS).map((t) => ({

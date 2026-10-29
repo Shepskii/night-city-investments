@@ -21,7 +21,7 @@ const units = (n) => Number(n).toLocaleString(undefined, { minimumFractionDigits
 const tickerOf = (id) => CompanyRepository.get(id)?.ticker ?? FundRepository.get(id)?.ticker ?? id;
 
 /** One proposal in words. */
-function describe(s, p) {
+export function describeProposal(s, p) {
   const name = memberOf(s, p.actorId)?.name || game.actors.get(p.actorId)?.name || '?';
   switch (p.kind) {
     case 'trade':
@@ -86,7 +86,7 @@ export function syndicateContext(account, portfolio, prices) {
     })),
     proposals: s.proposals.map((p) => ({
       id: p.id,
-      text: describe(s, p),
+      text: describeProposal(s, p),
       by: L('NCI.Syndicate.ProposedBy', { name: memberOf(s, p.by)?.name ?? '?', date: dayText(p.ends) }),
       yes: weight(p, true),
       no: weight(p, false),
