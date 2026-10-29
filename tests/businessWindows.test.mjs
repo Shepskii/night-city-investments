@@ -207,6 +207,29 @@ test('a registered business shows its loans, the bank, investors and an angel', 
   assert.match(overview, /Compliance/);
 });
 
+test('the overview charts the weeks the business keeps: bars, cash and each standing by band', async () => {
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const week = (i, profit, till, reputation) => ({
+    index: i + 1, startDay: b.openedDay + 7 * i, endDay: b.openedDay + 7 * (i + 1), takings: 300 + profit, upkeep: 300, profit, till,
+    bands: { reputation, capacity: 'room', costs: 'fair', compliance: 'sound' }, actions: [],
+  });
+  await S.BusinessRepository.save({ ...b, digests: [week(0, -120, 900, 'poor'), week(1, 80, 980, 'modest'), week(2, 260, 1240, 'good')] });
+  try {
+    const html = await renderBusiness(windowFor(med, 'overview'));
+    assertClean(html, 'overview with charts');
+    assert.equal((html.match(/class="nci-chart"/g) ?? []).length, 2, 'the weekly bars and the cash line');
+    assert.match(html, /<title>Week 1 \(to [^)]+\): Takings 180 eb, Upkeep 300 eb, Profit -120 eb<\/title>/);
+    const reputation = html.match(/Reputation<\/span>\s*<span class="nci-cells">(.*?)<\/span>\s*<strong/s)[1];
+    assert.deepEqual([...reputation.matchAll(/nci-lvl(-?\d)/g)].map((m) => m[1]), ['0', '1', '2'], 'poor, modest, good, week by week');
+    assert.match(text(html), /The last 3 week\(s\)/);
+  } finally {
+    await S.BusinessRepository.save(saved);
+  }
+  const empty = await renderBusiness(windowFor(med, 'overview'));
+  assert.match(text(empty), new RegExp(S.BusinessRepository.all()[0].digests.length ? 'The last' : 'The charts fill in'));
+});
+
 test('the investor list offers player characters and characters linked to NCM brokers and investors, nobody else', async () => {
   const npc = (name) => ({ id: `a_${name}`, name, type: 'character', hasPlayerOwner: false });
   const extra = [npc('Banker'), npc('Shark'), npc('Bystander'), { ...npc('Goon'), type: 'mook' }];

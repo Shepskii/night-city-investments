@@ -115,13 +115,34 @@
       {{#if myShare}}<div><span>{{localize "NCI.Business.YourShare"}}</span><strong>{{myShare}} ({{myValue}} eb)</strong></div>{{/if}}
       {{/if}}
     </div>
-    {{#if isOpen}}
-    <table class="nci-market"><tbody>
-      {{#each bands}}<tr><td>{{label}}</td><td><strong>{{value}}</strong></td></tr>{{/each}}
-    </tbody></table>
-    <p class="nci-hint">{{localize "NCI.Business.OpenedOn" date=opened}}</p>
+    {{#if isOpen}}<p class="nci-hint">{{localize "NCI.Business.OpenedOn" date=opened}}</p>{{/if}}
+  </div>
+
+  {{#with history}}
+  <div class="nci-block nci-history">
+    <h3>{{localize "NCI.Business.Standing"}}</h3>
+    <div class="nci-standings">
+      {{#each standings}}
+      <div class="nci-standing">
+        <span class="nci-standing-label">{{label}}</span>
+        <span class="nci-cells">{{#each cells}}<span class="nci-cell nci-lvl{{level}}" title="{{tip}}"></span>{{/each}}</span>
+        <strong class="nci-lvl-text nci-lvl{{level}}">{{now}}</strong>
+      </div>
+      {{/each}}
+    </div>
+    {{#if weeks}}
+    <h3>{{title}}</h3>
+    <div class="nci-chartbox">{{{revenue}}}</div>
+    <p class="nci-legend"><span class="nci-key nci-key-takings"></span>{{localize "NCI.Business.Takings"}} <span class="nci-key nci-key-upkeep"></span>{{localize "NCI.Business.Upkeep"}} <span class="nci-key nci-key-profit"></span>{{localize "NCI.Business.Profit"}}</p>
+    {{#if cash}}
+    <h3>{{localize "NCI.Business.CashTrend"}}</h3>
+    <div class="nci-chartbox">{{{cash}}}</div>
+    {{/if}}
+    {{else}}
+    <p class="nci-hint">{{localize "NCI.Business.NoHistory"}}</p>
     {{/if}}
   </div>
+  {{/with}}
 
   {{#with forming}}
   <div class="nci-block nci-form">

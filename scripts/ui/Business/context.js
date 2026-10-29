@@ -14,12 +14,53 @@ import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient, operatorRankOf, pendingBusinessRequests, investorActors } from '../../services/BusinessClient.js';
 import { MarketClock } from '../../services/MarketClockService.js';
 import { L, whole, signed } from '../format.js';
+import { weeklyBars, balanceLine } from '../components/chart.js';
 
 const DAY_MS = 86_400_000;
 const LEDGER_ROWS = 15;
 
 /** A market day as a date, e.g. "2045-03-09". */
 export const dayText = (day) => MarketClock.dateString(day * DAY_MS);
+
+/** Each standing's bands, worst to best, so a week's band can be drawn as a level from 0 to 3. */
+const BAND_LEVELS = {
+  reputation: ['poor', 'modest', 'good', 'excellent'],
+  capacity: ['cramped', 'room', 'busy', 'full'],
+  costs: ['high', 'fair', 'lean', 'tight'],
+  compliance: ['poor', 'shaky', 'sound', 'spotless'],
+};
+
+/**
+ * The overview's charts, from the weekly digests the business keeps (the last 12): takings, upkeep
+ * and profit by week, cash at each close, and each standing's band week by week. Only bands are
+ * drawn for the standings, never the numbers behind them, as everywhere else in the window.
+ */
+function historyContext(business, bands) {
+  const weeks = business.digests;
+  const eb = (v) => `${whole(v)} eb`;
+  const when = (d) => L('NCI.Business.WeekTo', { n: d.index, date: dayText(d.endDay) });
+  const tip = (d) => `${when(d)}: ${L('NCI.Business.Takings')} ${eb(d.takings)}, ${L('NCI.Business.Upkeep')} ${eb(d.upkeep)}, ${L('NCI.Business.Profit')} ${eb(d.profit)}`;
+  return {
+    weeks: weeks.length,
+    title: weeks.length ? L('NCI.Business.HistoryTitle', { n: weeks.length }) : '',
+    revenue: weeks.length ? weeklyBars(weeks.map((d) => ({ takings: d.takings, upkeep: d.upkeep, profit: d.profit, tip: tip(d) })), {
+      format: eb, labels: [when(weeks[0]), when(weeks.at(-1))],
+    }) : '',
+    cash: weeks.length > 1 ? balanceLine(weeks.map((d) => d.till), { format: eb, tips: weeks.map((d) => `${when(d)}: ${L('NCI.Business.Till')} ${eb(d.till)}`) }) : '',
+    standings: Object.entries(bands).map(([key, band]) => ({
+      label: L(`NCI.Business.State.${key}`),
+      now: L(`NCI.Business.Band.${key}.${band}`),
+      level: BAND_LEVELS[key]?.indexOf(band) ?? -1,
+      cells: weeks.map((d) => {
+        const past = d.bands?.[key];
+        return {
+          level: past ? BAND_LEVELS[key]?.indexOf(past) ?? -1 : -1,
+          tip: past ? `${when(d)}: ${L(`NCI.Business.Band.${key}.${past}`)}` : when(d),
+        };
+      }),
+    })),
+  };
+}
 
 const nameOf = (business, actorId) => partnerOf(business, actorId)?.name || game.actors.get(actorId)?.name || '?';
 
@@ -92,6 +133,7 @@ export function businessContext(business, actor) {
     canAct,
     isPartner: !!me && ['active', 'leaving'].includes(me.status),
     bands: Object.entries(bands).map(([key, band]) => ({ label: L(`NCI.Business.State.${key}`), value: L(`NCI.Business.Band.${key}.${band}`) })),
+    history: status === 'open' || status === 'closed' ? historyContext(business, bands) : null,
     till: whole(business.till),
     escrow: whole(business.escrow),
     assets: whole(business.assets),
