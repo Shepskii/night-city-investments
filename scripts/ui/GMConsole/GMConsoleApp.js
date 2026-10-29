@@ -57,6 +57,7 @@ export class GMConsoleApp extends BaseApplication {
     Hooks.on(HOOKS.GIGS_CHANGED, this._refresh);
     Hooks.on(HOOKS.HEAT_CHANGED, this._refresh);
     Hooks.on(HOOKS.BUSINESSES_CHANGED, this._refresh);
+    Hooks.on(HOOKS.SYNDICATES_CHANGED, this._refresh);
   }
 
   _onClose(options) {
@@ -65,6 +66,7 @@ export class GMConsoleApp extends BaseApplication {
     Hooks.off(HOOKS.GIGS_CHANGED, this._refresh);
     Hooks.off(HOOKS.HEAT_CHANGED, this._refresh);
     Hooks.off(HOOKS.BUSINESSES_CHANGED, this._refresh);
+    Hooks.off(HOOKS.SYNDICATES_CHANGED, this._refresh);
     super._onClose?.(options);
   }
 

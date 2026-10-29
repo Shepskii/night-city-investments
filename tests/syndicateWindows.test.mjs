@@ -172,3 +172,16 @@ test('the GM Console Syndicates tab shows each syndicate, its account and its op
   assert.match(html, /data-action="syndicateClose"/, 'an account of nothing but cash can be closed');
   assert.match(t, /Syndicates/);
 });
+
+test('the GM Console redraws when a syndicate is approved, without being closed and reopened', async () => {
+  const { HOOKS } = await import('../scripts/utils/constants.js');
+  const app = new Apps.GMConsole();
+  let renders = 0;
+  app.render = () => { renders++; };
+  app._onFirstRender({}, {});
+  Hooks.callAll(HOOKS.SYNDICATES_CHANGED, { syndicateId: syndicate().id });
+  assert.equal(renders, 1);
+  app._onClose({});
+  Hooks.callAll(HOOKS.SYNDICATES_CHANGED, {});
+  assert.equal(renders, 1, 'and stops listening once closed');
+});

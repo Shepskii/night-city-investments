@@ -74,7 +74,11 @@ export function installFakeFoundry({ actors: actorSpecs = [], now = Date.UTC(204
   const actors = actorSpecs.map(([name, wealth, owned]) => new FakeActor(name, wealth, owned));
 
   globalThis.CONST = { DOCUMENT_OWNERSHIP_LEVELS: { NONE: 0, OBSERVER: 2 } };
-  globalThis.Hooks = { callAll, on: (name, fn) => handlers.set(name, [...(handlers.get(name) ?? []), fn]) };
+  globalThis.Hooks = {
+    callAll,
+    on: (name, fn) => handlers.set(name, [...(handlers.get(name) ?? []), fn]),
+    off: (name, fn) => handlers.set(name, (handlers.get(name) ?? []).filter((h) => h !== fn)),
+  };
   globalThis.ui = { notifications: { warn: (m) => notices.push(['warn', m]), info: (m) => notices.push(['info', m]) } };
   globalThis.Folder = { create: async (d) => ({ id: 'f1', ...d }) };
   globalThis.JournalEntry = { create: async (d) => { const j = new FakeJournal(d); game.journal.push(j); return j; } };
