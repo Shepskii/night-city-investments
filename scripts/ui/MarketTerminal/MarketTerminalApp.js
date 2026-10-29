@@ -39,6 +39,7 @@ export class MarketTerminalApp extends BaseApplication {
   static DEFAULT_OPTIONS = {
     id: 'nci-market-terminal',
     window: { title: 'NCI.Terminal.Title', icon: 'fas fa-chart-line' },
+    position: { width: 1100, height: 640 },
     actions: {
       select: MarketTerminalApp._onSelect,
       openAsset: MarketTerminalApp._onOpenAsset,
