@@ -31,6 +31,8 @@ game.users.filter = () => [];
 env.store.set('directOrderExecution', 'instant');
 env.store.set('gigImpactApproval', false);
 env.store.set('heatEnabled', true);
+// A fixed seed, so prices (and so the size of each trade in eddies) are the same on every run.
+env.store.set('worldSeed', process.env.NCI_TEST_SEED ?? 'heat-flow');
 
 let S; let Gigs; let Heat; let HOOKS;
 const audits = [];
@@ -89,6 +91,16 @@ const trade = async (a, side, assetId, qty, route = 'direct') => {
 const report = async (p) => { const out = await Gigs.report(p); await settle(); return out; };
 const advance = async (n) => { await S.TickService.advance(n); await settle(); };
 const auditOf = (key) => heat().audits.find((a) => a.sourceKey === key);
+/**
+ * Wait until a window's audit has been recorded. Under a busy machine the after-tick work can still be
+ * finishing when `settle` returns, and a test that then changes a setting would race it.
+ */
+const auditDone = async (key) => {
+  for (let i = 0; i < 200 && !auditOf(key); i++) await settle();
+  const audit = auditOf(key);
+  assert.ok(audit, `the audit of ${key} was recorded`);
+  return audit;
+};
 const heatOf = (a) => Heat.heatOf(a.id);
 
 test('a reported gig opens a watch window, and nothing is audited until it closes', async () => {
@@ -262,16 +274,19 @@ test('approving a pending gig opens its window from the day it was reported', as
 });
 
 test('the GM\'s strength setting scales the heat a trade adds', async () => {
+  // The same trade in eddies each time, so only the strength differs.
+  const shares = (id, eb) => Math.max(1, Math.round(eb / S.MarketStore.getPublic().companies[id].price));
   env.store.set('heatStrength', 2);
   await report({ gigId: 'h9', outcome: 'done', client: 'Zetatech', reward: 3000 });
-  await trade(carol, 'buy', 'ZET', 30);
+  await trade(carol, 'buy', 'ZET', shares('ZET', 3000));
   await advance(5);
-  const doubled = auditOf('gig:h9:done').results[0].gain;
+  // Read it (and only then turn the strength back down) once the audit has really happened.
+  const doubled = (await auditDone('gig:h9:done')).results[0].gain;
   env.store.set('heatStrength', 1);
   await report({ gigId: 'h10', outcome: 'done', client: 'Network 54', reward: 3000 });
-  await trade(carol, 'buy', 'N54', 30);
+  await trade(carol, 'buy', 'N54', shares('N54', 3000));
   await advance(5);
-  const normal = auditOf('gig:h10:done').results[0].gain;
+  const normal = (await auditDone('gig:h10:done')).results[0].gain;
   assert.ok(doubled > normal * 1.4, `${doubled} vs ${normal}`);
 });
 
