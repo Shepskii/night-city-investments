@@ -264,7 +264,9 @@ test('gear is read from an item: its market price times how many there are, and 
   const kit = { type: 'gear', name: 'Medtech bag', img: 'bag.webp', system: { price: { market: 500 } } };
   assert.deepEqual(itemGear({ ...kit, ownerId: 'med' }, 'med'), { ok: true, name: 'Medtech bag', value: 500, img: 'bag.webp', fromActor: true });
   assert.equal(itemGear(kit, 'med').fromActor, false, 'from the library: a copy, nothing leaves a sheet');
-  assert.deepEqual([itemGear({ type: 'ammo', name: 'Basic ammo', system: { price: { market: 10 }, amount: 30 } }, 'med').value, itemGear({ type: 'ammo', name: 'Basic ammo', system: { price: { market: 10 }, amount: 30 } }, 'med').name], [300, 'Basic ammo ×30']);
+  const ammo = itemGear({ type: 'ammo', name: 'Basic ammo', system: { price: { market: 10 }, amount: 70, isInstalled: true }, ownerId: 'med' }, 'med');
+  assert.deepEqual([ammo.ok, ammo.value, ammo.name], [true, 70, 'Basic ammo ×70'], 'loaded ammunition is not "installed", and is priced per 10 rounds');
+  assert.equal(itemGear({ type: 'gear', name: 'Flashlight', system: { price: { market: 20 }, amount: 3 } }, 'med').value, 60, 'anything else is the price times how many');
   assert.equal(itemGear({ ...kit, ownerId: 'fix' }, 'med').reason, 'not-your-item');
   assert.equal(itemGear({ type: 'cyberware', name: 'Cyberarm', system: { price: { market: 500 }, isInstalled: true }, ownerId: 'med' }, 'med').reason, 'item-installed');
   assert.equal(itemGear({ type: 'skill', name: 'Cybertech', system: {} }, 'med').reason, 'bad-item');

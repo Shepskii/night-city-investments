@@ -79,10 +79,12 @@ const NOT_GEAR = new Set(['skill', 'role', 'criticalInjury', 'netarch']);
 export function itemGear(item, actorId, p = BUSINESS_DEFAULTS) {
   if (!item?.name || NOT_GEAR.has(item.type)) return fail('bad-item');
   if (item.ownerId && item.ownerId !== actorId) return fail('not-your-item');
-  if (item.system?.isInstalled) return fail('item-installed');
+  // Loaded ammunition is marked installed too; only installed cyberware is part of the character.
+  if (item.type === 'cyberware' && item.system?.isInstalled) return fail('item-installed');
   const price = Number(item.system?.price?.market ?? item.system?.price ?? 0) || 0;
   const amount = Math.max(1, Math.floor(Number(item.system?.amount) || 1));
-  const value = Math.round(price * amount);
+  // Cyberpunk RED prices ammunition per box of 10 rounds.
+  const value = Math.round(item.type === 'ammo' ? price * Math.ceil(amount / 10) : price * amount);
   if (value <= 0) return fail('no-price');
   if (value > p.maxGearValue) return fail('bad-gear');
   return { ok: true, name: text(item.name, 60) + (amount > 1 ? ` ×${amount}` : ''), value, img: String(item.img ?? ''), fromActor: !!item.ownerId };
