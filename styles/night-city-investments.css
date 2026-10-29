@@ -174,6 +174,9 @@
 .nci-app .nci-cashbox { display: flex; gap: 8px; align-items: center; padding: 8px; border: 1px solid var(--nci-accent-dim); margin-bottom: 8px; }
 .nci-app .nci-cashbox input { width: 130px; }
 .nci-app .nci-cashbox button { width: auto; padding: 0 12px; }
+/* A syndicate's pay-in and redeem boxes: the same label width, so their fields and buttons line up. */
+.nci-app .nci-synbox > span:first-child { flex: 0 0 240px; }
+.nci-app .nci-synbox input { flex: 0 0 130px; }
 .nci-app .nci-portfolio h3 { color: var(--nci-label); margin: 14px 0 4px; border: none; }
 .nci-app .nci-estimate { color: var(--nci-accent-bright); min-height: 1.4em; }
 

@@ -38,12 +38,12 @@
     {{#with portfolio.syndicate}}
     <h3>{{localize "NCI.Syndicate.Title" name=name}}</h3>
     {{#if pending}}<p class="nci-warn">{{localize "NCI.Portfolio.PendingRequests"}}: {{pending}}</p>{{/if}}
-    <div class="nci-cashbox">
+    <div class="nci-cashbox nci-synbox">
       <span class="nci-muted">{{localize "NCI.Syndicate.YourCash" amount=myCash}}</span>
       <input type="number" name="synAmount" min="1" step="1" placeholder="{{localize 'NCI.Portfolio.Amount'}}">
       <button type="button" data-action="synDeposit"><i class="fas fa-arrow-right-to-bracket"></i> {{localize "NCI.Syndicate.PayIn"}}</button>
     </div>
-    <div class="nci-cashbox">
+    <div class="nci-cashbox nci-synbox">
       <span class="nci-muted">{{localize "NCI.Syndicate.FreeUnits" units=freeUnits}}</span>
       <input type="number" name="synUnits" min="0.01" step="0.01" placeholder="{{localize 'NCI.Syndicate.Units'}}">
       <button type="button" data-action="synRedeem"><i class="fas fa-arrow-right-from-bracket"></i> {{localize "NCI.Syndicate.Redeem"}}</button>

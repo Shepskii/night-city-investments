@@ -1553,7 +1553,7 @@
         "dissolve": "Dissolve the syndicate and pay out its cash by units"
       },
       "Kind": {
-        "admit": "Invite a character",
+        "admit": "Invite a member",
         "remove": "Remove a member",
         "officer": "Make a member an officer",
         "member": "Make an officer a member",
