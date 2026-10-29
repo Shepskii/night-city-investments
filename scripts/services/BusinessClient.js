@@ -97,7 +97,7 @@ class BusinessClientImpl {
     }
     const use = request.use.kind === 'hire' ? request.use : spec.use;
     const { messageId } = await SkillAdapter.leverCheck(actor, {
-      dv: spec.dv, title, use, levers: { ...levers, bonus: spec.bonusAvailable ? levers.bonus : 0 },
+      dv: spec.dv, title, use, levers: { ...levers, bonus: spec.bonusAvailable ? levers.bonus : 0, extra: spec.extraAvailable ? levers.extra : 0 },
     });
     if (!messageId) return null;
     return this.submit(actor, request.type, { ...request, use, rollId: messageId });

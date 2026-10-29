@@ -14,6 +14,7 @@ const ability = (name) => Object.freeze({ kind: 'ability', ability: name });
 /** Cyberpunk RED skills the business loop uses, with the stat each falls back on. */
 export const SKILLS = Object.freeze({
   basicTech: skill('Basic Tech', 'tech'),
+  bureaucracy: skill('Bureaucracy', 'int'),
   business: skill('Business', 'int'),
   composition: skill('Composition', 'int'),
   conversation: skill('Conversation', 'emp'),
@@ -79,10 +80,28 @@ export const ACTIONS = Object.freeze({
 const byBand = (values) => Object.freeze(Object.fromEntries(['fumble', 'failure', 'narrow', 'solid', 'strong', 'exceptional'].map((b, i) => [b, values[i]])));
 
 export const BUSINESS_DEFAULTS = Object.freeze({
-  /** Per stage: action slots, the DV step of its actions, the Capacity ceiling, weekly rent and protection, the fix-up scale. */
+  /**
+   * Per stage: action slots, the DV step of its actions, the Capacity ceiling, weekly rent, licence fees
+   * and protection money, the fix-up scale, and the expansion project it can take on (eb, Capacity
+   * gained, business days of work). Registering trades protection money for rent and licence fees.
+   */
   stages: Object.freeze([
-    Object.freeze({ slots: 1, dv: 'everyday', capacityCap: 1.6, rent: 7, protection: 8, fixUpScale: 1 }),
+    Object.freeze({ slots: 1, dv: 'everyday', capacityCap: 1.6, rent: 7, licence: 0, protection: 8, fixUpScale: 1, expansion: Object.freeze({ cost: 1500, gain: 0.25, days: 3 }) }),
+    Object.freeze({ slots: 2, dv: 'difficult', capacityCap: 4.5, rent: 25, licence: 10, protection: 5, fixUpScale: 6, expansion: Object.freeze({ cost: 2500, gain: 0.8, days: 6 }) }),
   ]),
+  /** Business days each partner with a vote has a week, for projects and extra time, without Crew Tools. */
+  businessDays: 3,
+  /** Side business to registered business (DESIGN §26.0). Bureaucracy, or Local Expert or Persuasion at DV +2. */
+  registration: Object.freeze({
+    fee: 500, minWeeks: 4, minProfit: 100, minReputation: 50, dv: 'difficult', delay: 7, fumbleDelay: 14,
+    uses: Object.freeze([SKILLS.bureaucracy, Object.freeze({ ...SKILLS.localExpert, dvAdd: 2 }), Object.freeze({ ...SKILLS.persuasion, dvAdd: 2 })]),
+    /** The registration roll's band sets the Compliance the registered business starts with. */
+    compliance: Object.freeze({ narrow: 45, solid: 50, strong: 55, exceptional: 60 }),
+  }),
+  /** Compliance (registered businesses) drifts back toward this, like Reputation. */
+  complianceBaseline: 50,
+  /** Proposals lapse after this many game days without passing. */
+  proposalDays: 7,
   /** What each band does. `work` multiplies the week's takings; the rest add to the state. */
   effects: Object.freeze({
     work: byBand([0.6, 0.85, 1.0, 1.1, 1.2, 1.35]),

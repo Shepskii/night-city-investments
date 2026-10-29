@@ -29,8 +29,8 @@ test('Luck and the complementary bonus add to the total', () => {
 });
 
 test('levers are cleaned up: a hire takes no Luck, unknown values fall back', () => {
-  assert.deepEqual(normalizeLevers({ approach: 'reckless', luck: 3.7, bonus: 5, hire: 'good' }), { approach: 'standard', luck: 0, bonus: 1, hire: 'good' });
-  assert.deepEqual(normalizeLevers({ luck: -2, hire: 'nobody' }), { approach: 'standard', luck: 0, bonus: 0, hire: null });
+  assert.deepEqual(normalizeLevers({ approach: 'reckless', luck: 3.7, bonus: 5, hire: 'good' }), { approach: 'standard', luck: 0, bonus: 1, extra: 0, hire: 'good' });
+  assert.deepEqual(normalizeLevers({ luck: -2, hire: 'nobody' }), { approach: 'standard', luck: 0, bonus: 0, extra: 0, hire: null });
   assert.equal(normalizeLevers({ luck: 40 }).luck, 10);
 });
 

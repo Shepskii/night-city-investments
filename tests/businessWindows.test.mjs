@@ -143,12 +143,17 @@ test('waiting for the GM: the player is told, and the GM tab offers approval', a
 
 test('open: every tab renders, and the week offers its five actions', async () => {
   await S.BusinessService.approve(S.BusinessRepository.all()[0].id);
-  for (const tab of ['overview', 'week', 'ledger', 'partners']) {
+  for (const tab of ['overview', 'week', 'projects', 'ledger', 'partners', 'growth']) {
     const html = await renderBusiness(windowFor(med, tab));
     assertClean(html, `open ${tab}`);
   }
   const week = text(await renderBusiness(windowFor(med, 'week')));
   for (const name of ['Work the shop', 'Promote', 'Source supplies', 'Fix the place up', 'Keep it safe']) assert.match(week, new RegExp(name));
+  const growth = text(await renderBusiness(windowFor(med, 'growth')));
+  assert.match(growth, /To become a Registered business/);
+  assert.match(growth, /4 full weeks open/);
+  const projects = text(await renderBusiness(windowFor(med, 'projects')));
+  assert.match(projects, /business day\(s\) left this week/);
   const partners = text(await renderBusiness(windowFor(med, 'partners')));
   assert.match(partners, /Medtech/);
   assert.match(partners, /Book value per unit/);

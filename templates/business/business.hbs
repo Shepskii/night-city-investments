@@ -81,6 +81,7 @@
   {{#if ../isOverview}}
   <div class="nci-block">
     {{#if isPending}}<p class="nci-warn">{{localize "NCI.Business.AwaitingGM"}}</p>{{/if}}
+    {{#if waitingVote}}<p class="nci-warn">{{waitingVote}}</p>{{/if}}
     {{#if isClosed}}<p class="nci-warn">{{closed}}</p>{{/if}}
     <div class="nci-summary">
       {{#if isForming}}<div><span>{{localize "NCI.Business.Escrow"}}</span><strong>{{escrow}} eb</strong></div>{{else}}
@@ -127,7 +128,7 @@
   {{#with week}}
   <div class="nci-block">
     <h3>{{localize "NCI.Business.ThisWeek"}}</h3>
-    <p class="nci-hint">{{localize "NCI.Business.WeekRuns" from=from to=to day=closesOn}} {{slotsText}}</p>
+    <p class="nci-hint">{{localize "NCI.Business.WeekRuns" from=from to=to day=closesOn}} {{slotsText}} {{daysText}}</p>
     <table class="nci-market">
       <thead><tr><th>{{localize "NCI.Business.ActionLabel"}}</th><th></th><th></th></tr></thead>
       <tbody>
@@ -145,6 +146,54 @@
     </table>
     {{#if helped}}<p class="nci-muted">{{helped}}</p>{{/if}}
     <p class="nci-hint">{{unworkedNote}}</p>
+  </div>
+  {{else}}
+  <p class="nci-empty">{{localize "NCI.Business.NotOpenYet"}}</p>
+  {{/with}}
+  {{/if}}
+
+  {{#if ../isProjects}}
+  {{#with projects}}
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Business.Projects"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Business.ProjectsIntro"}} {{daysText}}</p>
+    {{#with active}}
+    <p><strong>{{text}}</strong></p>
+    {{#if canAdd}}
+    <label>{{localize "NCI.Business.DaysToAdd"}}<input type="number" name="days" min="1" max="{{max}}" step="1" value="1" class="nci-days"></label>
+    <button type="button" data-action="addDays" data-id="{{id}}"><i class="fas fa-hammer"></i> {{localize "NCI.Business.AddDays"}}</button>
+    {{/if}}
+    {{/with}}
+    {{#if offer}}<p>{{offer}}</p>{{/if}}
+    {{#if pending}}<p class="nci-warn">{{pending}}</p>{{/if}}
+    {{#if blocked}}<p class="nci-muted">{{blocked}}</p>{{/if}}
+    {{#if canPropose}}<button type="button" data-action="proposeExpansion"><i class="fas fa-up-right-and-down-left-from-center"></i> {{localize "NCI.Business.ProposeExpansion"}}</button>{{/if}}
+    {{#if done.length}}<ul class="nci-muted">{{#each done}}<li>{{this}}</li>{{/each}}</ul>{{/if}}
+  </div>
+  {{else}}
+  <p class="nci-empty">{{localize "NCI.Business.NotOpenYet"}}</p>
+  {{/with}}
+  {{/if}}
+
+  {{#if ../isGrowth}}
+  {{#with growth}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.Business.Growth"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Business.GrowthNow" stage=stage}}</p>
+    {{#if available}}
+    <h4>{{localize "NCI.Business.NextStage" stage=next}}</h4>
+    <table class="nci-market"><tbody>
+      {{#each items}}<tr><td>{{#if met}}<i class="fas fa-check nci-up"></i>{{else}}<i class="fas fa-xmark nci-down"></i>{{/if}} {{label}}</td><td>{{have}}</td></tr>{{/each}}
+    </tbody></table>
+    <p class="nci-hint">{{gains}}</p>
+    {{#if pending}}<p class="nci-warn">{{pending}}</p>{{/if}}
+    {{#if agreed}}<p><strong>{{agreed}}</strong></p>{{/if}}
+    {{#if retry}}<p class="nci-warn">{{retry}}</p>{{/if}}
+    {{#if canPropose}}<button type="button" data-action="proposeStepUp"><i class="fas fa-stairs"></i> {{localize "NCI.Business.ProposeStepUp"}}</button>{{/if}}
+    {{#if canRoll}}<button type="button" data-action="stepUpRoll"><i class="fas fa-dice-d10"></i> {{localize "NCI.Business.StepUpRoll"}}</button>{{/if}}
+    {{else}}
+    <p class="nci-muted">{{later}}</p>
+    {{/if}}
   </div>
   {{else}}
   <p class="nci-empty">{{localize "NCI.Business.NotOpenYet"}}</p>
@@ -221,14 +270,16 @@
   </div>
   <div class="nci-block">
     <h3>{{localize "NCI.Business.Decisions"}}</h3>
-    {{#with proposal}}
-    <p><strong>{{text}}</strong></p>
-    <p class="nci-muted">{{votes}}</p>
-    {{#if canVote}}
-    <button type="button" data-action="vote" data-id="{{id}}" data-yes="true"><i class="fas fa-check"></i> {{localize "NCI.Business.VoteYes"}}</button>
-    <button type="button" data-action="vote" data-id="{{id}}" data-yes="false"><i class="fas fa-xmark"></i> {{localize "NCI.Business.VoteNo"}}</button>
-    {{/if}}
-    {{/with}}
+    {{#each proposals}}
+    <div class="nci-gig">
+      <p><strong>{{text}}</strong> <span class="nci-muted">{{rule}}</span></p>
+      <p class="nci-muted">{{votes}}</p>
+      {{#if canVote}}
+      <button type="button" data-action="vote" data-id="{{id}}" data-yes="true"><i class="fas fa-check"></i> {{localize "NCI.Business.VoteYes"}}</button>
+      <button type="button" data-action="vote" data-id="{{id}}" data-yes="false"><i class="fas fa-xmark"></i> {{localize "NCI.Business.VoteNo"}}</button>
+      {{/if}}
+    </div>
+    {{/each}}
     {{#if canPropose}}<button type="button" data-action="proposeClose"><i class="fas fa-door-closed"></i> {{localize "NCI.Business.ProposeClose"}}</button>{{/if}}
     {{#if canLeave}}<button type="button" data-action="leave"><i class="fas fa-person-walking-arrow-right"></i> {{localize "NCI.Business.Leave"}}</button>{{/if}}
     <p class="nci-hint">{{localize "NCI.Business.DecisionsHint"}}</p>

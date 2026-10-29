@@ -1,7 +1,7 @@
 /**
  * Business window: running a player business, apart from the Market Terminal (DESIGN §26.8a).
  * @file scripts/ui/Business/BusinessApp.js
- * @description Tabs: Overview, This week, Ledger, Partners. A character with no business sees Start a
+ * @description Tabs: Overview, This week, Projects, Ledger, Partners, Growth. A character with no business sees Start a
  *              business. Everything a player does here is a request for the GM, as in the terminal,
  *              and every roll is made only when the player presses Roll.
  */
@@ -14,7 +14,7 @@ import { RollDialogApp } from './RollDialogApp.js';
 import { L } from '../format.js';
 import { pickerContext, startContext, businessContext, usableActors } from './context.js';
 
-const TABS = ['overview', 'week', 'ledger', 'partners'];
+const TABS = ['overview', 'week', 'projects', 'ledger', 'partners', 'growth'];
 
 /** Read a named input from the form block around the clicked button. */
 const field = (target, name) => target.closest('.nci-form')?.querySelector(`[name="${name}"]`);
@@ -50,6 +50,10 @@ export class BusinessApp extends BaseApplication {
       buyout: BusinessApp._onBuyout,
       proposeClose: BusinessApp._onProposeClose,
       vote: BusinessApp._onVote,
+      proposeExpansion: BusinessApp._onProposeExpansion,
+      addDays: BusinessApp._onAddDays,
+      proposeStepUp: BusinessApp._onProposeStepUp,
+      stepUpRoll: BusinessApp._onStepUpRoll,
     },
   };
 
@@ -200,6 +204,22 @@ export class BusinessApp extends BaseApplication {
 
   static _onVote(event, target) {
     return this._send('vote', { proposalId: target.dataset.id, yes: target.dataset.yes === 'true' });
+  }
+
+  static _onProposeExpansion() {
+    return this._send('propose', { kind: 'expansion' });
+  }
+
+  static _onAddDays(event, target) {
+    return this._send('addDays', { projectId: target.dataset.id, days: amount(target, 'days') });
+  }
+
+  static async _onProposeStepUp() {
+    if (await this._confirm('NCI.Business.StepUpConfirm')) return this._send('propose', { kind: 'stepUp' });
+  }
+
+  static _onStepUpRoll() {
+    this._roll({ type: 'stepUpRoll' }, L('NCI.Business.StepUpTitle', { name: this.business?.name ?? '' }));
   }
 
   _send(type, payload = {}) {

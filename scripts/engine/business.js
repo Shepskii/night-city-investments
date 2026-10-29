@@ -36,6 +36,11 @@ import {
   partnerOf, gearValue, totalUnits, bookValue, unitValue, shareOf, lastDigest, drawAllowance, fundingShortfall, hireFee, stateBands,
   fail, close, addLedger,
 } from './businessRecord.js';
+import {
+  daysLeft, spendDays, activeProject, expansionOffer, startExpansion, addProjectDays, milestones, stepUpCheck, applyStepUp, votingUnits,
+} from './businessGrowth.js';
+
+export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck };
 
 export {
   BUSINESS_SCHEMA, BUSINESS_STATUS, weekdayOf, nextBoundary, normalizeBusiness, archetypeOf, holders, voters,
@@ -43,12 +48,18 @@ export {
 };
 
 export const BUSINESS_REQUESTS = Object.freeze([
-  'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout', 'proposeClose', 'vote',
+  'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
+  'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays',
 ]);
 
 /** Requests that carry a roll. */
-export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist']);
+export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll']);
 
+/**
+ * What each kind of proposal needs to pass (DESIGN §26.0): closing and stepping up need every partner
+ * with a vote; starting an expansion is a day-to-day choice, a majority of the voting units.
+ */
+export const PROPOSAL_RULES = Object.freeze({ close: 'unanimous', stepUp: 'unanimous', expansion: 'majority' });
 
 // ── What a roll needs ────────────────────────────────────────────────────────
 
@@ -57,8 +68,10 @@ export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist']);
  * ahead at all (so a request that would be refused does not use up the card), the DV, the ways it
  * may be rolled, whether a hire is allowed, and whether a complementary bonus is waiting. With no
  * `use` in the request it only says whether the roll can be made and how (the roll dialog asks
- * this); with one it also checks the use, and gives it back with the business's own stat.
- * @returns {{ok: true, dv: number, uses: object[], use?: object, allowHire: boolean, bonusAvailable: boolean} | {ok: false, reason: string}}
+ * this); with one it also checks the use, and gives it back with the business's own stat and DV
+ * (some uses roll at a higher DV). `extraAvailable` says whether the roller has a business day to
+ * spend on extra time.
+ * @returns {{ok: true, dv: number, uses: object[], use?: object, allowHire: boolean, bonusAvailable: boolean, extraAvailable: boolean} | {ok: false, reason: string}}
  */
 export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p = BUSINESS_DEFAULTS } = {}) {
   const arch = archetypeOf(b);
@@ -78,6 +91,13 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
 
   if (b.status !== 'open') return fail('not-open');
   if (me?.status !== 'active' || !me.voting) return fail('not-partner');
+  const extraAvailable = daysLeft(b, actorId, p) > 0;
+
+  if (request.type === 'stepUpRoll') {
+    const check = stepUpCheck(b, actorId, day, p);
+    if (!check.ok) return check;
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - p.registration.fee, operatorRank, p });
+  }
 
   if (request.type === 'action') {
     if (!ACTIONS[request.action]) return fail('bad-action');
@@ -85,14 +105,14 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     if (b.period.slots.length >= slots) return fail('no-slot');
     if (b.period.slots.some((s) => s.action === request.action)) return fail('action-taken');
     const bonusAvailable = b.period.bonuses.some((x) => x.action === request.action && !x.used);
-    return allowed(actionUses(request.action, arch), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable, funds: b.till, operatorRank, p });
+    return allowed(actionUses(request.action, arch), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p });
   }
 
   if (request.type === 'assist') {
     if (!ACTIONS[request.forAction]) return fail('bad-action');
     if (b.period.helpers.includes(actorId)) return fail('helped');
     if (b.period.slots.some((s) => s.action === request.forAction)) return fail('action-taken');
-    return allowed(helpUses(request.forAction, arch), use, { dv: dvOf(p.helpDv), allowHire: false, bonusAvailable: false });
+    return allowed(helpUses(request.forAction, arch), use, { dv: dvOf(p.helpDv), allowHire: false, bonusAvailable: false, extraAvailable });
   }
   return fail('bad-request');
 }
@@ -101,11 +121,12 @@ function allowed(uses, use, { funds = 0, operatorRank = 0, p = BUSINESS_DEFAULTS
   if (use?.kind === 'hire') {
     if (!spec.allowHire) return fail('hire-not-allowed');
     if (funds < hireFee(use.hire, operatorRank, p)) return fail('no-funds');
-    return { ok: true, uses, use, ...spec };
+    return { ok: true, uses, use, extraAvailable: false, ...spec };
   }
   if (use && !usesInclude(uses, use)) return fail('bad-use');
-  // The skill's stat is the business's own, not what the request says.
-  return { ok: true, uses, ...(use ? { use: uses.find((u) => useKey(u) === useKey(use)) } : {}), ...spec };
+  // The skill's stat (and any DV step) is the business's own, not what the request says.
+  const own = use ? uses.find((u) => useKey(u) === useKey(use)) : null;
+  return { ok: true, uses, extraAvailable: false, ...spec, ...(own ? { use: own, dv: spec.dv + (own.dvAdd ?? 0) } : {}) };
 }
 
 // ── Applying a request ───────────────────────────────────────────────────────
@@ -234,6 +255,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
         const bonus = b.period.bonuses.find((x) => x.action === request.action && !x.used);
         if (bonus) bonus.used = true;
       }
+      if (r.extra) spendDays(b, actor.id, 1);
       b.period.slots.push({
         action: request.action, by: actor.id, use: useKey(request.use), band: r.band, total: r.total, dv: r.dv, approach: r.approach, luck: r.luck, bonus: r.bonus,
       });
@@ -246,6 +268,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
       b.period.helpers.push(actor.id);
       const r = check.result;
+      if (r.extra) spendDays(b, actor.id, 1);
       if (r.success) b.period.bonuses.push({ id: request.key, action: request.forAction, by: actor.id, used: false });
       out.events.push({ type: 'roll', action: 'assist', forAction: request.forAction, band: r.band, exposure: r.exposure });
       break;
@@ -290,12 +313,40 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       log('buyout', 0, { price, sellerId: seller.actorId });
       break;
     }
+    case 'propose':
     case 'proposeClose': {
+      const kind = request.type === 'proposeClose' ? 'close' : request.kind;
       if (b.status !== 'open') return fail('not-open');
       if (me?.status !== 'active' || !me.voting) return fail('not-partner');
-      if (b.proposals.some((x) => x.kind === 'close')) return fail('proposal-open');
-      b.proposals.push({ id: request.key, kind: 'close', by: actor.id, day, votes: { [actor.id]: true } });
+      if (!PROPOSAL_RULES[kind]) return fail('bad-request');
+      if (b.proposals.some((x) => x.kind === kind)) return fail('proposal-open');
+      const can = canPropose(b, kind, p);
+      if (!can.ok) return can;
+      b.proposals.push({ id: request.key, kind, by: actor.id, day, expires: day + p.proposalDays, votes: { [actor.id]: true } });
       settleProposals(b, day, out, p);
+      break;
+    }
+    case 'stepUpRoll': {
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
+      if (!spec.ok) return spec;
+      if (!check?.ok) return fail(check?.reason ?? 'no-roll');
+      if (request.use.kind === 'hire') {
+        const fee = hireFee(request.use.hire, ctx.operatorRank, p);
+        b.till -= fee;
+        log('hire', -fee);
+      }
+      const r = check.result;
+      if (r.extra) spendDays(b, actor.id, 1);
+      const { stepped } = applyStepUp(b, actor.id, r, day, p);
+      out.events.push({ type: 'roll', action: 'stepUp', band: r.band, exposure: r.exposure }, ...(stepped ? [{ type: 'steppedUp', stage: b.stage }] : []));
+      break;
+    }
+    case 'addDays': {
+      if (b.status !== 'open') return fail('not-open');
+      if (me?.status !== 'active' || !me.voting) return fail('not-partner');
+      const added = addProjectDays(b, actor.id, request.projectId, request.days, { growthRate: ctx.growthRate ?? 1, day, params: p });
+      if (!added.ok) return added;
+      if (added.done) out.events.push({ type: 'projectDone', projectId: request.projectId });
       break;
     }
     case 'vote': {
@@ -464,16 +515,43 @@ function liquidate(b, day, reason, out, p) {
   out.events.push({ type: 'closed', reason, paid });
 }
 
-/** A close proposal passes when every voting partner says yes; one no ends it. */
+/** Whether a proposal of this kind could pass now (checked again when it does). */
+function canPropose(b, kind, p) {
+  if (kind === 'stepUp') {
+    if (b.stepUp?.approved) return fail('already-agreed');
+    const m = milestones(b, p);
+    if (!m.available) return fail('no-step-up');
+    if (!m.met) return fail('milestones');
+  }
+  if (kind === 'expansion') return expansionOffer(b, p);
+  return { ok: true };
+}
+
+/**
+ * Settle every open proposal by its rule (PROPOSAL_RULES). Unanimous: every voting partner says yes,
+ * and one no ends it. Majority: more than half the voting units say yes; it ends once half or more
+ * say no. A proposal that passes takes effect at once.
+ */
 function settleProposals(b, day, out, p) {
+  const all = votingUnits(b);
   for (const proposal of [...b.proposals]) {
-    const votes = voters(b).map((x) => proposal.votes[x.actorId]);
-    if (votes.some((v) => v === false)) {
-      b.proposals = b.proposals.filter((x) => x !== proposal);
+    const vs = voters(b);
+    const units = (want) => vs.filter((x) => proposal.votes[x.actorId] === want).reduce((a, x) => a + x.units, 0);
+    const unanimous = PROPOSAL_RULES[proposal.kind] === 'unanimous';
+    const failed = unanimous ? vs.some((x) => proposal.votes[x.actorId] === false) : all > 0 && units(false) * 2 >= all;
+    const passed = unanimous ? vs.every((x) => proposal.votes[x.actorId] === true) : units(true) * 2 > all;
+    if (!failed && !passed) continue;
+    b.proposals = b.proposals.filter((x) => x !== proposal);
+    if (failed) {
       out.events.push({ type: 'proposalFailed', kind: proposal.kind });
-    } else if (votes.every((v) => v === true)) {
-      b.proposals = b.proposals.filter((x) => x !== proposal);
-      if (proposal.kind === 'close') liquidate(b, day, 'closed', out, p);
+      continue;
+    }
+    out.events.push({ type: 'proposalPassed', kind: proposal.kind });
+    if (proposal.kind === 'close') liquidate(b, day, 'closed', out, p);
+    if (proposal.kind === 'stepUp') b.stepUp = { approved: true, retryDay: null };
+    if (proposal.kind === 'expansion') {
+      const started = startExpansion(b, proposal.id, day, p);
+      if (!started.ok) out.events.push({ type: 'proposalVoid', kind: proposal.kind, reason: started.reason });
     }
   }
 }
@@ -493,6 +571,12 @@ export function advanceBusiness(business, day, { weekday = 1, growthRate = 1, ac
   const out = { wealth: {}, events: [] };
   if (b.status !== 'open' || !b.period) return { business: b, ...out, changed: false };
   let changed = settleLeavers(b, day, actors, out);
+  const lapsed = b.proposals.filter((x) => x.expires != null && day > x.expires);
+  if (lapsed.length) {
+    b.proposals = b.proposals.filter((x) => !lapsed.includes(x));
+    out.events.push(...lapsed.map((x) => ({ type: 'proposalLapsed', kind: x.kind })));
+    changed = true;
+  }
 
   let closes = 0;
   while (b.status === 'open' && b.period.endDay <= day && closes < p.catchUpPeriods) {
@@ -550,12 +634,13 @@ function closePeriod(b, { growthRate, weekday, params: p }, out) {
   const protection = safe ? 1 - fx.keepSafe[safe.band] * scale(safe) : 1;
 
   b.state.reputation = clamp(b.state.reputation + (50 - b.state.reputation) * p.reputationDrift, 0, 100);
+  if (b.state.compliance != null) b.state.compliance = clamp(b.state.compliance + (p.complianceBaseline - b.state.compliance) * p.reputationDrift, 0, 100);
   b.state.costFactor = Math.min(1, b.state.costFactor + p.costCreep);
 
   // A first period that began part-way through a week earns for the days it ran.
   const part = Math.min(1, (b.period.endDay - b.period.startDay) / 7);
   const takings = Math.round(arch.takings * b.state.capacity * traffic(b.state.reputation) * workMult * part);
-  const upkeep = Math.round((arch.costs * b.state.capacity ** 0.85 * b.state.costFactor + stage.rent + stage.protection * protection) * part);
+  const upkeep = Math.round((arch.costs * b.state.capacity ** 0.85 * b.state.costFactor + stage.rent + (stage.licence ?? 0) + stage.protection * protection) * part);
   const profit = takings - upkeep;
   b.till += profit;
 

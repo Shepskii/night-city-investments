@@ -43,7 +43,7 @@ export class RollDialogApp extends BaseApplication {
     this.request = options.request;
     this.rollTitle = options.rollTitle;
     /** What the player has chosen so far: `use` is a use key, or `hire:<tier>`. */
-    this.choice = { use: null, approach: 'standard', luck: 0, bonus: true };
+    this.choice = { use: null, approach: 'standard', luck: 0, bonus: true, extra: false };
   }
 
   get actor() {
@@ -68,6 +68,7 @@ export class RollDialogApp extends BaseApplication {
         approach: data.get('approach') ?? 'standard',
         luck: Math.floor(Number(data.get('luck')) || 0),
         bonus: data.get('bonus') === 'on',
+        extra: data.get('extra') === 'on',
       };
       this.render();
     });
@@ -80,7 +81,8 @@ export class RollDialogApp extends BaseApplication {
     const own = spec.uses.map((use) => {
       const { base } = SkillAdapter.baseFor(actor, use);
       const kind = use.kind === 'ability' ? L('NCI.Roll.AbilityRank', { rank: base }) : L('NCI.Roll.SkillBase', { base });
-      return { key: useKey(use), use, base, label: `${useLabel(use)} (${kind})` };
+      const harder = use.dvAdd ? `, ${L('NCI.Roll.DvAdd', { n: use.dvAdd })}` : '';
+      return { key: useKey(use), use, base, label: `${useLabel(use)} (${kind}${harder})` };
     })
       // A role ability the character does not have is not offered; a skill at 0 still rolls on its stat.
       .filter((o) => o.use.kind !== 'ability' || o.base > 0)
@@ -101,7 +103,7 @@ export class RollDialogApp extends BaseApplication {
     if (!option) return ui.notifications.warn(L('NCI.Roll.NothingToRoll'));
     await BusinessClient.roll(actor, business, { ...this.request, use: option.use }, {
       title: this.rollTitle,
-      levers: { approach: this.choice.approach, luck: this.choice.luck, bonus: this.choice.bonus ? 1 : 0 },
+      levers: { approach: this.choice.approach, luck: this.choice.luck, bonus: this.choice.bonus ? 1 : 0, extra: this.choice.extra ? 1 : 0 },
     });
     await this.close();
   }
@@ -122,10 +124,16 @@ export class RollDialogApp extends BaseApplication {
     const chosen = options.find((o) => o.key === this.choice.use) ?? options[0];
     const isHire = chosen?.use.kind === 'hire';
     const luckMax = isHire ? 0 : Math.min(MAX_LUCK_PER_ROLL, SkillAdapter.luck(actor));
+    const extraAvailable = full.extraAvailable && !isHire;
     const levers = normalizeLevers({
-      approach: this.choice.approach, luck: Math.min(this.choice.luck, luckMax), bonus: full.bonusAvailable && this.choice.bonus ? 1 : 0, hire: isHire ? chosen.use.hire : null,
+      approach: this.choice.approach,
+      luck: Math.min(this.choice.luck, luckMax),
+      bonus: full.bonusAvailable && this.choice.bonus ? 1 : 0,
+      extra: extraAvailable && this.choice.extra ? 1 : 0,
+      hire: isHire ? chosen.use.hire : null,
     });
-    const preview = previewRoll({ base: chosen?.base ?? 0, dv: full.dv, levers });
+    // Some uses roll at a higher DV (an alternative skill).
+    const preview = previewRoll({ base: chosen?.base ?? 0, dv: full.dv + (chosen?.use.dvAdd ?? 0), levers });
     const pct = (x) => `${Math.round(x * 100)}%`;
     const meaning = this.request.type === 'action' ? this.request.action : this.request.type;
 
@@ -139,6 +147,8 @@ export class RollDialogApp extends BaseApplication {
       noLuck: isHire,
       bonusAvailable: full.bonusAvailable,
       bonus: !!levers.bonus,
+      extraAvailable,
+      extra: !!levers.extra,
       dv: preview.dv,
       chance: pct(preview.chance),
       // A 1 is a fumble roll and a 10 adds a die, so "or more" only reads true between them.

@@ -26,7 +26,7 @@ export function nextBoundary(day, weekday) {
 }
 
 export function newPeriod(index, startDay, weekday) {
-  return { index, startDay, endDay: nextBoundary(startDay, weekday), slots: [], bonuses: [], helpers: [], draws: {} };
+  return { index, startDay, endDay: nextBoundary(startDay, weekday), slots: [], bonuses: [], helpers: [], draws: {}, days: {} };
 }
 
 // ── The record ───────────────────────────────────────────────────────────────
@@ -72,6 +72,8 @@ export function normalizeBusiness(raw) {
       capacity: Number(b.state?.capacity ?? 1),
       reputation: Number(b.state?.reputation ?? 50),
       costFactor: Number(b.state?.costFactor ?? 1),
+      // Registered businesses only (stage 1 and up).
+      compliance: b.state?.compliance == null ? null : Number(b.state.compliance),
     },
     escrow: int(b.escrow),
     till: int(b.till),
@@ -81,6 +83,9 @@ export function normalizeBusiness(raw) {
     ledger: b.ledger ?? [],
     losingPeriods: int(b.losingPeriods),
     proposals: b.proposals ?? [],
+    projects: b.projects ?? [],
+    /** The partners' agreement to step up, and when a failed registration may be tried again. */
+    stepUp: b.stepUp ?? null,
   };
 }
 
@@ -148,6 +153,7 @@ export function stateBands(b, p = BUSINESS_DEFAULTS) {
     reputation: rep < 35 ? 'poor' : rep < 50 ? 'modest' : rep < 65 ? 'good' : 'excellent',
     capacity: cap < 0.6 ? 'cramped' : cap < 0.8 ? 'room' : cap < 0.97 ? 'busy' : 'full',
     costs: cost > 0.97 ? 'high' : cost > 0.9 ? 'fair' : cost > 0.82 ? 'lean' : 'tight',
+    ...(b.state.compliance == null ? {} : { compliance: b.state.compliance < 35 ? 'poor' : b.state.compliance < 50 ? 'shaky' : b.state.compliance < 65 ? 'sound' : 'spotless' }),
   };
 }
 

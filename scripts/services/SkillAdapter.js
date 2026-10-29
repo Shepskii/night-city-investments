@@ -112,7 +112,7 @@ export const SkillAdapter = {
       title, base, roll, result, dice: dice.map((d) => d.roll).filter(Boolean),
       flag: {
         actorId: actor.id, skill: base.name, kind: use.kind, dice: dice.map((d) => d.value),
-        levers: { approach: l.approach, luck, luckBefore, bonus: l.bonus, hire: l.hire },
+        levers: { approach: l.approach, luck, luckBefore, bonus: l.bonus, extra: l.extra, hire: l.hire },
       },
     });
     return { result, roll, messageId };
@@ -121,14 +121,15 @@ export const SkillAdapter = {
   /**
    * GM side of `leverCheck`: read the card back as `verify` does, then the levers. The base is the
    * GM's own (the sheet now, or the hire tier); Luck counts only if the pool went down by that much
-   * since the roll; the bonus only if the business has one waiting (`bonusAvailable`); a hired
-   * professional only where the action allows one.
+   * since the roll; the bonus only if the business has one waiting (`bonusAvailable`); extra time
+   * only if the character has a business day left (`extraAvailable`); a hired professional only where
+   * the action allows one.
    * @param {Actor} actor
    * @param {{rollId?: string, key: string, ts?: number}} request
-   * @param {{dv: number, use: object, bonusAvailable?: boolean, allowHire?: boolean}} spec
+   * @param {{dv: number, use: object, bonusAvailable?: boolean, extraAvailable?: boolean, allowHire?: boolean}} spec
    * @returns {Promise<{ok: true, result: object, levers: object, base: number} | {ok: false, reason: string}>}
    */
-  async verifyLevers(actor, request, { dv, use, bonusAvailable = false, allowHire = false }) {
+  async verifyLevers(actor, request, { dv, use, bonusAvailable = false, extraAvailable = false, allowHire = false }) {
     if (use.kind === 'hire' && !allowHire) return { ok: false, reason: 'hire-not-allowed' };
     const name = use.kind === 'hire' ? `hire:${use.hire}` : use.kind === 'ability' ? use.ability : use.skill;
     const card = await this._readCard(actor, request, name);
@@ -142,6 +143,7 @@ export const SkillAdapter = {
       approach: claimed.approach,
       luck: luckOk ? luckClaimed : 0,
       bonus: bonusAvailable && Number(claimed.bonus) > 0 ? 1 : 0,
+      extra: extraAvailable && Number(claimed.extra) > 0 ? 1 : 0,
       hire: use.kind === 'hire' ? use.hire : null,
     });
 
@@ -245,6 +247,7 @@ export const SkillAdapter = {
     const extras = [
       result.luck ? ` + ${L('NCI.Roll.Luck')} ${result.luck}` : '',
       result.bonus ? ` + ${L('NCI.Roll.Help')} ${result.bonus}` : '',
+      result.extra ? ` + ${L('NCI.Roll.ExtraTime')} ${result.extra}` : '',
     ].join('');
     const approach = result.approach === 'standard' ? '' : ` (${L(`NCI.Roll.Approach.${result.approach}`)})`;
     const content = `<div class="nci-chat"><strong>${escapeHtml(title)}</strong><br>`

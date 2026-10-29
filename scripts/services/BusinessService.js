@@ -57,6 +57,7 @@ class BusinessServiceImpl {
     return {
       approval: game.settings.get(MODULE_ID, SETTINGS.BUSINESS_APPROVAL) !== false,
       weekday: this.weekday(),
+      growthRate: this.growthRate(),
       operatorRank: business ? operatorRankOf(business) : 0,
       actors: this.actors(),
       newId: `bus_${foundry.utils.randomID(12)}`,
@@ -101,7 +102,7 @@ class BusinessServiceImpl {
       const spec = rollSpec(business, request, actor.id, { day, operatorRank: context.operatorRank });
       if (spec.ok) {
         check = await SkillAdapter.verifyLevers(actor, request, {
-          dv: spec.dv, use: request.use.kind === 'hire' ? request.use : spec.use, bonusAvailable: spec.bonusAvailable, allowHire: spec.allowHire,
+          dv: spec.dv, use: request.use.kind === 'hire' ? request.use : spec.use, bonusAvailable: spec.bonusAvailable, extraAvailable: spec.extraAvailable, allowHire: spec.allowHire,
         });
       }
     }

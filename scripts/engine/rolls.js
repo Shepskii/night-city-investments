@@ -52,8 +52,9 @@ export function dvOf(step) {
 
 /**
  * Clean up the levers a player asked for: an approach that exists, whole Luck in range, a bonus of
- * 0 or 1, and a hire tier that exists. A hired professional cannot use Luck, which is a character's own.
- * @param {{approach?: string, luck?: number, bonus?: number, hire?: string|null}} [levers]
+ * 0 or 1, extra time of 0 or 1 (a business day spent on the roll), and a hire tier that exists. A
+ * hired professional cannot use Luck, which is a character's own.
+ * @param {{approach?: string, luck?: number, bonus?: number, extra?: number, hire?: string|null}} [levers]
  */
 export function normalizeLevers(levers = {}) {
   const hire = levers.hire && HIRE_TIERS[levers.hire] ? levers.hire : null;
@@ -62,6 +63,7 @@ export function normalizeLevers(levers = {}) {
     approach: APPROACHES[levers.approach] ? levers.approach : 'standard',
     luck,
     bonus: Number(levers.bonus) > 0 ? 1 : 0,
+    extra: Number(levers.extra) > 0 ? 1 : 0,
     hire,
   };
 }
@@ -78,7 +80,7 @@ export function resolveRoll({ base, roll, dv, levers = {} }) {
   const l = normalizeLevers(levers);
   const approach = approachOf(l.approach);
   const finalDv = Math.round(Number(dv) || 0) + approach.dv;
-  const total = (Number(base) || 0) + l.luck + l.bonus + roll.total;
+  const total = (Number(base) || 0) + l.luck + l.bonus + l.extra + roll.total;
   const margin = total - finalDv;
   const band = bandOf(margin, roll.crit ?? null);
   return {
@@ -86,6 +88,7 @@ export function resolveRoll({ base, roll, dv, levers = {} }) {
     roll: roll.total,
     luck: l.luck,
     bonus: l.bonus,
+    extra: l.extra,
     total,
     dv: finalDv,
     margin,
@@ -122,7 +125,7 @@ export function previewRoll({ base, dv, levers = {} }) {
   const finalDv = Math.round(Number(dv) || 0) + approachOf(l.approach).dv;
   return {
     dv: finalDv,
-    needed: finalDv - ((Number(base) || 0) + l.luck + l.bonus),
+    needed: finalDv - ((Number(base) || 0) + l.luck + l.bonus + l.extra),
     chance: pass / 100,
     bands: BANDS.map((band) => ({ band, chance: counts[band] / 100 })),
   };

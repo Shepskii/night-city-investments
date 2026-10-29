@@ -237,6 +237,7 @@
     "Roll": {
       "Luck": "Luck",
       "Help": "help",
+      "ExtraTime": "extra time",
       "Approach": { "careful": "Careful", "standard": "Standard", "bold": "Bold" },
       "ApproachHint": {
         "careful": "DV −2, three quarters of the effect.",
@@ -249,6 +250,8 @@
       "RollWith": "Roll with",
       "ApproachLabel": "Approach",
       "UseBonus": "Use the +1 a partner's check left for this",
+      "UseExtra": "Take extra time: spend one of this week's business days for +1",
+      "DvAdd": "DV +{n}",
       "Chance": "Chance to succeed",
       "Needed": "Needs {n} or more on the d10.",
       "NeededAny": "Passes on anything but a 1.",
@@ -308,6 +311,14 @@
           "solid": "Capacity up.",
           "strong": "Capacity well up.",
           "exceptional": "Capacity up a lot."
+        },
+        "stepUpRoll": {
+          "fumble": "Refused, and the paperwork is a mess: the fee is spent and you can try again in 14 days.",
+          "failure": "Refused: the fee is spent and you can try again in 7 days.",
+          "narrow": "Registered, but the inspectors will be watching: Compliance starts at 45.",
+          "solid": "Registered: Compliance starts at 50.",
+          "strong": "Registered with clean books: Compliance starts at 55.",
+          "exceptional": "Registered without a single query: Compliance starts at 60."
         },
         "keepSafe": {
           "fumble": "It goes badly: half as much protection money again this week.",
@@ -1495,7 +1506,10 @@
         "upkeep": "Rent, stock, wages and protection",
         "draw": "{name} drew",
         "buyout": "{name} bought {seller}'s stake for {price} eb",
-        "liquidation": "Closed: paid out to the partners ({salvage} eb from the gear)"
+        "liquidation": "Closed: paid out to the partners ({salvage} eb from the gear)",
+        "expansion": "An expansion started",
+        "registrationFee": "Registration fee, paid by {name}",
+        "registered": "Registered"
       },
       "CapTable": "Partners",
       "Partner": "Partner",
@@ -1528,7 +1542,45 @@
       "Leave": "Leave",
       "LeaveConfirm": "Offer your stake to your partners? They have the buy-out window to buy it at book value; after that it goes to your heir.",
       "DecisionsHint": "Closing needs every partner with a vote; one refusal ends the proposal.",
-      "Tab": { "overview": "Overview", "week": "This week", "ledger": "Ledger", "partners": "Partners" },
+      "Tab": { "overview": "Overview", "week": "This week", "projects": "Projects", "ledger": "Ledger", "partners": "Partners", "growth": "Growth" },
+      "DaysLeft": "You have {n} business day(s) left this week.",
+      "WaitingVote": "{n} proposal(s) waiting for votes on the Partners tab.",
+      "Projects": "Projects",
+      "ProjectsIntro": "An expansion (a second chair, a bigger bay) is paid from the till when the partners agree, then finished with business days: each partner with a vote has 3 a week, and days not spent lapse when the week closes.",
+      "DaysToAdd": "Business days",
+      "AddDays": "Put days in",
+      "ProposeExpansion": "Propose an expansion",
+      "ProjectProgress": "Expansion under way since {date}: {days} of {need} business days done. When finished, Capacity rises by {gain}.",
+      "ExpansionOffer": "An expansion here costs {cost} eb from the till and {days} business days of work, and raises Capacity by {gain}. Starting one needs a majority of the voting units.",
+      "ExpansionPending": "An expansion is waiting for the partners' votes.",
+      "ProjectDone": "Expansion finished on {date}: Capacity +{gain}.",
+      "Growth": "Growth",
+      "GrowthNow": "Now: {stage}.",
+      "NextStage": "To become a {stage}",
+      "NextStageLater": "Chartering a company comes in a later version of the module. A registered business can stay as it is for good.",
+      "Milestone": {
+        "weeks": "{need} full weeks open",
+        "profit": "Average weekly profit of {need} eb over the last 4 weeks",
+        "reputation": "Reputation of at least {need}",
+        "fee": "{need} eb in the till for the registration fee"
+      },
+      "RegisterGains": "Registering means two action slots a week and lower protection money, but rent and licence fees go up, actions are rolled at DV 15, and the business has a Compliance standing to look after. It takes every partner's agreement, then a registration roll: Bureaucracy, or Local Expert or Persuasion at DV +2. The fee is paid whatever the result.",
+      "StepUpPending": "Stepping up is waiting for every partner's vote.",
+      "StepUpAgreed": "The partners have agreed to register. Any partner may make the registration roll.",
+      "StepUpRetry": "The last registration was refused; it can be tried again from {date}.",
+      "ProposeStepUp": "Propose registering",
+      "StepUpConfirm": "Propose registering the business? Every partner has to agree.",
+      "StepUpRoll": "Make the registration roll",
+      "StepUpTitle": "Registering {name}",
+      "Proposed": {
+        "close": "{name} proposes closing the business.",
+        "stepUp": "{name} proposes registering the business.",
+        "expansion": "{name} proposes an expansion."
+      },
+      "Rule": {
+        "unanimous": "Needs every partner; lapses after {date}.",
+        "majority": "Needs a majority of units; lapses after {date}."
+      },
       "Status": { "forming": "setting up", "pending": "awaiting approval", "open": "open", "closed": "closed" },
       "Stage": { "0": "Side business", "1": "Registered business", "2": "Chartered company", "3": "Listed company" },
       "Closed": {
@@ -1537,11 +1589,12 @@
         "cancelled": "It never opened: everyone took their money back ({date}).",
         "rejected": "The GM turned it down on {date}; the money went back."
       },
-      "State": { "reputation": "Reputation", "capacity": "Capacity", "costs": "Cost base" },
+      "State": { "reputation": "Reputation", "capacity": "Capacity", "costs": "Cost base", "compliance": "Compliance" },
       "Band": {
         "reputation": { "poor": "poor", "modest": "modest", "good": "good", "excellent": "excellent" },
         "capacity": { "cramped": "plenty of room to grow", "room": "room to grow", "busy": "busy", "full": "as big as it can get here" },
-        "costs": { "high": "high", "fair": "fair", "lean": "lean", "tight": "tight" }
+        "costs": { "high": "high", "fair": "fair", "lean": "lean", "tight": "tight" },
+        "compliance": { "poor": "in trouble", "shaky": "shaky", "sound": "sound", "spotless": "spotless" }
       },
       "PartnerStatus": { "invited": "invited", "active": "partner", "leaving": "leaving", "left": "left", "declined": "declined" },
       "Archetype": {
@@ -1565,7 +1618,10 @@
         "leave": "Your stake is on offer to your partners.",
         "buyout": "Stake bought.",
         "proposeClose": "Proposal made.",
-        "vote": "Vote recorded."
+        "vote": "Vote recorded.",
+        "propose": "Proposal made.",
+        "stepUpRoll": "Registration roll recorded.",
+        "addDays": "Business days put in."
       },
       "Reason": {
         "bad-use": "that skill does not fit this roll",
@@ -1609,7 +1665,17 @@
         "roll-unverified": "the roll could not be checked",
         "disabled": "player businesses are turned off",
         "error": "something went wrong; the GM can see the details in the console",
-        "not-gm": "only the active GM can do that"
+        "not-gm": "only the active GM can do that",
+        "no-expansion": "there is no expansion at this stage",
+        "project-running": "a project is already under way",
+        "at-capacity": "the business is as big as it can get at this stage",
+        "no-project": "that project is not running",
+        "no-days": "not enough business days left this week",
+        "no-step-up": "there is no next stage yet",
+        "milestones": "the milestones are not all met",
+        "not-agreed": "the partners have not agreed to step up",
+        "step-up-delay": "the registration cannot be tried again yet",
+        "already-agreed": "the partners have already agreed"
       }
     }
   }

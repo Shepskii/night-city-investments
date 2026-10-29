@@ -6,6 +6,7 @@
 import {
   ARCHETYPES, ACTION_IDS, partnerOf, holders, totalUnits, unitValue, shareOf, bookValue, drawAllowance, fundingShortfall,
   stateBands, lastDigest, weekdayOf, gearValue, rollSpec, BUSINESS_DEFAULTS,
+  daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, PROPOSAL_RULES,
 } from '../../engine/index.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
@@ -80,11 +81,7 @@ export function businessContext(business, actor) {
     invited: me?.status === 'invited',
     canAct,
     isPartner: !!me && ['active', 'leaving'].includes(me.status),
-    bands: [
-      { label: L('NCI.Business.State.reputation'), value: L(`NCI.Business.Band.reputation.${bands.reputation}`) },
-      { label: L('NCI.Business.State.capacity'), value: L(`NCI.Business.Band.capacity.${bands.capacity}`) },
-      { label: L('NCI.Business.State.costs'), value: L(`NCI.Business.Band.costs.${bands.costs}`) },
-    ],
+    bands: Object.entries(bands).map(([key, band]) => ({ label: L(`NCI.Business.State.${key}`), value: L(`NCI.Business.Band.${key}.${band}`) })),
     till: whole(business.till),
     escrow: whole(business.escrow),
     assets: whole(business.assets),
@@ -96,6 +93,54 @@ export function businessContext(business, actor) {
     week: status === 'open' ? weekContext(business, actor, canAct) : null,
     ledger: ledgerContext(business, actor),
     partners: partnersContext(business, actor),
+    projects: status === 'open' ? projectsContext(business, actor, canAct) : null,
+    growth: status === 'open' ? growthContext(business, actor, canAct) : null,
+    waitingVote: business.proposals.length ? L('NCI.Business.WaitingVote', { n: business.proposals.length }) : '',
+  };
+}
+
+function projectsContext(business, actor, canAct) {
+  const project = activeProject(business);
+  const offer = expansionOffer(business);
+  const pending = business.proposals.some((x) => x.kind === 'expansion');
+  const left = actor ? daysLeft(business, actor.id) : 0;
+  return {
+    daysText: canAct ? L('NCI.Business.DaysLeft', { n: left }) : '',
+    active: project ? {
+      id: project.id,
+      text: L('NCI.Business.ProjectProgress', { days: project.days, need: project.daysNeeded, gain: project.gain, date: dayText(project.startedDay) }),
+      canAdd: canAct && left > 0,
+      max: Math.min(left, project.daysNeeded - project.days),
+    } : null,
+    offer: !project && offer.ok ? L('NCI.Business.ExpansionOffer', { cost: whole(offer.cost), gain: offer.gain, days: offer.days }) : '',
+    canPropose: canAct && !project && !pending && offer.ok,
+    pending: pending ? L('NCI.Business.ExpansionPending') : '',
+    blocked: !project && !offer.ok ? L(`NCI.Business.Reason.${offer.reason}`) : '',
+    done: business.projects.filter((x) => x.status === 'done').reverse().map((x) => L('NCI.Business.ProjectDone', { gain: x.gain, date: dayText(x.doneDay ?? x.startedDay) })),
+  };
+}
+
+function growthContext(business, actor, canAct) {
+  const m = milestones(business);
+  const day = BusinessClient.day();
+  const check = actor ? stepUpCheck(business, actor.id, day) : null;
+  const pending = business.proposals.some((x) => x.kind === 'stepUp');
+  return {
+    stage: L(`NCI.Business.Stage.${business.stage}`),
+    next: m.to != null ? L(`NCI.Business.Stage.${m.to}`) : '',
+    available: m.available,
+    later: m.available ? '' : L('NCI.Business.NextStageLater'),
+    items: m.items.map((x) => ({
+      label: L(`NCI.Business.Milestone.${x.id}`, { need: whole(x.need) }),
+      have: whole(x.have),
+      met: x.met,
+    })),
+    canPropose: canAct && m.met && !business.stepUp?.approved && !pending,
+    pending: pending ? L('NCI.Business.StepUpPending') : '',
+    agreed: business.stepUp?.approved ? L('NCI.Business.StepUpAgreed') : '',
+    retry: business.stepUp?.retryDay != null && day < business.stepUp.retryDay ? L('NCI.Business.StepUpRetry', { date: dayText(business.stepUp.retryDay) }) : '',
+    canRoll: canAct && !!check?.ok,
+    gains: m.available ? L('NCI.Business.RegisterGains') : '',
   };
 }
 
@@ -131,6 +176,7 @@ function weekContext(business, actor, canAct) {
     to: dayText(period.endDay),
     closesOn: L(`NCI.Weekday.${weekdayOf(period.endDay)}`),
     slotsText: L('NCI.Business.SlotsUsed', { used: period.slots.length, total: slots }),
+    daysText: canAct ? L('NCI.Business.DaysLeft', { n: daysLeft(business, actor.id) }) : '',
     actions: ACTION_IDS.map((id) => {
       const slot = taken.get(id);
       const bonus = period.bonuses.some((b) => b.action === id && !b.used);
@@ -188,7 +234,6 @@ function partnersContext(business, actor) {
   const me = actor ? partnerOf(business, actor.id) : null;
   const canAct = !!actor && BusinessClient.canAct(business, actor.id);
   const open = business.status === 'open';
-  const proposal = business.proposals.find((p) => p.kind === 'close');
   const characters = game.actors.filter((a) => a.type === 'character' && a.id !== actor?.id);
   const sweat = business.agreement.sweat;
   return {
@@ -215,12 +260,13 @@ function partnersContext(business, actor) {
       .map((o) => ({ ...o, selected: o.value === (me?.heirId ?? '') })),
     canSetHeir: !!me && ['active', 'leaving', 'invited'].includes(me.status),
     canLeave: open && me?.status === 'active' && holders(business).length > 1,
-    canPropose: open && canAct && !proposal,
-    proposal: proposal ? {
+    canPropose: open && canAct && !business.proposals.some((x) => x.kind === 'close'),
+    proposals: business.proposals.map((proposal) => ({
       id: proposal.id,
-      text: L('NCI.Business.CloseProposed', { name: nameOf(business, proposal.by) }),
+      text: L(`NCI.Business.Proposed.${proposal.kind}`, { name: nameOf(business, proposal.by) }),
+      rule: L(`NCI.Business.Rule.${PROPOSAL_RULES[proposal.kind]}`, { date: dayText(proposal.expires ?? proposal.day) }),
       votes: holders(business).filter((p) => p.voting).map((p) => `${p.name}: ${L(`NCI.Business.Vote.${proposal.votes[p.actorId] === true ? 'yes' : proposal.votes[p.actorId] === false ? 'no' : 'none'}`)}`).join(', '),
       canVote: !!me?.voting && ['active', 'leaving'].includes(me.status) && proposal.votes[actor.id] === undefined,
-    } : null,
+    })),
   };
 }
