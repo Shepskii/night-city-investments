@@ -50,8 +50,8 @@ class IpoServiceImpl {
 
     const price = ipoPrice(company);
     const tick = timeOf(pub);
-    const portfolios = game.actors
-      .filter((a) => a.type === 'character' && PortfolioRepository.hasPortfolio(a))
+    const portfolios = PortfolioRepository.accounts()
+      .filter((a) => PortfolioRepository.hasPortfolio(a))
       .map((a) => normalizePortfolio(PortfolioRepository.get(a)));
     const demand = ipoDemand(portfolios, companyId);
     const ratio = allocationRatio(demand, company.ipo?.allocation ?? 0);

@@ -39,7 +39,15 @@ export function installFakeFoundry({ actors: actorSpecs = [], now = Date.UTC(204
       this._changed({ flags: { [scope]: { [key]: value } } });
     }
     async unsetFlag(scope, key) { delete this.flags[scope]?.[key]; }
-    async update(d) { Object.assign(this, d); }
+    async update(d) {
+      // Foundry merges a flags update into the flags already there (arrays are replaced).
+      const { flags, ...rest } = d;
+      Object.assign(this, rest);
+      if (flags) {
+        merge(this.flags, structuredClone(flags));
+        this._changed({ flags });
+      }
+    }
     testUserPermission() { return true; }
     get isOwner() { return true; }
     _changed() {}

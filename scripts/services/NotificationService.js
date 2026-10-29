@@ -60,7 +60,7 @@ export const NotificationService = {
    */
   async onPortfolioEvents({ actorId, events = [], results = [] }) {
     if (!isActiveGM()) return;
-    const actor = game.actors.get(actorId);
+    const actor = PortfolioRepository.accountOf(actorId);
     if (!actor) return;
     const portfolio = PortfolioRepository.get(actor);
 
@@ -95,7 +95,7 @@ export const NotificationService = {
     if (!isActiveGM()) return;
     const name = CompanyRepository.get(companyId)?.name ?? FundRepository.get(companyId)?.name ?? companyId;
     for (const { actorId, payout } of payouts) {
-      const actor = game.actors.get(actorId);
+      const actor = PortfolioRepository.accountOf(actorId);
       if (actor) await this.notify(actor, 'dividends', MailService.dividend({ name, perShare, payout }));
     }
   },

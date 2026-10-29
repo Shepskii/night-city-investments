@@ -33,6 +33,22 @@ export function assetLabel(assetId) {
   return f ? { name: f.name, ticker: f.ticker } : { name: assetId, ticker: assetId };
 }
 
+/**
+ * Send one mail to an account: to the character, or to every active member of a syndicate (DESIGN
+ * §31). Money attached to a syndicate's mail would be paid to each member, so none is ever attached.
+ * Succeeds if any copy was delivered.
+ */
+async function sendTo(actor, mail) {
+  if (!actor?.isSyndicate) return NcmAdapter.send({ ...mail, toActorId: actor.id });
+  let last = { ok: false, error: 'no-members' };
+  for (const member of actor.members()) {
+    const sent = await NcmAdapter.send({ ...mail, eddies: 0, toActorId: member.id, subject: `${actor.name}: ${mail.subject}` });
+    if (sent.ok) last = sent;
+    else if (!last.ok) last = sent;
+  }
+  return last;
+}
+
 export const MailService = {
   mailKeys,
 
@@ -50,21 +66,21 @@ export const MailService = {
     const paragraphs = voiced
       ? (voiced.signed ? voiced.paragraphs : [...voiced.paragraphs, L(`NCI.Mail.Sign.${broker.grade}`)])
       : [...lines, L(`NCI.Mail.Sign.${broker.grade}`)];
-    return NcmAdapter.send({ fromContactId: brokerId, toActorId: actor.id, subject, body: html(paragraphs), eddies });
+    return sendTo(actor, { fromContactId: brokerId, subject, body: html(paragraphs), eddies });
   },
 
   /** The market wire mails a client. */
   async fromWire(actor, { subject, lines }) {
     const wire = await NcmAdapter.ensureWire();
     if (!wire) return { ok: false, error: 'no-wire' };
-    return NcmAdapter.send({ fromContactId: wire.id, toActorId: actor.id, subject, body: html(lines) });
+    return sendTo(actor, { fromContactId: wire.id, subject, body: html(lines) });
   },
 
   /** The system contact NCPD Financial Crimes mails a client. */
   async fromNcpd(actor, { subject, lines }) {
     const ncpd = await NcmAdapter.ensureNcpd();
     if (!ncpd) return { ok: false, error: 'no-ncpd' };
-    return NcmAdapter.send({ fromContactId: ncpd.id, toActorId: actor.id, subject, body: html(lines) });
+    return sendTo(actor, { fromContactId: ncpd.id, subject, body: html(lines) });
   },
 
   // ── Broker replies and notices ─────────────────────────────────────────────

@@ -131,6 +131,14 @@ test('knowing more draws more: the gig runner most, a rumour follower far less',
   assert.equal(score({}, win({ tipped: ['someone-else'] })).knowledge, 'general');
 });
 
+test('a syndicate knows what any of its members knows', () => {
+  assert.equal(score({}, win({ runners: ['m2'] }), { actorId: 'syn', aliases: ['m1', 'm2'] }).knowledge, 'runner');
+  assert.equal(score({}, win({ tipped: ['m1'] }), { actorId: 'syn', aliases: ['m1', 'm2'] }).knowledge, 'tipped');
+  assert.equal(score({}, win({ tipped: ['m3'] }), { actorId: 'syn', aliases: ['m1', 'm2'] }).knowledge, 'general');
+  const [r] = auditWindow({ window: win({ runners: ['m1'] }), portfolios: [{ actorId: 'syn', aliases: ['m1'], orders: [order()], value: 30_000 }] });
+  assert.equal(r.trades[0].knowledge, 'runner');
+});
+
 test('direct trades leave a bigger trail than broker trades', () => {
   const direct = score({ route: 'direct' }).gain;
   const broker = score({ route: 'broker' }).gain;

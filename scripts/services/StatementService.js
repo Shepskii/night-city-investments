@@ -51,7 +51,7 @@ export const StatementService = {
   /** Hook for `PORTFOLIO_EVENTS`: a player pressed "Send me a statement". */
   async onPortfolioEvents({ actorId, results = [] }) {
     if (!isActiveGM()) return;
-    const actor = game.actors.get(actorId);
+    const actor = PortfolioRepository.accountOf(actorId);
     if (actor && results.some((r) => r.type === 'requestStatement' && r.ok)) await this.sendRequested(actor);
   },
 

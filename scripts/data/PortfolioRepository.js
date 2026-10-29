@@ -9,6 +9,7 @@
 
 import { normalizePortfolio } from '../engine/index.js';
 import { MODULE_ID, FLAGS } from '../utils/constants.js';
+import { SyndicateRepository } from './SyndicateRepository.js';
 
 const clone = (v) => foundry.utils.deepClone(v);
 
@@ -63,6 +64,19 @@ export const PortfolioRepository = {
       : characters.filter((a) => a.testUserPermission(game.user, 'OWNER'));
     const list = game.user.isGM && !usable.length ? characters : usable;
     return list.sort((a, b) => a.name.localeCompare(b.name));
+  },
+
+  /**
+   * Every account the market keeps: the characters, and each active syndicate (DESIGN §31). This is
+   * the list the GM's services go through after a tick, for dividends, IPOs, heat and the like.
+   */
+  accounts() {
+    return [...game.actors.filter((a) => a.type === 'character'), ...SyndicateRepository.accounts()];
+  },
+
+  /** A character or a syndicate, by id. */
+  accountOf(id) {
+    return game.actors.get(id) ?? SyndicateRepository.account(id);
   },
 
   /** The user's assigned character, or the first they can use. */

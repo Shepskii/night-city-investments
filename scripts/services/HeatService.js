@@ -35,8 +35,8 @@ import { SerialQueue } from '../utils/queue.js';
 const setting = (key) => game.settings.get(MODULE_ID, key);
 const newId = () => foundry.utils.randomID(8);
 
-/** Characters with a portfolio. GM-run and non-character actors have none. */
-const traders = () => game.actors.filter((a) => a.type === 'character' && PortfolioRepository.hasPortfolio(a));
+/** Accounts with a portfolio: characters, and syndicates (whose heat is collective, DESIGN §31). */
+const traders = () => PortfolioRepository.accounts().filter((a) => PortfolioRepository.hasPortfolio(a));
 
 class HeatServiceImpl {
   constructor() {
@@ -130,7 +130,11 @@ class HeatServiceImpl {
     const results = auditWindow({
       window,
       strength: this.strength(),
-      portfolios: portfolios.map(({ actor, p }) => ({ actorId: actor.id, name: actor.name, orders: p.orders, value: valuePortfolio(p, prices).total, brokerFactors })),
+      portfolios: portfolios.map(({ actor, p }) => ({
+        actorId: actor.id, name: actor.name, orders: p.orders, value: valuePortfolio(p, prices).total, brokerFactors,
+        // A syndicate knows what any of its members knows.
+        ...(actor.isSyndicate ? { aliases: actor.members().map((m) => m.id) } : {}),
+      })),
     });
     const next = applyAudit(MarketStore.getHeat(), { window, results, tick, date: MarketClock.dateString() });
     await MarketStore.setHeat(next);
@@ -145,7 +149,7 @@ class HeatServiceImpl {
   // ── Consequences ───────────────────────────────────────────────────────────
 
   async _consequences(window, result, tick) {
-    const actor = game.actors.get(result.actorId);
+    const actor = PortfolioRepository.accountOf(result.actorId);
     if (!actor) return;
     try {
       const heat = MarketStore.getHeat();
@@ -202,7 +206,7 @@ class HeatServiceImpl {
 
   /** Carry out a penalty: change the portfolio, tell the player, and let the heat settle. */
   async _execute(penalty) {
-    const actor = game.actors.get(penalty.actorId);
+    const actor = PortfolioRepository.accountOf(penalty.actorId);
     if (!actor) return;
     const tick = this.tick();
     const ref = `heat:${penalty.id}`;
@@ -268,7 +272,7 @@ class HeatServiceImpl {
   /** Set a character's heat outright (0 clears it). Lowering it re-arms the warnings. */
   setHeat(actorId, value) {
     if (!isActiveGM()) return Promise.resolve({ ok: false, status: 'not-gm' });
-    const actor = game.actors.get(actorId);
+    const actor = PortfolioRepository.accountOf(actorId);
     const v = Number(value);
     if (!actor || !Number.isFinite(v)) return Promise.resolve({ ok: false, status: 'invalid' });
     return this._queue.run(async () => {
@@ -287,7 +291,7 @@ class HeatServiceImpl {
   /** A portfolio result arrived: apply any cover-up action it contains. */
   onPortfolioEvents({ actorId, results = [] }) {
     if (!isActiveGM() || !this.enabled() || !results.some((r) => r.type === 'heatAction')) return Promise.resolve();
-    const actor = game.actors.get(actorId);
+    const actor = PortfolioRepository.accountOf(actorId);
     if (!actor) return Promise.resolve();
     return this._queue.run(() => this._reconcile(actor));
   }

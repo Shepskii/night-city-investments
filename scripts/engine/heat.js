@@ -144,11 +144,12 @@ export function windowReady(window, tick, orderLists, tuning = HEAT_TUNING) {
  * @param {object} o.order - a filled order from the portfolio
  * @param {object} o.window
  * @param {string} o.actorId
+ * @param {string[]} [o.aliases] - others whose knowledge counts as this account's: a syndicate's members
  * @param {number} o.portfolioValue - the character's total value, for the share of it traded
  * @param {number} [o.strength] - the GM's scale
  * @param {number} [o.brokerFactor] - share of the heat kept on a broker trade (a skilled broker covers better)
  */
-export function scoreTrade({ order, window, actorId, portfolioValue, strength = 1, brokerFactor = 1 }, tuning = HEAT_TUNING) {
+export function scoreTrade({ order, window, actorId, aliases = [], portfolioValue, strength = 1, brokerFactor = 1 }, tuning = HEAT_TUNING) {
   if (order.status !== 'filled' || !placedInWindow(order, window)) return null;
   const aligned = (window.direction === 'up' && order.side === 'buy') || (window.direction === 'down' && order.side === 'sell');
   if (!aligned) return null;
@@ -162,7 +163,8 @@ export function scoreTrade({ order, window, actorId, portfolioValue, strength = 
   const span = window.closeTick - window.openTick;
   const position = span > 0 ? (order.submittedTick - window.openTick) / span : 0;
   const earliness = 1 - tuning.earlyDrop * clamp(position, 0, 1);
-  const knowledgeKey = window.runners.includes(actorId) ? 'runner' : window.tipped.includes(actorId) ? 'tipped' : 'general';
+  const who = [actorId, ...aliases];
+  const knowledgeKey = who.some((id) => window.runners.includes(id)) ? 'runner' : who.some((id) => window.tipped.includes(id)) ? 'tipped' : 'general';
   const knowledge = tuning.knowledge[knowledgeKey];
   const route = tuning.route[order.route] ?? tuning.route.broker;
   const cover = order.route === 'broker' ? clamp(Number(brokerFactor) || 1, 0, 1) : 1;
@@ -179,8 +181,9 @@ export function scoreTrade({ order, window, actorId, portfolioValue, strength = 
  * Score every character's trades in one window.
  * @param {object} o
  * @param {object} o.window
- * @param {{actorId: string, name?: string, orders: object[], value: number, brokerFactors?: Object<string, number>}[]} o.portfolios
- *        `brokerFactors` maps a broker's id to the share of heat kept on trades made through them
+ * @param {{actorId: string, name?: string, aliases?: string[], orders: object[], value: number, brokerFactors?: Object<string, number>}[]} o.portfolios
+ *        `brokerFactors` maps a broker's id to the share of heat kept on trades made through them;
+ *        `aliases` are the members of a syndicate, any of whom knowing makes the syndicate know
  * @param {number} [o.strength]
  * @returns {{actorId: string, name: string, gain: number, trades: object[]}[]} only characters with something to answer for
  */
@@ -188,7 +191,7 @@ export function auditWindow({ window, portfolios, strength = 1 }, tuning = HEAT_
   const results = [];
   for (const p of portfolios) {
     const trades = p.orders
-      .map((order) => scoreTrade({ order, window, actorId: p.actorId, portfolioValue: p.value, strength, brokerFactor: p.brokerFactors?.[order.brokerId] ?? 1 }, tuning))
+      .map((order) => scoreTrade({ order, window, actorId: p.actorId, aliases: p.aliases ?? [], portfolioValue: p.value, strength, brokerFactor: p.brokerFactors?.[order.brokerId] ?? 1 }, tuning))
       .filter(Boolean);
     if (!trades.length) continue;
     const gain = round1(Math.min(tuning.maxHeat, trades.reduce((s, t) => s + t.gain, 0)));

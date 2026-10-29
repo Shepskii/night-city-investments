@@ -107,7 +107,7 @@ class PortfolioServiceImpl {
   sweepAll() {
     if (!isActiveGM()) return Promise.resolve();
     return this._queue.run(async () => {
-      for (const actor of this._characters()) {
+      for (const actor of this._accounts()) {
         await this._process(actor);
         await this._payWithdrawals(actor);
       }
@@ -122,7 +122,7 @@ class PortfolioServiceImpl {
     if (!isActiveGM()) return Promise.resolve();
     const path = tick?.path ?? null;
     return this._queue.run(async () => {
-      for (const actor of this._characters()) {
+      for (const actor of this._accounts()) {
         await this._release(actor);
         await this._process(actor);
         await this._runOrders(actor, path);
@@ -173,8 +173,9 @@ class PortfolioServiceImpl {
     });
   }
 
-  _characters() {
-    return game.actors.filter((a) => a.type === 'character');
+  /** Every account: the characters and the active syndicates (DESIGN §31). */
+  _accounts() {
+    return PortfolioRepository.accounts();
   }
 
   /** Remember that a mail has been handled, even if it produced no request. */
@@ -197,7 +198,7 @@ class PortfolioServiceImpl {
     if (!isActiveGM()) return Promise.resolve(0);
     return this._queue.run(async () => {
       let changedCount = 0;
-      for (const actor of this._characters()) {
+      for (const actor of this._accounts()) {
         if (!PortfolioRepository.hasPortfolio(actor)) continue;
         const out = fn(PortfolioRepository.get(actor), actor);
         if (!out?.changed) continue;

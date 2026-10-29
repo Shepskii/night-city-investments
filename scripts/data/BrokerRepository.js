@@ -103,7 +103,7 @@ export const BrokerRepository = {
   usage(brokerId) {
     const assigned = [];
     const busy = [];
-    for (const actor of game.actors.filter((a) => PortfolioRepository.hasPortfolio(a))) {
+    for (const actor of PortfolioRepository.accounts().filter((a) => PortfolioRepository.hasPortfolio(a))) {
       const p = PortfolioRepository.get(actor);
       if (p.brokerContactId === brokerId) assigned.push(actor.name);
       else if (p.orders.some((o) => o.status === 'open' && o.brokerId === brokerId)

@@ -18,8 +18,8 @@ export const UndoService = {
   /** Has a player's money moved because of this tick (a fill, a dividend, a paid withdrawal)? */
   async isSettled(tickIndex) {
     await PortfolioService._queue;
-    return game.actors
-      .filter((a) => a.type === 'character' && PortfolioRepository.hasPortfolio(a))
+    return PortfolioRepository.accounts()
+      .filter((a) => PortfolioRepository.hasPortfolio(a))
       .some((a) => movedMoneySince(PortfolioRepository.get(a), tickIndex));
   },
 

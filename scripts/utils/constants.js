@@ -81,6 +81,12 @@ export const FLAGS = Object.freeze({
   BUSINESS_OUTBOX: 'businessOutbox',
   /** On actors. Which business requests the GM has handled, and how. Written only by the GM. */
   BUSINESS_RECEIPTS: 'businessReceipts',
+  /** On a syndicate's journal: its record, which its members can read. Written only by the GM. (Its account is the `portfolio` flag beside it.) */
+  SYNDICATE: 'syndicate',
+  /** On actors. Syndicate requests, written only by the owning player. */
+  SYNDICATE_OUTBOX: 'syndicateOutbox',
+  /** On actors. Which syndicate requests the GM has handled, and how. Written only by the GM. */
+  SYNDICATE_RECEIPTS: 'syndicateReceipts',
 });
 
 /** Tag on an NCM master contact that makes it a broker. */
@@ -126,4 +132,5 @@ export const OUTBOX_LIMIT = 30;
 
 export const COMPANY_FOLDER_NAME = 'Night City Investments';
 export const BUSINESS_FOLDER_NAME = 'NCI Businesses';
+export const SYNDICATE_FOLDER_NAME = 'NCI Syndicates';
 export const CONTROL_JOURNAL_NAME = 'NCI GM Control';
