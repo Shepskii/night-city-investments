@@ -147,6 +147,18 @@ test('a member votes on an open proposal from the panel', async () => {
   assert.match(t, /Set the officers' limit to 8,000 eb an order/);
   assert.match(t, /Yes 33%/);
   assert.match(html, /data-action="synVote" data-id="[^"]+" data-yes="true"/);
+  assert.match(html, /data-action="synVote" data-id="[^"]+" data-yes="false"/, 'not voted yet: yes and no');
+
+  // The Fixer proposed it, so has voted yes: the panel says so, and offers only to change the vote.
+  const mine = await portfolioTab(key(fix));
+  assert.match(text(mine), /You voted yes\. Change to no/);
+  assert.doesNotMatch(mine, /data-yes="true"/);
+  assert.match(mine, /data-action="synVote" data-id="[^"]+" data-yes="false"/);
+
+  // Each field of the propose form is labelled, and says which kinds of proposal it is for.
+  assert.match(text(html), /Character to invite|Which member/);
+  assert.match(html, /<label data-for="remove officer member">Which member <select name="synMember">/);
+  assert.match(html, /<label data-for="limit">New daily limit \(eb\) <input type="number" name="synLimit"/);
 });
 
 test('the trade dialog tells an officer the limit, and a member that only officers trade', async () => {

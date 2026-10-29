@@ -42,6 +42,7 @@ export function syndicateContext(account, portfolio, prices, stakes = 0) {
     return base > 0 ? `${Math.round((sum / base) * 100)}%` : '0%';
   };
   const others = s.members.filter((m) => m.status === 'active' && m.actorId !== meId);
+  const waiting = pendingSyndicateRequests(account.as).filter((r) => r.syndicateId === s.id);
   const candidates = game.actors
     .filter((a) => a.type === 'character' && a.hasPlayerOwner && !['active', 'invited'].includes(memberOf(s, a.id)?.status))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -61,7 +62,7 @@ export function syndicateContext(account, portfolio, prices, stakes = 0) {
     limit: whole(s.rules.tradeLimit),
     limitText: L('NCI.Syndicate.LimitText', { amount: whole(s.rules.tradeLimit), days: s.rules.proposalDays }),
     limitLeft: account.isOfficer ? L('NCI.Syndicate.LimitLeft', { left: whole(limitLeft(s, meId, dayIndex(MarketClock.nowMs()))) }) : '',
-    pending: pendingSyndicateRequests(account.as).filter((r) => r.syndicateId === s.id).length,
+    pending: waiting.length,
     members: s.members.filter((m) => ['active', 'invited'].includes(m.status)).map((m) => ({
       name: m.name || game.actors.get(m.actorId)?.name || '?',
       role: m.status === 'invited' ? L('NCI.Syndicate.Invited') : L(`NCI.Syndicate.Role.${m.role}`),
@@ -71,15 +72,24 @@ export function syndicateContext(account, portfolio, prices, stakes = 0) {
       leaving: m.leaving ? L('NCI.Syndicate.Leaving') : '',
       isMe: m.actorId === meId,
     })),
-    proposals: s.proposals.map((p) => ({
-      id: p.id,
-      text: describeProposal(s, p),
-      by: L('NCI.Syndicate.ProposedBy', { name: memberOf(s, p.by)?.name ?? '?', date: dayText(p.ends) }),
-      yes: weight(p, true),
-      no: weight(p, false),
-      votedYes: p.votes[meId] === true,
-      votedNo: p.votes[meId] === false,
-    })),
+    proposals: s.proposals.map((p) => {
+      // The vote shown is the one this member last sent, if the GM has not handled it yet, else the one recorded.
+      const sentVote = waiting.filter((r) => r.type === 'vote' && r.proposalId === p.id).at(-1);
+      const vote = sentVote ? !!sentVote.yes : p.votes[meId];
+      const said = vote === true ? 'yes' : vote === false ? 'no' : null;
+      return {
+        id: p.id,
+        text: describeProposal(s, p),
+        by: L('NCI.Syndicate.ProposedBy', { name: memberOf(s, p.by)?.name ?? '?', date: dayText(p.ends) }),
+        yes: weight(p, true),
+        no: weight(p, false),
+        voted: !!said,
+        voteText: said ? L(sentVote ? `NCI.Syndicate.VoteSent.${said}` : `NCI.Syndicate.Voted.${said}`) : '',
+        // Once voted, the one button left changes the vote.
+        changeTo: said ? (said === 'yes' ? 'false' : 'true') : null,
+        changeLabel: said ? L(`NCI.Syndicate.ChangeTo.${said === 'yes' ? 'no' : 'yes'}`) : '',
+      };
+    }),
     redemptions: s.redemptions.filter((r) => r.status === 'waiting').map((r) => L('NCI.Syndicate.RedemptionLine', {
       name: memberOf(s, r.actorId)?.name ?? '?', units: units(r.units), date: dayText(r.payableDay),
     })),

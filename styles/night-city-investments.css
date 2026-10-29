@@ -191,6 +191,9 @@
 /* A syndicate's pay-in and redeem boxes: the same label width, so their fields and buttons line up. */
 .nci-app .nci-synbox > span:first-child { flex: 0 0 240px; }
 .nci-app .nci-synbox input { flex: 0 0 130px; }
+.nci-app .nci-propose label { display: inline-flex; align-items: center; gap: 6px; color: var(--nci-label); font-size: 12px; }
+.nci-app .nci-propose label[hidden] { display: none; }
+.nci-app .nci-voted { margin-right: 8px; color: var(--nci-label); }
 .nci-app .nci-portfolio h3 { margin: 14px 0 6px; }
 .nci-app .nci-estimate { color: var(--nci-accent-bright); min-height: 1.4em; }
 

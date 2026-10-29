@@ -1615,6 +1615,11 @@
         "dissolve": "Dissolve the syndicate"
       },
       "Propose": "Propose",
+      "ProposeKind": "Propose",
+      "Field": { "candidate": "Character to invite", "member": "Which member", "limit": "New daily limit (eb)" },
+      "Voted": { "yes": "You voted yes.", "no": "You voted no." },
+      "VoteSent": { "yes": "Your yes vote has been sent.", "no": "Your no vote has been sent." },
+      "ChangeTo": { "yes": "Change to yes", "no": "Change to no" },
       "ProposeHint": "A proposal passes when members holding more than half the units say yes; it fails when half or more say no, and lapses at the end of its voting period. To dissolve, the officers first sell every holding.",
       "History": "Syndicate history",
       "RedemptionLine": "{name}: {units} units, paid from {date} if the cash is there",

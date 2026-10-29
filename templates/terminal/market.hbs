@@ -162,17 +162,22 @@
       <tr><td><strong>{{text}}</strong><div class="nci-muted">{{by}}</div></td>
         <td class="num nci-up">{{localize "NCI.Syndicate.Yes"}} {{yes}}</td><td class="num nci-down">{{localize "NCI.Syndicate.No"}} {{no}}</td>
         <td class="nci-rowbtns">
-          <button type="button" class="nci-labelled{{#if votedYes}} active{{/if}}" data-action="synVote" data-id="{{id}}" data-yes="true"><i class="fas fa-check"></i> {{localize "NCI.Syndicate.Yes"}}</button>
-          <button type="button" class="nci-labelled{{#if votedNo}} active{{/if}}" data-action="synVote" data-id="{{id}}" data-yes="false"><i class="fas fa-xmark"></i> {{localize "NCI.Syndicate.No"}}</button>
+          {{#if voted}}
+          <span class="nci-voted">{{voteText}}</span>
+          <button type="button" class="nci-labelled" data-action="synVote" data-id="{{id}}" data-yes="{{changeTo}}">{{changeLabel}}</button>
+          {{else}}
+          <button type="button" class="nci-labelled" data-action="synVote" data-id="{{id}}" data-yes="true"><i class="fas fa-check"></i> {{localize "NCI.Syndicate.Yes"}}</button>
+          <button type="button" class="nci-labelled" data-action="synVote" data-id="{{id}}" data-yes="false"><i class="fas fa-xmark"></i> {{localize "NCI.Syndicate.No"}}</button>
+          {{/if}}
         </td></tr>
       {{/each}}
     </tbody></table>
     {{else}}<p class="nci-empty">{{localize "NCI.Syndicate.NoProposals"}}</p>{{/if}}
-    <div class="nci-block nci-actions">
-      <select name="synKind">{{#each proposeKinds}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
-      {{#if candidates.length}}<select name="synCandidate" title="{{localize 'NCI.Syndicate.Kind.admit'}}">{{#each candidates}}<option value="{{id}}">{{name}}</option>{{/each}}</select>{{/if}}
-      {{#if others.length}}<select name="synMember" title="{{localize 'NCI.Syndicate.Members'}}">{{#each others}}<option value="{{id}}">{{name}}</option>{{/each}}</select>{{/if}}
-      <input type="number" name="synLimit" min="0" step="500" placeholder="{{limit}}" class="nci-days" title="{{localize 'NCI.Syndicate.Kind.limit'}}">
+    <div class="nci-block nci-actions nci-propose">
+      <label>{{localize "NCI.Syndicate.ProposeKind"}} <select name="synKind">{{#each proposeKinds}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+      {{#if candidates.length}}<label data-for="admit">{{localize "NCI.Syndicate.Field.candidate"}} <select name="synCandidate">{{#each candidates}}<option value="{{id}}">{{name}}</option>{{/each}}</select></label>{{/if}}
+      {{#if others.length}}<label data-for="remove officer member">{{localize "NCI.Syndicate.Field.member"}} <select name="synMember">{{#each others}}<option value="{{id}}">{{name}}</option>{{/each}}</select></label>{{/if}}
+      <label data-for="limit">{{localize "NCI.Syndicate.Field.limit"}} <input type="number" name="synLimit" min="0" step="500" placeholder="{{limit}}" class="nci-days"></label>
       <button type="button" data-action="synPropose"><i class="fas fa-gavel"></i> {{localize "NCI.Syndicate.Propose"}}</button>
     </div>
     <p class="nci-hint">{{localize "NCI.Syndicate.ProposeHint"}}</p>

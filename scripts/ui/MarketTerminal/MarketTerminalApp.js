@@ -100,6 +100,15 @@ export class MarketTerminalApp extends BaseApplication {
   _onRender(context, options) {
     super._onRender?.(context, options);
     const el = this.element;
+    // The propose form shows only the field the chosen kind of proposal needs.
+    const kind = el.querySelector('select[name="synKind"]');
+    const showFields = () => el.querySelectorAll('.nci-propose [data-for]').forEach((field) => {
+      field.hidden = !field.dataset.for.split(' ').includes(kind.value);
+    });
+    if (kind) {
+      kind.addEventListener('change', showFields);
+      showFields();
+    }
     el.querySelector('select[name="actorId"]')?.addEventListener('change', (event) => {
       this.actorId = event.target.value;
       this.render();
