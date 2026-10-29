@@ -31,8 +31,16 @@ import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import {
   ARCHETYPES, ACTIONS, BUSINESS_DEFAULTS, stageDv, actionUses, helpUses, setupUses, usesInclude, useKey,
 } from './businessConfig.js';
+import {
+  BUSINESS_SCHEMA, BUSINESS_STATUS, weekdayOf, nextBoundary, newPeriod, int, clamp, text, normalizeBusiness, archetypeOf, holders, voters,
+  partnerOf, gearValue, totalUnits, bookValue, unitValue, shareOf, lastDigest, drawAllowance, fundingShortfall, hireFee, stateBands,
+  fail, close, addLedger,
+} from './businessRecord.js';
 
-export const BUSINESS_SCHEMA = 1;
+export {
+  BUSINESS_SCHEMA, BUSINESS_STATUS, weekdayOf, nextBoundary, normalizeBusiness, archetypeOf, holders, voters,
+  partnerOf, gearValue, totalUnits, bookValue, unitValue, shareOf, lastDigest, drawAllowance, fundingShortfall, hireFee, stateBands,
+};
 
 export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout', 'proposeClose', 'vote',
@@ -41,146 +49,6 @@ export const BUSINESS_REQUESTS = Object.freeze([
 /** Requests that carry a roll. */
 export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist']);
 
-/** Statuses: forming (gathering partners and money), pending (waiting for the GM), open, closed. */
-export const BUSINESS_STATUS = Object.freeze(['forming', 'pending', 'open', 'closed']);
-
-// ── Days and periods ─────────────────────────────────────────────────────────
-
-/** 0 = Sunday. Day 0 of the epoch was a Thursday. */
-export const weekdayOf = (day) => (((day + 4) % 7) + 7) % 7;
-
-/** The first day after `day` that falls on `weekday`: where an operating period ends. */
-export function nextBoundary(day, weekday) {
-  let d = day + 1;
-  while (weekdayOf(d) !== weekday) d++;
-  return d;
-}
-
-function newPeriod(index, startDay, weekday) {
-  return { index, startDay, endDay: nextBoundary(startDay, weekday), slots: [], bonuses: [], helpers: [], draws: {} };
-}
-
-// ── The record ───────────────────────────────────────────────────────────────
-
-const int = (v) => Math.round(Number(v) || 0);
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const text = (v, max) => String(v ?? '').trim().slice(0, max);
-
-/** Fill in every field a stored record may be missing, so readers never need a default. */
-export function normalizeBusiness(raw) {
-  const b = raw ?? {};
-  return {
-    schema: BUSINESS_SCHEMA,
-    id: String(b.id ?? ''),
-    name: String(b.name ?? ''),
-    archetype: ARCHETYPES[b.archetype] ? b.archetype : 'clinic',
-    location: String(b.location ?? ''),
-    stage: int(b.stage),
-    status: BUSINESS_STATUS.includes(b.status) ? b.status : 'forming',
-    founderId: b.founderId ?? null,
-    createdDay: int(b.createdDay),
-    openedDay: b.openedDay ?? null,
-    closedDay: b.closedDay ?? null,
-    closeReason: b.closeReason ?? null,
-    partners: (b.partners ?? []).map((p) => ({
-      actorId: String(p.actorId),
-      name: String(p.name ?? ''),
-      status: p.status ?? 'active',
-      cash: int(p.cash),
-      gear: (p.gear ?? []).map((g) => ({ name: String(g.name ?? ''), value: int(g.value) })),
-      units: int(p.units),
-      voting: p.voting !== false,
-      heirId: p.heirId ?? null,
-      leavingSince: p.leavingSince ?? null,
-    })),
-    agreement: {
-      sweat: b.agreement?.sweat?.actorId ? { actorId: b.agreement.sweat.actorId, pct: clamp(int(b.agreement.sweat.pct), 0, 100) } : null,
-      decision: 'majority',
-      buyoutDays: int(b.agreement?.buyoutDays ?? BUSINESS_DEFAULTS.buyoutDays),
-    },
-    setup: b.setup ?? null,
-    state: {
-      capacity: Number(b.state?.capacity ?? 1),
-      reputation: Number(b.state?.reputation ?? 50),
-      costFactor: Number(b.state?.costFactor ?? 1),
-    },
-    escrow: int(b.escrow),
-    till: int(b.till),
-    assets: int(b.assets),
-    period: b.period ?? null,
-    digests: b.digests ?? [],
-    ledger: b.ledger ?? [],
-    losingPeriods: int(b.losingPeriods),
-    proposals: b.proposals ?? [],
-  };
-}
-
-// ── Reading a business ───────────────────────────────────────────────────────
-
-export const archetypeOf = (b) => ARCHETYPES[b.archetype];
-
-/** Partners who hold or will hold units: active, or leaving but not yet bought out. */
-export const holders = (b) => b.partners.filter((p) => p.status === 'active' || p.status === 'leaving');
-
-/** Partners who decide things: holders with a vote. */
-export const voters = (b) => holders(b).filter((p) => p.voting);
-
-export const partnerOf = (b, actorId) => b.partners.find((p) => p.actorId === actorId) ?? null;
-
-export const gearValue = (p) => p.gear.reduce((a, g) => a + g.value, 0);
-
-export const totalUnits = (b) => holders(b).reduce((a, p) => a + p.units, 0);
-
-/** Book value: the till and the gear and fit-out, at what they cost. */
-export const bookValue = (b) => b.till + b.assets;
-
-export const unitValue = (b) => {
-  const units = totalUnits(b);
-  return units > 0 ? bookValue(b) / units : 0;
-};
-
-/** A partner's share of the units, 0..1. */
-export const shareOf = (b, actorId) => {
-  const units = totalUnits(b);
-  const p = partnerOf(b, actorId);
-  return units > 0 && p && (p.status === 'active' || p.status === 'leaving') ? p.units / units : 0;
-};
-
-export const lastDigest = (b) => b.digests.at(-1) ?? null;
-
-/** What a partner may still draw this period: their share of last week's profit, less what they drew. */
-export function drawAllowance(b, actorId) {
-  const last = lastDigest(b);
-  if (b.status !== 'open' || !last || last.profit <= 0 || !b.period) return 0;
-  const share = Math.floor(last.profit * shareOf(b, actorId));
-  return Math.max(0, Math.min(share - (b.period.draws[actorId] ?? 0), b.till));
-}
-
-/** The cash a forming business still needs before it can open, once the setup roll has passed. */
-export function fundingShortfall(b) {
-  if (!b.setup?.passed) return null;
-  const gear = holders(b).reduce((a, p) => a + gearValue(p), 0);
-  return Math.max(0, Math.max(0, b.setup.cost - gear) - b.escrow);
-}
-
-/** A hired professional's fee, less a Fixer partner's Operator discount. */
-export function hireFee(tier, operatorRank = 0, p = BUSINESS_DEFAULTS) {
-  const base = p.hireFees[tier] ?? p.hireFees.cheap;
-  const off = Math.min(p.operatorDiscount.max, Math.max(0, operatorRank) * p.operatorDiscount.perRank);
-  return Math.round(base * (1 - off));
-}
-
-/** How a business's state reads to its owners: bands, not numbers. */
-export function stateBands(b, p = BUSINESS_DEFAULTS) {
-  const rep = b.state.reputation;
-  const cap = b.state.capacity / (p.stages[b.stage]?.capacityCap ?? 1.6);
-  const cost = b.state.costFactor;
-  return {
-    reputation: rep < 35 ? 'poor' : rep < 50 ? 'modest' : rep < 65 ? 'good' : 'excellent',
-    capacity: cap < 0.6 ? 'cramped' : cap < 0.8 ? 'room' : cap < 0.97 ? 'busy' : 'full',
-    costs: cost > 0.97 ? 'high' : cost > 0.9 ? 'fair' : cost > 0.82 ? 'lean' : 'tight',
-  };
-}
 
 // ── What a roll needs ────────────────────────────────────────────────────────
 
@@ -238,10 +106,6 @@ function allowed(uses, use, { funds = 0, operatorRank = 0, p = BUSINESS_DEFAULTS
   if (use && !usesInclude(uses, use)) return fail('bad-use');
   // The skill's stat is the business's own, not what the request says.
   return { ok: true, uses, ...(use ? { use: uses.find((u) => useKey(u) === useKey(use)) } : {}), ...spec };
-}
-
-function fail(reason) {
-  return { ok: false, reason };
 }
 
 // ── Applying a request ───────────────────────────────────────────────────────
@@ -600,13 +464,6 @@ function liquidate(b, day, reason, out, p) {
   out.events.push({ type: 'closed', reason, paid });
 }
 
-function close(b, day, reason) {
-  b.status = 'closed';
-  b.closedDay = day;
-  b.closeReason = reason;
-  b.proposals = [];
-}
-
 /** A close proposal passes when every voting partner says yes; one no ends it. */
 function settleProposals(b, day, out, p) {
   for (const proposal of [...b.proposals]) {
@@ -619,10 +476,6 @@ function settleProposals(b, day, out, p) {
       if (proposal.kind === 'close') liquidate(b, day, 'closed', out, p);
     }
   }
-}
-
-function addLedger(b, entry, p) {
-  b.ledger = [...b.ledger, { ...entry, amount: int(entry.amount) }].slice(-p.ledgerCap);
 }
 
 // ── Time passing ─────────────────────────────────────────────────────────────
