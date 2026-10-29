@@ -489,7 +489,8 @@ export class MarketTerminalApp extends BaseApplication {
       ...Object.fromEntries(Object.entries(pub.funds ?? {}).map(([id, s]) => [id, s.nav])),
     };
     const v = valuePortfolio(p, prices);
-    const stakes = actor.isSyndicate ? [] : this._privateStakes(actor);
+    // A syndicate's business stakes count too (DESIGN §31, B3b).
+    const stakes = this._privateStakes(actor);
     const stakesValue = stakes.reduce((a, s) => a + s.value, 0);
     const tick = timeOf(pub);
     const tickerOf = (id) => byId.get(id)?.ticker ?? id;
@@ -563,7 +564,7 @@ export class MarketTerminalApp extends BaseApplication {
 
     return {
       wealth: whole(ownerOf(actor).system?.wealth?.value ?? 0),
-      syndicate: actor.isSyndicate ? syndicateContext(actor, p, prices) : null,
+      syndicate: actor.isSyndicate ? syndicateContext(actor, p, prices, stakesValue) : null,
       syndicates: actor.isSyndicate ? null : characterSyndicates(actor),
       cash: whole(v.cash),
       unsettled: whole(v.unsettled),

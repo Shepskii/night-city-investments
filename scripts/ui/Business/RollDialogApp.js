@@ -9,6 +9,7 @@
 import { rollSpec, previewRoll, normalizeLevers, hireFee, HIRE_TIERS, APPROACHES, MAX_LUCK_PER_ROLL, useKey, EVENTS } from '../../engine/index.js';
 import { MODULE_ID } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
+import { accountFor } from '../accounts.js';
 import { BusinessClient, operatorRankOf } from '../../services/BusinessClient.js';
 import { SkillAdapter } from '../../services/SkillAdapter.js';
 import { BaseApplication } from '../BaseApplication.js';
@@ -31,7 +32,7 @@ export class RollDialogApp extends BaseApplication {
 
   /** Open the dialog for one roll. */
   static ask({ actorId, businessId, request, title }) {
-    const app = new RollDialogApp({ id: `nci-roll-${actorId}-${businessId}`, actorId, businessId, request, rollTitle: title });
+    const app = new RollDialogApp({ id: `nci-roll-${String(actorId).replace(/[^\w-]/g, '_')}-${businessId}`, actorId, businessId, request, rollTitle: title });
     app.render({ force: true });
     return app;
   }
@@ -46,8 +47,20 @@ export class RollDialogApp extends BaseApplication {
     this.choice = { use: null, approach: 'standard', luck: 0, bonus: true, extra: false };
   }
 
+  /** The account the roll is for: a character, or a syndicate picked as one of its officers. */
+  get account() {
+    return accountFor(this.actorId);
+  }
+
+  /** Who rolls: the character, or the officer acting for the syndicate. */
   get actor() {
-    return game.actors.get(this.actorId) ?? null;
+    const account = this.account;
+    return account?.isSyndicate ? account.as : account;
+  }
+
+  /** The business partner the roll counts for. */
+  get partnerId() {
+    return this.account?.id ?? null;
   }
 
   get business() {
@@ -88,7 +101,7 @@ export class RollDialogApp extends BaseApplication {
       .filter((o) => o.use.kind !== 'ability' || o.base > 0)
       .sort((a, b) => b.base - a.base);
     // Only the hires the business can pay for (a registration also needs its fee left in the till).
-    const affordable = (tier) => rollSpec(this.business, { ...this.request, use: { kind: 'hire', hire: tier } }, this.actorId, { day: BusinessClient.day(), operatorRank: rank }).ok;
+    const affordable = (tier) => rollSpec(this.business, { ...this.request, use: { kind: 'hire', hire: tier } }, this.partnerId, { day: BusinessClient.day(), operatorRank: rank }).ok;
     const hires = spec.allowHire
       ? Object.entries(HIRE_TIERS).filter(([tier]) => affordable(tier)).map(([tier, base]) => ({
         key: `hire:${tier}`, use: { kind: 'hire', hire: tier }, base, label: L('NCI.Roll.HireOption', { who: L(`NCI.Roll.Hire.${tier}`), base, fee: whole(hireFee(tier, rank)) }),
@@ -103,7 +116,7 @@ export class RollDialogApp extends BaseApplication {
     const spec = actor && business ? this._spec() : null;
     const option = spec?.ok ? this._options(spec).find((o) => o.key === this.choice.use) ?? this._options(spec)[0] : null;
     if (!option) return ui.notifications.warn(L('NCI.Roll.NothingToRoll'));
-    await BusinessClient.roll(actor, business, { ...this.request, use: option.use }, {
+    await BusinessClient.roll(this.account, business, { ...this.request, use: option.use }, {
       title: this.rollTitle,
       levers: { approach: this.choice.approach, luck: this.choice.luck, bonus: this.choice.bonus ? 1 : 0, extra: this.choice.extra ? 1 : 0 },
     });
@@ -112,7 +125,7 @@ export class RollDialogApp extends BaseApplication {
 
   /** Whether the roll can be made now, and the ways it may be made (no use named yet). */
   _spec() {
-    return rollSpec(this.business, { ...this.request, use: null }, this.actorId, { day: BusinessClient.day(), operatorRank: operatorRankOf(this.business) });
+    return rollSpec(this.business, { ...this.request, use: null }, this.partnerId, { day: BusinessClient.day(), operatorRank: operatorRankOf(this.business) });
   }
 
   async _prepareContext() {
@@ -142,7 +155,7 @@ export class RollDialogApp extends BaseApplication {
 
     return {
       title: this.rollTitle,
-      actorName: actor.name,
+      actorName: this.account?.isSyndicate ? L('NCI.Syndicate.PickerLabel', { name: this.account.name, as: actor.name }) : actor.name,
       uses: options.map((o) => ({ key: o.key, label: o.label, selected: o.key === chosen?.key })),
       approaches: Object.keys(APPROACHES).map((id) => ({ id, label: L(`NCI.Roll.Approach.${id}`), hint: L(`NCI.Roll.ApproachHint.${id}`), checked: id === levers.approach })),
       luck: levers.luck,

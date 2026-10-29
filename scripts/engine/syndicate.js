@@ -17,6 +17,10 @@
  *   { key, type: 'propose', kind, ... }                            see PROPOSAL_KINDS
  *   { key, type: 'vote', proposalId, yes }
  *
+ * A syndicate can also be a business partner (B3b): its officers act for it through the business
+ * service, which pays from and into this account. Its business stakes, at book value, count in its
+ * value (`context.stakes`), and a syndicate holding any cannot be wound up.
+ *
  * The books are `{ syndicate, portfolio, members }`: the record, the syndicate's own portfolio, and
  * the brokerage portfolios of its members by actor id. Every function returns new books.
  */
@@ -43,7 +47,10 @@ export const SYNDICATE_TRADES = Object.freeze([
 ]);
 
 /** What the members can vote on. */
-export const PROPOSAL_KINDS = Object.freeze(['trade', 'admit', 'remove', 'role', 'limit', 'dissolve']);
+export const PROPOSAL_KINDS = Object.freeze(['trade', 'business', 'admit', 'remove', 'role', 'limit', 'dissolve']);
+
+/** Business requests that spend the syndicate's money, and so can be put to the members when over the limit. */
+export const BUSINESS_SPENDS = Object.freeze(['found', 'join', 'contribute', 'buyout']);
 
 const SEEN_BY = ['invited', 'active'];
 const round2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
@@ -89,12 +96,13 @@ export const syndicateUnits = (s) => round2(activeMembers(s).reduce((a, m) => a 
 export const freeCash = (portfolio) => Math.max(0, portfolio.cash - committedCash(portfolio.orders));
 
 /**
- * What the syndicate is worth: the portfolio's total value at market, the units in issue, and the
- * value per unit (1 eb while there are none).
+ * What the syndicate is worth: the portfolio's total value at market plus its business stakes at book
+ * value, the units in issue, and the value per unit (1 eb while there are none).
  * @param {Object<string, number>} prices - assetId -> price
+ * @param {number} [stakes] - its stakes in businesses, at book value
  */
-export function navOf(s, portfolio, prices = {}) {
-  const total = valuePortfolio(normalizePortfolio(portfolio), prices).total;
+export function navOf(s, portfolio, prices = {}, stakes = 0) {
+  const total = valuePortfolio(normalizePortfolio(portfolio), prices).total + Math.max(0, Number(stakes) || 0);
   const units = syndicateUnits(s);
   return { total, units, nav: units > 0 ? total / units : 1 };
 }
@@ -111,8 +119,8 @@ export function orderValue(order, market = {}) {
   return Math.round(Math.max(0, Number(order.qty) || 0) * price);
 }
 
-/** Has the account nothing but cash, so it can be wound up? */
-export const isLiquid = (portfolio) => !portfolio.lots.length && !portfolio.orders.some((o) => o.status === OPEN) && !(portfolio.unsettled ?? []).length;
+/** Has the account nothing but cash, and no business stakes, so it can be wound up? */
+export const isLiquid = (portfolio, stakes = 0) => !portfolio.lots.length && !portfolio.orders.some((o) => o.status === OPEN) && !(portfolio.unsettled ?? []).length && !(stakes > 0);
 
 const clone = (books) => ({
   syndicate: structuredClone(normalizeSyndicate(books.syndicate)),
@@ -151,13 +159,15 @@ function moveCash(b, actorId, amount, tick, ref, what) {
  *   actors          { [id]: name } characters a request may name
  *   newId           the id for a new syndicate
  *   settlementDays  days before a redemption is paid
- * @returns {{ok: false, reason: string} | {ok: true, books: object, trades: object[], events: object[], changed: string[]}}
- *          `trades` are executor requests to run on the syndicate's portfolio; `changed` the member
- *          portfolios that changed
+ *   stakes          its business stakes at book value
+ * @returns {{ok: false, reason: string} | {ok: true, books: object, trades: object[], business: object[], events: object[], changed: string[]}}
+ *          `trades` are executor requests to run on the syndicate's portfolio; `business` the business
+ *          requests a passed proposal wants made for the syndicate; `changed` the member portfolios
+ *          that changed
  */
 export function applySyndicateRequest({ books, request, actor, day, tick, market = {}, context = {} }) {
   const ctx = { approval: true, actors: {}, settlementDays: 0, ...context };
-  const out = { trades: [], events: [], changed: new Set() };
+  const out = { trades: [], business: [], events: [], changed: new Set() };
 
   if (request.type === 'found') {
     const name = text(request.name, 40);
@@ -177,7 +187,7 @@ export function applySyndicateRequest({ books, request, actor, day, tick, market
     });
     addLedger(syndicate, { day, kind: 'founded', actorId: actor.id });
     out.events.push({ type: ctx.approval ? 'awaitingApproval' : 'founded' });
-    return { ok: true, books: { syndicate, portfolio: emptyPortfolio(), members: {} }, trades: [], events: out.events, changed: [] };
+    return { ok: true, books: { syndicate, portfolio: emptyPortfolio(), members: {} }, trades: [], business: [], events: out.events, changed: [] };
   }
 
   if (!books?.syndicate) return fail('no-syndicate');
@@ -206,7 +216,7 @@ export function applySyndicateRequest({ books, request, actor, day, tick, market
     }
   }
   settle(b, { day, tick, market, ctx, out });
-  return { ok: true, books: b, trades: out.trades, events: out.events, changed: [...out.changed] };
+  return { ok: true, books: b, trades: out.trades, business: out.business, events: out.events, changed: [...out.changed] };
 }
 
 function memberRequest(b, me, request, { day, tick, market, ctx, out }) {
@@ -219,7 +229,7 @@ function memberRequest(b, me, request, { day, tick, market, ctx, out }) {
       const mine = b.members[me.actorId];
       if (!mine) return fail('no-portfolio');
       if (amount > freeCash(mine)) return fail('insufficient-cash');
-      const { nav } = navOf(s, b.portfolio, prices);
+      const { nav } = navOf(s, b.portfolio, prices, ctx.stakes);
       const units = round2(amount / nav);
       if (!(units > 0)) return fail('bad-amount');
       moveCash(b, me.actorId, amount, tick, request.key, 'Deposit');
@@ -237,7 +247,7 @@ function memberRequest(b, me, request, { day, tick, market, ctx, out }) {
       if (units > freeUnits(s, me.actorId) + 1e-9) return fail('not-enough-units');
       // The last holder cannot cash out while the account still holds anything: the members dissolve it instead.
       const othersHold = activeMembers(s).some((m) => m.actorId !== me.actorId && m.units > 0);
-      if (!othersHold && units > 0 && units >= freeUnits(s, me.actorId) - 1e-9 && !isLiquid(b.portfolio)) return fail('dissolve-instead');
+      if (!othersHold && units > 0 && units >= freeUnits(s, me.actorId) - 1e-9 && !isLiquid(b.portfolio, ctx.stakes)) return fail('dissolve-instead');
       if (all && activeMembers(s).length === 1) return fail('dissolve-instead');
       if (all) me.leaving = true;
       if (units > 0) queueRedemption(s, me.actorId, units, request.key, day, ctx);
@@ -307,13 +317,23 @@ function propose(b, me, request, { day, market, ctx, out }) {
       proposal.amount = amount;
       break;
     }
+    case 'business': {
+      if (!isOfficer(s, me.actorId)) return fail('not-officer');
+      const r = request.business ?? {};
+      if (!BUSINESS_SPENDS.includes(r.type)) return fail('bad-request');
+      // A syndicate puts in cash only.
+      proposal.business = { ...r, gear: [] };
+      proposal.amount = whole(request.amount);
+      proposal.label = text(request.label, 60);
+      break;
+    }
     case 'dissolve':
-      if (!isLiquid(b.portfolio)) return fail('not-liquid');
+      if (!isLiquid(b.portfolio, ctx.stakes)) return fail('not-liquid');
       break;
     default:
       return fail('bad-request');
   }
-  const same = s.proposals.some((x) => x.kind === kind && (x.actorId ?? null) === (proposal.actorId ?? null) && kind !== 'trade');
+  const same = s.proposals.some((x) => x.kind === kind && (x.actorId ?? null) === (proposal.actorId ?? null) && !['trade', 'business'].includes(kind));
   if (same) return fail('already-proposed');
   s.proposals = [...s.proposals, proposal];
   out.events.push({ type: 'proposed', kind, proposalId: proposal.id });
@@ -351,7 +371,7 @@ function settle(b, { day, tick, market, ctx, out }) {
     out.events.push(done.ok ? { type: 'proposalPassed', kind: proposal.kind, proposalId: proposal.id } : { type: 'proposalVoid', kind: proposal.kind, proposalId: proposal.id, reason: done.reason });
     if (s.status === 'closed') return;
   }
-  payRedemptions(b, { day, tick, market, out });
+  payRedemptions(b, { day, tick, market, out, stakes: ctx.stakes });
 }
 
 function enact(b, proposal, { day, tick, market, ctx, out }) {
@@ -360,6 +380,9 @@ function enact(b, proposal, { day, tick, market, ctx, out }) {
   switch (proposal.kind) {
     case 'trade':
       out.trades.push({ ...proposal.order, type: 'placeOrder', key: proposal.id });
+      return { ok: true };
+    case 'business':
+      out.business.push({ key: proposal.id, request: proposal.business, by: proposal.by, label: proposal.label ?? '' });
       return { ok: true };
     case 'admit':
       if (target) Object.assign(target, { status: 'invited', role: 'member', units: 0, leaving: false });
@@ -382,16 +405,16 @@ function enact(b, proposal, { day, tick, market, ctx, out }) {
       s.rules.tradeLimit = proposal.amount;
       return { ok: true };
     case 'dissolve':
-      return dissolve(b, { day, tick, out });
+      return dissolve(b, { day, tick, out, stakes: ctx.stakes });
     default:
       return { ok: true };
   }
 }
 
 /** Pay the cash out by units into the members' brokerage balances, and close the syndicate. */
-function dissolve(b, { day, tick, out }) {
+function dissolve(b, { day, tick, out, stakes = 0 }) {
   const s = b.syndicate;
-  if (!isLiquid(b.portfolio)) return fail('not-liquid');
+  if (!isLiquid(b.portfolio, stakes)) return fail('not-liquid');
   const holders = activeMembers(s).filter((m) => m.units > 0);
   const units = syndicateUnits(s);
   const cash = Math.max(0, Math.floor(b.portfolio.cash));
@@ -417,9 +440,9 @@ function dissolve(b, { day, tick, out }) {
 }
 
 /** Pay the redemptions that are due, oldest first, while the cash covers them. */
-function payRedemptions(b, { day, tick, market, out }) {
+function payRedemptions(b, { day, tick, market, out, stakes = 0 }) {
   const s = b.syndicate;
-  const { nav } = navOf(s, b.portfolio, pricesOf(market));
+  const { nav } = navOf(s, b.portfolio, pricesOf(market), stakes);
   for (const r of s.redemptions.filter((x) => x.status === 'waiting' && x.payableDay <= day)) {
     const member = memberOf(s, r.actorId);
     if (!member || !b.members[r.actorId]) continue;
@@ -445,9 +468,9 @@ function payRedemptions(b, { day, tick, market, out }) {
  */
 export function advanceSyndicate({ books, day, tick, market = {}, context = {} }) {
   const b = clone(books);
-  const out = { trades: [], events: [], changed: new Set() };
+  const out = { trades: [], business: [], events: [], changed: new Set() };
   if (b.syndicate.status === 'active') settle(b, { day, tick, market, ctx: { actors: {}, settlementDays: 0, ...context }, out });
-  return { books: b, trades: out.trades, events: out.events, changed: [...out.changed] };
+  return { books: b, trades: out.trades, business: out.business, events: out.events, changed: [...out.changed] };
 }
 
 /** GM: let a pending syndicate start trading. */
@@ -467,22 +490,22 @@ export function decideProposal({ books, proposalId, how, day, tick, market = {},
   const s = b.syndicate;
   const proposal = s.proposals.find((x) => x.id === proposalId);
   if (!proposal) return fail('no-proposal');
-  const out = { trades: [], events: [], changed: new Set() };
+  const out = { trades: [], business: [], events: [], changed: new Set() };
   s.proposals = s.proposals.filter((x) => x !== proposal);
   if (how === 'pass') {
     const done = enact(b, proposal, { day, tick, market, ctx: { actors: {}, settlementDays: 0, ...context }, out });
     if (!done.ok) return done;
   }
   out.events.push({ type: how === 'pass' ? 'proposalPassed' : 'proposalVetoed', kind: proposal.kind, proposalId, forced: true });
-  return { ok: true, books: b, trades: out.trades, events: out.events, changed: [...out.changed] };
+  return { ok: true, books: b, trades: out.trades, business: out.business, events: out.events, changed: [...out.changed] };
 }
 
 /** GM: close a syndicate that is pending or holds nothing but cash, paying the cash out by units. */
-export function closeSyndicate({ books, day, tick }) {
+export function closeSyndicate({ books, day, tick, stakes = 0 }) {
   const b = clone(books);
-  const out = { trades: [], events: [], changed: new Set() };
+  const out = { trades: [], business: [], events: [], changed: new Set() };
   if (b.syndicate.status === 'closed') return fail('closed');
-  const done = dissolve(b, { day, tick, out });
+  const done = dissolve(b, { day, tick, out, stakes });
   if (!done.ok) return done;
-  return { ok: true, books: b, trades: [], events: out.events, changed: [...out.changed] };
+  return { ok: true, books: b, trades: [], business: [], events: out.events, changed: [...out.changed] };
 }

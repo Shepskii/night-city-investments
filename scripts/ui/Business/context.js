@@ -7,11 +7,13 @@ import {
   ARCHETYPES, ACTION_IDS, partnerOf, holders, totalUnits, unitValue, shareOf, bookValue, drawAllowance, fundingShortfall,
   stateBands, lastDigest, weekdayOf, gearValue, rollSpec, BUSINESS_DEFAULTS,
   daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
-  openLoans, bankCheck, angelCheck, averageProfit,
+  openLoans, bankCheck, angelCheck, averageProfit, freeCash,
 } from '../../engine/index.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient, operatorRankOf, pendingBusinessRequests, investorActors } from '../../services/BusinessClient.js';
+import { SyndicateRepository } from '../../data/SyndicateRepository.js';
+import { businessAccounts } from '../accounts.js';
 import { MarketClock } from '../../services/MarketClockService.js';
 import { L, whole, signed } from '../format.js';
 import { weeklyBars, balanceLine } from '../components/chart.js';
@@ -88,13 +90,15 @@ export function archetypeOptions() {
 
 /** The header: which character, and which of their businesses. */
 export function pickerContext(app) {
-  const actors = usableActors();
+  // Characters, and the syndicates they are officers of (DESIGN §31, B3b).
+  const actors = businessAccounts(usableActors());
   const actor = app.actor;
   const businesses = actor ? BusinessRepository.forActor(actor.id) : [];
+  const requests = actor?.isSyndicate ? pendingBusinessRequests(actor.as).filter((r) => r.syndicateId === actor.id) : actor ? pendingBusinessRequests(actor) : [];
   return {
-    actors: actors.map((a) => ({ id: a.id, name: a.name, selected: a.id === actor?.id })),
+    actors: actors.map((a) => ({ id: a.id, name: a.name, selected: a.id === app.actorId })),
     businesses: businesses.map((b) => ({ id: b.id, label: `${b.name} (${L(`NCI.Business.Status.${b.status}`)})`, selected: b.id === app.businessId })),
-    pending: actor ? pendingBusinessRequests(actor).length : 0,
+    pending: requests.length,
     noGM: !game.users.activeGM,
     enabled: game.settings.get(MODULE_ID, SETTINGS.BUSINESSES_ENABLED) !== false,
   };
@@ -103,12 +107,17 @@ export function pickerContext(app) {
 /** The Start a business form. */
 export function startContext(app) {
   const actor = app.actor;
-  const others = game.actors.filter((a) => a.type === 'character' && a.id !== actor?.id && a.hasPlayerOwner).sort((a, b) => a.name.localeCompare(b.name));
+  const others = [
+    ...game.actors.filter((a) => a.type === 'character' && a.id !== actor?.id && a.hasPlayerOwner),
+    // A syndicate can be invited as a partner too.
+    ...SyndicateRepository.all().filter((s) => s.status === 'active' && s.id !== actor?.id),
+  ].sort((a, b) => a.name.localeCompare(b.name));
   return {
     archetypes: archetypeOptions(),
     districts: districtOptions(),
     partners: others.map((a) => ({ id: a.id, name: a.name })),
-    wealth: whole(actor?.system?.wealth?.value ?? 0),
+    // A syndicate spends from its brokerage account.
+    wealth: whole(actor?.isSyndicate ? freeCash(SyndicateRepository.portfolio(actor.id)) : actor?.system?.wealth?.value ?? 0),
     maxSweat: BUSINESS_DEFAULTS.maxSweatPct,
   };
 }

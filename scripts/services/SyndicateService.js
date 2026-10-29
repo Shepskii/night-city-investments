@@ -20,10 +20,17 @@ import { MarketClock } from './MarketClockService.js';
 import { PortfolioService } from './PortfolioService.js';
 import { TradingSettings } from './TradingSettings.js';
 import { syndicateReceipts, pendingSyndicateRequests } from './SyndicateClient.js';
+import { BusinessService } from './BusinessService.js';
+import { SyndicateCash } from './SyndicateCash.js';
 
 const RESULTS_CAP = 20;
 
 class SyndicateServiceImpl {
+  constructor() {
+    /** Business requests passed proposals want made, run once the portfolio queue is free. */
+    this._after = [];
+  }
+
   enabled() {
     return game.settings.get(MODULE_ID, SETTINGS.SYNDICATES_ENABLED) !== false;
   }
@@ -41,12 +48,14 @@ class SyndicateServiceImpl {
     return Object.fromEntries(game.actors.filter((a) => a.type === 'character').map((a) => [a.id, a.name]));
   }
 
-  context() {
+  /** @param {number} [stakes] - the syndicate's business stakes at book value, which count in its value */
+  context(stakes = 0) {
     return {
       approval: game.settings.get(MODULE_ID, SETTINGS.SYNDICATE_APPROVAL) !== false,
       actors: this.actors(),
       newId: `syn_${foundry.utils.randomID(12)}`,
       settlementDays: TradingSettings.settlementDays(),
+      stakes,
     };
   }
 
@@ -59,13 +68,24 @@ class SyndicateServiceImpl {
       const actor = game.actors.get(m.actorId);
       if (actor) members[m.actorId] = PortfolioRepository.get(actor);
     }
-    return { syndicate, portfolio: SyndicateRepository.portfolio(id), members };
+    return { syndicate, portfolio: SyndicateRepository.portfolio(id), members, stakes: SyndicateCash.stakesOf(id) };
+  }
+
+  /**
+   * Make the business requests that passed proposals asked for. They run in the business service's
+   * queue, which pays the syndicate through the portfolio queue, so they wait until that is free.
+   */
+  async _flush() {
+    for (const job of this._after.splice(0)) {
+      const out = await BusinessService.applyFor(job.syndicateId, job.request);
+      if (!out.ok) await SyndicateCash.noteFailed(job.syndicateId, { label: job.label, reason: out.reason });
+    }
   }
 
   /** Handle whatever is waiting in one character's syndicate outbox. */
   processActor(actor) {
     if (!isActiveGM()) return Promise.resolve();
-    return PortfolioService.exclusive(() => this._process(actor));
+    return PortfolioService.exclusive(() => this._process(actor)).then(() => this._flush());
   }
 
   /** Handle every character's syndicate outbox. Run at startup. */
@@ -73,7 +93,7 @@ class SyndicateServiceImpl {
     if (!isActiveGM()) return Promise.resolve();
     return PortfolioService.exclusive(async () => {
       for (const actor of game.actors.filter((a) => a.type === 'character')) await this._process(actor);
-    });
+    }).then(() => this._flush());
   }
 
   async _process(actor) {
@@ -94,7 +114,7 @@ class SyndicateServiceImpl {
     if (books && !books.members[actor.id]) books.members[actor.id] = PortfolioRepository.get(actor);
 
     const out = applySyndicateRequest({
-      books, request, actor: { id: actor.id, name: actor.name }, day: this.day(), tick: this.tick(), market: PortfolioService.market(), context: this.context(),
+      books, request, actor: { id: actor.id, name: actor.name }, day: this.day(), tick: this.tick(), market: PortfolioService.market(), context: this.context(books?.stakes ?? 0),
     });
     if (!out.ok) return this._receipt(actor, request, out);
     const { results } = await this._commit(out, actor);
@@ -127,6 +147,7 @@ class SyndicateServiceImpl {
       if (opened && officer && portfolio.session) portfolio = { ...portfolio, session: { ...portfolio.session, by: officer.id } };
     }
     await SyndicateRepository.save(syndicate, portfolio);
+    for (const job of out.business ?? []) this._after.push({ syndicateId: syndicate.id, ...job });
     for (const actorId of out.changed) {
       const actor = game.actors.get(actorId);
       if (actor && out.books.members[actorId]) await PortfolioRepository.save(actor, out.books.members[actorId]);
@@ -159,11 +180,14 @@ class SyndicateServiceImpl {
       let changed = 0;
       for (const s of SyndicateRepository.all().filter((x) => x.status === 'active')) {
         const books = this.books(s.id);
-        const out = advanceSyndicate({ books, day: this.day(), tick: this.tick(), market: PortfolioService.market(), context: this.context() });
+        const out = advanceSyndicate({ books, day: this.day(), tick: this.tick(), market: PortfolioService.market(), context: this.context(books.stakes) });
         if (!out.events.length && !out.changed.length && !out.trades.length) continue;
         await this._commit(out);
         changed++;
       }
+      return changed;
+    }).then(async (changed) => {
+      await this._flush();
       return changed;
     });
   }
@@ -199,10 +223,13 @@ class SyndicateServiceImpl {
     return PortfolioService.exclusive(async () => {
       const books = this.books(id);
       if (!books) return { ok: false, reason: 'no-syndicate' };
-      const out = decideProposal({ books, proposalId, how, day: this.day(), tick: this.tick(), market: PortfolioService.market(), context: this.context() });
+      const out = decideProposal({ books, proposalId, how, day: this.day(), tick: this.tick(), market: PortfolioService.market(), context: this.context(books.stakes) });
       if (!out.ok) return out;
       await this._commit(out);
       return { ok: true };
+    }).then(async (result) => {
+      await this._flush();
+      return result;
     });
   }
 
@@ -212,7 +239,7 @@ class SyndicateServiceImpl {
     return PortfolioService.exclusive(async () => {
       const books = this.books(id);
       if (!books) return { ok: false, reason: 'no-syndicate' };
-      const out = closeSyndicate({ books, day: this.day(), tick: this.tick() });
+      const out = closeSyndicate({ books, day: this.day(), tick: this.tick(), stakes: books.stakes });
       if (!out.ok) return out;
       await this._commit(out);
       return { ok: true };

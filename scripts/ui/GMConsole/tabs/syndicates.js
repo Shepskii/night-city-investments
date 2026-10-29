@@ -10,6 +10,7 @@ import { SyndicateRepository } from '../../../data/SyndicateRepository.js';
 import { CompanyRepository } from '../../../data/CompanyRepository.js';
 import { FundRepository } from '../../../data/FundRepository.js';
 import { SyndicateService } from '../../../services/SyndicateService.js';
+import { SyndicateCash } from '../../../services/SyndicateCash.js';
 import { HeatService } from '../../../services/HeatService.js';
 import { describeProposal } from '../../MarketTerminal/syndicateContext.js';
 import { L, money, whole } from '../../format.js';
@@ -59,7 +60,8 @@ export function context() {
   const tickerOf = (id) => CompanyRepository.get(id)?.ticker ?? FundRepository.get(id)?.ticker ?? id;
   const rows = SyndicateRepository.all().map((s) => {
     const portfolio = SyndicateRepository.portfolio(s.id);
-    const { total, nav } = navOf(s, portfolio, prices);
+    const stakes = SyndicateCash.stakesOf(s.id);
+    const { total, nav } = navOf(s, portfolio, prices, stakes);
     const units = syndicateUnits(s);
     const held = {};
     for (const lot of portfolio.lots) held[lot.assetId] = (held[lot.assetId] ?? 0) + lot.qty;
@@ -79,7 +81,7 @@ export function context() {
       heat: s.status === 'active' && HeatService.enabled() ? L('NCI.GMSyndicate.Heat', { heat: HeatService.heatOf(s.id).toFixed(1), tier: L(`NCI.Heat.Tier.${HeatService.tierOf(s.id)}`) }) : '',
       waitingRedemptions: s.redemptions.filter((r) => r.status === 'waiting').length,
       proposals: s.proposals.map((p) => ({ id: p.id, text: describeProposal(s, p) })),
-      liquid: isLiquid(portfolio),
+      liquid: isLiquid(portfolio, stakes),
     };
   });
   return {

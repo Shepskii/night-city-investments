@@ -579,6 +579,8 @@
       "memberDeposit": "Paid in by a member",
       "memberRedeem": "Paid to a member who redeemed",
       "memberPayout": "Paid out to a member on dissolving",
+      "businessOut": "Paid into a business",
+      "businessIn": "Received from a business",
       "deposit": "Deposit",
       "withdraw": "Withdrawal",
       "buy": "Bought",
@@ -1551,6 +1553,12 @@
           "member": "Make {name} a member again, no longer an officer"
         },
         "limit": "Set the officers' limit to {amount} eb an order",
+        "business": {
+          "found": "Found {name} with {amount} eb",
+          "join": "Join {name} with {amount} eb",
+          "contribute": "Put {amount} eb more into {name}",
+          "buyout": "Buy a stake in {name} for about {amount} eb"
+        },
         "dissolve": "Dissolve the syndicate and pay out its cash by units"
       },
       "Kind": {
@@ -1571,7 +1579,10 @@
         "deposit": "{name} paid in for {units} units",
         "redeem": "{name} redeemed {units} units",
         "payout": "{name} was paid out for {units} units",
-        "dissolved": "The syndicate was dissolved"
+        "dissolved": "The syndicate was dissolved",
+        "businessOut": "Paid into {business}",
+        "businessIn": "Received from {business}",
+        "businessFailed": "The members agreed to put money into {business}, but it could not be done: {reason}"
       },
       "Heading": "Syndicates",
       "InvitedBy": "{founder} invites you to join {name}.",
@@ -1654,6 +1665,8 @@
       "SweatHint": "An optional slice of units for the partner who will do most of the work. Decisions follow units; closing the business, and changing the agreement, need every partner.",
       "Found": "Found it",
       "CancelStart": "Cancel",
+      "SyndicateCashOnly": "A syndicate puts in cash only. Its officers can bring gear as partners in their own right.",
+      "ProposedToSyndicate": "That is over {name}'s officers' limit, so the {amount} eb has gone to its members as a proposal. It is paid in once they agree.",
       "Invitation": "You are invited",
       "InvitationIntro": "You have been asked to be a partner in {name}. Put in what you like; your units follow what you put in.",
       "Join": "Join",
@@ -1988,6 +2001,10 @@
         "already-partner": "that character is already a partner or invited",
         "bad-price": "that price is not allowed",
         "angel-delay": "no angel will listen yet",
+        "syndicate-gear": "a syndicate puts in cash only",
+        "no-syndicate": "that syndicate is not trading",
+        "not-officer": "only the syndicate's officers can act for it",
+        "over-limit": "that is over the syndicate's officers' limit; propose it to its members",
         "bad-item": "that is not something a business can own",
         "item-missing": "that item could not be found",
         "not-your-item": "that item belongs to another character",

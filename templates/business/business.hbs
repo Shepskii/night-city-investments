@@ -41,6 +41,7 @@
       <label>{{localize "NCI.Business.Location"}}<input type="text" name="location" maxlength="80" placeholder="{{localize 'NCI.Business.LocationHint'}}"></label>
       <label>{{localize "NCI.Business.Cash"}} <span class="nci-muted">({{localize "NCI.Business.YouHave" amount=start.wealth}})</span><input type="number" name="cash" min="0" step="50" value="0"></label>
     </div>
+    {{#if @root.isSyndicate}}<p class="nci-hint">{{localize "NCI.Business.SyndicateCashOnly"}}</p>{{else}}
     <div class="nci-drop" data-gear="start">
       <p class="nci-hint"><i class="fas fa-hand-pointer"></i> {{localize "NCI.Business.GearDrop"}}</p>
       {{#each gearDrafts.start}}
@@ -48,6 +49,7 @@
         <button type="button" data-action="removeGear" data-form="start" data-index="{{@index}}" title="{{localize 'NCI.Business.GearRemove'}}"><i class="fas fa-xmark"></i></button></div>
       {{/each}}
     </div>
+    {{/if}}
     <ul class="nci-hint">{{#each start.archetypes}}<li><strong>{{label}}</strong>: {{hint}}</li>{{/each}}</ul>
     {{#if start.partners.length}}
     <fieldset>
@@ -90,6 +92,7 @@
     <div class="nci-grid">
       <label>{{localize "NCI.Business.Cash"}}<input type="number" name="cash" min="0" step="50" value="0"></label>
     </div>
+    {{#if @root.isSyndicate}}<p class="nci-hint">{{localize "NCI.Business.SyndicateCashOnly"}}</p>{{else}}
     <div class="nci-drop" data-gear="join">
       <p class="nci-hint"><i class="fas fa-hand-pointer"></i> {{localize "NCI.Business.GearDrop"}}</p>
       {{#each @root.gearDrafts.join}}
@@ -97,6 +100,7 @@
         <button type="button" data-action="removeGear" data-form="join" data-index="{{@index}}" title="{{localize 'NCI.Business.GearRemove'}}"><i class="fas fa-xmark"></i></button></div>
       {{/each}}
     </div>
+    {{/if}}
     <footer class="nci-footer">
       <button type="button" data-action="join"><i class="fas fa-handshake"></i> {{localize "NCI.Business.Join"}}</button>
       <button type="button" data-action="decline"><i class="fas fa-xmark"></i> {{localize "NCI.Business.Decline"}}</button>
@@ -161,6 +165,7 @@
     <div class="nci-grid">
       <label>{{localize "NCI.Business.Cash"}}<input type="number" name="cash" min="0" step="50" value="0"></label>
     </div>
+    {{#if @root.isSyndicate}}<p class="nci-hint">{{localize "NCI.Business.SyndicateCashOnly"}}</p>{{else}}
     <div class="nci-drop" data-gear="contribute">
       <p class="nci-hint"><i class="fas fa-hand-pointer"></i> {{localize "NCI.Business.GearDrop"}}</p>
       {{#each @root.gearDrafts.contribute}}
@@ -168,6 +173,7 @@
         <button type="button" data-action="removeGear" data-form="contribute" data-index="{{@index}}" title="{{localize 'NCI.Business.GearRemove'}}"><i class="fas fa-xmark"></i></button></div>
       {{/each}}
     </div>
+    {{/if}}
     <footer class="nci-footer">
       <button type="button" data-action="contribute"><i class="fas fa-coins"></i> {{localize "NCI.Business.Contribute"}}</button>
       <button type="button" data-action="withdraw"><i class="fas fa-rotate-left"></i> {{localize "NCI.Business.Withdraw"}}</button>
@@ -279,6 +285,7 @@
     <div class="nci-grid">
       <label>{{localize "NCI.Business.Cash"}}<input type="number" name="cash" min="0" step="50" value="0"></label>
     </div>
+    {{#if @root.isSyndicate}}<p class="nci-hint">{{localize "NCI.Business.SyndicateCashOnly"}}</p>{{else}}
     <div class="nci-drop" data-gear="contribute">
       <p class="nci-hint"><i class="fas fa-hand-pointer"></i> {{localize "NCI.Business.GearDrop"}}</p>
       {{#each @root.gearDrafts.contribute}}
@@ -286,6 +293,7 @@
         <button type="button" data-action="removeGear" data-form="contribute" data-index="{{@index}}" title="{{localize 'NCI.Business.GearRemove'}}"><i class="fas fa-xmark"></i></button></div>
       {{/each}}
     </div>
+    {{/if}}
     <button type="button" data-action="contribute"><i class="fas fa-coins"></i> {{localize "NCI.Business.Contribute"}}</button>
   </div>
   {{/if}}

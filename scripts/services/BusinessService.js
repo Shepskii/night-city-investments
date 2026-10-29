@@ -6,11 +6,17 @@
  *              moves the eddies, and saves the record. After each market tick it brings every open
  *              business up to the market's date, closing the weeks that have ended. Everything goes
  *              through one serial queue.
+ *
+ *              A syndicate can be a partner (DESIGN §31, B3b). An officer's request that names a
+ *              `syndicateId` is made for the syndicate: the engine sees the syndicate as the partner,
+ *              the roll is the officer's own, the money comes from and goes to the syndicate's
+ *              account (SyndicateCash), and it brings no gear. A payment over the officers' trade limit
+ *              is refused; the members vote on it instead, and it is then made with `applyFor`.
  */
 
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
-  applyBusinessGig, planBusinessGig, itemGear,
+  applyBusinessGig, planBusinessGig, itemGear, isOfficer,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { log, isActiveGM } from '../utils/helpers.js';
@@ -21,6 +27,8 @@ import { MarketClock } from './MarketClockService.js';
 import { SkillAdapter } from './SkillAdapter.js';
 import { WealthAdapter } from './WealthAdapter.js';
 import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors } from './BusinessClient.js';
+import { SyndicateRepository } from '../data/SyndicateRepository.js';
+import { SyndicateCash } from './SyndicateCash.js';
 
 const RESULTS_CAP = 40;
 /** Requests that may bring gear: the items are looked up here, never taken from the request. */
@@ -58,7 +66,11 @@ class BusinessServiceImpl {
 
   /** Every character a request may name, by id. */
   actors() {
-    return Object.fromEntries(game.actors.filter((a) => a.type === 'character').map((a) => [a.id, a.name]));
+    return Object.fromEntries([
+      ...game.actors.filter((a) => a.type === 'character').map((a) => [a.id, a.name]),
+      // A syndicate can be invited as a partner or an investor too (DESIGN §31, B3b).
+      ...SyndicateRepository.all().filter((s) => s.status === 'active').map((s) => [s.id, s.name]),
+    ]);
   }
 
   context(business) {
@@ -99,8 +111,23 @@ class BusinessServiceImpl {
     }
   }
 
+  /**
+   * The partner a request is made as: the character, or for an officer acting for a syndicate, the
+   * syndicate, with its free cash as its wealth.
+   */
+  _partnerFor(actor, request) {
+    if (!request.syndicateId) return { ok: true, partner: { id: actor.id, name: actor.name, wealth: WealthAdapter.get(actor) }, syndicate: null };
+    const syndicate = SyndicateRepository.get(request.syndicateId);
+    if (syndicate?.status !== 'active') return { ok: false, reason: 'no-syndicate' };
+    if (!isOfficer(syndicate, actor.id)) return { ok: false, reason: 'not-officer' };
+    if ((request.gear ?? []).length) return { ok: false, reason: 'syndicate-gear' };
+    return { ok: true, partner: { id: syndicate.id, name: syndicate.name, wealth: SyndicateCash.available(syndicate.id) }, syndicate };
+  }
+
   async _handle(actor, request) {
     if (!this.enabled()) return this._receipt(actor, request, { ok: false, reason: 'disabled' });
+    const as = this._partnerFor(actor, request);
+    if (!as.ok) return this._receipt(actor, request, as);
     const business = request.type === 'found' ? null : BusinessRepository.get(request.businessId);
     if (request.type !== 'found' && !business) return this._receipt(actor, request, { ok: false, reason: 'no-business' });
 
@@ -114,7 +141,7 @@ class BusinessServiceImpl {
     let check = null;
     if (business && ROLL_REQUESTS.includes(request.type) && request.use) {
       // The same checks the engine makes, first, so a request that would be refused does not use up its card.
-      const spec = rollSpec(business, request, actor.id, { day, operatorRank: context.operatorRank });
+      const spec = rollSpec(business, request, as.partner.id, { day, operatorRank: context.operatorRank });
       if (spec.ok) {
         check = await SkillAdapter.verifyLevers(actor, request, {
           dv: spec.dv, use: request.use.kind === 'hire' ? request.use : spec.use, bonusAvailable: spec.bonusAvailable, extraAvailable: spec.extraAvailable, allowHire: spec.allowHire,
@@ -122,11 +149,43 @@ class BusinessServiceImpl {
       }
     }
 
-    const out = applyBusinessRequest({
-      business, request, actor: { id: actor.id, name: actor.name, wealth: WealthAdapter.get(actor) }, day, check, context,
-    });
+    const out = applyBusinessRequest({ business, request, actor: as.partner, day, check, context });
+    // The engine is pure, so this is a dry run until it is committed: a syndicate's payment over its
+    // officers' limit goes to its members instead.
+    if (out.ok && as.syndicate && -(out.wealth?.[as.syndicate.id] ?? 0) > as.syndicate.rules.tradeLimit) {
+      return this._receipt(actor, request, { ok: false, reason: 'over-limit' });
+    }
     if (out.ok) await this._commit(out);
     return this._receipt(actor, request, out);
+  }
+
+  /**
+   * Make a business request for a syndicate whose members have voted for it (no limit, no roll: only
+   * the money requests in engine.BUSINESS_SPENDS).
+   * @returns {Promise<{ok: boolean, reason?: string}>}
+   */
+  applyFor(syndicateId, request) {
+    if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
+    return this._queue.run(async () => {
+      try {
+        const syndicate = SyndicateRepository.get(syndicateId);
+        if (syndicate?.status !== 'active') return { ok: false, reason: 'no-syndicate' };
+        const business = request.type === 'found' ? null : BusinessRepository.get(request.businessId);
+        if (request.type !== 'found' && !business) return { ok: false, reason: 'no-business' };
+        const out = applyBusinessRequest({
+          business,
+          request: { ...request, gear: [] },
+          actor: { id: syndicate.id, name: syndicate.name, wealth: SyndicateCash.available(syndicate.id) },
+          day: this.day(),
+          context: this.context(business),
+        });
+        if (out.ok) await this._commit(out);
+        return out.ok ? { ok: true } : { ok: false, reason: out.reason };
+      } catch (error) {
+        log.error('A syndicate business request failed', error);
+        return { ok: false, reason: 'error' };
+      }
+    });
   }
 
   /**
@@ -155,7 +214,7 @@ class BusinessServiceImpl {
 
   /** Eddies first, then the record, then the items that moved, then the hidden state; then tell everyone. */
   async _commit(out) {
-    await this._pay(out.wealth);
+    await this._pay(out.wealth, out.business);
     await BusinessRepository.save(out.business);
     await this._moveItems(out);
     const exposure = out.events.reduce((a, e) => a + (e.exposure ?? 0), 0);
@@ -183,10 +242,17 @@ class BusinessServiceImpl {
     }
   }
 
-  async _pay(wealth) {
+  /** Pay each partner: a character in eddies, a syndicate into its brokerage account. */
+  async _pay(wealth, business = null) {
     for (const [actorId, delta] of Object.entries(wealth ?? {})) {
+      if (!delta) continue;
+      if (SyndicateCash.isSyndicate(actorId)) {
+        const paid = await SyndicateCash.pay(actorId, delta, { businessId: business?.id ?? null, businessName: business?.name ?? '' });
+        if (!paid.ok) throw new Error(`Syndicate ${actorId} could not pay ${-delta} eb: ${paid.reason}`);
+        continue;
+      }
       const actor = game.actors.get(actorId);
-      if (!actor || !delta) continue;
+      if (!actor) continue;
       await WealthAdapter.set(actor, WealthAdapter.get(actor) + delta, WEALTH_REASON);
     }
   }

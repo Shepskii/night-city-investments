@@ -10,6 +10,7 @@
 import { dayIndex, rollSpec, partnerOf } from '../engine/index.js';
 import { MODULE_ID, FLAGS, OUTBOX_LIMIT, BROKER_TAG, INVESTOR_TAG } from '../utils/constants.js';
 import { NcmAdapter } from '../integrations/NcmAdapter.js';
+import { SyndicateRepository } from '../data/SyndicateRepository.js';
 import { L } from '../utils/helpers.js';
 import { SerialQueue } from '../utils/queue.js';
 import { MarketClock } from './MarketClockService.js';
@@ -47,7 +48,11 @@ export function operatorRankOf(business) {
  */
 export function investorActors() {
   const tagged = new Set([BROKER_TAG, INVESTOR_TAG].flatMap((tag) => NcmAdapter.contactsTagged(tag)).map((c) => c?.actorId).filter(Boolean));
-  return game.actors.filter((a) => a.type === 'character' && (a.hasPlayerOwner || tagged.has(a.id)));
+  return [
+    ...game.actors.filter((a) => a.type === 'character' && (a.hasPlayerOwner || tagged.has(a.id))),
+    // Syndicates invest from their own account (DESIGN §31, B3b).
+    ...SyndicateRepository.all().filter((s) => s.status === 'active').map((s) => ({ id: s.id, name: s.name, isSyndicate: true })),
+  ];
 }
 
 class BusinessClientImpl {
@@ -66,6 +71,8 @@ class BusinessClientImpl {
    * @returns {Promise<string|null>} the request key, or null if the outbox is full
    */
   async submit(actor, type, payload = {}) {
+    // For a syndicate, the officer it is picked as sends the request, naming the syndicate (DESIGN §31, B3b).
+    if (actor?.isSyndicate) return this.submit(actor.as, type, { ...payload, syndicateId: actor.id });
     if (pendingBusinessRequests(actor).length >= OUTBOX_LIMIT) {
       ui.notifications.warn(L('NCI.Errors.OutboxFull'));
       return null;
@@ -107,7 +114,8 @@ class BusinessClientImpl {
       return null;
     }
     const use = request.use.kind === 'hire' ? request.use : spec.use;
-    const { messageId } = await SkillAdapter.leverCheck(actor, {
+    // An officer acting for a syndicate rolls with their own skills and Luck.
+    const { messageId } = await SkillAdapter.leverCheck(actor?.isSyndicate ? actor.as : actor, {
       dv: spec.dv, title, use, levers: { ...levers, bonus: spec.bonusAvailable ? levers.bonus : 0, extra: spec.extraAvailable ? levers.extra : 0 },
     });
     if (!messageId) return null;

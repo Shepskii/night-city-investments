@@ -448,7 +448,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B0 | **Done, see §26.9 (B0 findings).** Groundwork for player businesses and syndicates: the business growth simulator (`tools/business-model.mjs`), the storage schema, and the Crew Tools spike (from its source; a run in the test world is still to do) |
 | B1 | **Done (v0.10.0), see §29.** Side businesses: the roll levers, the Business window and the GM's Businesses tab, partnerships, four archetypes, the weekly loop |
 | B2 | **Done (v0.11.0), see §30.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
-| B3 | **Building (v0.12), see §31.** Player syndicates, and syndicates owning or investing in businesses |
+| B3 | **Built (v0.12), see §31; not yet released.** Player syndicates, and syndicates owning or investing in businesses |
 | B4 | **v0.13.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
 | B5 | **v0.14.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
 | B6 | **v0.15.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
@@ -1260,7 +1260,7 @@ B2 as built, with the decisions made while building it. The design it follows is
 
 **Tested in the test world** (Foundry 12.343, Cyberpunk RED Core v0.92.4): gear dragged from a sheet (one item and several), valued from the item, leaving the sheet and coming back when the business was cancelled; founding in a district; a fixer's loan, an expansion finished with business days, answering events (a shortage, a breakdown, debt collectors) with extra time and Luck; weekly closes with interest, a missed payment and the collectors; the registration checklist, agreement and roll with a hired professional; a bank loan; finding an angel and a failed pitch; a character invited as an investor accepting from their own window; private stakes in the Portfolio tab. It found and fixed: loaded ammunition refused as installed and priced per round; a player's stale copy of a business they had left; a loan payment checked before the week's takings came in; the dialog offering a hire the till could not pay. Not tried live: a successful angel pitch, an inspection, a gig for a player's business, and the registered business's second slot (all covered by tests).
 
-## 31. Phase B3: syndicates (B3a built for v0.12; B3b next)
+## 31. Phase B3: syndicates (built for v0.12)
 
 A syndicate is a crew's shared brokerage account: members pool money, officers trade it on the market, and everyone holds units in it. This section turns §26.1 into what is built, with the choices made at the start of B3. It is built in two steps: **B3a**, the account (below), then **B3b**, syndicates as partners and owners of businesses.
 
@@ -1297,4 +1297,16 @@ A syndicate is a crew's shared brokerage account: members pool money, officers t
 
 **B3a as built.** The engine is `scripts/engine/syndicate.js` (pure, with `tests/syndicate.test.mjs`); storage `SyndicateRepository` (its `account(id)` stands in for an actor wherever a portfolio is read or written, and `PortfolioRepository.accounts()` lists characters and active syndicates for the GM's services); the GM side `SyndicateService`, run in the portfolio service's queue because deposits and redemptions write members' own accounts, with a "Syndicates" step after orders in the after-tick sequence; the player side `SyndicateClient` and `SyndicateWatcher`; the terminal's picker, Syndicate panel and founding form (`ui/accounts.js`, `ui/MarketTerminal/syndicateContext.js`); the trade dialog's limit note and proposal; and the GM Console's Syndicates tab. Two settings: player syndicates on or off, and GM approval of new ones (both on by default). Each side of a cash movement has its own ledger line: the member's reads "paid into a syndicate", "redeemed from a syndicate" or "paid out by a dissolved syndicate", and the syndicate's "paid in by a member" and so on. `tests/syndicateFlow.test.mjs` runs the services from founding to dissolving, and `tests/syndicateWindows.test.mjs` renders the windows. Not yet tried in the test world.
 
-**B3b (after B3a).** A syndicate as a business partner or owner: it founds, joins or invests in a business through an officer, pays from its cash, receives draws and payouts into its cash, and votes through its officers; its stake counts in NAV at book value (and at *V* once B4 brings companies).
+**B3b: syndicates in businesses, as built.** A syndicate can be a business partner or its only owner. Choices made at the start of B3b:
+- **Its officers act for it.** Any officer takes the syndicate's turns in a business (the weekly slot, helping, the setup roll and the rest), rolling with their own skills and Luck; members who are not officers cannot.
+- **Any officer casts its vote** on a business proposal.
+- **The officers' trade limit applies to business money too.** An officer can found, join, top up or buy in up to the limit; a bigger payment goes to the syndicate's members as a `business` proposal, and is made once it passes.
+- **Cash only.** A syndicate has no inventory, so it brings no gear; its officers bring gear as partners in their own right.
+
+How it works:
+- **Acting for it.** In the Business window an officer picks "*syndicate* (as *officer*)", beside their characters. The window sends the officer's request with the syndicate's id (`syndicateId`); `BusinessService` checks the officer, then runs the request with the syndicate as the partner (the engine needed no change: it knows partners only by id), the officer's roll verified from the officer's card, and the syndicate's free cash as its wealth.
+- **The limit.** The business engine is pure, so the service runs a request first without saving it; if the syndicate would pay more than its limit, the request is refused (`over-limit`) and nothing is written. The Business window does not send it at all: it puts it to the members instead. A passed `business` proposal is made by `BusinessService.applyFor`, after the portfolio queue is free; if the business side then refuses it, the syndicate's history says why.
+- **Money.** Every payment to or from a syndicate partner (paying in, a refund, a draw, a buy-out, a payout on closing) goes through `SyndicateCash` into its brokerage account, with a line in the account's ledger ("paid into a business", "received from a business") and in its history.
+- **Value.** Its stakes in open businesses, at book value times its share, count in its value per unit (deposits and redemptions are priced with them), and show in its Private businesses list; a syndicate holding any stake cannot be dissolved (it must leave or sell first).
+- **Who sees the business.** The users of a syndicate partner's active members can read the business's record.
+- **Inviting a syndicate.** The Start a business form, and the partners' investor list, offer active syndicates as well as characters.

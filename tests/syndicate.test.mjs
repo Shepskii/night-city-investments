@@ -194,3 +194,21 @@ test('the GM can pass or veto a proposal, and close a syndicate holding only cas
   assert.equal(closed.books.syndicate.status, 'closed');
   assert.equal(closeSyndicate({ books: hold(books, 'ARA', 1, 100), day: DAY, tick: 1 }).reason, 'not-liquid');
 });
+
+test('an officer puts a business payment over the limit to the members; once it passes, it is handed to the business side', () => {
+  const books = funded();
+  const out = apply(books, { type: 'propose', kind: 'business', business: { type: 'found', name: 'Back Room', archetype: 'clinic', cash: 8000, gear: [{ uuid: 'x' }] }, amount: 8000, label: 'Back Room' }, MED);
+  assert.equal(out.business.length, 1, 'the Medtech holds the majority, so it passes at once');
+  assert.deepEqual([out.business[0].request.type, out.business[0].request.cash, out.business[0].request.gear], ['found', 8000, []], 'cash only');
+  assert.equal(out.business[0].label, 'Back Room');
+  assert.equal(apply(books, { type: 'propose', kind: 'business', business: { type: 'draw' }, amount: 1 }, MED, { expect: false }).reason, 'bad-request', 'only payments into a business');
+  assert.equal(apply(books, { type: 'propose', kind: 'business', business: { type: 'found' }, amount: 1 }, FIX, { expect: false }).reason, 'not-officer');
+});
+
+test('business stakes count in the value per unit, and a syndicate holding any cannot be dissolved', () => {
+  const books = funded();
+  assert.equal(navOf(books.syndicate, books.portfolio, {}, 4500).nav, 2, '4,500 eb of cash and 4,500 eb of stakes over 4,500 units');
+  assert.equal(apply(books, { type: 'propose', kind: 'dissolve' }, MED, { expect: false, context: { stakes: 100 } }).reason, 'not-liquid');
+  const deposit = apply(books, { type: 'deposit', amount: 1000 }, FIX, { context: { stakes: 4500 } });
+  assert.equal(memberOf(deposit.books.syndicate, 'fix').units, 1500 + 500, 'paying in buys at the value with the stakes in it');
+});

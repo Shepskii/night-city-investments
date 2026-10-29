@@ -7,6 +7,7 @@ import { navOf, memberOf, freeCash, freeUnits, isLiquid, syndicateUnits, activeM
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { PortfolioRepository } from '../../data/PortfolioRepository.js';
 import { SyndicateRepository } from '../../data/SyndicateRepository.js';
+import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { CompanyRepository } from '../../data/CompanyRepository.js';
 import { FundRepository } from '../../data/FundRepository.js';
 import { MarketClock } from '../../services/MarketClockService.js';
@@ -30,6 +31,10 @@ export function describeProposal(s, p) {
       return L(`NCI.Syndicate.Proposal.role.${p.role}`, { name });
     case 'limit':
       return L('NCI.Syndicate.Proposal.limit', { amount: whole(p.amount) });
+    case 'business': {
+      const business = p.business?.businessId ? BusinessRepository.get(p.business.businessId) : null;
+      return L(`NCI.Syndicate.Proposal.business.${p.business?.type}`, { name: business?.name ?? p.label ?? p.business?.name ?? '?', amount: whole(p.amount ?? 0) });
+    }
     default:
       return L(`NCI.Syndicate.Proposal.${p.kind}`, { name });
   }
@@ -40,12 +45,13 @@ export function describeProposal(s, p) {
  * @param {object} account - from accounts.memberAccount
  * @param {object} portfolio - the syndicate's account
  * @param {Object<string, number>} prices
+ * @param {number} [stakes] - its business stakes at book value, which count in its value
  */
-export function syndicateContext(account, portfolio, prices) {
+export function syndicateContext(account, portfolio, prices, stakes = 0) {
   const s = account.syndicate;
   const meId = account.as.id;
   const me = memberOf(s, meId);
-  const { total, nav } = navOf(s, portfolio, prices);
+  const { total, nav } = navOf(s, portfolio, prices, stakes);
   const all = syndicateUnits(s);
   const share = (m) => (all > 0 ? `${((m.units / all) * 100).toFixed(1)}%` : '—');
   const weight = (p, yes) => {
@@ -98,14 +104,18 @@ export function syndicateContext(account, portfolio, prices) {
     })),
     ledger: [...s.ledger].reverse().slice(0, LEDGER_ROWS).map((e) => ({
       date: dayText(e.day),
-      text: L(`NCI.Syndicate.Ledger.${e.kind}`, { name: memberOf(s, e.actorId)?.name ?? '', units: units(e.units ?? 0) }),
-      amount: e.amount ? signed(e.kind === 'deposit' ? e.amount : -e.amount) : '',
+      text: L(`NCI.Syndicate.Ledger.${e.kind}`, {
+        name: memberOf(s, e.actorId)?.name ?? '', units: units(e.units ?? 0), business: e.business || '?',
+        reason: e.reason ? L(`NCI.Business.Reason.${e.reason}`) : '',
+      }),
+      // Money in (a member paying in, a business paying out) reads as a gain; everything else as money out.
+      amount: e.amount ? signed(['deposit', 'businessIn'].includes(e.kind) ? e.amount : -e.amount) : '',
     })),
     proposeKinds: [
       ...(candidates.length ? [{ value: 'admit', label: L('NCI.Syndicate.Kind.admit') }] : []),
       ...(others.length ? ['remove', 'officer', 'member'].map((k) => ({ value: k, label: L(`NCI.Syndicate.Kind.${k}`) })) : []),
       { value: 'limit', label: L('NCI.Syndicate.Kind.limit') },
-      ...(isLiquid(portfolio) ? [{ value: 'dissolve', label: L('NCI.Syndicate.Kind.dissolve') }] : []),
+      ...(isLiquid(portfolio, stakes) ? [{ value: 'dissolve', label: L('NCI.Syndicate.Kind.dissolve') }] : []),
     ],
     candidates: candidates.map((a) => ({ id: a.id, name: a.name })),
     others: others.map((m) => ({ id: m.actorId, name: m.name })),

@@ -6,10 +6,12 @@
  *              and every roll is made only when the player presses Roll.
  */
 
-import { itemGear } from '../../engine/index.js';
+import { itemGear, partnerOf } from '../../engine/index.js';
 import { MODULE_ID, HOOKS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient } from '../../services/BusinessClient.js';
+import { SyndicateClient } from '../../services/SyndicateClient.js';
+import { accountFor } from '../accounts.js';
 import { BaseApplication } from '../BaseApplication.js';
 import { RollDialogApp } from './RollDialogApp.js';
 import { L } from '../format.js';
@@ -169,8 +171,21 @@ export class BusinessApp extends BaseApplication {
     return gear;
   }
 
+  /** The picked account: a character, or a syndicate picked as one of its officers (DESIGN §31, B3b). */
   get actor() {
-    return this.actorId ? game.actors.get(this.actorId) ?? null : null;
+    return accountFor(this.actorId);
+  }
+
+  /**
+   * For a syndicate, a payment over the officers' limit goes to its members as a proposal instead of
+   * to the business. Returns the proposal's key, or null when the request should go ahead.
+   */
+  async _proposeIfOver(type, payload, amount, label) {
+    const account = this.actor;
+    if (!account?.isSyndicate || !(amount > account.syndicate.rules.tradeLimit)) return null;
+    const key = await SyndicateClient.submit(account.as, 'propose', { syndicateId: account.id, kind: 'business', business: { type, ...payload }, amount, label });
+    if (key) ui.notifications.info(L('NCI.Business.ProposedToSyndicate', { name: account.name, amount: amount.toLocaleString() }));
+    return key ?? 'refused';
   }
 
   /** The business on screen: the chosen one, or the character's first that is not closed. */
@@ -204,7 +219,7 @@ export class BusinessApp extends BaseApplication {
     if (!this.actor) return;
     const invite = [...this.element.querySelectorAll('input[name="invite"]:checked')].map((el) => el.value);
     const sweatPct = amount(target, 'sweatPct');
-    const key = await BusinessClient.submit(this.actor, 'found', {
+    const request = {
       name: value(target, 'name').trim(),
       archetype: value(target, 'archetype'),
       location: value(target, 'location').trim(),
@@ -213,23 +228,31 @@ export class BusinessApp extends BaseApplication {
       gear: this._takeGear('start'),
       invite,
       sweat: sweatPct > 0 ? { actorId: value(target, 'sweatTo') || this.actor.id, pct: sweatPct } : null,
-    });
+    };
+    const key = (await this._proposeIfOver('found', request, request.cash, request.name))
+      ?? await BusinessClient.submit(this.actor, 'found', request);
     if (key) {
       this.starting = false;
       this.tab = 'overview';
     }
   }
 
-  static _onJoin(event, target) {
-    return this._send('join', { cash: amount(target, 'cash'), gear: this._takeGear('join') });
+  static async _onJoin(event, target) {
+    const payload = { cash: amount(target, 'cash'), gear: this._takeGear('join') };
+    // An investor's offer sets what it pays, whatever is typed.
+    const offer = this.business && this.actor ? partnerOf(this.business, this.actor.id)?.offer : null;
+    if (await this._proposeIfOver('join', { businessId: this.business?.id, ...payload }, offer?.amount ?? payload.cash, this.business?.name)) return null;
+    return this._send('join', payload);
   }
 
   static _onDecline() {
     return this._send('decline');
   }
 
-  static _onContribute(event, target) {
-    return this._send('contribute', { cash: amount(target, 'cash'), gear: this._takeGear('contribute') });
+  static async _onContribute(event, target) {
+    const payload = { cash: amount(target, 'cash'), gear: this._takeGear('contribute') };
+    if (await this._proposeIfOver('contribute', { businessId: this.business?.id, ...payload }, payload.cash, this.business?.name)) return null;
+    return this._send('contribute', payload);
   }
 
   static async _onWithdraw() {
@@ -333,7 +356,7 @@ export class BusinessApp extends BaseApplication {
   _roll(request, title) {
     const business = this.business;
     if (!this.actor || !business) return;
-    RollDialogApp.ask({ actorId: this.actor.id, businessId: business.id, request: { ...request, businessId: business.id }, title });
+    RollDialogApp.ask({ actorId: this.actorId, businessId: business.id, request: { ...request, businessId: business.id }, title });
   }
 
   async _confirm(key) {
@@ -355,6 +378,7 @@ export class BusinessApp extends BaseApplication {
     const context = {
       picker,
       tab: this.tab,
+      isSyndicate: !!this.actor?.isSyndicate,
       gearDrafts: Object.fromEntries(GEAR_FORMS.map((f) => [f, this.gearDrafts[f].map((g) => ({ ...g, value: g.value.toLocaleString() }))])),
     };
     for (const t of TABS) context[`is${t[0].toUpperCase()}${t.slice(1)}`] = t === this.tab;

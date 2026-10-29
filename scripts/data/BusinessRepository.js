@@ -10,6 +10,7 @@
 
 import { normalizeBusiness } from '../engine/index.js';
 import { MODULE_ID, FLAGS, BUSINESS_FOLDER_NAME } from '../utils/constants.js';
+import { SyndicateRepository } from './SyndicateRepository.js';
 
 const LEVELS = () => CONST.DOCUMENT_OWNERSHIP_LEVELS;
 const unwrap = (stored) => (Array.isArray(stored) ? stored[0] : stored);
@@ -51,13 +52,21 @@ export const BusinessRepository = {
     return this.all().filter((b) => b.partners.some((p) => p.actorId === actorId && SEEN_BY.has(p.status)));
   },
 
-  /** The ownership a business's journal should have: Observer for the users of its partners' characters. */
+  /**
+   * The ownership a business's journal should have: Observer for the users of its partners'
+   * characters, and of the active members of any syndicate that is a partner.
+   */
   ownershipFor(business) {
     const ownership = { default: LEVELS().NONE };
     for (const p of business.partners.filter((x) => SEEN_BY.has(x.status))) {
-      const actor = game.actors.get(p.actorId);
-      for (const user of game.users?.filter?.((u) => !u.isGM && actor?.testUserPermission?.(u, 'OWNER')) ?? []) {
-        ownership[user.id] = LEVELS().OBSERVER;
+      const syndicate = game.actors.get(p.actorId) ? null : SyndicateRepository.get(p.actorId);
+      const actors = syndicate
+        ? syndicate.members.filter((m) => m.status === 'active').map((m) => game.actors.get(m.actorId)).filter(Boolean)
+        : [game.actors.get(p.actorId)];
+      for (const actor of actors) {
+        for (const user of game.users?.filter?.((u) => !u.isGM && actor?.testUserPermission?.(u, 'OWNER')) ?? []) {
+          ownership[user.id] = LEVELS().OBSERVER;
+        }
       }
     }
     return ownership;
