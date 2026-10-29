@@ -6,7 +6,7 @@
  *              and every roll is made only when the player presses Roll.
  */
 
-import { itemGear, partnerOf } from '../../engine/index.js';
+import { itemGear, partnerOf, limitLeft } from '../../engine/index.js';
 import { MODULE_ID, HOOKS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient } from '../../services/BusinessClient.js';
@@ -70,9 +70,13 @@ export class BusinessApp extends BaseApplication {
     body: { template: `modules/${MODULE_ID}/templates/business/business.hbs` },
   };
 
-  /** Open the window, optionally on one business (from the GM Console). */
+  /**
+   * Open the window, optionally on one business (from the GM Console, or a Portfolio row) and as one
+   * account (a character, or `syn:<syndicate>:<character>`).
+   */
   static open(options = {}) {
     const app = super.open(options);
+    if (options.actorId && accountFor(options.actorId)) app.actorId = options.actorId;
     if (options.businessId) {
       app.businessId = options.businessId;
       const business = BusinessRepository.get(options.businessId);
@@ -182,7 +186,7 @@ export class BusinessApp extends BaseApplication {
    */
   async _proposeIfOver(type, payload, amount, label) {
     const account = this.actor;
-    if (!account?.isSyndicate || !(amount > account.syndicate.rules.tradeLimit)) return null;
+    if (!account?.isSyndicate || !(amount > limitLeft(account.syndicate, account.as.id, BusinessClient.day()))) return null;
     const key = await SyndicateClient.submit(account.as, 'propose', { syndicateId: account.id, kind: 'business', business: { type, ...payload }, amount, label });
     if (key) ui.notifications.info(L('NCI.Business.ProposedToSyndicate', { name: account.name, amount: amount.toLocaleString() }));
     return key ?? 'refused';
@@ -379,6 +383,8 @@ export class BusinessApp extends BaseApplication {
       picker,
       tab: this.tab,
       isSyndicate: !!this.actor?.isSyndicate,
+      // A member who is not an officer sees the syndicate's businesses but cannot act for it.
+      readOnly: !!this.actor?.isSyndicate && !this.actor.isOfficer,
       gearDrafts: Object.fromEntries(GEAR_FORMS.map((f) => [f, this.gearDrafts[f].map((g) => ({ ...g, value: g.value.toLocaleString() }))])),
     };
     for (const t of TABS) context[`is${t[0].toUpperCase()}${t.slice(1)}`] = t === this.tab;

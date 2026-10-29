@@ -31,7 +31,10 @@ export const SYNDICATE_SCHEMA = 1;
 export const SYNDICATE_STATUS = Object.freeze(['pending', 'active', 'closed']);
 
 export const SYNDICATE_DEFAULTS = Object.freeze({
-  /** Officers may place an order up to this estimated value without a vote. */
+  /**
+   * Each officer may trade, and put into businesses, up to this much a game day without a vote. It
+   * counts every order (buys and sells, at their estimated value) and every business payment.
+   */
   tradeLimit: 5000,
   /** A proposal lapses after this many game days. */
   proposalDays: 7,
@@ -82,7 +85,24 @@ export function normalizeSyndicate(raw) {
     proposals: s.proposals ?? [],
     redemptions: s.redemptions ?? [],
     ledger: s.ledger ?? [],
+    /** What each officer has used of the daily limit: { [actorId]: { day, amount } }. */
+    spent: s.spent ?? {},
   };
+}
+
+/** How much of the daily limit an officer has used on this game day. */
+export function spentToday(s, actorId, day) {
+  const entry = s.spent?.[actorId];
+  return entry && entry.day === day ? entry.amount : 0;
+}
+
+/** What an officer can still trade or pay in today without a vote. */
+export const limitLeft = (s, actorId, day) => Math.max(0, s.rules.tradeLimit - spentToday(s, actorId, day));
+
+/** Count an amount against an officer's daily limit. Mutates `s`. */
+export function recordSpend(s, actorId, day, amount) {
+  const so = spentToday(s, actorId, day);
+  s.spent = { ...(s.spent ?? {}), [actorId]: { day, amount: so + Math.max(0, Math.round(Number(amount) || 0)) } };
 }
 
 export const memberOf = (s, actorId) => s.members.find((m) => m.actorId === actorId) ?? null;
@@ -230,6 +250,8 @@ function memberRequest(b, me, request, { day, tick, market, ctx, out }) {
       if (!mine) return fail('no-portfolio');
       if (amount > freeCash(mine)) return fail('insufficient-cash');
       const { nav } = navOf(s, b.portfolio, prices, ctx.stakes);
+      // At no value a unit would cost nothing, and a deposit would buy without limit.
+      if (!(nav > 0)) return fail('no-value');
       const units = round2(amount / nav);
       if (!(units > 0)) return fail('bad-amount');
       moveCash(b, me.actorId, amount, tick, request.key, 'Deposit');
@@ -256,10 +278,16 @@ function memberRequest(b, me, request, { day, tick, market, ctx, out }) {
       return { ok: true };
     }
     case 'trade': {
-      if (!isOfficer(s, me.actorId)) return fail('not-officer');
       const inner = request.request ?? {};
       if (!SYNDICATE_TRADES.includes(inner.type)) return fail('bad-request');
-      if (inner.type === 'placeOrder' && orderValue(inner, market) > s.rules.tradeLimit) return fail('over-limit');
+      // Ending a terminal session is allowed to any member, so one who opened it as an officer and has
+      // since been made a member can still close it when they leave CorpNet.
+      if (inner.type !== 'disconnectTerminal' && !isOfficer(s, me.actorId)) return fail('not-officer');
+      if (inner.type === 'placeOrder') {
+        const value = orderValue(inner, market);
+        if (value > limitLeft(s, me.actorId, day)) return fail('over-limit');
+        recordSpend(s, me.actorId, day, value);
+      }
       out.trades.push({ ...inner, key: request.key });
       return { ok: true };
     }
@@ -336,7 +364,7 @@ function propose(b, me, request, { day, market, ctx, out }) {
   const same = s.proposals.some((x) => x.kind === kind && (x.actorId ?? null) === (proposal.actorId ?? null) && !['trade', 'business'].includes(kind));
   if (same) return fail('already-proposed');
   s.proposals = [...s.proposals, proposal];
-  out.events.push({ type: 'proposed', kind, proposalId: proposal.id });
+  out.events.push({ type: 'proposed', kind, proposalId: proposal.id, proposal: structuredClone(proposal) });
   return { ok: true, proposalId: proposal.id };
 }
 
@@ -364,11 +392,13 @@ function settle(b, { day, tick, market, ctx, out }) {
     if (!passed && !failed && !lapsed) continue;
     s.proposals = s.proposals.filter((x) => x !== proposal);
     if (!passed) {
-      out.events.push({ type: lapsed ? 'proposalLapsed' : 'proposalFailed', kind: proposal.kind, proposalId: proposal.id });
+      out.events.push({ type: lapsed ? 'proposalLapsed' : 'proposalFailed', kind: proposal.kind, proposalId: proposal.id, proposal });
       continue;
     }
     const done = enact(b, proposal, { day, tick, market, ctx, out });
-    out.events.push(done.ok ? { type: 'proposalPassed', kind: proposal.kind, proposalId: proposal.id } : { type: 'proposalVoid', kind: proposal.kind, proposalId: proposal.id, reason: done.reason });
+    out.events.push(done.ok
+      ? { type: 'proposalPassed', kind: proposal.kind, proposalId: proposal.id, proposal }
+      : { type: 'proposalVoid', kind: proposal.kind, proposalId: proposal.id, proposal, reason: done.reason });
     if (s.status === 'closed') return;
   }
   payRedemptions(b, { day, tick, market, out, stakes: ctx.stakes });
@@ -382,7 +412,7 @@ function enact(b, proposal, { day, tick, market, ctx, out }) {
       out.trades.push({ ...proposal.order, type: 'placeOrder', key: proposal.id });
       return { ok: true };
     case 'business':
-      out.business.push({ key: proposal.id, request: proposal.business, by: proposal.by, label: proposal.label ?? '' });
+      out.business.push({ key: proposal.id, request: proposal.business, by: proposal.by, label: proposal.label ?? '', amount: proposal.amount ?? 0 });
       return { ok: true };
     case 'admit':
       if (target) Object.assign(target, { status: 'invited', role: 'member', units: 0, leaving: false });
@@ -429,13 +459,14 @@ function dissolve(b, { day, tick, out, stakes = 0 }) {
     addLedger(s, { day, kind: 'payout', actorId: m.actorId, amount, units: m.units });
     m.units = 0;
   }
+  const atTheEnd = activeMembers(s).map((m) => m.actorId);
   for (const m of s.members.filter((x) => ['active', 'invited'].includes(x.status))) m.status = 'left';
   s.redemptions = s.redemptions.map((r) => (r.status === 'waiting' ? { ...r, status: 'cancelled' } : r));
   s.proposals = [];
   s.status = 'closed';
   s.closedDay = day;
   addLedger(s, { day, kind: 'dissolved' });
-  out.events.push({ type: 'dissolved' });
+  out.events.push({ type: 'dissolved', actorIds: atTheEnd });
   return { ok: true };
 }
 
@@ -496,7 +527,7 @@ export function decideProposal({ books, proposalId, how, day, tick, market = {},
     const done = enact(b, proposal, { day, tick, market, ctx: { actors: {}, settlementDays: 0, ...context }, out });
     if (!done.ok) return done;
   }
-  out.events.push({ type: how === 'pass' ? 'proposalPassed' : 'proposalVetoed', kind: proposal.kind, proposalId, forced: true });
+  out.events.push({ type: how === 'pass' ? 'proposalPassed' : 'proposalVetoed', kind: proposal.kind, proposalId, proposal, forced: true });
   return { ok: true, books: b, trades: out.trades, business: out.business, events: out.events, changed: [...out.changed] };
 }
 

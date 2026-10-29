@@ -50,6 +50,7 @@ export const SETTINGS = Object.freeze({
   BUSINESS_GROWTH_RATE: 'businessGrowthRate',
   SYNDICATES_ENABLED: 'syndicatesEnabled',
   SYNDICATE_APPROVAL: 'syndicateApproval',
+  SYNDICATE_MAIL: 'syndicateMail',
 });
 
 /** Flag keys under flags[MODULE_ID] on journals. */

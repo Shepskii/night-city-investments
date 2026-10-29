@@ -1,4 +1,4 @@
-<section class="nci-terminal nci-business">
+<section class="nci-terminal nci-business{{#if readOnly}} nci-readonly{{/if}}">
   <nav class="nci-tabs">
     {{#if business}}
     {{#unless business.invited}}
@@ -21,6 +21,7 @@
   </nav>
 
   {{#unless picker.enabled}}<p class="nci-warn">{{localize "NCI.Business.Disabled"}}</p>{{/unless}}
+  {{#if readOnly}}<p class="nci-warn">{{localize "NCI.Business.ReadOnly"}}</p>{{/if}}
   {{#if picker.noGM}}<p class="nci-warn">{{localize "NCI.Portfolio.NoGM"}}</p>{{/if}}
   {{#if picker.pending}}<p class="nci-warn">{{localize "NCI.Portfolio.PendingRequests"}}: {{picker.pending}}</p>{{/if}}
 

@@ -55,14 +55,15 @@ export function tradingAccounts() {
 
 /**
  * The accounts the Business window offers: the given characters, then each active syndicate one of
- * them is an officer of, since only officers act for a syndicate in a business (DESIGN §31, B3b).
+ * them belongs to. Only officers act for a syndicate in a business (DESIGN §31, B3b); other members
+ * see its businesses read-only.
  */
 export function businessAccounts(characters) {
   const syndicates = [];
   for (const actor of characters) {
     for (const s of SyndicateRepository.forActor(actor.id)) {
       const me = memberOf(s, actor.id);
-      if (s.status !== 'active' || me?.status !== 'active' || me.role !== 'officer') continue;
+      if (s.status !== 'active' || me?.status !== 'active') continue;
       syndicates.push({ id: syndicateKey(s.id, actor.id), name: L('NCI.Syndicate.PickerLabel', { name: s.name, as: actor.name }), isSyndicate: true });
     }
   }

@@ -3,15 +3,14 @@
  * @file scripts/ui/MarketTerminal/syndicateContext.js
  */
 
-import { navOf, memberOf, freeCash, freeUnits, isLiquid, syndicateUnits, activeMembers, shareOf, bookValue } from '../../engine/index.js';
+import { navOf, memberOf, freeCash, freeUnits, isLiquid, syndicateUnits, activeMembers, limitLeft, dayIndex } from '../../engine/index.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { PortfolioRepository } from '../../data/PortfolioRepository.js';
 import { SyndicateRepository } from '../../data/SyndicateRepository.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
-import { CompanyRepository } from '../../data/CompanyRepository.js';
-import { FundRepository } from '../../data/FundRepository.js';
 import { MarketClock } from '../../services/MarketClockService.js';
 import { pendingSyndicateRequests } from '../../services/SyndicateClient.js';
+import { describeProposal } from '../../services/SyndicateMail.js';
 import { syndicateKey } from '../accounts.js';
 import { L, money, whole, signed } from '../format.js';
 
@@ -19,26 +18,7 @@ const DAY_MS = 86_400_000;
 const LEDGER_ROWS = 10;
 const dayText = (day) => MarketClock.dateString(day * DAY_MS);
 const units = (n) => Number(n).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-const tickerOf = (id) => CompanyRepository.get(id)?.ticker ?? FundRepository.get(id)?.ticker ?? id;
 
-/** One proposal in words. */
-export function describeProposal(s, p) {
-  const name = memberOf(s, p.actorId)?.name || game.actors.get(p.actorId)?.name || '?';
-  switch (p.kind) {
-    case 'trade':
-      return L('NCI.Syndicate.Proposal.trade', { side: L(`NCI.Side.${p.order.side}`), qty: p.order.qty, ticker: tickerOf(p.order.assetId), value: whole(p.value ?? 0) });
-    case 'role':
-      return L(`NCI.Syndicate.Proposal.role.${p.role}`, { name });
-    case 'limit':
-      return L('NCI.Syndicate.Proposal.limit', { amount: whole(p.amount) });
-    case 'business': {
-      const business = p.business?.businessId ? BusinessRepository.get(p.business.businessId) : null;
-      return L(`NCI.Syndicate.Proposal.business.${p.business?.type}`, { name: business?.name ?? p.label ?? p.business?.name ?? '?', amount: whole(p.amount ?? 0) });
-    }
-    default:
-      return L(`NCI.Syndicate.Proposal.${p.kind}`, { name });
-  }
-}
 
 /**
  * The Syndicate panel, for a syndicate's account picked as one of its members.
@@ -80,6 +60,7 @@ export function syndicateContext(account, portfolio, prices, stakes = 0) {
     myCash: whole(freeCash(PortfolioRepository.get(account.as))),
     limit: whole(s.rules.tradeLimit),
     limitText: L('NCI.Syndicate.LimitText', { amount: whole(s.rules.tradeLimit), days: s.rules.proposalDays }),
+    limitLeft: account.isOfficer ? L('NCI.Syndicate.LimitLeft', { left: whole(limitLeft(s, meId, dayIndex(MarketClock.nowMs()))) }) : '',
     pending: pendingSyndicateRequests(account.as).filter((r) => r.syndicateId === s.id).length,
     members: s.members.filter((m) => ['active', 'invited'].includes(m.status)).map((m) => ({
       name: m.name || game.actors.get(m.actorId)?.name || '?',
@@ -123,11 +104,6 @@ export function syndicateContext(account, portfolio, prices, stakes = 0) {
   };
 }
 
-/** A syndicate's stakes in open businesses, at book value times its share. */
-export function syndicateStakes(id) {
-  return Math.round(BusinessRepository.all().filter((b) => b.status === 'open').reduce((sum, b) => sum + shareOf(b, id) * bookValue(b), 0));
-}
-
 /**
  * For a character's own account: invitations to answer, syndicates they are in (with the value per
  * unit, the account's value and the character's units), and founding a new one.
@@ -141,7 +117,7 @@ export function characterSyndicates(actor, prices = {}) {
       id: s.id, name: s.name, founder: memberOf(s, s.founderId)?.name ?? '?', pending: s.status === 'pending',
     })),
     memberships: mine.filter((s) => memberOf(s, actor.id)?.status === 'active').map((s) => {
-      const { total, nav } = navOf(s, SyndicateRepository.portfolio(s.id), prices, syndicateStakes(s.id));
+      const { total, nav } = navOf(s, SyndicateRepository.portfolio(s.id), prices, BusinessRepository.stakesOf(s.id));
       const mineUnits = memberOf(s, actor.id).units;
       return {
         key: syndicateKey(s.id, actor.id),

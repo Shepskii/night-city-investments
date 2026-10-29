@@ -10,9 +10,9 @@
 
 import { normalizeSyndicate, normalizePortfolio, seenBy, activeMembers } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SYNDICATE_FOLDER_NAME } from '../utils/constants.js';
+import { unwrap } from '../utils/helpers.js';
 
 const LEVELS = () => CONST.DOCUMENT_OWNERSHIP_LEVELS;
-const unwrap = (stored) => (Array.isArray(stored) ? stored[0] : stored);
 const recordOf = (journal) => unwrap(journal?.getFlag(MODULE_ID, FLAGS.SYNDICATE));
 
 export const SyndicateRepository = {

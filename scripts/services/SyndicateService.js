@@ -22,6 +22,8 @@ import { TradingSettings } from './TradingSettings.js';
 import { syndicateReceipts, pendingSyndicateRequests } from './SyndicateClient.js';
 import { BusinessService } from './BusinessService.js';
 import { SyndicateCash } from './SyndicateCash.js';
+import { SyndicateMail, describeProposal } from './SyndicateMail.js';
+import { BusinessRepository } from '../data/BusinessRepository.js';
 
 const RESULTS_CAP = 20;
 
@@ -29,6 +31,8 @@ class SyndicateServiceImpl {
   constructor() {
     /** Business requests passed proposals want made, run once the portfolio queue is free. */
     this._after = [];
+    /** Mail and ownership updates waiting for the portfolio queue to be free: `{ syndicateId, events, members }`. */
+    this._notices = [];
   }
 
   enabled() {
@@ -78,7 +82,15 @@ class SyndicateServiceImpl {
   async _flush() {
     for (const job of this._after.splice(0)) {
       const out = await BusinessService.applyFor(job.syndicateId, job.request);
-      if (!out.ok) await SyndicateCash.noteFailed(job.syndicateId, { label: job.label, reason: out.reason });
+      if (out.ok) continue;
+      await SyndicateCash.noteFailed(job.syndicateId, { label: job.label, reason: out.reason });
+      const s = SyndicateRepository.get(job.syndicateId);
+      const text = s ? describeProposal(s, { kind: 'business', business: job.request, amount: job.amount, label: job.label }) : job.label;
+      this._notices.push({ syndicateId: job.syndicateId, events: [{ type: 'agreedFailed', text, reason: out.reason }] });
+    }
+    for (const notice of this._notices.splice(0)) {
+      if (notice.members) await BusinessRepository.refreshOwnership(notice.syndicateId);
+      await SyndicateMail.send(notice.syndicateId, notice.events);
     }
   }
 
@@ -129,6 +141,9 @@ class SyndicateServiceImpl {
    */
   async _commit(out, officer = null) {
     const { syndicate } = out.books;
+    const activeIds = (s) => (s?.members ?? []).filter((m) => m.status === 'active').map((m) => m.actorId).sort().join();
+    const membersChanged = activeIds(SyndicateRepository.get(syndicate.id)) !== activeIds(syndicate);
+    const notices = [...out.events];
     let portfolio = out.books.portfolio;
     let events = [];
     let results = [];
@@ -145,9 +160,17 @@ class SyndicateServiceImpl {
       // The officer who opened a session is the one at the terminal: leaving CorpNet ends it.
       const opened = results.some((r) => r.type === 'connectTerminal' && r.passed && !r.already);
       if (opened && officer && portfolio.session) portfolio = { ...portfolio, session: { ...portfolio.session, by: officer.id } };
+      // A trade the members agreed that could not be placed is noted, and they are told.
+      for (const r of results.filter((x) => !x.ok && String(x.key).startsWith('p_'))) {
+        const proposal = out.events.find((e) => e.proposal?.id === r.key)?.proposal;
+        const text = proposal ? describeProposal(syndicate, proposal) : '';
+        syndicate.ledger = [...syndicate.ledger, { day: this.day(), kind: 'tradeFailed', text, reason: r.reason }].slice(-120);
+        notices.push({ type: 'agreedFailed', text, reason: r.reason });
+      }
     }
     await SyndicateRepository.save(syndicate, portfolio);
     for (const job of out.business ?? []) this._after.push({ syndicateId: syndicate.id, ...job });
+    if (notices.length || membersChanged) this._notices.push({ syndicateId: syndicate.id, events: notices, members: membersChanged });
     for (const actorId of out.changed) {
       const actor = game.actors.get(actorId);
       if (actor && out.books.members[actorId]) await PortfolioRepository.save(actor, out.books.members[actorId]);
@@ -243,6 +266,9 @@ class SyndicateServiceImpl {
       if (!out.ok) return out;
       await this._commit(out);
       return { ok: true };
+    }).then(async (result) => {
+      await this._flush();
+      return result;
     });
   }
 }

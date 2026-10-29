@@ -130,7 +130,8 @@ test('picked as a member, the Portfolio tab is the syndicate\'s account with its
   assert.match(t, /Syndicate: Back Room Capital/);
   assert.match(t, /Value per unit \(NAV\) 1\.00 eb/);
   assert.match(t, /Your units 6,000 \(66\.7%\)/);
-  assert.match(t, /Officers trade up to 5,000 eb an order/);
+  assert.match(t, /Each officer can trade, and put into businesses, up to 5,000 eb a game day/);
+  assert.match(t, /You have 5,000 eb of today's limit left/);
   assert.match(t, /Fixer member 3,000 33\.3% 3,000 eb/);
   assert.match(html, /data-action="synDeposit"/);
   assert.match(html, /data-action="synPropose"/);
@@ -154,7 +155,7 @@ test('the trade dialog tells an officer the limit, and a member that only office
     const app = new Apps.Trade({ actorId: key(actor), assetId, side: 'buy' });
     return text(render('templates/dialogs/trade.hbs', await app._prepareContext()));
   };
-  assert.match(await dialog(med), /Officers trade up to 5,000 eb an order; a bigger one is sent to the members/);
+  assert.match(await dialog(med), /You have 5,000 eb of your 5,000 eb daily limit left; a bigger order is sent to the members/);
   assert.match(await dialog(fix), /Only the syndicate's officers can trade its account/);
 });
 

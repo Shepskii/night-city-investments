@@ -125,10 +125,11 @@ test('its stake in an open business counts in its value, and it cannot dissolve 
   assert.equal(out.reason, 'not-liquid');
 });
 
-test('the Business window offers the syndicate to its officers only', () => {
+test('the Business window offers the syndicate to every member; only officers can act for it', () => {
   const offered = (actor) => S.accounts.businessAccounts([actor]).map((a) => a.id);
   assert.deepEqual(offered(med), [med.id, `syn:${syndicate().id}:${med.id}`]);
-  assert.deepEqual(offered(fix), [fix.id], 'the Fixer is a member, not an officer');
+  assert.deepEqual(offered(fix), [fix.id, `syn:${syndicate().id}:${fix.id}`], 'a member sees it too');
+  assert.deepEqual([as(med).isOfficer, as(fix).isOfficer], [true, false], 'the window shows it read-only to a member who is not an officer');
 });
 
 test('a registered business invites a syndicate as its investor, and an officer accepts for it', async () => {

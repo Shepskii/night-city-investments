@@ -8,10 +8,8 @@
  */
 
 import { MODULE_ID, FLAGS, OUTBOX_LIMIT } from '../utils/constants.js';
-import { L } from '../utils/helpers.js';
+import { L, unwrap } from '../utils/helpers.js';
 import { SerialQueue } from '../utils/queue.js';
-
-const unwrap = (stored) => (Array.isArray(stored) ? stored[0] : stored);
 
 /** What the GM has done with a character's syndicate requests. */
 export function syndicateReceipts(actor) {

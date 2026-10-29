@@ -10,6 +10,7 @@ import { log, isActiveGM, L } from '../utils/helpers.js';
 import { runMigrations, latestSchemaVersion } from '../engine/index.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
+import { SyndicateRepository } from '../data/SyndicateRepository.js';
 
 
 const STORE_FLAGS = { controls: FLAGS.CONTROLS, gigs: FLAGS.GIGS, heat: FLAGS.HEAT };
@@ -26,14 +27,19 @@ export const MigrationService = {
   /** What the migration steps may read and write. */
   context() {
     return {
-      portfolios: () => game.actors
-        .filter((a) => PortfolioRepository.hasPortfolio(a))
+      // Characters' portfolios, and every syndicate's account (DESIGN §31).
+      portfolios: () => [...game.actors.filter((a) => PortfolioRepository.hasPortfolio(a)), ...this._syndicates()]
         .map((a) => ({ id: a.id, name: a.name, data: PortfolioRepository.raw(a) })),
-      savePortfolio: (id, data) => PortfolioRepository.save(game.actors.get(id), data),
+      savePortfolio: (id, data) => PortfolioRepository.save(PortfolioRepository.accountOf(id), data),
       stores: () => Object.fromEntries(Object.entries(STORE_FLAGS).map(([name, flag]) => [name, MarketStore.readRecord(flag)])),
       saveStore: (name, data) => MarketStore[STORE_SETTERS[name]](data),
       saveVersion: (n) => game.settings.set(MODULE_ID, SETTINGS.SCHEMA_VERSION, n),
     };
+  },
+
+  /** Every syndicate's account that has a portfolio, whatever its status. */
+  _syndicates() {
+    return SyndicateRepository.all().map((s) => SyndicateRepository.account(s.id)).filter((a) => a && PortfolioRepository.hasPortfolio(a));
   },
 
   /** Run any steps this world has not had yet. Active GM only. */

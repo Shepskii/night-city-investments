@@ -264,6 +264,12 @@
 .nci-app .nci-key-takings { background: #3ddc84; }
 .nci-app .nci-key-upkeep { background: #ff6a4d; }
 .nci-app .nci-key-profit { background: #f2f2f2; border-radius: 50%; }
+/* Read-only: a syndicate member who is not an officer sees everything but the controls. */
+.nci-app .nci-readonly [data-action]:not([data-action="switchTab"]),
+.nci-app .nci-readonly .nci-form input,
+.nci-app .nci-readonly .nci-form select,
+.nci-app .nci-readonly .nci-form textarea,
+.nci-app .nci-readonly .nci-drop { display: none; }
 .nci-app .nci-business .nci-drop { border: 1px dashed var(--nci-accent-dim); padding: 6px 8px; margin-bottom: 8px; min-height: 36px; }
 .nci-app .nci-business .nci-drop.nci-over { border-color: var(--nci-accent-bright); }
 .nci-app .nci-business .nci-gearrow { display: flex; align-items: center; gap: 8px; margin-top: 4px; }

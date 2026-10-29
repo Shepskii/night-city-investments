@@ -10,14 +10,12 @@
 import { normalizePortfolio } from '../engine/index.js';
 import { MODULE_ID, FLAGS } from '../utils/constants.js';
 import { SyndicateRepository } from './SyndicateRepository.js';
+import { unwrap } from '../utils/helpers.js';
 
 const clone = (v) => foundry.utils.deepClone(v);
 
-/**
- * The portfolio is stored wrapped in a one-element array, so a save replaces it outright instead of
- * being merged into the old one. An unwrapped portfolio is from before v0.9.7.
- */
-const unwrap = (stored) => (Array.isArray(stored) ? stored[0] : stored);
+// The portfolio is stored wrapped in a one-element array (read back with `unwrap`), so a save replaces
+// it outright instead of being merged into the old one. An unwrapped portfolio is from before v0.9.7.
 
 export const PortfolioRepository = {
   get(actor) {

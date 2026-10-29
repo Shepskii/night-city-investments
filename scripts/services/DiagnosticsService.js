@@ -13,14 +13,16 @@ import { FundRepository } from '../data/FundRepository.js';
 import { BrokerRepository } from '../data/BrokerRepository.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
+import { SyndicateRepository } from '../data/SyndicateRepository.js';
 import { NcmAdapter } from '../integrations/NcmAdapter.js';
 import { MigrationService } from './MigrationService.js';
 
 
 export const DiagnosticsService = {
-  /** Every character that has a portfolio, with the portfolio. */
+  /** Every character, and every syndicate, that has a portfolio, with the portfolio. */
   portfolios() {
-    return game.actors
+    const syndicates = SyndicateRepository.all().map((s) => SyndicateRepository.account(s.id)).filter(Boolean);
+    return [...game.actors, ...syndicates]
       .filter((a) => PortfolioRepository.hasPortfolio(a))
       .map((a) => ({ id: a.id, actorId: a.id, name: a.name, portfolio: PortfolioRepository.get(a) }));
   },

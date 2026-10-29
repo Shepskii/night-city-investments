@@ -15,7 +15,8 @@ import { PortfolioRepository } from '../../data/PortfolioRepository.js';
 import { PortfolioClient } from '../../services/PortfolioClient.js';
 import { SyndicateClient } from '../../services/SyndicateClient.js';
 import { accountFor } from '../accounts.js';
-import { orderValue } from '../../engine/index.js';
+import { orderValue, limitLeft, dayIndex } from '../../engine/index.js';
+import { MarketClock } from '../../services/MarketClockService.js';
 import { TradingSettings } from '../../services/TradingSettings.js';
 import { BaseApplication } from '../BaseApplication.js';
 import { L, money, whole } from '../format.js';
@@ -73,7 +74,7 @@ export class TradeDialogApp extends BaseApplication {
     // A syndicate order over the officers' limit goes to the members as a proposal (DESIGN §31).
     const pub = MarketStore.getPublic();
     const market = { [this.assetId]: { price: pub.companies?.[this.assetId]?.price ?? pub.funds?.[this.assetId]?.nav ?? 0 } };
-    if (actor.isSyndicate && orderValue(order, market) > actor.syndicate.rules.tradeLimit) {
+    if (actor.isSyndicate && orderValue(order, market) > limitLeft(actor.syndicate, actor.as.id, dayIndex(MarketClock.nowMs()))) {
       await SyndicateClient.submit(actor.as, 'propose', { syndicateId: actor.id, kind: 'trade', order });
     } else {
       await PortfolioClient.submit(actor, 'placeOrder', order);
@@ -171,7 +172,9 @@ export class TradeDialogApp extends BaseApplication {
       actorName: actor?.name ?? '',
       syndicate: actor?.isSyndicate ? {
         officer: actor.isOfficer,
-        note: actor.isOfficer ? L('NCI.Syndicate.TradeNote', { amount: actor.syndicate.rules.tradeLimit.toLocaleString() }) : L('NCI.Syndicate.NotOfficer'),
+        note: actor.isOfficer
+          ? L('NCI.Syndicate.TradeNote', { amount: actor.syndicate.rules.tradeLimit.toLocaleString(), left: limitLeft(actor.syndicate, actor.as.id, dayIndex(MarketClock.nowMs())).toLocaleString() })
+          : L('NCI.Syndicate.NotOfficer'),
       } : null,
     };
   }

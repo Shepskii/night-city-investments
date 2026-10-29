@@ -145,7 +145,7 @@
       <div><span>{{localize "NCI.Syndicate.YourStake"}}</span><strong>{{myValue}} eb</strong></div>
       <div><span>{{localize "NCI.Syndicate.YourRole"}}</span><strong>{{role}}</strong></div>
     </div>
-    <p class="nci-hint">{{limitText}}</p>
+    <p class="nci-hint">{{limitText}}{{#if limitLeft}} {{limitLeft}}{{/if}}</p>
 
     <h3>{{localize "NCI.Syndicate.Members"}}</h3>
     <table class="nci-market"><tbody>

@@ -16,7 +16,7 @@
 
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
-  applyBusinessGig, planBusinessGig, itemGear, isOfficer,
+  applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { log, isActiveGM } from '../utils/helpers.js';
@@ -150,12 +150,12 @@ class BusinessServiceImpl {
     }
 
     const out = applyBusinessRequest({ business, request, actor: as.partner, day, check, context });
-    // The engine is pure, so this is a dry run until it is committed: a syndicate's payment over its
-    // officers' limit goes to its members instead.
-    if (out.ok && as.syndicate && -(out.wealth?.[as.syndicate.id] ?? 0) > as.syndicate.rules.tradeLimit) {
+    // The engine is pure, so this is a dry run until it is committed: a syndicate's payment over what
+    // this officer has left of the day's limit goes to its members instead.
+    if (out.ok && as.syndicate && -(out.wealth?.[as.syndicate.id] ?? 0) > limitLeft(as.syndicate, actor.id, day)) {
       return this._receipt(actor, request, { ok: false, reason: 'over-limit' });
     }
-    if (out.ok) await this._commit(out);
+    if (out.ok) await this._commit(out, { officerId: as.syndicate ? actor.id : null });
     return this._receipt(actor, request, out);
   }
 
@@ -212,9 +212,12 @@ class BusinessServiceImpl {
     return { ok: true, gear };
   }
 
-  /** Eddies first, then the record, then the items that moved, then the hidden state; then tell everyone. */
-  async _commit(out) {
-    await this._pay(out.wealth, out.business);
+  /**
+   * Eddies first, then the record, then the items that moved, then the hidden state; then tell everyone.
+   * @param {{officerId?: string|null}} [by] - the officer who made a syndicate's payment, for its daily limit
+   */
+  async _commit(out, { officerId = null } = {}) {
+    await this._pay(out.wealth, out.business, officerId);
     await BusinessRepository.save(out.business);
     await this._moveItems(out);
     const exposure = out.events.reduce((a, e) => a + (e.exposure ?? 0), 0);
@@ -242,12 +245,16 @@ class BusinessServiceImpl {
     }
   }
 
-  /** Pay each partner: a character in eddies, a syndicate into its brokerage account. */
-  async _pay(wealth, business = null) {
-    for (const [actorId, delta] of Object.entries(wealth ?? {})) {
+  /**
+   * Pay each partner: a character in eddies, a syndicate into its brokerage account. Money is taken
+   * before any is paid out, so a payer who turns out to be short stops it before anyone is paid.
+   */
+  async _pay(wealth, business = null, officerId = null) {
+    const moves = Object.entries(wealth ?? {}).sort(([, a], [, b]) => a - b);
+    for (const [actorId, delta] of moves) {
       if (!delta) continue;
       if (SyndicateCash.isSyndicate(actorId)) {
-        const paid = await SyndicateCash.pay(actorId, delta, { businessId: business?.id ?? null, businessName: business?.name ?? '' });
+        const paid = await SyndicateCash.pay(actorId, delta, { businessId: business?.id ?? null, businessName: business?.name ?? '', officerId });
         if (!paid.ok) throw new Error(`Syndicate ${actorId} could not pay ${-delta} eb: ${paid.reason}`);
         continue;
       }

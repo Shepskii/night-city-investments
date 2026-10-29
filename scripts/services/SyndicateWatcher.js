@@ -5,11 +5,9 @@
  */
 
 import { HOOKS, MODULE_ID, FLAGS } from '../utils/constants.js';
-import { L } from '../utils/helpers.js';
+import { L, unwrap } from '../utils/helpers.js';
 import { SyndicateClient, syndicateReceipts } from './SyndicateClient.js';
 import { PortfolioWatcher } from './PortfolioWatcher.js';
-
-const unwrap = (stored) => (Array.isArray(stored) ? stored[0] : stored);
 
 export const SyndicateWatcher = {
   _seen: new Set(),

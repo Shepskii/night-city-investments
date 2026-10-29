@@ -8,15 +8,14 @@
 
 import { emptyHistory, emptyNews, emptyGigs, emptyHeat, normalizeControls, normalizeGigs, normalizeHeat, timeOf } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, FLAGS, CONTROL_JOURNAL_NAME } from '../utils/constants.js';
+import { unwrap } from '../utils/helpers.js';
 
 const clone = (v) => foundry.utils.deepClone(v);
 
-/**
- * GM-only records are stored wrapped in a one-element array. Foundry merges an object into the flag
- * already there, so a key removed from the record would linger; an array always replaces the old
- * value, so one write saves the record exactly. Unwrapped values are from before v0.9.7.
- */
-const unwrap = (stored) => (Array.isArray(stored) ? stored[0] : stored);
+// GM-only records are stored wrapped in a one-element array (read back with `unwrap`). Foundry merges
+// an object into the flag already there, so a key removed from the record would linger; an array
+// always replaces the old value, so one write saves the record exactly. Unwrapped values are from
+// before v0.9.7.
 
 /** Serialises changes to the dividend records, which the dividend and fund distribution services both write. */
 let recordsQueue = Promise.resolve();

@@ -11,12 +11,10 @@ import { dayIndex, rollSpec, partnerOf } from '../engine/index.js';
 import { MODULE_ID, FLAGS, OUTBOX_LIMIT, BROKER_TAG, INVESTOR_TAG } from '../utils/constants.js';
 import { NcmAdapter } from '../integrations/NcmAdapter.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
-import { L } from '../utils/helpers.js';
+import { L, unwrap } from '../utils/helpers.js';
 import { SerialQueue } from '../utils/queue.js';
 import { MarketClock } from './MarketClockService.js';
 import { SkillAdapter } from './SkillAdapter.js';
-
-const unwrap = (stored) => (Array.isArray(stored) ? stored[0] : stored);
 
 /** What the GM has done with a character's business requests. */
 export function receiptsOf(actor) {
@@ -36,9 +34,17 @@ export function pendingBusinessRequests(actor) {
 
 /** The best Operator rank among a business's partners, for hire fees. */
 export function operatorRankOf(business) {
+  // A syndicate partner counts its officers' Operator, since they act for it (DESIGN §31, B3b).
+  const actorsOf = (id) => {
+    const actor = game.actors.get(id);
+    if (actor) return [actor];
+    const syndicate = SyndicateRepository.get(id);
+    return (syndicate?.members ?? []).filter((m) => m.status === 'active' && m.role === 'officer').map((m) => game.actors.get(m.actorId)).filter(Boolean);
+  };
   return Math.max(0, ...business.partners
     .filter((p) => p.status === 'active' || p.status === 'leaving')
-    .map((p) => SkillAdapter.readAbility(game.actors.get(p.actorId), 'Operator').rank));
+    .flatMap((p) => actorsOf(p.actorId))
+    .map((actor) => SkillAdapter.readAbility(actor, 'Operator').rank));
 }
 
 /**

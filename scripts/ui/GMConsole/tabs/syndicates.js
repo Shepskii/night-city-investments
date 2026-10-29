@@ -12,7 +12,7 @@ import { FundRepository } from '../../../data/FundRepository.js';
 import { SyndicateService } from '../../../services/SyndicateService.js';
 import { SyndicateCash } from '../../../services/SyndicateCash.js';
 import { HeatService } from '../../../services/HeatService.js';
-import { describeProposal } from '../../MarketTerminal/syndicateContext.js';
+import { describeProposal } from '../../../services/SyndicateMail.js';
 import { L, money, whole } from '../../format.js';
 import { confirm, report } from '../shared.js';
 

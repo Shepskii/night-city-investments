@@ -339,6 +339,15 @@ export function registerSettings() {
     default: true,
   });
 
+  s.register(MODULE_ID, SETTINGS.SYNDICATE_MAIL, {
+    name: 'NCI.Settings.SyndicateMail.Name',
+    hint: 'NCI.Settings.SyndicateMail.Hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
   s.register(MODULE_ID, SETTINGS.BUSINESS_WEEKDAY, {
     name: 'NCI.Settings.BusinessWeekday.Name',
     hint: 'NCI.Settings.BusinessWeekday.Hint',

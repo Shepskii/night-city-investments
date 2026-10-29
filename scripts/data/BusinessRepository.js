@@ -8,12 +8,12 @@
  *              (MarketStore.getBusinessesHidden).
  */
 
-import { normalizeBusiness } from '../engine/index.js';
+import { normalizeBusiness, shareOf, bookValue } from '../engine/index.js';
 import { MODULE_ID, FLAGS, BUSINESS_FOLDER_NAME } from '../utils/constants.js';
 import { SyndicateRepository } from './SyndicateRepository.js';
+import { unwrap } from '../utils/helpers.js';
 
 const LEVELS = () => CONST.DOCUMENT_OWNERSHIP_LEVELS;
-const unwrap = (stored) => (Array.isArray(stored) ? stored[0] : stored);
 
 /**
  * Partners whose players should see the business: those invited and those holding units. A partner
@@ -50,6 +50,34 @@ export const BusinessRepository = {
   /** Businesses a character is part of or invited to, closed ones included if they were a partner at the end. */
   forActor(actorId) {
     return this.all().filter((b) => b.partners.some((p) => p.actorId === actorId && SEEN_BY.has(p.status)));
+  },
+
+  /**
+   * An owner's stakes in businesses still open, at book value times their share. The owner is a
+   * character or a syndicate (whose stakes count in its value per unit, DESIGN §31).
+   */
+  stakesOf(ownerId) {
+    return Math.round(this.all().filter((b) => b.status === 'open').reduce((sum, b) => sum + shareOf(b, ownerId) * bookValue(b), 0));
+  },
+
+  /**
+   * Bring who can see a partner's businesses up to date without touching their records: used when a
+   * syndicate's members change, since its members' users are among them. GM only.
+   */
+  async refreshOwnership(partnerId) {
+    if (!game.user.isGM) return 0;
+    let changed = 0;
+    for (const business of this.all().filter((b) => b.partners.some((p) => p.actorId === partnerId))) {
+      const journal = this.journalOf(business.id);
+      if (!journal) continue;
+      const ownership = this.ownershipFor(business);
+      const current = journal.ownership ?? {};
+      const gone = Object.keys(current).filter((id) => id !== 'default' && !(id in ownership) && !game.users?.get?.(id)?.isGM);
+      if (!gone.length && Object.entries(ownership).every(([id, level]) => current[id] === level)) continue;
+      await journal.update({ ownership: { ...ownership, ...Object.fromEntries(gone.map((id) => [`-=${id}`, null])) } });
+      changed++;
+    }
+    return changed;
   },
 
   /**

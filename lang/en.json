@@ -1430,6 +1430,10 @@
         "Name": "Player syndicates",
         "Hint": "Let players pool money in a syndicate that trades on the market as one account. Turning this off refuses new syndicate requests; existing syndicates keep their holdings and nothing is deleted."
       },
+      "SyndicateMail": {
+        "Name": "Mail syndicate members",
+        "Hint": "Send members a Night City Messenger mail from the market wire when a proposal opens and when it passes, fails or lapses, when an agreed payment fails, when their redemption is paid, and when the syndicate is wound up."
+      },
       "SyndicateApproval": {
         "Name": "New syndicates need GM approval",
         "Hint": "A syndicate a player founds waits in the GM Console's Syndicates tab until the GM approves it. Until then no money can be paid in."
@@ -1441,6 +1445,45 @@
       "BusinessGrowthRate": {
         "Name": "Business growth rate",
         "Hint": "Scales how fast businesses build Reputation and Capacity. 1 is the calibrated pace; 1.5 suits a campaign that wants players' businesses to grow sooner."
+      }
+    },
+    "SyndicateMail": {
+      "Proposed": {
+        "Subject": "New proposal to vote on",
+        "Body": "Proposed by {name}. Vote in the market terminal's Portfolio tab, with the syndicate picked, before {date}."
+      },
+      "Passed": {
+        "Subject": "Proposal passed",
+        "Body": "Members holding more than half the units agreed.",
+        "Forced": "The GM passed it."
+      },
+      "Failed": {
+        "Subject": "Proposal turned down",
+        "Body": "Members holding half the units or more said no."
+      },
+      "Lapsed": {
+        "Subject": "Proposal lapsed",
+        "Body": "Not enough members agreed before the vote closed."
+      },
+      "Vetoed": {
+        "Subject": "Proposal vetoed",
+        "Body": "The GM struck it out."
+      },
+      "Void": {
+        "Subject": "Proposal passed but could not be carried out",
+        "Body": "Why: {reason}."
+      },
+      "AgreedFailed": {
+        "Subject": "An agreed payment or trade failed",
+        "Body": "The members agreed it, but it could not be done: {reason}."
+      },
+      "Redeemed": {
+        "Subject": "Redemption paid",
+        "Body": "{units} units of {name} were redeemed for {amount} eb, paid into your brokerage balance."
+      },
+      "Dissolved": {
+        "Subject": "Syndicate wound up",
+        "Body": "The syndicate has been dissolved. Its cash was paid into the members' brokerage balances by units."
       }
     },
     "GMSyndicate": {
@@ -1460,7 +1503,7 @@
       "Close": "Close and pay out",
       "CloseConfirm": "Close this syndicate? Its cash is paid into the members' brokerage balances by units, and it stops trading.",
       "CloseLater": "To close it, its account must first hold nothing but cash.",
-      "Money": "Cash {cash} eb · value {total} eb · {nav} eb a unit · officers' limit {limit} eb",
+      "Money": "Cash {cash} eb · value {total} eb · {nav} eb a unit · officers' limit {limit} eb a day each",
       "NoHoldings": "No holdings.",
       "Heat": "Heat {heat} ({tier})",
       "WaitingRedemptions": "Redemptions waiting for cash: {n}",
@@ -1523,7 +1566,8 @@
       "YourUnits": "Your units",
       "YourStake": "Your stake",
       "YourRole": "Your role",
-      "LimitText": "Officers trade up to {amount} eb an order without a vote. Bigger orders, and every other decision, go to the members, who vote by units for up to {days} days.",
+      "LimitText": "Each officer can trade, and put into businesses, up to {amount} eb a game day without a vote. Anything bigger, and every other decision, goes to the members, who vote by units for up to {days} days.",
+      "LimitLeft": "You have {left} eb of today's limit left.",
       "YourCash": "Your brokerage cash: {amount} eb",
       "PayIn": "Pay in",
       "FreeUnits": "Units you can redeem: {units}",
@@ -1580,6 +1624,7 @@
         "deposit": "{name} paid in for {units} units",
         "redeem": "{name} redeemed {units} units",
         "payout": "{name} was paid out for {units} units",
+        "tradeFailed": "The members agreed a trade, but it could not be placed: {text} ({reason})",
         "dissolved": "The syndicate was dissolved",
         "businessOut": "Paid into {business}",
         "businessIn": "Received from {business}",
@@ -1597,7 +1642,7 @@
       "NamePlaceholder": "Syndicate name",
       "FoundButton": "Found",
       "Invite": "Invite",
-      "TradeNote": "This order is for the syndicate. Officers trade up to {amount} eb an order; a bigger one is sent to the members as a proposal instead.",
+      "TradeNote": "This order is for the syndicate. You have {left} eb of your {amount} eb daily limit left; a bigger order is sent to the members as a proposal instead.",
       "NotOfficer": "Only the syndicate's officers can trade its account. Ask an officer, or propose the trade to the members.",
       "Refused": "Your syndicate request was refused: {reason}",
       "Done": {
@@ -1625,6 +1670,7 @@
         "insufficient-cash": "not enough free cash in your brokerage account",
         "not-enough-units": "you do not have that many units free to redeem",
         "dissolve-instead": "you are the last holder; propose dissolving the syndicate instead",
+        "no-value": "the syndicate is worth nothing at the moment, so no units can be bought",
         "not-officer": "only officers can do that",
         "bad-request": "that is not something a syndicate can do",
         "over-limit": "the order is over the officers' limit; propose it to the members",
@@ -1666,6 +1712,7 @@
       "SweatHint": "An optional slice of units for the partner who will do most of the work. Decisions follow units; closing the business, and changing the agreement, need every partner.",
       "Found": "Found it",
       "CancelStart": "Cancel",
+      "ReadOnly": "You are a member of this syndicate, not an officer: you can see its businesses, but only its officers act for it.",
       "SyndicateCashOnly": "A syndicate puts in cash only. Its officers can bring gear as partners in their own right.",
       "ProposedToSyndicate": "That is over {name}'s officers' limit, so the {amount} eb has gone to its members as a proposal. It is paid in once they agree.",
       "Invitation": "You are invited",

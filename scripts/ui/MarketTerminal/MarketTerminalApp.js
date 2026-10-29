@@ -227,7 +227,7 @@ export class MarketTerminalApp extends BaseApplication {
 
   /** From a private stake on the Portfolio tab: open the Business window on that business. */
   static _onManageBusiness(event, target) {
-    BusinessApp.open({ businessId: target.dataset.id });
+    BusinessApp.open({ businessId: target.dataset.id, actorId: this.actorId });
   }
 
   static async _onRequestStatement() {
