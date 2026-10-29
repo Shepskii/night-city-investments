@@ -658,6 +658,7 @@
       "QueuedNoGM": "No GM is online. Your request is saved and will run when one connects.",
       "BrokerSet": "Broker assigned.",
       "BrokerCleared": "You no longer have a broker.",
+      "SessionEnded": "You left CorpNet, so your direct-trading session has ended. Connect to the terminal again to trade directly.",
       "SessionAlready": "Your terminal session is already open.",
       "SessionOpen": "Terminal session open. Accounting check {total} against DV {dv}.",
       "SessionFailed": "Terminal check failed: {total} against DV {dv}. You are locked out for now.",

@@ -39,7 +39,7 @@ export const SYNDICATE_DEFAULTS = Object.freeze({
 
 /** The terminal requests an officer can make for the syndicate's account. */
 export const SYNDICATE_TRADES = Object.freeze([
-  'placeOrder', 'cancelOrder', 'setBroker', 'connectTerminal', 'setDrip', 'setAlert', 'removeAlert', 'requestStatement', 'subscribeIpo',
+  'placeOrder', 'cancelOrder', 'setBroker', 'connectTerminal', 'disconnectTerminal', 'setDrip', 'setAlert', 'removeAlert', 'requestStatement', 'subscribeIpo',
 ]);
 
 /** What the members can vote on. */

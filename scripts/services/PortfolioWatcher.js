@@ -102,6 +102,9 @@ export const PortfolioWatcher = {
       case 'requestStatement':
         ui.notifications.info(L('NCI.Notify.StatementRequested'));
         break;
+      case 'disconnectTerminal':
+        if (r.ended) ui.notifications.warn(L('NCI.Notify.SessionEnded'));
+        break;
       case 'heatAction': {
         const text = L(`NCI.Heat.Action.Result.${r.outcome}`, { action: L(`NCI.Heat.Action.${r.action}.Name`), total: r.total, dv: r.dv, cost: eb(r.cost) });
         (r.passed ? ui.notifications.info : ui.notifications.warn).call(ui.notifications, text);

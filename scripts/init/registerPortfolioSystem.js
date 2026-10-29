@@ -9,6 +9,7 @@ import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { PortfolioService } from '../services/PortfolioService.js';
 import { PortfolioClient } from '../services/PortfolioClient.js';
 import { PortfolioWatcher } from '../services/PortfolioWatcher.js';
+import { NetworkWatcher } from '../services/NetworkWatcher.js';
 
 export function registerPortfolioSystem(initializer) {
   initializer.register('init', 40, 'Portfolio hooks', () => {
@@ -26,6 +27,9 @@ export function registerPortfolioSystem(initializer) {
     PortfolioWatcher.snapshot();
     if (isActiveGM()) await PortfolioService.sweepAll();
   });
+
+  // A player who leaves CorpNet in Night City Messenger loses their direct-trading session.
+  initializer.register('ready', 51, 'CorpNet watch', () => NetworkWatcher.start());
 
   initializer.register('ready', 46, 'Portfolio API', () => {
     const api = game.modules.get(MODULE_ID)?.api;

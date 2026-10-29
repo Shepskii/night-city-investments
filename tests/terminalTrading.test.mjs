@@ -133,6 +133,22 @@ test('an active session is reused, not re-rolled; and the legacy open mode needs
 
 // ── Direct is the most expensive; brokers are slower but cheaper ─────────────
 
+test('leaving CorpNet ends a session opened through the network, but not one the GM granted', () => {
+  const connect = req('connectTerminal');
+  const opened = run(funded(), [connect], { s: settings({ checks: passCheck(connect.key) }) });
+  const left = run(opened.portfolio, [req('disconnectTerminal', { reason: 'no-network' })]);
+  assert.equal(last(left).ended, true);
+  assert.equal(sessionActive(left.portfolio, 10), false);
+  assert.deepEqual(left.events.map((e) => e.type), ['sessionEnded']);
+  assert.equal(last(run(left.portfolio, [req('placeOrder', { route: 'direct', side: 'buy', assetId: 'ARA', qty: 5 })])).reason, 'no-terminal-session');
+
+  const connect2 = req('connectTerminal');
+  const granted = run(funded(), [connect2], { s: settings({ checks: passCheck(connect2.key, { access: { ok: true, source: 'grant' } }) }) });
+  const stays = run(granted.portfolio, [req('disconnectTerminal')]);
+  assert.equal(last(stays).ended, false);
+  assert.equal(sessionActive(stays.portfolio, 10), true, 'a GM grant is not tied to the network');
+});
+
 test('the same trade costs less through any broker than direct, but arrives later', () => {
   const c = req('connectTerminal');
   const sess = settings({ checks: passCheck(c.key) });

@@ -149,6 +149,17 @@ export const NcmAdapter = {
     return null;
   },
 
+  /**
+   * Call `fn` whenever this client's network changes (switching, a dead zone, a network edited or
+   * removed). Returns false when NCM has no event bus to listen to.
+   */
+  onNetworkChange(fn) {
+    const bus = svc('eventBus');
+    if (typeof bus?.on !== 'function') return false;
+    for (const event of ['network:changed', 'network:connected', 'network:disconnected', 'network:authSuccess']) bus.on(event, fn);
+    return true;
+  },
+
   /** CorpNet (or whichever network) state of this client: are we on it, and signed in? */
   networkState(networkId) {
     const net = svc('networkService');

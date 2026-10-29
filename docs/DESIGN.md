@@ -502,6 +502,8 @@ These rules came from the user's Phase 4 brief and replace the earlier tier-base
 
 **Safety.** A withdrawal is marked paid before its mail is sent. If the mail fails, the money returns to the balance and the player is told. Broker fee profiles are snapshotted onto each order, so a later skill or setting change cannot reprice an open order.
 
+**Leaving CorpNet ends the session** (added after B3). Each player's client listens to NCM's network events (`network:changed`, `connected`, `disconnected`, `authSuccess`) through `NcmAdapter.onNetworkChange`, and `NetworkWatcher` checks once at startup too. When the client is no longer on CorpNet, or no longer signed in to it, it sends `disconnectTerminal` for every live session on the user's own characters that came from the network; the executor ends it and the player is told. A session the GM granted is not tied to the network and stays. A syndicate's session records the officer who opened it (`session.by`), and ends when that officer leaves.
+
 **Not yet verified in a live world:** NCM's `message:sent` payload for a contact with no linked actor, that players can message an unshared broker contact, and the `Roll` and chat card for the Accounting check. The Node tests use a fake Foundry and a fake NCM.
 
 ## 17. Phase 3 completion (v0.4.1)

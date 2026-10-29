@@ -122,6 +122,9 @@ class SyndicateServiceImpl {
       events = ran.events;
       const keys = new Set(out.trades.map((t) => t.key));
       results = portfolio.results.filter((r) => keys.has(r.key));
+      // The officer who opened a session is the one at the terminal: leaving CorpNet ends it.
+      const opened = results.some((r) => r.type === 'connectTerminal' && r.passed && !r.already);
+      if (opened && officer && portfolio.session) portfolio = { ...portfolio, session: { ...portfolio.session, by: officer.id } };
     }
     await SyndicateRepository.save(syndicate, portfolio);
     for (const actorId of out.changed) {

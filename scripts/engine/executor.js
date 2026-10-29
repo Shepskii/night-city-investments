@@ -13,6 +13,7 @@
  *   { key, type: 'cancelOrder', orderId }
  *   { key, type: 'setBroker', brokerId }              null clears
  *   { key, type: 'connectTerminal' }                  open a direct-trading session (needs a check)
+ *   { key, type: 'disconnectTerminal', reason? }      the player left CorpNet: end a session that came from it
  *   { key, type: 'setDrip', assetId, enabled }
  *   { key, type: 'subscribeIpo', assetId, qty }       reserve cash for an IPO offer (see ipo.js)
  *   { key, type: 'setAlert', assetId, kind, value, once }   a price alert (see alerts.js)
@@ -454,6 +455,16 @@ export function applyRequests({ portfolio, requests, wealth, tick, market, setti
         const out = connectTerminal({ p, request, tick, settings });
         p = out.p;
         result = out.result;
+        break;
+      }
+      case 'disconnectTerminal': {
+        // Only a session opened through the network ends; one the GM granted is not tied to it.
+        const ended = !!p.session && p.session.source !== 'grant';
+        if (ended) {
+          p = { ...p, session: null };
+          events.push({ type: 'sessionEnded', reason: request.reason ?? 'no-network' });
+        }
+        result = { ok: true, ended };
         break;
       }
       case 'setDrip': {
