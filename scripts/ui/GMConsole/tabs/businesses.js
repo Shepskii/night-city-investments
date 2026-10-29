@@ -60,7 +60,7 @@ export function context() {
       isPending: b.status === 'pending',
       isForming: b.status === 'forming',
       isOpen: b.status === 'open',
-      location: b.location,
+      location: [b.district ? L(`NCI.District.${b.district}`) : '', b.location].filter(Boolean).join(', '),
       partners: b.partners.filter((p) => p.status !== 'declined').map((p) => {
         const share = units > 0 && ['active', 'leaving'].includes(p.status) ? ` ${((p.units / units) * 100).toFixed(0)}%` : '';
         return `${p.name} (${L(`NCI.Business.PartnerStatus.${p.status}`)}${share})`;
@@ -77,6 +77,7 @@ export function context() {
         : '',
       last: last ? L('NCI.GMBusiness.LastWeek', { n: last.index, profit: signed(last.profit), takings: whole(last.takings), upkeep: whole(last.upkeep) }) : '',
       week: b.status === 'open' ? L('NCI.GMBusiness.Week', { n: b.period.index, end: dayText(b.period.endDay), used: b.period.slots.length }) : '',
+      event: b.status === 'open' && b.period.event ? L('NCI.GMBusiness.Event', { event: L(`NCI.Event.${b.period.event.kind}.Name`) }) : '',
       closed: b.status === 'closed' ? L(`NCI.Business.Closed.${b.closeReason ?? 'closed'}`, { date: dayText(b.closedDay ?? 0) }) : '',
     };
   });

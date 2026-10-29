@@ -1,0 +1,83 @@
+/**
+ * Player businesses: weekly events
+ * @file scripts/engine/businessEvents.js
+ * @description The week's trouble or windfall (DESIGN §26.0, §26.4). The engine draws an event when
+ *              a week starts, from the world seed, the business and the week, so the same week always
+ *              draws the same thing; that draw is not a player's roll. Answering it is: a partner
+ *              takes a slot and rolls one of the skills the event names. Unanswered, it has its default
+ *              outcome when the week closes. Pure; no Foundry globals.
+ */
+
+import { createRng } from './rng.js';
+import { EVENTS, BUSINESS_DEFAULTS, districtOf } from './businessConfig.js';
+import { archetypeOf, clamp } from './businessRecord.js';
+import { bandPassed } from './rolls.js';
+
+/** How likely an event is this week: the base chance, the district's risk, and less once registered. */
+export function eventChance(b, p = BUSINESS_DEFAULTS) {
+  return Math.min(0.9, p.events.chance * districtOf(b.district).risk * (b.stage >= 1 ? p.events.registeredFactor : 1));
+}
+
+/** Draw this week's event, or none. */
+export function drawEvent(b, seed = 'nci', p = BUSINESS_DEFAULTS) {
+  const rng = createRng(seed, 'business-event', b.id, b.period.index);
+  if (!rng.chance(eventChance(b, p))) return null;
+  const weights = Object.fromEntries(Object.entries(EVENTS).filter(([, e]) => (e.stage ?? 0) <= b.stage).map(([k, e]) => [k, e.weight]));
+  return { kind: rng.weighted(weights) };
+}
+
+/** The ways an event may be answered: its own skills and abilities, and the trade's skills where it says so. */
+export function eventUses(b, kind) {
+  const e = EVENTS[kind];
+  if (!e) return [];
+  const seen = new Set();
+  return [...(e.trade ? archetypeOf(b)?.trade ?? [] : []), ...e.uses].filter((u) => {
+    const key = u.kind === 'ability' ? `a:${u.ability}` : `s:${u.skill}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
+ * How this week's event turned out, when the week closes.
+ * @param {object} b - the business (its state is changed by the event's hit)
+ * @param {number} takings - the week's takings before the event
+ * @param {object[]} slots - the week's slots: the answer is the `respond` one; a passed Keep it safe covers security events
+ * @returns {{kind: string, outcome: string, band: string|null, change: number}|null}
+ *          `change` is what the event does to the takings, in eb
+ */
+export function settleEvent(b, takings, slots, p = BUSINESS_DEFAULTS) {
+  const event = b.period.event;
+  if (!event) return null;
+  const def = EVENTS[event.kind];
+  const answer = slots.find((s) => s.action === 'respond');
+  const safe = slots.find((s) => s.action === 'keepSafe');
+
+  if (def.good) {
+    const band = answer?.band ?? null;
+    return { kind: event.kind, outcome: band ? (bandPassed(band) ? 'windfall' : 'missed') : 'unanswered', band, change: Math.round(takings * (band ? p.events.windfall[band] : 0)) };
+  }
+
+  let outcome;
+  let share;
+  if (answer) {
+    outcome = answer.band === 'fumble' ? 'fumbled' : bandPassed(answer.band) ? 'answered' : 'failed';
+    share = outcome === 'answered' ? 0 : p.events.loss[outcome === 'fumbled' ? 'fumble' : 'failure'];
+  } else if (def.security && safe && bandPassed(safe.band)) {
+    outcome = 'covered';
+    share = 0;
+  } else {
+    outcome = 'unanswered';
+    share = p.events.loss.unanswered;
+  }
+  if (share > 0) applyHit(b, def.hit, outcome === 'failed' ? 0.5 : 1);
+  return { kind: event.kind, outcome, band: answer?.band ?? null, change: -Math.round(takings * share) };
+}
+
+function applyHit(b, hit, scale) {
+  if (hit.reputation) b.state.reputation = clamp(b.state.reputation + hit.reputation * scale, 0, 100);
+  if (hit.capacity) b.state.capacity = Math.max(0.5, b.state.capacity + hit.capacity * scale);
+  if (hit.costFactor) b.state.costFactor = Math.min(1.2, b.state.costFactor + hit.costFactor * scale);
+  if (hit.compliance && b.state.compliance != null) b.state.compliance = clamp(b.state.compliance + hit.compliance * scale, 0, 100);
+}

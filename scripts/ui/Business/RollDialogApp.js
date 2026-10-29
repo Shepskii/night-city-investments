@@ -6,7 +6,7 @@
  *              Nothing is rolled until the player presses Roll.
  */
 
-import { rollSpec, previewRoll, normalizeLevers, hireFee, HIRE_TIERS, APPROACHES, MAX_LUCK_PER_ROLL, useKey } from '../../engine/index.js';
+import { rollSpec, previewRoll, normalizeLevers, hireFee, HIRE_TIERS, APPROACHES, MAX_LUCK_PER_ROLL, useKey, EVENTS } from '../../engine/index.js';
 import { MODULE_ID } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient, operatorRankOf } from '../../services/BusinessClient.js';
@@ -135,7 +135,8 @@ export class RollDialogApp extends BaseApplication {
     // Some uses roll at a higher DV (an alternative skill).
     const preview = previewRoll({ base: chosen?.base ?? 0, dv: full.dv + (chosen?.use.dvAdd ?? 0), levers });
     const pct = (x) => `${Math.round(x * 100)}%`;
-    const meaning = this.request.type === 'action' ? this.request.action : this.request.type;
+    const good = this.request.type === 'respond' && EVENTS[business.period?.event?.kind]?.good;
+    const meaning = this.request.type === 'action' ? this.request.action : good ? 'respondGood' : this.request.type;
 
     return {
       title: this.rollTitle,

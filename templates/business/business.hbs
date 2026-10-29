@@ -33,6 +33,9 @@
       <label>{{localize "NCI.Business.Kind"}}
         <select name="archetype">{{#each start.archetypes}}<option value="{{value}}" title="{{hint}}">{{label}}</option>{{/each}}</select>
       </label>
+      <label>{{localize "NCI.Business.District"}}
+        <select name="district">{{#each start.districts}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+      </label>
       <label>{{localize "NCI.Business.Location"}}<input type="text" name="location" maxlength="80" placeholder="{{localize 'NCI.Business.LocationHint'}}"></label>
       <label>{{localize "NCI.Business.Cash"}} <span class="nci-muted">({{localize "NCI.Business.YouHave" amount=start.wealth}})</span><input type="number" name="cash" min="0" step="50" value="0"></label>
       <label>{{localize "NCI.Business.GearName"}}<input type="text" name="gearName" maxlength="60" placeholder="{{localize 'NCI.Business.GearHint'}}"></label>
@@ -129,6 +132,15 @@
   <div class="nci-block">
     <h3>{{localize "NCI.Business.ThisWeek"}}</h3>
     <p class="nci-hint">{{localize "NCI.Business.WeekRuns" from=from to=to day=closesOn}} {{slotsText}} {{daysText}}</p>
+    {{#with event}}
+    <div class="nci-gig">
+      <div class="nci-gigtop"><strong>{{name}}</strong>{{#if good}}<span class="nci-up">{{localize "NCI.Business.Opportunity"}}</span>{{else}}<span class="nci-down">{{localize "NCI.Business.Trouble"}}</span>{{/if}}</div>
+      <div>{{hint}}</div>
+      <div class="nci-muted">{{uses}} {{security}}</div>
+      {{#if answered}}<div><strong>{{answered}}</strong></div>{{else}}<div class="nci-muted">{{ifNot}}</div>{{/if}}
+      {{#if canAnswer}}<div class="nci-actions"><button type="button" data-action="respond"><i class="fas fa-dice-d10"></i> {{localize "NCI.Business.Answer"}}</button></div>{{/if}}
+    </div>
+    {{/with}}
     <table class="nci-market">
       <thead><tr><th>{{localize "NCI.Business.ActionLabel"}}</th><th></th><th></th></tr></thead>
       <tbody>
@@ -217,7 +229,7 @@
       <thead><tr><th>{{localize "NCI.Business.WeekLabel"}}</th><th>{{localize "NCI.Business.Takings"}}</th><th>{{localize "NCI.Business.Upkeep"}}</th><th>{{localize "NCI.Business.Profit"}}</th><th>{{localize "NCI.Business.Till"}}</th></tr></thead>
       <tbody>
         {{#each digests}}
-        <tr><td>{{week}}<div class="nci-muted">{{dates}}</div><div class="nci-muted">{{actions}}</div></td><td>{{takings}}</td><td>{{upkeep}}</td><td class="{{cls}}">{{profit}}</td><td>{{till}}</td></tr>
+        <tr><td>{{week}}<div class="nci-muted">{{dates}}</div><div class="nci-muted">{{actions}}</div>{{#if event}}<div class="nci-muted">{{event}}</div>{{/if}}</td><td>{{takings}}</td><td>{{upkeep}}</td><td class="{{cls}}">{{profit}}</td><td>{{till}}</td></tr>
         {{/each}}
       </tbody>
     </table>

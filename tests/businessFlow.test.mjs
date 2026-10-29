@@ -30,6 +30,9 @@ for (const actor of env.actors) {
   };
 }
 const fake = installFakeChat();
+// Weekly events are drawn from the business's id, so ids are fixed to keep the weeks the same each run.
+let nextId = 0;
+globalThis.foundry.utils.randomID = () => `id${String(++nextId).padStart(14, '0')}`;
 
 let BusinessClient;
 let BusinessService;

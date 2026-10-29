@@ -26,6 +26,9 @@ for (const actor of env.actors) {
   actor.testUserPermission = (user) => user.isGM || user.id === 'gm1' || user.id === owner;
 }
 installFakeChat();
+// Weekly events are drawn from the business's id, so ids are fixed to keep the weeks the same each run.
+let nextId = 0;
+globalThis.foundry.utils.randomID = () => `id${String(++nextId).padStart(14, '0')}`;
 
 // Like ApplicationV2, some properties are read-only getters: assigning to one throws.
 class StubApplication {

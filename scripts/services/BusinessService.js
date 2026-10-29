@@ -43,6 +43,11 @@ class BusinessServiceImpl {
     return d >= 0 && d <= 6 ? d : 1;
   }
 
+  /** The world seed: weekly events are drawn from it, the business and the week. */
+  seed() {
+    return game.settings.get(MODULE_ID, SETTINGS.WORLD_SEED) || 'nci';
+  }
+
   growthRate() {
     const g = Number(game.settings.get(MODULE_ID, SETTINGS.BUSINESS_GROWTH_RATE));
     return Number.isFinite(g) && g > 0 ? g : 1;
@@ -58,6 +63,7 @@ class BusinessServiceImpl {
       approval: game.settings.get(MODULE_ID, SETTINGS.BUSINESS_APPROVAL) !== false,
       weekday: this.weekday(),
       growthRate: this.growthRate(),
+      seed: this.seed(),
       operatorRank: business ? operatorRankOf(business) : 0,
       actors: this.actors(),
       newId: `bus_${foundry.utils.randomID(12)}`,
@@ -158,7 +164,7 @@ class BusinessServiceImpl {
     if (!isActiveGM() || !this.enabled()) return Promise.resolve(0);
     return this._queue.run(async () => {
       const day = this.day();
-      const opts = { weekday: this.weekday(), growthRate: this.growthRate(), actors: this.actors() };
+      const opts = { weekday: this.weekday(), growthRate: this.growthRate(), actors: this.actors(), seed: this.seed() };
       let changed = 0;
       for (const business of BusinessRepository.all().filter((b) => b.status === 'open')) {
         const out = advanceBusiness(business, day, opts);
@@ -186,7 +192,7 @@ class BusinessServiceImpl {
 
   /** Let a business waiting for approval open. */
   approve(id) {
-    return this._gm(id, (b) => approveBusiness(b, this.day(), this.weekday()));
+    return this._gm(id, (b) => approveBusiness(b, this.day(), this.weekday(), undefined, this.seed()));
   }
 
   /** Turn a business down before it opens; everyone's money goes back. */

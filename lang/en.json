@@ -312,6 +312,22 @@
           "strong": "Capacity well up.",
           "exceptional": "Capacity up a lot."
         },
+        "respond": {
+          "fumble": "It goes badly: 20% of the week's takings lost, and the full mark.",
+          "failure": "It falls short: 10% of the week's takings lost, and half the mark.",
+          "narrow": "Dealt with.",
+          "solid": "Dealt with.",
+          "strong": "Dealt with.",
+          "exceptional": "Dealt with."
+        },
+        "respondGood": {
+          "fumble": "The chance slips away.",
+          "failure": "The chance slips away.",
+          "narrow": "5% more takings this week.",
+          "solid": "15% more takings this week.",
+          "strong": "20% more takings this week.",
+          "exceptional": "30% more takings this week."
+        },
         "stepUpRoll": {
           "fumble": "Refused, and the paperwork is a mess: the fee is spent and you can try again in 14 days.",
           "failure": "Refused: the fee is spent and you can try again in 7 days.",
@@ -1406,7 +1422,25 @@
       "SetupFailed": "Setup roll {band}: can be tried again (range {range}).",
       "State": "Reputation {rep}, Capacity {cap}, Cost base {cost}, Exposure {exposure}.",
       "LastWeek": "Week {n}: takings {takings}, upkeep {upkeep}, profit {profit} eb.",
-      "Week": "Week {n} closes on or after {end}; slots used: {used}."
+      "Week": "Week {n} closes on or after {end}; slots used: {used}.",
+      "Event": "This week: {event}."
+    },
+    "District": {
+      "exec": "Executive Zone", "westbrook": "New Westbrook", "japan": "Old Japan Town", "watson": "Watson Development",
+      "china": "Little China", "europe": "Little Europe", "marina": "Upper Marina", "uni": "University District",
+      "glen": "The Glen", "heywood": "Heywood", "bank": "Old Bank Block", "med": "Old Med Center",
+      "rancho": "Rancho Coronado", "south": "South Night City", "hind": "Heywood Industrial Zone", "ocz": "Old Combat Zone",
+      "pacifica": "Pacifica Playground", "morro": "Morro Rock", "oldcorp": "Old Corp Center", "oldcc": "Hot Zone · Old City Center"
+    },
+    "Event": {
+      "shakedown": { "Name": "A shakedown", "Hint": "A gang wants protection money on top of what you already pay." },
+      "theft": { "Name": "A break-in", "Hint": "Someone has been through the stock overnight, and they will be back." },
+      "breakdown": { "Name": "Something breaks", "Hint": "The kit the business runs on has given out." },
+      "shortage": { "Name": "A supply shortage", "Hint": "The usual supplier cannot deliver this week." },
+      "rival": { "Name": "A rival opens nearby", "Hint": "A competitor is undercutting you and talking you down." },
+      "trouble": { "Name": "Trouble with a customer", "Hint": "A customer, or a job, has gone wrong in a way people will talk about." },
+      "inspection": { "Name": "An inspection", "Hint": "The city's inspectors want to see the books and the licences." },
+      "windfall": { "Name": "A big order", "Hint": "Someone with money wants something done this week, if you can deliver." }
     },
     "Weekday": { "0": "Sunday", "1": "Monday", "2": "Tuesday", "3": "Wednesday", "4": "Thursday", "5": "Friday", "6": "Saturday" },
     "Business": {
@@ -1601,7 +1635,32 @@
         "clinic": { "Name": "Ripperdoc clinic", "Hint": "Cybertech or Paramedic to work it; good for a Medtech or Tech." },
         "garage": { "Name": "Garage or chop shop", "Hint": "Basic Tech or Land Vehicle Tech; good for a Tech or Nomad." },
         "bar": { "Name": "Bar or club", "Hint": "Conversation, Persuasion or Play Instrument; good for a Rockerboy or Fixer." },
-        "infoShop": { "Name": "Info shop or data broker", "Hint": "Library Search or Electronics/Security Tech; good for a Netrunner or Fixer." }
+        "infoShop": { "Name": "Info shop or data broker", "Hint": "Library Search or Electronics/Security Tech; good for a Netrunner or Fixer." },
+        "boutique": { "Name": "Boutique or salon", "Hint": "Wardrobe & Style or Personal Grooming; good for a Media or Exec." },
+        "gunShop": { "Name": "Gun shop", "Hint": "Weaponstech or Trading; good for a Solo or Fixer. Dear to set up." },
+        "courier": { "Name": "Courier service", "Hint": "Drive Land Vehicle or Local Expert; good for a Nomad." },
+        "security": { "Name": "Security outfit", "Hint": "Tactics or Persuasion; good for a Solo or Lawman." },
+        "media": { "Name": "Screamsheet or media outlet", "Hint": "Composition or Photography/Film; good for a Media." },
+        "foodStall": { "Name": "Food stall", "Hint": "Streetwise or Local Expert; anyone can run one, and it is cheap to start." }
+      },
+      "District": "District",
+      "NoDistrict": "None (average traffic, rent and risk)",
+      "Opportunity": "an opportunity",
+      "Trouble": "trouble",
+      "AnswerWith": "Answer with: {skills}.",
+      "SecurityNote": "A successful Keep it safe this week also deals with it.",
+      "EventIfNot": "Unanswered, it costs 15% of the week's takings and leaves a mark.",
+      "WindfallIfNot": "Unanswered, the chance simply goes by.",
+      "Answer": "Answer it",
+      "AnswerTitle": "Answering: {event}",
+      "EventOutcome": {
+        "answered": "{event}: dealt with.",
+        "covered": "{event}: Keep it safe dealt with it.",
+        "failed": "{event}: the answer fell short ({change} eb).",
+        "fumbled": "{event}: the answer made it worse ({change} eb).",
+        "unanswered": "{event}: nobody answered it ({change} eb).",
+        "windfall": "{event}: taken ({change} eb).",
+        "missed": "{event}: the chance slipped away."
       },
       "Refused": "Your business request was refused: {reason}",
       "Done": {
@@ -1621,7 +1680,8 @@
         "vote": "Vote recorded.",
         "propose": "Proposal made.",
         "stepUpRoll": "Registration roll recorded.",
-        "addDays": "Business days put in."
+        "addDays": "Business days put in.",
+        "respond": "Your answer is recorded."
       },
       "Reason": {
         "bad-use": "that skill does not fit this roll",
@@ -1675,6 +1735,8 @@
         "milestones": "the milestones are not all met",
         "not-agreed": "the partners have not agreed to step up",
         "step-up-delay": "the registration cannot be tried again yet",
+        "no-event": "there is nothing to answer this week",
+        "event-answered": "this week's event has already been answered",
         "already-agreed": "the partners have already agreed"
       }
     }

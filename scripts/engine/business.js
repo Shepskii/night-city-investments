@@ -28,8 +28,9 @@
  */
 
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
+import { drawEvent, eventUses, settleEvent } from './businessEvents.js';
 import {
-  ARCHETYPES, ACTIONS, BUSINESS_DEFAULTS, stageDv, actionUses, helpUses, setupUses, usesInclude, useKey,
+  ARCHETYPES, ACTIONS, BUSINESS_DEFAULTS, DISTRICTS, EVENTS, districtOf, stageDv, actionUses, helpUses, setupUses, usesInclude, useKey,
 } from './businessConfig.js';
 import {
   BUSINESS_SCHEMA, BUSINESS_STATUS, weekdayOf, nextBoundary, newPeriod, int, clamp, text, normalizeBusiness, archetypeOf, holders, voters,
@@ -49,11 +50,11 @@ export {
 
 export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
-  'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays',
+  'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond',
 ]);
 
 /** Requests that carry a roll. */
-export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll']);
+export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond']);
 
 /**
  * What each kind of proposal needs to pass (DESIGN §26.0): closing and stepping up need every partner
@@ -97,6 +98,14 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     const check = stepUpCheck(b, actorId, day, p);
     if (!check.ok) return check;
     return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - p.registration.fee, operatorRank, p });
+  }
+
+  if (request.type === 'respond') {
+    const event = b.period.event;
+    if (!event || !EVENTS[event.kind]) return fail('no-event');
+    if (b.period.slots.some((s) => s.action === 'respond')) return fail('event-answered');
+    if (b.period.slots.length >= (p.stages[b.stage]?.slots ?? 1)) return fail('no-slot');
+    return allowed(eventUses(b, event.kind), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p });
   }
 
   if (request.type === 'action') {
@@ -341,6 +350,23 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       out.events.push({ type: 'roll', action: 'stepUp', band: r.band, exposure: r.exposure }, ...(stepped ? [{ type: 'steppedUp', stage: b.stage }] : []));
       break;
     }
+    case 'respond': {
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
+      if (!spec.ok) return spec;
+      if (!check?.ok) return fail(check?.reason ?? 'no-roll');
+      if (request.use.kind === 'hire') {
+        const fee = hireFee(request.use.hire, ctx.operatorRank, p);
+        b.till -= fee;
+        log('hire', -fee);
+      }
+      const r = check.result;
+      if (r.extra) spendDays(b, actor.id, 1);
+      b.period.slots.push({
+        action: 'respond', event: b.period.event.kind, by: actor.id, use: useKey(request.use), band: r.band, total: r.total, dv: r.dv, approach: r.approach, luck: r.luck, bonus: 0,
+      });
+      out.events.push({ type: 'roll', action: 'respond', band: r.band, exposure: r.exposure });
+      break;
+    }
     case 'addDays': {
       if (b.status !== 'open') return fail('not-open');
       if (me?.status !== 'active' || !me.voting) return fail('not-partner');
@@ -388,6 +414,7 @@ function found(request, actor, day, ctx, p) {
     name,
     archetype: request.archetype,
     location: text(request.location, 80),
+    district: DISTRICTS[request.district] ? request.district : '',
     status: 'forming',
     founderId: actor.id,
     createdDay: day,
@@ -432,7 +459,7 @@ function tryOpen(b, day, ctx, events, p) {
     events.push({ type: 'awaitingApproval' });
     return;
   }
-  openBusiness(b, day, ctx.weekday, p);
+  openBusiness(b, day, ctx.weekday, p, ctx.seed);
   events.push({ type: 'opened' });
 }
 
@@ -440,7 +467,7 @@ function tryOpen(b, day, ctx, events, p) {
  * Open a business: contributions become units (one per eb of cash or gear at book value, plus any
  * sweat slice), the setup cost becomes its fit-out, and the rest of the money its till.
  */
-export function openBusiness(business, day, weekday, p = BUSINESS_DEFAULTS) {
+export function openBusiness(business, day, weekday, p = BUSINESS_DEFAULTS, seed = 'nci') {
   const b = business;
   const partners = holders(b);
   for (const x of partners) x.units = x.cash + gearValue(x);
@@ -460,16 +487,16 @@ export function openBusiness(business, day, weekday, p = BUSINESS_DEFAULTS) {
   b.state.capacity = b.setup.capacity;
   b.status = 'open';
   b.openedDay = day;
-  b.period = newPeriod(1, day, weekday);
+  startPeriod(b, 1, day, weekday, seed, p);
   addLedger(b, { day, kind: 'opened', amount: -cashSpent }, p);
   return b;
 }
 
 /** GM: let a business that is waiting open. */
-export function approveBusiness(business, day, weekday, p = BUSINESS_DEFAULTS) {
+export function approveBusiness(business, day, weekday, p = BUSINESS_DEFAULTS, seed = 'nci') {
   const b = structuredClone(normalizeBusiness(business));
   if (b.status !== 'pending') return fail('not-pending');
-  return { ok: true, business: openBusiness(b, day, weekday, p), wealth: {} };
+  return { ok: true, business: openBusiness(b, day, weekday, p, seed), wealth: {} };
 }
 
 /** GM: turn a business down before it opens. Every partner gets their share of the escrow back. */
@@ -566,7 +593,7 @@ function settleProposals(b, day, out, p) {
  * @param {{weekday?: number, growthRate?: number, actors?: object, params?: object}} [o]
  * @returns {{business: object, wealth: object, events: object[], changed: boolean}}
  */
-export function advanceBusiness(business, day, { weekday = 1, growthRate = 1, actors = {}, params: p = BUSINESS_DEFAULTS } = {}) {
+export function advanceBusiness(business, day, { weekday = 1, growthRate = 1, actors = {}, seed = 'nci', params: p = BUSINESS_DEFAULTS } = {}) {
   const b = structuredClone(normalizeBusiness(business));
   const out = { wealth: {}, events: [] };
   if (b.status !== 'open' || !b.period) return { business: b, ...out, changed: false };
@@ -580,13 +607,13 @@ export function advanceBusiness(business, day, { weekday = 1, growthRate = 1, ac
 
   let closes = 0;
   while (b.status === 'open' && b.period.endDay <= day && closes < p.catchUpPeriods) {
-    closePeriod(b, { growthRate, weekday, params: p }, out);
+    closePeriod(b, { growthRate, weekday, seed, params: p }, out);
     closes++;
     changed = true;
   }
   // A longer jump than the catch-up allows: the weeks beyond it are skipped, not simulated.
   if (b.status === 'open' && b.period.endDay <= day) {
-    b.period = newPeriod(b.period.index + 1, day, weekday);
+    startPeriod(b, b.period.index + 1, day, weekday, seed, p);
     out.events.push({ type: 'periodsSkipped' });
   }
   return { business: b, ...out, changed };
@@ -614,7 +641,14 @@ function settleLeavers(b, day, actors, out) {
 const traffic = (rep) => 0.6 + (clamp(rep, 0, 100) / 100) * 0.8;
 
 /** Close the current operating period: the week's takings and upkeep, the state, the digest. */
-function closePeriod(b, { growthRate, weekday, params: p }, out) {
+/** Start an operating period, and draw its event. */
+function startPeriod(b, index, startDay, weekday, seed, p) {
+  b.period = newPeriod(index, startDay, weekday);
+  const event = drawEvent(b, seed, p);
+  if (event) b.period.event = event;
+}
+
+function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
   const stage = p.stages[b.stage] ?? p.stages[0];
   const arch = archetypeOf(b);
   const fx = p.effects;
@@ -639,8 +673,12 @@ function closePeriod(b, { growthRate, weekday, params: p }, out) {
 
   // A first period that began part-way through a week earns for the days it ran.
   const part = Math.min(1, (b.period.endDay - b.period.startDay) / 7);
-  const takings = Math.round(arch.takings * b.state.capacity * traffic(b.state.reputation) * workMult * part);
-  const upkeep = Math.round((arch.costs * b.state.capacity ** 0.85 * b.state.costFactor + stage.rent + (stage.licence ?? 0) + stage.protection * protection) * part);
+  const district = districtOf(b.district);
+  const base = Math.round(arch.takings * b.state.capacity * traffic(b.state.reputation) * district.traffic * workMult * part);
+  const event = settleEvent(b, base, b.period.slots, p);
+  const takings = Math.max(0, base + (event?.change ?? 0));
+  const fixed = (stage.rent + (stage.licence ?? 0)) * district.rent + stage.protection * protection * district.risk;
+  const upkeep = Math.round((arch.costs * b.state.capacity ** 0.85 * b.state.costFactor + fixed) * part);
   const profit = takings - upkeep;
   b.till += profit;
 
@@ -653,6 +691,7 @@ function closePeriod(b, { growthRate, weekday, params: p }, out) {
     profit,
     till: b.till,
     worked: !!work,
+    ...(event ? { event } : {}),
     actions: b.period.slots.map((s) => ({ action: s.action, by: s.by, band: s.band })),
     bands: stateBands(b, p),
   };
@@ -666,5 +705,5 @@ function closePeriod(b, { growthRate, weekday, params: p }, out) {
     liquidate(b, b.period.endDay, 'failed', out, p);
     return;
   }
-  b.period = newPeriod(b.period.index + 1, b.period.endDay, weekday);
+  startPeriod(b, b.period.index + 1, b.period.endDay, weekday, seed, p);
 }

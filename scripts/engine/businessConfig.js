@@ -14,23 +14,29 @@ const ability = (name) => Object.freeze({ kind: 'ability', ability: name });
 /** Cyberpunk RED skills the business loop uses, with the stat each falls back on. */
 export const SKILLS = Object.freeze({
   basicTech: skill('Basic Tech', 'tech'),
+  bribery: skill('Bribery', 'cool'),
   bureaucracy: skill('Bureaucracy', 'int'),
   business: skill('Business', 'int'),
   composition: skill('Composition', 'int'),
   conversation: skill('Conversation', 'emp'),
   cybertech: skill('Cybertech', 'tech'),
+  driveLand: skill('Drive Land Vehicle', 'ref'),
   electronics: skill('Electronics/Security Tech', 'tech'),
   humanPerception: skill('Human Perception', 'emp'),
   landVehicleTech: skill('Land Vehicle Tech', 'tech'),
   librarySearch: skill('Library Search', 'int'),
   localExpert: skill('Local Expert', 'int'),
   paramedic: skill('Paramedic', 'tech'),
+  perception: skill('Perception', 'int'),
+  personalGrooming: skill('Personal Grooming', 'cool'),
   persuasion: skill('Persuasion', 'cool'),
+  photography: skill('Photography/Film', 'tech'),
   playInstrument: skill('Play Instrument', 'tech'),
   streetwise: skill('Streetwise', 'cool'),
   tactics: skill('Tactics', 'int'),
   trading: skill('Trading', 'cool'),
   wardrobe: skill('Wardrobe & Style', 'cool'),
+  weaponstech: skill('Weaponstech', 'tech'),
 });
 
 /** Role abilities, by the name Cyberpunk RED gives them (`system.mainRoleAbility`). */
@@ -50,7 +56,7 @@ const S = SKILLS;
 const A = ABILITIES;
 
 /**
- * The four archetypes of B1. `takings` and `costs` are weekly, at Capacity 1 and a neutral
+ * The ten archetypes (four from B1, six from B2). `takings` and `costs` are weekly, at Capacity 1 and a neutral
  * Reputation; `setup` is the range a setup roll's band picks from; `trade` are the skills that work
  * the shop; `abilities` are the role abilities that fit its setup and its complementary checks.
  */
@@ -59,7 +65,28 @@ export const ARCHETYPES = Object.freeze({
   garage: Object.freeze({ id: 'garage', takings: 240, costs: 165, setup: [800, 2500], trade: [S.basicTech, S.landVehicleTech], abilities: [A.maker, A.moto] }),
   bar: Object.freeze({ id: 'bar', takings: 250, costs: 175, setup: [1000, 3000], trade: [S.conversation, S.persuasion, S.playInstrument], abilities: [A.charismaticImpact, A.operator] }),
   infoShop: Object.freeze({ id: 'infoShop', takings: 230, costs: 155, setup: [700, 2200], trade: [S.librarySearch, S.electronics], abilities: [A.interface, A.operator] }),
+  boutique: Object.freeze({ id: 'boutique', takings: 240, costs: 165, setup: [900, 2800], trade: [S.wardrobe, S.personalGrooming], abilities: [A.credibility, A.charismaticImpact] }),
+  gunShop: Object.freeze({ id: 'gunShop', takings: 270, costs: 190, setup: [1500, 3000], trade: [S.weaponstech, S.trading], abilities: [A.operator, A.maker] }),
+  courier: Object.freeze({ id: 'courier', takings: 220, costs: 150, setup: [600, 2000], trade: [S.driveLand, S.localExpert], abilities: [A.moto, A.operator] }),
+  security: Object.freeze({ id: 'security', takings: 250, costs: 175, setup: [800, 2500], trade: [S.tactics, S.persuasion], abilities: [A.combatAwareness, A.backup] }),
+  media: Object.freeze({ id: 'media', takings: 225, costs: 155, setup: [700, 2200], trade: [S.composition, S.photography], abilities: [A.credibility] }),
+  foodStall: Object.freeze({ id: 'foodStall', takings: 200, costs: 135, setup: [500, 1500], trade: [S.streetwise, S.localExpert], abilities: [A.operator] }),
 });
+
+/**
+ * Night City's districts, with the ids Night City Map uses. `traffic` multiplies takings, `rent`
+ * multiplies rent and licence fees, and `risk` multiplies protection money and how often trouble
+ * comes. A business with no district is average on all three.
+ */
+export const DISTRICTS = Object.freeze(Object.fromEntries([
+  ['exec', 1.25, 1.6, 0.6], ['westbrook', 1.2, 1.45, 0.7], ['japan', 1.15, 1.15, 1.1], ['watson', 1.1, 1.0, 1.0],
+  ['china', 1.1, 1.0, 1.1], ['europe', 1.05, 1.1, 0.9], ['marina', 1.0, 1.15, 0.9], ['uni', 1.0, 1.0, 0.9],
+  ['glen', 1.0, 1.05, 0.9], ['heywood', 1.0, 0.95, 1.0], ['bank', 0.95, 0.9, 1.2], ['med', 0.95, 0.9, 1.2],
+  ['rancho', 0.9, 0.9, 0.9], ['south', 0.85, 0.75, 1.4], ['hind', 0.8, 0.8, 1.2], ['ocz', 0.8, 0.65, 1.6],
+  ['pacifica', 0.75, 0.6, 1.6], ['morro', 0.7, 0.75, 1.3], ['oldcorp', 0.6, 0.5, 2.0], ['oldcc', 0.6, 0.5, 2.0],
+].map(([id, traffic, rent, risk]) => [id, Object.freeze({ id, traffic, rent, risk })])));
+
+export const districtOf = (id) => DISTRICTS[id] ?? { id: '', traffic: 1, rent: 1, risk: 1 };
 
 /** In display order. */
 export const ACTION_IDS = Object.freeze(['work', 'promote', 'source', 'fixUp', 'keepSafe']);
@@ -72,7 +99,7 @@ export const ACTION_IDS = Object.freeze(['work', 'promote', 'source', 'fixUp', '
 export const ACTIONS = Object.freeze({
   work: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.humanPerception, A.medicine, A.charismaticImpact] }),
   promote: Object.freeze({ skills: [S.persuasion, S.wardrobe, S.composition], abilities: [A.credibility, A.charismaticImpact], help: [S.streetwise, S.localExpert] }),
-  source: Object.freeze({ skills: [S.trading, S.streetwise], abilities: [A.operator], help: [S.business, S.localExpert] }),
+  source: Object.freeze({ skills: [S.trading, S.streetwise], abilities: [A.operator, A.moto], help: [S.business, S.localExpert] }),
   fixUp: Object.freeze({ skills: [S.basicTech], abilities: [A.maker], help: [S.electronics, S.landVehicleTech] }),
   keepSafe: Object.freeze({ skills: [S.tactics, S.persuasion], abilities: [A.combatAwareness, A.backup], help: [S.streetwise, S.humanPerception] }),
 });
@@ -136,12 +163,42 @@ export const BUSINESS_DEFAULTS = Object.freeze({
   failurePeriods: 2,
   /** What the gear fetches when a business closes: when it fails, and when the partners choose to. */
   salvage: Object.freeze({ failed: 0.25, closed: 0.5 }),
+  /**
+   * Weekly events (DESIGN §26.4): the chance of one each week before the district's risk, less once
+   * registered. An event is answered with a slot and a roll before the week closes; unanswered, it
+   * costs its share of the week's takings. A good event (a windfall) only pays if answered well.
+   */
+  events: Object.freeze({
+    chance: 0.25,
+    registeredFactor: 0.8,
+    /** The share of the week's takings lost: unanswered, failed, fumbled. A success loses nothing. */
+    loss: Object.freeze({ unanswered: 0.15, failure: 0.1, fumble: 0.2 }),
+    /** A windfall answered well adds this share of the week's takings, by band. */
+    windfall: byBand([0, 0, 0.05, 0.15, 0.2, 0.3]),
+  }),
   /** The most weekly closes run at once after the calendar jumps. */
   catchUpPeriods: 8,
   digestCap: 12,
   ledgerCap: 120,
   maxGearItems: 6,
   maxPartners: 6,
+});
+
+/**
+ * The kinds of event. `weight` is how often each comes up, `uses` answer it (with `trade` adding the
+ * archetype's trade skills), `security` events are also covered by a successful Keep it safe that
+ * week, and `hit` is what an unanswered or failed event does to the state on top of the lost takings.
+ * `stage` limits an event to registered businesses.
+ */
+export const EVENTS = Object.freeze({
+  shakedown: Object.freeze({ weight: 3, security: true, uses: [S.persuasion, S.streetwise, A.combatAwareness, A.backup], hit: Object.freeze({ reputation: -1 }) }),
+  theft: Object.freeze({ weight: 2, security: true, uses: [S.perception, S.electronics, S.tactics, A.combatAwareness, A.interface], hit: Object.freeze({}) }),
+  breakdown: Object.freeze({ weight: 2, trade: true, uses: [S.basicTech, A.maker], hit: Object.freeze({ capacity: -0.05 }) }),
+  shortage: Object.freeze({ weight: 2, uses: [S.trading, S.streetwise, S.business, A.operator, A.moto], hit: Object.freeze({ costFactor: 0.02 }) }),
+  rival: Object.freeze({ weight: 2, uses: [S.persuasion, S.business, S.composition, A.credibility, A.charismaticImpact], hit: Object.freeze({ reputation: -3 }) }),
+  trouble: Object.freeze({ weight: 2, trade: true, uses: [S.humanPerception, S.persuasion, S.conversation], hit: Object.freeze({ reputation: -2 }) }),
+  inspection: Object.freeze({ weight: 2, stage: 1, uses: [S.bureaucracy, Object.freeze({ ...S.localExpert, dvAdd: 2 }), Object.freeze({ ...S.bribery, dvAdd: 2 }), A.backup], hit: Object.freeze({ compliance: -8 }) }),
+  windfall: Object.freeze({ weight: 2, good: true, trade: true, uses: [S.business, S.trading, A.operator], hit: Object.freeze({}) }),
 });
 
 /** The DV for a stage's actions. */

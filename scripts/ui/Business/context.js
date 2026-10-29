@@ -6,7 +6,7 @@
 import {
   ARCHETYPES, ACTION_IDS, partnerOf, holders, totalUnits, unitValue, shareOf, bookValue, drawAllowance, fundingShortfall,
   stateBands, lastDigest, weekdayOf, gearValue, rollSpec, BUSINESS_DEFAULTS,
-  daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, PROPOSAL_RULES,
+  daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
 } from '../../engine/index.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
@@ -27,6 +27,13 @@ export function usableActors() {
   const characters = game.actors.filter((a) => a.type === 'character');
   const usable = game.user.isGM ? characters.filter((a) => a.hasPlayerOwner) : characters.filter((a) => a.testUserPermission(game.user, 'OWNER'));
   return (game.user.isGM && !usable.length ? characters : usable).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Districts for the Start a business form, by name, after "none". */
+export function districtOptions() {
+  return [{ value: '', label: L('NCI.Business.NoDistrict') }, ...Object.keys(DISTRICTS)
+    .map((id) => ({ value: id, label: L(`NCI.District.${id}`) }))
+    .sort((a, b) => a.label.localeCompare(b.label))];
 }
 
 export function archetypeOptions() {
@@ -53,6 +60,7 @@ export function startContext(app) {
   const others = game.actors.filter((a) => a.type === 'character' && a.id !== actor?.id && a.hasPlayerOwner).sort((a, b) => a.name.localeCompare(b.name));
   return {
     archetypes: archetypeOptions(),
+    districts: districtOptions(),
     partners: others.map((a) => ({ id: a.id, name: a.name })),
     wealth: whole(actor?.system?.wealth?.value ?? 0),
     maxSweat: BUSINESS_DEFAULTS.maxSweatPct,
@@ -69,7 +77,7 @@ export function businessContext(business, actor) {
     id: business.id,
     name: business.name,
     archetype: L(`NCI.Business.Archetype.${business.archetype}.Name`),
-    location: business.location,
+    location: [business.district ? L(`NCI.District.${business.district}`) : '', business.location].filter(Boolean).join(', '),
     stage: L(`NCI.Business.Stage.${business.stage}`),
     status,
     statusLabel: L(`NCI.Business.Status.${status}`),
@@ -191,7 +199,27 @@ function weekContext(business, actor, canAct) {
       };
     }),
     helped: actor && helped && canAct ? L('NCI.Business.AlreadyHelped') : '',
+    event: eventContext(business, canAct, free),
     unworkedNote: L('NCI.Business.UnworkedNote'),
+  };
+}
+
+/** This week's event, if there is one, and whether it can still be answered. */
+function eventContext(business, canAct, free) {
+  const event = business.period.event;
+  if (!event || !EVENTS[event.kind]) return null;
+  const def = EVENTS[event.kind];
+  const answer = business.period.slots.find((s) => s.action === 'respond');
+  const uses = eventUses(business, event.kind).map((u) => (u.kind === 'ability' ? u.ability : u.skill) + (u.dvAdd ? ` (DV +${u.dvAdd})` : ''));
+  return {
+    name: L(`NCI.Event.${event.kind}.Name`),
+    hint: L(`NCI.Event.${event.kind}.Hint`),
+    good: !!def.good,
+    uses: L('NCI.Business.AnswerWith', { skills: uses.join(', ') }),
+    answered: answer ? L('NCI.Business.TakenBy', { name: nameOf(business, answer.by), band: L(`NCI.Roll.Band.${answer.band}`) }) : '',
+    security: def.security ? L('NCI.Business.SecurityNote') : '',
+    canAnswer: canAct && free && !answer,
+    ifNot: def.good ? L('NCI.Business.WindfallIfNot') : L('NCI.Business.EventIfNot'),
   };
 }
 
@@ -223,8 +251,9 @@ function digestRow(business, d) {
     cls: d.profit > 0 ? 'nci-up' : d.profit < 0 ? 'nci-down' : 'nci-flat',
     till: whole(d.till),
     actions: d.actions.length
-      ? d.actions.map((a) => L('NCI.Business.DigestAction', { action: L(`NCI.Business.Action.${a.action}.Name`), name: nameOf(business, a.by), band: L(`NCI.Roll.Band.${a.band}`) })).join('; ')
+      ? d.actions.map((a) => L('NCI.Business.DigestAction', { action: L(a.action === 'respond' ? 'NCI.Business.Answer' : `NCI.Business.Action.${a.action}.Name`), name: nameOf(business, a.by), band: L(`NCI.Roll.Band.${a.band}`) })).join('; ')
       : L('NCI.Business.NoActions'),
+    event: d.event ? L(`NCI.Business.EventOutcome.${d.event.outcome}`, { event: L(`NCI.Event.${d.event.kind}.Name`), change: signed(d.event.change) }) : '',
   };
 }
 

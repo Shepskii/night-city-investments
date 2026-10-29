@@ -44,6 +44,8 @@ export function normalizeBusiness(raw) {
     name: String(b.name ?? ''),
     archetype: ARCHETYPES[b.archetype] ? b.archetype : 'clinic',
     location: String(b.location ?? ''),
+    /** A Night City district id (businessConfig DISTRICTS), or '' for none. */
+    district: String(b.district ?? ''),
     stage: int(b.stage),
     status: BUSINESS_STATUS.includes(b.status) ? b.status : 'forming',
     founderId: b.founderId ?? null,

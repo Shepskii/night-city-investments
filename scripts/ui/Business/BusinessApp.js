@@ -54,6 +54,7 @@ export class BusinessApp extends BaseApplication {
       addDays: BusinessApp._onAddDays,
       proposeStepUp: BusinessApp._onProposeStepUp,
       stepUpRoll: BusinessApp._onStepUpRoll,
+      respond: BusinessApp._onRespond,
     },
   };
 
@@ -141,6 +142,7 @@ export class BusinessApp extends BaseApplication {
       name: value(target, 'name').trim(),
       archetype: value(target, 'archetype'),
       location: value(target, 'location').trim(),
+      district: value(target, 'district'),
       cash: amount(target, 'cash'),
       gear: gearFrom(target),
       invite,
@@ -216,6 +218,11 @@ export class BusinessApp extends BaseApplication {
 
   static async _onProposeStepUp() {
     if (await this._confirm('NCI.Business.StepUpConfirm')) return this._send('propose', { kind: 'stepUp' });
+  }
+
+  static _onRespond() {
+    const kind = this.business?.period?.event?.kind;
+    this._roll({ type: 'respond' }, L('NCI.Business.AnswerTitle', { event: kind ? L(`NCI.Event.${kind}.Name`) : '' }));
   }
 
   static _onStepUpRoll() {

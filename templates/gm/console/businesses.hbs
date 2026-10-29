@@ -30,7 +30,7 @@
     <div>{{money}}</div>
     {{#if setup}}<div class="nci-muted">{{setup}}</div>{{/if}}
     {{#if state}}<div class="nci-muted">{{state}}</div>{{/if}}
-    {{#if week}}<div class="nci-muted">{{week}}</div>{{/if}}
+    {{#if week}}<div class="nci-muted">{{week}}{{#if event}} {{event}}{{/if}}</div>{{/if}}
     {{#if last}}<div class="nci-muted">{{last}}</div>{{/if}}
     <div class="nci-actions">
       <button type="button" data-action="businessOpen" data-id="{{id}}"><i class="fas fa-store"></i> {{localize "NCI.GMBusiness.Open"}}</button>
