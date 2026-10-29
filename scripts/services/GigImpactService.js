@@ -9,13 +9,15 @@
  */
 
 import {
-  GIG_OUTCOMES, resolveClient, parseReward, planGigImpact, gigHeadlineKey, recentGigAbs, isKnownGig,
+  GIG_OUTCOMES, resolveClient, matchBusiness, parseReward, planGigImpact, gigHeadlineKey, recentGigAbs, isKnownGig,
   addPending, removePending, addHistory, setMapping, removeMapping, sanitizeGigEdits, normalizeName,
   makeImpact, percentToAmount, logEntry, timeOf,
 } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
 import { log, isActiveGM, L } from '../utils/helpers.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
+import { BusinessRepository } from '../data/BusinessRepository.js';
+import { BusinessService } from './BusinessService.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { MarketClock } from './MarketClockService.js';
@@ -39,6 +41,7 @@ const historyEntry = (rec, status, extra = {}) => ({
   outcome: rec.outcome,
   reward: rec.reward,
   companyId: rec.companyId ?? null,
+  businessId: rec.businessId ?? null,
   how: rec.how ?? null,
   amount: rec.amount ?? 0,
   percent: rec.percent ?? 0,
@@ -137,6 +140,10 @@ class GigImpactServiceImpl {
       date: MarketClock.dateString(),
       runners: this._runners(p.runners),
     };
+    // A gig for a player's own business changes the business, not a share price (DESIGN §26.5).
+    const own = matchBusiness({ client: p.client, notes: p.notes }, BusinessRepository.all());
+    if (own) return this._businessGig(gigs, { ...base, businessId: own.businessId, how: own.how });
+
     const res = resolveClient(
       { client: p.client, notes: p.notes, text: [p.title, p.desc, p.notes].filter(Boolean).join(' ') },
       CompanyRepository.all({ includeUnlisted: true }),
@@ -164,6 +171,38 @@ class GigImpactServiceImpl {
     this._notice('Mapping', queued);
     Hooks.callAll(HOOKS.GIG_IMPACT, { status: 'unmatched', record: queued });
     return { ok: true, status: 'unmatched', id: queued.id };
+  }
+
+  /** Queue a player business's gig for the GM, or apply it when approval is off. */
+  async _businessGig(gigs, rec) {
+    const planned = { ...rec, ...(BusinessService.planGig(rec) ?? {}) };
+    if (this.approvalRequired()) {
+      const queued = { ...planned, kind: 'business', reason: 'approval' };
+      await this._commit(addPending(gigs, queued));
+      this._notice('Business', queued);
+      Hooks.callAll(HOOKS.GIG_IMPACT, { status: 'pending', record: queued });
+      return { ok: true, status: 'pending', id: queued.id, businessId: rec.businessId };
+    }
+    return this._applyBusinessGig(gigs, planned);
+  }
+
+  async _applyBusinessGig(gigs, rec) {
+    const out = await BusinessService.applyGig(rec);
+    const status = out.ok ? 'applied' : 'ignored';
+    await this._commit(addHistory(gigs, historyEntry({ ...rec, ...(out.plan ?? {}) }, status, out.ok ? { reputation: out.plan.reputation, takings: out.plan.takings } : { reason: out.reason })));
+    Hooks.callAll(HOOKS.GIG_IMPACT, { status, record: rec });
+    return { ok: true, status, businessId: rec.businessId };
+  }
+
+  /** Approve a queued gig for a player's business. */
+  approveBusiness(id) {
+    if (!isActiveGM()) return Promise.resolve({ ok: false, status: 'not-gm' });
+    return this._queue.run(async () => {
+      const gigs = MarketStore.getGigs();
+      const rec = gigs.pending.find((p) => p.id === id && p.kind === 'business');
+      if (!rec) return { ok: false, status: 'unknown' };
+      return this._applyBusinessGig(removePending(gigs, id), rec);
+    });
   }
 
   /** The characters among a report's runners. Anything else (an unknown id, an NPC) is dropped. */
@@ -198,7 +237,8 @@ class GigImpactServiceImpl {
 
   _notice(kind, rec) {
     const company = rec.companyId ? CompanyRepository.get(rec.companyId) : null;
-    const text = L(`NCI.Gig.Notice.${kind}`, { client: rec.client || rec.title || '?', name: company?.name ?? '', outcome: L(`NCI.Gig.Outcome.${rec.outcome}`).toLowerCase() });
+    const name = company?.name ?? (rec.businessId ? BusinessRepository.get(rec.businessId)?.name : '') ?? '';
+    const text = L(`NCI.Gig.Notice.${kind}`, { client: rec.client || rec.title || '?', name, outcome: L(`NCI.Gig.Outcome.${rec.outcome}`).toLowerCase() });
     if (kind === 'Mapping') ui.notifications.warn(text);
     else ui.notifications.info(text);
   }

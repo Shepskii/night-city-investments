@@ -211,3 +211,16 @@ test('a character\'s stakes in open businesses show in the terminal\'s Portfolio
   assert.equal(stakes[0].value, Math.round(shareOf(b, med.id) * bookValue(b)));
   assert.equal(stakes[0].stage, 'Registered business');
 });
+
+test('the Gigs tab shows a gig for the players\' business in its own section', async () => {
+  const { GigImpactService } = await import('../scripts/services/GigImpactService.js');
+  const b = S.BusinessRepository.all()[0];
+  const out = await GigImpactService.report({ gigId: 'w1', outcome: 'done', client: b.name, reward: 1500 });
+  assert.equal(out.status, 'pending');
+  const app = new Apps.GMConsole();
+  app.tab = 'gigs';
+  const html = render('templates/gm/console.hbs', await app._prepareContext());
+  assertClean(html, 'gigs tab with a business gig');
+  assert.match(text(html), /For players(&#x27;|')? businesses/);
+  assert.match(html, /data-action="gigApproveBusiness"/);
+});

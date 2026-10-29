@@ -7,6 +7,7 @@
 import { L } from '../../format.js';
 import { CompanyRepository } from '../../../data/CompanyRepository.js';
 import { MarketStore } from '../../../data/MarketStore.js';
+import { BusinessRepository } from '../../../data/BusinessRepository.js';
 import { GigImpactService } from '../../../services/GigImpactService.js';
 import { field, gigField, report, gigResult, companyOptions } from '../shared.js';
 
@@ -19,6 +20,10 @@ async function onGigApprove(event, target) {
     headline: gigField(target, 'gigHeadline')?.value ?? '',
   };
   gigResult(await GigImpactService.approve(target.dataset.id, edits));
+}
+
+async function onGigApproveBusiness(event, target) {
+  gigResult(await GigImpactService.approveBusiness(target.dataset.id));
 }
 
 async function onGigDiscard(event, target) {
@@ -59,6 +64,7 @@ async function onGigClearHistory() {
 
 export const actions = {
   gigApprove: onGigApprove,
+  gigApproveBusiness: onGigApproveBusiness,
   gigDiscard: onGigDiscard,
   gigMap: onGigMap,
   gigAddMapping: onGigAddMapping,
@@ -75,6 +81,9 @@ function build(companyOptions) {
   const gigs = MarketStore.getGigs();
   const byId = new Map(CompanyRepository.all({ includeUnlisted: true }).map((c) => [c.id, c]));
   const label = (id) => (byId.has(id) ? `${byId.get(id).ticker} ${byId.get(id).name}` : id);
+  const businesses = new Map(BusinessRepository.all().map((b) => [b.id, b.name]));
+  const target = (h) => (h.companyId ? label(h.companyId) : h.businessId ? L('NCI.Gig.BusinessLabel', { name: businesses.get(h.businessId) ?? h.businessId }) : '—');
+  const ownEffect = (h) => L('NCI.Gig.BusinessEffect', { reputation: sign(h.reputation ?? 0), takings: sign(Math.round((h.takings ?? 0) * 100)) });
   const sign = (n) => `${n > 0 ? '+' : ''}${n}`;
   const base = (p) => ({
     id: p.id,
@@ -103,6 +112,13 @@ function build(companyOptions) {
       headline: p.headline ?? '',
       how: L(`NCI.Gig.How.${p.how}`),
     })),
+    businessGigs: gigs.pending.filter((p) => p.kind === 'business').map((p) => ({
+      ...base(p),
+      business: businesses.get(p.businessId) ?? p.businessId,
+      effect: ownEffect(p),
+      weaker: p.recent ? L('NCI.Gig.Weaker', { n: p.recent }) : '',
+      how: L(`NCI.Gig.How.${p.how}`),
+    })),
     mappings: Object.entries(gigs.mappings).map(([key, m]) => ({
       key,
       label: m.label,
@@ -110,10 +126,10 @@ function build(companyOptions) {
     })),
     history: gigs.history.slice(-15).reverse().map((h) => ({
       ...base(h),
-      company: h.companyId ? label(h.companyId) : '—',
+      company: target(h),
       status: L(`NCI.Gig.Status.${h.status}`),
       applied: h.status === 'applied',
-      effect: h.status === 'applied' ? `${sign(h.percent)}%` : '',
+      effect: h.status !== 'applied' ? '' : h.businessId ? ownEffect(h) : `${sign(h.percent)}%`,
     })),
     outcomes: ['done', 'failed'].map((o) => ({ value: o, label: L(`NCI.Gig.Outcome.${o}`) })),
   };

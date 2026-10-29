@@ -97,6 +97,9 @@ export function normalizeBusiness(raw) {
     retry: b.retry ?? {},
     /** A fixer's payment was missed: collectors come next week. */
     collectors: b.collectors === true,
+    /** Gigs run for the business, newest last, and next week's takings change from them. */
+    gigs: b.gigs ?? [],
+    boost: Number(b.boost ?? 0),
   };
 }
 

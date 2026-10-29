@@ -206,6 +206,21 @@ export const BUSINESS_DEFAULTS = Object.freeze({
       premium: byBand([0, 0, -0.1, 0, 0.1, 0.2]),
     }),
   }),
+  /**
+   * Gigs run for a player's own business (DESIGN §26.5) change its business, not a share price:
+   * Reputation at once, and next week's takings. The size follows the reward (a reward of `reward`
+   * eb is size 1, within `size`), and each gig for the business in the last `windowDays` weakens the
+   * next, so a crew cannot farm its own business.
+   */
+  gigs: Object.freeze({
+    reward: 2000,
+    size: Object.freeze([0.25, 1.5]),
+    windowDays: 28,
+    done: Object.freeze({ reputation: 4, takings: 0.1 }),
+    failed: Object.freeze({ reputation: -6, takings: -0.1 }),
+    boostCap: 0.3,
+    logCap: 20,
+  }),
   /** The most weekly closes run at once after the calendar jumps. */
   catchUpPeriods: 8,
   digestCap: 12,

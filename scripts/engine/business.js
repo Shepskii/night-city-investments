@@ -29,6 +29,7 @@
 
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import { drawEvent, eventUses, settleEvent } from './businessEvents.js';
+import { normalizeName } from './gigImpact.js';
 import {
   fixerOffer, takeFixerLoan, bankCheck, applyBankRoll, repayLoan, payLoans, investorOffer, inviteInvestor, acceptInvestment,
   angelCheck, findAngel, applyAngelRoll, openLoans, averageProfit,
@@ -677,6 +678,49 @@ function enact(b, proposal, day, p, ctx) {
   }
 }
 
+// ── Gigs for a player's own business ─────────────────────────────────────────
+
+/**
+ * Which open player business a gig is for, if any: a `[NCI: <business id>]` tag in its notes, or a
+ * client that names the business, exactly or within the client's text.
+ * @returns {{businessId: string, how: 'tag'|'exact'|'contains'}|null}
+ */
+export function matchBusiness(gig, businesses) {
+  const open = businesses.filter((b) => b.status === 'open');
+  const tag = /\[NCI:\s*([^\]\s]+)\s*\]/i.exec(String(gig.notes ?? ''))?.[1];
+  const tagged = tag ? open.find((b) => b.id === tag) : null;
+  if (tagged) return { businessId: tagged.id, how: 'tag' };
+  const client = normalizeName(gig.client);
+  if (!client) return null;
+  const exact = open.find((b) => normalizeName(b.name) === client);
+  if (exact) return { businessId: exact.id, how: 'exact' };
+  const inside = open.filter((b) => normalizeName(b.name).length >= 4 && client.includes(normalizeName(b.name)));
+  return inside.length === 1 ? { businessId: inside[0].id, how: 'contains' } : null;
+}
+
+/** What a gig would do to a business: Reputation now and next week's takings, weaker after recent gigs. */
+export function planBusinessGig(b, { outcome, reward, day }, p = BUSINESS_DEFAULTS) {
+  const g = p.gigs;
+  const terms = g[outcome] ?? g.done;
+  const size = clamp((Number(reward) || 0) / g.reward, g.size[0], g.size[1]);
+  const recent = b.gigs.filter((x) => day - x.day < g.windowDays).length;
+  const scale = size / (1 + recent);
+  return { reputation: Math.round(terms.reputation * scale * 10) / 10, takings: Math.round(terms.takings * scale * 1000) / 1000, recent };
+}
+
+/** Apply a gig outcome to a business. Once per gig (`key`). */
+export function applyBusinessGig(business, { key, outcome, reward, day }, p = BUSINESS_DEFAULTS) {
+  const b = structuredClone(normalizeBusiness(business));
+  if (b.status !== 'open') return fail('not-open');
+  if (b.gigs.some((x) => x.key === key)) return fail('duplicate');
+  const plan = planBusinessGig(b, { outcome, reward, day }, p);
+  b.state.reputation = clamp(b.state.reputation + plan.reputation, 0, 100);
+  b.boost = clamp(b.boost + plan.takings, -p.gigs.boostCap, p.gigs.boostCap);
+  b.gigs = [...b.gigs, { key, outcome, day, reputation: plan.reputation, takings: plan.takings }].slice(-p.gigs.logCap);
+  addLedger(b, { day, kind: outcome === 'done' ? 'gigDone' : 'gigFailed', amount: 0 }, p);
+  return { ok: true, business: b, wealth: {}, events: [{ type: 'gig', outcome, ...plan }], plan };
+}
+
 // ── Time passing ─────────────────────────────────────────────────────────────
 
 /**
@@ -774,7 +818,10 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
   // A first period that began part-way through a week earns for the days it ran.
   const part = Math.min(1, (b.period.endDay - b.period.startDay) / 7);
   const district = districtOf(b.district);
-  const base = Math.round(arch.takings * b.state.capacity * traffic(b.state.reputation) * district.traffic * workMult * part);
+  // Gigs run for the business since last week move this week's takings, once.
+  const base = Math.round(arch.takings * b.state.capacity * traffic(b.state.reputation) * district.traffic * workMult * (1 + b.boost) * part);
+  const boost = b.boost;
+  b.boost = 0;
   const event = settleEvent(b, base, b.period.slots, p);
   const takings = Math.max(0, base + (event?.change ?? 0));
   const fixed = (stage.rent + (stage.licence ?? 0)) * district.rent + stage.protection * protection * district.risk;
@@ -794,6 +841,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
     ...(loans.interest || loans.principal || loans.missed.length ? { interest: loans.interest, repaid: loans.principal, missed: loans.missed } : {}),
     worked: !!work,
     ...(event ? { event } : {}),
+    ...(boost ? { boost } : {}),
     actions: b.period.slots.map((s) => ({ action: s.action, by: s.by, band: s.band })),
     bands: stateBands(b, p),
   };

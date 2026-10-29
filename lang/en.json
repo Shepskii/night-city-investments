@@ -999,8 +999,14 @@
       },
       "Notice": {
         "Review": "A gig {outcome} for {client} ({name}) is waiting for your approval in the Gigs tab.",
-        "Mapping": "A gig for \"{client}\" needs a company. Open the Gigs tab to choose one."
+        "Mapping": "A gig for \"{client}\" needs a company. Open the Gigs tab to choose one.",
+        "Business": "A gig {outcome} for {client} is for the players' business {name}. It is waiting for your approval in the Gigs tab."
       },
+      "BusinessLabel": "{name} (players' business)",
+      "BusinessEffect": "Reputation {reputation}, next week's takings {takings}%",
+      "Weaker": "(weaker: {n} earlier gig(s) for it this month)",
+      "BusinessTitle": "For players' businesses",
+      "BusinessHint": "Gigs whose client is a business the players own change that business, not a share price: its Reputation at once and next week's takings. Each gig for the same business within four weeks counts for less than the one before.",
       "Result": {
         "applied": "Impact queued. It shows in about {days} day(s).",
         "pending": "Waiting for your approval.",
@@ -1565,6 +1571,8 @@
         "expansion": "An expansion started",
         "registrationFee": "Registration fee, paid by {name}",
         "registered": "Registered",
+        "gigDone": "A gig for the business went well",
+        "gigFailed": "A gig for the business went wrong",
         "loan": "A loan",
         "repay": "A loan paid off early",
         "missedPayment": "A loan payment missed",
@@ -1691,6 +1699,7 @@
       "BankTitle": "{name}: a bank loan",
       "LoanPending": "A loan is waiting for the partners' votes on the Partners tab.",
       "DigestLoans": "Loans: {interest} eb interest, {repaid} eb repaid.",
+      "DigestGig": "Gigs for the business: takings {pct}%.",
       "DigestMissed": { "fixer": "A fixer's payment was missed.", "bank": "A bank payment was missed." },
       "Investors": "Investors",
       "InvestorsLater": "Investors only buy into registered businesses.",

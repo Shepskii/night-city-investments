@@ -10,6 +10,7 @@
 
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
+  applyBusinessGig, planBusinessGig,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { log, isActiveGM } from '../utils/helpers.js';
@@ -203,6 +204,30 @@ class BusinessServiceImpl {
   /** A partner has died or left the table: the others may buy the stake, or it goes to the heir. */
   partnerLeaves(id, actorId) {
     return this._gm(id, (b) => markLeaving(b, actorId, this.day()));
+  }
+
+  /**
+   * A gig run for a player's own business (DESIGN §26.5): its outcome changes the business's
+   * Reputation and next week's takings. Called by the gig service, once the GM has approved it or
+   * straight away when approval is off.
+   * @param {{businessId: string, sourceKey: string, outcome: 'done'|'failed', reward: number}} rec
+   */
+  applyGig(rec) {
+    if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
+    return this._queue.run(async () => {
+      const business = BusinessRepository.get(rec.businessId);
+      if (!business) return { ok: false, reason: 'no-business' };
+      const out = applyBusinessGig(business, { key: rec.sourceKey, outcome: rec.outcome, reward: rec.reward, day: this.day() });
+      if (!out.ok) return out;
+      await this._commit(out);
+      return { ok: true, plan: out.plan };
+    });
+  }
+
+  /** What a gig would do to a business now, for the GM's approval queue. */
+  planGig(rec) {
+    const business = BusinessRepository.get(rec.businessId);
+    return business ? planBusinessGig(business, { outcome: rec.outcome, reward: rec.reward, day: this.day() }) : null;
   }
 
   /** Delete a business record outright, with its hidden state. No money moves. */
