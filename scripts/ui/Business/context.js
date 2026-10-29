@@ -48,6 +48,8 @@ function historyContext(business, bands) {
     }) : '',
     cash: weeks.length > 1 ? balanceLine(weeks.map((d) => d.till), { format: eb, tips: weeks.map((d) => `${when(d)}: ${L('NCI.Business.Till')} ${eb(d.till)}`) }) : '',
     standings: Object.entries(bands).map(([key, band]) => ({
+      // Capacity is how big the place is, not how well it is doing, so it is drawn on a neutral scale.
+      neutral: key === 'capacity',
       label: L(`NCI.Business.State.${key}`),
       now: L(`NCI.Business.Band.${key}.${band}`),
       level: BAND_LEVELS[key]?.indexOf(band) ?? -1,

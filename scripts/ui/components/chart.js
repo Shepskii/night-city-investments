@@ -116,9 +116,10 @@ export function weeklyBars(weeks, { width = 1040, height = 190, format = String,
     + groups
     + (n > 1 ? `<polyline fill="none" stroke="#f2f2f2" stroke-opacity="0.6" stroke-width="1.5" points="${profit}"/>` : '')
     + dots
-    + (max > 0 ? scaleText(max) : '')
+    // The zero mark always shows; the top and bottom only when they are clear of it.
+    + (max > 0 && y(0) - y(max) >= 12 ? scaleText(max) : '')
     + scaleText(0)
-    + (min < 0 ? scaleText(min) : '')
+    + (min < 0 && y(min) - y(0) >= 12 ? scaleText(min) : '')
     + `<text x="${gutter}" y="${height - 3}" fill="#888" font-size="10">${escapeXml(labels[0] ?? '')}</text>`
     + (n > 1 ? `<text x="${width - padX}" y="${height - 3}" text-anchor="end" fill="#888" font-size="10">${escapeXml(labels[1] ?? '')}</text>` : '')
     + `</svg>`;

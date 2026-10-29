@@ -123,7 +123,7 @@
     <h3>{{localize "NCI.Business.Standing"}}</h3>
     <div class="nci-standings">
       {{#each standings}}
-      <div class="nci-standing">
+      <div class="nci-standing{{#if neutral}} nci-neutral{{/if}}">
         <span class="nci-standing-label">{{label}}</span>
         <span class="nci-cells">{{#each cells}}<span class="nci-cell nci-lvl{{level}}" title="{{tip}}"></span>{{/each}}</span>
         <strong class="nci-lvl-text nci-lvl{{level}}">{{now}}</strong>

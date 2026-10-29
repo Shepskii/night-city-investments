@@ -237,6 +237,11 @@
 .nci-app .nci-lvl-text.nci-lvl1 { color: #e0b44a; }
 .nci-app .nci-lvl-text.nci-lvl2 { color: #6fcf97; }
 .nci-app .nci-lvl-text.nci-lvl3 { color: #3ddc84; }
+.nci-app .nci-neutral .nci-cell.nci-lvl0 { background: #1f3346; }
+.nci-app .nci-neutral .nci-cell.nci-lvl1 { background: #2a4d6e; }
+.nci-app .nci-neutral .nci-cell.nci-lvl2 { background: #3a6f9c; }
+.nci-app .nci-neutral .nci-cell.nci-lvl3 { background: #5a9fd6; }
+.nci-app .nci-neutral .nci-lvl-text { color: #7fb6e3; }
 .nci-app .nci-legend { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--nci-label); margin: -4px 0 8px; }
 .nci-app .nci-key { display: inline-block; width: 10px; height: 10px; margin-left: 8px; }
 .nci-app .nci-key-takings { background: #3ddc84; }
