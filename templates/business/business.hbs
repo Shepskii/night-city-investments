@@ -1,21 +1,23 @@
 <section class="nci-terminal nci-business">
   <nav class="nci-tabs">
-    {{#if picker.actors.length}}
-    <select name="actorId" class="nci-actor" title="{{localize 'NCI.Business.Character'}}">
-      {{#each picker.actors}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}
-    </select>
-    {{/if}}
-    {{#if picker.businesses.length}}
-    <select name="businessId" class="nci-actor" title="{{localize 'NCI.Business.Which'}}">
-      {{#each picker.businesses}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
-    </select>
-    {{/if}}
     {{#if business}}
     {{#unless business.invited}}
     {{#each tabs}}<button type="button" data-action="switchTab" data-tab="{{id}}" class="{{#if active}}active{{/if}}">{{label}}</button>{{/each}}
     {{/unless}}
     <button type="button" data-action="startNew" title="{{localize 'NCI.Business.StartHint'}}"><i class="fas fa-plus"></i> {{localize "NCI.Business.Start"}}</button>
     {{/if}}
+    <div class="nci-pickers">
+      {{#if picker.businesses.length}}
+      <select name="businessId" title="{{localize 'NCI.Business.Which'}}">
+        {{#each picker.businesses}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+      </select>
+      {{/if}}
+      {{#if picker.actors.length}}
+      <select name="actorId" class="nci-actor" title="{{localize 'NCI.Business.Character'}}">
+        {{#each picker.actors}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}
+      </select>
+      {{/if}}
+    </div>
   </nav>
 
   {{#unless picker.enabled}}<p class="nci-warn">{{localize "NCI.Business.Disabled"}}</p>{{/unless}}

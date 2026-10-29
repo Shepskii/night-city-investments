@@ -29,7 +29,7 @@ export class BusinessApp extends BaseApplication {
   static DEFAULT_OPTIONS = {
     id: 'nci-business',
     window: { title: 'NCI.Business.Title', icon: 'fas fa-store' },
-    position: { width: 760, height: 660 },
+    position: { width: 900, height: 660 },
     actions: {
       switchTab: BusinessApp._onTab,
       startNew: BusinessApp._onStartNew,

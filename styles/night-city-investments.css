@@ -163,6 +163,9 @@
 .nci-app .nci-tabs { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
 .nci-app .nci-tabs button { width: auto; padding: 0 12px; }
 .nci-app .nci-actor { margin-left: auto; max-width: 220px; }
+/* The Business window's pickers, kept together at the right of the tab bar as the market window's is. */
+.nci-app .nci-tabs .nci-pickers { display: flex; gap: 6px; margin-left: auto; flex: 0 0 auto; }
+.nci-app .nci-tabs .nci-pickers select { width: auto; max-width: 220px; margin-left: 0; }
 
 .nci-app .nci-summary { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 6px 0 10px; }
 .nci-app .nci-summary div { display: flex; flex-direction: column; }
@@ -199,6 +202,7 @@
 .nci-app .nci-days { width: 64px; }
 .nci-app .nci-rowbtns { white-space: nowrap; text-align: right; }
 .nci-app .nci-rowbtns button { width: 26px; padding: 0; }
+.nci-app .nci-rowbtns button.nci-labelled { width: auto; padding: 0 8px; }
 
 .nci-app .nci-editor label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--nci-label); }
 .nci-app .nci-editor .nci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-bottom: 8px; }

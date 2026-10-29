@@ -28,8 +28,8 @@
       <td><strong>{{name}}</strong> <span class="nci-muted">({{ticker}})</span></td>
       <td class="nci-muted">{{seen}}</td>
       <td class="nci-rowbtns">
-        <button type="button" data-action="createSuggested" data-name="{{name}}" data-ticker="{{ticker}}"><i class="fas fa-plus"></i> {{localize "NCI.Tools.Create"}}</button>
-        <button type="button" data-action="ignoreSuggested" data-name="{{name}}"><i class="fas fa-eye-slash"></i> {{localize "NCI.Tools.Ignore"}}</button>
+        <button type="button" class="nci-labelled" data-action="createSuggested" data-name="{{name}}" data-ticker="{{ticker}}"><i class="fas fa-plus"></i> {{localize "NCI.Tools.Create"}}</button>
+        <button type="button" class="nci-labelled" data-action="ignoreSuggested" data-name="{{name}}"><i class="fas fa-eye-slash"></i> {{localize "NCI.Tools.Ignore"}}</button>
       </td>
     </tr>
     {{/each}}

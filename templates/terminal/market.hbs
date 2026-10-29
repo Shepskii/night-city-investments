@@ -40,7 +40,7 @@
     <table class="nci-market"><tbody>
       {{#each portfolio.stakes}}
       <tr><td><strong>{{name}}</strong> <span class="nci-muted">{{stage}}</span></td><td>{{share}}</td><td>{{value}} eb</td>
-        <td class="nci-rowbtns"><button type="button" data-action="manageBusiness" data-id="{{id}}"><i class="fas fa-store"></i> {{localize "NCI.Portfolio.Manage"}}</button></td></tr>
+        <td class="nci-rowbtns"><button type="button" class="nci-labelled" data-action="manageBusiness" data-id="{{id}}"><i class="fas fa-store"></i> {{localize "NCI.Portfolio.Manage"}}</button></td></tr>
       {{/each}}
     </tbody></table>
     {{/if}}
