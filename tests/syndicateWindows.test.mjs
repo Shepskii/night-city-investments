@@ -102,9 +102,9 @@ test('a character\'s Portfolio tab offers to start a syndicate and invite the ot
   assert.match(html, /data-action="synFound"/);
   assert.match(html, /data-action="deposit"/, 'a character still has the wallet box');
   const at = (needle) => html.indexOf(needle);
-  const order = [at('data-action="deposit"'), at('Trading access'), at('>Syndicates<'), at('>Start a syndicate<'), at('>Positions<'), at('>Open orders<')];
+  const order = [at('>Brokerage balance<'), at('data-action="deposit"'), at('Trading access'), at('>Syndicates<'), at('>Start a syndicate<'), at('>Positions<'), at('>Open orders<')];
   assert.ok(order.every((x) => x >= 0), `every section is there: ${order}`);
-  assert.deepEqual([...order].sort((a, b) => a - b), order, 'money in and out first, then trading access, syndicates, positions and orders');
+  assert.deepEqual([...order].sort((a, b) => a - b), order, 'the balances, then money in and out, trading access, syndicates, positions and orders');
 });
 
 test('the invited character sees the invitation; once a member, the syndicate joins the account picker', async () => {

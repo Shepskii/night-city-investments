@@ -24,6 +24,17 @@
     {{#if portfolio.heat.frozen}}<p class="nci-warn">{{portfolio.heat.frozen}}</p>{{/if}}
     {{#if portfolio.heat.banned}}<p class="nci-warn">{{portfolio.heat.banned}}</p>{{/if}}
 
+    <div class="nci-summary">
+      <div><span>{{localize "NCI.Portfolio.Cash"}}</span><strong>{{portfolio.cash}} eb</strong></div>
+      {{#if portfolio.settling.length}}<div><span>{{localize "NCI.Portfolio.Settling"}}</span><strong>{{portfolio.unsettled}} eb</strong></div>{{/if}}
+      <div><span>{{localize "NCI.Portfolio.Holdings"}}</span><strong>{{portfolio.holdings}} eb</strong></div>
+      {{#if portfolio.stakesValue}}<div><span>{{localize "NCI.Portfolio.PrivateStakes"}}</span><strong>{{portfolio.stakesValue}} eb</strong></div>{{/if}}
+      <div><span>{{localize "NCI.Portfolio.Total"}}</span><strong>{{portfolio.total}} eb</strong></div>
+      <div><span>{{localize "NCI.Portfolio.Unrealized"}}</span><strong class="{{portfolio.unrealizedCls}}">{{portfolio.unrealized}}</strong></div>
+      <div><span>{{localize "NCI.Portfolio.Realized"}}</span><strong class="{{portfolio.realizedCls}}">{{portfolio.realized}}</strong></div>
+      <div><span>{{localize "NCI.Portfolio.DividendsIncome"}}</span><strong>{{portfolio.dividends}}</strong></div>
+    </div>
+
     {{#with portfolio.syndicate}}
     <h3>{{localize "NCI.Syndicate.Title" name=name}}</h3>
     {{#if pending}}<p class="nci-warn">{{localize "NCI.Portfolio.PendingRequests"}}: {{pending}}</p>{{/if}}
@@ -49,17 +60,6 @@
     </div>
     <p class="nci-hint">{{#if portfolio.access.broker}}{{localize "NCI.Access.WithdrawViaBroker"}}{{else}}{{localize "NCI.Access.WithdrawDirect"}}{{/if}}</p>
     {{/with}}
-
-    <div class="nci-summary">
-      <div><span>{{localize "NCI.Portfolio.Cash"}}</span><strong>{{portfolio.cash}} eb</strong></div>
-      {{#if portfolio.settling.length}}<div><span>{{localize "NCI.Portfolio.Settling"}}</span><strong>{{portfolio.unsettled}} eb</strong></div>{{/if}}
-      <div><span>{{localize "NCI.Portfolio.Holdings"}}</span><strong>{{portfolio.holdings}} eb</strong></div>
-      {{#if portfolio.stakesValue}}<div><span>{{localize "NCI.Portfolio.PrivateStakes"}}</span><strong>{{portfolio.stakesValue}} eb</strong></div>{{/if}}
-      <div><span>{{localize "NCI.Portfolio.Total"}}</span><strong>{{portfolio.total}} eb</strong></div>
-      <div><span>{{localize "NCI.Portfolio.Unrealized"}}</span><strong class="{{portfolio.unrealizedCls}}">{{portfolio.unrealized}}</strong></div>
-      <div><span>{{localize "NCI.Portfolio.Realized"}}</span><strong class="{{portfolio.realizedCls}}">{{portfolio.realized}}</strong></div>
-      <div><span>{{localize "NCI.Portfolio.DividendsIncome"}}</span><strong>{{portfolio.dividends}}</strong></div>
-    </div>
 
     <h3>{{localize "NCI.Access.Title"}}</h3>
     <div class="nci-access">
