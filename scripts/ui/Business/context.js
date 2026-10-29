@@ -53,13 +53,15 @@ function historyContext(business, bands) {
       label: L(`NCI.Business.State.${key}`),
       now: L(`NCI.Business.Band.${key}.${band}`),
       level: BAND_LEVELS[key]?.indexOf(band) ?? -1,
-      cells: weeks.map((d) => {
-        const past = d.bands?.[key];
-        return {
-          level: past ? BAND_LEVELS[key]?.indexOf(past) ?? -1 : -1,
-          tip: past ? `${when(d)}: ${L(`NCI.Business.Band.${key}.${past}`)}` : when(d),
-        };
-      }),
+      // Oldest week on the left; the slots after the last week stay empty until later weeks fill them.
+      cells: (() => {
+        const filled = weeks.filter((d) => d.bands?.[key]).map((d) => ({
+          level: BAND_LEVELS[key]?.indexOf(d.bands[key]) ?? -1,
+          tip: `${when(d)}: ${L(`NCI.Business.Band.${key}.${d.bands[key]}`)}`,
+        }));
+        const empty = Math.max(0, BUSINESS_DEFAULTS.digestCap - filled.length);
+        return [...filled, ...Array.from({ length: empty }, () => ({ level: -1, tip: '' }))];
+      })(),
     })),
   };
 }

@@ -221,7 +221,7 @@ test('the overview charts the weeks the business keeps: bars, cash and each stan
     assert.equal((html.match(/class="nci-chart"/g) ?? []).length, 2, 'the weekly bars and the cash line');
     assert.match(html, /<title>Week 1 \(to [^)]+\): Takings 180 eb, Upkeep 300 eb, Profit -120 eb<\/title>/);
     const reputation = html.match(/Reputation<\/span>\s*<span class="nci-cells">(.*?)<\/span>\s*<strong/s)[1];
-    assert.deepEqual([...reputation.matchAll(/nci-lvl(-?\d)/g)].map((m) => m[1]), ['0', '1', '2'], 'poor, modest, good, week by week');
+    assert.deepEqual([...reputation.matchAll(/nci-lvl(-?\d)/g)].map((m) => m[1]), ['0', '1', '2', ...Array(9).fill('-1')], 'poor, modest, good from the left, then empty slots for the weeks to come');
     assert.match(text(html), /The last 3 week\(s\)/);
   } finally {
     await S.BusinessRepository.save(saved);
