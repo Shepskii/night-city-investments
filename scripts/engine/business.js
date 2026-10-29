@@ -884,9 +884,11 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
   const takings = Math.max(0, base + (event?.change ?? 0));
   const fixed = (stage.rent + (stage.licence ?? 0)) * district.rent + stage.protection * protection * district.risk;
   const upkeep = Math.round((arch.costs * b.state.capacity ** 0.85 * b.state.costFactor + fixed) * part);
+  // The week's takings come in before its loan payments go out, so a week that earns the payment makes it.
+  b.till += takings - upkeep;
   const loans = payLoans(b, b.period.endDay, p);
   const profit = takings - upkeep - loans.interest;
-  b.till += profit - loans.principal;
+  b.till -= loans.interest + loans.principal;
 
   const digest = {
     index: b.period.index,

@@ -140,3 +140,14 @@ test('an angel is found when every partner agrees, then pitched with an opposed 
   assert.equal(lost.partners.some((x) => x.npc), false);
   assert.equal(lost.retry.angel, DAY + 14);
 });
+
+test('a payment the week\'s own takings cover is made, even if the till was short before the week closed', () => {
+  const b = apply(clinic(0, 0), { type: 'propose', businessId: 'b1', kind: 'fixerLoan', amount: 1000 }, MED).business;
+  b.till = 130; // less than the 150 due, but the week's own earnings make up the rest
+  const week = closeWeek(b).business;
+  const d = week.digests.at(-1);
+  assert.ok(130 + d.takings - d.upkeep >= 150, `the week earned ${d.takings - d.upkeep}`);
+  assert.deepEqual(d.missed, []);
+  assert.deepEqual([d.interest, d.repaid], [50, 100]);
+  assert.equal(week.till, 130 + d.takings - d.upkeep - 150);
+});
