@@ -109,10 +109,10 @@
 .nci-app tr.nci-row { cursor: pointer; background: var(--nci-row); }
 .nci-app tr.nci-row:nth-child(even) { background: var(--nci-row-alt); }
 .nci-app tr.nci-row:hover { background: var(--nci-row-hover); }
-/* The GM Console's and the Business window's tables use the market window's two row shades, clickable or not. */
-.nci-app :is(.nci-console, .nci-business) table > tbody > tr { background: var(--nci-row); }
-.nci-app :is(.nci-console, .nci-business) table > tbody > tr:nth-child(even) { background: var(--nci-row-alt); }
-.nci-app :is(.nci-console, .nci-business) table > tbody > tr.nci-row:hover { background: var(--nci-row-hover); }
+/* Tables in the GM Console, the Business window and the Portfolio tab use the market window's two row shades, clickable or not. */
+.nci-app :is(.nci-console, .nci-business, .nci-portfolio) table > tbody > tr { background: var(--nci-row); }
+.nci-app :is(.nci-console, .nci-business, .nci-portfolio) table > tbody > tr:nth-child(even) { background: var(--nci-row-alt); }
+.nci-app :is(.nci-console, .nci-business, .nci-portfolio) table > tbody > tr.nci-row:hover { background: var(--nci-row-hover); }
 
 .nci-app .nci-badge {
   font-size: 10px;
