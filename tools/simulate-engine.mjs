@@ -47,7 +47,9 @@ export function runEngine(crew, seed, { weeks = WEEKS, growthRate = GROWTH, arch
 
   // The B0 prototype's start: 1,500 eb of gear and 1,500 eb in the till, at Capacity 1.
   const trade = ARCHETYPES[archetype].trade[0];
-  let b = send(null, { type: 'found', name: 'Sim', archetype, district, cash: 1500, gear: [{ name: 'Kit', value: 1500 }] });
+  ctx.gear = [{ name: 'Kit', value: 1500 }];
+  let b = send(null, { type: 'found', name: 'Sim', archetype, district, cash: 1500 });
+  ctx.gear = [];
   b = send(b, { type: 'setupRoll', use: trade }, { ok: true, result: resolveRoll({ base: 30, roll: { total: 5, crit: null }, dv: 13 }) });
   b = normalizeBusiness({ ...b, till: 1500, assets: 1500 });
   b.state.capacity = 1;

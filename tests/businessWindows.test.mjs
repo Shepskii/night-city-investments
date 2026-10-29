@@ -7,6 +7,7 @@ import Handlebars from 'handlebars';
 import { registerPartials } from './helpers/partials.mjs';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
 import { installFakeChat } from './helpers/fakeChat.mjs';
+import { installFakeItems } from './helpers/fakeItems.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 registerPartials(Handlebars, root);
@@ -26,6 +27,8 @@ for (const actor of env.actors) {
   actor.testUserPermission = (user) => user.isGM || user.id === 'gm1' || user.id === owner;
 }
 installFakeChat();
+const fakeItems = installFakeItems();
+const kit = fakeItems.give(med, { name: 'Surgical kit', type: 'gear', system: { price: { market: 800 } } });
 // Weekly events are drawn from the business's id, so ids are fixed to keep the weeks the same each run.
 let nextId = 0;
 globalThis.foundry.utils.randomID = () => `id${String(++nextId).padStart(14, '0')}`;
@@ -101,7 +104,7 @@ test('a character with no business sees the Start a business form', async () => 
 });
 
 test('an invited partner sees the invitation; the founder sees who they are waiting for', async () => {
-  await send(med, 'found', { name: 'Back Room', archetype: 'clinic', location: 'Watson', cash: 1000, gear: [{ name: 'Surgical kit', value: 800 }], invite: [fix.id] });
+  await send(med, 'found', { name: 'Back Room', archetype: 'clinic', location: 'Watson', cash: 1000, gear: [{ uuid: kit.uuid }], invite: [fix.id] });
   const invite = await renderBusiness(windowFor(fix));
   assertClean(invite, 'invitation');
   assert.match(text(invite), /You are invited/);
@@ -223,4 +226,14 @@ test('the Gigs tab shows a gig for the players\' business in its own section', a
   assertClean(html, 'gigs tab with a business gig');
   assert.match(text(html), /For players(&#x27;|')? businesses/);
   assert.match(html, /data-action="gigApproveBusiness"/);
+});
+
+test('items dragged into the Start a business form are listed with their book value', async () => {
+  const app = windowFor(fix);
+  app.starting = true;
+  app.gearDrafts.start.push({ uuid: 'Item.x', name: 'Toolkit', value: 1200, img: '', fromActor: true });
+  const html = await renderBusiness(app);
+  assertClean(html, 'start form with dragged gear');
+  assert.match(text(html), /Toolkit 1,200 eb leaves your sheet/);
+  assert.match(html, /data-action="removeGear" data-form="start" data-index="0"/);
 });

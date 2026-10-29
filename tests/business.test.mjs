@@ -27,8 +27,8 @@ function apply(business, request, actor, extra = {}) {
 /** The worked example: the Medtech brings 1,000 eb and her surgical gear, the Fixer 1,500 eb, with a 5% sweat slice. */
 function foundClinic(extra = {}) {
   let out = apply(null, {
-    type: 'found', name: 'Back Room', archetype: 'clinic', location: 'Watson', cash: 1000, gear: [{ name: 'Surgical kit', value: 800 }], invite: ['fix'], sweat: { actorId: 'med', pct: 5 },
-  }, MED, extra);
+    type: 'found', name: 'Back Room', archetype: 'clinic', location: 'Watson', cash: 1000, invite: ['fix'], sweat: { actorId: 'med', pct: 5 },
+  }, MED, { ...extra, context: { ...extra.context, gear: [{ name: 'Surgical kit', value: 800 }] } });
   out = apply(out.business, { type: 'join', businessId: 'b1', cash: 1500 }, FIX, extra);
   return out.business;
 }
@@ -257,4 +257,16 @@ test('a failed setup never loses more than half the money put in', () => {
   b = apply(b, { type: 'setupRoll', businessId: 'b1', use: SKILLS.basicTech }, MED, { check: check(8, -4, 13) }).business;
   assert.equal(b.setup.band, 'fumble');
   assert.equal(b.escrow, 200, 'half of 400, not the 400 that half the lowest setup cost would take');
+});
+
+test('gear is read from an item: its market price times how many there are, and only things a business can own', async () => {
+  const { itemGear } = await import('../scripts/engine/index.js');
+  const kit = { type: 'gear', name: 'Medtech bag', img: 'bag.webp', system: { price: { market: 500 } } };
+  assert.deepEqual(itemGear({ ...kit, ownerId: 'med' }, 'med'), { ok: true, name: 'Medtech bag', value: 500, img: 'bag.webp', fromActor: true });
+  assert.equal(itemGear(kit, 'med').fromActor, false, 'from the library: a copy, nothing leaves a sheet');
+  assert.deepEqual([itemGear({ type: 'ammo', name: 'Basic ammo', system: { price: { market: 10 }, amount: 30 } }, 'med').value, itemGear({ type: 'ammo', name: 'Basic ammo', system: { price: { market: 10 }, amount: 30 } }, 'med').name], [300, 'Basic ammo ×30']);
+  assert.equal(itemGear({ ...kit, ownerId: 'fix' }, 'med').reason, 'not-your-item');
+  assert.equal(itemGear({ type: 'cyberware', name: 'Cyberarm', system: { price: { market: 500 }, isInstalled: true }, ownerId: 'med' }, 'med').reason, 'item-installed');
+  assert.equal(itemGear({ type: 'skill', name: 'Cybertech', system: {} }, 'med').reason, 'bad-item');
+  assert.equal(itemGear({ type: 'gear', name: 'Junk', system: { price: { market: 0 } } }, 'med').reason, 'no-price');
 });

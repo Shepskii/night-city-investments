@@ -227,6 +227,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
   digestCap: 12,
   ledgerCap: 120,
   maxGearItems: 6,
+  /** The most book value one item of gear may carry. */
+  maxGearValue: 100000,
   maxPartners: 6,
 });
 

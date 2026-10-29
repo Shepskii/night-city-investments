@@ -1485,9 +1485,9 @@
       "LocationHint": "e.g. a back room in Watson",
       "Cash": "Eddies to put in",
       "YouHave": "you have {amount} eb",
-      "GearName": "Gear you bring (optional)",
-      "GearHint": "e.g. a surgical kit",
-      "GearValue": "Its book value (eb)",
+      "GearDrop": "Gear you bring (optional): drag an item here from your character's sheet, the Items directory or a compendium. Its book value is its market price.",
+      "GearLeaves": "leaves your sheet; back if the business never opens",
+      "GearRemove": "Take it out again",
       "Invite": "Invite partners",
       "SweatPct": "Sweat equity (0–{max}%)",
       "SweatTo": "For",
@@ -1820,6 +1820,11 @@
         "already-partner": "that character is already a partner or invited",
         "bad-price": "that price is not allowed",
         "angel-delay": "no angel will listen yet",
+        "bad-item": "that is not something a business can own",
+        "item-missing": "that item could not be found",
+        "not-your-item": "that item belongs to another character",
+        "item-installed": "installed cyberware cannot be put into a business",
+        "no-price": "that item has no market price",
         "already-agreed": "the partners have already agreed"
       }
     }

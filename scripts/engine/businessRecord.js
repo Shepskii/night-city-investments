@@ -58,7 +58,15 @@ export function normalizeBusiness(raw) {
       name: String(p.name ?? ''),
       status: p.status ?? 'active',
       cash: int(p.cash),
-      gear: (p.gear ?? []).map((g) => ({ name: String(g.name ?? ''), value: int(g.value) })),
+      gear: (p.gear ?? []).map((g) => ({
+        name: String(g.name ?? ''),
+        value: int(g.value),
+        ...(g.uuid ? { uuid: String(g.uuid) } : {}),
+        ...(g.img ? { img: String(g.img) } : {}),
+        // An item that came off the partner's sheet, kept so it can be given back if the business never opens.
+        ...(g.item ? { item: g.item } : {}),
+        ...(g.returned ? { returned: true } : {}),
+      })),
       units: int(p.units),
       voting: p.voting !== false,
       heirId: p.heirId ?? null,

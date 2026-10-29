@@ -10,7 +10,7 @@
 
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
-  applyBusinessGig, planBusinessGig,
+  applyBusinessGig, planBusinessGig, itemGear,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { log, isActiveGM } from '../utils/helpers.js';
@@ -23,6 +23,8 @@ import { WealthAdapter } from './WealthAdapter.js';
 import { receiptsOf, pendingBusinessRequests, operatorRankOf } from './BusinessClient.js';
 
 const RESULTS_CAP = 40;
+/** Requests that may bring gear: the items are looked up here, never taken from the request. */
+const GEAR_REQUESTS = ['found', 'join', 'contribute'];
 const WEALTH_REASON = 'Night City Investments: business';
 
 class BusinessServiceImpl {
@@ -103,6 +105,11 @@ class BusinessServiceImpl {
 
     const day = this.day();
     const context = this.context(business);
+    if (GEAR_REQUESTS.includes(request.type)) {
+      const gear = await this.resolveGear(actor, request.gear);
+      if (!gear.ok) return this._receipt(actor, request, gear);
+      context.gear = gear.gear;
+    }
     let check = null;
     if (business && ROLL_REQUESTS.includes(request.type) && request.use) {
       // The same checks the engine makes, first, so a request that would be refused does not use up its card.
@@ -121,10 +128,35 @@ class BusinessServiceImpl {
     return this._receipt(actor, request, out);
   }
 
-  /** Eddies first, then the record, then the hidden state; then tell everyone. */
+  /**
+   * Look up the items a request names (`[{uuid}]`) and read them as gear: from the requesting
+   * character's own sheet, or from the Items directory or a compendium. An item on another
+   * character's sheet, installed cyberware, a skill or a role, or an item with no price is refused.
+   * An item from the sheet is kept in full so it can be given back if the business never opens.
+   * @returns {Promise<{ok: true, gear: object[]} | {ok: false, reason: string}>}
+   */
+  async resolveGear(actor, requested = []) {
+    const uuids = [...new Set((Array.isArray(requested) ? requested : []).map((g) => String(g?.uuid ?? '')).filter(Boolean))];
+    const gear = [];
+    for (const uuid of uuids) {
+      const item = await fromUuid(uuid).catch(() => null);
+      if (!item || item.documentName !== 'Item') return { ok: false, reason: 'item-missing' };
+      const owner = item.parent?.documentName === 'Actor' ? item.parent : null;
+      const read = itemGear({ type: item.type, name: item.name, img: item.img, system: item.system, ownerId: owner?.id ?? null }, actor.id);
+      if (!read.ok) return read;
+      gear.push({
+        name: read.name, value: read.value, uuid, img: read.img,
+        ...(read.fromActor ? { item: { ...item.toObject(), _id: undefined, _sourceId: item.id } } : {}),
+      });
+    }
+    return { ok: true, gear };
+  }
+
+  /** Eddies first, then the record, then the items that moved, then the hidden state; then tell everyone. */
   async _commit(out) {
     await this._pay(out.wealth);
     await BusinessRepository.save(out.business);
+    await this._moveItems(out);
     const exposure = out.events.reduce((a, e) => a + (e.exposure ?? 0), 0);
     if (exposure) {
       const hidden = MarketStore.getBusinessesHidden();
@@ -135,6 +167,19 @@ class BusinessServiceImpl {
       Hooks.callAll(HOOKS.BUSINESS_PERIOD, { businessId: out.business.id, digest: event.digest });
     }
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: out.business.id, events: out.events });
+  }
+
+  /** Take contributed items off the sheets they came from, and give back those a refund returns. */
+  async _moveItems({ taken = {}, items = {} }) {
+    for (const [actorId, ids] of Object.entries(taken)) {
+      const actor = game.actors.get(actorId);
+      const still = ids.filter((id) => actor?.items?.get?.(id));
+      if (still.length) await actor.deleteEmbeddedDocuments('Item', still);
+    }
+    for (const [actorId, data] of Object.entries(items)) {
+      const actor = game.actors.get(actorId);
+      if (actor && data.length) await actor.createEmbeddedDocuments('Item', data);
+    }
   }
 
   async _pay(wealth) {

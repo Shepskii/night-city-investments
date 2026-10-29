@@ -12,6 +12,10 @@
  *   { key, type: 'join', businessId, cash, gear?, heirId? }      an invited character accepts
  *   { key, type: 'decline', businessId }
  *   { key, type: 'contribute', businessId, cash, gear? }         while forming
+ *
+ * `gear` in a request is `[{uuid}]`, Foundry items dragged in. The GM's service looks each one up
+ * and passes what it found as `context.gear` (see `itemGear`); a name or value in the request itself
+ * is never used.
  *   { key, type: 'withdraw', businessId }                        while forming: take your money back
  *   { key, type: 'setupRoll', businessId, use, rollId }
  *   { key, type: 'action', businessId, action, use, rollId }     take this week's slot
@@ -58,6 +62,31 @@ export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
   'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan',
 ]);
+
+/** Item types that are not things a business can own. */
+const NOT_GEAR = new Set(['skill', 'role', 'criticalInjury', 'netarch']);
+
+/**
+ * Read a Foundry item as gear: its name, its book value (the market price times how many there are)
+ * and whether it is on the character's own sheet, in which case it leaves the sheet when the request
+ * goes through. Used by the player's window to show what was dropped and by the GM's service to
+ * check it again.
+ * @param {{type: string, name: string, img?: string, system?: object, ownerId?: string|null}} item
+ *        `ownerId` is the actor the item belongs to, or null for a library or compendium item
+ * @param {string} actorId - the character putting it in
+ * @returns {{ok: true, name: string, value: number, img: string, fromActor: boolean} | {ok: false, reason: string}}
+ */
+export function itemGear(item, actorId, p = BUSINESS_DEFAULTS) {
+  if (!item?.name || NOT_GEAR.has(item.type)) return fail('bad-item');
+  if (item.ownerId && item.ownerId !== actorId) return fail('not-your-item');
+  if (item.system?.isInstalled) return fail('item-installed');
+  const price = Number(item.system?.price?.market ?? item.system?.price ?? 0) || 0;
+  const amount = Math.max(1, Math.floor(Number(item.system?.amount) || 1));
+  const value = Math.round(price * amount);
+  if (value <= 0) return fail('no-price');
+  if (value > p.maxGearValue) return fail('bad-gear');
+  return { ok: true, name: text(item.name, 60) + (amount > 1 ? ` ×${amount}` : ''), value, img: String(item.img ?? ''), fromActor: !!item.ownerId };
+}
 
 /** Requests that carry a roll. */
 export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll']);
@@ -174,8 +203,8 @@ function allowed(uses, use, { funds = 0, operatorRank = 0, p = BUSINESS_DEFAULTS
  *          `wealth` maps actorId -> the change to that character's eddies
  */
 export function applyBusinessRequest({ business, request, actor, day, check = null, context = {}, params: p = BUSINESS_DEFAULTS }) {
-  const ctx = { approval: true, weekday: 1, operatorRank: 0, actors: {}, wealthOf: () => 0, ...context };
-  const out = { wealth: {}, events: [] };
+  const ctx = { approval: true, weekday: 1, operatorRank: 0, actors: {}, wealthOf: () => 0, gear: [], ...context };
+  const out = { wealth: {}, events: [], items: {}, taken: {} };
   const pay = (actorId, amount) => {
     out.wealth[actorId] = (out.wealth[actorId] ?? 0) + amount;
   };
@@ -184,6 +213,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
     const made = found(request, actor, day, ctx, p);
     if (!made.ok) return made;
     pay(actor.id, -made.business.escrow);
+    take(out, actor.id, made.business.partners[0].gear);
     return { ok: true, business: made.business, ...out };
   }
 
@@ -206,9 +236,10 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
         break;
       }
       if (b.status !== 'forming') return fail('not-forming');
-      const money = contribution(request, actor, p);
+      const money = contribution(request, actor, p, p.maxGearItems, ctx.gear);
       if (!money.ok) return money;
       Object.assign(me, { status: 'active', name: actor.name, cash: money.cash, gear: money.gear, heirId: heirOf(request.heirId, actor.id, ctx) });
+      take(out, actor.id, money.gear);
       b.escrow += money.cash;
       pay(actor.id, -money.cash);
       log('contribution', money.cash, { gear: gearValue(me) });
@@ -223,9 +254,10 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
     case 'contribute': {
       if (b.status !== 'forming') return fail('not-forming');
       if (me?.status !== 'active') return fail('not-partner');
-      const money = contribution(request, actor, p, p.maxGearItems - me.gear.length);
+      const money = contribution(request, actor, p, p.maxGearItems - me.gear.length, ctx.gear);
       if (!money.ok) return money;
       if (!money.cash && !money.gear.length) return fail('bad-amount');
+      take(out, actor.id, money.gear);
       me.cash += money.cash;
       me.gear.push(...money.gear);
       b.escrow += money.cash;
@@ -241,6 +273,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       b.escrow -= refund;
       me.status = 'left';
       pay(actor.id, refund);
+      giveBack(out, me);
       log('refund', -refund);
       if (!holders(b).length) close(b, day, 'cancelled');
       else if (b.founderId === actor.id) b.founderId = holders(b)[0].actorId;
@@ -445,7 +478,7 @@ function found(request, actor, day, ctx, p) {
   const name = text(request.name, 60);
   if (!name) return fail('bad-name');
   if (!ARCHETYPES[request.archetype]) return fail('bad-archetype');
-  const money = contribution(request, actor, p);
+  const money = contribution(request, actor, p, p.maxGearItems, ctx.gear);
   if (!money.ok) return money;
 
   const invite = [...new Set((request.invite ?? []).map(String))].filter((id) => id !== actor.id);
@@ -480,16 +513,37 @@ function found(request, actor, day, ctx, p) {
   return { ok: true, business };
 }
 
-/** A contribution's cash and gear, checked against what the character has. */
-function contribution(request, actor, p, gearRoom = p.maxGearItems) {
+/**
+ * A contribution's cash and gear, checked against what the character has. The gear is what the GM's
+ * service found when it looked up the items dragged in (`itemGear`), never the request's own word.
+ */
+function contribution(request, actor, p, gearRoom = p.maxGearItems, found = []) {
   const cash = int(request.cash);
   if (cash < 0) return fail('bad-amount');
   if (cash > actor.wealth) return fail('insufficient-funds');
-  const gear = (request.gear ?? [])
-    .map((g) => ({ name: text(g?.name, 60), value: int(g?.value) }))
+  const gear = found
+    .map((g) => ({
+      name: text(g?.name, 60), value: int(g?.value), ...(g.uuid ? { uuid: g.uuid } : {}), ...(g.img ? { img: g.img } : {}), ...(g.item ? { item: g.item } : {}),
+    }))
     .filter((g) => g.name && g.value > 0);
-  if (gear.length > gearRoom || gear.some((g) => g.value > 20000)) return fail('bad-gear');
+  if (gear.length > gearRoom || gear.some((g) => g.value > p.maxGearValue)) return fail('bad-gear');
   return { ok: true, cash, gear };
+}
+
+/** Items that come off a character's sheet with a request (the service deletes them once it is saved). */
+function take(out, actorId, gear) {
+  const ids = gear.filter((g) => g.item && g.item._sourceId).map((g) => g.item._sourceId);
+  if (ids.length) out.taken[actorId] = [...(out.taken[actorId] ?? []), ...ids];
+}
+
+/** Give a partner's items back when the business never opens: the service recreates them on the sheet. */
+function giveBack(out, partner) {
+  const items = partner.gear.filter((g) => g.item).map((g) => {
+    const { _sourceId, ...data } = g.item;
+    return data;
+  });
+  if (items.length) out.items[partner.actorId] = [...(out.items[partner.actorId] ?? []), ...items];
+  partner.gear = partner.gear.map(({ item, ...g }) => ({ ...g, ...(item ? { returned: true } : {}) }));
 }
 
 function heirOf(heirId, self, ctx) {
@@ -555,14 +609,16 @@ export function rejectBusiness(business, day, p = BUSINESS_DEFAULTS) {
   const b = structuredClone(normalizeBusiness(business));
   if (b.status !== 'pending' && b.status !== 'forming') return fail('not-pending');
   const wealth = {};
+  const out = { items: {} };
   const shares = holders(b).map((x) => [x, refundShare(b, x)]);
   for (const [x, refund] of shares) {
     if (refund > 0) wealth[x.actorId] = refund;
     addLedger(b, { day, kind: 'refund', amount: -refund, actorId: x.actorId }, p);
+    giveBack(out, x);
   }
   b.escrow = 0;
   close(b, day, 'rejected');
-  return { ok: true, business: b, wealth };
+  return { ok: true, business: b, wealth, items: out.items };
 }
 
 /** GM: a partner has died or left the table, so the buy-out rule applies to their stake. */

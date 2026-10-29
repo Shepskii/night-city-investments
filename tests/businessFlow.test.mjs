@@ -2,6 +2,7 @@ import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
 import { installFakeChat } from './helpers/fakeChat.mjs';
+import { installFakeItems } from './helpers/fakeItems.mjs';
 
 const DAY_MS = 86_400_000;
 const env = installFakeFoundry({ actors: [['Medtech', 3000, true], ['Fixer', 3000, true], ['Solo', 3000, true]] });
@@ -30,6 +31,9 @@ for (const actor of env.actors) {
   };
 }
 const fake = installFakeChat();
+const items = installFakeItems();
+const kit = items.give(med, { name: 'Surgical kit', type: 'gear', img: 'kit.webp', system: { price: { market: 800 }, amount: 1 } });
+const rig = items.give(med, { name: 'Diagnostic rig', type: 'gear', system: { price: { market: 2500 } } });
 // Weekly events are drawn from the business's id, so ids are fixed to keep the weeks the same each run.
 let nextId = 0;
 globalThis.foundry.utils.randomID = () => `id${String(++nextId).padStart(14, '0')}`;
@@ -57,9 +61,11 @@ const send = async (actor, type, payload) => {
 };
 
 test('the Medtech founds a clinic and invites the Fixer', async () => {
-  const r = await send(med, 'found', { name: 'Back Room', archetype: 'clinic', location: 'Watson', cash: 1000, gear: [{ name: 'Surgical kit', value: 800 }], invite: [fix.id] });
+  const r = await send(med, 'found', { name: 'Back Room', archetype: 'clinic', location: 'Watson', cash: 1000, gear: [{ uuid: kit.uuid }], invite: [fix.id] });
   assert.equal(r.ok, true, r.reason);
   assert.equal(wealth(med), 2000);
+  assert.equal(med.items.get(kit.id), undefined, 'the kit has left the Medtech\'s sheet');
+  assert.deepEqual(business().partners[0].gear.map((g) => [g.name, g.value]), [['Surgical kit', 800]], 'its book value is the item\'s price');
   const b = business();
   assert.equal(b.status, 'forming');
   const journal = BusinessRepository.journalOf(b.id);
@@ -146,7 +152,8 @@ test('when the partners close the clinic, its money is paid out and the record s
 });
 
 test('a partner who sold out does not get the record back when the business closes', async () => {
-  await send(med, 'found', { name: 'Second Shop', archetype: 'garage', cash: 500, gear: [{ name: 'Rig', value: 2500 }], invite: [solo.id] });
+  await send(med, 'found', { name: 'Second Shop', archetype: 'garage', cash: 500, gear: [{ uuid: rig.uuid }], invite: [solo.id] });
+  assert.equal(med.items.get(rig.id), undefined);
   const id = BusinessRepository.all().find((b) => b.name === 'Second Shop').id;
   await send(solo, 'decline', { businessId: id });
   assert.deepEqual(BusinessRepository.journalOf(id).ownership, { default: 0, u_med: 2, '-=u_solo': null }, 'the decline removes the Solo\'s player');
@@ -154,4 +161,16 @@ test('a partner who sold out does not get the record back when the business clos
   const ownership = BusinessRepository.journalOf(id).ownership;
   assert.equal(ownership.u_solo, undefined, 'closing does not give it back');
   assert.equal(ownership.u_med, 2);
+  assert.ok(med.items.some((i) => i.name === 'Diagnostic rig'), 'turned down, the rig goes back on the Medtech\'s sheet');
+});
+
+test('the GM side refuses another character\'s item, and takes a library item without touching any sheet', async () => {
+  const theirs = items.give(fix, { name: 'Fixer\'s toolkit', type: 'gear', system: { price: { market: 300 } } });
+  assert.deepEqual(await BusinessService.resolveGear(med, [{ uuid: theirs.uuid }]), { ok: false, reason: 'not-your-item' });
+  assert.ok(fix.items.get(theirs.id), 'the Fixer keeps it');
+  const shelf = items.library({ name: 'Autodoc', type: 'gear', system: { price: { market: 1200 } } });
+  const out = await BusinessService.resolveGear(med, [{ uuid: shelf.uuid }, { uuid: shelf.uuid }]);
+  assert.equal(out.ok, true);
+  assert.deepEqual(out.gear.map((g) => [g.name, g.value, !!g.item]), [['Autodoc', 1200, false]], 'once, and with nothing to give back');
+  assert.equal((await BusinessService.resolveGear(med, [{ uuid: 'Item.nothing' }])).reason, 'item-missing');
 });

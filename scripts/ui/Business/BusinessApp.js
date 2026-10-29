@@ -6,6 +6,7 @@
  *              and every roll is made only when the player presses Roll.
  */
 
+import { itemGear } from '../../engine/index.js';
 import { MODULE_ID, HOOKS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient } from '../../services/BusinessClient.js';
@@ -21,12 +22,8 @@ const field = (target, name) => target.closest('.nci-form')?.querySelector(`[nam
 const value = (target, name) => field(target, name)?.value ?? '';
 const amount = (target, name) => Math.floor(Number(value(target, name)) || 0);
 
-/** One line of gear from a form block, if both its name and value are filled in. */
-function gearFrom(target) {
-  const name = value(target, 'gearName').trim();
-  const worth = amount(target, 'gearValue');
-  return name && worth > 0 ? [{ name, value: worth }] : [];
-}
+/** The forms that take gear, each with its own drop zone. */
+const GEAR_FORMS = ['start', 'join', 'contribute'];
 
 export class BusinessApp extends BaseApplication {
   static DEFAULT_OPTIONS = {
@@ -62,6 +59,7 @@ export class BusinessApp extends BaseApplication {
       proposeInvestor: BusinessApp._onProposeInvestor,
       proposeAngel: BusinessApp._onProposeAngel,
       angelRoll: BusinessApp._onAngelRoll,
+      removeGear: BusinessApp._onRemoveGear,
     },
   };
 
@@ -88,6 +86,8 @@ export class BusinessApp extends BaseApplication {
   businessId = null;
   /** Showing the Start a business form instead of a business. */
   starting = false;
+  /** Items dragged into each form and not sent yet: `{uuid, name, value, img, fromActor}`. */
+  gearDrafts = { start: [], join: [], contribute: [] };
   _refresh = () => this.render();
 
   _onFirstRender(context, options) {
@@ -109,13 +109,63 @@ export class BusinessApp extends BaseApplication {
       this.actorId = event.target.value;
       this.businessId = null;
       this.starting = false;
+      this._clearGear();
       this.render();
     });
     this.element.querySelector('select[name="businessId"]')?.addEventListener('change', (event) => {
       this.businessId = event.target.value;
       this.starting = false;
+      this._clearGear();
       this.render();
     });
+    this.element.querySelectorAll('.nci-drop').forEach((zone) => {
+      zone.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        zone.classList.add('nci-over');
+      });
+      zone.addEventListener('dragleave', () => zone.classList.remove('nci-over'));
+      zone.addEventListener('drop', (event) => {
+        zone.classList.remove('nci-over');
+        this._onDropGear(event, zone.dataset.gear);
+      });
+    });
+  }
+
+  /**
+   * An item dragged from a character's sheet, the Items directory or a compendium. It is read here
+   * so the player sees its book value at once; the GM's side looks it up again when the request
+   * arrives and only trusts its own reading.
+   */
+  async _onDropGear(event, form) {
+    event.preventDefault();
+    if (!GEAR_FORMS.includes(form) || !this.actor) return;
+    const data = TextEditor.getDragEventData(event);
+    if (data?.type !== 'Item' || !data.uuid) return ui.notifications.warn(L('NCI.Business.Reason.bad-item'));
+    const item = await fromUuid(data.uuid);
+    if (!item) return ui.notifications.warn(L('NCI.Business.Reason.item-missing'));
+    const owner = item.parent?.documentName === 'Actor' ? item.parent : null;
+    const read = itemGear({ type: item.type, name: item.name, img: item.img, system: item.system, ownerId: owner?.id ?? null }, this.actor.id);
+    if (!read.ok) return ui.notifications.warn(L(`NCI.Business.Reason.${read.reason}`));
+    if (this.gearDrafts[form].some((g) => g.uuid === item.uuid)) return null;
+    this.gearDrafts[form].push({ uuid: item.uuid, name: read.name, value: read.value, img: read.img, fromActor: read.fromActor });
+    return this.render();
+  }
+
+  /** Items dragged for one character or business do not carry over to another. */
+  _clearGear() {
+    this.gearDrafts = { start: [], join: [], contribute: [] };
+  }
+
+  static _onRemoveGear(event, target) {
+    this.gearDrafts[target.dataset.form]?.splice(Number(target.dataset.index), 1);
+    this.render();
+  }
+
+  /** The dragged items of one form, as the request sends them (their uuids only), and clear them. */
+  _takeGear(form) {
+    const gear = this.gearDrafts[form].map((g) => ({ uuid: g.uuid }));
+    this.gearDrafts[form] = [];
+    return gear;
   }
 
   get actor() {
@@ -151,7 +201,7 @@ export class BusinessApp extends BaseApplication {
       location: value(target, 'location').trim(),
       district: value(target, 'district'),
       cash: amount(target, 'cash'),
-      gear: gearFrom(target),
+      gear: this._takeGear('start'),
       invite,
       sweat: sweatPct > 0 ? { actorId: value(target, 'sweatTo') || this.actor.id, pct: sweatPct } : null,
     });
@@ -162,7 +212,7 @@ export class BusinessApp extends BaseApplication {
   }
 
   static _onJoin(event, target) {
-    return this._send('join', { cash: amount(target, 'cash'), gear: gearFrom(target) });
+    return this._send('join', { cash: amount(target, 'cash'), gear: this._takeGear('join') });
   }
 
   static _onDecline() {
@@ -170,7 +220,7 @@ export class BusinessApp extends BaseApplication {
   }
 
   static _onContribute(event, target) {
-    return this._send('contribute', { cash: amount(target, 'cash'), gear: gearFrom(target) });
+    return this._send('contribute', { cash: amount(target, 'cash'), gear: this._takeGear('contribute') });
   }
 
   static async _onWithdraw() {
@@ -293,7 +343,11 @@ export class BusinessApp extends BaseApplication {
     const picker = pickerContext(this);
     const business = this.starting ? null : this.business;
     if (business) this.businessId = business.id;
-    const context = { picker, tab: this.tab };
+    const context = {
+      picker,
+      tab: this.tab,
+      gearDrafts: Object.fromEntries(GEAR_FORMS.map((f) => [f, this.gearDrafts[f].map((g) => ({ ...g, value: g.value.toLocaleString() }))])),
+    };
     for (const t of TABS) context[`is${t[0].toUpperCase()}${t.slice(1)}`] = t === this.tab;
     context.tabs = TABS.map((t) => ({ id: t, label: L(`NCI.Business.Tab.${t}`), active: t === this.tab }));
     if (!this.actor) return { ...context, noActor: true };
