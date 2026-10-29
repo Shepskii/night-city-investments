@@ -7,7 +7,8 @@
   "scripts": {
     "test": "node --test",
     "simulate": "node tools/simulate.mjs",
-    "simulate:business": "node tools/simulate-business.mjs"
+    "simulate:business": "node tools/simulate-business.mjs",
+    "simulate:engine": "node tools/simulate-engine.mjs"
   },
   "license": "MIT",
   "devDependencies": {

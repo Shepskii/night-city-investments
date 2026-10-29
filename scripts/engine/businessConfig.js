@@ -121,7 +121,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
   businessDays: 3,
   /** Side business to registered business (DESIGN §26.0). Bureaucracy, or Local Expert or Persuasion at DV +2. */
   registration: Object.freeze({
-    fee: 500, minWeeks: 4, minProfit: 100, minReputation: 50, dv: 'difficult', delay: 7, fumbleDelay: 14,
+    // Reputation drifts back toward 50 and events knock it down, so the bar is near that baseline, not on it.
+    fee: 500, minWeeks: 4, minProfit: 100, minReputation: 45, dv: 'difficult', delay: 7, fumbleDelay: 14,
     uses: Object.freeze([SKILLS.bureaucracy, Object.freeze({ ...SKILLS.localExpert, dvAdd: 2 }), Object.freeze({ ...SKILLS.persuasion, dvAdd: 2 })]),
     /** The registration roll's band sets the Compliance the registered business starts with. */
     compliance: Object.freeze({ narrow: 45, solid: 50, strong: 55, exceptional: 60 }),
@@ -236,12 +237,12 @@ export const BUSINESS_DEFAULTS = Object.freeze({
  * `stage` limits an event to registered businesses.
  */
 export const EVENTS = Object.freeze({
-  shakedown: Object.freeze({ weight: 3, security: true, uses: [S.persuasion, S.streetwise, A.combatAwareness, A.backup], hit: Object.freeze({ reputation: -1 }) }),
+  shakedown: Object.freeze({ weight: 3, security: true, uses: [S.persuasion, S.streetwise, A.combatAwareness, A.backup], hit: Object.freeze({}) }),
   theft: Object.freeze({ weight: 2, security: true, uses: [S.perception, S.electronics, S.tactics, A.combatAwareness, A.interface], hit: Object.freeze({}) }),
   breakdown: Object.freeze({ weight: 2, trade: true, uses: [S.basicTech, A.maker], hit: Object.freeze({ capacity: -0.05 }) }),
   shortage: Object.freeze({ weight: 2, uses: [S.trading, S.streetwise, S.business, A.operator, A.moto], hit: Object.freeze({ costFactor: 0.02 }) }),
-  rival: Object.freeze({ weight: 2, uses: [S.persuasion, S.business, S.composition, A.credibility, A.charismaticImpact], hit: Object.freeze({ reputation: -3 }) }),
-  trouble: Object.freeze({ weight: 2, trade: true, uses: [S.humanPerception, S.persuasion, S.conversation], hit: Object.freeze({ reputation: -2 }) }),
+  rival: Object.freeze({ weight: 2, uses: [S.persuasion, S.business, S.composition, A.credibility, A.charismaticImpact], hit: Object.freeze({ reputation: -2 }) }),
+  trouble: Object.freeze({ weight: 2, trade: true, uses: [S.humanPerception, S.persuasion, S.conversation], hit: Object.freeze({ reputation: -1 }) }),
   inspection: Object.freeze({ weight: 2, stage: 1, uses: [S.bureaucracy, Object.freeze({ ...S.localExpert, dvAdd: 2 }), Object.freeze({ ...S.bribery, dvAdd: 2 }), A.backup], hit: Object.freeze({ compliance: -8 }) }),
   windfall: Object.freeze({ weight: 2, good: true, trade: true, uses: [S.business, S.trading, A.operator], hit: Object.freeze({}) }),
   /** Never drawn: it comes the week after a missed fixer-loan payment. */
