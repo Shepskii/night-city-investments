@@ -11,7 +11,7 @@ import {
 } from '../../engine/index.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
-import { BusinessClient, operatorRankOf, pendingBusinessRequests } from '../../services/BusinessClient.js';
+import { BusinessClient, operatorRankOf, pendingBusinessRequests, investorActors } from '../../services/BusinessClient.js';
 import { MarketClock } from '../../services/MarketClockService.js';
 import { L, whole, signed } from '../format.js';
 
@@ -306,7 +306,7 @@ function investorsContext(business, actor, canAct) {
   return {
     registered,
     later: registered ? '' : L('NCI.Business.InvestorsLater'),
-    candidates: game.actors.filter((a) => a.type === 'character' && !taken.has(a.id)).sort((a, b) => a.name.localeCompare(b.name)).map((a) => ({ value: a.id, label: a.name })),
+    candidates: investorActors().filter((a) => !taken.has(a.id)).sort((a, b) => a.name.localeCompare(b.name)).map((a) => ({ value: a.id, label: a.name })),
     bookPrice: unitValue(business).toFixed(2),
     canInvite: canAct && registered && !pending('investor'),
     canSeekAngel: canAct && registered && !angel && !pending('angel'),

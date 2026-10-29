@@ -119,6 +119,12 @@ test('a character buys in on terms every partner agreed', () => {
   assert.equal(poor.reason, 'insufficient-funds');
 });
 
+test('only a character the service allows can be proposed as an investor', () => {
+  const out = apply(clinic(1), { type: 'propose', businessId: 'b1', kind: 'investor', actorId: 'solo', amount: 1000 }, MED, { expect: false, context: { investors: ['med', 'fix'] } });
+  assert.equal(out.reason, 'not-investor');
+  assert.equal(apply(clinic(1), { type: 'propose', businessId: 'b1', kind: 'investor', actorId: 'solo', amount: 1000 }, MED, { context: { investors: ['solo'] } }).ok, true);
+});
+
 test('an angel is found when every partner agrees, then pitched with an opposed roll', () => {
   let b = apply(clinic(1), { type: 'propose', businessId: 'b1', kind: 'angel' }, MED).business;
   b = apply(b, { type: 'vote', businessId: 'b1', proposalId: b.proposals[0].id, yes: true }, FIX).business;

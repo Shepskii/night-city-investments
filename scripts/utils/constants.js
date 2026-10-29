@@ -85,6 +85,8 @@ export const FLAGS = Object.freeze({
 
 /** Tag on an NCM master contact that makes it a broker. */
 export const BROKER_TAG = 'broker';
+/** Tag on an NCM master contact whose linked character may be invited to invest in a business. */
+export const INVESTOR_TAG = 'investor';
 /** Tag on the system contact that sends market mail. */
 export const WIRE_TAG = 'market-wire';
 export const WIRE_NAME = 'Night City Market Wire';

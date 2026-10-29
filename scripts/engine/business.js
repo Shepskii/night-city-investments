@@ -677,6 +677,8 @@ function canPropose(b, kind, request, ctx, p) {
       return { ok: true };
     case 'investor': {
       const offer = investorOffer(b, request, ctx.actors, p);
+      // Only the characters the service allows (player characters, NCM brokers and investors), when it says.
+      if (offer.ok && ctx.investors && !ctx.investors.includes(offer.actorId)) return fail('not-investor');
       return offer.ok ? { ok: true, terms: { actorId: offer.actorId, amount: offer.amount, price: offer.price } } : offer;
     }
     case 'angel':

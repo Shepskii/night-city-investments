@@ -205,6 +205,23 @@ test('a registered business shows its loans, the bank, investors and an angel', 
   assert.match(overview, /Compliance/);
 });
 
+test('the investor list offers player characters and characters linked to NCM brokers and investors, nobody else', async () => {
+  const npc = (name) => ({ id: `a_${name}`, name, type: 'character', hasPlayerOwner: false });
+  const extra = [npc('Banker'), npc('Shark'), npc('Bystander'), { ...npc('Goon'), type: 'mook' }];
+  game.actors.push(...extra);
+  const contacts = [{ actorId: 'a_Banker', tags: ['Investor'] }, { actorId: 'a_Shark', tags: ['broker'] }, { actorId: null, tags: ['investor'] }, { actorId: 'a_Goon', tags: ['investor'] }];
+  game.nightcity = { masterContactService: { filterByTag: (tag) => contacts.filter((c) => c.tags.some((t) => t.toLowerCase() === tag)) } };
+  try {
+    const html = await renderBusiness(windowFor(med, 'partners'));
+    const options = [...html.matchAll(/<select name="investor">(.*?)<\/select>/gs)][0][1];
+    const names = [...options.matchAll(/>([^<]+)<\/option>/g)].map((m) => m[1]);
+    assert.deepEqual(names, ['Banker', 'Shark'], 'the partners are already in; the bystander and the mook are not offered');
+  } finally {
+    for (const a of extra) game.actors.splice(game.actors.indexOf(a), 1);
+    delete game.nightcity;
+  }
+});
+
 test('a character\'s stakes in open businesses show in the terminal\'s Portfolio tab, at book value', async () => {
   const { MarketTerminalApp } = await import('../scripts/ui/MarketTerminal/MarketTerminalApp.js');
   const { shareOf, bookValue } = await import('../scripts/engine/index.js');

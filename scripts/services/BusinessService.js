@@ -20,7 +20,7 @@ import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
 import { SkillAdapter } from './SkillAdapter.js';
 import { WealthAdapter } from './WealthAdapter.js';
-import { receiptsOf, pendingBusinessRequests, operatorRankOf } from './BusinessClient.js';
+import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors } from './BusinessClient.js';
 
 const RESULTS_CAP = 40;
 /** Requests that may bring gear: the items are looked up here, never taken from the request. */
@@ -69,6 +69,7 @@ class BusinessServiceImpl {
       seed: this.seed(),
       operatorRank: business ? operatorRankOf(business) : 0,
       actors: this.actors(),
+      investors: investorActors().map((a) => a.id),
       newId: `bus_${foundry.utils.randomID(12)}`,
     };
   }

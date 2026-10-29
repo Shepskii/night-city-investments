@@ -8,7 +8,8 @@
  */
 
 import { dayIndex, rollSpec, partnerOf } from '../engine/index.js';
-import { MODULE_ID, FLAGS, OUTBOX_LIMIT } from '../utils/constants.js';
+import { MODULE_ID, FLAGS, OUTBOX_LIMIT, BROKER_TAG, INVESTOR_TAG } from '../utils/constants.js';
+import { NcmAdapter } from '../integrations/NcmAdapter.js';
 import { L } from '../utils/helpers.js';
 import { SerialQueue } from '../utils/queue.js';
 import { MarketClock } from './MarketClockService.js';
@@ -37,6 +38,16 @@ export function operatorRankOf(business) {
   return Math.max(0, ...business.partners
     .filter((p) => p.status === 'active' || p.status === 'leaving')
     .map((p) => SkillAdapter.readAbility(game.actors.get(p.actorId), 'Operator').rank));
+}
+
+/**
+ * The characters a business may invite to buy in: player characters, and the characters linked to
+ * NCM contacts tagged broker or investor. A contact with no linked character is left out, since an
+ * investor pays from a character's wealth and accepts through that character.
+ */
+export function investorActors() {
+  const tagged = new Set([BROKER_TAG, INVESTOR_TAG].flatMap((tag) => NcmAdapter.contactsTagged(tag)).map((c) => c?.actorId).filter(Boolean));
+  return game.actors.filter((a) => a.type === 'character' && (a.hasPlayerOwner || tagged.has(a.id)));
 }
 
 class BusinessClientImpl {
