@@ -10,7 +10,7 @@ import { SyndicateRepository } from '../../data/SyndicateRepository.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { MarketClock } from '../../services/MarketClockService.js';
 import { pendingSyndicateRequests } from '../../services/SyndicateClient.js';
-import { describeProposal } from '../../services/SyndicateMail.js';
+import { describeProposal, reasonText } from '../../services/SyndicateMail.js';
 import { syndicateKey } from '../accounts.js';
 import { L, money, whole, signed } from '../format.js';
 
@@ -86,8 +86,8 @@ export function syndicateContext(account, portfolio, prices, stakes = 0) {
     ledger: [...s.ledger].reverse().slice(0, LEDGER_ROWS).map((e) => ({
       date: dayText(e.day),
       text: L(`NCI.Syndicate.Ledger.${e.kind}`, {
-        name: memberOf(s, e.actorId)?.name ?? '', units: units(e.units ?? 0), business: e.business || '?',
-        reason: e.reason ? L(`NCI.Business.Reason.${e.reason}`) : '',
+        name: memberOf(s, e.actorId)?.name ?? '', units: units(e.units ?? 0), business: e.business || '?', text: e.text ?? '',
+        reason: e.reason ? reasonText(e.reason) : '',
       }),
       // Money in (a member paying in, a business paying out) reads as a gain; everything else as money out.
       amount: e.amount ? signed(['deposit', 'businessIn'].includes(e.kind) ? e.amount : -e.amount) : '',

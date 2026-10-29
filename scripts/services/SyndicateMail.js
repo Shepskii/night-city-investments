@@ -43,8 +43,8 @@ export function describeProposal(s, p) {
   }
 }
 
-/** A refusal reason in words, from whichever list it belongs to. */
-function reasonText(reason) {
+/** A refusal reason in words, from whichever list it belongs to (syndicate, market or business). */
+export function reasonText(reason) {
   for (const key of [`NCI.Syndicate.Reason.${reason}`, `NCI.Reasons.${reason}`, `NCI.Business.Reason.${reason}`]) {
     const text = L(key);
     if (text !== key) return text;

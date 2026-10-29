@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  applySyndicateRequest, advanceSyndicate, approveSyndicate, decideProposal, closeSyndicate, navOf, freeUnits, syndicateUnits, memberOf, emptyPortfolio,
+  applySyndicateRequest, advanceSyndicate, approveSyndicate, decideProposal, closeSyndicate, navOf, freeUnits, syndicateUnits, memberOf, emptyPortfolio, spentToday, limitLeft,
 } from '../scripts/engine/index.js';
 
 const MED = { id: 'med', name: 'Medtech' };
@@ -211,4 +211,38 @@ test('business stakes count in the value per unit, and a syndicate holding any c
   assert.equal(apply(books, { type: 'propose', kind: 'dissolve' }, MED, { expect: false, context: { stakes: 100 } }).reason, 'not-liquid');
   const deposit = apply(books, { type: 'deposit', amount: 1000 }, FIX, { context: { stakes: 4500 } });
   assert.equal(memberOf(deposit.books.syndicate, 'fix').units, 1500 + 500, 'paying in buys at the value with the stakes in it');
+});
+
+test('the limit is each officer\'s for the day: orders add up, and it starts again the next day', () => {
+  let books = funded();
+  const buy = (qty, day = DAY) => apply(books, { type: 'trade', request: { type: 'placeOrder', side: 'buy', assetId: 'ARA', qty, orderType: 'market' } }, MED, { day, expect: false });
+  let out = buy(30);
+  assert.equal(out.ok, true, '3,000 eb of 5,000');
+  books = out.books;
+  assert.equal(spentToday(books.syndicate, 'med', DAY), 3000);
+  assert.equal(buy(30).reason, 'over-limit', 'another 3,000 eb the same day is over');
+  out = buy(20);
+  assert.equal(out.ok, true, 'but 2,000 eb more fits');
+  books = out.books;
+  assert.equal(limitLeft(books.syndicate, 'med', DAY), 0);
+  assert.equal(buy(30, DAY + 1).ok, true, 'a new day, a new limit');
+});
+
+test('a worthless syndicate takes no deposits, and any member may end the terminal session they opened', () => {
+  const books = funded();
+  const broke = { ...books, portfolio: { ...books.portfolio, cash: 0 } };
+  assert.equal(apply(broke, { type: 'deposit', amount: 100 }, MED, { expect: false }).reason, 'no-value');
+  const ended = apply(books, { type: 'trade', request: { type: 'disconnectTerminal', reason: 'no-network' } }, FIX);
+  assert.equal(ended.trades[0].type, 'disconnectTerminal', 'the Fixer is no officer, but may close a session');
+  assert.equal(apply(books, { type: 'trade', request: { type: 'connectTerminal' } }, FIX, { expect: false }).reason, 'not-officer');
+});
+
+test('events carry the proposal, for the mail, and a wind-up says who was a member at the end', () => {
+  const proposed = apply(funded(), { type: 'propose', kind: 'limit', amount: 900 }, FIX);
+  assert.equal(proposed.events.find((e) => e.type === 'proposed').proposal.amount, 900);
+  const passed = apply(proposed.books, { type: 'vote', proposalId: proposed.books.syndicate.proposals[0].id, yes: true }, MED);
+  assert.equal(passed.events.find((e) => e.type === 'proposalPassed').proposal.kind, 'limit');
+  const grown = funded();
+  const done = apply({ ...grown, portfolio: { ...grown.portfolio, cash: 4500 } }, { type: 'propose', kind: 'dissolve' }, MED);
+  assert.deepEqual(done.events.find((e) => e.type === 'dissolved').actorIds.sort(), ['fix', 'med']);
 });

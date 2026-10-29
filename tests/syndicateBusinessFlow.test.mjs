@@ -2,11 +2,18 @@ import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
 
-const env = installFakeFoundry({ actors: [['Medtech', 90000, true], ['Fixer', 90000, true]] });
-const [med, fix] = env.actors;
+const env = installFakeFoundry({ actors: [['Medtech', 90000, true], ['Fixer', 90000, true], ['Solo', 90000, true]] });
+const [med, fix, solo] = env.actors;
+/** Messenger mail sent, and the contacts it was sent from (the market wire). */
+const sent = [];
+const contacts = [];
 globalThis.game.nightcity = {
-  masterContactService: { filterByTag: () => [], getAll: () => [] },
-  messageService: { sendMessage: async () => ({ success: true }) },
+  masterContactService: {
+    filterByTag: (t) => contacts.filter((c) => c.tags.includes(t)),
+    getAll: () => contacts,
+    addContact: async (d) => { const c = { id: `c${contacts.length}`, ...d }; contacts.push(c); return { success: true, contact: c }; },
+  },
+  messageService: { sendMessage: async (m) => { sent.push(m); return { success: true, messageId: `m${sent.length}` }; } },
   networkService: { isOnNetwork: () => false },
 };
 globalThis.ChatMessage = { create: async () => {} };
@@ -144,4 +151,69 @@ test('a registered business invites a syndicate as its investor, and an officer 
   const accepted = await send(as(med), 'join', { businessId: b.id });
   assert.equal(accepted.ok, true, accepted.reason);
   assert.equal(businessOf('Fixer Garage').partners.find((p) => p.actorId === syndicate().id).status, 'active');
+});
+
+test('members are mailed when a proposal opens and when it passes', async () => {
+  sent.length = 0;
+  await S.SyndicateClient.submit(fix, 'propose', { syndicateId: syndicate().id, kind: 'limit', amount: 6000 });
+  await S.SyndicateService.processActor(fix);
+  const opened = sent.filter((m) => m.subject.includes('NCI.SyndicateMail.Proposed.Subject'));
+  assert.deepEqual(opened.map((m) => m.toActorId).sort(), [fix.id, med.id].sort(), 'every active member');
+  assert.ok(opened[0].subject.startsWith('Back Room Capital'), 'named in the subject');
+  sent.length = 0;
+  await S.SyndicateClient.submit(med, 'vote', { syndicateId: syndicate().id, proposalId: syndicate().proposals[0].id, yes: true });
+  await S.SyndicateService.processActor(med);
+  assert.equal(sent.filter((m) => m.subject.includes('NCI.SyndicateMail.Passed.Subject')).length, 2);
+  assert.equal(syndicate().rules.tradeLimit, 6000);
+});
+
+test('business payments count against the officer day limit as well as orders', async () => {
+  const spent = (await import('../scripts/engine/index.js')).spentToday(syndicate(), med.id, S.BusinessService.day());
+  assert.ok(spent >= 3000, `the clinic's 3,000 eb counted: ${spent}`);
+  const left = 6000 - spent;
+  assert.equal((await send(as(med), 'found', { name: 'Over Today', archetype: 'bar', cash: left + 100 })).reason, 'over-limit');
+  assert.equal((await send(as(med), 'found', { name: 'Fits Today', archetype: 'bar', cash: Math.min(left, 500) })).ok, true);
+});
+
+test('a syndicate partner brings the Operator rank of its Fixer officers to the hires', async () => {
+  const { operatorRankOf } = await import('../scripts/services/BusinessClient.js');
+  const b = businessOf('Big Bar');
+  assert.equal(operatorRankOf(b), 0);
+  med.items = [{ type: 'role', name: 'Fixer', system: { rank: 4, mainRoleAbility: 'Operator' } }];
+  assert.equal(operatorRankOf(b), 4, 'the Medtech is an officer and a Fixer');
+  med.items = [];
+});
+
+test('money is taken before any is paid out, so a short payer stops it before anyone is paid', async () => {
+  const before = fix.system.wealth.value;
+  await assert.rejects(() => S.BusinessService._pay({ [fix.id]: 100, [syndicate().id]: -10_000_000 }));
+  assert.equal(fix.system.wealth.value, before, 'the Fixer was not paid');
+});
+
+test('a new member can see the businesses of the syndicate at once', async () => {
+  const refreshed = [];
+  const original = S.BusinessRepository.refreshOwnership;
+  S.BusinessRepository.refreshOwnership = async (id) => { refreshed.push(id); return 0; };
+  try {
+    await S.SyndicateClient.submit(med, 'propose', { syndicateId: syndicate().id, kind: 'admit', actorId: solo.id });
+    await S.SyndicateService.processActor(med);
+    assert.deepEqual(refreshed, [], 'an invitation is not membership');
+    await S.SyndicateClient.submit(solo, 'join', { syndicateId: syndicate().id });
+    await S.SyndicateService.processActor(solo);
+    assert.deepEqual(refreshed, [syndicate().id]);
+  } finally {
+    S.BusinessRepository.refreshOwnership = original;
+  }
+});
+
+test('a trade the members agreed that cannot be placed is noted in the history, and they are told', async () => {
+  sent.length = 0;
+  await S.SyndicateClient.submit(med, 'propose', {
+    syndicateId: syndicate().id, kind: 'trade', order: { route: 'direct', side: 'sell', assetId: 'ARA', qty: 50, orderType: 'market', expiry: 'day' },
+  });
+  await S.SyndicateService.processActor(med);
+  const noted = syndicate().ledger.find((l) => l.kind === 'tradeFailed');
+  assert.ok(noted, 'the history says so');
+  assert.ok(noted.reason, `with the reason: ${noted.reason}`);
+  assert.ok(sent.some((m) => m.subject.includes('NCI.SyndicateMail.AgreedFailed.Subject')), 'and the members are mailed');
 });
