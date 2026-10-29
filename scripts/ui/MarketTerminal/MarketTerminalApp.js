@@ -242,9 +242,9 @@ export class MarketTerminalApp extends BaseApplication {
 
   // ── Syndicates (DESIGN §31) ────────────────────────────────────────────────
 
-  /** A form field's value in the block around the button. */
+  /** A form field in the box, row or block around the button. */
   _field(target, name) {
-    return target.closest('.nci-block')?.querySelector(`[name="${name}"]`) ?? null;
+    return target.closest('.nci-cashbox, .nci-actions, .nci-block')?.querySelector(`[name="${name}"]`) ?? null;
   }
 
   static async _onSynFound(event, target) {
