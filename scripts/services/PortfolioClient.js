@@ -13,6 +13,7 @@ import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { SkillAdapter } from './SkillAdapter.js';
 import { TerminalAccess } from './TerminalAccess.js';
 import { SerialQueue } from '../utils/queue.js';
+import { SyndicateClient } from './SyndicateClient.js';
 
 class PortfolioClientImpl {
   constructor() {
@@ -33,6 +34,8 @@ class PortfolioClientImpl {
    * @returns {Promise<string|null>} the request key, or null if the outbox is full
    */
   async submit(actor, type, payload = {}) {
+    // A syndicate's account is traded through the member it was picked as (DESIGN §31).
+    if (actor?.isSyndicate) return SyndicateClient.trade(actor.as, actor.id, type, payload);
     if (PortfolioRepository.pending(actor).length >= OUTBOX_LIMIT) {
       ui.notifications.warn(game.i18n.localize('NCI.Errors.OutboxFull'));
       return null;
@@ -64,6 +67,8 @@ class PortfolioClientImpl {
 
   /** Add or remove a company from the actor's watchlist. */
   async toggleWatch(actor, assetId) {
+    // A syndicate's account keeps its watchlist and notices on the member it is traded as.
+    if (actor?.isSyndicate) actor = actor.as;
     await this._write(async () => {
       const prefs = actor.getFlag(MODULE_ID, FLAGS.PREFS) ?? {};
       const list = new Set(prefs.watchlist ?? []);
@@ -85,7 +90,8 @@ class PortfolioClientImpl {
    */
   async connectTerminal(actor) {
     const claim = TerminalAccess.claim();
-    const rollId = await TerminalAccess.roll(actor, claim);
+    // For a syndicate, the officer makes the Accounting roll as themselves.
+    const rollId = await TerminalAccess.roll(actor?.isSyndicate ? actor.as : actor, claim);
     return this.submit(actor, 'connectTerminal', { claim, ...(rollId ? { rollId } : {}) });
   }
 
@@ -127,6 +133,7 @@ class PortfolioClientImpl {
 
   /** Choose how to hear about one category: 'mail', 'chat' or 'off'. */
   async setNotify(actor, category, channel) {
+    if (actor?.isSyndicate) actor = actor.as;
     await this._write(async () => {
       const prefs = actor.getFlag(MODULE_ID, FLAGS.PREFS) ?? {};
       await actor.setFlag(MODULE_ID, FLAGS.PREFS, { ...prefs, notify: { ...(prefs.notify ?? {}), [category]: channel } });
@@ -135,6 +142,7 @@ class PortfolioClientImpl {
 
   /** How big a one-day move (percent) makes a holding a "mover" for the movers notice. */
   async setMoverPct(actor, pct) {
+    if (actor?.isSyndicate) actor = actor.as;
     await this._write(async () => {
       const prefs = actor.getFlag(MODULE_ID, FLAGS.PREFS) ?? {};
       await actor.setFlag(MODULE_ID, FLAGS.PREFS, { ...prefs, moverPct: moverThreshold(pct) });

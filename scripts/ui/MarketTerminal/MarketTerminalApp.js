@@ -23,6 +23,9 @@ import { L, money, whole, signed, pct, trendClass } from '../format.js';
 import { fundRows, fundDetail, accessContext, ipoRows, heatContext } from './context.js';
 import { ipoPrice, shareOf, bookValue } from '../../engine/index.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
+import { SyndicateClient } from '../../services/SyndicateClient.js';
+import { accountFor, tradingAccounts, ownerOf } from '../accounts.js';
+import { syndicateContext, characterSyndicates } from './syndicateContext.js';
 
 const RANGES = [30, 90, 365];
 const HISTORY_ROWS = 10;
@@ -60,6 +63,15 @@ export class MarketTerminalApp extends BaseApplication {
       requestStatement: MarketTerminalApp._onRequestStatement,
       manageBusiness: MarketTerminalApp._onManageBusiness,
       coverTracks: MarketTerminalApp._onCoverTracks,
+      synFound: MarketTerminalApp._onSynFound,
+      synJoin: MarketTerminalApp._onSynJoin,
+      synDecline: MarketTerminalApp._onSynDecline,
+      synOpen: MarketTerminalApp._onSynOpen,
+      synDeposit: MarketTerminalApp._onSynDeposit,
+      synRedeem: MarketTerminalApp._onSynRedeem,
+      synLeave: MarketTerminalApp._onSynLeave,
+      synVote: MarketTerminalApp._onSynVote,
+      synPropose: MarketTerminalApp._onSynPropose,
     },
   };
 
@@ -77,11 +89,11 @@ export class MarketTerminalApp extends BaseApplication {
 
   _onFirstRender(context, options) {
     super._onFirstRender?.(context, options);
-    for (const hook of [HOOKS.MARKET_UPDATED, HOOKS.COMPANIES_CHANGED, HOOKS.PORTFOLIO_UPDATED, HOOKS.BUSINESSES_CHANGED]) Hooks.on(hook, this._refresh);
+    for (const hook of [HOOKS.MARKET_UPDATED, HOOKS.COMPANIES_CHANGED, HOOKS.PORTFOLIO_UPDATED, HOOKS.BUSINESSES_CHANGED, HOOKS.SYNDICATES_CHANGED]) Hooks.on(hook, this._refresh);
   }
 
   _onClose(options) {
-    for (const hook of [HOOKS.MARKET_UPDATED, HOOKS.COMPANIES_CHANGED, HOOKS.PORTFOLIO_UPDATED, HOOKS.BUSINESSES_CHANGED]) Hooks.off(hook, this._refresh);
+    for (const hook of [HOOKS.MARKET_UPDATED, HOOKS.COMPANIES_CHANGED, HOOKS.PORTFOLIO_UPDATED, HOOKS.BUSINESSES_CHANGED, HOOKS.SYNDICATES_CHANGED]) Hooks.off(hook, this._refresh);
     super._onClose?.(options);
   }
 
@@ -105,8 +117,9 @@ export class MarketTerminalApp extends BaseApplication {
     });
   }
 
+  /** The picked account: a character, or a syndicate traded as one of its members (DESIGN §31). */
   get actor() {
-    return this.actorId ? game.actors.get(this.actorId) ?? null : null;
+    return accountFor(this.actorId);
   }
 
   // ── Actions ────────────────────────────────────────────────────────────────
@@ -145,7 +158,7 @@ export class MarketTerminalApp extends BaseApplication {
 
   static _onTrade(event, target) {
     if (!this.actor) return ui.notifications.warn(L('NCI.Errors.NoActor'));
-    TradeDialogApp.trade({ actorId: this.actor.id, assetId: target.dataset.id, side: target.dataset.side });
+    TradeDialogApp.trade({ actorId: this.actorId, assetId: target.dataset.id, side: target.dataset.side });
   }
 
   /** Read the whole-eb amount from the cash box. */
@@ -188,7 +201,7 @@ export class MarketTerminalApp extends BaseApplication {
   static async _onConnectTerminal() {
     if (!this.actor) return ui.notifications.warn(L('NCI.Errors.NoActor'));
     const claim = TerminalAccess.claim();
-    if (!claim.ok && !TerminalAccess.granted(this.actor)) {
+    if (!claim.ok && !TerminalAccess.granted(ownerOf(this.actor))) {
       return ui.notifications.warn(L('NCI.Access.NeedTerminal', { reason: L(`NCI.Reasons.${claim.reason}`) }));
     }
     await PortfolioClient.connectTerminal(this.actor);
@@ -227,6 +240,79 @@ export class MarketTerminalApp extends BaseApplication {
     await PortfolioClient.heatAction(this.actor, target.dataset.id);
   }
 
+  // ── Syndicates (DESIGN §31) ────────────────────────────────────────────────
+
+  /** A form field's value in the block around the button. */
+  _field(target, name) {
+    return target.closest('.nci-block')?.querySelector(`[name="${name}"]`) ?? null;
+  }
+
+  static async _onSynFound(event, target) {
+    if (!this.actor || this.actor.isSyndicate) return undefined;
+    const name = this._field(target, 'synName')?.value?.trim() ?? '';
+    if (name.length < 2) return ui.notifications.warn(L('NCI.Syndicate.Reason.bad-name'));
+    const invite = [...(target.closest('.nci-block')?.querySelectorAll('input[name="synInvite"]:checked') ?? [])].map((i) => i.value);
+    return SyndicateClient.submit(this.actor, 'found', { name, invite });
+  }
+
+  static _onSynJoin(event, target) {
+    if (this.actor && !this.actor.isSyndicate) return SyndicateClient.submit(this.actor, 'join', { syndicateId: target.dataset.id });
+    return undefined;
+  }
+
+  static _onSynDecline(event, target) {
+    if (this.actor && !this.actor.isSyndicate) return SyndicateClient.submit(this.actor, 'decline', { syndicateId: target.dataset.id });
+    return undefined;
+  }
+
+  /** Switch the picker to a syndicate the character belongs to. */
+  static _onSynOpen(event, target) {
+    this.actorId = target.dataset.key;
+    this.render();
+  }
+
+  static _onSynDeposit(event, target) {
+    const amount = Math.floor(Number(this._field(target, 'synAmount')?.value));
+    if (!this.actor?.isSyndicate) return undefined;
+    if (!(amount >= 1)) return ui.notifications.warn(L('NCI.Reasons.invalid-amount'));
+    return SyndicateClient.submit(this.actor.as, 'deposit', { syndicateId: this.actor.id, amount });
+  }
+
+  static _onSynRedeem(event, target) {
+    const units = Number(this._field(target, 'synUnits')?.value);
+    if (!this.actor?.isSyndicate) return undefined;
+    if (!(units > 0)) return ui.notifications.warn(L('NCI.Syndicate.Reason.bad-amount'));
+    return SyndicateClient.submit(this.actor.as, 'redeem', { syndicateId: this.actor.id, units });
+  }
+
+  static async _onSynLeave() {
+    if (!this.actor?.isSyndicate) return undefined;
+    const ok = await foundry.applications.api.DialogV2.confirm({
+      window: { title: L('NCI.Syndicate.Leave') }, content: `<p>${L('NCI.Syndicate.LeaveConfirm')}</p>`, rejectClose: false,
+    });
+    return ok ? SyndicateClient.submit(this.actor.as, 'leave', { syndicateId: this.actor.id }) : undefined;
+  }
+
+  static _onSynVote(event, target) {
+    if (!this.actor?.isSyndicate) return undefined;
+    return SyndicateClient.submit(this.actor.as, 'vote', { syndicateId: this.actor.id, proposalId: target.dataset.id, yes: target.dataset.yes === 'true' });
+  }
+
+  /** Put something to the vote: the form's kind is admit, remove, officer, member, limit or dissolve. */
+  static _onSynPropose(event, target) {
+    if (!this.actor?.isSyndicate) return undefined;
+    const kind = this._field(target, 'synKind')?.value;
+    const base = { syndicateId: this.actor.id };
+    if (kind === 'admit') return SyndicateClient.submit(this.actor.as, 'propose', { ...base, kind, actorId: this._field(target, 'synCandidate')?.value });
+    if (['remove', 'officer', 'member'].includes(kind)) {
+      const actorId = this._field(target, 'synMember')?.value;
+      return SyndicateClient.submit(this.actor.as, 'propose', kind === 'remove' ? { ...base, kind, actorId } : { ...base, kind: 'role', actorId, role: kind });
+    }
+    if (kind === 'limit') return SyndicateClient.submit(this.actor.as, 'propose', { ...base, kind, amount: Math.floor(Number(this._field(target, 'synLimit')?.value)) });
+    if (kind === 'dissolve') return SyndicateClient.submit(this.actor.as, 'propose', { ...base, kind });
+    return undefined;
+  }
+
   /** Ask how many shares to subscribe for, then queue the subscription. */
   static async _onSubscribeIpo(event, target) {
     if (!this.actor) return ui.notifications.warn(L('NCI.Errors.NoActor'));
@@ -252,7 +338,7 @@ export class MarketTerminalApp extends BaseApplication {
     const hasData = !!pub.schema;
     const traded = hasData ? companies.filter((c) => pub.companies?.[c.id]) : [];
 
-    const actors = PortfolioRepository.actors();
+    const actors = tradingAccounts();
     if (this.actorId && !actors.some((a) => a.id === this.actorId)) this.actorId = actors[0]?.id ?? null;
     const watched = new Set(this.actor ? PortfolioRepository.watchlist(this.actor) : []);
 
@@ -403,7 +489,7 @@ export class MarketTerminalApp extends BaseApplication {
       ...Object.fromEntries(Object.entries(pub.funds ?? {}).map(([id, s]) => [id, s.nav])),
     };
     const v = valuePortfolio(p, prices);
-    const stakes = this._privateStakes(actor);
+    const stakes = actor.isSyndicate ? [] : this._privateStakes(actor);
     const stakesValue = stakes.reduce((a, s) => a + s.value, 0);
     const tick = timeOf(pub);
     const tickerOf = (id) => byId.get(id)?.ticker ?? id;
@@ -476,7 +562,9 @@ export class MarketTerminalApp extends BaseApplication {
     ];
 
     return {
-      wealth: whole(actor.system?.wealth?.value ?? 0),
+      wealth: whole(ownerOf(actor).system?.wealth?.value ?? 0),
+      syndicate: actor.isSyndicate ? syndicateContext(actor, p, prices) : null,
+      syndicates: actor.isSyndicate ? null : characterSyndicates(actor),
       cash: whole(v.cash),
       unsettled: whole(v.unsettled),
       settling,
@@ -493,7 +581,7 @@ export class MarketTerminalApp extends BaseApplication {
       alertLog,
       alertAssets,
       alertKinds: ['above', 'below', 'move'].map((k) => ({ value: k, label: L(`NCI.Alerts.Kind.${k}`) })),
-      pending: PortfolioRepository.pending(actor).length,
+      pending: actor.isSyndicate ? 0 : PortfolioRepository.pending(actor).length,
       noGM: !game.users.activeGM,
       access: accessContext(actor, p, tick),
       heat: heatContext(actor, p, tick),

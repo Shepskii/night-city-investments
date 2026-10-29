@@ -71,6 +71,7 @@ test('a deposit moves cash from the member\'s own account and buys units at NAV'
   assert.equal(books.portfolio.cash, 3000);
   assert.equal(memberOf(books.syndicate, 'med').units, 3000, 'one unit per eb while none exist');
   assert.equal(books.members.med.ledger.at(-1).kind, 'syndicateDeposit');
+  assert.equal(books.portfolio.ledger.at(-1).kind, 'memberDeposit', 'the same payment, as the syndicate sees it');
 
   // The account doubles in value: the next eddie buys half a unit.
   books = hold(books, 'ARA', 30, 100);

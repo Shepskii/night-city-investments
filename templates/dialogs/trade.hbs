@@ -1,6 +1,7 @@
 <div class="nci-editor nci-trade">
   <h3>{{ticker}} <span class="nci-muted">{{name}}</span></h3>
   <p class="nci-muted">{{actorName}}</p>
+  {{#if syndicate}}<p class="{{#if syndicate.officer}}nci-hint{{else}}nci-warn{{/if}}">{{syndicate.note}}</p>{{/if}}
 
   <div class="nci-kv">
     <span>{{#if isFund}}{{localize "NCI.Fund.Nav"}}{{else}}{{localize "NCI.Terminal.Price"}}{{/if}}</span><strong>{{price}}</strong>

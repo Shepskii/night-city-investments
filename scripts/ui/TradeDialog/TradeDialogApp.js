@@ -13,6 +13,9 @@ import { BrokerRepository } from '../../data/BrokerRepository.js';
 import { MarketStore } from '../../data/MarketStore.js';
 import { PortfolioRepository } from '../../data/PortfolioRepository.js';
 import { PortfolioClient } from '../../services/PortfolioClient.js';
+import { SyndicateClient } from '../../services/SyndicateClient.js';
+import { accountFor } from '../accounts.js';
+import { orderValue } from '../../engine/index.js';
 import { TradingSettings } from '../../services/TradingSettings.js';
 import { BaseApplication } from '../BaseApplication.js';
 import { L, money, whole } from '../format.js';
@@ -32,7 +35,7 @@ export class TradeDialogApp extends BaseApplication {
 
   /** Open a trade window. `side` is 'buy' or 'sell'. */
   static trade({ actorId, assetId, side = 'buy' }) {
-    const app = new TradeDialogApp({ id: `nci-trade-${actorId}-${assetId}`, actorId, assetId, side });
+    const app = new TradeDialogApp({ id: `nci-trade-${String(actorId).replace(/[^\w-]/g, '_')}-${assetId}`, actorId, assetId, side });
     app.render({ force: true });
     return app;
   }
@@ -50,7 +53,7 @@ export class TradeDialogApp extends BaseApplication {
 
   static async _onSubmit(event, form, formData) {
     const data = foundry.utils.expandObject(formData.object);
-    const actor = game.actors.get(this.actorId);
+    const actor = accountFor(this.actorId);
     const qty = Math.floor(Number(data.qty));
     if (!actor || !(qty >= 1)) return ui.notifications.warn(L('NCI.Reasons.invalid-qty'));
 
@@ -58,7 +61,7 @@ export class TradeDialogApp extends BaseApplication {
     const limit = Number(data.limit);
     if (orderType !== 'market' && !(limit > 0)) return ui.notifications.warn(L('NCI.Reasons.invalid-limit'));
 
-    await PortfolioClient.submit(actor, 'placeOrder', {
+    const order = {
       route: data.route,
       side: data.side,
       assetId: this.assetId,
@@ -66,7 +69,15 @@ export class TradeDialogApp extends BaseApplication {
       orderType,
       limit: orderType === 'market' ? null : limit,
       expiry: data.expiry ?? 'day',
-    });
+    };
+    // A syndicate order over the officers' limit goes to the members as a proposal (DESIGN §31).
+    const pub = MarketStore.getPublic();
+    const market = { [this.assetId]: { price: pub.companies?.[this.assetId]?.price ?? pub.funds?.[this.assetId]?.nav ?? 0 } };
+    if (actor.isSyndicate && orderValue(order, market) > actor.syndicate.rules.tradeLimit) {
+      await SyndicateClient.submit(actor.as, 'propose', { syndicateId: actor.id, kind: 'trade', order });
+    } else {
+      await PortfolioClient.submit(actor, 'placeOrder', order);
+    }
     await this.close();
   }
 
@@ -123,7 +134,7 @@ export class TradeDialogApp extends BaseApplication {
     const pub = MarketStore.getPublic();
     const price = isFund ? (pub.funds?.[this.assetId]?.nav ?? 0) : (pub.companies?.[this.assetId]?.price ?? 0);
     const q = isFund ? { bid: price, ask: price } : quote(price, company?.liquidity ?? 3);
-    const actor = game.actors.get(this.actorId);
+    const actor = accountFor(this.actorId);
     const p = PortfolioRepository.get(actor);
     const held = heldQty(p.lots, this.assetId);
     const tick = timeOf(pub);
@@ -158,6 +169,10 @@ export class TradeDialogApp extends BaseApplication {
       held,
       available: held - reservedShares(p.orders, this.assetId),
       actorName: actor?.name ?? '',
+      syndicate: actor?.isSyndicate ? {
+        officer: actor.isOfficer,
+        note: actor.isOfficer ? L('NCI.Syndicate.TradeNote', { amount: actor.syndicate.rules.tradeLimit.toLocaleString() }) : L('NCI.Syndicate.NotOfficer'),
+      } : null,
     };
   }
 

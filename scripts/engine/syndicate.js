@@ -124,13 +124,17 @@ function addLedger(s, entry) {
   s.ledger = [...s.ledger, entry].slice(-SYNDICATE_DEFAULTS.ledgerCap);
 }
 
-/** Move cash between a member's account and the syndicate's, with a line in each ledger. */
-function moveCash(b, actorId, amount, tick, ref, kind) {
+/**
+ * Move cash between a member's account and the syndicate's, with a line in each ledger: the member's
+ * reads `syndicate<What>`, the syndicate's `member<What>`.
+ * @param {'Deposit'|'Redeem'|'Payout'} what
+ */
+function moveCash(b, actorId, amount, tick, ref, what) {
   const mine = b.members[actorId];
   mine.cash = round2(mine.cash - amount);
   b.portfolio.cash = round2(b.portfolio.cash + amount);
-  mine.ledger = [...mine.ledger, { ts: tick, kind, assetId: null, qty: 0, amount: -amount, ref, syndicateId: b.syndicate.id }];
-  b.portfolio.ledger = [...b.portfolio.ledger, { ts: tick, kind, assetId: null, qty: 0, amount, ref, actorId }];
+  mine.ledger = [...mine.ledger, { ts: tick, kind: `syndicate${what}`, assetId: null, qty: 0, amount: -amount, ref, syndicateId: b.syndicate.id }];
+  b.portfolio.ledger = [...b.portfolio.ledger, { ts: tick, kind: `member${what}`, assetId: null, qty: 0, amount, ref, actorId }];
 }
 
 /**
@@ -218,7 +222,7 @@ function memberRequest(b, me, request, { day, tick, market, ctx, out }) {
       const { nav } = navOf(s, b.portfolio, prices);
       const units = round2(amount / nav);
       if (!(units > 0)) return fail('bad-amount');
-      moveCash(b, me.actorId, amount, tick, request.key, 'syndicateDeposit');
+      moveCash(b, me.actorId, amount, tick, request.key, 'Deposit');
       me.units = round2(me.units + units);
       addLedger(s, { day, kind: 'deposit', actorId: me.actorId, amount, units, nav: round2(nav) });
       out.changed.add(me.actorId);
@@ -397,7 +401,7 @@ function dissolve(b, { day, tick, out }) {
   for (const x of shares) left -= x.amount;
   if (shares.length) shares.reduce((a, x) => (x.m.units > a.m.units ? x : a)).amount += left;
   for (const { m, amount } of shares) {
-    if (amount > 0) moveCash(b, m.actorId, -amount, tick, `dissolve_${s.id}`, 'syndicatePayout');
+    if (amount > 0) moveCash(b, m.actorId, -amount, tick, `dissolve_${s.id}`, 'Payout');
     out.changed.add(m.actorId);
     addLedger(s, { day, kind: 'payout', actorId: m.actorId, amount, units: m.units });
     m.units = 0;
@@ -422,7 +426,7 @@ function payRedemptions(b, { day, tick, market, out }) {
     const units = Math.min(r.units, member.units);
     const amount = Math.floor(units * nav);
     if (amount > freeCash(b.portfolio)) break;
-    moveCash(b, r.actorId, -amount, tick, r.id, 'syndicateRedeem');
+    moveCash(b, r.actorId, -amount, tick, r.id, 'Redeem');
     member.units = round2(member.units - units);
     r.status = 'paid';
     r.amount = amount;
