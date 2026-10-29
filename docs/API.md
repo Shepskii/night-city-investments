@@ -75,6 +75,29 @@ await api.businesses.roll(fixer, clinic, { type: 'setupRoll', businessId: clinic
 | `api.businesses.submit(actor, type, payload)` | Queue a request. `type` is one of `found` (with an optional `district`; gear in `found`, `join` and `contribute` is `gear: [{ uuid }]`, Foundry items the GM's side looks up, values from the item's market price), `join` (also how an invited investor accepts), `decline`, `contribute`, `withdraw`, `draw`, `setHeir`, `leave`, `buyout`, `propose`, `vote`, `addDays` (`{ projectId, days }`) or `repayLoan` (`{ loanId, amount }`). `propose` takes a `kind`: `close`, `stepUp`, `expansion`, `fixerLoan` (with `amount`), `bankLoan`, `investor` (with `actorId`, `amount` and an optional `price` per unit) or `angel`; each kind's rule is in `engine.PROPOSAL_RULES`. The fields are listed at the top of `scripts/engine/business.js`. Returns the request key, or `null` if the outbox is full. |
 | `api.businesses.roll(actor, business, request, { title, levers })` | Make a roll and send it: `request.type` is `setupRoll`, `action` (with `action`: `work`, `promote`, `source`, `fixUp`, `keepSafe`), `assist` (with `forAction`), `respond` (this week's event), `stepUpRoll` (registering), `loanRoll` (a bank loan, with `amount`) or `angelRoll`; `request.use` is `{ kind: 'skill', skill, stat }`, `{ kind: 'ability', ability }` or `{ kind: 'hire', hire: 'cheap' \| 'good' \| 'best' }`. `levers`: `{ approach: 'careful' \| 'standard' \| 'bold', luck, bonus, extra }` (`extra` spends a business day for +1). Checked on the calling client first, so a roll that could not count is not made. |
 
+## Syndicates (the calling user's own characters)
+
+Player syndicates (DESIGN §31, B3): a crew's shared brokerage account. A syndicate is a JournalEntry whose `syndicate` flag is the record and whose `portfolio` flag is an ordinary portfolio. A member writes a request into their own character's syndicate outbox (`flags.night-city-investments.syndicateOutbox`); the active GM's client carries it out and records the result in `syndicateReceipts`. Terminal requests for the syndicate's account (orders, the broker, a terminal session, alerts, statements, IPO subscriptions) are wrapped in a `trade` request and made by an officer.
+
+```js
+const med = game.actors.getName('Doc');
+await api.syndicates.submit(med, 'found', { name: 'Back Room Capital', invite: [fixer.id] });
+const [s] = api.syndicates.forActor(med);
+await api.syndicates.submit(med, 'deposit', { syndicateId: s.id, amount: 5000 });
+await api.syndicates.trade(med, s.id, 'placeOrder', { route: 'direct', side: 'buy', assetId: 'ARA', qty: 10, orderType: 'market', expiry: 'day' });
+```
+
+| Call | Notes |
+|---|---|
+| `api.syndicates.list()` / `.get(id)` | Every syndicate this client can read: a player sees only those their characters belong to or are invited to. |
+| `api.syndicates.portfolio(id)` | The syndicate's own account, as a normal portfolio. |
+| `api.syndicates.forActor(actorOrId)` | The syndicates one character belongs to or is invited to. |
+| `api.syndicates.submit(actor, type, payload)` | Queue a request. `type` is `found` (`{ name, invite }`), `join`, `decline`, `deposit` (`{ amount }`, from the member's brokerage balance), `redeem` (`{ units }`), `leave`, `trade` (`{ request }`), `propose` or `vote` (`{ proposalId, yes }`); every one but `found` carries `syndicateId`. `propose` takes a `kind`: `trade` (with `order`), `admit` or `remove` (with `actorId`), `role` (with `actorId` and `role`), `limit` (with `amount`) or `dissolve`. The fields are listed at the top of `scripts/engine/syndicate.js`. Returns the request key, or `null` if the outbox is full. |
+| `api.syndicates.trade(actor, syndicateId, type, payload)` | An officer's terminal request for the syndicate's account (`type` is one of `engine.SYNDICATE_TRADES`). An order over the officers' limit is refused (`over-limit`); propose it instead. |
+| `api.syndicates.approve(id)` / `.reject(id)` | **GM.** Let a pending syndicate start, or turn it down (its journal is removed; nothing was paid in). |
+| `api.syndicates.decide(id, proposalId, 'pass' \| 'veto')` | **GM.** Force a proposal through or strike it out. |
+| `api.syndicates.close(id)` | **GM.** Close a syndicate whose account holds nothing but cash, paying the cash out by units. |
+
 ## Brokers, funds, terminal
 
 | Call | Returns |
@@ -154,6 +177,7 @@ Fired with `Hooks.callAll`, on every client unless noted. Names are prefixed `ni
 | `heatPenalty` | `{ penalty }` | **GM client.** A penalty was proposed, approved or dismissed. |
 | `heatChanged` | none | Heat changed. |
 | `businessesChanged` | `{ businessId?, actorId?, events? }` | A business record, or a character's business requests or receipts, changed. |
+| `syndicatesChanged` | `{ syndicateId?, actorId?, events? }` | A syndicate record, or a character's syndicate requests or receipts, changed. |
 | `businessPeriod` | `{ businessId, digest }` | **GM client.** A business's operating week closed: `digest` has `takings`, `upkeep`, `profit`, `till` and the week's actions. |
 
 Night City Messenger's `night-city-messenger.message:sent` hook is how a broker notices mail from a player.
