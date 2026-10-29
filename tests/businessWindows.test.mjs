@@ -237,3 +237,12 @@ test('items dragged into the Start a business form are listed with their book va
   assert.match(text(html), /Toolkit 1,200 eb leaves your sheet/);
   assert.match(html, /data-action="removeGear" data-form="start" data-index="0"/);
 });
+
+test('the roll dialog offers only the hires the business can pay for', async () => {
+  const b = S.BusinessRepository.all()[0];
+  await S.BusinessRepository.save({ ...b, till: 200, period: { ...b.period, slots: [] } });
+  const dialog = new Apps.Roll({ actorId: med.id, businessId: b.id, request: { type: 'action', businessId: b.id, action: 'work' }, rollTitle: 'Work' });
+  const html = text(render('templates/dialogs/roll.hbs', await dialog._prepareContext()));
+  assert.match(html, /A good hire/);
+  assert.doesNotMatch(html, /The best money can buy/, '400 eb is more than the till holds');
+});

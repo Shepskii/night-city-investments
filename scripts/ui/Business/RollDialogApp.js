@@ -87,8 +87,10 @@ export class RollDialogApp extends BaseApplication {
       // A role ability the character does not have is not offered; a skill at 0 still rolls on its stat.
       .filter((o) => o.use.kind !== 'ability' || o.base > 0)
       .sort((a, b) => b.base - a.base);
+    // Only the hires the business can pay for (a registration also needs its fee left in the till).
+    const affordable = (tier) => rollSpec(this.business, { ...this.request, use: { kind: 'hire', hire: tier } }, this.actorId, { day: BusinessClient.day(), operatorRank: rank }).ok;
     const hires = spec.allowHire
-      ? Object.entries(HIRE_TIERS).map(([tier, base]) => ({
+      ? Object.entries(HIRE_TIERS).filter(([tier]) => affordable(tier)).map(([tier, base]) => ({
         key: `hire:${tier}`, use: { kind: 'hire', hire: tier }, base, label: L('NCI.Roll.HireOption', { who: L(`NCI.Roll.Hire.${tier}`), base, fee: whole(hireFee(tier, rank)) }),
       }))
       : [];
