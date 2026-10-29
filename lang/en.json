@@ -1968,7 +1968,7 @@
         "bad-name": "the business needs a name",
         "bad-archetype": "that kind of business does not exist",
         "too-many-partners": "too many partners",
-        "bad-partner": "one of those partners is not a character",
+        "bad-partner": "that is not a character or syndicate the business can take on",
         "not-investor": "only player characters, and characters linked to Night City Messenger contacts tagged broker or investor, can be invited to invest",
         "bad-sweat": "sweat equity must go to a founder, at no more than 10%",
         "bad-gear": "the gear list is not allowed",

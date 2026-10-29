@@ -130,3 +130,17 @@ test('the Business window offers the syndicate to its officers only', () => {
   assert.deepEqual(offered(med), [med.id, `syn:${syndicate().id}:${med.id}`]);
   assert.deepEqual(offered(fix), [fix.id], 'the Fixer is a member, not an officer');
 });
+
+test('a registered business invites a syndicate as its investor, and an officer accepts for it', async () => {
+  const r = await send(fix, 'found', { name: 'Fixer Garage', archetype: 'garage', cash: 2000, invite: [] });
+  assert.equal(r.ok, true, r.reason);
+  const b = businessOf('Fixer Garage');
+  await S.BusinessRepository.save({ ...b, status: 'open', stage: 1, escrow: 0, till: 2000, assets: 2000, partners: b.partners.map((p) => ({ ...p, units: 2000 })) });
+  const proposed = await send(fix, 'propose', { businessId: b.id, kind: 'investor', actorId: syndicate().id, amount: 1000 });
+  assert.equal(proposed.ok, true, proposed.reason);
+  const invited = businessOf('Fixer Garage').partners.find((p) => p.actorId === syndicate().id);
+  assert.equal(invited?.status, 'invited');
+  const accepted = await send(as(med), 'join', { businessId: b.id });
+  assert.equal(accepted.ok, true, accepted.reason);
+  assert.equal(businessOf('Fixer Garage').partners.find((p) => p.actorId === syndicate().id).status, 'active');
+});
