@@ -447,7 +447,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | 0.9.7 | **Done (v0.9.7).** Released the work that had been unreleased: the after-tick sequence and dividend-records fix (§27), the market date, price paths and cleanups (§28), and gig runners for heat (H4) |
 | B0 | **Done, see §26.9 (B0 findings).** Groundwork for player businesses and syndicates: the business growth simulator (`tools/business-model.mjs`), the storage schema, and the Crew Tools spike (from its source; a run in the test world is still to do) |
 | B1 | **Done (v0.10.0), see §29.** Side businesses: the roll levers, the Business window and the GM's Businesses tab, partnerships, four archetypes, the weekly loop |
-| B2 | **v0.11.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
+| B2 | **v0.11. Built, see §30; to be released after a run in the test world.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
 | B3 | **v0.12, alongside B1 and B2.** Player syndicates, and syndicates owning or investing in businesses |
 | B4 | **v0.13.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
 | B5 | **v0.14.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
@@ -807,7 +807,7 @@ An unrolled week is not a closed shop: takings default to the archetype's baseli
 
 | Step | Milestones (defaults) | Roll | On failure |
 |---|---|---|---|
-| Side → Registered | 4 periods operating, average profit of 100 eb a week over the last 4, Reputation at or above the district baseline | Registration: Bureaucracy (Local Expert or Persuasion at DV +2), plus a fee of about 500 eb | the fee is spent and a delay of 7 game days; nothing is lost |
+| Side → Registered | 4 periods operating, average profit of 100 eb a week over the last 4, Reputation of at least 45, just under the baseline (§30) | Registration: Bureaucracy (Local Expert or Persuasion at DV +2), plus a fee of about 500 eb | the fee is spent and a delay of 7 game days; nothing is lost |
 | Registered → Chartered | 3 monthly ledgers, average profit of 400 eb a week over the last 4 periods, Capacity from at least one expansion | the charter (§26.2), with the business plan roll one DV step easier for a business with a track record | as §26.2 |
 | Chartered → Listed | §26.4a | the prospectus rolls (§26.4a) | as §26.4a |
 
@@ -1208,3 +1208,48 @@ B1 as built, with the decisions made while building it. The design it follows is
 **Not built yet** (B2 unless noted): weekly events and event responses; registration and the later stages; loans and investors; expansion projects and the Projects and Growth tabs; location effects (the location is a note for now); role abilities as actions (they can be used for the setup roll and complementary checks); the six other archetypes; extra time from downtime (B7); private holdings in the Portfolio tab.
 
 **Tested in the test world** (Foundry 12.343, Cyberpunk RED Core v0.92.4) before release: founding, invitations and joining, the setup roll (a real fumble included), GM approval, complementary checks, an action with Luck and the +1 on a real sheet, the weekly close and catch-up over a 14-day jump, draws, a refused close vote, leaving, a buy-out and closing; a business journal reaching only its partners' players. It found and fixed: the roll dialog failing to open (`title` is read-only on ApplicationV2), qualified skills such as Local Expert (Your Home) reading as 0, a lone owner helping themselves with the action's own skill, abilities at rank 0 in the dialog, a stale "no GM online" warning, a fumble taking the whole escrow (now capped at half), and a closed business reappearing for partners who had sold out. Not tried live: failure after two losing weeks, and a stake passing to an heir or lapsing (both covered by tests).
+
+## 30. Phase B2: growing (built for v0.11)
+
+B2 as built, with the decisions made while building it. The design it follows is §26.0, §26.4 (events) and §26.5 (gigs). The engine is now split into `businessRecord.js` (the record and its readers), `business.js` (requests, proposals and the week), `businessGrowth.js`, `businessEvents.js` and `businessFinance.js`.
+
+**Proposals.** One `propose` request covers every decision, each kind with its rule (`PROPOSAL_RULES`): closing, stepping up, an investor and an angel need every partner with a vote; an expansion, a fixer's loan and going to a bank need a majority of the voting units (more than half to pass; it fails once half or more say no). A proposal takes effect the moment it passes, and lapses after 7 game days. `proposeClose` stays as an alias. One proposal of each kind may be open at a time.
+
+**Business days and extra time.** Without Crew Tools (§26.8), each partner with a vote has 3 business days a week, which lapse when the week closes. They pay for expansion work and for **extra time**: one day for +1 on a roll, a new lever in the roll dialog, which the GM counts only if the character has a day left.
+
+**Stage 1, the registered business.** Two action slots at DV 15, a Capacity ceiling of 4.5, fix-ups scaled ×6, rent 25 and licence fees 10 a week in place of most of the protection money (5), and a Compliance standing that starts from the registration roll's band (45 to 60) and drifts back to 50 like Reputation. Inspections come only to registered businesses.
+- **Registering.** The checklist (four full weeks open, an average of 100 eb a week over the last four, counting a short first week at its weekly rate, Reputation 45, and the 500 eb fee in the till), then every partner's agreement, then the registration roll: Bureaucracy at DV 15, or Local Expert or Persuasion at DV +2 (each use can now carry its own DV step, shown in the dialog). The fee is paid whatever the result; a refusal waits 7 game days, a fumble 14.
+- **Reputation 45, not 50.** The simulator showed half the average crews never registering with a bar of 50: events knock Reputation down and at a side business it only drifts back toward 50, so it settled just under. The bar is near the baseline instead of on it.
+
+**Expansion projects.** Started by a majority, paid from the till at once (the fit-out is worth what it cost), finished with business days, and then Capacity rises: 1,500 eb, 3 days and +0.25 at stage 0; 2,500 eb, 6 days and +0.8 at stage 1, scaled by the growth rate and up to the stage's ceiling. One at a time.
+
+**Weekly events** (`businessEvents.js`). The engine draws an event when a week starts, from the world seed, the business and the week, so a week always draws the same thing; it is not a player's roll. The chance is 25%, times the district's risk, times 0.8 once registered. Eight kinds: a shakedown, a break-in, a breakdown, a shortage, a rival, trouble with a customer, an inspection (registered only) and a big order, each answered with the skills and abilities it names (some add the trade's own skills; an inspection takes Bureaucracy, or Local Expert or Bribery at DV +2).
+- Answering takes a slot and a roll, at the stage's DV. Unanswered, an event costs 15% of the week's takings and leaves its mark (a breakdown Capacity −0.05, a shortage Cost base +0.02, a rival Reputation −2, trouble Reputation −1, an inspection Compliance −8); a failed answer costs 10% and half the mark, a fumble 20%. A successful Keep it safe that week also deals with a shakedown or a break-in. A big order pays 5% to 30% more takings only if answered well. Debt collectors (never drawn) come the week after a missed fixer payment.
+- At a side business answering uses the only slot, so the shop goes unworked that week; that is the trade-off the design wants.
+- The shakedown's Reputation hit was dropped and the others softened, for the same reason as the Reputation bar above.
+
+**Districts.** Twenty, with Night City Map's ids (the bays are left out), chosen when the business is founded. Each sets foot traffic (×0.6 in the ruined centre to ×1.25 in the Executive Zone, on takings), rent (×0.5 to ×1.6, on rent and licence fees) and risk (×0.6 to ×2, on protection money and how often events come). No district is average on all three. The free-text location stays as a note; showing businesses on the map is for the map bridge (B7).
+
+**The other six archetypes.** Boutique (Wardrobe & Style, Personal Grooming), gun shop (Weaponstech, Trading; dear to set up), courier (Drive Land Vehicle, Local Expert), security outfit (Tactics, Persuasion), screamsheet (Composition, Photography/Film) and food stall (Streetwise, Local Expert; cheap). Their takings and costs keep the clinic's margin.
+
+**Role abilities as actions.** B1 already let the abilities in §26.0's table roll the actions they fit (Credibility and Charismatic Impact to promote, Operator to source, Maker to fix up, Combat Awareness and Backup to keep it safe); B2 adds Moto to sourcing and lets abilities answer events. Exec Teamwork (an extra slot) is a chartered company's (B4).
+
+**Loans** (`businessFinance.js`). Interest counts against the week's profit; the principal repaid comes out of the till but is not a cost. Repayments are taken as each week closes, and loans can be paid off early.
+- **A fixer's loan**, at any stage, on a majority: up to 2,000 eb (4,000 once registered), 5% of the balance a week, a tenth of the principal repaid each week. A missed payment adds a 10% late fee, costs 2 Reputation and sends the collectors.
+- **A bank loan**, for a registered business: a majority agrees, then a partner rolls Accounting or Business at DV 15 (a hired accountant allowed). The band sets the limit, 6 to 20 weeks of the last four weeks' average profit, and the rate, 1.5% down to 0.8% a week, over 20 weeks; the loan is what the partners asked for, up to the limit. A missed payment adds 5% and costs 10 Compliance. A refusal waits 14 days.
+
+**Investors**, for registered businesses only (§26.0).
+- **A character**: every partner agrees on who, how much and the price per unit (book value unless the partners set one). The character is then invited, sees the offer in their Business window, and pays in to become a voting partner.
+- **An angel**: once every partner agrees, the angel is found: its skill total (12 + d10, drawn from the seed and the proposal) and name are stored, so the partners know who they are pitching to and the dialog's preview is exact. The pitch is a Persuasion or Trading roll against that total, the CPR opposed roll with the NPC's die already cast. The band sets how much of the book value the angel puts in (20% to 50%) and the price (10% under book to 20% over). An angel holds units without a vote; its share of the profit stays in the business (it draws nothing), and it is paid like any holder if the business closes. A failed pitch waits 14 days. This replaces rolling the angel's die after the player's, which would have let the player's card say one thing and the GM's result another.
+
+**Private holdings in the Portfolio tab** (§26.8a). A character's stakes in open businesses, valued at book value times their share, not tradable, each with a button to the Business window, counted in the portfolio's total. Statements leave them out for now.
+
+**Gigs for a player's own business** (§26.5). A gig is matched to an open player business before any company: a `[NCI: <business id>]` tag, the business's exact name, or its name inside the client text. Its outcome moves Reputation at once and next week's takings: at a reward of 2,000 eb a success is +4 and +10%, a failure −6 and −10%, scaled by the reward (0.25 to 1.5) and divided by one more for each gig for the same business in the last 28 days. With GM approval on (the default) it waits in its own section of the Gigs tab with the planned effect shown; the history names the business. A business has no share price yet, so there is no insider-trading window; heat for its gig runners waits for listing (B5).
+
+**Windows.** The Business window gains Projects and Growth tabs, the week's event with an Answer button, loans on the Ledger tab and investors on the Partners tab, every kind of proposal on the Partners tab with its rule, the district, Compliance, and the digest's event, loan and gig lines. The GM's Businesses tab shows each business's district and week's event.
+
+**Simulator** (`tools/simulate-engine.mjs`, `npm run simulate:engine`). It plays a business through the real engine with the B0 crews. At growth rate 1, after the Reputation changes above, strong, average and weak crews register in a median of 8, 11 and 28 weeks (100%, 99% and 94% within 80 weeks), against the B0 prototype's 7, 11 and 26, with weekly profit on registering of 139, 114 and 110 eb (the prototype's 136, 116 and 109) and 0 to 2% closing.
+
+**Not built yet:** chartering and everything after it (B4 to B6); the GM editing the event tables; statements counting private stakes; moving a business to another district; Crew Tools downtime in place of business days (B7).
+
+**Still to check in a live Foundry v12 world:** everything in B2 (none of it has been run there yet).

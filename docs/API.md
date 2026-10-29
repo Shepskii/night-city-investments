@@ -59,7 +59,7 @@ api.portfolio.get(actor);   // { cash, lots, orders, ledger, ... }
 
 ## Businesses (the calling user's own characters)
 
-Player businesses (DESIGN §26, built so far: side businesses, B1). As with portfolios, a player only ever writes a request into their character's business outbox (`flags.night-city-investments.businessOutbox`); the active GM's client carries it out and records the result in `businessReceipts`. Rolls are made on the calling client when the player chooses to roll, and the GM reads the dice back from the chat card.
+Player businesses (DESIGN §26, built so far: side and registered businesses, B1 and B2). As with portfolios, a player only ever writes a request into their character's business outbox (`flags.night-city-investments.businessOutbox`); the active GM's client carries it out and records the result in `businessReceipts`. Rolls are made on the calling client when the player chooses to roll, and the GM reads the dice back from the chat card.
 
 ```js
 const med = game.actors.getName('Doc');
@@ -72,8 +72,8 @@ await api.businesses.roll(fixer, clinic, { type: 'setupRoll', businessId: clinic
 |---|---|
 | `api.businesses.list()` / `.get(id)` | Every business this client can read: a player sees only those their characters are partners in (or invited to). |
 | `api.businesses.forActor(actorOrId)` | One character's businesses, closed ones included. |
-| `api.businesses.submit(actor, type, payload)` | Queue a request. `type` is one of `found`, `join`, `decline`, `contribute`, `withdraw`, `draw`, `setHeir`, `leave`, `buyout`, `proposeClose`, `vote` (the fields are listed at the top of `scripts/engine/business.js`). Returns the request key, or `null` if the outbox is full. |
-| `api.businesses.roll(actor, business, request, { title, levers })` | Make a roll and send it: `request.type` is `setupRoll`, `action` (with `action`: `work`, `promote`, `source`, `fixUp`, `keepSafe`) or `assist` (with `forAction`); `request.use` is `{ kind: 'skill', skill, stat }`, `{ kind: 'ability', ability }` or `{ kind: 'hire', hire: 'cheap' \| 'good' \| 'best' }`. `levers`: `{ approach: 'careful' \| 'standard' \| 'bold', luck, bonus }`. Checked on the calling client first, so a roll that could not count is not made. |
+| `api.businesses.submit(actor, type, payload)` | Queue a request. `type` is one of `found` (with an optional `district`), `join` (also how an invited investor accepts), `decline`, `contribute`, `withdraw`, `draw`, `setHeir`, `leave`, `buyout`, `propose`, `vote`, `addDays` (`{ projectId, days }`) or `repayLoan` (`{ loanId, amount }`). `propose` takes a `kind`: `close`, `stepUp`, `expansion`, `fixerLoan` (with `amount`), `bankLoan`, `investor` (with `actorId`, `amount` and an optional `price` per unit) or `angel`; each kind's rule is in `engine.PROPOSAL_RULES`. The fields are listed at the top of `scripts/engine/business.js`. Returns the request key, or `null` if the outbox is full. |
+| `api.businesses.roll(actor, business, request, { title, levers })` | Make a roll and send it: `request.type` is `setupRoll`, `action` (with `action`: `work`, `promote`, `source`, `fixUp`, `keepSafe`), `assist` (with `forAction`), `respond` (this week's event), `stepUpRoll` (registering), `loanRoll` (a bank loan, with `amount`) or `angelRoll`; `request.use` is `{ kind: 'skill', skill, stat }`, `{ kind: 'ability', ability }` or `{ kind: 'hire', hire: 'cheap' \| 'good' \| 'best' }`. `levers`: `{ approach: 'careful' \| 'standard' \| 'bold', luck, bonus, extra }` (`extra` spends a business day for +1). Checked on the calling client first, so a roll that could not count is not made. |
 
 ## Brokers, funds, terminal
 
