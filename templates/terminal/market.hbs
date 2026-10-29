@@ -177,6 +177,7 @@
 
     {{#with portfolio.syndicates}}
     <h3>{{localize "NCI.Syndicate.Heading"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Syndicate.Intro"}}</p>
     {{#each invitations}}
     <p>{{localize "NCI.Syndicate.InvitedBy" name=name founder=founder}}{{#if pending}} <span class="nci-muted">({{localize "NCI.Syndicate.AwaitingGM"}})</span>{{/if}}
       <button type="button" class="nci-labelled" data-action="synJoin" data-id="{{id}}"><i class="fas fa-check"></i> {{localize "NCI.Syndicate.Join"}}</button>
