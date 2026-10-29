@@ -255,6 +255,7 @@ test('a character\'s stakes in open businesses show in the terminal\'s Portfolio
   assert.equal(stakes.length, 1);
   assert.equal(stakes[0].value, Math.round(shareOf(b, med.id) * bookValue(b)));
   assert.equal(stakes[0].stage, 'Registered business');
+  assert.deepEqual([stakes[0].till, stakes[0].book], [b.till.toLocaleString(), bookValue(b).toLocaleString()], 'the cash and book value of the business too');
 });
 
 test('the Gigs tab shows a gig for the players\' business in its own section', async () => {

@@ -118,12 +118,22 @@
     {{#if portfolio.stakes.length}}
     <h3 class="nci-subhead">{{localize "NCI.Portfolio.PrivateTitle"}}</h3>
     <p class="nci-hint">{{localize "NCI.Portfolio.PrivateHint"}}</p>
-    <table class="nci-market"><tbody>
+    <table class="nci-market">
+      <thead><tr>
+        <th>{{localize "NCI.Portfolio.PrivateTitle"}}</th>
+        <th class="num">{{localize "NCI.Business.Till"}}</th>
+        <th class="num">{{localize "NCI.Business.BookValue"}}</th>
+        <th class="num">{{localize "NCI.Business.YourShare"}}</th>
+        <th class="num">{{localize "NCI.Portfolio.ShareValue"}}</th>
+      </tr></thead>
+      <tbody>
       {{#each portfolio.stakes}}
       <tr data-action="manageBusiness" data-id="{{id}}" class="nci-row" title="{{localize 'NCI.Portfolio.Manage'}}">
-        <td><strong>{{name}}</strong> <span class="nci-muted">{{stage}}</span></td><td class="num">{{share}}</td><td class="num">{{value}} eb</td></tr>
+        <td><strong>{{name}}</strong> <span class="nci-muted">{{stage}}</span></td>
+        <td class="num">{{till}} eb</td><td class="num">{{book}} eb</td><td class="num">{{share}}</td><td class="num">{{value}} eb</td></tr>
       {{/each}}
-    </tbody></table>
+      </tbody>
+    </table>
     {{/if}}
 
     {{#with portfolio.syndicate}}

@@ -49,6 +49,7 @@
     "Portfolio": {
       "PrivateStakes": "Private stakes",
       "PrivateTitle": "Private businesses",
+      "ShareValue": "Share value",
       "PrivateHint": "Stakes in businesses that are not on the market, valued at book value times your share. They count toward the total but cannot be bought or sold here; click one to open it in the Business window.",
       "Manage": "Open in the Business window",
       "Cash": "Brokerage balance",

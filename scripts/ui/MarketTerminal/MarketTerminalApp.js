@@ -475,6 +475,8 @@ export class MarketTerminalApp extends BaseApplication {
         id: b.id,
         name: b.name,
         stage: L(`NCI.Business.Stage.${b.stage}`),
+        till: whole(b.till),
+        book: whole(bookValue(b)),
         share: `${(shareOf(b, actor.id) * 100).toFixed(1)}%`,
         value: Math.round(shareOf(b, actor.id) * bookValue(b)),
       }));
