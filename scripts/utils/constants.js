@@ -48,6 +48,8 @@ export const SETTINGS = Object.freeze({
   BUSINESS_APPROVAL: 'businessApproval',
   BUSINESS_WEEKDAY: 'businessWeekday',
   BUSINESS_GROWTH_RATE: 'businessGrowthRate',
+  SYNDICATES_ENABLED: 'syndicatesEnabled',
+  SYNDICATE_APPROVAL: 'syndicateApproval',
 });
 
 /** Flag keys under flags[MODULE_ID] on journals. */
@@ -125,6 +127,8 @@ export const HOOKS = Object.freeze({
   BUSINESSES_CHANGED: `${MODULE_ID}.businessesChanged`,
   /** A business's week closed: `{businessId, digest}`. */
   BUSINESS_PERIOD: `${MODULE_ID}.businessPeriod`,
+  /** A syndicate record was created, changed or removed, or a character's syndicate receipts changed. */
+  SYNDICATES_CHANGED: `${MODULE_ID}.syndicatesChanged`,
 });
 
 /** Most unprocessed requests a player may have waiting at once. */

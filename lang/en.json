@@ -1416,6 +1416,14 @@
         "Name": "New businesses need GM approval",
         "Hint": "A business that has passed its setup roll and has its money waits in the GM Console's Businesses tab until the GM lets it open."
       },
+      "SyndicatesEnabled": {
+        "Name": "Player syndicates",
+        "Hint": "Let players pool money in a syndicate that trades on the market as one account. Turning this off refuses new syndicate requests; existing syndicates keep their holdings and nothing is deleted."
+      },
+      "SyndicateApproval": {
+        "Name": "New syndicates need GM approval",
+        "Hint": "A syndicate a player founds waits in the GM Console's Syndicates tab until the GM approves it. Until then no money can be paid in."
+      },
       "BusinessWeekday": {
         "Name": "Business week ends on",
         "Hint": "Every business's operating week closes on the first market tick on or after this day. The day of your weekly session works well."

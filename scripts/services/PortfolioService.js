@@ -173,6 +173,11 @@ class PortfolioServiceImpl {
     });
   }
 
+  /** Run a task in step with order processing (syndicate requests change members' portfolios too). */
+  exclusive(fn) {
+    return this._queue.run(fn);
+  }
+
   /** Every account: the characters and the active syndicates (DESIGN §31). */
   _accounts() {
     return PortfolioRepository.accounts();

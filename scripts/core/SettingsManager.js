@@ -7,6 +7,7 @@ import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
 
 const notifyMarketUpdated = () => Hooks.callAll(HOOKS.MARKET_UPDATED);
 const notifyBusinessesChanged = () => Hooks.callAll(HOOKS.BUSINESSES_CHANGED);
+const notifySyndicatesChanged = () => Hooks.callAll(HOOKS.SYNDICATES_CHANGED);
 
 export function registerSettings() {
   const s = game.settings;
@@ -313,6 +314,25 @@ export function registerSettings() {
   s.register(MODULE_ID, SETTINGS.BUSINESS_APPROVAL, {
     name: 'NCI.Settings.BusinessApproval.Name',
     hint: 'NCI.Settings.BusinessApproval.Hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
+  s.register(MODULE_ID, SETTINGS.SYNDICATES_ENABLED, {
+    name: 'NCI.Settings.SyndicatesEnabled.Name',
+    hint: 'NCI.Settings.SyndicatesEnabled.Hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true,
+    onChange: notifySyndicatesChanged,
+  });
+
+  s.register(MODULE_ID, SETTINGS.SYNDICATE_APPROVAL, {
+    name: 'NCI.Settings.SyndicateApproval.Name',
+    hint: 'NCI.Settings.SyndicateApproval.Hint',
     scope: 'world',
     config: true,
     type: Boolean,

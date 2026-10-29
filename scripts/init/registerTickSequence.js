@@ -19,6 +19,7 @@ import { HeatService } from '../services/HeatService.js';
 import { NotificationService } from '../services/NotificationService.js';
 import { StatementService } from '../services/StatementService.js';
 import { BusinessService } from '../services/BusinessService.js';
+import { SyndicateService } from '../services/SyndicateService.js';
 
 /** In order. `data` is the `priceTick` hook's payload. */
 const STEPS = [
@@ -29,6 +30,8 @@ const STEPS = [
   ['Fund distributions', () => FundDistributionService.onTick()],
   ['Gig headlines', () => GigImpactService.onTick()],
   ['Orders, alerts and withdrawals', (data) => PortfolioService.onTick(data)],
+  // Syndicates' lapsed votes and due redemptions, against the prices and cash the orders above left.
+  ['Syndicates', () => SyndicateService.onTick()],
   // After orders have been worked, so the audit never waits a tick for an order that is about to fill.
   ['Heat audit', () => HeatService.onTick()],
   ['Notifications', (data) => NotificationService.onTick(data)],
