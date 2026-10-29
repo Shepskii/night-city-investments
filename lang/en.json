@@ -47,6 +47,10 @@
       "Watch": "Watch"
     },
     "Portfolio": {
+      "PrivateStakes": "Private stakes",
+      "PrivateTitle": "Private businesses",
+      "PrivateHint": "Stakes in businesses that are not on the market, valued at book value times your share. They count toward the total but cannot be bought or sold here; manage them in the Business window.",
+      "Manage": "Manage in Business window",
       "Cash": "Brokerage balance",
       "Reinvest": "Reinvest dividends",
       "ReinvestHint": "Use dividends from this holding to buy more shares automatically.",

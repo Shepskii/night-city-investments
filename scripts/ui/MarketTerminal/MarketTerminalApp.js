@@ -17,10 +17,12 @@ import { TerminalAccess } from '../../services/TerminalAccess.js';
 import { describeOrder } from '../../services/PortfolioWatcher.js';
 import { BaseApplication } from '../BaseApplication.js';
 import { TradeDialogApp } from '../TradeDialog/TradeDialogApp.js';
+import { BusinessApp } from '../Business/BusinessApp.js';
 import { sparkline, lineChart } from '../components/chart.js';
 import { L, money, whole, signed, pct, trendClass } from '../format.js';
 import { fundRows, fundDetail, accessContext, ipoRows, heatContext } from './context.js';
-import { ipoPrice } from '../../engine/index.js';
+import { ipoPrice, shareOf, bookValue } from '../../engine/index.js';
+import { BusinessRepository } from '../../data/BusinessRepository.js';
 
 const RANGES = [30, 90, 365];
 const HISTORY_ROWS = 10;
@@ -55,6 +57,7 @@ export class MarketTerminalApp extends BaseApplication {
       addAlert: MarketTerminalApp._onAddAlert,
       removeAlert: MarketTerminalApp._onRemoveAlert,
       requestStatement: MarketTerminalApp._onRequestStatement,
+      manageBusiness: MarketTerminalApp._onManageBusiness,
       coverTracks: MarketTerminalApp._onCoverTracks,
     },
   };
@@ -73,11 +76,11 @@ export class MarketTerminalApp extends BaseApplication {
 
   _onFirstRender(context, options) {
     super._onFirstRender?.(context, options);
-    for (const hook of [HOOKS.MARKET_UPDATED, HOOKS.COMPANIES_CHANGED, HOOKS.PORTFOLIO_UPDATED]) Hooks.on(hook, this._refresh);
+    for (const hook of [HOOKS.MARKET_UPDATED, HOOKS.COMPANIES_CHANGED, HOOKS.PORTFOLIO_UPDATED, HOOKS.BUSINESSES_CHANGED]) Hooks.on(hook, this._refresh);
   }
 
   _onClose(options) {
-    for (const hook of [HOOKS.MARKET_UPDATED, HOOKS.COMPANIES_CHANGED, HOOKS.PORTFOLIO_UPDATED]) Hooks.off(hook, this._refresh);
+    for (const hook of [HOOKS.MARKET_UPDATED, HOOKS.COMPANIES_CHANGED, HOOKS.PORTFOLIO_UPDATED, HOOKS.BUSINESSES_CHANGED]) Hooks.off(hook, this._refresh);
     super._onClose?.(options);
   }
 
@@ -206,6 +209,11 @@ export class MarketTerminalApp extends BaseApplication {
 
   static async _onRemoveAlert(event, target) {
     if (this.actor) await PortfolioClient.removeAlert(this.actor, target.dataset.id);
+  }
+
+  /** From a private stake on the Portfolio tab: open the Business window on that business. */
+  static _onManageBusiness(event, target) {
+    BusinessApp.open({ businessId: target.dataset.id });
   }
 
   static async _onRequestStatement() {
@@ -369,6 +377,22 @@ export class MarketTerminalApp extends BaseApplication {
     };
   }
 
+  /**
+   * The character's stakes in private businesses (DESIGN §26.8a): read-only, valued at book value
+   * times their share, and not tradable on the market. Only businesses still open count.
+   */
+  _privateStakes(actor) {
+    return BusinessRepository.forActor(actor.id)
+      .filter((b) => b.status === 'open' && shareOf(b, actor.id) > 0)
+      .map((b) => ({
+        id: b.id,
+        name: b.name,
+        stage: L(`NCI.Business.Stage.${b.stage}`),
+        share: `${(shareOf(b, actor.id) * 100).toFixed(1)}%`,
+        value: Math.round(shareOf(b, actor.id) * bookValue(b)),
+      }));
+  }
+
   _portfolio(pub, companies, funds = []) {
     const actor = this.actor;
     const p = PortfolioRepository.get(actor);
@@ -378,6 +402,8 @@ export class MarketTerminalApp extends BaseApplication {
       ...Object.fromEntries(Object.entries(pub.funds ?? {}).map(([id, s]) => [id, s.nav])),
     };
     const v = valuePortfolio(p, prices);
+    const stakes = this._privateStakes(actor);
+    const stakesValue = stakes.reduce((a, s) => a + s.value, 0);
     const tick = timeOf(pub);
     const tickerOf = (id) => byId.get(id)?.ticker ?? id;
 
@@ -454,7 +480,9 @@ export class MarketTerminalApp extends BaseApplication {
       unsettled: whole(v.unsettled),
       settling,
       holdings: whole(v.holdings),
-      total: whole(v.total),
+      total: whole(v.total + stakesValue),
+      stakes: stakes.map((s) => ({ ...s, value: whole(s.value) })),
+      stakesValue: stakes.length ? whole(stakesValue) : '',
       unrealized: signed(v.unrealized),
       unrealizedCls: trendClass(v.unrealized),
       realized: signed(p.stats.realized),

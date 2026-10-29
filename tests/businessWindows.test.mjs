@@ -201,3 +201,13 @@ test('a registered business shows its loans, the bank, investors and an angel', 
   const overview = text(await renderBusiness(windowFor(med, 'overview')));
   assert.match(overview, /Compliance/);
 });
+
+test('a character\'s stakes in open businesses show in the terminal\'s Portfolio tab, at book value', async () => {
+  const { MarketTerminalApp } = await import('../scripts/ui/MarketTerminal/MarketTerminalApp.js');
+  const { shareOf, bookValue } = await import('../scripts/engine/index.js');
+  const b = S.BusinessRepository.all()[0];
+  const stakes = new MarketTerminalApp()._privateStakes(med);
+  assert.equal(stakes.length, 1);
+  assert.equal(stakes[0].value, Math.round(shareOf(b, med.id) * bookValue(b)));
+  assert.equal(stakes[0].stage, 'Registered business');
+});
