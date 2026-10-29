@@ -22,8 +22,12 @@ const unwrap = (stored) => (Array.isArray(stored) ? stored[0] : stored);
 const SEEN_BY = new Set(['invited', 'active', 'leaving']);
 
 export const BusinessRepository = {
+  /**
+   * Business journals this user may read. A player who loses access (declined, sold out) can keep a
+   * stale copy until they reload, so it is checked here rather than trusted.
+   */
   journals() {
-    return game.journal.filter((j) => j.getFlag(MODULE_ID, FLAGS.BUSINESS));
+    return game.journal.filter((j) => j.getFlag(MODULE_ID, FLAGS.BUSINESS) && (game.user.isGM || j.testUserPermission?.(game.user, 'OBSERVER') !== false));
   },
 
   /** Every business this client can read, newest first. */
