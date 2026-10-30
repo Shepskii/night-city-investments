@@ -54,7 +54,8 @@ class BusinessServiceImpl {
 
   weekday() {
     const d = Math.floor(Number(game.settings.get(MODULE_ID, SETTINGS.BUSINESS_WEEKDAY)));
-    return d >= 0 && d <= 6 ? d : 1;
+    // The setting is a weekday on the world's calendar; the engine counts real-calendar weekdays.
+    return ((d >= 0 && d <= 6 ? d : 1) - MarketClock.weekdayOffset() + 7) % 7;
   }
 
   /** The world seed: weekly events are drawn from it, the business and the week. */

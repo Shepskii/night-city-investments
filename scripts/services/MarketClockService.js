@@ -8,7 +8,7 @@
  *              advanced the market by hand, and in manual mode moves only with the market.
  */
 
-import { msToDate, dayIndex, marketDay, DAY_MS } from '../engine/index.js';
+import { msToDate, dayIndex, marketDay, DAY_MS, weekdayOf } from '../engine/index.js';
 import { MarketStore } from '../data/MarketStore.js';
 
 export const MarketClock = {
@@ -34,6 +34,45 @@ export const MarketClock = {
   /** The market's date. */
   date() {
     return msToDate(this.nowMs());
+  },
+
+  /**
+   * How many days Simple Calendar's weekdays run ahead of the real calendar's. The calendar's dates
+   * become real dates (Night City Messenger's clock), but a Simple Calendar world can set its own
+   * weekdays: there, 2046-12-17 may be a Wednesday though it was a Monday in the real calendar. 0 with
+   * no Simple Calendar, a week that is not 7 days, or a clock that is not on Simple Calendar's date.
+   */
+  weekdayOffset() {
+    try {
+      const sc = globalThis.SimpleCalendar?.api;
+      if (!sc?.timestampToDate || !sc.timestamp) return 0;
+      if ((sc.getAllWeekdays?.() ?? []).length !== 7) return 0;
+      const today = sc.timestampToDate(sc.timestamp());
+      if (!Number.isInteger(today?.dayOfTheWeek)) return 0;
+      // Simple Calendar's month and day are indices.
+      const day = dayIndex(Date.UTC(today.year, today.month, today.day + 1));
+      if (day !== dayIndex(this.calendarMs())) return 0;
+      return (((today.dayOfTheWeek - weekdayOf(day)) % 7) + 7) % 7;
+    } catch {
+      return 0;
+    }
+  },
+
+  /** A day's weekday on the world's calendar, 0 = Sunday (Simple Calendar's first weekday). */
+  weekdayOf(day) {
+    return (weekdayOf(day) + this.weekdayOffset()) % 7;
+  },
+
+  /** A day's weekday by name: Simple Calendar's own name where it has one. */
+  weekdayName(day) {
+    const index = this.weekdayOf(day);
+    try {
+      const name = globalThis.SimpleCalendar?.api?.getAllWeekdays?.()?.[index]?.name;
+      if (name) return name;
+    } catch {
+      // The module's own names.
+    }
+    return game.i18n.localize(`NCI.Weekday.${index}`);
   },
 
   /** e.g. "2045-03-09" */

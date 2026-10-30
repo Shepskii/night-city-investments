@@ -5,7 +5,7 @@
 
 import {
   ARCHETYPES, ACTION_IDS, partnerOf, holders, totalUnits, unitValue, shareOf, bookValue, drawAllowance, fundingShortfall,
-  stateBands, lastDigest, weekdayOf, gearValue, rollSpec, BUSINESS_DEFAULTS,
+  stateBands, lastDigest, gearValue, rollSpec, BUSINESS_DEFAULTS,
   daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck,
@@ -287,7 +287,7 @@ function weekContext(business, actor, canAct) {
   return {
     from: dayText(period.startDay),
     to: dayText(period.endDay),
-    closesOn: L(`NCI.Weekday.${weekdayOf(period.endDay)}`),
+    closesOn: MarketClock.weekdayName(period.endDay),
     // Slots still free this week out of the stage's total, in the actions table's header.
     slotsFree: L('NCI.Business.SlotsFree', { free: Math.max(0, slots - period.slots.length), total: slots }),
     noSlots: period.slots.length >= slots,
