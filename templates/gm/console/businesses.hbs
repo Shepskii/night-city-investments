@@ -9,8 +9,14 @@
   {{#each businesses.pending}}
   <div class="nci-gig">
     <div class="nci-gigtop"><strong>{{name}}</strong><span class="nci-muted">{{archetype}}{{#if location}} &middot; {{location}}{{/if}}</span></div>
-    <div class="nci-muted">{{{partners}}}</div>
-    <div>{{money}}</div>
+    {{#if owners.length}}
+    <table class="nci-market nci-owners">
+      <thead><tr><th>{{localize "NCI.GMBusiness.Owner"}}</th><th>{{localize "NCI.GMBusiness.Status"}}</th><th class="num">{{localize "NCI.GMBusiness.Units"}}</th><th class="num">{{localize "NCI.GMBusiness.Share"}}</th></tr></thead>
+      <tbody>{{#each owners}}<tr><td>{{{who}}}{{#if note}} <span class="nci-muted">{{note}}</span>{{/if}}</td><td class="nci-muted">{{status}}</td><td class="num">{{units}}</td><td class="num">{{share}}</td></tr>{{/each}}</tbody>
+    </table>
+    {{/if}}
+    {{#if stats.length}}<div class="nci-gmstats">{{#each stats}}<span><span class="nci-muted">{{label}}</span> <strong>{{value}}</strong></span>{{/each}}</div>{{/if}}
+    {{#if money}}<div>{{money}}</div>{{/if}}
     <div class="nci-muted">{{setup}}</div>
     <div class="nci-actions">
       <button type="button" data-action="businessApprove" data-id="{{id}}"><i class="fas fa-check"></i> {{localize "NCI.GMBusiness.Approve"}}</button>
@@ -26,11 +32,15 @@
   {{#each businesses.active}}
   <div class="nci-gig">
     <div class="nci-gigtop"><strong>{{name}}</strong><span>{{status}}</span><span class="nci-muted">{{archetype}}{{#if location}} &middot; {{location}}{{/if}}</span></div>
-    <div class="nci-muted">{{{partners}}}</div>
-    <div>{{money}}</div>
+    {{#if stats.length}}<div class="nci-gmstats">{{#each stats}}<span><span class="nci-muted">{{label}}</span> <strong>{{value}}</strong></span>{{/each}}</div>{{/if}}
+    {{#if money}}<div>{{money}}</div>{{/if}}
+    {{#if owners.length}}
+    <table class="nci-market nci-owners">
+      <thead><tr><th>{{localize "NCI.GMBusiness.Owner"}}</th><th>{{localize "NCI.GMBusiness.Status"}}</th><th class="num">{{localize "NCI.GMBusiness.Units"}}</th><th class="num">{{localize "NCI.GMBusiness.Share"}}</th></tr></thead>
+      <tbody>{{#each owners}}<tr><td>{{{who}}}{{#if note}} <span class="nci-muted">{{note}}</span>{{/if}}</td><td class="nci-muted">{{status}}</td><td class="num">{{units}}</td><td class="num">{{share}}</td></tr>{{/each}}</tbody>
+    </table>
+    {{/if}}
     {{#if setup}}<div class="nci-muted">{{setup}}</div>{{/if}}
-    {{#if state}}<div class="nci-muted">{{state}}</div>{{/if}}
-    {{#if week}}<div class="nci-muted">{{week}}{{#if event}} {{event}}{{/if}}</div>{{/if}}
     {{#if charter}}
     <div class="nci-warn">{{charter.text}}</div>
     {{#if charter.awaiting}}
@@ -40,7 +50,6 @@
     </div>
     {{/if}}
     {{/if}}
-    {{#if last}}<div class="nci-muted">{{last}}</div>{{/if}}
     {{#if staff}}<div class="nci-muted">{{localize "NCI.GMBusiness.Staff"}}: {{{staff}}}</div>{{/if}}
     {{#if applicants}}<div class="nci-muted">{{applicants}}</div>{{/if}}
     {{#each offers}}

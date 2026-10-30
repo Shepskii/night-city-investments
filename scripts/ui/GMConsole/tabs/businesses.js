@@ -4,11 +4,11 @@
  * @description Action handlers run with `this` set to the console window.
  */
 
-import { holders, totalUnits, bookValue, lastDigest, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty } from '../../../engine/index.js';
+import { holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty } from '../../../engine/index.js';
 import { BusinessService } from '../../../services/BusinessService.js';
 import { BusinessApp } from '../../Business/BusinessApp.js';
 import { dayText } from '../../Business/context.js';
-import { L, whole, signed } from '../../format.js';
+import { L, whole } from '../../format.js';
 import { confirm, report } from '../shared.js';
 import { actorLink } from '../../actorLink.js';
 import { escapeHtml } from '../../../utils/text.js';
@@ -80,7 +80,6 @@ function staffExtra(s, traits) {
 export function context() {
   const rows = BusinessService.snapshot().map(({ business: b, hidden }) => {
     const units = totalUnits(b);
-    const last = lastDigest(b);
     return {
       id: b.id,
       name: b.name,
@@ -99,24 +98,29 @@ export function context() {
       isForming: b.status === 'forming',
       isOpen: b.status === 'open',
       location: [b.district ? L(`NCI.District.${b.district}`) : '', b.location].filter(Boolean).join(', '),
-      // HTML: each partner's name links to their character.
-      partners: b.partners.filter((p) => p.status !== 'declined').map((p) => {
-        const share = units > 0 && ['active', 'leaving'].includes(p.status) ? ` ${((p.units / units) * 100).toFixed(0)}%` : '';
-        return `${actorLink(p.actorId, p.name)} (${escapeHtml(L(`NCI.Business.PartnerStatus.${p.status}`))}${share})`;
-      }).join(', '),
+      // The owners, as a compact table: each name (HTML) links to their character.
+      owners: b.partners.filter((p) => p.status !== 'declined').map((p) => ({
+        who: actorLink(p.actorId, p.name),
+        status: L(`NCI.Business.PartnerStatus.${p.status}`),
+        units: b.status === 'open' || b.status === 'closed' ? whole(p.units ?? 0) : '',
+        share: units > 0 && ['active', 'leaving'].includes(p.status) ? `${((p.units / units) * 100).toFixed(1)}%` : '',
+        note: [p.voting === false ? L('NCI.Business.NonVoting') : '', (b.officers ?? []).includes(p.actorId) ? L('NCI.Company.Officer') : ''].filter(Boolean).join(', '),
+      })),
       leavers: holders(b).filter((p) => p.status === 'active').map((p) => ({ value: p.actorId, label: p.name })),
       money: b.status === 'forming' || b.status === 'pending'
         ? L('NCI.GMBusiness.MoneyForming', { escrow: whole(b.escrow), short: whole(fundingShortfall(b) ?? 0) })
-        : L('NCI.GMBusiness.MoneyOpen', { till: whole(b.till), book: whole(bookValue(b)) }),
-      setup: b.setup ? L(b.setup.passed ? 'NCI.GMBusiness.SetupPassed' : 'NCI.GMBusiness.SetupFailed', {
+        : '',
+      // Where an open business stands now: its cash, book value, Reputation, Capacity, and its hidden Exposure.
+      stats: b.status === 'open' ? [
+        [L('NCI.Business.Till'), `${whole(b.till)} eb`],
+        [L('NCI.GMBusiness.BookValue'), `${whole(bookValue(b))} eb`],
+        [L('NCI.Business.State.reputation'), b.state.reputation.toFixed(0)],
+        [L('NCI.Business.State.capacity'), b.state.capacity.toFixed(2)],
+        [L('NCI.GMBusiness.Exposure'), String(hidden.exposure ?? 0)],
+      ].map(([label, value]) => ({ label, value })) : [],
+      setup: b.setup && b.status !== 'open' ? L(b.setup.passed ? 'NCI.GMBusiness.SetupPassed' : 'NCI.GMBusiness.SetupFailed', {
         band: L(`NCI.Roll.Band.${b.setup.band}`), cost: whole(b.setup.cost ?? 0), range: ARCHETYPES[b.archetype].setup.map(whole).join('–'),
       }) : '',
-      state: b.status === 'open'
-        ? L('NCI.GMBusiness.State', { rep: b.state.reputation.toFixed(0), cap: b.state.capacity.toFixed(2), cost: b.state.costFactor.toFixed(3), exposure: hidden.exposure ?? 0 })
-        : '',
-      last: last ? L('NCI.GMBusiness.LastWeek', { n: last.index, profit: signed(last.profit), takings: whole(last.takings), upkeep: whole(last.upkeep) }) : '',
-      week: b.status === 'open' ? L('NCI.GMBusiness.Week', { n: b.period.index, end: dayText(b.period.endDay), used: b.period.slots.length }) : '',
-      event: b.status === 'open' && b.period.event ? L('NCI.GMBusiness.Event', { event: L(`NCI.Event.${b.period.event.kind}.Name`) }) : '',
       // HTML, as the partners. The GM sees true loyalty and hidden traits (E2).
       staff: (b.staff ?? []).filter((s) => s.status === 'active')
         .map((s) => escapeHtml(L('NCI.GMBusiness.StaffOne', { name: '\u0000', post: L(`NCI.Staff.Post.${s.post}`), wage: whole(s.wage), extra: staffExtra(s, hidden.traits) })).replace('\u0000', actorLink(s.actorId, s.name))).join(', '),

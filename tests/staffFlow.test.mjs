@@ -203,6 +203,12 @@ test('the week closes: the wage is paid to Nova, and the ledger and the GM tab s
   const gm = render('templates/gm/console.hbs', await app._prepareContext());
   assertClean(gm, 'GM tab with staff');
   assert.match(text(gm), /Staff: Nova \(Floor, 108 eb\)/);
+  // Owners in a compact table, and the standing in one strip; no week-by-week detail.
+  assert.match(gm, /<table class="nci-market nci-owners">/);
+  assert.match(text(gm), /Owner Status Units Share/);
+  assert.match(text(gm), /Medtech partner 3,000 66\.7% Fixer partner 1,500 33\.3%/);
+  assert.match(text(gm), /Cash \S+ eb Book value \S+ eb Reputation \d+ Capacity \d\.\d\d Exposure \d+/);
+  assert.doesNotMatch(text(gm), /takings|slots used|Cost base|Setup roll/);
 });
 
 test('advertising brings applicants the partners can hire on what they ask; Nova can quit, and the job leaves the Job view', async () => {
