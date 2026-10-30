@@ -20,6 +20,15 @@ async function onReject(event, target) {
   report(await BusinessService.reject(target.dataset.id));
 }
 
+async function onCharterApprove(event, target) {
+  report(await BusinessService.approveCharter(target.dataset.id));
+}
+
+async function onCharterReject(event, target) {
+  if (!(await confirm(L('NCI.GMBusiness.CharterReject'), L('NCI.GMBusiness.CharterRejectConfirm')))) return;
+  report(await BusinessService.rejectCharter(target.dataset.id));
+}
+
 async function onPartnerLeaves(event, target) {
   const actorId = target.closest('.nci-gig')?.querySelector('[name="leaver"]')?.value;
   if (!actorId) return;
@@ -37,6 +46,8 @@ function onOpen(event, target) {
 
 export const actions = {
   businessApprove: onApprove,
+  businessCharterApprove: onCharterApprove,
+  businessCharterReject: onCharterReject,
   businessReject: onReject,
   businessPartnerLeaves: onPartnerLeaves,
   businessRemove: onRemove,
@@ -45,7 +56,7 @@ export const actions = {
 
 /** How many businesses are waiting for the GM, for the tab's label. */
 export function waiting() {
-  return BusinessService.snapshot().filter(({ business }) => business.status === 'pending').length;
+  return BusinessService.snapshot().filter(({ business }) => business.status === 'pending' || business.charter?.status === 'awaiting').length;
 }
 
 export function context() {
@@ -58,6 +69,15 @@ export function context() {
       archetype: L(`NCI.Business.Archetype.${b.archetype}.Name`),
       status: L(`NCI.Business.Status.${b.status}`),
       isPending: b.status === 'pending',
+      charter: b.charter && ['rolling', 'awaiting', 'funding'].includes(b.charter.status) ? {
+        awaiting: b.charter.status === 'awaiting',
+        text: L(`NCI.GMBusiness.Charter.${b.charter.status}`, {
+          ticker: b.charter.ticker, quote: whole(b.charter.quote ?? 0), assets: whole(b.charter.netAssets ?? 0), shortfall: whole(b.charter.shortfall ?? 0),
+          rolls: Object.entries(b.charter.rolls ?? {}).map(([k, r]) => `${L(`NCI.Charter.Part.${k}`)} ${L(`NCI.Roll.Band.${r.band}`)}`).join(', ') || '—',
+          date: dayText(b.charter.fundingEnds ?? 0),
+        }),
+      } : null,
+      ticker: b.company?.ticker ?? '',
       isForming: b.status === 'forming',
       isOpen: b.status === 'open',
       location: [b.district ? L(`NCI.District.${b.district}`) : '', b.location].filter(Boolean).join(', '),

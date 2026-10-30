@@ -16,12 +16,13 @@
 
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
-  applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft,
+  applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { log, isActiveGM } from '../utils/helpers.js';
 import { SerialQueue } from '../utils/queue.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
+import { CompanyRepository } from '../data/CompanyRepository.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
 import { SkillAdapter } from './SkillAdapter.js';
@@ -83,7 +84,17 @@ class BusinessServiceImpl {
       actors: this.actors(),
       investors: investorActors().map((a) => a.id),
       newId: `bus_${foundry.utils.randomID(12)}`,
+      tickers: this.tickersTaken(business?.id),
     };
+  }
+
+  /** Tickers a new charter cannot use: the market's companies', and every other business's charter or company. */
+  tickersTaken(exceptId = null) {
+    const fromBusinesses = BusinessRepository.all()
+      .filter((b) => b.id !== exceptId)
+      .map((b) => b.company?.ticker ?? (b.charter && b.charter.status !== 'failed' ? b.charter.ticker : null))
+      .filter(Boolean);
+    return [...CompanyRepository.all({ includeUnlisted: true }).map((c) => c.ticker), ...fromBusinesses];
   }
 
   /** Handle whatever is waiting in one character's business outbox. */
@@ -318,6 +329,16 @@ class BusinessServiceImpl {
   /** Turn a business down before it opens; everyone's money goes back. */
   reject(id) {
     return this._gm(id, (b) => rejectBusiness(b, this.day()));
+  }
+
+  /** Approve a charter waiting for the GM (DESIGN §32): formed at once, or its funding window opens. */
+  approveCharter(id) {
+    return this._gm(id, (b) => approveBusinessCharter(b, this.day()));
+  }
+
+  /** Turn a charter down: anything paid in is refunded; the filing fee is not. */
+  rejectCharter(id) {
+    return this._gm(id, (b) => rejectBusinessCharter(b, this.day()));
   }
 
   /** A partner has died or left the table: the others may buy the stake, or it goes to the heir. */

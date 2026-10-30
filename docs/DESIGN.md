@@ -449,7 +449,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B1 | **Done (v0.10.0), see §29.** Side businesses: the roll levers, the Business window and the GM's Businesses tab, partnerships, four archetypes, the weekly loop |
 | B2 | **Done (v0.11.0), see §30.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
 | B3 | **Built (v0.12), see §31; not yet released.** Player syndicates, and syndicates owning or investing in businesses |
-| B4 | **v0.13.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
+| B4 | **Building (v0.13), see §32.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
 | B5 | **v0.14.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
 | B6 | **v0.15.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
 | B7 | Downtime bridge (separate module, after B2): company work through Crew Tools downtime, businesses on Night City Map |
@@ -1317,3 +1317,37 @@ How it works:
 - **Operator for syndicate partners.** A syndicate partner counts the Operator rank of its officers, so a Fixer officer cheapens the business's hired professionals as a Fixer partner does.
 - **Members see its businesses.** The Business window offers a syndicate to every active member; one who is not an officer sees its businesses read-only. A Portfolio row opens the Business window as the account picked in the terminal, and a change in a syndicate's members updates who can see its businesses at once (`BusinessRepository.refreshOwnership`), not at the business's next save.
 - **Smaller fixes.** No units are sold while a syndicate is worth nothing (they would cost nothing); any member may end a terminal session they opened as an officer; a trade the members agreed that cannot be placed is noted in the syndicate's history; a business payment takes money before it pays any out, so a short payer stops it cleanly; data upgrades and the self-check include syndicates' accounts.
+
+## 32. Phase B4: chartered companies (building for v0.13)
+
+A registered business that has grown far enough becomes a **chartered company**: stage 2 of the same business record (§26.0), with a cap table of shares, more action slots, the five company actions, monthly reports and elected officers. This section turns §26.2 to §26.4 into what is built. It is built in three steps: **B4a** the charter, **B4b** the company loop, **B4c** officers, control and information rolls.
+
+**Choices made for B4** (decided before building):
+- **Growing only.** A company is chartered by growing a registered business; chartering from scratch is left for later. The business's net assets count toward the capital quote and its units become shares.
+- **Funding in eddies.** What the owners add to fund the charter comes from their characters' eddies, as every business payment does (a syndicate partner pays from its account, B3b). §26.2a's brokerage-balance deposits are not used.
+- **The cap table stays on the record** until a listing (B5) turns it into market shares in portfolios. Units become shares one-for-one, so nothing is converted, and a private company's shares can never be sold on the market by mistake.
+- **The five company actions** (Business, Accounting, Trading, Bureaucracy, Bribery, each with alternative skills at DV +2) replace the shop actions at stage 2 (B4b).
+
+### 32.1 B4a: the charter
+
+**Milestones** (Registered → Chartered, §26.0): 12 weeks registered (three monthly ledgers of four weeks), an average profit of 400 eb a week over the last 4, at least one finished expansion, and the filing fee (2,000 eb, the B0 prototype's) in the till. Then every partner with a vote agrees to charter (the `stepUp` proposal, as for registering), naming the company's ticker (two to five letters, not taken by a market company or another charter). The filing fee is paid from the till when they agree, and is spent whatever happens.
+
+**The three rolls**, each a `charterRoll` request any partner with a vote can make on their own client, in any order, with the usual levers (Luck, the complementary bonus, extra time, a hired professional paid from the till):
+
+| Part | Skill (alternatives at DV +2) | DV | Sets |
+|---|---|---|---|
+| Business plan | Business (Persuasion, Trading) | Everyday 13: a business with a track record finds it one step easier | starting Reputation |
+| Registration | Bureaucracy (Local Expert, Persuasion) | Difficult 15 | starting Compliance |
+| Capital structure | Accounting (Business) | Difficult 15 | the capital quote |
+
+Each part is rolled once. A failed business plan or registration is a setback, not a refusal: the company starts with less Reputation or Compliance. A failed **capital structure** roll refuses the charter: the fee is lost, and the partners may agree to try again after 7 game days (14 after a fumble); a business plan or registration roll that passed is kept for 30 game days, so only what failed is rolled again.
+
+**The capital quote** (§26.2a), set by the capital structure roll: quote = Kmax − (Kmax − Kmin) × clamp(margin / 8, 0, 1), rounded to 100 eb, with the Startup tier's Kmin 5,000 and Kmax 12,000 times the sector factor (media and consumer 0.8; tech, transport, health, finance, construction and others 1.0; security and arms 1.3; biotech and energy 1.5). The business type maps to a market sector (a clinic is health, a garage and a courier transport, a bar, boutique and food stall consumer, an info shop tech, a gun shop arms, a security outfit security, a media outfit media). The business's **net assets** (its cash and fit-out, less what it owes on loans) count toward the quote, so the owners pay in only the shortfall.
+
+**GM approval.** Every charter waits for the GM, as §26 decided, in the Businesses tab: the rolls, the quote, the net assets and the shortfall. The GM approves or turns it down (a turned-down charter refunds anything paid in; the fee is not refunded).
+
+**Funding.** On approval, a funding window of 14 game days opens. Any partner pays in (`charterFund`) from their eddies, up to the shortfall plus 50%, and each payment buys new shares at the business's book value per unit at the time, so existing holders are not diluted below what their stake is worth. When the shortfall is met the company is formed; if the window lapses, every payment is refunded and the charter fails (the partners may agree again). With no shortfall, the company is formed the moment the GM approves.
+
+**Formed.** The business becomes stage 2: its units are now shares (the same numbers), what was paid in goes into its cash, it has the ticker and its market sector, and the business plan and registration bands shift its Reputation and Compliance. Until B4b, a chartered company runs the stage-2 weekly loop with the shop actions, using the B0 prototype's stage 2: three action slots, actions at DV 17 (Professional), a Capacity ceiling of 14, 150 eb a week of rent, licences and protection, and expansions of 8,000 eb for +1.5 Capacity.
+
+**B4a as built.** The charter is `scripts/engine/businessCharter.js` (pure, with `tests/businessCharter.test.mjs`), wired into the business engine: the stage-1 `stepUp` proposal names the ticker (checked against the market's and other charters' tickers, which the service passes as `context.tickers`), `charterRoll` (one of `plan`, `registration`, `capital`) and `charterFund` requests, `approveBusinessCharter` and `rejectBusinessCharter` for the GM (the Businesses tab), and the funding window lapsing on the weekly advance. A business now records the day it registered (`registeredDay`; older ones are read from their ledger). The Growth tab shows the charter's milestones, sector and quote range, the ticker form, each roll's result with its Roll button, what the GM is weighing, and the funding form; the roll dialog says what each band of each charter roll means. A syndicate partner's charter payment counts against its officer's daily limit like any other payment in. Not yet tried in the test world.

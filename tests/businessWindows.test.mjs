@@ -289,3 +289,40 @@ test('the roll dialog offers only the hires the business can pay for', async () 
   assert.match(html, /A good hire/);
   assert.doesNotMatch(html, /The best money can buy/, '400 eb is more than the till holds');
 });
+
+test('a registered business shows the charter: milestones, the ticker, the rolls, and the GM tab shows it waiting', async () => {
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  try {
+    await S.BusinessRepository.save({
+      ...b, stage: 1, till: 6000, assets: 3000, registeredDay: b.period.startDay - 91, state: { ...b.state, compliance: 50 },
+      projects: [{ id: 'x1', kind: 'expansion', status: 'done', stage: 1 }],
+      digests: [0, 1, 2, 3].map((i) => ({ index: i + 1, startDay: b.period.startDay - 28 + 7 * i, endDay: b.period.startDay - 21 + 7 * i, profit: 450, takings: 900, upkeep: 450, till: 6000, actions: [] })),
+      loans: [], approved: {}, proposals: [], charter: null,
+    });
+    let html = await renderBusiness(windowFor(med, 'growth'));
+    assertClean(html, 'charter milestones');
+    assert.match(text(html), /12 weeks registered/);
+    assert.match(text(html), /As a company it would be in the Healthcare sector/);
+    assert.match(html, /name="ticker"/);
+    assert.match(html, /data-action="proposeCharter"/);
+
+    const cur = S.BusinessRepository.all()[0];
+    await S.BusinessRepository.save({ ...cur, charter: { status: 'rolling', ticker: 'BRC', agreedDay: cur.period.startDay, rolls: { plan: { band: 'solid', success: true, margin: 3, by: med.id, day: cur.period.startDay } }, escrow: {} } });
+    html = await renderBusiness(windowFor(med, 'growth'));
+    assertClean(html, 'charter rolls');
+    assert.match(text(html), /agreed to charter as BRC/);
+    assert.match(text(html), /Business plan passed \(Solid success\)/);
+    assert.match(html, /data-action="charterRoll" data-part="registration"/);
+    assert.doesNotMatch(html, /data-part="plan"/, 'the plan has been rolled');
+
+    const now = S.BusinessRepository.all()[0];
+    await S.BusinessRepository.save({ ...now, charter: { ...now.charter, status: 'awaiting', quote: 8000, netAssets: 6000, shortfall: 2000, rolls: { ...now.charter.rolls, registration: { band: 'narrow', success: true }, capital: { band: 'solid', success: true, margin: 3 } } } });
+    const gm = await renderConsole();
+    assertClean(gm, 'charter waiting');
+    assert.match(text(gm), /Charter as BRC waiting for you/);
+    assert.match(gm, /data-action="businessCharterApprove"/);
+  } finally {
+    await S.BusinessRepository.save(saved);
+  }
+});

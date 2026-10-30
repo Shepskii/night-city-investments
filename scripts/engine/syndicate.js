@@ -53,7 +53,7 @@ export const SYNDICATE_TRADES = Object.freeze([
 export const PROPOSAL_KINDS = Object.freeze(['trade', 'business', 'admit', 'remove', 'role', 'limit', 'dissolve']);
 
 /** Business requests that spend the syndicate's money, and so can be put to the members when over the limit. */
-export const BUSINESS_SPENDS = Object.freeze(['found', 'join', 'contribute', 'buyout']);
+export const BUSINESS_SPENDS = Object.freeze(['found', 'join', 'contribute', 'buyout', 'charterFund']);
 
 const SEEN_BY = ['invited', 'active'];
 const round2 = (v) => Math.round((Number(v) || 0) * 100) / 100;

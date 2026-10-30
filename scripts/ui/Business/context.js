@@ -7,7 +7,7 @@ import {
   ARCHETYPES, ACTION_IDS, partnerOf, holders, totalUnits, unitValue, shareOf, bookValue, drawAllowance, fundingShortfall,
   stateBands, lastDigest, weekdayOf, gearValue, rollSpec, BUSINESS_DEFAULTS,
   daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
-  openLoans, bankCheck, angelCheck, averageProfit, freeCash,
+  openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
 } from '../../engine/index.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
@@ -205,7 +205,48 @@ function growthContext(business, actor, canAct) {
     agreed: business.stepUp?.approved ? L('NCI.Business.StepUpAgreed') : '',
     retry: business.stepUp?.retryDay != null && day < business.stepUp.retryDay ? L('NCI.Business.StepUpRetry', { date: dayText(business.stepUp.retryDay) }) : '',
     canRoll: canAct && !!check?.ok,
-    gains: m.available ? L('NCI.Business.RegisterGains') : '',
+    gains: m.available ? L(business.stage === 1 ? 'NCI.Charter.Gains' : 'NCI.Business.RegisterGains') : '',
+    charter: business.stage === 1 ? charterContext(business, actor, canAct, m, pending) : null,
+  };
+}
+
+/** The charter, for a registered business (DESIGN §32): agreeing, the three rolls, the GM, the funding. */
+function charterContext(business, actor, canAct, m, pending) {
+  const c = business.charter;
+  const day = BusinessClient.day();
+  const status = c?.status ?? 'none';
+  const { kmin, kmax } = quoteRange(business);
+  const parts = CHARTER_PARTS.map((part) => {
+    const r = c?.rolls?.[part] ?? c?.kept?.[part];
+    const spec = actor && status === 'rolling' ? charterRollCheck(business, actor.id, part) : null;
+    return {
+      part,
+      label: L(`NCI.Charter.Part.${part}`),
+      result: r ? L(r.success ? 'NCI.Charter.Passed' : 'NCI.Charter.Failed', { band: L(`NCI.Roll.Band.${r.band}`) }) : L('NCI.Charter.NotRolled'),
+      done: !!r,
+      canRoll: canAct && !!spec?.ok,
+    };
+  });
+  const delay = c?.retryDay != null && day < c.retryDay;
+  return {
+    sector: L(`NCI.Sector.${charterSector(business)}`),
+    range: L('NCI.Charter.Range', { min: whole(kmin), max: whole(kmax) }),
+    canPropose: canAct && m.met && !pending && ['none', 'failed'].includes(status) && !delay,
+    isRolling: status === 'rolling',
+    isAwaiting: status === 'awaiting',
+    isFunding: status === 'funding',
+    parts: status === 'rolling' || status === 'awaiting' || status === 'funding' ? parts : [],
+    ticker: c?.ticker ?? '',
+    agreed: status === 'rolling' ? L('NCI.Charter.Agreed', { ticker: c.ticker }) : '',
+    awaiting: status === 'awaiting' ? L('NCI.Charter.Awaiting', { quote: whole(c.quote), assets: whole(c.netAssets), shortfall: whole(c.shortfall) }) : '',
+    funding: status === 'funding' ? L('NCI.Charter.Funding', {
+      paid: whole(charterPaid(business)), shortfall: whole(c.shortfall), date: dayText(c.fundingEnds), max: whole(Math.round(c.shortfall * (1 + BUSINESS_DEFAULTS.charter.extraShare))),
+    }) : '',
+    canFund: status === 'funding' && !!actor && partnerOf(business, actor.id)?.status === 'active',
+    refused: status === 'failed' ? L(c.reason === 'rejected' ? 'NCI.Charter.Rejected' : c.reason === 'lapsed' ? 'NCI.Charter.Lapsed' : 'NCI.Charter.Refused', { date: dayText(c.retryDay ?? day) }) : '',
+    kept: status === 'failed' && Object.keys(c.kept ?? {}).length
+      ? L('NCI.Charter.Kept', { parts: Object.keys(c.kept).map((k) => L(`NCI.Charter.Part.${k}`)).join(', ') })
+      : '',
   };
 }
 

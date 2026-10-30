@@ -31,6 +31,15 @@
     {{#if setup}}<div class="nci-muted">{{setup}}</div>{{/if}}
     {{#if state}}<div class="nci-muted">{{state}}</div>{{/if}}
     {{#if week}}<div class="nci-muted">{{week}}{{#if event}} {{event}}{{/if}}</div>{{/if}}
+    {{#if charter}}
+    <div class="nci-warn">{{charter.text}}</div>
+    {{#if charter.awaiting}}
+    <div class="nci-actions">
+      <button type="button" data-action="businessCharterApprove" data-id="{{id}}"><i class="fas fa-file-signature"></i> {{localize "NCI.GMBusiness.CharterApprove"}}</button>
+      <button type="button" data-action="businessCharterReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.CharterReject"}}</button>
+    </div>
+    {{/if}}
+    {{/if}}
     {{#if last}}<div class="nci-muted">{{last}}</div>{{/if}}
     <div class="nci-actions">
       <button type="button" data-action="businessOpen" data-id="{{id}}"><i class="fas fa-store"></i> {{localize "NCI.GMBusiness.Open"}}</button>

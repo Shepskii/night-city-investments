@@ -256,10 +256,41 @@
     </tbody></table>
     <p class="nci-hint">{{gains}}</p>
     {{#if pending}}<p class="nci-warn">{{pending}}</p>{{/if}}
+    {{#with charter}}
+    <p class="nci-hint">{{localize "NCI.Charter.SectorLine" sector=sector}} {{range}}</p>
+    {{#if refused}}<p class="nci-warn">{{refused}}</p>{{/if}}
+    {{#if kept}}<p class="nci-hint">{{kept}}</p>{{/if}}
+    {{#if canPropose}}
+    <div class="nci-actions nci-form">
+      <label>{{localize "NCI.Charter.Ticker"}} <input type="text" name="ticker" maxlength="5" class="nci-days"></label>
+      <button type="button" data-action="proposeCharter"><i class="fas fa-file-signature"></i> {{localize "NCI.Charter.Propose"}}</button>
+    </div>
+    {{/if}}
+    {{#if agreed}}<p><strong>{{agreed}}</strong></p>{{/if}}
+    {{#if parts.length}}
+    <table class="nci-market"><tbody>
+      {{#each parts}}
+      <tr><td>{{label}}</td><td>{{result}}</td>
+        <td class="nci-rowbtns">{{#if canRoll}}<button type="button" class="nci-labelled" data-action="charterRoll" data-part="{{part}}"><i class="fas fa-dice-d10"></i> {{localize "NCI.Charter.Roll"}}</button>{{/if}}</td></tr>
+      {{/each}}
+    </tbody></table>
+    {{/if}}
+    {{#if awaiting}}<p class="nci-warn">{{awaiting}}</p>{{/if}}
+    {{#if funding}}
+    <p><strong>{{funding}}</strong></p>
+    {{#if canFund}}
+    <div class="nci-actions nci-form">
+      <label>{{localize "NCI.Business.Cash"}} <input type="number" name="cash" min="1" step="100" value="0"></label>
+      <button type="button" data-action="charterFund"><i class="fas fa-coins"></i> {{localize "NCI.Charter.Fund"}}</button>
+    </div>
+    {{/if}}
+    {{/if}}
+    {{else}}
     {{#if agreed}}<p><strong>{{agreed}}</strong></p>{{/if}}
     {{#if retry}}<p class="nci-warn">{{retry}}</p>{{/if}}
     {{#if canPropose}}<button type="button" data-action="proposeStepUp"><i class="fas fa-stairs"></i> {{localize "NCI.Business.ProposeStepUp"}}</button>{{/if}}
     {{#if canRoll}}<button type="button" data-action="stepUpRoll"><i class="fas fa-dice-d10"></i> {{localize "NCI.Business.StepUpRoll"}}</button>{{/if}}
+    {{/with}}
     {{else}}
     <p class="nci-muted">{{later}}</p>
     {{/if}}

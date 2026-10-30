@@ -49,6 +49,9 @@ import {
 import {
   daysLeft, spendDays, activeProject, expansionOffer, startExpansion, addProjectDays, milestones, stepUpCheck, applyStepUp, votingUnits,
 } from './businessGrowth.js';
+import {
+  canCharter, startCharter, charterRollCheck, applyCharterRoll, approveCharter, dropCharter, fundCharter,
+} from './businessCharter.js';
 
 export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck };
 export { fixerOffer, bankCheck, angelCheck, openLoans, averageProfit };
@@ -60,7 +63,7 @@ export {
 
 export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
-  'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan',
+  'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund',
 ]);
 
 /** Item types that are not things a business can own. */
@@ -91,7 +94,7 @@ export function itemGear(item, actorId, p = BUSINESS_DEFAULTS) {
 }
 
 /** Requests that carry a roll. */
-export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll']);
+export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll']);
 
 /**
  * What each kind of proposal needs to pass (DESIGN §26.0): closing and stepping up need every partner
@@ -137,6 +140,12 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     const check = stepUpCheck(b, actorId, day, p);
     if (!check.ok) return check;
     return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - p.registration.fee, operatorRank, p });
+  }
+
+  if (request.type === 'charterRoll') {
+    const check = charterRollCheck(b, actorId, request.part, p);
+    if (!check.ok) return check;
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p });
   }
 
   if (request.type === 'loanRoll' || request.type === 'angelRoll') {
@@ -396,7 +405,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (me?.status !== 'active' || !me.voting) return fail('not-partner');
       if (!PROPOSAL_RULES[kind]) return fail('bad-request');
       if (b.proposals.some((x) => x.kind === kind)) return fail('proposal-open');
-      const can = canPropose(b, kind, request, ctx, p);
+      const can = canPropose(b, kind, request, { ...ctx, day }, p);
       if (!can.ok) return can;
       b.proposals.push({ id: request.key, kind, by: actor.id, day, expires: day + p.proposalDays, votes: { [actor.id]: true }, ...(can.terms ? { terms: can.terms } : {}) });
       settleProposals(b, day, out, p, ctx);
@@ -415,6 +424,30 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (r.extra) spendDays(b, actor.id, 1);
       const { stepped } = applyStepUp(b, actor.id, r, day, p);
       out.events.push({ type: 'roll', action: 'stepUp', band: r.band, exposure: r.exposure }, ...(stepped ? [{ type: 'steppedUp', stage: b.stage }] : []));
+      break;
+    }
+    case 'charterRoll': {
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
+      if (!spec.ok) return spec;
+      if (!check?.ok) return fail(check?.reason ?? 'no-roll');
+      if (request.use.kind === 'hire') {
+        const fee = hireFee(request.use.hire, ctx.operatorRank, p);
+        b.till -= fee;
+        log('hire', -fee);
+      }
+      const r = check.result;
+      if (r.extra) spendDays(b, actor.id, 1);
+      const done = applyCharterRoll(b, actor.id, request.part, r, day, p);
+      out.events.push({ type: 'roll', action: `charter.${request.part}`, band: r.band, exposure: r.exposure });
+      if (done.refused) out.events.push({ type: 'charterRefused' });
+      if (done.awaiting) out.events.push({ type: 'charterAwaiting' });
+      break;
+    }
+    case 'charterFund': {
+      const done = fundCharter(b, actor, request.cash, day, p);
+      if (!done.ok) return done;
+      pay(actor.id, -done.cash);
+      if (done.formed) out.events.push({ type: 'chartered' });
       break;
     }
     case 'respond': {
@@ -615,6 +648,22 @@ export function approveBusiness(business, day, weekday, p = BUSINESS_DEFAULTS, s
   return { ok: true, business: openBusiness(b, day, weekday, p, seed), wealth: {} };
 }
 
+/** GM: approve a charter waiting for it (DESIGN §32): it is formed at once, or its funding window opens. */
+export function approveBusinessCharter(business, day, p = BUSINESS_DEFAULTS) {
+  const b = structuredClone(normalizeBusiness(business));
+  const done = approveCharter(b, day, p);
+  if (!done.ok) return done;
+  return { ok: true, business: b, wealth: {}, events: [{ type: done.formed ? 'chartered' : 'charterFunding' }] };
+}
+
+/** GM: turn a charter down. Anything paid in is refunded; the fee is not. */
+export function rejectBusinessCharter(business, day, p = BUSINESS_DEFAULTS) {
+  const b = structuredClone(normalizeBusiness(business));
+  if (!['awaiting', 'funding', 'rolling'].includes(b.charter?.status)) return fail('not-awaiting');
+  const wealth = dropCharter(b, day, 'rejected', p);
+  return { ok: true, business: b, wealth, events: [{ type: 'charterRejected' }] };
+}
+
 /** GM: turn a business down before it opens. Every partner gets their share of the escrow back. */
 export function rejectBusiness(business, day, p = BUSINESS_DEFAULTS) {
   const b = structuredClone(normalizeBusiness(business));
@@ -667,6 +716,11 @@ function liquidate(b, day, reason, out, p) {
 function canPropose(b, kind, request, ctx, p) {
   switch (kind) {
     case 'stepUp': {
+      // A registered business steps up by chartering, which names its ticker (B4a).
+      if (b.stage === 1) {
+        const can = canCharter(b, { ticker: request.ticker, day: ctx.day, taken: ctx.tickers ?? [] }, p);
+        return can.ok ? { ok: true, terms: { ticker: can.ticker } } : can;
+      }
       if (b.stepUp?.approved) return fail('already-agreed');
       const m = milestones(b, p);
       if (!m.available) return fail('no-step-up');
@@ -720,7 +774,12 @@ function settleProposals(b, day, out, p, ctx = {}) {
     }
     out.events.push({ type: 'proposalPassed', kind: proposal.kind });
     if (proposal.kind === 'close') liquidate(b, day, 'closed', out, p);
-    if (proposal.kind === 'stepUp') b.stepUp = { approved: true, retryDay: null };
+    if (proposal.kind === 'stepUp' && b.stage === 0) b.stepUp = { approved: true, retryDay: null };
+    if (proposal.kind === 'stepUp' && b.stage === 1) {
+      const started = startCharter(b, { ticker: proposal.terms?.ticker, day }, p);
+      if (!started.ok) out.events.push({ type: 'proposalVoid', kind: proposal.kind, reason: started.reason });
+      continue;
+    }
     const done = enact(b, proposal, day, p, ctx);
     if (!done.ok) out.events.push({ type: 'proposalVoid', kind: proposal.kind, reason: done.reason });
   }
@@ -805,6 +864,12 @@ export function advanceBusiness(business, day, { weekday = 1, growthRate = 1, ac
   const out = { wealth: {}, events: [] };
   if (b.status !== 'open' || !b.period) return { business: b, ...out, changed: false };
   let changed = settleLeavers(b, day, actors, out);
+  // A charter's funding window that has run out: everything paid in is refunded (B4a).
+  if (b.charter?.status === 'funding' && day > b.charter.fundingEnds) {
+    for (const [actorId, cash] of Object.entries(dropCharter(b, day, 'lapsed', p))) out.wealth[actorId] = (out.wealth[actorId] ?? 0) + cash;
+    out.events.push({ type: 'charterLapsed' });
+    changed = true;
+  }
   const lapsed = b.proposals.filter((x) => x.expires != null && day > x.expires);
   if (lapsed.length) {
     b.proposals = b.proposals.filter((x) => !lapsed.includes(x));

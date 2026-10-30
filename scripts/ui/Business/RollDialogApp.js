@@ -151,7 +151,9 @@ export class RollDialogApp extends BaseApplication {
     const preview = previewRoll({ base: chosen?.base ?? 0, dv: full.dv + (chosen?.use.dvAdd ?? 0), levers });
     const pct = (x) => `${Math.round(x * 100)}%`;
     const good = this.request.type === 'respond' && EVENTS[business.period?.event?.kind]?.good;
-    const meaning = this.request.type === 'action' ? this.request.action : good ? 'respondGood' : this.request.type;
+    const meaning = this.request.type === 'action' ? this.request.action
+      : this.request.type === 'charterRoll' ? `charter.${this.request.part}`
+        : good ? 'respondGood' : this.request.type;
 
     return {
       title: this.rollTitle,

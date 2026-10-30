@@ -108,6 +108,12 @@ export function normalizeBusiness(raw) {
     /** Gigs run for the business, newest last, and next week's takings change from them. */
     gigs: b.gigs ?? [],
     boost: Number(b.boost ?? 0),
+    /** The market day it registered (stage 1), since B4. */
+    registeredDay: b.registeredDay ?? null,
+    /** A charter under way, refused or formed (DESIGN §32, businessCharter.js). */
+    charter: b.charter ?? null,
+    /** Once chartered: `{ ticker, sector, charteredDay }`. */
+    company: b.company ?? null,
   };
 }
 

@@ -54,6 +54,9 @@ export class BusinessApp extends BaseApplication {
       addDays: BusinessApp._onAddDays,
       proposeStepUp: BusinessApp._onProposeStepUp,
       stepUpRoll: BusinessApp._onStepUpRoll,
+      proposeCharter: BusinessApp._onProposeCharter,
+      charterRoll: BusinessApp._onCharterRoll,
+      charterFund: BusinessApp._onCharterFund,
       respond: BusinessApp._onRespond,
       proposeFixerLoan: BusinessApp._onProposeFixerLoan,
       proposeBankLoan: BusinessApp._onProposeBankLoan,
@@ -345,6 +348,25 @@ export class BusinessApp extends BaseApplication {
 
   static _onAngelRoll() {
     this._roll({ type: 'angelRoll' }, L('NCI.Business.AngelTitle', { name: this.business?.approved?.angel?.name ?? '' }));
+  }
+
+  /** Every partner with a vote must agree to charter; the ticker is named now (DESIGN §32). */
+  static async _onProposeCharter(event, target) {
+    const ticker = value(target, 'ticker').trim().toUpperCase();
+    if (ticker.length < 2) return ui.notifications.warn(L('NCI.Business.Reason.bad-ticker'));
+    if (await this._confirm('NCI.Charter.Confirm')) return this._send('propose', { kind: 'stepUp', ticker });
+    return null;
+  }
+
+  static _onCharterRoll(event, target) {
+    const part = target.dataset.part;
+    this._roll({ type: 'charterRoll', part }, L('NCI.Charter.RollTitle', { part: L(`NCI.Charter.Part.${part}`), name: this.business?.name ?? '' }));
+  }
+
+  static async _onCharterFund(event, target) {
+    const cash = amount(target, 'cash');
+    if (await this._proposeIfOver('charterFund', { businessId: this.business?.id, cash }, cash, this.business?.name)) return null;
+    return this._send('charterFund', { cash });
   }
 
   static _onStepUpRoll() {

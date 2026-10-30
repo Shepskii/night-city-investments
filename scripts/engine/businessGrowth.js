@@ -7,6 +7,7 @@
  */
 
 import { BUSINESS_DEFAULTS } from './businessConfig.js';
+import { charterMilestones } from './businessCharter.js';
 import { dvOf } from './rolls.js';
 import { partnerOf, holders, addLedger, fail, clamp } from './businessRecord.js';
 
@@ -85,6 +86,7 @@ const weekly = (d) => (d.endDay - d.startDay > 0 ? (d.profit * 7) / (d.endDay - 
  * @returns {{to: number|null, items: {id: string, have: number, need: number, met: boolean}[], met: boolean, available: boolean}}
  */
 export function milestones(b, p = BUSINESS_DEFAULTS) {
+  if (b.stage === 1) return charterMilestones(b, p);
   if (b.stage !== 0) return { to: b.stage + 1, items: [], met: false, available: false };
   const r = p.registration;
   const full = b.digests.filter((d) => d.endDay - d.startDay >= 7);
@@ -104,6 +106,8 @@ export function stepUpCheck(b, actorId, day, p = BUSINESS_DEFAULTS) {
   const me = partnerOf(b, actorId);
   if (b.status !== 'open') return fail('not-open');
   if (me?.status !== 'active' || !me.voting) return fail('not-partner');
+  // The registration roll; a registered business charters with the charter rolls instead (B4a).
+  if (b.stage !== 0) return fail('no-step-up');
   const m = milestones(b, p);
   if (!m.available) return fail('no-step-up');
   if (!m.met) return fail('milestones');
@@ -122,6 +126,7 @@ export function applyStepUp(b, actorId, result, day, p = BUSINESS_DEFAULTS) {
     return { stepped: false };
   }
   b.stage = 1;
+  b.registeredDay = day;
   b.state.compliance = r.compliance[result.band] ?? p.complianceBaseline;
   b.stepUp = null;
   addLedger(b, { day, kind: 'registered', amount: 0, actorId }, p);

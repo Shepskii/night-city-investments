@@ -269,6 +269,32 @@
       "HireOption": "{who} (base {base}, {fee} eb from the business)",
       "HireNote": "A hired professional's fixed base replaces your stat and skill. Their fee is paid from the business even if the roll fails, and Luck cannot be spent on their roll.",
       "Meaning": {
+        "charter": {
+          "plan": {
+            "fumble": "A muddled plan: Reputation starts 8 lower.",
+            "failure": "A weak plan: Reputation starts 5 lower.",
+            "narrow": "A workable plan: Reputation carries on as it is.",
+            "solid": "A good plan: Reputation starts 3 higher.",
+            "strong": "A strong plan: Reputation starts 5 higher.",
+            "exceptional": "A plan investors love: Reputation starts 8 higher."
+          },
+          "registration": {
+            "fumble": "Paperwork lost: Compliance starts 10 lower.",
+            "failure": "Paperwork queried: Compliance starts 6 lower.",
+            "narrow": "Registered: Compliance carries on as it is.",
+            "solid": "Clean filings: Compliance starts 3 higher.",
+            "strong": "Spotless filings: Compliance starts 5 higher.",
+            "exceptional": "Filed without a query: Compliance starts 8 higher."
+          },
+          "capital": {
+            "fumble": "Refused, and the books are a mess: try again in 14 days.",
+            "failure": "Refused: the fee is spent; try again in 7 days.",
+            "narrow": "Passed narrowly: the capital quote is near the top of the range.",
+            "solid": "Passed: a middling capital quote.",
+            "strong": "Passed well: a low capital quote.",
+            "exceptional": "Passed brilliantly: the lowest capital quote."
+          }
+        },
         "setupRoll": {
           "fumble": "The setup falls through: half the lowest setup cost is lost (never more than half the money put in), and you can try again in 14 days.",
           "failure": "The setup falls through: a third of the lowest setup cost is lost (never more than half the money put in), and you can try again in 7 days.",
@@ -1486,6 +1512,32 @@
         "Body": "The syndicate has been dissolved. Its cash was paid into the members' brokerage balances by units."
       }
     },
+    "Charter": {
+      "Gains": "Chartering makes the business a company: three action slots a week, a Capacity ceiling of 14, shares in place of units, and later monthly reports and officers. Rent, licences and actions (DV 17) cost more. It takes every partner's agreement, naming the ticker, then three rolls any partner can make: the business plan, the registration and the capital structure. The 2,000 eb filing fee is paid when you agree, whatever happens.",
+      "SectorLine": "As a company it would be in the {sector} sector.",
+      "Range": "Its capital quote will be between {min} and {max} eb, depending on the capital structure roll; the business's net assets count toward it.",
+      "Ticker": "Ticker",
+      "Propose": "Propose chartering",
+      "Confirm": "Propose chartering the business? If every partner agrees, the 2,000 eb filing fee is paid from its cash at once, and the three charter rolls open.",
+      "Agreed": "The partners have agreed to charter as {ticker}. Any partner may make each roll.",
+      "Part": {
+        "plan": "Business plan",
+        "registration": "Registration",
+        "capital": "Capital structure"
+      },
+      "NotRolled": "not rolled yet",
+      "Passed": "passed ({band})",
+      "Failed": "failed ({band})",
+      "Roll": "Roll",
+      "RollTitle": "{part} for {name}",
+      "Awaiting": "Waiting for the GM: a capital quote of {quote} eb, of which the business's net assets cover {assets} eb, leaving {shortfall} eb to pay in.",
+      "Funding": "The GM has approved the charter. Pay in {shortfall} eb by {date} ({paid} eb so far, at most {max} eb): each payment buys shares at book value. The company is formed when it is met.",
+      "Fund": "Pay in",
+      "Refused": "The capital structure roll failed, so the charter was refused. You can agree to try again from {date}.",
+      "Rejected": "The GM turned the charter down; anything paid in was refunded.",
+      "Lapsed": "The funding window ran out; everything paid in was refunded.",
+      "Kept": "Kept for the next try (30 days): {parts}."
+    },
     "GMSyndicate": {
       "Title": "Player syndicates",
       "Intro": "Each syndicate's members, its account and what is waiting. You can pass or veto any proposal, and close a syndicate whose account holds nothing but cash (it is paid out by units).",
@@ -1514,6 +1566,14 @@
       }
     },
     "GMBusiness": {
+      "CharterApprove": "Approve the charter",
+      "CharterReject": "Turn the charter down",
+      "CharterRejectConfirm": "Turn this charter down? Anything the partners paid in is refunded; the filing fee is not.",
+      "Charter": {
+        "rolling": "Chartering as {ticker}: rolls so far {rolls}.",
+        "awaiting": "Charter as {ticker} waiting for you: {rolls}. Quote {quote} eb, net assets {assets} eb, shortfall {shortfall} eb.",
+        "funding": "Charter as {ticker} approved: {shortfall} eb to be paid in by {date}."
+      },
       "Title": "Player businesses",
       "Intro": "Every business at every stage, with its true state, Exposure included. Players see their own businesses only, as bands rather than numbers.",
       "Waiting": "Waiting for you",
@@ -1804,6 +1864,11 @@
         "expansion": "An expansion started",
         "registrationFee": "Registration fee, paid by {name}",
         "registered": "Registered",
+        "charterFee": "Charter filing fee",
+        "charterRefused": "Charter refused: the capital structure roll failed",
+        "charterDropped": "Charter dropped",
+        "charterFund": "{name} paid toward the charter",
+        "chartered": "Chartered as a company",
         "gigDone": "A gig for the business went well",
         "gigFailed": "A gig for the business went wrong",
         "loan": "A loan",
@@ -1863,7 +1928,11 @@
         "weeks": "{need} full weeks open",
         "profit": "Average weekly profit of {need} eb over the last 4 weeks",
         "reputation": "Reputation of at least {need}",
-        "fee": "{need} eb of the business's cash for the registration fee"
+        "fee": "{need} eb of the business's cash for the registration fee",
+        "registeredWeeks": "{need} weeks registered",
+        "charterProfit": "Average weekly profit of {need} eb over the last 4 weeks",
+        "expansions": "At least {need} expansion finished",
+        "charterFee": "{need} eb of the business's cash for the filing fee"
       },
       "RegisterGains": "Registering means two action slots a week and lower protection money, but rent and licence fees go up, actions are rolled at DV 15, and the business has a Compliance standing to look after. It takes every partner's agreement, then a registration roll: Bureaucracy, or Local Expert or Persuasion at DV +2. The fee is paid whatever the result.",
       "StepUpPending": "Stepping up is waiting for every partner's vote.",
@@ -2044,6 +2113,14 @@
         "no-step-up": "there is no next stage yet",
         "milestones": "the milestones are not all met",
         "not-agreed": "the partners have not agreed to step up",
+        "charter-delay": "the last charter was refused; wait before trying again",
+        "bad-ticker": "a ticker needs two to five letters",
+        "ticker-taken": "that ticker is already taken",
+        "bad-part": "that is not one of the charter rolls",
+        "part-rolled": "that charter roll has been made",
+        "not-funding": "the charter is not taking payments",
+        "over-funded": "that is more than the charter can take",
+        "not-awaiting": "no charter is waiting for that",
         "step-up-delay": "the registration cannot be tried again yet",
         "no-event": "there is nothing to answer this week",
         "event-answered": "this week's event has already been answered",

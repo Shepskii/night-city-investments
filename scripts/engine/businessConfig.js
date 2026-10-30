@@ -116,6 +116,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
   stages: Object.freeze([
     Object.freeze({ slots: 1, dv: 'everyday', capacityCap: 1.6, rent: 7, licence: 0, protection: 8, fixUpScale: 1, expansion: Object.freeze({ cost: 1500, gain: 0.25, days: 3 }) }),
     Object.freeze({ slots: 2, dv: 'difficult', capacityCap: 4.5, rent: 25, licence: 10, protection: 5, fixUpScale: 6, expansion: Object.freeze({ cost: 2500, gain: 0.8, days: 6 }) }),
+    // A chartered company (B4): the B0 prototype's stage 2, with 150 eb a week of fixed costs.
+    Object.freeze({ slots: 3, dv: 'professional', capacityCap: 14, rent: 90, licence: 45, protection: 15, fixUpScale: 14, expansion: Object.freeze({ cost: 8000, gain: 1.5, days: 9 }) }),
   ]),
   /** Business days each partner with a vote has a week, for projects and extra time, without Crew Tools. */
   businessDays: 3,
@@ -126,6 +128,32 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     uses: Object.freeze([SKILLS.bureaucracy, Object.freeze({ ...SKILLS.localExpert, dvAdd: 2 }), Object.freeze({ ...SKILLS.persuasion, dvAdd: 2 })]),
     /** The registration roll's band sets the Compliance the registered business starts with. */
     compliance: Object.freeze({ narrow: 45, solid: 50, strong: 55, exceptional: 60 }),
+  }),
+  /** Registered business to chartered company (DESIGN §32, B4a). */
+  charter: Object.freeze({
+    fee: 2000, minWeeks: 12, minProfit: 400, minExpansions: 1,
+    /** The three rolls: each part's DV step and skills (alternatives at DV +2). A track record makes the plan easier. */
+    parts: Object.freeze({
+      plan: Object.freeze({ dv: 'everyday', uses: Object.freeze([SKILLS.business, Object.freeze({ ...SKILLS.persuasion, dvAdd: 2 }), Object.freeze({ ...SKILLS.trading, dvAdd: 2 })]) }),
+      registration: Object.freeze({ dv: 'difficult', uses: Object.freeze([SKILLS.bureaucracy, Object.freeze({ ...SKILLS.localExpert, dvAdd: 2 }), Object.freeze({ ...SKILLS.persuasion, dvAdd: 2 })]) }),
+      capital: Object.freeze({ dv: 'difficult', uses: Object.freeze([SKILLS.accounting, Object.freeze({ ...SKILLS.business, dvAdd: 2 })]) }),
+    }),
+    /** A failed capital structure roll: game days before the partners may try again. Passed parts are kept this long. */
+    refile: 7, fumbleRefile: 14, keepDays: 30,
+    /** The Startup tier's range for the capital quote (§26.2a), times the sector factor. */
+    kmin: 5000, kmax: 12000,
+    sectorFactor: Object.freeze({ media: 0.8, consumer: 0.8, security: 1.3, arms: 1.3, biotech: 1.5, energy: 1.5 }),
+    /** Each business type's market sector. */
+    sectors: Object.freeze({
+      clinic: 'health', garage: 'transport', bar: 'consumer', infoShop: 'tech', boutique: 'consumer',
+      gunShop: 'arms', courier: 'transport', security: 'security', media: 'media', foodStall: 'consumer',
+    }),
+    /** The business plan's band shifts Reputation, the registration's Compliance, when the company is formed. */
+    reputation: byBand([-8, -5, 0, 3, 5, 8]),
+    compliance: byBand([-10, -6, 0, 3, 5, 8]),
+    fundingDays: 14,
+    /** Owners may pay in up to this much over the shortfall. */
+    extraShare: 0.5,
   }),
   /** Compliance (registered businesses) drifts back toward this, like Reputation. */
   complianceBaseline: 50,
