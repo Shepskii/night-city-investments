@@ -7,7 +7,7 @@
 import { holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty } from '../../../engine/index.js';
 import { BusinessService } from '../../../services/BusinessService.js';
 import { BusinessApp } from '../../Business/BusinessApp.js';
-import { dayText } from '../../Business/context.js';
+import { dayText, LT } from '../../Business/context.js';
 import { L, whole } from '../../format.js';
 import { confirm, report } from '../shared.js';
 import { actorLink } from '../../actorLink.js';
@@ -101,7 +101,7 @@ export function context() {
       // The owners, as a compact table: each name (HTML) links to their character.
       owners: b.partners.filter((p) => p.status !== 'declined').map((p) => ({
         who: actorLink(p.actorId, p.name),
-        status: L(`NCI.Business.PartnerStatus.${p.status}`),
+        status: LT(b, `NCI.Business.PartnerStatus.${p.status}`),
         units: b.status === 'open' || b.status === 'closed' ? whole(p.units ?? 0) : '',
         share: units > 0 && ['active', 'leaving'].includes(p.status) ? `${((p.units / units) * 100).toFixed(1)}%` : '',
         note: [p.voting === false ? L('NCI.Business.NonVoting') : '', (b.officers ?? []).includes(p.actorId) ? L('NCI.Company.Officer') : ''].filter(Boolean).join(', '),

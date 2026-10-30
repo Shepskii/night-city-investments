@@ -39,6 +39,25 @@ const BAND_LEVELS = {
 };
 
 /**
+ * Language keys with a company wording (the same key plus `Company`): from chartering on, the owners
+ * are shareholders holding shares, not partners holding units. The record still calls them units.
+ */
+const COMPANY_TERMS = new Set([
+  'NCI.Business.Tab.partners', 'NCI.Business.CapTable', 'NCI.Business.Partner', 'NCI.Business.Units', 'NCI.Business.UnitValue',
+  'NCI.Business.PartnerStatus.active', 'NCI.Business.Agreement.decision', 'NCI.Business.Agreement.buyout', 'NCI.Business.HeirHint',
+  'NCI.Business.LeaveConfirm', 'NCI.Business.CloseConfirm', 'NCI.Business.DecisionsHint', 'NCI.Business.InvestPrice',
+  'NCI.Business.InvestOffer', 'NCI.Business.AngelIntro', 'NCI.Business.Rule.unanimous', 'NCI.Business.Rule.majority',
+  'NCI.Business.WaitingVote', 'NCI.Business.LoanPending', 'NCI.Business.NoDraw', 'NCI.Business.TopUpHint', 'NCI.Business.HelpHint',
+  'NCI.Business.BonusWaiting', 'NCI.Business.FixerTerms', 'NCI.Business.BankTerms', 'NCI.Business.Closed.closed', 'NCI.Project.Intro',
+]);
+
+/** A language key in the wording for this business's stage: shareholders and shares for a company and beyond. */
+export const termKey = (business, key) => (business?.stage >= 2 && COMPANY_TERMS.has(key) ? `${key}Company` : key);
+
+/** Localise in the wording for this business's stage (see termKey). */
+export const LT = (business, key, data) => L(termKey(business, key), data);
+
+/**
  * The overview's charts, from the weekly digests the business keeps (the last 12): takings, upkeep
  * and profit by week, cash at each close, and each standing's band week by week. Only bands are
  * drawn for the standings, never the numbers behind them, as everywhere else in the window.
@@ -152,9 +171,9 @@ export function businessContext(business, actor) {
     isPending: status === 'pending',
     isOpen: status === 'open',
     isClosed: status === 'closed',
-    closed: status === 'closed' ? L(`NCI.Business.Closed.${business.closeReason ?? 'closed'}`, { date: dayText(business.closedDay ?? 0) }) : '',
+    closed: status === 'closed' ? LT(business, `NCI.Business.Closed.${business.closeReason ?? 'closed'}`, { date: dayText(business.closedDay ?? 0) }) : '',
     invited: me?.status === 'invited',
-    offer: me?.status === 'invited' && me.offer ? L('NCI.Business.InvestOffer', { amount: whole(me.offer.amount), price: me.offer.price.toFixed(2), units: whole(Math.floor(me.offer.amount / me.offer.price)) }) : '',
+    offer: me?.status === 'invited' && me.offer ? LT(business, 'NCI.Business.InvestOffer', { amount: whole(me.offer.amount), price: me.offer.price.toFixed(2), units: whole(Math.floor(me.offer.amount / me.offer.price)) }) : '',
     canAct,
     isPartner: !!me && ['active', 'leaving'].includes(me.status),
     bands: Object.entries(bands).map(([key, band]) => ({ label: L(`NCI.Business.State.${key}`), value: L(`NCI.Business.Band.${key}.${band}`) })),
@@ -168,12 +187,14 @@ export function businessContext(business, actor) {
     opened: business.openedDay != null ? dayText(business.openedDay) : '',
     forming: status === 'forming' ? formingContext(business, actor) : null,
     week: status === 'open' ? weekContext(business, actor, canAct) : null,
-    ledger: ledgerContext(business, actor),
+    ledger: ledgerContext(business, actor, canAct),
     partners: partnersContext(business, actor),
     projects: status === 'open' ? projectsContext(business, actor, canAct) : null,
     growth: status === 'open' ? growthContext(business, actor, canAct) : null,
     staff: status === 'open' ? staffContext(business, actor, canAct) : null,
-    waitingVote: business.proposals.length ? L('NCI.Business.WaitingVote', { n: business.proposals.length }) : '',
+    terms: Object.fromEntries(['CapTable', 'Partner', 'Units', 'HeirHint', 'DecisionsHint', 'AngelIntro', 'TopUpHint', 'HelpHint']
+      .map((k) => [k, LT(business, `NCI.Business.${k}`)]).concat([['ProjectIntro', LT(business, 'NCI.Project.Intro')]])),
+    waitingVote: business.proposals.length ? LT(business, 'NCI.Business.WaitingVote', { n: business.proposals.length }) : '',
   };
 }
 
@@ -386,18 +407,13 @@ function weekContext(business, actor, canAct) {
         name: L(`NCI.Business.Action.${id}.Name`),
         hint: L(`NCI.Business.Action.${id}.Hint`),
         taken: slot ? L('NCI.Business.TakenBy', { name: nameOf(business, slot.by), band: L(`NCI.Roll.Band.${slot.band}`) }) : '',
-        bonus: bonus ? L('NCI.Business.BonusWaiting') : '',
+        bonus: bonus ? LT(business, 'NCI.Business.BonusWaiting') : '',
         canRoll: runs && free && !slot,
         canHelp: canAct && !helped && !slot,
       };
     }),
     helped: actor && helped && canAct ? L('NCI.Business.AlreadyHelped') : '',
     event: eventContext(business, runs, free),
-    report: business.stage >= 2 ? {
-      text: L('NCI.Company.ReportWeek', { n: (business.reportWeeks ?? 0) + 1, of: BUSINESS_DEFAULTS.report.weeks }),
-      prepared: business.reportPrep ? L(business.reportPrep.bold ? 'NCI.Company.PreparedBold' : 'NCI.Company.Prepared', { band: L(`NCI.Roll.Band.${business.reportPrep.band}`) }) : '',
-      canPrepare: runs && reportCheck(business).ok,
-    } : null,
     notOfficer: business.stage >= 2 && canAct && !runs ? L('NCI.Company.NotOfficer') : '',
     info: business.stage >= 2 ? infoContext(business, runs) : null,
     unworkedNote: L('NCI.Business.UnworkedNote'),
@@ -540,15 +556,21 @@ export function cashbookContext(business, index) {
   };
 }
 
-function ledgerContext(business, actor) {
+function ledgerContext(business, actor, canAct = false) {
   const last = lastDigest(business);
   const allowance = actor ? drawAllowance(business, actor.id) : 0;
   return {
+    // A company's monthly report: how far into the month it is, and preparing it in the last week (B4b).
+    report: business.stage >= 2 && business.status === 'open' ? {
+      text: L('NCI.Company.ReportWeek', { n: (business.reportWeeks ?? 0) + 1, of: BUSINESS_DEFAULTS.report.weeks }),
+      prepared: business.reportPrep ? L(business.reportPrep.bold ? 'NCI.Company.PreparedBold' : 'NCI.Company.Prepared', { band: L(`NCI.Roll.Band.${business.reportPrep.band}`) }) : '',
+      canPrepare: canAct && canRun(business, actor.id) && reportCheck(business).ok,
+    } : null,
     last: last ? digestRow(business, last, business.digests.length - 1) : null,
     digests: business.digests.map((d, i) => digestRow(business, d, i)).reverse(),
     entries: [...business.ledger].reverse().slice(0, LEDGER_ROWS).map((e) => ledgerLine(business, e)),
     allowance,
-    allowanceText: allowance > 0 ? L('NCI.Business.DrawAllowance', { amount: whole(allowance) }) : L('NCI.Business.NoDraw'),
+    allowanceText: allowance > 0 ? L('NCI.Business.DrawAllowance', { amount: whole(allowance) }) : LT(business, 'NCI.Business.NoDraw'),
     canDraw: business.status === 'open' && allowance > 0,
     canTopUp: business.status === 'open' && (actor ? partnerOf(business, actor.id)?.status === 'active' : false),
     money: business.status === 'open' ? moneyContext(business, actor) : null,
@@ -583,16 +605,16 @@ function moneyContext(business, actor) {
       canRepay: canAct && business.till > 0,
       max: Math.min(l.balance, business.till),
     })),
-    fixerText: L('NCI.Business.FixerTerms', { limit: whole(limit), rate: f.rate * 100, weeks: f.weeks }),
+    fixerText: LT(business, 'NCI.Business.FixerTerms', { limit: whole(limit), rate: f.rate * 100, weeks: f.weeks }),
     canFixer: canAct && !loans.some((l) => l.kind === 'fixer') && !pending('fixerLoan'),
     fixerLimit: limit,
     bankText: registered
-      ? L('NCI.Business.BankTerms', { profit: whole(averageProfit(business)) })
+      ? LT(business, 'NCI.Business.BankTerms', { profit: whole(averageProfit(business)) })
       : L('NCI.Business.BankLater'),
     canProposeBank: canAct && registered && !business.approved.bankLoan && !loans.some((l) => l.kind === 'bank') && !pending('bankLoan'),
     canRollBank: canAct && !!bank?.ok,
     bankRetry: business.retry.bankLoan != null && day < business.retry.bankLoan ? L('NCI.Business.BankRetry', { date: dayText(business.retry.bankLoan) }) : '',
-    pending: ['fixerLoan', 'bankLoan'].some(pending) ? L('NCI.Business.LoanPending') : '',
+    pending: ['fixerLoan', 'bankLoan'].some(pending) ? LT(business, 'NCI.Business.LoanPending') : '',
   };
 }
 
@@ -645,6 +667,7 @@ function investorsContext(business, actor, canAct) {
     later: registered ? '' : L('NCI.Business.InvestorsLater'),
     candidates: investorActors().filter((a) => !taken.has(a.id)).sort((a, b) => a.name.localeCompare(b.name)).map((a) => ({ value: a.id, label: a.name })),
     bookPrice: unitValue(business).toFixed(2),
+    priceLabel: LT(business, 'NCI.Business.InvestPrice', { price: unitValue(business).toFixed(2) }),
     canInvite: canAct && registered && !pending('investor'),
     canSeekAngel: canAct && registered && !angel && !pending('angel'),
     angel: angel ? L('NCI.Business.AngelFound', { name: angel.name, total: angel.total }) : '',
@@ -883,7 +906,7 @@ function partnersContext(business, actor) {
       actorId: p.actorId,
       name: p.name,
       who: actorLink(p.actorId, p.name),
-      status: L(`NCI.Business.PartnerStatus.${p.status}`),
+      status: LT(business, `NCI.Business.PartnerStatus.${p.status}`),
       units: business.status === 'forming' ? '' : whole(p.units),
       share: units > 0 && ['active', 'leaving'].includes(p.status) ? `${((p.units / units) * 100).toFixed(1)}%` : '',
       put: L('NCI.Business.PutIn', { cash: whole(p.cash), gear: whole(gearValue(p)) }),
@@ -899,12 +922,12 @@ function partnersContext(business, actor) {
       canDismiss: business.stage >= 2 && canAct && open && officersOf(business).includes(p.actorId) && officersOf(business).length > 1
         && !business.proposals.some((x) => x.kind === 'dismiss'),
     })),
-    unitValue: units > 0 ? value.toFixed(2) : '',
+    unitValue: units > 0 ? LT(business, 'NCI.Business.UnitValue', { value: value.toFixed(2) }) : '',
     isCompany: business.stage >= 2,
     agreement: [
       sweat ? L('NCI.Business.Agreement.sweat', { name: nameOf(business, sweat.actorId), pct: sweat.pct }) : L('NCI.Business.Agreement.noSweat'),
-      L('NCI.Business.Agreement.decision'),
-      L('NCI.Business.Agreement.buyout', { days: business.agreement.buyoutDays }),
+      LT(business, 'NCI.Business.Agreement.decision'),
+      LT(business, 'NCI.Business.Agreement.buyout', { days: business.agreement.buyoutDays }),
     ],
     heirOptions: [{ value: '', label: L('NCI.Business.NoHeir') }, ...characters.map((a) => ({ value: a.id, label: a.name }))]
       .map((o) => ({ ...o, selected: o.value === (me?.heirId ?? '') })),
@@ -922,7 +945,7 @@ function partnersContext(business, actor) {
         pct: proposal.terms?.pct != null ? Math.round(proposal.terms.pct * 100) : '',
         project: proposal.terms?.project ? L(`NCI.Project.Kind.${proposal.terms.project}`) : '',
       }),
-      rule: L(`NCI.Business.Rule.${PROPOSAL_RULES[proposal.kind]}`, { date: dayText(proposal.expires ?? proposal.day) }),
+      rule: LT(business, `NCI.Business.Rule.${PROPOSAL_RULES[proposal.kind]}`, { date: dayText(proposal.expires ?? proposal.day) }),
       // Each voter, linked to their character, and how they voted.
       voters: holders(business).filter((p) => p.voting).map((p) => {
         const state = proposal.votes[p.actorId] === true ? 'yes' : proposal.votes[p.actorId] === false ? 'no' : 'none';

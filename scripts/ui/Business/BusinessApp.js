@@ -18,7 +18,7 @@ import { HireDialogApp } from './HireDialogApp.js';
 import { EmployeeDialogApp } from './EmployeeDialogApp.js';
 import { CashbookDialogApp } from './CashbookDialogApp.js';
 import { L } from '../format.js';
-import { pickerContext, startContext, businessContext, usableActors, jobsContext } from './context.js';
+import { pickerContext, startContext, businessContext, usableActors, jobsContext, termKey } from './context.js';
 
 const TABS = ['overview', 'ledger', 'week', 'projects', 'staff', 'partners', 'growth'];
 
@@ -307,7 +307,7 @@ export class BusinessApp extends BaseApplication {
   }
 
   static async _onLeave() {
-    if (await this._confirm('NCI.Business.LeaveConfirm')) return this._send('leave');
+    if (await this._confirm(termKey(this.business, 'NCI.Business.LeaveConfirm'))) return this._send('leave');
   }
 
   static _onBuyout(event, target) {
@@ -315,7 +315,7 @@ export class BusinessApp extends BaseApplication {
   }
 
   static async _onProposeClose() {
-    if (await this._confirm('NCI.Business.CloseConfirm')) return this._send('proposeClose');
+    if (await this._confirm(termKey(this.business, 'NCI.Business.CloseConfirm'))) return this._send('proposeClose');
   }
 
   static _onVote(event, target) {
@@ -504,7 +504,7 @@ export class BusinessApp extends BaseApplication {
       gearDrafts: Object.fromEntries(GEAR_FORMS.map((f) => [f, this.gearDrafts[f].map((g) => ({ ...g, value: g.value.toLocaleString() }))])),
     };
     for (const t of TABS) context[`is${t[0].toUpperCase()}${t.slice(1)}`] = t === this.tab;
-    context.tabs = TABS.map((t) => ({ id: t, label: L(`NCI.Business.Tab.${t}`), active: t === this.tab }));
+    context.tabs = TABS.map((t) => ({ id: t, label: L(termKey(business, `NCI.Business.Tab.${t}`)), active: t === this.tab }));
     if (!this.actor) return { ...context, noActor: true };
     // The jobs this character holds or is offered at other people's businesses (DESIGN §33).
     context.jobs = jobsContext(this.actor);

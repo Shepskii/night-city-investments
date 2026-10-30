@@ -350,8 +350,11 @@ test('a company shows its officers, the information rolls and the report; a shar
     assert.match(officer, /data-action="actionRoll" data-id="contracts"/);
     assert.match(officer, /data-action="auditRoll"/);
     assert.match(officer, /name="targetName"/);
-    assert.match(text(officer), /Week 2 of 4 toward this month/);
-    assert.doesNotMatch(officer, /data-action="reportRoll"/, 'only in the last week');
+    assert.doesNotMatch(text(officer), /toward this month/, 'the monthly report is on the Ledger tab');
+    const ledger = await renderBusiness(windowFor(med, 'ledger'));
+    assertClean(ledger, 'company ledger');
+    assert.match(text(ledger), /Week 2 of 4 toward this month/);
+    assert.doesNotMatch(ledger, /data-action="reportRoll"/, 'only in the last week');
 
     const holder = await renderBusiness(windowFor(fix, 'week'));
     assertClean(holder, 'shareholder week');
@@ -362,6 +365,14 @@ test('a company shows its officers, the information rolls and the report; a shar
     const partners = await renderBusiness(windowFor(med, 'partners'));
     assertClean(partners, 'company partners');
     assert.match(text(partners), /officer/);
+    // From chartering on, the owners are shareholders holding shares.
+    assert.match(partners, /data-tab="partners"[^>]*>Shareholders</);
+    assert.match(text(partners), /Shareholder\s+Shares\s+Share/);
+    assert.match(text(partners), /shareholder · officer|shareholder &middot; officer/);
+    assert.match(text(partners), /Book value per share/);
+    assert.match(text(partners), /Day-to-day decisions by a majority of the shares/);
+    assert.doesNotMatch(text(partners), /\bunits?\b/i, 'no units left in a company\'s wording');
+    assert.match(text(await renderBusiness(windowFor(med, 'projects'))), /The shareholders agree on one/);
     assert.match(partners, new RegExp(`data-action="proposeElect" data-id="${fix.id}"`));
   } finally {
     await S.BusinessRepository.save(saved);
