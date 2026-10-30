@@ -1647,6 +1647,7 @@ Four directions for player businesses once employees (E3), going public (B5) and
 | Clinic | Black-market cyberware, ripping, scrubbing stolen chrome | Cybertech, Paramedic; Medicine | Scavengers, Bozos, NCPD |
 | Garage | Chop shop, untraceable rides | Basic Tech, Land Vehicle Tech; Maker | Gangs whose rides you strip, insurers |
 | Bar | Gambling, dealing, a meeting place | Streetwise, Persuasion; Charismatic Impact | Rival dealers, vice raids |
+| Bar, club | A brothel or dollhouse (dolls running on behaviour chips) | Persuasion, Human Perception, Wardrobe & Style; Charismatic Impact; Cybertech for the chips | Vice raids, the gang that runs the district's trade, chip suppliers, clients who talk |
 | Info shop | Data fencing, a netrunner's den | Library Search, Interface | Corp netsec, NetWatch |
 | Gun shop | Unregistered arms, military-grade kit | Weaponstech, Trading; Operator | Militech-style corp security, NCPD |
 | Courier | Smuggling | Drive Land Vehicle, Local Expert; Moto | Customs, rival smugglers |
@@ -1655,6 +1656,8 @@ Four directions for player businesses once employees (E3), going public (B5) and
 | Security | Muscle for hire, protection rackets | Tactics, Persuasion; Combat Awareness | Rival crews |
 
 **How it would work** (a first sketch):
+- **One kind per front.** Where a front has more than one kind of back room (a bar or club: gambling and dealing, or a brothel or dollhouse), the partners choose one when they open it.
+- **A brothel or dollhouse** (bar or club) staffs its back room with employees (E1) in a new role, so their loyalty and traits matter more than anywhere else: a sullen worker or an informant is the likeliest leak. A dollhouse also needs behaviour chips, a running cost and a Cybertech check that can go wrong (an event). Like the rest of §35.1 it is handled in game terms only: takings, risk, events, with no explicit content in the module's text.
 - **Opening one** is a project (§34) with its own roll, and needs the GM's approval. Its size grows like the front's Capacity, and it is capped by it: a back room cannot outgrow its front without being obvious.
 - **Dirty money.** The back room's takings go to a separate **dirty cash** pot, not the till: off the books, out of the monthly report, and not counted in book value or a listed company's valuation. Partners can take it as eddies with no draw cap, but every eddy raises Exposure.
 - **Laundering** moves dirty cash into the till through the front's takings. It is capped at a share of the legitimate takings each week (around 25–40%, by front): a launder action (Accounting, Business; Bribery at DV +2). A bookkeeper (E1) makes it cleaner. A poor roll leaves traces that an audit, an inspection or B6's investigators can find.
