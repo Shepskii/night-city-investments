@@ -4,7 +4,7 @@
  */
 
 import { HOOKS, MODULE_ID, FLAGS } from '../utils/constants.js';
-import { L } from '../utils/helpers.js';
+import { L, isCharacter } from '../utils/helpers.js';
 import { BusinessClient, receiptsOf } from './BusinessClient.js';
 
 export const BusinessWatcher = {
@@ -12,7 +12,7 @@ export const BusinessWatcher = {
 
   /** Remember the results already there, so only later ones are announced. */
   snapshot() {
-    for (const actor of game.actors.filter((a) => a.type === 'character' && a.isOwner)) {
+    for (const actor of game.actors.filter((a) => isCharacter(a) && a.isOwner)) {
       receiptsOf(actor).results.forEach((r) => this._seen.add(r.key));
     }
   },
@@ -38,7 +38,11 @@ export const BusinessWatcher = {
   },
 
   _announce(result) {
-    if (result.ok) ui.notifications.info(L(`NCI.Business.Done.${result.type}`));
+    const settled = result.ok ? result.proposal : null;
+    if (settled?.outcome === 'passed') ui.notifications.info(L(`NCI.Business.Settled.${settled.detail ?? settled.kind}`));
+    else if (settled?.outcome === 'failed') ui.notifications.info(L('NCI.Business.Settled.failed'));
+    else if (settled?.outcome === 'void') ui.notifications.warn(L('NCI.Business.Settled.void', { reason: L(`NCI.Business.Reason.${settled.reason}`) }));
+    else if (result.ok) ui.notifications.info(L(`NCI.Business.Done.${result.type}`));
     else ui.notifications.warn(L('NCI.Business.Refused', { reason: L(`NCI.Business.Reason.${result.reason}`) }));
   },
 };

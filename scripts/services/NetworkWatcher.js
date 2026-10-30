@@ -10,7 +10,7 @@
  */
 
 import { sessionActive } from '../engine/index.js';
-import { log } from '../utils/helpers.js';
+import { log, isCharacter } from '../utils/helpers.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
@@ -31,7 +31,7 @@ export const NetworkWatcher = {
 
   /** The characters whose sessions this user answers for: their own (a GM only those no player owns). */
   _characters() {
-    return game.actors.filter((a) => a.type === 'character' && a.isOwner && !(game.user.isGM && a.hasPlayerOwner));
+    return game.actors.filter((a) => isCharacter(a) && a.isOwner && !(game.user.isGM && a.hasPlayerOwner));
   },
 
   /** End every network session on the user's accounts if this client is off CorpNet. */

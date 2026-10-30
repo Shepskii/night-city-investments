@@ -10,7 +10,7 @@
 import { normalizePortfolio } from '../engine/index.js';
 import { MODULE_ID, FLAGS } from '../utils/constants.js';
 import { SyndicateRepository } from './SyndicateRepository.js';
-import { unwrap } from '../utils/helpers.js';
+import { unwrap, isCharacter } from '../utils/helpers.js';
 
 const clone = (v) => foundry.utils.deepClone(v);
 
@@ -56,7 +56,7 @@ export const PortfolioRepository = {
    * characters, or every character if none has an owner yet (so the GM can still try things out).
    */
   actors() {
-    const characters = game.actors.filter((a) => a.type === 'character');
+    const characters = game.actors.filter((a) => isCharacter(a));
     const usable = game.user.isGM
       ? characters.filter((a) => a.hasPlayerOwner)
       : characters.filter((a) => a.testUserPermission(game.user, 'OWNER'));
@@ -69,7 +69,7 @@ export const PortfolioRepository = {
    * the list the GM's services go through after a tick, for dividends, IPOs, heat and the like.
    */
   accounts() {
-    return [...game.actors.filter((a) => a.type === 'character'), ...SyndicateRepository.accounts()];
+    return [...game.actors.filter((a) => isCharacter(a)), ...SyndicateRepository.accounts()];
   },
 
   /** A character or a syndicate, by id. */

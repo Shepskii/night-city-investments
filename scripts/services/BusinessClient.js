@@ -11,7 +11,7 @@ import { dayIndex, rollSpec, partnerOf } from '../engine/index.js';
 import { MODULE_ID, FLAGS, OUTBOX_LIMIT, BROKER_TAG, INVESTOR_TAG, STAFF_TAGS } from '../utils/constants.js';
 import { NcmAdapter } from '../integrations/NcmAdapter.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
-import { L, unwrap } from '../utils/helpers.js';
+import { L, unwrap, isCharacter, isItemPile } from '../utils/helpers.js';
 import { SerialQueue } from '../utils/queue.js';
 import { MarketClock } from './MarketClockService.js';
 import { SkillAdapter } from './SkillAdapter.js';
@@ -55,7 +55,7 @@ export function operatorRankOf(business) {
 export function investorActors() {
   const tagged = new Set([BROKER_TAG, INVESTOR_TAG].flatMap((tag) => NcmAdapter.contactsTagged(tag)).map((c) => c?.actorId).filter(Boolean));
   return [
-    ...game.actors.filter((a) => a.type === 'character' && (a.hasPlayerOwner || tagged.has(a.id))),
+    ...game.actors.filter((a) => isCharacter(a) && (a.hasPlayerOwner || tagged.has(a.id))),
     // Syndicates invest from their own account (DESIGN §31, B3b).
     ...SyndicateRepository.all().filter((s) => s.status === 'active').map((s) => ({ id: s.id, name: s.name, isSyndicate: true })),
   ];
@@ -70,7 +70,7 @@ export function investorActors() {
 export function staffActors() {
   const tagged = new Set(STAFF_TAGS.flatMap((tag) => NcmAdapter.contactsTagged(tag)).map((c) => c?.actorId).filter(Boolean));
   return game.actors
-    .filter((a) => (a.type === 'character' && a.hasPlayerOwner) || (['character', 'mook'].includes(a.type) && tagged.has(a.id)))
+    .filter((a) => (isCharacter(a) && a.hasPlayerOwner) || (['character', 'mook'].includes(a.type) && !isItemPile(a) && tagged.has(a.id)))
     .map((a) => ({ id: a.id, name: a.name, source: a.hasPlayerOwner ? 'pc' : 'npc' }));
 }
 

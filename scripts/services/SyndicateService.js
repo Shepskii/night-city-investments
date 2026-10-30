@@ -12,7 +12,7 @@ import {
   applySyndicateRequest, advanceSyndicate, approveSyndicate, decideProposal, closeSyndicate, applyRequests, dayIndex, PROCESSED_CAP,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
-import { log, isActiveGM } from '../utils/helpers.js';
+import { log, isActiveGM, isCharacter } from '../utils/helpers.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { MarketStore } from '../data/MarketStore.js';
@@ -49,7 +49,7 @@ class SyndicateServiceImpl {
 
   /** Every character a request may name, by id. */
   actors() {
-    return Object.fromEntries(game.actors.filter((a) => a.type === 'character').map((a) => [a.id, a.name]));
+    return Object.fromEntries(game.actors.filter((a) => isCharacter(a)).map((a) => [a.id, a.name]));
   }
 
   /** @param {number} [stakes] - the syndicate's business stakes at book value, which count in its value */
@@ -104,7 +104,7 @@ class SyndicateServiceImpl {
   sweepAll() {
     if (!isActiveGM()) return Promise.resolve();
     return PortfolioService.exclusive(async () => {
-      for (const actor of game.actors.filter((a) => a.type === 'character')) await this._process(actor);
+      for (const actor of game.actors.filter((a) => isCharacter(a))) await this._process(actor);
     }).then(() => this._flush());
   }
 

@@ -969,6 +969,22 @@ function settleProposals(b, day, out, p, ctx = {}) {
   }
 }
 
+/**
+ * What became of a proposal the request itself settled (one made, or a vote cast, that carried it at
+ * once), so the proposer is told what happened rather than that a proposal was made. `detail` says
+ * whether a hire took the employee on or offered them the job.
+ * @returns {{outcome: 'passed'|'failed'|'void', kind: string, detail?: string, reason?: string}|null}
+ */
+export function proposalOutcome(events = []) {
+  const settled = events.find((e) => ['proposalPassed', 'proposalFailed'].includes(e.type));
+  if (!settled) return null;
+  if (settled.type === 'proposalFailed') return { outcome: 'failed', kind: settled.kind };
+  const voided = events.find((e) => e.type === 'proposalVoid' && e.kind === settled.kind);
+  if (voided) return { outcome: 'void', kind: settled.kind, reason: voided.reason };
+  const hire = events.find((e) => ['hired', 'jobOffered'].includes(e.type));
+  return { outcome: 'passed', kind: settled.kind, ...(settled.kind === 'hire' && hire ? { detail: hire.type } : {}) };
+}
+
 /** What a proposal that has passed does. */
 function enact(b, proposal, day, p, ctx, out) {
   switch (proposal.kind) {
@@ -1120,6 +1136,8 @@ const traffic = (rep) => 0.6 + (clamp(rep, 0, 100) / 100) * 0.8;
 /** Start an operating period, and draw its event. */
 function startPeriod(b, index, startDay, weekday, seed, p, traits = null) {
   b.period = newPeriod(index, startDay, weekday);
+  // The cash the week starts with, so its digest can account for every eddie in and out.
+  b.period.opening = b.till;
   const event = drawEvent(b, seed, p, traits);
   if (b.collectors) {
     // A missed payment to a fixer: the collectors come in place of whatever else the week held.
@@ -1233,8 +1251,9 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, params
     costs,
     profit,
     till: b.till,
+    ...(b.period.opening != null ? { opening: b.period.opening } : {}),
     ...(loans.interest || loans.principal || loans.missed.length ? { interest: loans.interest, repaid: loans.principal, missed: loans.missed } : {}),
-    ...(wages.wages || wages.owed ? { wages: wages.wages, owed: wages.owed } : {}),
+    ...(wages.wages || wages.owed || wages.paid ? { wages: wages.wages, paid: wages.paid, owed: wages.owed } : {}),
     worked: !!work,
     ...(event ? { event: { kind: event.kind, outcome: event.outcome, band: event.band, change: event.change, ...(eventCost ? { cost: eventCost } : {}) } } : {}),
     ...(notes.length ? { staff: notes } : {}),

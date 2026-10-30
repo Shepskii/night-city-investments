@@ -9,7 +9,7 @@
 
 import { normalizeNotify, digestOf, valuePortfolio, moversOf, moverThreshold } from '../engine/index.js';
 import { MODULE_ID, FLAGS } from '../utils/constants.js';
-import { log, isActiveGM } from '../utils/helpers.js';
+import { log, isActiveGM, isCharacter } from '../utils/helpers.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
 import { FundRepository } from '../data/FundRepository.js';
@@ -106,7 +106,7 @@ export const NotificationService = {
    */
   async onHeadline(item) {
     if (!isActiveGM()) return;
-    for (const actor of game.actors.filter((a) => a.type === 'character' && PortfolioRepository.hasPortfolio(a))) {
+    for (const actor of game.actors.filter((a) => isCharacter(a) && PortfolioRepository.hasPortfolio(a))) {
       if (this.prefs(actor).headlines === 'off') continue;
       const brokerId = item.source === 'gig' ? PortfolioRepository.get(actor).brokerContactId ?? null : null;
       await this.notify(actor, 'headlines', brokerId ? MailService.gigHeadline(item) : MailService.headline(item), brokerId);
@@ -126,7 +126,7 @@ export const NotificationService = {
     for (const [id, s] of Object.entries(pub.companies ?? {})) quotes[id] = { price: s.price, prevClose: s.prevClose };
     for (const [id, s] of Object.entries(pub.funds ?? {})) quotes[id] = { price: s.nav, prevClose: s.prevNav };
 
-    for (const actor of game.actors.filter((a) => a.type === 'character' && PortfolioRepository.hasPortfolio(a))) {
+    for (const actor of game.actors.filter((a) => isCharacter(a) && PortfolioRepository.hasPortfolio(a))) {
       const prefs = this.prefs(actor);
       const portfolio = PortfolioRepository.get(actor);
       if (prefs.digest !== 'off') {

@@ -196,7 +196,8 @@ test('the week closes: the wage is paid to Nova, and the ledger and the GM tab s
 
   const ledger = await renderBusiness(windowFor(med, 'ledger'));
   assertClean(ledger, 'ledger with wages');
-  assert.match(text(ledger), /Wages \d+ eb/);
+  // The week's wages in their own column, and the overtime paid during the week under Other.
+  assert.match(text(ledger), /Solid success \d+ \d+ \d+ -54 [+-]\d+ [\d,]+ Ledger/);
   assert.match(text(ledger), /Overtime for Nova, called in by Medtech/);
   assert.match(ledger, /data-tab="week" class="">Work</, 'the week tab is called Work');
 

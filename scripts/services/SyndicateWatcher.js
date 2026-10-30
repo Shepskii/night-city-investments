@@ -5,7 +5,7 @@
  */
 
 import { HOOKS, MODULE_ID, FLAGS } from '../utils/constants.js';
-import { L, unwrap } from '../utils/helpers.js';
+import { L, unwrap, isCharacter } from '../utils/helpers.js';
 import { SyndicateClient, syndicateReceipts } from './SyndicateClient.js';
 import { PortfolioWatcher } from './PortfolioWatcher.js';
 
@@ -15,7 +15,7 @@ export const SyndicateWatcher = {
 
   /** Remember the results and order states already there, so only later ones are announced. */
   snapshot() {
-    for (const actor of game.actors.filter((a) => a.type === 'character' && a.isOwner)) {
+    for (const actor of game.actors.filter((a) => isCharacter(a) && a.isOwner)) {
       syndicateReceipts(actor).results.forEach((r) => this._seen.add(r.key));
     }
     for (const journal of game.journal.filter((j) => j.getFlag(MODULE_ID, FLAGS.SYNDICATE))) {

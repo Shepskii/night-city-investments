@@ -27,6 +27,12 @@ export const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.
  */
 export const unwrap = (stored) => (Array.isArray(stored) ? stored[0] : stored);
 
+/** An actor that Item Piles has made into a pile (or a merchant, vault...): never a person. */
+export const isItemPile = (actor) => !!actor?.flags?.['item-piles']?.data?.enabled;
+
+/** A character actor that is a person: not an Item Piles pile made from a character. */
+export const isCharacter = (actor) => actor?.type === 'character' && !isItemPile(actor);
+
 export function isGM() {
   return game.user?.isGM ?? false;
 }

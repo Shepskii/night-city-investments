@@ -1777,6 +1777,9 @@
       "Other": "Other money in and out",
       "OtherHint": "Paid in or out of the cash during the week, and not counted in the profit: overtime, hired help, adverts, bonuses, draws, top-ups, loans and the like.",
       "NoOther": "Nothing else this week.",
+      "TillAtStart": "Cash at the start:",
+      "WageGap": "Wages still owed, not yet paid from the cash (or, if below zero, back pay paid this week)",
+      "Unlisted": "Not itemised in the ledger (a week from before entries were marked with their week, or entries since trimmed)",
       "TillAtClose": "Cash at the close:"
     },
     "GMBusiness": {
@@ -2078,6 +2081,12 @@
       "Takings": "Takings",
       "Upkeep": "Upkeep",
       "Profit": "Profit",
+      "Costs": "Costs (upkeep, wages, interest, bills)",
+      "Wages": "Wages",
+      "Other": "Other",
+      "WeeksHint": "The cash at each close is the week before's cash, plus the takings, less the upkeep and the wages paid, plus Other: everything else in or out of the cash (loan interest and repayments, a staff event's bills, draws, top-ups, overtime, adverts, bonuses). The profit is the takings less the upkeep, wages, loan interest and bills. Click a week for its cashbook.",
+      "ChartTip": "{week}: takings {takings} eb, costs {costs} eb, profit {profit} eb",
+      "CashTip": "{week}: cash {till} eb (from {opening} eb: takings {takings}, upkeep −{upkeep}, wages −{wages}, other {other})",
       "NoWeeks": "No week has closed yet.",
       "DigestAction": "{action}: {name}, {band}",
       "NoActions": "Nobody took an action.",
@@ -2331,6 +2340,25 @@
         "refuseRaise": "Raise turned down.",
         "movePost": "Moved.",
         "rejectApplicant": "Applicant turned away."
+      },
+      "Settled": {
+        "close": "Agreed: the business is closed and its money shared out.",
+        "stepUp": "Agreed by every partner: go ahead with the next step on the Growth tab.",
+        "expansion": "Agreed: the expansion is paid for and under way.",
+        "project": "Agreed: the project is paid for and under way.",
+        "fixerLoan": "Agreed: the fixer's loan is in the cash.",
+        "bankLoan": "Agreed: any partner can now make the case to a bank.",
+        "investor": "Agreed: the investor has been invited.",
+        "angel": "Agreed: you know who you are pitching to.",
+        "elect": "Agreed: the officer is elected.",
+        "dismiss": "Agreed: the officer is dismissed.",
+        "hire": "Agreed: the hire goes ahead.",
+        "hired": "Agreed: hired, starting now.",
+        "jobOffered": "Agreed: the job is offered. They answer it.",
+        "fire": "Agreed: they have been let go.",
+        "pay": "Agreed: the new pay starts now.",
+        "failed": "The proposal was turned down.",
+        "void": "Agreed, but it could not be done: {reason}"
       },
       "Reason": {
         "bad-use": "that skill does not fit this roll",

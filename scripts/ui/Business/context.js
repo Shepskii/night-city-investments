@@ -22,6 +22,7 @@ import { MarketClock } from '../../services/MarketClockService.js';
 import { L, whole, signed } from '../format.js';
 import { weeklyBars, balanceLine } from '../components/chart.js';
 import { actorLink } from '../actorLink.js';
+import { isCharacter } from '../../utils/helpers.js';
 
 const DAY_MS = 86_400_000;
 const LEDGER_ROWS = 15;
@@ -46,14 +47,20 @@ function historyContext(business, bands) {
   const weeks = business.digests;
   const eb = (v) => `${whole(v)} eb`;
   const when = (d) => L('NCI.Business.WeekTo', { n: d.index, date: dayText(d.endDay) });
-  const tip = (d) => `${when(d)}: ${L('NCI.Business.Takings')} ${eb(d.takings)}, ${L('NCI.Business.Upkeep')} ${eb(d.upkeep)}, ${L('NCI.Business.Profit')} ${eb(d.profit)}`;
+  const tip = (d) => L('NCI.Business.ChartTip', { week: when(d), takings: whole(d.takings), costs: whole(weekCosts(d)), profit: signed(d.profit) });
+  const cashTip = (d, i) => {
+    const m = weekMoney(weeks, i);
+    return m.other == null
+      ? `${when(d)}: ${L('NCI.Business.Till')} ${eb(d.till)}`
+      : L('NCI.Business.CashTip', { week: when(d), till: whole(d.till), opening: whole(m.opening), takings: whole(d.takings), upkeep: whole(d.upkeep), wages: whole(m.wages), other: signed(m.other) });
+  };
   return {
     weeks: weeks.length,
     title: weeks.length ? L('NCI.Business.HistoryTitle', { n: weeks.length }) : '',
-    revenue: weeks.length ? weeklyBars(weeks.map((d) => ({ takings: d.takings, upkeep: d.upkeep, profit: d.profit, tip: tip(d) })), {
+    revenue: weeks.length ? weeklyBars(weeks.map((d) => ({ takings: d.takings, upkeep: weekCosts(d), profit: d.profit, tip: tip(d) })), {
       format: eb, labels: [when(weeks[0]), when(weeks.at(-1))],
     }) : '',
-    cash: weeks.length > 1 ? balanceLine(weeks.map((d) => d.till), { format: eb, tips: weeks.map((d) => `${when(d)}: ${L('NCI.Business.Till')} ${eb(d.till)}`) }) : '',
+    cash: weeks.length > 1 ? balanceLine(weeks.map((d) => d.till), { format: eb, tips: weeks.map(cashTip) }) : '',
     standings: Object.entries(bands).map(([key, band]) => ({
       // Capacity is how big the place is, not how well it is doing, so it is drawn on a neutral scale.
       neutral: key === 'capacity',
@@ -77,7 +84,7 @@ const nameOf = (business, actorId) => partnerOf(business, actorId)?.name || (bus
 
 /** Characters this user can act as: their own, or for a GM the player-owned ones (every character if none). */
 export function usableActors() {
-  const characters = game.actors.filter((a) => a.type === 'character');
+  const characters = game.actors.filter((a) => isCharacter(a));
   const usable = game.user.isGM ? characters.filter((a) => a.hasPlayerOwner) : characters.filter((a) => a.testUserPermission(game.user, 'OWNER'));
   return (game.user.isGM && !usable.length ? characters : usable).sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -113,7 +120,7 @@ export function pickerContext(app) {
 export function startContext(app) {
   const actor = app.actor;
   const others = [
-    ...game.actors.filter((a) => a.type === 'character' && a.id !== actor?.id && a.hasPlayerOwner),
+    ...game.actors.filter((a) => isCharacter(a) && a.id !== actor?.id && a.hasPlayerOwner),
     // A syndicate can be invited as a partner too.
     ...SyndicateRepository.all().filter((s) => s.status === 'active' && s.id !== actor?.id),
   ].sort((a, b) => a.name.localeCompare(b.name));
@@ -453,6 +460,23 @@ function ledgerLine(business, e) {
   };
 }
 
+/** Everything a week's profit takes off its takings: the upkeep, a staff event's bills, wages and loan interest. */
+const weekCosts = (d) => d.upkeep + (d.event?.cost ?? 0) + (d.wages ?? 0) + (d.interest ?? 0);
+
+/**
+ * A week's cash, accounted for: the cash it started with (kept on the digest since it was recorded, or
+ * the week before's close), the wages paid out of the cash, and everything else in or out (`other`):
+ * event bills, loan interest and repayments, draws, top-ups, overtime, adverts, bonuses. The opening,
+ * plus the takings, less the upkeep and wages, plus the other, is the cash at the close. `other` is
+ * null when the opening is not known (the oldest week kept, closed before openings were recorded).
+ */
+function weekMoney(digests, i) {
+  const d = digests[i];
+  const opening = d.opening ?? digests[i - 1]?.till ?? null;
+  const wages = d.paid ?? d.wages ?? 0;
+  return { opening, wages, other: opening == null ? null : d.till - opening - d.takings + d.upkeep + wages };
+}
+
 /** Ledger entries the week's close writes; the cashbook shows them from the digest instead. */
 const AT_CLOSE = new Set(['takings', 'upkeep', 'wages', 'medical']);
 /** Entries made while the business was being set up, into the money held for it rather than its cash. */
@@ -466,9 +490,10 @@ const FORMING = new Set(['founded', 'contribution', 'setupLoss', 'refund']);
  * upkeep's parts shows the upkeep as one line.
  */
 export function cashbookContext(business, index) {
-  const d = business.digests.find((x) => x.index === index);
+  const at = business.digests.findLastIndex((x) => x.index === index);
+  const d = business.digests[at];
   if (!d) return { business: business.name, week: L('NCI.Business.Week', { n: index }), gone: L('NCI.Cashbook.Gone') };
-  const row = digestRow(business, d);
+  const row = digestRow(business, d, at);
   const line = (label, amount, note = '') => ({ label, note, amount: signed(amount), cls: amount > 0 ? 'nci-up' : amount < 0 ? 'nci-down' : '' });
   const change = d.event?.change ?? 0;
   const gross = d.gross ?? d.takings - change;
@@ -489,6 +514,11 @@ export function cashbookContext(business, index) {
   const totalOut = Math.max(-change, 0) + d.upkeep + (d.event?.cost ?? 0) + (d.wages ?? 0) + (d.interest ?? 0);
   // An entry made before entries were marked with their week is placed by its date (setting-up entries left out).
   const inWeek = (e) => (e.week != null ? e.week === d.index : e.day >= d.startDay && e.day <= d.endDay && !FORMING.has(e.kind));
+  const others = business.ledger.filter((e) => inWeek(e) && !AT_CLOSE.has(e.kind) && e.amount);
+  // Whatever moved the cash that the ledger no longer lists (an old week, or entries since trimmed), so the page still adds up.
+  const money = weekMoney(business.digests, at);
+  const listed = (d.event?.cost ?? 0) + (d.interest ?? 0) + (d.repaid ?? 0);
+  const unlisted = money.other == null ? 0 : money.other + listed - others.reduce((a, e) => a + e.amount, 0);
   return {
     business: business.name,
     week: row.week,
@@ -501,7 +531,11 @@ export function cashbookContext(business, index) {
     profit: row.profit,
     profitCls: row.cls,
     repaid: d.repaid ? signed(-d.repaid) : '',
-    other: business.ledger.filter((e) => inWeek(e) && !AT_CLOSE.has(e.kind) && e.amount).map((e) => ledgerLine(business, e)),
+    other: others.map((e) => ledgerLine(business, e)),
+    opening: row.opening,
+    unlisted: unlisted ? signed(unlisted) : '',
+    // Wages counted in the profit but not yet paid from the cash (+), or back pay paid this week (−).
+    wageGap: (d.wages ?? 0) !== money.wages ? signed((d.wages ?? 0) - money.wages) : '',
     till: row.till,
   };
 }
@@ -510,8 +544,8 @@ function ledgerContext(business, actor) {
   const last = lastDigest(business);
   const allowance = actor ? drawAllowance(business, actor.id) : 0;
   return {
-    last: last ? digestRow(business, last) : null,
-    digests: [...business.digests].reverse().map((d) => digestRow(business, d)),
+    last: last ? digestRow(business, last, business.digests.length - 1) : null,
+    digests: business.digests.map((d, i) => digestRow(business, d, i)).reverse(),
     entries: [...business.ledger].reverse().slice(0, LEDGER_ROWS).map((e) => ledgerLine(business, e)),
     allowance,
     allowanceText: allowance > 0 ? L('NCI.Business.DrawAllowance', { amount: whole(allowance) }) : L('NCI.Business.NoDraw'),
@@ -562,13 +596,19 @@ function moneyContext(business, actor) {
   };
 }
 
-function digestRow(business, d) {
+/** One weekly digest for the Ledger tab and the cashbook; `i` is where it sits among the digests kept. */
+function digestRow(business, d, i) {
+  const money = weekMoney(business.digests, i);
   return {
     index: d.index,
     week: L('NCI.Business.Week', { n: d.index }),
     dates: `${dayText(d.startDay)} – ${dayText(d.endDay)}`,
     takings: whole(d.takings),
     upkeep: whole(d.upkeep),
+    paidWages: money.wages ? whole(money.wages) : '–',
+    other: money.other == null ? '–' : signed(money.other),
+    otherCls: money.other > 0 ? 'nci-up' : money.other < 0 ? 'nci-down' : '',
+    opening: money.opening == null ? '' : whole(money.opening),
     profit: signed(d.profit),
     cls: d.profit > 0 ? 'nci-up' : d.profit < 0 ? 'nci-down' : 'nci-flat',
     till: whole(d.till),
@@ -580,7 +620,8 @@ function digestRow(business, d) {
     // What happened to the staff: someone off sick, hurt, poached, caught, quitting, asking for a raise (E2).
     people: (d.staff ?? []).map((n) => L(`NCI.Staff.Note.${n.kind}`, { name: n.name })).join(' '),
     gig: d.boost ? L('NCI.Business.DigestGig', { pct: signed(Math.round(d.boost * 100)) }) : '',
-    wages: d.wages || d.owed ? L(d.owed ? 'NCI.Staff.DigestOwed' : 'NCI.Staff.DigestWages', { wages: whole(d.wages ?? 0), owed: whole(d.owed ?? 0) }) : '',
+    // The wages have their own column; the note is only for what is still owed.
+    wages: d.owed ? L('NCI.Staff.DigestOwed', { wages: whole(d.wages ?? 0), owed: whole(d.owed ?? 0) }) : '',
     loans: d.interest || d.repaid || d.missed?.length
       ? [L('NCI.Business.DigestLoans', { interest: whole(d.interest ?? 0), repaid: whole(d.repaid ?? 0) }), ...(d.missed ?? []).map((k) => L(`NCI.Business.DigestMissed.${k}`))].join(' ')
       : '',
@@ -831,7 +872,7 @@ function partnersContext(business, actor) {
   const me = actor ? partnerOf(business, actor.id) : null;
   const canAct = !!actor && BusinessClient.canAct(business, actor.id);
   const open = business.status === 'open';
-  const characters = game.actors.filter((a) => a.type === 'character' && a.id !== actor?.id);
+  const characters = game.actors.filter((a) => isCharacter(a) && a.id !== actor?.id);
   const sweat = business.agreement.sweat;
   return {
     rows: business.partners.filter((p) => p.status !== 'declined').map((p) => ({

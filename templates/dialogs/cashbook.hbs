@@ -5,6 +5,7 @@
   </header>
   {{#if gone}}<p class="nci-empty">{{gone}}</p>{{else}}
   {{#each activity}}<p class="nci-hint">{{this}}</p>{{/each}}
+  {{#if opening}}<p><strong>{{localize "NCI.Cashbook.TillAtStart"}}</strong> {{opening}} eb</p>{{/if}}
 
   <div class="nci-block">
     <h3>{{localize "NCI.Cashbook.Income"}}</h3>
@@ -37,6 +38,8 @@
       {{#each other}}<tr><td class="nci-muted">{{date}}</td><td>{{what}}</td><td class="num {{cls}}">{{amount}}</td></tr>{{/each}}
     </tbody></table>
     {{else}}<p class="nci-empty">{{localize "NCI.Cashbook.NoOther"}}</p>{{/if}}
+    {{#if wageGap}}<table class="nci-market"><tbody><tr><td>{{localize "NCI.Cashbook.WageGap"}}</td><td class="num">{{wageGap}}</td></tr></tbody></table>{{/if}}
+    {{#if unlisted}}<table class="nci-market"><tbody><tr><td>{{localize "NCI.Cashbook.Unlisted"}}</td><td class="num">{{unlisted}}</td></tr></tbody></table>{{/if}}
   </div>
 
   <p><strong>{{localize "NCI.Cashbook.TillAtClose"}}</strong> {{till}} eb</p>

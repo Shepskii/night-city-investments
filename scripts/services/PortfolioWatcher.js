@@ -8,7 +8,7 @@ import { CompanyRepository } from '../data/CompanyRepository.js';
 import { FundRepository } from '../data/FundRepository.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { PortfolioClient } from './PortfolioClient.js';
-import { L } from '../utils/helpers.js';
+import { L, isCharacter } from '../utils/helpers.js';
 
 const eb = (n) => `${Math.round(n).toLocaleString()} eb`;
 const price = (n) => Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -28,7 +28,7 @@ export const PortfolioWatcher = {
 
   /** Remember the current state so that only later changes are announced. */
   snapshot() {
-    for (const actor of game.actors.filter((a) => a.type === 'character' && a.isOwner)) {
+    for (const actor of game.actors.filter((a) => isCharacter(a) && a.isOwner)) {
       const p = PortfolioRepository.get(actor);
       p.results.forEach((r) => this._seenResults.add(r.key));
       p.orders.forEach((o) => this._orderStatus.set(o.id, o.status));

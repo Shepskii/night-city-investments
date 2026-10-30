@@ -7,7 +7,7 @@
  */
 
 import { parseOrderText, mailCommandToRequest, orderRef } from '../engine/index.js';
-import { log, isActiveGM } from '../utils/helpers.js';
+import { log, isActiveGM, isCharacter } from '../utils/helpers.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
 import { FundRepository } from '../data/FundRepository.js';
 import { BrokerRepository } from '../data/BrokerRepository.js';
@@ -45,7 +45,7 @@ export const BrokerService = {
     if (!contactId || !BrokerRepository.isBroker(contactId)) return;
 
     const actor = game.actors.get(data.fromActorId);
-    if (!actor || actor.type !== 'character') return;
+    if (!actor || !isCharacter(actor)) return;
 
     if (seen.has(data.messageId)) return;
     seen.add(data.messageId);

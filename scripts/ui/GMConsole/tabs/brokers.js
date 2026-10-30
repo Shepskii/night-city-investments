@@ -10,6 +10,7 @@ import { TerminalAccess } from '../../../services/TerminalAccess.js';
 import { TradingSettings } from '../../../services/TradingSettings.js';
 import { field, confirm, report } from '../shared.js';
 import { actorLink } from '../../actorLink.js';
+import { isCharacter, isItemPile } from '../../../utils/helpers.js';
 
 async function onAddBrokerActor(event, target) {
   const id = field(target, 'brokerActor');
@@ -94,13 +95,13 @@ function build() {
     minWithdrawal: b.minWithdrawal,
   }));
   // Player characters only: a player may own other actors too, such as a container for upgrade projects.
-  const actors = game.actors.filter((a) => a.type === 'character' && a.hasPlayerOwner);
+  const actors = game.actors.filter((a) => isCharacter(a) && a.hasPlayerOwner);
   return {
     brokers,
     direct: { commission: `${(direct.commissionBps / 100).toFixed(2)}%`, flatFee: direct.flatFee, dv: direct.dv, network: direct.network },
     terminalMode: TradingSettings.mode() === 'terminal',
     // A broker's own actor: a character or a Cyberpunk RED NPC ('mook'), never a container, vehicle or Black ICE.
-    actorOptions: game.actors.filter((a) => a.type === 'character' || a.type === 'mook').map((a) => ({ value: a.id, label: a.name })),
+    actorOptions: game.actors.filter((a) => (isCharacter(a) || a.type === 'mook') && !isItemPile(a)).map((a) => ({ value: a.id, label: a.name })),
     contactOptions: BrokerRepository.candidateContacts().map((c) => ({ value: c.id, label: c.name })),
     grants: actors.map((a) => ({ id: a.id, name: a.name, who: actorLink(a.id, a.name), granted: TerminalAccess.granted(a) })),
   };

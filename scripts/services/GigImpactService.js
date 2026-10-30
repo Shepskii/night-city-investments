@@ -14,7 +14,7 @@ import {
   makeImpact, percentToAmount, logEntry, timeOf,
 } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
-import { log, isActiveGM, L } from '../utils/helpers.js';
+import { log, isActiveGM, L, isCharacter } from '../utils/helpers.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
 import { BusinessService } from './BusinessService.js';
@@ -208,7 +208,7 @@ class GigImpactServiceImpl {
   /** The characters among a report's runners. Anything else (an unknown id, an NPC) is dropped. */
   _runners(ids) {
     if (!Array.isArray(ids)) return [];
-    return [...new Set(ids.map(String))].filter((id) => game.actors.get(id)?.type === 'character').slice(0, 10);
+    return [...new Set(ids.map(String))].filter((id) => isCharacter(game.actors.get(id))).slice(0, 10);
   }
 
   /** A record with its size, delay and headline filled in. */
@@ -311,7 +311,7 @@ class GigImpactServiceImpl {
     const company = CompanyRepository.get(rec.companyId);
     if (!company) return sent;
     try {
-      for (const actor of game.actors.filter((a) => a.type === 'character' && PortfolioRepository.hasPortfolio(a))) {
+      for (const actor of game.actors.filter((a) => isCharacter(a) && PortfolioRepository.hasPortfolio(a))) {
         if (NotificationService.prefs(actor).tips === 'off') continue;
         const portfolio = PortfolioRepository.get(actor);
         const involved = portfolio.lots.some((l) => l.assetId === company.id) || PortfolioRepository.watchlist(actor).includes(company.id);

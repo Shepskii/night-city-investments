@@ -17,10 +17,10 @@
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
-  STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf,
+  STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
-import { L, log, isActiveGM } from '../utils/helpers.js';
+import { L, log, isActiveGM, isCharacter } from '../utils/helpers.js';
 import { SerialQueue } from '../utils/queue.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
@@ -71,7 +71,7 @@ class BusinessServiceImpl {
   /** Every character a request may name, by id. */
   actors() {
     return Object.fromEntries([
-      ...game.actors.filter((a) => a.type === 'character').map((a) => [a.id, a.name]),
+      ...game.actors.filter((a) => isCharacter(a)).map((a) => [a.id, a.name]),
       // A syndicate can be invited as a partner or an investor too (DESIGN §31, B3b).
       ...SyndicateRepository.all().filter((s) => s.status === 'active').map((s) => [s.id, s.name]),
     ]);
@@ -135,7 +135,7 @@ class BusinessServiceImpl {
   sweepAll() {
     if (!isActiveGM()) return Promise.resolve();
     return this._queue.run(async () => {
-      for (const actor of game.actors.filter((a) => a.type === 'character')) await this._process(actor);
+      for (const actor of game.actors.filter((a) => isCharacter(a))) await this._process(actor);
     });
   }
 
@@ -353,7 +353,7 @@ class BusinessServiceImpl {
    */
   async _syncJobs(business) {
     const holding = new Set((business.staff ?? []).filter((s) => s.source === 'pc' && s.actorId).map((s) => s.actorId));
-    for (const actor of game.actors.filter((a) => a.type === 'character' && (holding.has(a.id) || jobsOf(a).some((j) => j.businessId === business.id)))) {
+    for (const actor of game.actors.filter((a) => isCharacter(a) && (holding.has(a.id) || jobsOf(a).some((j) => j.businessId === business.id)))) {
       const kept = jobsOf(actor).filter((j) => j.businessId !== business.id);
       const staff = business.status === 'open' ? (business.staff ?? []).find((s) => s.actorId === actor.id) : null;
       const jobs = staff ? [...kept, {
@@ -370,6 +370,9 @@ class BusinessServiceImpl {
       key: request.key, type: request.type, ok: out.ok, ...(out.ok ? {} : { reason: out.reason }),
       businessId: out.business?.id ?? request.businessId ?? null, day: this.day(),
     };
+    // A proposal (or a vote) that carried at once: say what happened, not that a proposal was made.
+    const settled = out.ok ? proposalOutcome(out.events) : null;
+    if (settled) result.proposal = settled;
     await actor.setFlag(MODULE_ID, FLAGS.BUSINESS_RECEIPTS, [{
       processed: [...r.processed, request.key].slice(-PROCESSED_CAP),
       results: [...r.results, result].slice(-RESULTS_CAP),

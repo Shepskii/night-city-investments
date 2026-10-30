@@ -14,6 +14,7 @@ import { describeProposal, reasonText } from '../../services/SyndicateMail.js';
 import { syndicateKey } from '../accounts.js';
 import { L, money, whole, signed } from '../format.js';
 import { actorLink } from '../actorLink.js';
+import { isCharacter } from '../../utils/helpers.js';
 
 const DAY_MS = 86_400_000;
 const LEDGER_ROWS = 10;
@@ -45,7 +46,7 @@ export function syndicateContext(account, portfolio, prices, stakes = 0) {
   const others = s.members.filter((m) => m.status === 'active' && m.actorId !== meId);
   const waiting = pendingSyndicateRequests(account.as).filter((r) => r.syndicateId === s.id);
   const candidates = game.actors
-    .filter((a) => a.type === 'character' && a.hasPlayerOwner && !['active', 'invited'].includes(memberOf(s, a.id)?.status))
+    .filter((a) => isCharacter(a) && a.hasPlayerOwner && !['active', 'invited'].includes(memberOf(s, a.id)?.status))
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return {
@@ -143,7 +144,7 @@ export function characterSyndicates(actor, prices = {}) {
       };
     }),
     inviteOptions: game.actors
-      .filter((a) => a.type === 'character' && a.hasPlayerOwner && a.id !== actor.id)
+      .filter((a) => isCharacter(a) && a.hasPlayerOwner && a.id !== actor.id)
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((a) => ({ id: a.id, name: a.name, who: actorLink(a.id, a.name) })),
   };

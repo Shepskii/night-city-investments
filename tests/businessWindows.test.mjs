@@ -215,12 +215,20 @@ test('the overview charts the weeks the business keeps: bars, cash and each stan
     index: i + 1, startDay: b.openedDay + 7 * i, endDay: b.openedDay + 7 * (i + 1), takings: 300 + profit, upkeep: 300, profit, till,
     bands: { reputation, capacity: 'room', costs: 'fair', compliance: 'sound' }, actions: [],
   });
-  await S.BusinessRepository.save({ ...b, digests: [week(0, -120, 900, 'poor'), week(1, 80, 980, 'modest'), week(2, 260, 1240, 'good')] });
+  // Week 3 paid 50 eb of wages (40 counted in its profit, 10 back pay) and 30 eb went out besides (a draw).
+  const third = { ...week(2, 220, 1160, 'good'), takings: 560, wages: 40, paid: 50, opening: 980 };
+  await S.BusinessRepository.save({ ...b, digests: [week(0, -120, 900, 'poor'), week(1, 80, 980, 'modest'), third] });
   try {
     const html = await renderBusiness(windowFor(med, 'overview'));
     assertClean(html, 'overview with charts');
     assert.equal((html.match(/class="nci-chart"/g) ?? []).length, 2, 'the weekly bars and the cash line');
-    assert.match(html, /<title>Week 1 \(to [^)]+\): Takings 180 eb, Upkeep 300 eb, Profit -120 eb<\/title>/);
+    assert.match(html, /<title>Week 1 \(to [^)]+\): takings 180 eb, costs 300 eb, profit -120 eb<\/title>/);
+    assert.match(html, /<title>Week 3 \(to [^)]+\): takings 560 eb, costs 340 eb, profit \+220 eb<\/title>/, 'the costs bar holds everything the profit takes off');
+    assert.match(html, /Week 3 \(to [^)]+\): cash 1,160 eb \(from 980 eb: takings 560, upkeep −300, wages −50, other -30\)/, 'the cash line accounts for every eddie');
+    const ledger = await renderBusiness(windowFor(med, 'ledger'));
+    assertClean(ledger, 'ledger with weeks');
+    assert.match(text(ledger), /Takings\s+Upkeep\s+Wages\s+Other\s+Profit\s+Cash/);
+    assert.match(text(ledger), /560\s+300\s+50\s+-30\s+\+220\s+1,160/, 'cash at the start + takings - upkeep - wages + other = cash at the close');
     const reputation = html.match(/Reputation<\/span>\s*<span class="nci-cells">(.*?)<\/span>\s*<strong/s)[1];
     assert.deepEqual([...reputation.matchAll(/nci-lvl(-?\d)/g)].map((m) => m[1]), ['0', '1', '2', ...Array(9).fill('-1')], 'poor, modest, good from the left, then empty slots for the weeks to come');
     assert.match(text(html), /The last 3 week\(s\)/);
