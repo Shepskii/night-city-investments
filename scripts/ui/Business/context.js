@@ -478,10 +478,10 @@ function skillOf(staff, post, arch) {
   return { skill, base: best.base };
 }
 
-/** Applicants still waiting, for every post or one, with what they ask (they are hired on it). */
-function applicantsOf(business, { post = null, canAct, pending }) {
+/** Applicants still waiting, with what they ask (they are hired on it). */
+function applicantsOf(business, { canAct, pending }) {
   const day = BusinessClient.day();
-  return (business.candidates ?? []).filter((c) => c.expires >= day && (!post || c.post === post)).map((c) => ({
+  return (business.candidates ?? []).filter((c) => c.expires >= day).map((c) => ({
     id: c.id,
     name: c.name,
     post: postLabel(c.post),
@@ -542,8 +542,8 @@ function staffContext(business, actor, canAct) {
 }
 
 /**
- * The Hire window for one post: hiring a character, advertising the job (a roll whose result brings
- * one to three applicants), and the applicants waiting for this post.
+ * The Hire window for one post: hiring a character, or advertising the job (a roll whose result
+ * brings one to three applicants, listed on the Staff tab).
  * @param {object} account - the picked account (a character, or a syndicate as one of its officers)
  */
 export function hireContext(business, account, post) {
@@ -567,7 +567,6 @@ export function hireContext(business, account, post) {
     advertText: L('NCI.Staff.AdvertiseHint', { cost: whole(BUSINESS_DEFAULTS.staff.recruit.cost[business.stage]) }),
     canAdvertise: runs && advert.ok && !pending,
     advertBlocked: open.ok && canAct && !advert.ok ? L(`NCI.Business.Reason.${advert.reason}`) : open.ok && canAct && !runs ? L('NCI.Company.NotOfficer') : '',
-    applicants: applicantsOf(business, { post, canAct, pending }),
   };
 }
 

@@ -115,7 +115,6 @@ test('an open clinic shows an empty Staff tab: each open post has a Hire button 
   assert.match(text(dialog), /Floor/);
   assert.match(dialog, new RegExp(`name="staffActor"><option value="${nova.id}"`), 'Nova, a player character who is not a partner, can be hired');
   assert.match(dialog, /data-action="advertise"/);
-  assert.match(text(dialog), /No applicants waiting for this post/);
 });
 
 test('the partners hire a player character, who accepts from their own window and sees the job there', async () => {
@@ -195,7 +194,23 @@ test('the week closes: the wage is paid to Nova, and the ledger and the GM tab s
 
 test('advertising brings applicants the partners can hire on what they ask; Nova can quit, and the job leaves the Job view', async () => {
   dice = [9];
-  await S.BusinessClient.roll(med, business(), { type: 'recruitRoll', businessId: business().id, post: 'manager', use: { kind: 'skill', skill: 'Business', stat: 'int' } }, { title: 'Recruit' });
+  // Advertising from the Hire window: its roll dialog, and the Hire window closes once the roll is made.
+  const Hiring = (await import('../scripts/ui/Business/HireDialogApp.js')).HireDialogApp;
+  const hiring = new Hiring({ actorId: med.id, businessId: business().id, post: 'manager' });
+  let hireClosed = false;
+  hiring.close = async () => { hireClosed = true; };
+  let rollDialog = null;
+  const ask = Apps.Roll.ask;
+  Apps.Roll.ask = (o) => { rollDialog = new Apps.Roll(o); return rollDialog; };
+  try {
+    Hiring.DEFAULT_OPTIONS.actions.advertise.call(hiring);
+  } finally {
+    Apps.Roll.ask = ask;
+  }
+  rollDialog.close = async () => {};
+  assert.equal(hireClosed, false, 'still open while the roll dialog is up');
+  await Apps.Roll.DEFAULT_OPTIONS.form.handler.call(rollDialog);
+  assert.equal(hireClosed, true, 'the Hire window closes once the advert is rolled');
   await S.BusinessService.processActor(med);
   assert.equal(receipt(med).ok, true, receipt(med).reason);
   const candidate = business().candidates[0];
@@ -205,10 +220,12 @@ test('advertising brings applicants the partners can hire on what they ask; Nova
   assert.match(text(html), /Applicants/);
   assert.match(text(html), /Asks \d+ eb a week/);
   assert.match(html, new RegExp(`data-action="proposeHire" data-id="${candidate.id}"`));
+  const tail = html.split('data-action="openHire"').at(-1);
+  assert.match(tail, /Applicants/, 'the applicants sit at the foot of the Staff tab, after the posts');
   const Hire = (await import('../scripts/ui/Business/HireDialogApp.js')).HireDialogApp;
   const dialog = render('templates/dialogs/hire.hbs', await new Hire({ actorId: med.id, businessId: business().id, post: 'manager' })._prepareContext());
-  assertClean(dialog, 'hire window with applicants');
-  assert.match(dialog, new RegExp(`data-action="hireApplicant" data-id="${candidate.id}"`));
+  assertClean(dialog, 'hire window after an advert');
+  assert.doesNotMatch(dialog, new RegExp(candidate.id), 'applicants are not shown in the Hire window');
   assert.doesNotMatch(dialog, /data-action="advertise"/, 'advertised this week already');
   await send(med, 'propose', { businessId: business().id, kind: 'hire', candidateId: candidate.id, pct: 100 });
   assert.equal(business().staff.length, 2);

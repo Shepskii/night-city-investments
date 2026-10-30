@@ -4,8 +4,9 @@
  * @description Opened from a post's Hire button on the Staff tab. The partners can propose hiring a
  *              character (a player character, or an NPC tagged staff or employee in Night City
  *              Messenger) at a share of the going rate, or advertise the job: a roll that brings one to
- *              three applicants, each with their own skill and the wage they ask, who wait here to be
- *              hired. Everything is a request for the GM, as in the Business window.
+ *              three applicants, each with their own skill and the wage they ask, listed at the foot of
+ *              the Staff tab. The window closes once the advert's roll is made. Everything is a request
+ *              for the GM, as in the Business window.
  */
 
 import { MODULE_ID, HOOKS } from '../../utils/constants.js';
@@ -23,7 +24,6 @@ export class HireDialogApp extends BaseApplication {
     position: { width: 620, height: 'auto' },
     actions: {
       hireCharacter: HireDialogApp._onHireCharacter,
-      hireApplicant: HireDialogApp._onHireApplicant,
       advertise: HireDialogApp._onAdvertise,
       close: HireDialogApp._onClose,
     },
@@ -91,11 +91,10 @@ export class HireDialogApp extends BaseApplication {
     return this._send('propose', { kind: 'hire', actorId, post: this.post, pct });
   }
 
-  static _onHireApplicant(event, target) {
-    return this._send('propose', { kind: 'hire', candidateId: target.dataset.id });
-  }
-
-  /** Advertise the job: the roll dialog, and the applicants come back here when the GM has it. */
+  /**
+   * Advertise the job: the roll dialog. Once the roll is made this window closes; the applicants show
+   * at the foot of the Staff tab when the GM has the roll. Cancelling the roll leaves it open.
+   */
   static _onAdvertise() {
     const business = this.business;
     if (!business) return;
@@ -104,6 +103,7 @@ export class HireDialogApp extends BaseApplication {
       businessId: business.id,
       request: { type: 'recruitRoll', businessId: business.id, post: this.post },
       title: L('NCI.Staff.RecruitTitle', { post: L(`NCI.Staff.Post.${this.post}`), name: business.name }),
+      afterRoll: () => this.close(),
     });
   }
 
@@ -113,7 +113,7 @@ export class HireDialogApp extends BaseApplication {
 
   async _prepareContext() {
     const business = this.business;
-    if (!business) return { post: L(`NCI.Staff.Post.${this.post}`), blocked: L('NCI.Business.Reason.no-business'), people: [], applicants: [] };
+    if (!business) return { post: L(`NCI.Staff.Post.${this.post}`), blocked: L('NCI.Business.Reason.no-business'), people: [] };
     return hireContext(business, this.account, this.post);
   }
 }

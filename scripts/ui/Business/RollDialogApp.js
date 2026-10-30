@@ -32,9 +32,9 @@ export class RollDialogApp extends BaseApplication {
     form: { template: `modules/${MODULE_ID}/templates/dialogs/roll.hbs` },
   };
 
-  /** Open the dialog for one roll. */
-  static ask({ actorId, businessId, request, title }) {
-    const app = new RollDialogApp({ id: `nci-roll-${String(actorId).replace(/[^\w-]/g, '_')}-${businessId}`, actorId, businessId, request, rollTitle: title });
+  /** Open the dialog for one roll. `afterRoll` runs once the roll has been made and sent (not on Cancel). */
+  static ask({ actorId, businessId, request, title, afterRoll = null }) {
+    const app = new RollDialogApp({ id: `nci-roll-${String(actorId).replace(/[^\w-]/g, '_')}-${businessId}`, actorId, businessId, request, rollTitle: title, afterRoll });
     app.render({ force: true });
     return app;
   }
@@ -45,6 +45,7 @@ export class RollDialogApp extends BaseApplication {
     this.businessId = options.businessId;
     this.request = options.request;
     this.rollTitle = options.rollTitle;
+    this.afterRoll = options.afterRoll ?? null;
     /** What the player has chosen so far: `use` is a use key, or `hire:<tier>`. */
     this.choice = { use: null, approach: 'standard', luck: 0, bonus: true, extra: false };
   }
@@ -128,11 +129,12 @@ export class RollDialogApp extends BaseApplication {
     const spec = actor && business ? this._spec() : null;
     const option = spec?.ok ? this._options(spec).find((o) => o.key === this.choice.use) ?? this._options(spec)[0] : null;
     if (!option) return ui.notifications.warn(L('NCI.Roll.NothingToRoll'));
-    await BusinessClient.roll(this.account, business, { ...this.request, use: option.use }, {
+    const key = await BusinessClient.roll(this.account, business, { ...this.request, use: option.use }, {
       title: this.rollTitle,
       levers: { approach: this.choice.approach, luck: this.choice.luck, bonus: this.choice.bonus ? 1 : 0, extra: this.choice.extra ? 1 : 0 },
     });
     await this.close();
+    if (key) await this.afterRoll?.();
   }
 
   /** Whether the roll can be made now, and the ways it may be made (no use named yet). */
