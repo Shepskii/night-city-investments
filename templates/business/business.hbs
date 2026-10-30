@@ -229,7 +229,7 @@
         <tr>
           <td><strong>{{name}}</strong><div class="nci-muted">{{hint}}</div></td>
           <td>{{#if taken}}{{taken}}{{/if}}{{#if bonus}}<div class="nci-up">{{bonus}}</div>{{/if}}</td>
-          <td class="nci-rowbtns">
+          <td class="nci-rowbtns nci-endbtns">
             {{#if canRoll}}<button type="button" data-action="actionRoll" data-id="{{id}}"><i class="fas fa-dice-d10"></i> {{localize "NCI.Business.TakeSlot"}}</button>{{/if}}
             {{#if canHelp}}<button type="button" data-action="helpRoll" data-id="{{id}}" title="{{localize 'NCI.Business.HelpHint'}}"><i class="fas fa-hands-helping"></i> {{localize "NCI.Business.Help"}}</button>{{/if}}
           </td>
@@ -369,7 +369,7 @@
           <td>{{skill}} <strong>{{base}}</strong></td>
           <td>{{#if loyalty}}<span class="nci-loyal nci-loyal-{{loyaltyBand}}">{{loyalty}}</span>{{else}}<span class="nci-muted">&mdash;</span>{{/if}}</td>
           <td class="num">{{wage}}</td>
-          <td class="nci-rowbtns">
+          <td class="nci-rowbtns nci-endbtns">
             {{#if canManage}}<button type="button" class="nci-labelled" data-action="openEmployee" data-id="{{id}}"><i class="fas fa-id-badge"></i> {{localize "NCI.Staff.Manage"}}</button>{{/if}}
             {{#if canFire}}<button type="button" class="nci-labelled" data-action="proposeFire" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.Staff.Withdraw"}}</button>{{/if}}
           </td>

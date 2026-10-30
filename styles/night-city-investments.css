@@ -231,6 +231,8 @@
 /* The Work tab: the actions still available this week, at the right of the actions table's header. */
 .nci-app th.nci-slots { text-align: right; white-space: nowrap; color: var(--nci-up); font-weight: bold; }
 .nci-app th.nci-slots-none { color: var(--nci-down); }
+/* Under a count in the header (Work, Staff), the row's buttons sit in a row on the right, under it. */
+.nci-app td.nci-endbtns > button { display: inline-flex; vertical-align: middle; width: auto; margin: 0 0 0 4px; padding: 0 10px; }
 /* The cashbook: totals stand out from the lines above them. */
 .nci-app .nci-cashbook tr.nci-total td { font-weight: bold; border-top: 1px solid var(--nci-accent-dim); }
 /* GM Console, Businesses tab: a business's standing in one strip, and its owners in a compact table. */
