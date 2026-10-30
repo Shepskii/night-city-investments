@@ -451,7 +451,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B3 | **Built (v0.12), see §31; not yet released.** Player syndicates, and syndicates owning or investing in businesses |
 | B4 | **Built (v0.13), see §32; not yet released.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
 | E | **E1 and E2 built (v0.13), see §33.9 and §33.10; E3 proposed, see §33.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
-| P | **Built (v0.13), see §34; not yet released.** Projects beside expansion: refit, security upgrade, storefront, staff room; the Projects tab reworked |
+| Projects | **Built (v0.13), see §34; not yet released.** Projects beside expansion: refit, security upgrade, storefront, staff room; the Projects tab reworked |
 | B5 | **v0.14.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
 | B6 | **v0.15.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
 | B7 | Downtime bridge (separate module, after B2): company work through Crew Tools downtime, businesses on Night City Map |
