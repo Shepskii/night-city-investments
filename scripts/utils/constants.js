@@ -84,6 +84,8 @@ export const FLAGS = Object.freeze({
   BUSINESS_OUTBOX: 'businessOutbox',
   /** On actors. Which business requests the GM has handled, and how. Written only by the GM. */
   BUSINESS_RECEIPTS: 'businessReceipts',
+  /** On actors. The jobs a character holds or is offered at player businesses (DESIGN §33). Written only by the GM. */
+  JOBS: 'jobs',
   /** On a syndicate's journal: its record, which its members can read. Written only by the GM. (Its account is the `portfolio` flag beside it.) */
   SYNDICATE: 'syndicate',
   /** On actors. Syndicate requests, written only by the owning player. */
@@ -96,6 +98,8 @@ export const FLAGS = Object.freeze({
 export const BROKER_TAG = 'broker';
 /** Tag on an NCM master contact whose linked character may be invited to invest in a business. */
 export const INVESTOR_TAG = 'investor';
+/** Tags on an NCM master contact whose linked character may be hired as an employee (DESIGN §33). */
+export const STAFF_TAGS = Object.freeze(['staff', 'employee']);
 /** Tag on the system contact that sends market mail. */
 export const WIRE_TAG = 'market-wire';
 export const WIRE_NAME = 'Night City Market Wire';

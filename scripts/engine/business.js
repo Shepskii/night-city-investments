@@ -28,7 +28,14 @@
  *   { key, type: 'vote', businessId, proposalId, yes }
  *
  * `use` is how the roll was made: `{kind: 'skill', skill, stat}`, `{kind: 'ability', ability}` or
- * `{kind: 'hire', hire}` (see businessConfig.js). Days are whole market days (`marketDay`).
+ * `{kind: 'hire', hire}` (see businessConfig.js), or `{kind: 'staff', staffId}`: an employee called in
+ * for overtime (DESIGN §33), who rolls their best for it. Days are whole market days (`marketDay`).
+ *
+ * Employees (businessStaff.js):
+ *   { key, type: 'recruitRoll', businessId, post, use, rollId }   look for someone for a post
+ *   { key, type: 'propose', kind: 'hire', candidateId | actorId, post, pct }   pct: % of the going rate
+ *   { key, type: 'propose', kind: 'fire', staffId }
+ *   { key, type: 'acceptJob' | 'declineJob' | 'quitJob', businessId }        from the employee's own character
  */
 
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
@@ -55,6 +62,10 @@ import {
 import {
   companyWeek, reportCheck, closeReportWeek, canRun, officerProposal, applyOfficerProposal, infoCheck, applyInternalAudit, applyDiligence,
 } from './businessCompany.js';
+import {
+  activeStaff, recruitCheck, applyRecruit, hireOffer, enactHire, answerJob, quitJob, fireOffer, enactFire, staffRoll, payOvertime, staffShifts,
+  staffWeek, payWages,
+} from './businessStaff.js';
 
 export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck };
 export { fixerOffer, bankCheck, angelCheck, openLoans, averageProfit };
@@ -67,6 +78,7 @@ export {
 export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
   'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll',
+  'recruitRoll', 'acceptJob', 'declineJob', 'quitJob',
 ]);
 
 /** Item types that are not things a business can own. */
@@ -97,7 +109,7 @@ export function itemGear(item, actorId, p = BUSINESS_DEFAULTS) {
 }
 
 /** Requests that carry a roll. */
-export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll']);
+export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll']);
 
 /**
  * What each kind of proposal needs to pass (DESIGN §26.0): closing and stepping up need every partner
@@ -107,6 +119,8 @@ export const PROPOSAL_RULES = Object.freeze({
   close: 'unanimous', stepUp: 'unanimous', expansion: 'majority', fixerLoan: 'majority', bankLoan: 'majority', investor: 'unanimous', angel: 'unanimous',
   // A company's officers are elected and dismissed by a majority of the shares (B4c).
   elect: 'majority', dismiss: 'majority',
+  // Taking an employee on, or letting one go (DESIGN §33).
+  hire: 'majority', fire: 'majority',
 });
 
 // ── What a roll needs ────────────────────────────────────────────────────────
@@ -125,7 +139,7 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
   const arch = archetypeOf(b);
   const me = partnerOf(b, actorId);
   const use = request.use ?? null;
-  if (use && (!['skill', 'ability', 'hire'].includes(use.kind) || (use.kind === 'hire' && !HIRE_TIERS[use.hire]))) return fail('bad-use');
+  if (use && (!['skill', 'ability', 'hire', 'staff'].includes(use.kind) || (use.kind === 'hire' && !HIRE_TIERS[use.hire]))) return fail('bad-use');
 
   if (request.type === 'setupRoll') {
     if (b.status !== 'forming') return fail('not-forming');
@@ -134,7 +148,7 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     if (b.setup?.passed) return fail('setup-done');
     if (b.setup?.retryDay != null && day < b.setup.retryDay) return fail('setup-delay');
     if (!holders(b).some((x) => x.cash + gearValue(x) > 0)) return fail('no-contribution');
-    return allowed(setupUses(arch), use, { dv: dvOf(p.setupDv), allowHire: true, bonusAvailable: false, funds: b.escrow, operatorRank, p });
+    return allowed(setupUses(arch), use, { dv: dvOf(p.setupDv), allowHire: true, bonusAvailable: false, funds: b.escrow, operatorRank, p, b, overtime: null });
   }
 
   if (b.status !== 'open') return fail('not-open');
@@ -144,29 +158,35 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
   if (request.type === 'stepUpRoll') {
     const check = stepUpCheck(b, actorId, day, p);
     if (!check.ok) return check;
-    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - p.registration.fee, operatorRank, p });
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - p.registration.fee, operatorRank, p, b });
   }
 
   if (request.type === 'charterRoll') {
     const check = charterRollCheck(b, actorId, request.part, p);
     if (!check.ok) return check;
-    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p });
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b });
   }
 
   if (request.type === 'loanRoll' || request.type === 'angelRoll') {
     const can = request.type === 'loanRoll' ? bankCheck(b, actorId, day, p) : angelCheck(b, actorId, day, p);
     if (!can.ok) return can;
-    return allowed(can.uses, use, { dv: can.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p });
+    return allowed(can.uses, use, { dv: can.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b });
   }
 
   // A company is run by its officers; any holder may still help (a complementary check).
-  if (['action', 'respond', 'reportRoll', 'auditRoll', 'diligenceRoll'].includes(request.type) && !canRun(b, actorId)) return fail('not-officer');
+  if (['action', 'respond', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll'].includes(request.type) && !canRun(b, actorId)) return fail('not-officer');
+
+  if (request.type === 'recruitRoll') {
+    const check = recruitCheck(b, request.post, day, p);
+    if (!check.ok) return check;
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - check.cost, operatorRank, p, b });
+  }
 
   if (request.type === 'auditRoll' || request.type === 'diligenceRoll') {
     const check = infoCheck(b, request.type === 'auditRoll' ? 'audit' : 'diligence', day, p);
     if (!check.ok) return check;
     if (request.type === 'diligenceRoll' && (!request.targetId || request.targetId === b.id)) return fail('bad-target');
-    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - check.cost, operatorRank, p });
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - check.cost, operatorRank, p, b });
   }
 
   if (request.type === 'respond') {
@@ -174,7 +194,7 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     if (!event || !EVENTS[event.kind]) return fail('no-event');
     if (b.period.slots.some((s) => s.action === 'respond')) return fail('event-answered');
     if (b.period.slots.length >= (p.stages[b.stage]?.slots ?? 1)) return fail('no-slot');
-    return allowed(eventUses(b, event.kind), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p });
+    return allowed(eventUses(b, event.kind), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b });
   }
 
   if (request.type === 'action') {
@@ -183,25 +203,39 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     if (b.period.slots.length >= slots) return fail('no-slot');
     if (b.period.slots.some((s) => s.action === request.action)) return fail('action-taken');
     const bonusAvailable = b.period.bonuses.some((x) => x.action === request.action && !x.used);
-    return allowed(actionUses(request.action, arch, b.stage), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p });
+    return allowed(actionUses(request.action, arch, b.stage), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p, b });
   }
 
   if (request.type === 'assist') {
     if (!actionFor(b.stage, request.forAction)) return fail('bad-action');
-    if (b.period.helpers.includes(actorId)) return fail('helped');
+    // An employee called in to help is a helper of their own; the partner who called them may still help.
+    if (b.period.helpers.includes(use?.kind === 'staff' ? use.staffId : actorId)) return fail('helped');
     if (b.period.slots.some((s) => s.action === request.forAction)) return fail('action-taken');
-    return allowed(helpUses(request.forAction, arch, b.stage), use, { dv: dvOf(p.helpDv), allowHire: false, bonusAvailable: false, extraAvailable });
+    return allowed(helpUses(request.forAction, arch, b.stage), use, { dv: dvOf(p.helpDv), allowHire: false, bonusAvailable: false, extraAvailable, funds: b.till, p, b, overtime: 'help' });
   }
 
   if (request.type === 'reportRoll') {
     const check = reportCheck(b, p);
     if (!check.ok) return check;
-    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p });
+    // A bookkeeper's work on the figures is the complementary +1 (DESIGN §33).
+    const bookkeeper = activeStaff(b).some((s) => s.post === 'bookkeeper');
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: bookkeeper, extraAvailable, funds: b.till, operatorRank, p, b });
   }
   return fail('bad-request');
 }
 
-function allowed(uses, use, { funds = 0, operatorRank = 0, p = BUSINESS_DEFAULTS, ...spec }) {
+/**
+ * Check a roll's use against what the roll allows. A hired professional needs the fee; an employee
+ * called in for overtime (`overtime` is 'roll' or 'help', null where none can be) needs a shift left
+ * and the pay, and rolls their best use for it, with its DV step.
+ */
+function allowed(uses, use, { funds = 0, operatorRank = 0, p = BUSINESS_DEFAULTS, b = null, overtime = 'roll', ...spec }) {
+  if (use?.kind === 'staff') {
+    if (!overtime || !b) return fail('staff-not-allowed');
+    const call = staffRoll(b, use, uses, overtime, funds, p);
+    if (!call.ok) return call;
+    return { ok: true, uses, ...spec, use: call.use, dv: spec.dv + call.dvAdd, extraAvailable: false, overtime: call.cost };
+  }
   if (use?.kind === 'hire') {
     if (!spec.allowHire) return fail('hire-not-allowed');
     if (funds < hireFee(use.hire, operatorRank, p)) return fail('no-funds');
@@ -254,6 +288,19 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
   const b = structuredClone(normalizeBusiness(business));
   const me = partnerOf(b, actor.id);
   const log = (kind, amount, note = {}) => addLedger(b, { day, kind, amount, actorId: actor.id, ...note }, p);
+  /** Pay for who made the roll: a hired professional's fee, or an employee's overtime (`kind` 'roll' or 'help'). */
+  const spendFor = (kind) => {
+    if (request.use.kind === 'hire') {
+      const fee = hireFee(request.use.hire, ctx.operatorRank, p);
+      b.till -= fee;
+      log('hire', -fee);
+    } else if (request.use.kind === 'staff') {
+      const paid = payOvertime(b, request.use.staffId, kind, day, actor.id, p);
+      if (paid.actorId) pay(paid.actorId, paid.cost);
+    }
+  };
+  /** Who a slot or a help is by: the partner, or the employee they called in. */
+  const rollerId = () => (request.use?.kind === 'staff' ? request.use.staffId : actor.id);
 
   switch (request.type) {
     case 'join': {
@@ -351,11 +398,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
-      if (request.use.kind === 'hire') {
-        const fee = hireFee(request.use.hire, ctx.operatorRank, p);
-        b.till -= fee;
-        log('hire', -fee);
-      }
+      spendFor('roll');
       const r = check.result;
       if (r.bonus) {
         const bonus = b.period.bonuses.find((x) => x.action === request.action && !x.used);
@@ -363,7 +406,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       }
       if (r.extra) spendDays(b, actor.id, 1);
       b.period.slots.push({
-        action: request.action, by: actor.id, use: useKey(request.use), band: r.band, total: r.total, dv: r.dv, approach: r.approach, luck: r.luck, bonus: r.bonus,
+        action: request.action, by: rollerId(), use: useKey(request.use), band: r.band, total: r.total, dv: r.dv, approach: r.approach, luck: r.luck, bonus: r.bonus,
       });
       out.events.push({ type: 'roll', action: request.action, band: r.band, exposure: r.exposure });
       break;
@@ -372,10 +415,11 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
-      b.period.helpers.push(actor.id);
+      spendFor('help');
+      b.period.helpers.push(rollerId());
       const r = check.result;
       if (r.extra) spendDays(b, actor.id, 1);
-      if (r.success) b.period.bonuses.push({ id: request.key, action: request.forAction, by: actor.id, used: false });
+      if (r.success) b.period.bonuses.push({ id: request.key, action: request.forAction, by: rollerId(), used: false });
       out.events.push({ type: 'roll', action: 'assist', forAction: request.forAction, band: r.band, exposure: r.exposure });
       break;
     }
@@ -436,11 +480,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
-      if (request.use.kind === 'hire') {
-        const fee = hireFee(request.use.hire, ctx.operatorRank, p);
-        b.till -= fee;
-        log('hire', -fee);
-      }
+      spendFor('roll');
       const r = check.result;
       if (r.extra) spendDays(b, actor.id, 1);
       const { stepped } = applyStepUp(b, actor.id, r, day, p);
@@ -451,11 +491,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
-      if (request.use.kind === 'hire') {
-        const fee = hireFee(request.use.hire, ctx.operatorRank, p);
-        b.till -= fee;
-        log('hire', -fee);
-      }
+      spendFor('roll');
       const r = check.result;
       if (r.extra) spendDays(b, actor.id, 1);
       const done = applyCharterRoll(b, actor.id, request.part, r, day, p);
@@ -468,11 +504,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
-      if (request.use.kind === 'hire') {
-        const fee = hireFee(request.use.hire, ctx.operatorRank, p);
-        b.till -= fee;
-        log('hire', -fee);
-      }
+      spendFor('roll');
       const r = check.result;
       if (r.extra) spendDays(b, actor.id, 1);
       const bold = r.approach === 'bold';
@@ -485,11 +517,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
-      if (request.use.kind === 'hire') {
-        const fee = hireFee(request.use.hire, ctx.operatorRank, p);
-        b.till -= fee;
-        log('hire', -fee);
-      }
+      spendFor('roll');
       const r = check.result;
       if (r.extra) spendDays(b, actor.id, 1);
       if (request.type === 'auditRoll') {
@@ -499,6 +527,34 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
         applyDiligence(b, { result: r, day, targetId: request.targetId, target: ctx.targets?.[request.targetId] ?? null, by: actor.id }, p);
         out.events.push({ type: 'roll', action: 'diligence', band: r.band, exposure: r.exposure ?? 0 });
       }
+      break;
+    }
+    case 'recruitRoll': {
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
+      if (!spec.ok) return spec;
+      if (!check?.ok) return fail(check?.reason ?? 'no-roll');
+      spendFor('roll');
+      const r = check.result;
+      if (r.extra) spendDays(b, actor.id, 1);
+      const candidate = applyRecruit(b, { result: r, day, post: request.post, key: request.key, seed: ctx.seed, by: actor.id }, p);
+      out.events.push({ type: 'roll', action: 'recruit', band: r.band, exposure: r.exposure ?? 0 }, ...(candidate ? [{ type: 'candidate', candidate }] : []));
+      break;
+    }
+    case 'acceptJob':
+    case 'declineJob': {
+      // From the employee's own character: the job they were offered here.
+      const job = (b.staff ?? []).find((s) => s.actorId === actor.id && s.status === 'offered');
+      if (!job) return fail('no-offer');
+      const done = answerJob(b, job.id, request.type === 'acceptJob', day, p);
+      if (!done.ok) return done;
+      out.events.push({ type: request.type === 'acceptJob' ? 'jobAccepted' : 'jobDeclined', staffId: job.id });
+      break;
+    }
+    case 'quitJob': {
+      const job = (b.staff ?? []).find((s) => s.actorId === actor.id);
+      if (!job) return fail('not-staff');
+      quitJob(b, job.id, day, p);
+      out.events.push({ type: 'quit', staffId: job.id });
       break;
     }
     case 'charterFund': {
@@ -512,15 +568,11 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
-      if (request.use.kind === 'hire') {
-        const fee = hireFee(request.use.hire, ctx.operatorRank, p);
-        b.till -= fee;
-        log('hire', -fee);
-      }
+      spendFor('roll');
       const r = check.result;
       if (r.extra) spendDays(b, actor.id, 1);
       b.period.slots.push({
-        action: 'respond', event: b.period.event.kind, by: actor.id, use: useKey(request.use), band: r.band, total: r.total, dv: r.dv, approach: r.approach, luck: r.luck, bonus: 0,
+        action: 'respond', event: b.period.event.kind, by: rollerId(), use: useKey(request.use), band: r.band, total: r.total, dv: r.dv, approach: r.approach, luck: r.luck, bonus: 0,
       });
       out.events.push({ type: 'roll', action: 'respond', band: r.band, exposure: r.exposure });
       break;
@@ -530,11 +582,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
-      if (request.use.kind === 'hire') {
-        const fee = hireFee(request.use.hire, ctx.operatorRank, p);
-        b.till -= fee;
-        log('hire', -fee);
-      }
+      spendFor('roll');
       const r = check.result;
       if (r.extra) spendDays(b, actor.id, 1);
       if (request.type === 'loanRoll') {
@@ -790,6 +838,10 @@ function canPropose(b, kind, request, ctx, p) {
     case 'elect':
     case 'dismiss':
       return officerProposal(b, kind, request.actorId);
+    case 'hire':
+      return hireOffer(b, request, ctx, ctx.day, p);
+    case 'fire':
+      return fireOffer(b, request.staffId);
     case 'fixerLoan': {
       const offer = fixerOffer(b, request.amount, p);
       return offer.ok ? { ok: true, terms: { amount: offer.amount } } : offer;
@@ -841,13 +893,13 @@ function settleProposals(b, day, out, p, ctx = {}) {
       if (!started.ok) out.events.push({ type: 'proposalVoid', kind: proposal.kind, reason: started.reason });
       continue;
     }
-    const done = enact(b, proposal, day, p, ctx);
+    const done = enact(b, proposal, day, p, ctx, out);
     if (!done.ok) out.events.push({ type: 'proposalVoid', kind: proposal.kind, reason: done.reason });
   }
 }
 
 /** What a proposal that has passed does. */
-function enact(b, proposal, day, p, ctx) {
+function enact(b, proposal, day, p, ctx, out) {
   switch (proposal.kind) {
     case 'expansion':
       return startExpansion(b, proposal.id, day, p);
@@ -862,6 +914,17 @@ function enact(b, proposal, day, p, ctx) {
     case 'elect':
     case 'dismiss':
       return applyOfficerProposal(b, proposal.kind, proposal.terms.actorId);
+    case 'hire': {
+      const done = enactHire(b, proposal.terms, day, ctx, p);
+      if (done.ok) out.events.push({ type: done.staff.status === 'active' ? 'hired' : 'jobOffered', staffId: done.staff.id, actorId: done.staff.actorId });
+      return done;
+    }
+    case 'fire': {
+      const done = enactFire(b, proposal.terms.staffId, day, p);
+      if (done.ok && done.actorId && done.paid) out.wealth[done.actorId] = (out.wealth[done.actorId] ?? 0) + done.paid;
+      if (done.ok) out.events.push({ type: 'fired', staffId: proposal.terms.staffId });
+      return done;
+    }
     case 'angel':
       findAngel(b, ctx.seed ?? 'nci', proposal.id, p.investors.angel.names, p);
       return { ok: true };
@@ -997,6 +1060,8 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
   const g = growthRate;
   const slot = (action) => b.period.slots.find((s) => s.action === action);
   const scale = (s) => approachOf(s.approach).effect;
+  // What the staff did without a partner: a manager working the shop, security answering trouble.
+  staffShifts(b, seed, p);
 
   // A chartered company takes the five company actions; a smaller business the shop actions.
   let work;
@@ -1021,7 +1086,10 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
     protection = safe ? 1 - fx.keepSafe[safe.band] * scale(safe) : 1;
   }
 
-  b.state.reputation = clamp(b.state.reputation + (50 - b.state.reputation) * p.reputationDrift, 0, 100);
+  // Floor and sales staff lift the takings; a bookkeeper, publicist and compliance officer move the state.
+  const team = staffWeek(b, g, p);
+  workMult *= 1 + team.lift;
+  b.state.reputation = clamp(b.state.reputation + ((team.reputationTarget ?? 50) - b.state.reputation) * p.reputationDrift, 0, 100);
   if (b.state.compliance != null) b.state.compliance = clamp(b.state.compliance + (p.complianceBaseline - b.state.compliance) * p.reputationDrift, 0, 100);
   b.state.costFactor = Math.min(1, b.state.costFactor + p.costCreep);
 
@@ -1038,8 +1106,11 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
   const upkeep = Math.round((arch.costs * b.state.capacity ** 0.85 * b.state.costFactor + fixed) * part);
   // The week's takings come in before its loan payments go out, so a week that earns the payment makes it.
   b.till += takings - upkeep;
+  // Wages next, as far as the cash goes, then the loans.
+  const wages = payWages(b, part, b.period.endDay, p);
+  for (const [actorId, eb] of Object.entries(wages.pay)) out.wealth[actorId] = (out.wealth[actorId] ?? 0) + eb;
   const loans = payLoans(b, b.period.endDay, p);
-  const profit = takings - upkeep - loans.interest;
+  const profit = takings - upkeep - wages.wages - loans.interest;
   b.till -= loans.interest + loans.principal;
 
   const digest = {
@@ -1051,10 +1122,11 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
     profit,
     till: b.till,
     ...(loans.interest || loans.principal || loans.missed.length ? { interest: loans.interest, repaid: loans.principal, missed: loans.missed } : {}),
+    ...(wages.wages || wages.owed ? { wages: wages.wages, owed: wages.owed } : {}),
     worked: !!work,
     ...(event ? { event } : {}),
     ...(boost ? { boost } : {}),
-    actions: b.period.slots.map((s) => ({ action: s.action, by: s.by, band: s.band })),
+    actions: b.period.slots.map((s) => ({ action: s.action, by: s.by, band: s.band, ...(s.staff ? { staff: true } : {}) })),
     bands: stateBands(b, p),
   };
   b.digests = [...b.digests, digest].slice(-p.digestCap);

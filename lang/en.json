@@ -454,8 +454,19 @@
           "solid": "Half off this week's protection money.",
           "strong": "Three quarters off this week's protection money.",
           "exceptional": "No protection money this week."
+        },
+        "recruitRoll": {
+          "fumble": "Nobody worth hiring turns up, and the ads are wasted.",
+          "failure": "Nobody suitable.",
+          "narrow": "A Green or Skilled candidate.",
+          "solid": "A Skilled candidate.",
+          "strong": "An Expert candidate.",
+          "exceptional": "An Expert, or even a Master."
         }
-      }
+      },
+      "Employee": "Employee",
+      "StaffOption": "{name}, employee: {via} {base} (overtime {pay} eb)",
+      "StaffNote": "An employee called in rolls with their own skill and cannot use Luck or business days. The overtime, {pay} eb, comes from the business's cash."
     },
     "Mail": {
       "Days": { "one": "{n} day", "many": "{n} days" },
@@ -1695,7 +1706,12 @@
       "State": "Reputation {rep}, Capacity {cap}, Cost base {cost}, Exposure {exposure}.",
       "LastWeek": "Week {n}: takings {takings}, upkeep {upkeep}, profit {profit} eb.",
       "Week": "Week {n} closes on or after {end}; slots used: {used}.",
-      "Event": "This week: {event}."
+      "Event": "This week: {event}.",
+      "Staff": "Staff",
+      "StaffOne": "{name} ({post}, {wage} eb)",
+      "StaffOffer": "{name}, an NPC, is offered a job as {post} at {wage} eb a week. Answer for them.",
+      "StaffAccept": "Take the job",
+      "StaffDecline": "Turn it down"
     },
     "District": {
       "exec": "Executive Zone", "westbrook": "New Westbrook", "japan": "Old Japan Town", "watson": "Watson Development",
@@ -1981,7 +1997,15 @@
         "repay": "A loan paid off early",
         "missedPayment": "A loan payment missed",
         "investment": "{name} bought in",
-        "angel": "An angel investor bought in"
+        "angel": "An angel investor bought in",
+        "recruit": "{name} went recruiting",
+        "hired": "{staff} hired",
+        "jobOffered": "{staff} offered a job",
+        "jobDeclined": "{staff} turned the job down",
+        "quit": "{staff} quit",
+        "fired": "{staff} let go",
+        "overtime": "Overtime for {staff}, called in by {name}",
+        "wages": "Wages"
       },
       "CapTable": "Partners",
       "Partner": "Partner",
@@ -2014,7 +2038,7 @@
       "Leave": "Leave",
       "LeaveConfirm": "Offer your stake to your partners? They have the buy-out window to buy it at book value; after that it goes to your heir.",
       "DecisionsHint": "Closing needs every partner with a vote; one refusal ends the proposal.",
-      "Tab": { "overview": "Overview", "week": "This week", "projects": "Projects", "ledger": "Ledger", "partners": "Partners", "growth": "Growth" },
+      "Tab": { "overview": "Overview", "week": "This week", "projects": "Projects", "ledger": "Ledger", "partners": "Partners", "growth": "Growth", "staff": "Staff" },
       "DaysLeft": "You have {n} business day(s) left this week.",
       "WaitingVote": "{n} proposal(s) waiting for votes on the Partners tab.",
       "Projects": "Projects",
@@ -2055,7 +2079,11 @@
         "fixerLoan": "{name} proposes a fixer's loan.",
         "bankLoan": "{name} proposes going to a bank.",
         "investor": "{name} proposes bringing in an investor.",
-        "angel": "{name} proposes finding an angel investor."
+        "angel": "{name} proposes finding an angel investor.",
+        "elect": "{name} proposes electing an officer.",
+        "dismiss": "{name} proposes dismissing an officer.",
+        "hire": "{name} proposes hiring {who} as {post}.",
+        "fire": "{name} proposes letting {who} go."
       },
       "Rule": {
         "unanimous": "Needs every partner; lapses after {date}.",
@@ -2165,7 +2193,16 @@
         "respond": "Your answer is recorded.",
         "loanRoll": "Your case to the bank is recorded.",
         "angelRoll": "Your pitch is recorded.",
-        "repayLoan": "Paid off."
+        "repayLoan": "Paid off.",
+        "charterRoll": "Charter roll recorded.",
+        "charterFund": "Payment made.",
+        "reportRoll": "Report preparation recorded.",
+        "auditRoll": "Audit recorded.",
+        "diligenceRoll": "Due diligence recorded.",
+        "recruitRoll": "Recruiting roll recorded.",
+        "acceptJob": "You have taken the job.",
+        "declineJob": "Job turned down.",
+        "quitJob": "You have quit."
       },
       "Reason": {
         "bad-use": "that skill does not fit this roll",
@@ -2254,8 +2291,93 @@
         "not-your-item": "that item belongs to another character",
         "item-installed": "installed cyberware cannot be put into a business",
         "no-price": "that item has no market price",
-        "already-agreed": "the partners have already agreed"
+        "already-agreed": "the partners have already agreed",
+        "bad-post": "there is no such post",
+        "post-later": "that post comes at a later stage",
+        "no-headcount": "every place on the staff is taken",
+        "post-taken": "the business already has one",
+        "no-floor-room": "there is no room for more floor staff until the Capacity grows",
+        "recruit-delay": "the partners have recruited this week already",
+        "too-many-candidates": "three candidates are already waiting",
+        "bad-wage": "pay must be between 80% and 150% of the going rate",
+        "no-candidate": "that candidate is no longer waiting",
+        "not-staff": "only player characters, and characters linked to Night City Messenger contacts tagged staff or employee, can be hired",
+        "is-partner": "a partner cannot also be an employee",
+        "already-staff": "already on the staff",
+        "no-offer": "there is no job offer waiting",
+        "no-shifts": "that employee has worked two overtime shifts this week",
+        "staff-not-allowed": "an employee cannot be called in for that"
       }
+    },
+    "Staff": {
+      "Title": "Staff",
+      "Intro": "Employees work in the business for a wage. Each holds a post, and their skills for that post set what they do for the business and what they are paid.",
+      "Headcount": "{n} of {max} places taken.",
+      "Employee": "Employee",
+      "PostLabel": "Post",
+      "Base": "Base",
+      "Wage": "Wage a week (eb)",
+      "WageWeek": "{wage} eb a week",
+      "Since": "since {date}",
+      "Offered": "offered the job, waiting for an answer",
+      "OfferedNpc": "offered the job, waiting for the GM",
+      "Owed": "{amount} eb in wages owed",
+      "None": "No staff yet.",
+      "Fire": "Let go",
+      "FireConfirm": "Propose letting this employee go? It needs a majority, and an employee who has started is paid a week's wage.",
+      "OvertimeHint": "Call an employee in for any of this week's rolls from the roll dialog: half a week's wage to take a slot or answer an event, a quarter to help. Two shifts each a week. Employees cannot use Luck or business days.",
+      "Posts": "Posts",
+      "Post": {
+        "floor": "Floor",
+        "manager": "Manager",
+        "security": "Security",
+        "bookkeeper": "Bookkeeper",
+        "sales": "Sales",
+        "publicist": "Publicist",
+        "compliance": "Compliance"
+      },
+      "PostHint": {
+        "floor": "The trade's own skills (role abilities that fit it count higher): lifts the takings, more with a higher base. No more on the floor than the Capacity allows.",
+        "manager": "Business, or the trade's skills a level lower: works the shop (at a company, chases contracts) in any week no partner does. One per business.",
+        "security": "Tactics, Brawling, Handgun, Melee Weapon or Human Perception (Combat Awareness and Backup count higher): answers a shakedown, break-in or trouble no partner answers.",
+        "bookkeeper": "Accounting, or Business a level lower: trims the Cost base each week, and gives a company's monthly report its +1. From registration.",
+        "sales": "Business, Persuasion or Trading: lifts the takings by half what a floor hand does, and keeps Reputation nearer 55. Companies only.",
+        "publicist": "Composition, Wardrobe & Style or Persuasion (Credibility and Charismatic Impact count higher): Reputation up each week. Companies only.",
+        "compliance": "Bureaucracy or Local Expert: Compliance up each week, and answers an inspection no partner answers. Companies only."
+      },
+      "Level": {
+        "green": "Green",
+        "skilled": "Skilled",
+        "expert": "Expert",
+        "master": "Master"
+      },
+      "Source": {
+        "pc": "player character",
+        "npc": "NPC",
+        "recruit": "recruit"
+      },
+      "Recruit": "Recruiting",
+      "RecruitHint": "Look for someone for a post: Business, Streetwise or Library Search at this stage's DV, costing {cost} eb for the ads and the drinks. The better the roll, the better the candidate. Once a week; a candidate waits 7 days.",
+      "RecruitRoll": "Look for someone",
+      "RecruitTitle": "{name}: looking for {post} staff",
+      "NoOpenPost": "Every place is taken: no post is open.",
+      "CandidateTerms": "Going rate {rate} eb a week. Waits until {date}.",
+      "Pct": "Pay (% of the going rate)",
+      "ProposeHire": "Propose hiring",
+      "HireCharacter": "Hire a character",
+      "HireCharacterHint": "A player character, or an NPC linked to a Night City Messenger contact tagged staff or employee. Hiring needs a majority; then a player character accepts from their own window, and the GM answers for an NPC. Pay is a share of the going rate, 80% to 150%.",
+      "RateHint": "The going rate here is {rate} eb a week for each point of the base for the post.",
+      "Who": "Character",
+      "NoPeople": "Nobody who can be hired.",
+      "Pending": "A decision about staff is waiting for votes on the Partners tab.",
+      "Jobs": "Your jobs",
+      "JobsHint": "Your wage is paid into your eddies when the business's week closes. The partners may call you in for overtime.",
+      "Accept": "Take the job",
+      "Decline": "Turn it down",
+      "Quit": "Quit",
+      "QuitConfirm": "Quit this job? There is no severance when you leave.",
+      "DigestWages": "Wages {wages} eb.",
+      "DigestOwed": "Wages {wages} eb; {owed} eb still owed."
     }
   }
 }

@@ -41,6 +41,14 @@
     {{/if}}
     {{/if}}
     {{#if last}}<div class="nci-muted">{{last}}</div>{{/if}}
+    {{#if staff}}<div class="nci-muted">{{localize "NCI.GMBusiness.Staff"}}: {{staff}}</div>{{/if}}
+    {{#each offers}}
+    <div class="nci-warn">{{text}}</div>
+    <div class="nci-actions">
+      <button type="button" data-action="businessStaffAnswer" data-id="{{../id}}" data-staff="{{id}}" data-yes="true"><i class="fas fa-handshake"></i> {{localize "NCI.GMBusiness.StaffAccept"}}</button>
+      <button type="button" data-action="businessStaffAnswer" data-id="{{../id}}" data-staff="{{id}}" data-yes="false"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.StaffDecline"}}</button>
+    </div>
+    {{/each}}
     <div class="nci-actions">
       <button type="button" data-action="businessOpen" data-id="{{id}}"><i class="fas fa-store"></i> {{localize "NCI.GMBusiness.Open"}}</button>
       {{#if isOpen}}{{#if leavers.length}}

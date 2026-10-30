@@ -15,6 +15,7 @@ const ability = (name) => Object.freeze({ kind: 'ability', ability: name });
 export const SKILLS = Object.freeze({
   accounting: skill('Accounting', 'int'),
   basicTech: skill('Basic Tech', 'tech'),
+  brawling: skill('Brawling', 'dex'),
   bribery: skill('Bribery', 'cool'),
   bureaucracy: skill('Bureaucracy', 'int'),
   business: skill('Business', 'int'),
@@ -23,10 +24,12 @@ export const SKILLS = Object.freeze({
   cybertech: skill('Cybertech', 'tech'),
   driveLand: skill('Drive Land Vehicle', 'ref'),
   electronics: skill('Electronics/Security Tech', 'tech'),
+  handgun: skill('Handgun', 'ref'),
   humanPerception: skill('Human Perception', 'emp'),
   landVehicleTech: skill('Land Vehicle Tech', 'tech'),
   librarySearch: skill('Library Search', 'int'),
   localExpert: skill('Local Expert', 'int'),
+  meleeWeapon: skill('Melee Weapon', 'dex'),
   paramedic: skill('Paramedic', 'tech'),
   perception: skill('Perception', 'int'),
   personalGrooming: skill('Personal Grooming', 'cool'),
@@ -131,6 +134,23 @@ export const COMPANY_ACTIONS = Object.freeze({
 export const actionIdsFor = (stage) => (stage >= 2 ? COMPANY_ACTION_IDS : ACTION_IDS);
 /** The definition of an action, for this stage. */
 export const actionFor = (stage, id) => (stage >= 2 ? COMPANY_ACTIONS[id] : ACTIONS[id]) ?? null;
+
+/** Employees' posts, in display order (DESIGN §33). */
+export const POST_IDS = Object.freeze(['floor', 'manager', 'security', 'bookkeeper', 'sales', 'publicist', 'compliance']);
+
+/**
+ * What each post needs: the first stage it exists at, the skills and abilities that count for it
+ * (`trade` adds the archetype's trade skills and abilities), and those that count a level lower.
+ */
+export const POSTS = Object.freeze({
+  floor: Object.freeze({ stage: 0, uses: [], trade: true }),
+  manager: Object.freeze({ stage: 0, uses: [S.business], lowerTrade: true }),
+  security: Object.freeze({ stage: 0, uses: [S.tactics, S.brawling, S.handgun, S.meleeWeapon, S.humanPerception, A.combatAwareness, A.backup] }),
+  bookkeeper: Object.freeze({ stage: 1, uses: [S.accounting], lower: [S.business] }),
+  sales: Object.freeze({ stage: 2, uses: [S.business, S.persuasion, S.trading] }),
+  publicist: Object.freeze({ stage: 2, uses: [S.composition, S.wardrobe, S.persuasion, A.credibility, A.charismaticImpact] }),
+  compliance: Object.freeze({ stage: 2, uses: [S.bureaucracy, S.localExpert] }),
+});
 
 const byBand = (values) => Object.freeze(Object.fromEntries(['fumble', 'failure', 'narrow', 'solid', 'strong', 'exceptional'].map((b, i) => [b, values[i]])));
 
@@ -262,6 +282,55 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     boldExposure: 4,
     cap: 12,
   }),
+  /**
+   * Employees (DESIGN §33, E1). An employee's base for a post is their best stat + skill among the
+   * post's skills (a fitting role ability counts as its rank + `abilityBonus`, a skill a level lower
+   * takes `lowerBy` off), read as a level. Their wage is a rate per point of that base each week,
+   * times the share of the going rate the partners offered. Overtime pays a share of a week's wage.
+   */
+  staff: Object.freeze({
+    /** The most employees by stage. Floor staff are also limited to the Capacity, rounded down. */
+    headcount: Object.freeze([1, 3, 8]),
+    /** Levels: up to and including each base. */
+    levels: Object.freeze([[8, 'green'], [12, 'skilled'], [15, 'expert'], [Infinity, 'master']]),
+    /** A recruit's base in their post's skills, by level; everything else they roll at `recruitOther`. */
+    recruitBase: Object.freeze({ green: 7, skilled: 10, expert: 13, master: 16 }),
+    recruitOther: 7,
+    abilityBonus: 9,
+    lowerBy: 3,
+    /** eb a week per point of base, by stage (part-time at a side business). */
+    rate: Object.freeze([5, 9, 14]),
+    /** The share of the going rate the partners may offer. */
+    offer: Object.freeze({ min: 0.8, max: 1.5 }),
+    /** Floor staff lift the takings by (base − floorBase) × floorLift each; sales by half that. In total, at most the stage's cap. */
+    floorBase: 6,
+    floorLift: 0.015,
+    salesShare: 0.5,
+    liftCap: Object.freeze([0.15, 0.35, 0.6]),
+    /** With a salesperson, Reputation drifts toward this rather than 50. */
+    salesReputation: 55,
+    /** By level: a bookkeeper's weekly cut to the Cost base, a publicist's Reputation, a compliance officer's Compliance. */
+    bookkeeper: Object.freeze({ green: 0.003, skilled: 0.005, expert: 0.0075, master: 0.01 }),
+    publicist: Object.freeze({ green: 0.5, skilled: 0.8, expert: 1.2, master: 1.5 }),
+    compliance: Object.freeze({ green: 0.5, skilled: 0.8, expert: 1.2, master: 1.5 }),
+    /** Overtime, as a share of a week's wage: a roll of the business's own, or a complementary check. */
+    overtime: Object.freeze({ roll: 0.5, help: 0.25 }),
+    maxShifts: 2,
+    /** A fired employee is paid this many weeks' wages. */
+    severanceWeeks: 1,
+    /** Looking for someone: the roll, its cost by stage, how often, and how long a candidate waits. */
+    recruit: Object.freeze({
+      uses: Object.freeze([S.business, S.streetwise, S.librarySearch]),
+      cost: Object.freeze([50, 100, 200]),
+      cooldown: 7,
+      candidateDays: 7,
+      maxCandidates: 3,
+      /** The levels a pass can find, by band; where there are two, the seed picks. */
+      levels: Object.freeze({ narrow: Object.freeze(['green', 'skilled']), solid: Object.freeze(['skilled']), strong: Object.freeze(['expert']), exceptional: Object.freeze(['expert', 'master']) }),
+      firstNames: Object.freeze(['Ana', 'Benji', 'Chen', 'Dara', 'Eli', 'Farah', 'Gus', 'Hana', 'Ivo', 'Jade', 'Kofi', 'Lupe', 'Marek', 'Nia', 'Oz', 'Priya', 'Rico', 'Suki', 'Teo', 'Vera']),
+      lastNames: Object.freeze(['Alvarez', 'Brook', 'Cho', 'Dunn', 'Esposito', 'Faulk', 'Grant', 'Hale', 'Ito', 'Jansen', 'Kowalski', 'Lam', 'Moreau', 'Nakamura', 'Ortiz', 'Petrov', 'Ruiz', 'Silva', 'Tran', 'Voss']),
+    }),
+  }),
   /** A hired professional's fee by tier, from the till; a Fixer's Operator takes 5% off per rank, up to 40%. */
   hireFees: Object.freeze({ cheap: 50, good: 150, best: 400 }),
   operatorDiscount: Object.freeze({ perRank: 0.05, max: 0.4 }),
@@ -386,7 +455,8 @@ export function setupUses(archetype) {
   return dedupeUses([...(archetype?.trade ?? []), S.business, ...(archetype?.abilities ?? []), A.operator, A.maker]);
 }
 
-export const useKey = (use) => (use.kind === 'ability' ? `ability:${use.ability}` : use.kind === 'hire' ? `hire:${use.hire}` : `skill:${use.skill}`);
+export const useKey = (use) => (use.kind === 'ability' ? `ability:${use.ability}` : use.kind === 'hire' ? `hire:${use.hire}`
+  : use.kind === 'staff' ? `staff:${use.staffId}` : `skill:${use.skill}`);
 
 function dedupeUses(list) {
   const seen = new Set();

@@ -40,6 +40,11 @@ async function onRemove(event, target) {
   report(await BusinessService.remove(target.dataset.id));
 }
 
+/** The GM answers a job offer for an NPC (DESIGN §33). */
+async function onStaffAnswer(event, target) {
+  report(await BusinessService.answerOffer(target.dataset.id, target.dataset.staff, target.dataset.yes === 'true'));
+}
+
 function onOpen(event, target) {
   BusinessApp.open({ businessId: target.dataset.id });
 }
@@ -52,11 +57,13 @@ export const actions = {
   businessPartnerLeaves: onPartnerLeaves,
   businessRemove: onRemove,
   businessOpen: onOpen,
+  businessStaffAnswer: onStaffAnswer,
 };
 
 /** How many businesses are waiting for the GM, for the tab's label. */
 export function waiting() {
-  return BusinessService.snapshot().filter(({ business }) => business.status === 'pending' || business.charter?.status === 'awaiting').length;
+  return BusinessService.snapshot().filter(({ business }) => business.status === 'pending' || business.charter?.status === 'awaiting'
+    || (business.staff ?? []).some((s) => s.status === 'offered' && s.source === 'npc')).length;
 }
 
 export function context() {
@@ -98,6 +105,10 @@ export function context() {
       last: last ? L('NCI.GMBusiness.LastWeek', { n: last.index, profit: signed(last.profit), takings: whole(last.takings), upkeep: whole(last.upkeep) }) : '',
       week: b.status === 'open' ? L('NCI.GMBusiness.Week', { n: b.period.index, end: dayText(b.period.endDay), used: b.period.slots.length }) : '',
       event: b.status === 'open' && b.period.event ? L('NCI.GMBusiness.Event', { event: L(`NCI.Event.${b.period.event.kind}.Name`) }) : '',
+      staff: (b.staff ?? []).filter((s) => s.status === 'active').map((s) => L('NCI.GMBusiness.StaffOne', { name: s.name, post: L(`NCI.Staff.Post.${s.post}`), wage: whole(s.wage) })).join(', '),
+      offers: (b.staff ?? []).filter((s) => s.status === 'offered' && s.source === 'npc').map((s) => ({
+        id: s.id, text: L('NCI.GMBusiness.StaffOffer', { name: s.name, post: L(`NCI.Staff.Post.${s.post}`), wage: whole(s.wage) }),
+      })),
       closed: b.status === 'closed' ? L(`NCI.Business.Closed.${b.closeReason ?? 'closed'}`, { date: dayText(b.closedDay ?? 0) }) : '',
     };
   });

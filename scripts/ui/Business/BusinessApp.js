@@ -1,7 +1,7 @@
 /**
  * Business window: running a player business, apart from the Market Terminal (DESIGN §26.8a).
  * @file scripts/ui/Business/BusinessApp.js
- * @description Tabs: Overview, This week, Projects, Ledger, Partners, Growth. A character with no business sees Start a
+ * @description Tabs: Overview, This week, Projects, Ledger, Partners, Staff, Growth. A character with no business sees Start a
  *              business. Everything a player does here is a request for the GM, as in the terminal,
  *              and every roll is made only when the player presses Roll.
  */
@@ -15,9 +15,9 @@ import { accountFor } from '../accounts.js';
 import { BaseApplication } from '../BaseApplication.js';
 import { RollDialogApp } from './RollDialogApp.js';
 import { L } from '../format.js';
-import { pickerContext, startContext, businessContext, usableActors } from './context.js';
+import { pickerContext, startContext, businessContext, usableActors, jobsContext } from './context.js';
 
-const TABS = ['overview', 'week', 'projects', 'ledger', 'partners', 'growth'];
+const TABS = ['overview', 'week', 'projects', 'ledger', 'partners', 'staff', 'growth'];
 
 /** Read a named input from the form block around the clicked button. */
 const field = (target, name) => target.closest('.nci-form')?.querySelector(`[name="${name}"]`);
@@ -71,6 +71,13 @@ export class BusinessApp extends BaseApplication {
       proposeAngel: BusinessApp._onProposeAngel,
       angelRoll: BusinessApp._onAngelRoll,
       removeGear: BusinessApp._onRemoveGear,
+      recruitRoll: BusinessApp._onRecruitRoll,
+      proposeHire: BusinessApp._onProposeHire,
+      proposeHireActor: BusinessApp._onProposeHireActor,
+      proposeFire: BusinessApp._onProposeFire,
+      acceptJob: BusinessApp._onJob,
+      declineJob: BusinessApp._onJob,
+      quitJob: BusinessApp._onJob,
     },
   };
 
@@ -398,6 +405,33 @@ export class BusinessApp extends BaseApplication {
     return this._send('propose', { kind: 'dismiss', actorId: target.dataset.id });
   }
 
+  /** Look for someone for a post (DESIGN §33): a roll, and a candidate if it passes. */
+  static _onRecruitRoll(event, target) {
+    const post = value(target, 'recruitPost');
+    this._roll({ type: 'recruitRoll', post }, L('NCI.Staff.RecruitTitle', { post: L(`NCI.Staff.Post.${post}`), name: this.business?.name ?? '' }));
+  }
+
+  static _onProposeHire(event, target) {
+    return this._send('propose', { kind: 'hire', candidateId: target.dataset.id, pct: amount(target, 'pct') || 100 });
+  }
+
+  static _onProposeHireActor(event, target) {
+    return this._send('propose', { kind: 'hire', actorId: value(target, 'staffActor'), post: value(target, 'staffPost'), pct: amount(target, 'staffPct') || 100 });
+  }
+
+  static async _onProposeFire(event, target) {
+    if (await this._confirm('NCI.Staff.FireConfirm')) return this._send('propose', { kind: 'fire', staffId: target.dataset.id });
+    return null;
+  }
+
+  /** An employee's answer to an offer, or their notice, sent from their own character to the business named. */
+  static async _onJob(event, target) {
+    const type = target.dataset.action;
+    if (type === 'quitJob' && !(await this._confirm('NCI.Staff.QuitConfirm'))) return null;
+    if (!this.actor || this.actor.isSyndicate) return null;
+    return BusinessClient.submit(this.actor, type, { businessId: target.dataset.id });
+  }
+
   static _onStepUpRoll() {
     this._roll({ type: 'stepUpRoll' }, L('NCI.Business.StepUpTitle', { name: this.business?.name ?? '' }));
   }
@@ -441,6 +475,8 @@ export class BusinessApp extends BaseApplication {
     for (const t of TABS) context[`is${t[0].toUpperCase()}${t.slice(1)}`] = t === this.tab;
     context.tabs = TABS.map((t) => ({ id: t, label: L(`NCI.Business.Tab.${t}`), active: t === this.tab }));
     if (!this.actor) return { ...context, noActor: true };
+    // The jobs this character holds or is offered at other people's businesses (DESIGN §33).
+    context.jobs = jobsContext(this.actor);
     if (!business) return { ...context, start: startContext(this) };
     return { ...context, business: businessContext(business, this.actor) };
   }

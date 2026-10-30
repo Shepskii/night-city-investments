@@ -6,7 +6,7 @@
  *              Nothing is rolled until the player presses Roll.
  */
 
-import { rollSpec, previewRoll, normalizeLevers, hireFee, HIRE_TIERS, APPROACHES, MAX_LUCK_PER_ROLL, useKey, EVENTS } from '../../engine/index.js';
+import { rollSpec, previewRoll, normalizeLevers, hireFee, HIRE_TIERS, APPROACHES, MAX_LUCK_PER_ROLL, useKey, EVENTS, activeStaff } from '../../engine/index.js';
 import { MODULE_ID } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { accountFor } from '../accounts.js';
@@ -107,7 +107,17 @@ export class RollDialogApp extends BaseApplication {
         key: `hire:${tier}`, use: { kind: 'hire', hire: tier }, base, label: L('NCI.Roll.HireOption', { who: L(`NCI.Roll.Hire.${tier}`), base, fee: whole(hireFee(tier, rank)) }),
       }))
       : [];
-    return [...own, ...hires];
+    // Employees who can be called in for this roll, each with their best for it and the overtime (DESIGN §33).
+    const staff = activeStaff(this.business).map((s) => {
+      const call = rollSpec(this.business, { ...this.request, use: { kind: 'staff', staffId: s.id } }, this.partnerId, { day: BusinessClient.day(), operatorRank: rank });
+      if (!call.ok) return null;
+      const via = call.use.via.replace(/^(skill|ability):/, '');
+      return {
+        key: `staff:${s.id}`, use: { kind: 'staff', staffId: s.id }, base: call.use.base, dvAdd: call.dv - spec.dv, overtime: call.overtime,
+        label: L('NCI.Roll.StaffOption', { name: s.name, via, base: call.use.base, pay: whole(call.overtime) }),
+      };
+    }).filter(Boolean);
+    return [...own, ...hires, ...staff];
   }
 
   static async _onSubmit() {
@@ -137,7 +147,9 @@ export class RollDialogApp extends BaseApplication {
 
     const options = this._options(full);
     const chosen = options.find((o) => o.key === this.choice.use) ?? options[0];
-    const isHire = chosen?.use.kind === 'hire';
+    const isStaff = chosen?.use.kind === 'staff';
+    // Neither a hired professional nor an employee uses the character's Luck or business days.
+    const isHire = chosen?.use.kind === 'hire' || isStaff;
     const luckMax = isHire ? 0 : Math.min(MAX_LUCK_PER_ROLL, SkillAdapter.luck(actor));
     const extraAvailable = full.extraAvailable && !isHire;
     const levers = normalizeLevers({
@@ -145,15 +157,15 @@ export class RollDialogApp extends BaseApplication {
       luck: Math.min(this.choice.luck, luckMax),
       bonus: full.bonusAvailable && this.choice.bonus ? 1 : 0,
       extra: extraAvailable && this.choice.extra ? 1 : 0,
-      hire: isHire ? chosen.use.hire : null,
+      hire: chosen?.use.kind === 'hire' ? chosen.use.hire : null,
     });
     // Some uses roll at a higher DV (an alternative skill).
-    const preview = previewRoll({ base: chosen?.base ?? 0, dv: full.dv + (chosen?.use.dvAdd ?? 0), levers });
+    const preview = previewRoll({ base: chosen?.base ?? 0, dv: full.dv + (chosen?.dvAdd ?? chosen?.use.dvAdd ?? 0), levers });
     const pct = (x) => `${Math.round(x * 100)}%`;
     const good = this.request.type === 'respond' && EVENTS[business.period?.event?.kind]?.good;
     const meaning = this.request.type === 'action' ? this.request.action
       : this.request.type === 'charterRoll' ? `charter.${this.request.part}`
-        : this.request.type === 'auditRoll' || this.request.type === 'diligenceRoll' ? this.request.type
+        : ['auditRoll', 'diligenceRoll', 'recruitRoll'].includes(this.request.type) ? this.request.type
         : good ? 'respondGood' : this.request.type;
 
     return {
@@ -175,7 +187,7 @@ export class RollDialogApp extends BaseApplication {
       bands: preview.bands.filter((b) => b.chance > 0).reverse().map((b) => ({
         label: L(`NCI.Roll.Band.${b.band}`), chance: pct(b.chance), meaning: L(`NCI.Roll.Meaning.${meaning}.${b.band}`),
       })),
-      hireNote: isHire ? L('NCI.Roll.HireNote') : '',
+      hireNote: isStaff ? L('NCI.Roll.StaffNote', { pay: whole(chosen.overtime) }) : isHire ? L('NCI.Roll.HireNote') : '',
     };
   }
 }

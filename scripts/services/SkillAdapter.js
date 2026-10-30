@@ -74,6 +74,11 @@ export const SkillAdapter = {
    * @returns {{base: number, name: string, parts: string}} `parts` is the breakdown for the chat card
    */
   baseFor(actor, use) {
+    // An employee's base comes from the business's record (the GM's rollSpec puts it on the use), not the caller's sheet.
+    if (use.kind === 'staff') {
+      const base = Number(use.base) || 0;
+      return { base, name: `staff:${use.staffId}`, parts: `${L('NCI.Roll.Employee')} ${base}` };
+    }
     if (use.kind === 'hire') {
       const base = HIRE_TIERS[use.hire] ?? HIRE_TIERS.cheap;
       return { base, name: `hire:${use.hire}`, parts: `${L(`NCI.Roll.Hire.${use.hire}`)} ${base}` };
@@ -95,7 +100,8 @@ export const SkillAdapter = {
    * @returns {Promise<{result: object, roll: object, messageId: string|null}>}
    */
   async leverCheck(actor, { dv, title, use, levers = {} }) {
-    const l = normalizeLevers({ ...levers, hire: use.kind === 'hire' ? use.hire : null });
+    // A hired professional or an employee cannot use the character's Luck, or their business days.
+    const l = normalizeLevers({ ...levers, ...(use.kind === 'staff' ? { luck: 0, extra: 0 } : {}), hire: use.kind === 'hire' ? use.hire : null });
     const base = this.baseFor(actor, use);
     const luckBefore = this.luck(actor);
     const luck = Math.min(l.luck, luckBefore);
@@ -131,19 +137,19 @@ export const SkillAdapter = {
    */
   async verifyLevers(actor, request, { dv, use, bonusAvailable = false, extraAvailable = false, allowHire = false }) {
     if (use.kind === 'hire' && !allowHire) return { ok: false, reason: 'hire-not-allowed' };
-    const name = use.kind === 'hire' ? `hire:${use.hire}` : use.kind === 'ability' ? use.ability : use.skill;
+    const name = use.kind === 'hire' ? `hire:${use.hire}` : use.kind === 'staff' ? `staff:${use.staffId}` : use.kind === 'ability' ? use.ability : use.skill;
     const card = await this._readCard(actor, request, name);
     if (!card.ok) return card;
 
     const claimed = card.flag.levers ?? {};
     const luckClaimed = Math.max(0, Math.floor(Number(claimed.luck) || 0));
     const before = Number(claimed.luckBefore);
-    const luckOk = use.kind !== 'hire' && luckClaimed > 0 && Number.isFinite(before) && luckClaimed <= before && this.luck(actor) <= before - luckClaimed;
+    const luckOk = use.kind !== 'hire' && use.kind !== 'staff' && luckClaimed > 0 && Number.isFinite(before) && luckClaimed <= before && this.luck(actor) <= before - luckClaimed;
     const levers = normalizeLevers({
       approach: claimed.approach,
       luck: luckOk ? luckClaimed : 0,
       bonus: bonusAvailable && Number(claimed.bonus) > 0 ? 1 : 0,
-      extra: extraAvailable && Number(claimed.extra) > 0 ? 1 : 0,
+      extra: extraAvailable && use.kind !== 'staff' && Number(claimed.extra) > 0 ? 1 : 0,
       hire: use.kind === 'hire' ? use.hire : null,
     });
 

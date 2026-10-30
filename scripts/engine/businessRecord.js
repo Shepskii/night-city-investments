@@ -26,7 +26,7 @@ export function nextBoundary(day, weekday) {
 }
 
 export function newPeriod(index, startDay, weekday) {
-  return { index, startDay, endDay: nextBoundary(startDay, weekday), slots: [], bonuses: [], helpers: [], draws: {}, days: {} };
+  return { index, startDay, endDay: nextBoundary(startDay, weekday), slots: [], bonuses: [], helpers: [], draws: {}, days: {}, overtime: {} };
 }
 
 // ── The record ───────────────────────────────────────────────────────────────
@@ -122,6 +122,22 @@ export function normalizeBusiness(raw) {
     officers: b.officers ?? [],
     lastAudit: b.lastAudit ?? null,
     intel: b.intel ?? [],
+    /** Employees (DESIGN §33, businessStaff.js), recruits waiting to be hired, and when the partners last recruited. */
+    staff: (b.staff ?? []).map((x) => ({
+      id: String(x.id),
+      actorId: x.actorId ?? null,
+      name: String(x.name ?? ''),
+      source: ['pc', 'npc', 'recruit'].includes(x.source) ? x.source : 'recruit',
+      post: String(x.post ?? 'floor'),
+      bases: x.bases ?? {},
+      pct: Number(x.pct ?? 1),
+      wage: int(x.wage),
+      hiredDay: x.hiredDay ?? null,
+      status: x.status === 'offered' ? 'offered' : 'active',
+      owed: int(x.owed),
+    })),
+    candidates: b.candidates ?? [],
+    lastRecruit: b.lastRecruit ?? null,
   };
 }
 

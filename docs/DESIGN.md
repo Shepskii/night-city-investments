@@ -450,7 +450,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B2 | **Done (v0.11.0), see §30.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
 | B3 | **Built (v0.12), see §31; not yet released.** Player syndicates, and syndicates owning or investing in businesses |
 | B4 | **Built (v0.13), see §32; not yet released.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
-| E | **Proposed, see §33.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
+| E | **E1 built (v0.13), see §33.9; E2 and E3 proposed, see §33.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
 | B5 | **v0.14.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
 | B6 | **v0.15.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
 | B7 | Downtime bridge (separate module, after B2): company work through Crew Tools downtime, businesses on Night City Map |
@@ -1529,3 +1529,31 @@ Below 25 an employee may quit, steals more readily and gives poaching offers a h
 | E3 Careers | training, share grants, an Exec's team, and the B5 and B6 links when those phases are built |
 
 Each step ends as the others do: engine tests, flow tests, a schema migration, a simulator check of the wage and lift targets in §33.1, and a run in the test world.
+
+### 33.9 E1 as built
+
+E1 is `scripts/engine/businessStaff.js` (pure), wired into the business engine, with `tests/businessStaff.test.mjs` and `tests/staffFlow.test.mjs`. It follows §33.1 to §33.3, with these decisions made while building it:
+
+- **Pay is a share of the going rate.** The partners offer 80% to 150% of the going rate (`pct`), not a sum in eb. Players' clients cannot read an NPC's sheet, so they cannot know the eb before hiring. The wage is worked out again each week from the employee's base for the post, the stage and that share, so it follows the employee's skills, and it rises when the business steps up.
+- **Abilities.** A fitting role ability counts for a post as its rank + 9 (rank 4 counts as 13, Expert). For an overtime roll an employee uses an ability at its rank, as a partner does.
+- **Overtime.** An employee called in rolls their best use for the roll, an alternative skill's DV step counted against it (`{kind: 'staff', staffId}`, which the GM's service fills in with the base from the record). The partner presses Roll, and the card is checked like any other. The employee cannot use Luck or business days, and the overtime is paid from the cash when the roll counts. An employee helping (a complementary check) is a helper of their own, so the partner who called them in may still help.
+- **Automatic shifts.** The manager's work and security's answer are each a slot marked `staff`, rolled from the seed when the week closes. They are added before the week is counted and do not use one of the partners' slots. A manager at a company chases contracts. A compliance officer answers an inspection the same way.
+- **Wages** are paid after the takings and upkeep and before the loans, as far as the cash goes. They count against the week's profit, and the digest and the ledger show them. What the cash cannot cover is owed and paid first the next week; E1 does not yet make anyone quit over it.
+- **A player character's job** is mirrored onto their own actor (`flags.night-city-investments.jobs`) by the GM's service after every change to the business. The Business window shows it as **Your jobs**, with Take the job, Turn it down and Quit. A player character can quit at once, without notice or severance.
+- **NPC offers** wait in the GM Console's Businesses tab, which counts them among what needs the GM. A recruit starts at once.
+- **No migration.** The record's normalizer fills in the new fields (`staff`, `candidates`, `lastRecruit`, and `overtime` on the week), so stored businesses need no step.
+
+**Checked against §33.1's targets** (a clinic at neutral Reputation, no district; the floor post's lift against its wage, before upkeep):
+
+| Stage, Capacity | Base 9 | 12 | 13 | 16 |
+|---|---|---|---|---|
+| side business, 1.3 | −30 | −30 | −30 | −29 |
+| registered, 4.5 | −28 | −3 | +6 | +32 |
+| company, 8 | −32 | +19 | +36 | +88 |
+| company, 14 | +38 | +160 | +200 | +322 |
+
+A floor hire breaks even near the registered stage's ceiling and earns clearly as a company, as intended. At a side business staff are only worth their other work (a manager freeing the crew, overtime). Overtime is cheaper than hiring a professional (a Skilled employee's roll at a registered business is 54 eb against 150). One target is missed: the margin keeps rising with the level instead of peaking at Expert, because the lift grows faster with the base than the wage does. It is left for the simulator pass with E2, where loyalty and poaching also weigh on dear staff.
+
+**Also fixed:** the vote lines for electing and dismissing officers had no text (`NCI.Business.Proposed.elect` and `dismiss`), and several requests from B4 had no confirmation message.
+
+**Not built yet:** a player character rolling their own overtime with their own Luck (on call), the Messenger payslip, changing an employee's post, and everything in E2 and E3 (loyalty, quitting over pay, vetting and traits, staff events, bonuses, training, share grants, an Exec's team). Not yet tried in the test world.

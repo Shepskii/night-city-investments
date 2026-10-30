@@ -17,6 +17,7 @@
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
+  STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { log, isActiveGM } from '../utils/helpers.js';
@@ -27,7 +28,7 @@ import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
 import { SkillAdapter } from './SkillAdapter.js';
 import { WealthAdapter } from './WealthAdapter.js';
-import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors } from './BusinessClient.js';
+import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors, staffActors, jobsOf } from './BusinessClient.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
 import { SyndicateCash } from './SyndicateCash.js';
 
@@ -83,12 +84,22 @@ class BusinessServiceImpl {
       operatorRank: business ? operatorRankOf(business) : 0,
       actors: this.actors(),
       investors: investorActors().map((a) => a.id),
+      // Who may be hired, and their bases read from their sheets (DESIGN §33).
+      staffActors: Object.fromEntries(staffActors().map((a) => [a.id, a.source])),
+      basesOf: (id) => this.basesOf(id),
       newId: `bus_${foundry.utils.randomID(12)}`,
       tickers: this.tickersTaken(business?.id),
       // Hidden from players: an internal audit reads it, and due diligence sees the other businesses (B4c).
       exposure: business ? (MarketStore.getBusinessesHidden()[business.id]?.exposure ?? 0) : 0,
       targets: Object.fromEntries(BusinessRepository.all().filter((t) => t.status === 'open' && t.id !== business?.id).map((t) => [t.id, diligenceView(t)])),
     };
+  }
+
+  /** A character's base in every skill and role ability a business roll names, from their sheet. */
+  basesOf(actorId) {
+    const actor = game.actors.get(actorId);
+    if (!actor) return null;
+    return Object.fromEntries(STAFF_USES.map((use) => [useKey(use), SkillAdapter.baseFor(actor, use).base]));
   }
 
   /** Tickers a new charter cannot use: the market's companies', and every other business's charter or company. */
@@ -248,6 +259,7 @@ class BusinessServiceImpl {
       // An internal audit can wipe some out, but never below none.
       await MarketStore.setBusinessesHidden({ ...hidden, [out.business.id]: { ...entry, exposure: Math.max(0, entry.exposure + exposure) } });
     }
+    await this._syncJobs(out.business);
     for (const event of out.events.filter((e) => e.type === 'periodClosed')) {
       Hooks.callAll(HOOKS.BUSINESS_PERIOD, { businessId: out.business.id, digest: event.digest });
     }
@@ -286,6 +298,23 @@ class BusinessServiceImpl {
     }
   }
 
+  /**
+   * Mirror the jobs at a business onto the player characters who hold or are offered them, so they see
+   * their job without seeing the business's books (DESIGN §33); a job that has ended is taken off.
+   */
+  async _syncJobs(business) {
+    const holding = new Set((business.staff ?? []).filter((s) => s.source === 'pc' && s.actorId).map((s) => s.actorId));
+    for (const actor of game.actors.filter((a) => a.type === 'character' && (holding.has(a.id) || jobsOf(a).some((j) => j.businessId === business.id)))) {
+      const kept = jobsOf(actor).filter((j) => j.businessId !== business.id);
+      const staff = business.status === 'open' ? (business.staff ?? []).find((s) => s.actorId === actor.id) : null;
+      const jobs = staff ? [...kept, {
+        businessId: business.id, businessName: business.name, archetype: business.archetype, stage: business.stage,
+        staffId: staff.id, post: staff.post, status: staff.status, wage: staff.wage, hiredDay: staff.hiredDay, owed: staff.owed,
+      }] : kept;
+      if (JSON.stringify(jobs) !== JSON.stringify(jobsOf(actor))) await actor.setFlag(MODULE_ID, FLAGS.JOBS, [jobs]);
+    }
+  }
+
   async _receipt(actor, request, out) {
     const r = receiptsOf(actor);
     const result = {
@@ -308,9 +337,12 @@ class BusinessServiceImpl {
       const day = this.day();
       const opts = { weekday: this.weekday(), growthRate: this.growthRate(), actors: this.actors(), seed: this.seed() };
       let changed = 0;
-      for (const business of BusinessRepository.all().filter((b) => b.status === 'open')) {
+      for (const stored of BusinessRepository.all().filter((b) => b.status === 'open')) {
+        // Employees' skills are read again from their sheets before the week is counted.
+        const business = normalizeBusiness(structuredClone(stored));
+        const reread = refreshStaffBases(business, (id) => this.basesOf(id));
         const out = advanceBusiness(business, day, opts);
-        if (!out.changed) continue;
+        if (!out.changed && !reread) continue;
         await this._commit({ ...out, ok: true });
         changed++;
       }
@@ -350,6 +382,15 @@ class BusinessServiceImpl {
   /** Turn a charter down: anything paid in is refunded; the filing fee is not. */
   rejectCharter(id) {
     return this._gm(id, (b) => rejectBusinessCharter(b, this.day()));
+  }
+
+  /** The GM answers a job offer for an NPC (DESIGN §33). */
+  answerOffer(id, staffId, yes) {
+    return this._gm(id, (b) => {
+      const copy = normalizeBusiness(structuredClone(b));
+      const done = answerJob(copy, staffId, yes, this.day());
+      return done.ok ? { ok: true, business: copy, wealth: {}, events: [{ type: yes ? 'jobAccepted' : 'jobDeclined', staffId }] } : done;
+    });
   }
 
   /** A partner has died or left the table: the others may buy the stake, or it goes to the heir. */

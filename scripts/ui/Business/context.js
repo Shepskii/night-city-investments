@@ -9,10 +9,11 @@ import {
   daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck,
+  POST_IDS, POSTS, levelOf, postBase, goingRate, postOpen, recruitCheck, archetypeOf,
 } from '../../engine/index.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
-import { BusinessClient, operatorRankOf, pendingBusinessRequests, investorActors } from '../../services/BusinessClient.js';
+import { BusinessClient, operatorRankOf, pendingBusinessRequests, investorActors, staffActors, jobsOf } from '../../services/BusinessClient.js';
 import { SyndicateRepository } from '../../data/SyndicateRepository.js';
 import { businessAccounts } from '../accounts.js';
 import { MarketClock } from '../../services/MarketClockService.js';
@@ -69,7 +70,7 @@ function historyContext(business, bands) {
   };
 }
 
-const nameOf = (business, actorId) => partnerOf(business, actorId)?.name || game.actors.get(actorId)?.name || '?';
+const nameOf = (business, actorId) => partnerOf(business, actorId)?.name || (business.staff ?? []).find((s) => s.id === actorId)?.name || game.actors.get(actorId)?.name || '?';
 
 /** Characters this user can act as: their own, or for a GM the player-owned ones (every character if none). */
 export function usableActors() {
@@ -161,6 +162,7 @@ export function businessContext(business, actor) {
     partners: partnersContext(business, actor),
     projects: status === 'open' ? projectsContext(business, actor, canAct) : null,
     growth: status === 'open' ? growthContext(business, actor, canAct) : null,
+    staff: status === 'open' ? staffContext(business, actor, canAct) : null,
     waitingVote: business.proposals.length ? L('NCI.Business.WaitingVote', { n: business.proposals.length }) : '',
   };
 }
@@ -366,7 +368,7 @@ function ledgerContext(business, actor) {
     digests: [...business.digests].reverse().map((d) => digestRow(business, d)),
     entries: [...business.ledger].reverse().slice(0, LEDGER_ROWS).map((e) => ({
       date: dayText(e.day),
-      what: L(`NCI.Business.Ledger.${e.kind}${e.gear > 0 ? 'Gear' : ''}`, { name: e.actorId ? nameOf(business, e.actorId) : '', seller: e.sellerId ? nameOf(business, e.sellerId) : '', price: whole(e.price ?? 0), salvage: whole(e.salvage ?? 0), gear: whole(e.gear ?? 0) }),
+      what: L(`NCI.Business.Ledger.${e.kind}${e.gear > 0 ? 'Gear' : ''}`, { name: e.actorId ? nameOf(business, e.actorId) : '', staff: e.staffName ?? '', seller: e.sellerId ? nameOf(business, e.sellerId) : '', price: whole(e.price ?? 0), salvage: whole(e.salvage ?? 0), gear: whole(e.gear ?? 0) }),
       amount: e.amount ? signed(e.amount) : '',
       cls: e.amount > 0 ? 'nci-up' : e.amount < 0 ? 'nci-down' : '',
     })),
@@ -433,6 +435,7 @@ function digestRow(business, d) {
       : L('NCI.Business.NoActions'),
     event: d.event ? L(`NCI.Business.EventOutcome.${d.event.outcome}`, { event: L(`NCI.Event.${d.event.kind}.Name`), change: signed(d.event.change) }) : '',
     gig: d.boost ? L('NCI.Business.DigestGig', { pct: signed(Math.round(d.boost * 100)) }) : '',
+    wages: d.wages || d.owed ? L(d.owed ? 'NCI.Staff.DigestOwed' : 'NCI.Staff.DigestWages', { wages: whole(d.wages ?? 0), owed: whole(d.owed ?? 0) }) : '',
     loans: d.interest || d.repaid || d.missed?.length
       ? [L('NCI.Business.DigestLoans', { interest: whole(d.interest ?? 0), repaid: whole(d.repaid ?? 0) }), ...(d.missed ?? []).map((k) => L(`NCI.Business.DigestMissed.${k}`))].join(' ')
       : '',
@@ -459,6 +462,80 @@ function investorsContext(business, actor, canAct) {
     angelRetry: business.retry.angel != null && day < business.retry.angel ? L('NCI.Business.AngelRetry', { date: dayText(business.retry.angel) }) : '',
     holders: business.partners.filter((x) => x.npc).map((x) => x.name).join(', '),
   };
+}
+
+/** A post's name and what it does. */
+const postLabel = (post) => L(`NCI.Staff.Post.${post}`);
+
+/**
+ * The Staff tab (DESIGN §33): the employees, the candidates recruiting found, and what the partners
+ * can do: recruit for a post, hire a candidate or a character, let someone go.
+ */
+function staffContext(business, actor, canAct) {
+  const day = BusinessClient.day();
+  const arch = archetypeOf(business);
+  const runs = canAct && canRun(business, actor.id);
+  const pending = (kind) => business.proposals.some((x) => x.kind === kind);
+  const max = BUSINESS_DEFAULTS.staff.headcount[business.stage] ?? 0;
+  const staff = business.staff ?? [];
+  const posts = POST_IDS.filter((id) => POSTS[id].stage <= business.stage);
+  const open = posts.filter((id) => postOpen(business, id).ok);
+  const recruit = open.length ? recruitCheck(business, open[0], day) : null;
+  const taken = new Set([...business.partners.filter((x) => ['invited', 'active', 'leaving'].includes(x.status)).map((x) => x.actorId), ...staff.map((s) => s.actorId)]);
+  const cost = BUSINESS_DEFAULTS.staff.recruit.cost[business.stage];
+  return {
+    headcount: L('NCI.Staff.Headcount', { n: staff.length, max }),
+    rows: staff.map((s) => {
+      const base = postBase(s, s.post, arch);
+      return {
+        id: s.id,
+        name: s.name,
+        source: L(`NCI.Staff.Source.${s.source}`),
+        post: postLabel(s.post),
+        level: L(`NCI.Staff.Level.${levelOf(base)}`),
+        base,
+        wage: whole(s.wage),
+        status: s.status === 'offered' ? L(s.source === 'npc' ? 'NCI.Staff.OfferedNpc' : 'NCI.Staff.Offered') : L('NCI.Staff.Since', { date: dayText(s.hiredDay ?? day) }),
+        owed: s.owed ? L('NCI.Staff.Owed', { amount: whole(s.owed) }) : '',
+        canFire: canAct && !pending('fire'),
+      };
+    }),
+    candidates: (business.candidates ?? []).filter((c) => c.expires >= day).map((c) => ({
+      id: c.id,
+      name: c.name,
+      post: postLabel(c.post),
+      level: L(`NCI.Staff.Level.${c.level}`),
+      base: c.base,
+      rate: whole(goingRate(c.base, business.stage)),
+      expires: dayText(c.expires),
+      canHire: canAct && !pending('hire') && postOpen(business, c.post).ok,
+    })),
+    posts: posts.map((id) => ({ value: id, label: postLabel(id), hint: L(`NCI.Staff.PostHint.${id}`), open: open.includes(id) })),
+    openPosts: open.map((id) => ({ value: id, label: postLabel(id) })),
+    canRecruit: runs && !!recruit?.ok,
+    recruitText: L('NCI.Staff.RecruitHint', { cost: whole(cost) }),
+    recruitBlocked: runs && open.length && recruit && !recruit.ok ? L(`NCI.Business.Reason.${recruit.reason}`) : !open.length ? L('NCI.Staff.NoOpenPost') : '',
+    people: staffActors().filter((a) => !taken.has(a.id)).sort((a, b) => a.name.localeCompare(b.name))
+      .map((a) => ({ value: a.id, label: `${a.name}${a.source === 'npc' ? ` (${L('NCI.Staff.Source.npc')})` : ''}` })),
+    canHireActor: canAct && !pending('hire') && open.length > 0,
+    rateText: L('NCI.Staff.RateHint', { rate: BUSINESS_DEFAULTS.staff.rate[business.stage] }),
+    pending: pending('hire') || pending('fire') ? L('NCI.Staff.Pending') : '',
+  };
+}
+
+/** The jobs a character holds or is offered, as the GM mirrored them onto the character. */
+export function jobsContext(actor) {
+  if (!actor || actor.isSyndicate) return [];
+  return jobsOf(actor).map((j) => ({
+    businessId: j.businessId,
+    name: j.businessName,
+    archetype: L(`NCI.Business.Archetype.${j.archetype}.Name`),
+    post: postLabel(j.post),
+    wage: whole(j.wage),
+    offered: j.status === 'offered',
+    since: j.hiredDay != null ? dayText(j.hiredDay) : '',
+    owed: j.owed ? L('NCI.Staff.Owed', { amount: whole(j.owed) }) : '',
+  }));
 }
 
 function partnersContext(business, actor) {
@@ -504,7 +581,12 @@ function partnersContext(business, actor) {
     investors: open ? investorsContext(business, actor, canAct) : null,
     proposals: business.proposals.map((proposal) => ({
       id: proposal.id,
-      text: L(`NCI.Business.Proposed.${proposal.kind}`, { name: nameOf(business, proposal.by) }),
+      text: L(`NCI.Business.Proposed.${proposal.kind}`, {
+        name: nameOf(business, proposal.by),
+        // Who a hire or a firing is about, and the post (DESIGN §33).
+        who: proposal.terms?.name ?? '',
+        post: proposal.terms?.post ? postLabel(proposal.terms.post) : '',
+      }),
       rule: L(`NCI.Business.Rule.${PROPOSAL_RULES[proposal.kind]}`, { date: dayText(proposal.expires ?? proposal.day) }),
       votes: holders(business).filter((p) => p.voting).map((p) => `${p.name}: ${L(`NCI.Business.Vote.${proposal.votes[p.actorId] === true ? 'yes' : proposal.votes[p.actorId] === false ? 'no' : 'none'}`)}`).join(', '),
       canVote: !!me?.voting && ['active', 'leaving'].includes(me.status) && proposal.votes[actor.id] === undefined,

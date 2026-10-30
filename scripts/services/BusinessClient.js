@@ -8,7 +8,7 @@
  */
 
 import { dayIndex, rollSpec, partnerOf } from '../engine/index.js';
-import { MODULE_ID, FLAGS, OUTBOX_LIMIT, BROKER_TAG, INVESTOR_TAG } from '../utils/constants.js';
+import { MODULE_ID, FLAGS, OUTBOX_LIMIT, BROKER_TAG, INVESTOR_TAG, STAFF_TAGS } from '../utils/constants.js';
 import { NcmAdapter } from '../integrations/NcmAdapter.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
 import { L, unwrap } from '../utils/helpers.js';
@@ -60,6 +60,21 @@ export function investorActors() {
     ...SyndicateRepository.all().filter((s) => s.status === 'active').map((s) => ({ id: s.id, name: s.name, isSyndicate: true })),
   ];
 }
+
+/**
+ * The characters a business may hire (DESIGN §33): player characters ('pc'), and NPCs linked to NCM
+ * contacts tagged staff or employee ('npc').
+ * @returns {{id: string, name: string, source: 'pc'|'npc'}[]}
+ */
+export function staffActors() {
+  const tagged = new Set(STAFF_TAGS.flatMap((tag) => NcmAdapter.contactsTagged(tag)).map((c) => c?.actorId).filter(Boolean));
+  return game.actors
+    .filter((a) => a.type === 'character' && (a.hasPlayerOwner || tagged.has(a.id)))
+    .map((a) => ({ id: a.id, name: a.name, source: a.hasPlayerOwner ? 'pc' : 'npc' }));
+}
+
+/** The jobs a character holds or has been offered, as the GM mirrored them onto the character. */
+export const jobsOf = (actor) => [...(unwrap(actor?.getFlag?.(MODULE_ID, FLAGS.JOBS)) ?? [])];
 
 class BusinessClientImpl {
   constructor() {

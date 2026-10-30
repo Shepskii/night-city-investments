@@ -20,7 +20,7 @@ export const BusinessWatcher = {
   /** Hook for `updateActor` on every client. */
   onActorUpdate(actor, changes) {
     const flags = `flags.${MODULE_ID}`;
-    if (!foundry.utils.hasProperty(changes, `${flags}.${FLAGS.BUSINESS_RECEIPTS}`) && !foundry.utils.hasProperty(changes, `${flags}.${FLAGS.BUSINESS_OUTBOX}`)) return;
+    if (![FLAGS.BUSINESS_RECEIPTS, FLAGS.BUSINESS_OUTBOX, FLAGS.JOBS].some((f) => foundry.utils.hasProperty(changes, `${flags}.${f}`))) return;
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { actorId: actor.id });
     if (!actor.isOwner) return;
     BusinessClient.prune(actor);
