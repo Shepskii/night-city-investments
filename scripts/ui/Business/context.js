@@ -642,7 +642,6 @@ function staffContext(business, actor, canAct) {
       hint: L(`NCI.Staff.PostHint.${id}`),
       canHire: canHire && open.includes(id),
     })),
-    canDrop: canHire && open.length > 0,
     recruitText: L('NCI.Staff.RecruitHint', { cost: whole(BUSINESS_DEFAULTS.staff.recruit.cost[business.stage]), rate: BUSINESS_DEFAULTS.staff.rate[business.stage] }),
     noOpen: open.length ? '' : L('NCI.Staff.NoOpenPost'),
     pending: pending('hire') || pending('fire') ? L('NCI.Staff.Pending') : '',

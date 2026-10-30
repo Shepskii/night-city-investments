@@ -6,7 +6,7 @@
   {{#if blocked}}<p class="nci-warn">{{blocked}}</p>{{/if}}
   {{#if pending}}<p class="nci-warn">{{pending}}</p>{{/if}}
 
-  <div class="nci-block nci-form">
+  <div class="nci-block nci-form{{#if canHire}} nci-drop nci-hiredrop{{/if}}">
     <h3>{{localize "NCI.Staff.HireCharacter"}}</h3>
     <p class="nci-hint">{{localize "NCI.Staff.HireCharacterHint"}} {{rateText}}</p>
     {{#if canHire}}{{#if people.length}}
@@ -15,7 +15,8 @@
       <label>{{localize "NCI.Staff.Pct"}} <input type="number" name="staffPct" min="80" max="150" step="5" value="100"></label>
       <button type="button" data-action="hireCharacter"><i class="fas fa-user-plus"></i> {{localize "NCI.Staff.ProposeHire"}}</button>
     </div>
-    {{else}}<p class="nci-muted">{{localize "NCI.Staff.NoPeople"}}</p>{{/if}}{{/if}}
+    {{else}}<p class="nci-muted">{{localize "NCI.Staff.NoPeople"}}</p>{{/if}}
+    <p class="nci-hint"><i class="fas fa-hand-pointer"></i> {{localize "NCI.Staff.DropHint"}}</p>{{/if}}
   </div>
 
   <div class="nci-block">

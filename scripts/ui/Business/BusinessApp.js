@@ -6,10 +6,10 @@
  *              and every roll is made only when the player presses Roll.
  */
 
-import { itemGear, partnerOf, limitLeft, postOpen } from '../../engine/index.js';
+import { itemGear, partnerOf, limitLeft } from '../../engine/index.js';
 import { MODULE_ID, HOOKS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
-import { BusinessClient, staffActors } from '../../services/BusinessClient.js';
+import { BusinessClient } from '../../services/BusinessClient.js';
 import { SyndicateClient } from '../../services/SyndicateClient.js';
 import { accountFor } from '../accounts.js';
 import { BaseApplication } from '../BaseApplication.js';
@@ -157,50 +157,6 @@ export class BusinessApp extends BaseApplication {
         this._onDropGear(event, zone.dataset.gear);
       });
     });
-    // Each open post on the Staff tab takes a character dragged from the Actors directory.
-    this.element.querySelectorAll('tr.nci-droppost').forEach((row) => {
-      row.addEventListener('dragover', (event) => {
-        event.preventDefault();
-        row.classList.add('nci-over');
-      });
-      row.addEventListener('dragleave', () => row.classList.remove('nci-over'));
-      row.addEventListener('drop', (event) => {
-        row.classList.remove('nci-over');
-        this._onDropStaff(event, row.dataset.post);
-      });
-    });
-  }
-
-  /**
-   * A character dropped on a post: checked here as far as this client can (that they may be hired,
-   * are not a partner or on the staff already, and the post is open), then, once confirmed, a hire
-   * proposal at the pay set above the posts. The GM's side checks it all again.
-   */
-  async _onDropStaff(event, post) {
-    event.preventDefault();
-    const business = this.business;
-    const account = this.actor;
-    if (!business || !account || (account.isSyndicate && !account.isOfficer)) return null;
-    const data = TextEditor.getDragEventData(event);
-    if (data?.type !== 'Actor' || !data.uuid) return ui.notifications.warn(L('NCI.Staff.DropActorOnly'));
-    const actor = await fromUuid(data.uuid);
-    if (!actor) return ui.notifications.warn(L('NCI.Staff.DropActorOnly'));
-    const refuse = (reason) => ui.notifications.warn(L('NCI.Business.Refused', { reason: L(`NCI.Business.Reason.${reason}`) }));
-    if (!staffActors().some((a) => a.id === actor.id)) return refuse('not-staff');
-    const partner = partnerOf(business, actor.id);
-    if (partner && ['active', 'leaving', 'invited'].includes(partner.status)) return refuse('is-partner');
-    if ((business.staff ?? []).some((s) => s.actorId === actor.id)) return refuse('already-staff');
-    const open = postOpen(business, post);
-    if (!open.ok) return refuse(open.reason);
-    const pct = Math.floor(Number(this.element.querySelector('[name="dropPct"]')?.value) || 100);
-    const ok = await foundry.applications.api.DialogV2.confirm({
-      window: { title: L('NCI.Business.Title') },
-      content: `<p>${L('NCI.Staff.DropConfirm', { name: actor.name, post: L(`NCI.Staff.Post.${post}`), pct })}</p>`,
-      rejectClose: false,
-      modal: true,
-    });
-    if (!ok) return null;
-    return this._send('propose', { kind: 'hire', actorId: actor.id, post, pct });
   }
 
   /**

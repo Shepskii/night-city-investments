@@ -289,12 +289,17 @@ test('advertising brings applicants the partners can hire on what they ask; Nova
   assert.deepEqual(S.jobsOf(nova), []);
 });
 
-test('a character dragged from the Actors directory onto an open post proposes hiring them for it', async () => {
+test("a character dragged from the Actors directory onto the Hire window's Hire a character block proposes hiring them for its role", async () => {
   const html = await renderBusiness(windowFor(med, 'staff'));
-  assertClean(html, 'staff tab with drop targets');
-  assert.match(html, /class="nci-droppost" data-post="floor"/);
-  assert.doesNotMatch(html, /class="nci-droppost" data-post="manager"/, 'the manager post is taken');
-  assert.match(text(html), /Drag a character from the Actors directory/);
+  assertClean(html, 'staff tab');
+  assert.match(text(html), /Roles/);
+  assert.doesNotMatch(html, /nci-droppost|name="dropPct"/, 'the roles table takes no drops, and has no pay field');
+  assert.doesNotMatch(text(html), /Drag a character/);
+  const Hire = (await import('../scripts/ui/Business/HireDialogApp.js')).HireDialogApp;
+  const dialog = render('templates/dialogs/hire.hbs', await new Hire({ actorId: med.id, businessId: business().id, post: 'floor' })._prepareContext());
+  assertClean(dialog, 'hire window with its drop zone');
+  assert.match(dialog, /class="nci-block nci-form nci-drop nci-hiredrop"/);
+  assert.match(text(dialog), /drag a character from the Actors directory here/);
 
   // What Foundry gives a drop from the Actors directory, and a confirmation the GM clicks through.
   globalThis.TextEditor = { getDragEventData: (event) => event.data };
@@ -302,9 +307,9 @@ test('a character dragged from the Actors directory onto an open post proposes h
   let asked = null;
   globalThis.foundry.applications.api.DialogV2 = { confirm: async ({ content }) => { asked = content; return true; } };
   const drop = (actor, post) => {
-    const app = windowFor(med, 'staff');
+    const app = new Hire({ actorId: med.id, businessId: business().id, post });
     Object.defineProperty(app, 'element', { value: { querySelector: () => ({ value: '120' }) } });
-    return app._onDropStaff({ preventDefault() {}, data: actor ? { type: 'Actor', uuid: `Actor.${actor.id}` } : { type: 'Item', uuid: 'Item.x' } }, post);
+    return app._onDropStaff({ preventDefault() {}, data: actor ? { type: 'Actor', uuid: `Actor.${actor.id}` } : { type: 'Item', uuid: 'Item.x' } });
   };
   const notices = env.notices ?? [];
   const warned = () => notices.filter(([kind]) => kind === 'warn').at(-1)?.[1] ?? '';
