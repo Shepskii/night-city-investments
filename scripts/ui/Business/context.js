@@ -576,6 +576,7 @@ function applicantsOf(business, { canAct, runs, pending }) {
           vetted: c.vetted === 'failed' ? L('NCI.Staff.VetFailed') : c.revealed ? L('NCI.Staff.VetShows', { trait: traitText(c.revealed) }) : L('NCI.Staff.NotVetted'),
           bad: !!c.revealed && c.revealed !== 'none' && !BUSINESS_DEFAULTS.staff.traits.good.includes(c.revealed),
           canHire: canAct && !pending && postOpen(business, c.post).ok,
+          canReject: runs,
         };
       }),
     };
@@ -610,7 +611,9 @@ function staffContext(business, actor, canAct) {
   const open = posts.filter((id) => postOpen(business, id).ok);
   const canHire = canAct && !pending('hire');
   return {
-    headcount: L('NCI.Staff.Headcount', { n: staff.length, max }),
+    // Places still free out of the stage's headcount, in the staff table's header.
+    openRoles: L('NCI.Staff.OpenRoles', { free: Math.max(0, max - staff.length), max }),
+    noRoles: staff.length >= max,
     rows: staff.map((s) => {
       const { skill, base } = skillOf(s, s.post, arch);
       return {

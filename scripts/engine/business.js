@@ -41,6 +41,7 @@
  *   { key, type: 'vetRoll', businessId, post, use, rollId }      check every applicant waiting for a post
  *   { key, type: 'bonus', businessId, staffId, quarters }        quarters of a week's wage, from the cash
  *   { key, type: 'refuseRaise', businessId, staffId }
+ *   { key, type: 'rejectApplicant', businessId, candidateId }    turn an applicant away
  *   { key, type: 'movePost', businessId, staffId, post }
  *   { key, type: 'propose', kind: 'pay', staffId, pct }          a new share of the going rate
  *
@@ -77,7 +78,7 @@ import {
   staffWeek, payWages,
 } from './businessStaff.js';
 import {
-  idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost,
+  idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost, rejectApplicant,
 } from './businessPeople.js';
 
 export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck };
@@ -91,7 +92,7 @@ export {
 export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
   'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll',
-  'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'refuseRaise', 'movePost',
+  'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'refuseRaise', 'movePost', 'rejectApplicant',
 ]);
 
 /** Item types that are not things a business can own. */
@@ -573,7 +574,8 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
     }
     case 'bonus':
     case 'refuseRaise':
-    case 'movePost': {
+    case 'movePost':
+    case 'rejectApplicant': {
       // Day-to-day running: whoever runs the business (an officer, at a company).
       if (b.status !== 'open') return fail('not-open');
       if (me?.status !== 'active' || !me.voting) return fail('not-partner');
@@ -583,6 +585,9 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
         if (!done.ok) return done;
         if (done.actorId) pay(done.actorId, done.amount);
         out.events.push({ type: 'bonus', staffId: request.staffId, amount: done.amount });
+      } else if (request.type === 'rejectApplicant') {
+        const done = rejectApplicant(b, request.candidateId, day, actor.id, p);
+        if (!done.ok) return done;
       } else if (request.type === 'refuseRaise') {
         const done = refuseRaise(b, request.staffId, day, ctx.traits, p);
         if (!done.ok) return done;

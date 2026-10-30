@@ -357,11 +357,10 @@
   {{#with staff}}
   <div class="nci-block">
     <h3>{{localize "NCI.Staff.Title"}}</h3>
-    <p class="nci-hint">{{localize "NCI.Staff.Intro"}} {{headcount}}</p>
+    <p class="nci-hint">{{localize "NCI.Staff.Intro"}}</p>
     {{#if pending}}<p class="nci-warn">{{pending}}</p>{{/if}}
-    {{#if rows.length}}
     <table class="nci-market">
-      <thead><tr><th>{{localize "NCI.Staff.Employee"}}</th><th>{{localize "NCI.Staff.PostLabel"}}</th><th>{{localize "NCI.Staff.Skill"}}</th><th>{{localize "NCI.Staff.LoyaltyLabel"}}</th><th class="num">{{localize "NCI.Staff.Wage"}}</th><th></th></tr></thead>
+      <thead><tr><th>{{localize "NCI.Staff.Employee"}}</th><th>{{localize "NCI.Staff.PostLabel"}}</th><th>{{localize "NCI.Staff.Skill"}}</th><th>{{localize "NCI.Staff.LoyaltyLabel"}}</th><th class="num">{{localize "NCI.Staff.Wage"}}</th><th class="nci-slots{{#if noRoles}} nci-slots-none{{/if}}">{{openRoles}}</th></tr></thead>
       <tbody>
         {{#each rows}}
         <tr>
@@ -375,10 +374,11 @@
             {{#if canFire}}<button type="button" class="nci-labelled" data-action="proposeFire" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.Staff.Withdraw"}}</button>{{/if}}
           </td>
         </tr>
+        {{else}}
+        <tr><td colspan="6" class="nci-empty">{{localize "NCI.Staff.None"}}</td></tr>
         {{/each}}
       </tbody>
     </table>
-    {{else}}<p class="nci-empty">{{localize "NCI.Staff.None"}}</p>{{/if}}
     <p class="nci-hint">{{localize "NCI.Staff.OvertimeHint"}} {{localize "NCI.Staff.LoyaltyHint"}}</p>
   </div>
   <div class="nci-block nci-form">
@@ -411,7 +411,10 @@
         <div class="nci-gigtop"><strong>{{name}}</strong><span class="nci-muted">{{level}}{{#if base}} ({{base}}){{/if}}</span></div>
         <div class="nci-muted">{{terms}}</div>
         <div class="{{#if bad}}nci-warn{{else}}nci-muted{{/if}}">{{vetted}}</div>
-        {{#if canHire}}<div class="nci-actions"><button type="button" data-action="proposeHire" data-id="{{id}}"><i class="fas fa-user-plus"></i> {{localize "NCI.Staff.ProposeHire"}}</button></div>{{/if}}
+        <div class="nci-actions">
+          {{#if canHire}}<button type="button" data-action="proposeHire" data-id="{{id}}"><i class="fas fa-user-plus"></i> {{localize "NCI.Staff.ProposeHire"}}</button>{{/if}}
+          {{#if canReject}}<button type="button" data-action="rejectApplicant" data-id="{{id}}"><i class="fas fa-user-xmark"></i> {{localize "NCI.Staff.Reject"}}</button>{{/if}}
+        </div>
       </div>
       {{/each}}
     </div>

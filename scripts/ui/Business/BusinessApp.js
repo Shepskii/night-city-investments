@@ -79,6 +79,7 @@ export class BusinessApp extends BaseApplication {
       proposeFire: BusinessApp._onProposeFire,
       openEmployee: BusinessApp._onOpenEmployee,
       openCashbook: BusinessApp._onOpenCashbook,
+      rejectApplicant: BusinessApp._onRejectApplicant,
       vetApplicants: BusinessApp._onVetApplicants,
       acceptJob: BusinessApp._onJob,
       declineJob: BusinessApp._onJob,
@@ -479,6 +480,12 @@ export class BusinessApp extends BaseApplication {
   static _onVetApplicants(event, target) {
     const post = target.dataset.post;
     this._roll({ type: 'vetRoll', post }, L('NCI.Staff.VetTitle', { post: L(`NCI.Staff.Post.${post}`), name: this.business?.name ?? '' }));
+  }
+
+  /** Turn an applicant away: they leave the list. */
+  static async _onRejectApplicant(event, target) {
+    if (await this._confirm('NCI.Staff.RejectConfirm')) return this._send('rejectApplicant', { candidateId: target.dataset.id });
+    return null;
   }
 
   /** An applicant waiting from an advert, hired on what they asked. */

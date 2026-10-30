@@ -235,6 +235,15 @@ export function applyVet(b, { result, day, post, traits = null, by }, p = BUSINE
   return checked;
 }
 
+/** Turn an applicant away: they leave the list (and their hidden trait goes with them). */
+export function rejectApplicant(b, candidateId, day, by, p = BUSINESS_DEFAULTS) {
+  const candidate = (b.candidates ?? []).find((c) => c.id === candidateId);
+  if (!candidate) return fail('no-candidate');
+  b.candidates = b.candidates.filter((c) => c !== candidate);
+  addLedger(b, { day, kind: 'rejected', amount: 0, actorId: by, staffName: candidate.name }, p);
+  return { ok: true };
+}
+
 // ── Pay, bonuses and posts ───────────────────────────────────────────────────
 
 /** Whether a bonus can be paid: quarters of a week's wage, once a week for each employee. */

@@ -103,7 +103,7 @@ test('an open clinic shows an empty Staff tab: each open post has a Hire button 
   const html = await renderBusiness(windowFor(med, 'staff'));
   assertClean(html, 'empty staff tab');
   assert.match(text(html), /No staff yet/);
-  assert.match(text(html), /0 of 3 places taken/);
+  assert.match(text(html), /Wage a week \(eb\) Open roles 3\/3 No staff yet/, 'the open roles in the staff table header');
   assert.match(html, /data-action="openHire" data-post="floor"/);
   assert.doesNotMatch(html, /data-action="recruitRoll"|name="staffActor"/, 'recruiting and hiring a character are in the Hire window now');
   assert.match(text(html), /advertise the job/);
@@ -426,4 +426,21 @@ test('every data-action in the Business window and the staff windows has a handl
     const used = [...readFileSync(join(root, file), 'utf8').matchAll(/data-action="([^"]+)"/g)].map((m) => m[1]);
     for (const action of new Set(used)) assert.ok(action in App.DEFAULT_OPTIONS.actions, `${file}: no handler for "${action}"`);
   }
+});
+
+test('an applicant can be turned away: they leave the list, with their hidden trait', async () => {
+  const { MarketStore } = await import('../scripts/data/MarketStore.js');
+  const b = structuredClone(business());
+  b.candidates = [...(b.candidates ?? []), { id: 'ad9-1', name: 'Oz Petrov', post: 'floor', level: 'skilled', base: 11, pct: 1.1, expires: b.period.endDay + 7 }];
+  await S.BusinessRepository.save(b);
+  await MarketStore.setBusinessesHidden({ ...MarketStore.getBusinessesHidden(), [b.id]: { ...(MarketStore.getBusinessesHidden()[b.id] ?? {}), traits: { 'ad-1': 'lightFingers', 'ad9-1': 'moonlighter' } } });
+  const html = await renderBusiness(windowFor(med, 'staff'));
+  assertClean(html, 'staff tab with an applicant to turn away');
+  assert.match(html, /data-action="rejectApplicant" data-id="ad9-1"/);
+  assert.ok('rejectApplicant' in Apps.Business.DEFAULT_OPTIONS.actions);
+  await send(med, 'rejectApplicant', { businessId: b.id, candidateId: 'ad9-1' });
+  assert.equal(receipt(med).ok, true, receipt(med).reason);
+  assert.equal(business().candidates.some((c) => c.id === 'ad9-1'), false);
+  assert.equal(MarketStore.getBusinessesHidden()[b.id].traits['ad9-1'], undefined, 'the trait goes too');
+  assert.match(text(await renderBusiness(windowFor(med, 'ledger'))), /Oz Petrov turned away by Medtech/);
 });

@@ -2071,6 +2071,7 @@
         "payCut": "{staff}'s pay cut",
         "raiseRefused": "{staff}'s raise turned down",
         "moved": "{staff} moved to another post by {name}",
+        "rejected": "{staff} turned away by {name}",
         "poached": "{staff} poached by a rival",
         "medical": "Medical bills",
         "wages": "Wages"
@@ -2275,7 +2276,8 @@
         "vetRoll": "The checks are under way.",
         "bonus": "Bonus paid.",
         "refuseRaise": "Raise turned down.",
-        "movePost": "Moved."
+        "movePost": "Moved.",
+        "rejectApplicant": "Applicant turned away."
       },
       "Reason": {
         "bad-use": "that skill does not fit this roll",
@@ -2391,7 +2393,9 @@
     "Staff": {
       "Title": "Staff",
       "Intro": "Employees work in the business for a wage. Each holds a post, and their skills for that post set what they do for the business and what they are paid.",
-      "Headcount": "{n} of {max} places taken.",
+      "OpenRoles": "Open roles {free}/{max}",
+      "Reject": "Reject",
+      "RejectConfirm": "Turn this applicant away? They leave the list for good.",
       "Employee": "Employee",
       "PostLabel": "Post",
       "Base": "Base",
