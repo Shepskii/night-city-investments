@@ -288,7 +288,9 @@ function weekContext(business, actor, canAct) {
     from: dayText(period.startDay),
     to: dayText(period.endDay),
     closesOn: L(`NCI.Weekday.${weekdayOf(period.endDay)}`),
-    slotsText: L('NCI.Business.SlotsUsed', { used: period.slots.length, total: slots }),
+    // Slots still free this week out of the stage's total, in the actions table's header.
+    slotsFree: L('NCI.Business.SlotsFree', { free: Math.max(0, slots - period.slots.length), total: slots }),
+    noSlots: period.slots.length >= slots,
     daysText: canAct ? L('NCI.Business.DaysLeft', { n: daysLeft(business, actor.id) }) : '',
     // A chartered company has the five company actions; a smaller business the shop actions.
     actions: actionIdsFor(business.stage).map((id) => {

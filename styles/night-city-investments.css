@@ -228,6 +228,9 @@
 .nci-app .nci-hirerow label { min-width: 0; }
 .nci-app .nci-hirerow :is(select, input, button) { box-sizing: border-box; width: 100%; height: 30px; margin: 0; }
 .nci-app .nci-hirerow button { width: auto; padding: 0 12px; white-space: nowrap; }
+/* The Work tab: the actions still available this week, at the right of the actions table's header. */
+.nci-app th.nci-slots { text-align: right; white-space: nowrap; color: var(--nci-up); font-weight: bold; }
+.nci-app th.nci-slots-none { color: var(--nci-down); }
 /* The cashbook: totals stand out from the lines above them. */
 .nci-app .nci-cashbook tr.nci-total td { font-weight: bold; border-top: 1px solid var(--nci-accent-dim); }
 /* GM Console, Businesses tab: a business's standing in one strip, and its owners in a compact table. */

@@ -1982,7 +1982,7 @@
       "WithdrawConfirm": "Take your share of the money back out and leave the business before it opens?",
       "ThisWeek": "This week",
       "WeekRuns": "This operating week runs from {from} and closes at the first market tick on or after {to} ({day}).",
-      "SlotsUsed": "Action slots used: {used} of {total}.",
+      "SlotsFree": "Actions available {free}/{total}",
       "ActionLabel": "Action",
       "TakeSlot": "Take the slot",
       "Help": "Help",

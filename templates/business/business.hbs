@@ -212,7 +212,7 @@
   {{#with week}}
   <div class="nci-block">
     <h3>{{localize "NCI.Business.ThisWeek"}}</h3>
-    <p class="nci-hint">{{localize "NCI.Business.WeekRuns" from=from to=to day=closesOn}} {{slotsText}} {{daysText}}</p>
+    <p class="nci-hint">{{localize "NCI.Business.WeekRuns" from=from to=to day=closesOn}} {{daysText}}</p>
     {{#with event}}
     <div class="nci-gig">
       <div class="nci-gigtop"><strong>{{name}}</strong>{{#if good}}<span class="nci-up">{{localize "NCI.Business.Opportunity"}}</span>{{else}}<span class="nci-down">{{localize "NCI.Business.Trouble"}}</span>{{/if}}</div>
@@ -223,7 +223,7 @@
     </div>
     {{/with}}
     <table class="nci-market">
-      <thead><tr><th>{{localize "NCI.Business.ActionLabel"}}</th><th></th><th></th></tr></thead>
+      <thead><tr><th>{{localize "NCI.Business.ActionLabel"}}</th><th></th><th class="nci-slots{{#if noSlots}} nci-slots-none{{/if}}">{{slotsFree}}</th></tr></thead>
       <tbody>
         {{#each actions}}
         <tr>

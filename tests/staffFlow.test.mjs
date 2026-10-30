@@ -166,6 +166,7 @@ test('the roll dialog offers the employee for overtime; their roll counts, the o
   assert.equal(SkillLuck(med), 4, "the Medtech's Luck is untouched");
 
   const week = text(await renderBusiness(windowFor(med, 'week')));
+  assert.match(week, /Action Actions available 1\/2 /, 'one of the two slots taken, shown in the actions table header');
   assert.match(week, /Nova/);
 });
 
