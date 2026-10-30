@@ -228,7 +228,7 @@ test('the overview charts the weeks the business keeps: bars, cash and each stan
     const ledger = await renderBusiness(windowFor(med, 'ledger'));
     assertClean(ledger, 'ledger with weeks');
     assert.match(text(ledger), /Takings\s+Upkeep\s+Wages\s+Other\s+Profit\s+Cash/);
-    assert.match(text(ledger), /560\s+300\s+50\s+-30\s+\+220\s+1,160/, 'cash at the start + takings - upkeep - wages + other = cash at the close');
+    assert.match(text(ledger), /\+560\s+-300\s+-50\s+-30\s+\+220\s+1,160/, 'cash at the start + takings - upkeep - wages + other = cash at the close');
     const reputation = html.match(/Reputation<\/span>\s*<span class="nci-cells">(.*?)<\/span>\s*<strong/s)[1];
     assert.deepEqual([...reputation.matchAll(/nci-lvl(-?\d)/g)].map((m) => m[1]), ['0', '1', '2', ...Array(9).fill('-1')], 'poor, modest, good from the left, then empty slots for the weeks to come');
     assert.match(text(html), /The last 3 week\(s\)/);
