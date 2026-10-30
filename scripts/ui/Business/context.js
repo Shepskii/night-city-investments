@@ -510,7 +510,15 @@ function staffContext(business, actor, canAct) {
       expires: dayText(c.expires),
       canHire: canAct && !pending('hire') && postOpen(business, c.post).ok,
     })),
-    posts: posts.map((id) => ({ value: id, label: postLabel(id), hint: L(`NCI.Staff.PostHint.${id}`), open: open.includes(id) })),
+    // A character dragged from the Actors directory onto an open post proposes hiring them for it.
+    posts: posts.map((id) => ({
+      value: id,
+      label: postLabel(id),
+      hint: L(`NCI.Staff.PostHint.${id}`),
+      open: open.includes(id),
+      droppable: canAct && !pending('hire') && open.includes(id),
+      holders: staff.filter((s) => s.post === id).map((s) => s.name).join(', '),
+    })),
     openPosts: open.map((id) => ({ value: id, label: postLabel(id) })),
     canRecruit: runs && !!recruit?.ok,
     recruitText: L('NCI.Staff.RecruitHint', { cost: whole(cost) }),
@@ -518,6 +526,7 @@ function staffContext(business, actor, canAct) {
     people: staffActors().filter((a) => !taken.has(a.id)).sort((a, b) => a.name.localeCompare(b.name))
       .map((a) => ({ value: a.id, label: `${a.name}${a.source === 'npc' ? ` (${L('NCI.Staff.Source.npc')})` : ''}` })),
     canHireActor: canAct && !pending('hire') && open.length > 0,
+    canDrop: canAct && !pending('hire') && open.length > 0,
     rateText: L('NCI.Staff.RateHint', { rate: BUSINESS_DEFAULTS.staff.rate[business.stage] }),
     pending: pending('hire') || pending('fire') ? L('NCI.Staff.Pending') : '',
   };

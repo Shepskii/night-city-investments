@@ -2377,7 +2377,11 @@
       "Quit": "Quit",
       "QuitConfirm": "Quit this job? There is no severance when you leave.",
       "DigestWages": "Wages {wages} eb.",
-      "DigestOwed": "Wages {wages} eb; {owed} eb still owed."
+      "DigestOwed": "Wages {wages} eb; {owed} eb still owed.",
+      "DropHint": "Drag a character from the Actors directory onto an open post to propose hiring them for it, at this pay.",
+      "DropHere": "Drop a character here",
+      "DropActorOnly": "Only a character can be dropped on a post.",
+      "DropConfirm": "Propose hiring {name} as {post} at {pct}% of the going rate? It needs a majority of the votes."
     }
   }
 }

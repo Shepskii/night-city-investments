@@ -13,8 +13,8 @@ registerPartials(Handlebars, root);
 const lang = JSON.parse(readFileSync(join(root, 'lang', 'en.json'), 'utf8'));
 
 const DAY_MS = 86_400_000;
-const env = installFakeFoundry({ actors: [['Medtech', 6000, true], ['Fixer', 4000, true], ['Nova', 100, true]] });
-const [med, fix, nova] = env.actors;
+const env = installFakeFoundry({ actors: [['Medtech', 6000, true], ['Fixer', 4000, true], ['Nova', 100, true], ['Rook', 50, true]] });
+const [med, fix, nova, rook] = env.actors;
 med.system.stats = { tech: { value: 7 }, int: { value: 6 }, luck: { value: 4, max: 4 } };
 med.items = [{ type: 'skill', name: 'Cybertech', system: { level: 5, stat: 'tech' } }];
 fix.system.stats = { cool: { value: 6 }, luck: { value: 3, max: 3 } };
@@ -23,7 +23,7 @@ nova.system.stats = { tech: { value: 7 }, luck: { value: 5, max: 5 } };
 nova.items = [{ type: 'skill', name: 'Paramedic', system: { level: 5, stat: 'tech' } }];
 const users = [{ id: 'u_med', isGM: false }, { id: 'u_fix', isGM: false }, { id: 'u_nova', isGM: false }, { id: 'gm1', isGM: true }];
 game.users = Object.assign(users, { activeGM: users[3], get: (id) => users.find((u) => u.id === id) });
-const owners = { [med.id]: 'u_med', [fix.id]: 'u_fix', [nova.id]: 'u_nova' };
+const owners = { [med.id]: 'u_med', [fix.id]: 'u_fix', [nova.id]: 'u_nova', [rook.id]: 'u_nova' };
 for (const actor of env.actors) actor.testUserPermission = (user) => user.isGM || user.id === 'gm1' || user.id === owners[actor.id];
 installFakeChat();
 let nextId = 0;
@@ -198,4 +198,42 @@ test('recruiting finds a candidate the partners can hire; Nova can quit, and the
   assert.equal(receipt(nova).ok, true, receipt(nova).reason);
   assert.equal(business().staff.length, 1);
   assert.deepEqual(S.jobsOf(nova), []);
+});
+
+test('a character dragged from the Actors directory onto an open post proposes hiring them for it', async () => {
+  const html = await renderBusiness(windowFor(med, 'staff'));
+  assertClean(html, 'staff tab with drop targets');
+  assert.match(html, /class="nci-droppost" data-post="floor"/);
+  assert.doesNotMatch(html, /class="nci-droppost" data-post="manager"/, 'the manager post is taken');
+  assert.match(text(html), /Drag a character from the Actors directory/);
+
+  // What Foundry gives a drop from the Actors directory, and a confirmation the GM clicks through.
+  globalThis.TextEditor = { getDragEventData: (event) => event.data };
+  globalThis.fromUuid = async (uuid) => env.actors.find((a) => `Actor.${a.id}` === uuid) ?? null;
+  let asked = null;
+  globalThis.foundry.applications.api.DialogV2 = { confirm: async ({ content }) => { asked = content; return true; } };
+  const drop = (actor, post) => {
+    const app = windowFor(med, 'staff');
+    Object.defineProperty(app, 'element', { value: { querySelector: () => ({ value: '120' }) } });
+    return app._onDropStaff({ preventDefault() {}, data: actor ? { type: 'Actor', uuid: `Actor.${actor.id}` } : { type: 'Item', uuid: 'Item.x' } }, post);
+  };
+  const notices = env.notices ?? [];
+  const warned = () => notices.filter(([kind]) => kind === 'warn').at(-1)?.[1] ?? '';
+
+  await drop(fix, 'floor');
+  assert.match(warned(), /partner cannot also be an employee/);
+  await drop(rook, 'manager');
+  assert.match(warned(), /already has one/);
+  await drop(null, 'floor');
+  assert.match(warned(), /Only a character/);
+  assert.equal(business().proposals.length, 0, 'nothing proposed for a refused drop');
+
+  await drop(rook, 'floor');
+  assert.match(asked, /Propose hiring Rook as Floor at 120%/);
+  await S.BusinessService.processActor(med);
+  assert.equal(receipt(med).ok, true, receipt(med).reason);
+  const hired = business().staff.find((s) => s.actorId === rook.id);
+  assert.equal(hired.post, 'floor');
+  assert.equal(hired.pct, 1.2);
+  assert.equal(hired.status, 'offered');
 });
