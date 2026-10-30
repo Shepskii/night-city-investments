@@ -15,6 +15,7 @@ import { accountFor } from '../accounts.js';
 import { BaseApplication } from '../BaseApplication.js';
 import { RollDialogApp } from './RollDialogApp.js';
 import { HireDialogApp } from './HireDialogApp.js';
+import { EmployeeDialogApp } from './EmployeeDialogApp.js';
 import { L } from '../format.js';
 import { pickerContext, startContext, businessContext, usableActors, jobsContext } from './context.js';
 
@@ -75,6 +76,8 @@ export class BusinessApp extends BaseApplication {
       openHire: BusinessApp._onOpenHire,
       proposeHire: BusinessApp._onProposeHire,
       proposeFire: BusinessApp._onProposeFire,
+      openEmployee: BusinessApp._onOpenEmployee,
+      vetApplicants: BusinessApp._onVetApplicants,
       acceptJob: BusinessApp._onJob,
       declineJob: BusinessApp._onJob,
       quitJob: BusinessApp._onJob,
@@ -454,6 +457,19 @@ export class BusinessApp extends BaseApplication {
     const business = this.business;
     if (!business || !this.actor) return;
     HireDialogApp.ask({ actorId: this.actorId, businessId: business.id, post: target.dataset.post });
+  }
+
+  /** An employee's Manage button (E2): the Employee window, for pay, a bonus, a move or letting them go. */
+  static _onOpenEmployee(event, target) {
+    const business = this.business;
+    if (!business || !this.actor) return;
+    EmployeeDialogApp.ask({ actorId: this.actorId, businessId: business.id, staffId: target.dataset.id });
+  }
+
+  /** Vet every applicant waiting for a post: one roll. */
+  static _onVetApplicants(event, target) {
+    const post = target.dataset.post;
+    this._roll({ type: 'vetRoll', post }, L('NCI.Staff.VetTitle', { post: L(`NCI.Staff.Post.${post}`), name: this.business?.name ?? '' }));
   }
 
   /** An applicant waiting from an advert, hired on what they asked. */

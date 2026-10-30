@@ -8,7 +8,9 @@
 
 import { BUSINESS_DEFAULTS } from './businessConfig.js';
 import { clamp, fail, addLedger, partnerOf, holders, voters, stateBands, bookValue } from './businessRecord.js';
-import { dvOf, approachOf } from './rolls.js';
+import { dvOf, approachOf, bandPassed } from './rolls.js';
+
+const BANDS = ['fumble', 'failure', 'narrow', 'solid', 'strong', 'exceptional'];
 
 /**
  * Apply the company's actions this week. Returns what the rest of the close needs: the multiplier on
@@ -162,9 +164,12 @@ export function applyInternalAudit(b, { result, day, exposure, by }, p = BUSINES
  * better the roll, the narrower), kept with this company's intelligence.
  * @param {{name: string, bands: object, value: number}|null} target - what the GM's service found
  */
-export function applyDiligence(b, { result, day, targetId, target, by }, p = BUSINESS_DEFAULTS) {
+export function applyDiligence(b, { result: rolled, day, targetId, target, by }, p = BUSINESS_DEFAULTS) {
   b.till -= p.info.diligenceCost;
   addLedger(b, { day, kind: 'diligence', amount: -p.info.diligenceCost, actorId: by }, p);
+  // Loose lips on the target's staff (E2): what the roll finds counts a band better.
+  const band = target?.leaky ? BANDS[Math.min(BANDS.length - 1, BANDS.indexOf(rolled.band) + 1)] : rolled.band;
+  const result = { ...rolled, band, success: bandPassed(band) };
   const spread = p.info.spread[result.band];
   const entry = {
     targetId, name: target?.name ?? '', day, band: result.band, by,

@@ -36,6 +36,16 @@
  *   { key, type: 'propose', kind: 'hire', candidateId | actorId, post, pct }   pct: % of the going rate
  *   { key, type: 'propose', kind: 'fire', staffId }
  *   { key, type: 'acceptJob' | 'declineJob' | 'quitJob', businessId }        from the employee's own character
+ *
+ * Employees as people (businessPeople.js, E2):
+ *   { key, type: 'vetRoll', businessId, post, use, rollId }      check every applicant waiting for a post
+ *   { key, type: 'bonus', businessId, staffId, quarters }        quarters of a week's wage, from the cash
+ *   { key, type: 'refuseRaise', businessId, staffId }
+ *   { key, type: 'movePost', businessId, staffId, post }
+ *   { key, type: 'propose', kind: 'pay', staffId, pct }          a new share of the going rate
+ *
+ * `context.traits` is the business's hidden traits (applicant or employee id to trait), from the GM's
+ * hidden state; a result's `traits` are new ones for the service to keep there, never on the record.
  */
 
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
@@ -66,6 +76,9 @@ import {
   activeStaff, recruitCheck, applyRecruit, hireOffer, enactHire, answerJob, quitJob, fireOffer, enactFire, staffRoll, payOvertime, staffShifts,
   staffWeek, payWages,
 } from './businessStaff.js';
+import {
+  idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost,
+} from './businessPeople.js';
 
 export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck };
 export { fixerOffer, bankCheck, angelCheck, openLoans, averageProfit };
@@ -78,7 +91,7 @@ export {
 export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
   'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll',
-  'recruitRoll', 'acceptJob', 'declineJob', 'quitJob',
+  'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'refuseRaise', 'movePost',
 ]);
 
 /** Item types that are not things a business can own. */
@@ -109,7 +122,7 @@ export function itemGear(item, actorId, p = BUSINESS_DEFAULTS) {
 }
 
 /** Requests that carry a roll. */
-export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll']);
+export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll']);
 
 /**
  * What each kind of proposal needs to pass (DESIGN §26.0): closing and stepping up need every partner
@@ -120,7 +133,7 @@ export const PROPOSAL_RULES = Object.freeze({
   // A company's officers are elected and dismissed by a majority of the shares (B4c).
   elect: 'majority', dismiss: 'majority',
   // Taking an employee on, or letting one go (DESIGN §33).
-  hire: 'majority', fire: 'majority',
+  hire: 'majority', fire: 'majority', pay: 'majority',
 });
 
 // ── What a roll needs ────────────────────────────────────────────────────────
@@ -135,7 +148,7 @@ export const PROPOSAL_RULES = Object.freeze({
  * spend on extra time.
  * @returns {{ok: true, dv: number, uses: object[], use?: object, allowHire: boolean, bonusAvailable: boolean, extraAvailable: boolean} | {ok: false, reason: string}}
  */
-export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p = BUSINESS_DEFAULTS } = {}) {
+export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p = BUSINESS_DEFAULTS, traits = null } = {}) {
   const arch = archetypeOf(b);
   const me = partnerOf(b, actorId);
   const use = request.use ?? null;
@@ -148,7 +161,7 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     if (b.setup?.passed) return fail('setup-done');
     if (b.setup?.retryDay != null && day < b.setup.retryDay) return fail('setup-delay');
     if (!holders(b).some((x) => x.cash + gearValue(x) > 0)) return fail('no-contribution');
-    return allowed(setupUses(arch), use, { dv: dvOf(p.setupDv), allowHire: true, bonusAvailable: false, funds: b.escrow, operatorRank, p, b, overtime: null });
+    return allowed(setupUses(arch), use, { dv: dvOf(p.setupDv), allowHire: true, bonusAvailable: false, funds: b.escrow, operatorRank, p, b, overtime: null, traits });
   }
 
   if (b.status !== 'open') return fail('not-open');
@@ -158,35 +171,41 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
   if (request.type === 'stepUpRoll') {
     const check = stepUpCheck(b, actorId, day, p);
     if (!check.ok) return check;
-    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - p.registration.fee, operatorRank, p, b });
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - p.registration.fee, operatorRank, p, b, traits });
   }
 
   if (request.type === 'charterRoll') {
     const check = charterRollCheck(b, actorId, request.part, p);
     if (!check.ok) return check;
-    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b });
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
 
   if (request.type === 'loanRoll' || request.type === 'angelRoll') {
     const can = request.type === 'loanRoll' ? bankCheck(b, actorId, day, p) : angelCheck(b, actorId, day, p);
     if (!can.ok) return can;
-    return allowed(can.uses, use, { dv: can.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b });
+    return allowed(can.uses, use, { dv: can.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
 
   // A company is run by its officers; any holder may still help (a complementary check).
-  if (['action', 'respond', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll'].includes(request.type) && !canRun(b, actorId)) return fail('not-officer');
+  if (['action', 'respond', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll'].includes(request.type) && !canRun(b, actorId)) return fail('not-officer');
 
   if (request.type === 'recruitRoll') {
     const check = recruitCheck(b, request.post, day, p);
     if (!check.ok) return check;
-    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - check.cost, operatorRank, p, b });
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - check.cost, operatorRank, p, b, traits });
+  }
+
+  if (request.type === 'vetRoll') {
+    const check = vetCheck(b, request.post, day, p);
+    if (!check.ok) return check;
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - check.cost, operatorRank, p, b, traits });
   }
 
   if (request.type === 'auditRoll' || request.type === 'diligenceRoll') {
     const check = infoCheck(b, request.type === 'auditRoll' ? 'audit' : 'diligence', day, p);
     if (!check.ok) return check;
     if (request.type === 'diligenceRoll' && (!request.targetId || request.targetId === b.id)) return fail('bad-target');
-    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - check.cost, operatorRank, p, b });
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - check.cost, operatorRank, p, b, traits });
   }
 
   if (request.type === 'respond') {
@@ -194,7 +213,7 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     if (!event || !EVENTS[event.kind]) return fail('no-event');
     if (b.period.slots.some((s) => s.action === 'respond')) return fail('event-answered');
     if (b.period.slots.length >= (p.stages[b.stage]?.slots ?? 1)) return fail('no-slot');
-    return allowed(eventUses(b, event.kind), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b });
+    return allowed(eventUses(b, event.kind), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
 
   if (request.type === 'action') {
@@ -203,7 +222,7 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     if (b.period.slots.length >= slots) return fail('no-slot');
     if (b.period.slots.some((s) => s.action === request.action)) return fail('action-taken');
     const bonusAvailable = b.period.bonuses.some((x) => x.action === request.action && !x.used);
-    return allowed(actionUses(request.action, arch, b.stage), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p, b });
+    return allowed(actionUses(request.action, arch, b.stage), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
 
   if (request.type === 'assist') {
@@ -211,7 +230,7 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     // An employee called in to help is a helper of their own; the partner who called them may still help.
     if (b.period.helpers.includes(use?.kind === 'staff' ? use.staffId : actorId)) return fail('helped');
     if (b.period.slots.some((s) => s.action === request.forAction)) return fail('action-taken');
-    return allowed(helpUses(request.forAction, arch, b.stage), use, { dv: dvOf(p.helpDv), allowHire: false, bonusAvailable: false, extraAvailable, funds: b.till, p, b, overtime: 'help' });
+    return allowed(helpUses(request.forAction, arch, b.stage), use, { dv: dvOf(p.helpDv), allowHire: false, bonusAvailable: false, extraAvailable, funds: b.till, p, b, overtime: 'help', traits });
   }
 
   if (request.type === 'reportRoll') {
@@ -219,7 +238,7 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     if (!check.ok) return check;
     // A bookkeeper's work on the figures is the complementary +1 (DESIGN §33).
     const bookkeeper = activeStaff(b).some((s) => s.post === 'bookkeeper');
-    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: bookkeeper, extraAvailable, funds: b.till, operatorRank, p, b });
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: bookkeeper, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
   return fail('bad-request');
 }
@@ -229,10 +248,10 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
  * called in for overtime (`overtime` is 'roll' or 'help', null where none can be) needs a shift left
  * and the pay, and rolls their best use for it, with its DV step.
  */
-function allowed(uses, use, { funds = 0, operatorRank = 0, p = BUSINESS_DEFAULTS, b = null, overtime = 'roll', ...spec }) {
+function allowed(uses, use, { funds = 0, operatorRank = 0, p = BUSINESS_DEFAULTS, b = null, overtime = 'roll', traits = null, ...spec }) {
   if (use?.kind === 'staff') {
     if (!overtime || !b) return fail('staff-not-allowed');
-    const call = staffRoll(b, use, uses, overtime, funds, p);
+    const call = staffRoll(b, use, uses, overtime, funds, p, traits);
     if (!call.ok) return call;
     return { ok: true, uses, ...spec, use: call.use, dv: spec.dv + call.dvAdd, extraAvailable: false, overtime: call.cost };
   }
@@ -269,8 +288,8 @@ function allowed(uses, use, { funds = 0, operatorRank = 0, p = BUSINESS_DEFAULTS
  *          `wealth` maps actorId -> the change to that character's eddies
  */
 export function applyBusinessRequest({ business, request, actor, day, check = null, context = {}, params: p = BUSINESS_DEFAULTS }) {
-  const ctx = { approval: true, weekday: 1, operatorRank: 0, actors: {}, wealthOf: () => 0, gear: [], ...context };
-  const out = { wealth: {}, events: [], items: {}, taken: {} };
+  const ctx = { approval: true, weekday: 1, operatorRank: 0, actors: {}, wealthOf: () => 0, gear: [], traits: {}, ...context };
+  const out = { wealth: {}, events: [], items: {}, taken: {}, traits: {} };
   const pay = (actorId, amount) => {
     out.wealth[actorId] = (out.wealth[actorId] ?? 0) + amount;
   };
@@ -295,7 +314,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       b.till -= fee;
       log('hire', -fee);
     } else if (request.use.kind === 'staff') {
-      const paid = payOvertime(b, request.use.staffId, kind, day, actor.id, p);
+      const paid = payOvertime(b, request.use.staffId, kind, day, actor.id, p, ctx.traits);
       if (paid.actorId) pay(paid.actorId, paid.cost);
     }
   };
@@ -368,7 +387,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       break;
     }
     case 'setupRoll': {
-      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
       const arch = archetypeOf(b);
@@ -395,7 +414,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       break;
     }
     case 'action': {
-      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
       spendFor('roll');
@@ -412,7 +431,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       break;
     }
     case 'assist': {
-      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
       spendFor('help');
@@ -477,7 +496,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       break;
     }
     case 'stepUpRoll': {
-      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
       spendFor('roll');
@@ -488,7 +507,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       break;
     }
     case 'charterRoll': {
-      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
       spendFor('roll');
@@ -501,7 +520,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       break;
     }
     case 'reportRoll': {
-      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
       spendFor('roll');
@@ -514,7 +533,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
     }
     case 'auditRoll':
     case 'diligenceRoll': {
-      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
       spendFor('roll');
@@ -530,14 +549,48 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       break;
     }
     case 'recruitRoll': {
-      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
       spendFor('roll');
       const r = check.result;
       if (r.extra) spendDays(b, actor.id, 1);
-      const applicants = applyRecruit(b, { result: r, day, post: request.post, key: request.key, seed: ctx.seed, by: actor.id }, p);
+      const { applicants, traits } = applyRecruit(b, { result: r, day, post: request.post, key: request.key, seed: ctx.seed, by: actor.id }, p);
+      Object.assign(out.traits, traits);
       out.events.push({ type: 'roll', action: 'recruit', band: r.band, exposure: r.exposure ?? 0 }, { type: 'applicants', post: request.post, applicants });
+      break;
+    }
+    case 'vetRoll': {
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
+      if (!spec.ok) return spec;
+      if (!check?.ok) return fail(check?.reason ?? 'no-roll');
+      spendFor('roll');
+      const r = check.result;
+      if (r.extra) spendDays(b, actor.id, 1);
+      const checked = applyVet(b, { result: r, day, post: request.post, traits: ctx.traits, by: actor.id }, p);
+      out.events.push({ type: 'roll', action: 'vet', band: r.band, exposure: r.exposure ?? 0 }, { type: 'vetted', post: request.post, count: checked.length });
+      break;
+    }
+    case 'bonus':
+    case 'refuseRaise':
+    case 'movePost': {
+      // Day-to-day running: whoever runs the business (an officer, at a company).
+      if (b.status !== 'open') return fail('not-open');
+      if (me?.status !== 'active' || !me.voting) return fail('not-partner');
+      if (!canRun(b, actor.id)) return fail('not-officer');
+      if (request.type === 'bonus') {
+        const done = payBonus(b, request.staffId, request.quarters, day, actor.id, ctx.traits, p);
+        if (!done.ok) return done;
+        if (done.actorId) pay(done.actorId, done.amount);
+        out.events.push({ type: 'bonus', staffId: request.staffId, amount: done.amount });
+      } else if (request.type === 'refuseRaise') {
+        const done = refuseRaise(b, request.staffId, day, ctx.traits, p);
+        if (!done.ok) return done;
+      } else {
+        const done = movePost(b, request.staffId, request.post, day, actor.id, p);
+        if (!done.ok) return done;
+        out.events.push({ type: 'moved', staffId: request.staffId, post: request.post });
+      }
       break;
     }
     case 'acceptJob':
@@ -565,7 +618,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       break;
     }
     case 'respond': {
-      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
       spendFor('roll');
@@ -579,7 +632,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
     }
     case 'loanRoll':
     case 'angelRoll': {
-      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
       spendFor('roll');
@@ -842,6 +895,8 @@ function canPropose(b, kind, request, ctx, p) {
       return hireOffer(b, request, ctx, ctx.day, p);
     case 'fire':
       return fireOffer(b, request.staffId);
+    case 'pay':
+      return payOffer(b, request, p);
     case 'fixerLoan': {
       const offer = fixerOffer(b, request.amount, p);
       return offer.ok ? { ok: true, terms: { amount: offer.amount } } : offer;
@@ -920,9 +975,14 @@ function enact(b, proposal, day, p, ctx, out) {
       return done;
     }
     case 'fire': {
-      const done = enactFire(b, proposal.terms.staffId, day, p);
+      const done = enactFire(b, proposal.terms.staffId, day, p, { traits: ctx.traits, seed: ctx.seed });
       if (done.ok && done.actorId && done.paid) out.wealth[done.actorId] = (out.wealth[done.actorId] ?? 0) + done.paid;
-      if (done.ok) out.events.push({ type: 'fired', staffId: proposal.terms.staffId });
+      if (done.ok) out.events.push({ type: 'fired', staffId: proposal.terms.staffId, exposure: done.exposure });
+      return done;
+    }
+    case 'pay': {
+      const done = enactPay(b, proposal.terms, day, ctx.traits, p);
+      if (done.ok) out.events.push({ type: 'payChanged', staffId: proposal.terms.staffId, pct: proposal.terms.pct });
       return done;
     }
     case 'angel':
@@ -986,7 +1046,7 @@ export function applyBusinessGig(business, { key, outcome, reward, day }, p = BU
  * @param {{weekday?: number, growthRate?: number, actors?: object, params?: object}} [o]
  * @returns {{business: object, wealth: object, events: object[], changed: boolean}}
  */
-export function advanceBusiness(business, day, { weekday = 1, growthRate = 1, actors = {}, seed = 'nci', params: p = BUSINESS_DEFAULTS } = {}) {
+export function advanceBusiness(business, day, { weekday = 1, growthRate = 1, actors = {}, seed = 'nci', traits = {}, params: p = BUSINESS_DEFAULTS } = {}) {
   const b = structuredClone(normalizeBusiness(business));
   const out = { wealth: {}, events: [] };
   if (b.status !== 'open' || !b.period) return { business: b, ...out, changed: false };
@@ -1006,13 +1066,13 @@ export function advanceBusiness(business, day, { weekday = 1, growthRate = 1, ac
 
   let closes = 0;
   while (b.status === 'open' && b.period.endDay <= day && closes < p.catchUpPeriods) {
-    closePeriod(b, { growthRate, weekday, seed, params: p }, out);
+    closePeriod(b, { growthRate, weekday, seed, traits, params: p }, out);
     closes++;
     changed = true;
   }
   // A longer jump than the catch-up allows: the weeks beyond it are skipped, not simulated.
   if (b.status === 'open' && b.period.endDay <= day) {
-    startPeriod(b, b.period.index + 1, day, weekday, seed, p);
+    startPeriod(b, b.period.index + 1, day, weekday, seed, p, traits);
     out.events.push({ type: 'periodsSkipped' });
   }
   return { business: b, ...out, changed };
@@ -1039,29 +1099,35 @@ function settleLeavers(b, day, actors, out) {
 
 const traffic = (rep) => 0.6 + (clamp(rep, 0, 100) / 100) * 0.8;
 
-/** Close the current operating period: the week's takings and upkeep, the state, the digest. */
 /** Start an operating period, and draw its event. */
-function startPeriod(b, index, startDay, weekday, seed, p) {
+function startPeriod(b, index, startDay, weekday, seed, p, traits = null) {
   b.period = newPeriod(index, startDay, weekday);
-  const event = drawEvent(b, seed, p);
+  const event = drawEvent(b, seed, p, traits);
   if (b.collectors) {
     // A missed payment to a fixer: the collectors come in place of whatever else the week held.
     b.period.event = { kind: 'collectors' };
     b.collectors = false;
+  } else if (b.grudge) {
+    // A sullen employee who was let go comes back to make a point.
+    b.period.event = { kind: 'grudge' };
+    b.grudge = false;
   } else if (event) {
     b.period.event = event;
   }
 }
 
-function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
+/** Close the current operating period: the week's takings and upkeep, the state, the digest. */
+function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, params: p }, out) {
   const stage = p.stages[b.stage] ?? p.stages[0];
   const arch = archetypeOf(b);
   const fx = p.effects;
   const g = growthRate;
   const slot = (action) => b.period.slots.find((s) => s.action === action);
   const scale = (s) => approachOf(s.approach).effect;
-  // What the staff did without a partner: a manager working the shop, security answering trouble.
-  staffShifts(b, seed, p);
+  // Who is off this week (sick, hurt, or downing tools), then what the rest did without a partner:
+  // a manager working the shop, security answering trouble.
+  const idle = idleStaff(b);
+  staffShifts(b, seed, p, { idle, traits });
 
   // A chartered company takes the five company actions; a smaller business the shop actions.
   let work;
@@ -1087,7 +1153,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
   }
 
   // Floor and sales staff lift the takings; a bookkeeper, publicist and compliance officer move the state.
-  const team = staffWeek(b, g, p);
+  const team = staffWeek(b, g, p, { idle, traits });
   workMult *= 1 + team.lift;
   b.state.reputation = clamp(b.state.reputation + ((team.reputationTarget ?? 50) - b.state.reputation) * p.reputationDrift, 0, 100);
   if (b.state.compliance != null) b.state.compliance = clamp(b.state.compliance + (p.complianceBaseline - b.state.compliance) * p.reputationDrift, 0, 100);
@@ -1100,18 +1166,36 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
   const base = Math.round(arch.takings * b.state.capacity * traffic(b.state.reputation) * district.traffic * workMult * (1 + b.boost) * part);
   const boost = b.boost;
   b.boost = 0;
-  const event = settleEvent(b, base, b.period.slots, p);
+  const event = settleEvent(b, base, b.period.slots, p, { traits, seed, day: b.period.endDay });
   const takings = Math.max(0, base + (event?.change ?? 0));
   const fixed = (stage.rent + (stage.licence ?? 0)) * district.rent + stage.protection * protection * district.risk;
   const upkeep = Math.round((arch.costs * b.state.capacity ** 0.85 * b.state.costFactor + fixed) * part);
   // The week's takings come in before its loan payments go out, so a week that earns the payment makes it.
   b.till += takings - upkeep;
+  // A staff event's bills (an accident at work) come out of the cash too.
+  const eventCost = event?.cost ?? 0;
+  if (eventCost) {
+    b.till -= eventCost;
+    addLedger(b, { day: b.period.endDay, kind: 'medical', amount: -eventCost }, p);
+  }
   // Wages next, as far as the cash goes, then the loans.
   const wages = payWages(b, part, b.period.endDay, p);
   for (const [actorId, eb] of Object.entries(wages.pay)) out.wealth[actorId] = (out.wealth[actorId] ?? 0) + eb;
+  // A payslip for each player character on the staff (DESIGN §33.2).
+  for (const s of activeStaff(b).filter((x) => x.source === 'pc' && x.actorId)) {
+    out.events.push({ type: 'payslip', actorId: s.actorId, staffId: s.id, post: s.post, wage: Math.round(s.wage * part), paid: wages.pay[s.actorId] ?? 0, owed: s.owed ?? 0 });
+  }
   const loans = payLoans(b, b.period.endDay, p);
-  const profit = takings - upkeep - wages.wages - loans.interest;
+  const profit = takings - upkeep - eventCost - wages.wages - loans.interest;
   b.till -= loans.interest + loans.principal;
+
+  // The staff's week: loyalty, raises asked for at a month's end, and who has had enough (E2).
+  const monthEnd = b.period.index % p.report.weeks === 0;
+  const monthProfit = profit + b.digests.slice(-(p.report.weeks - 1)).reduce((a, d) => a + d.profit, 0);
+  const unanswered = !!event && !EVENTS[event.kind]?.good && event.outcome === 'unanswered';
+  const people = loyaltyWeek(b, { monthEnd, monthProfit, unanswered, traits, seed, day: b.period.endDay }, p);
+  if (people.exposure) out.events.push({ type: 'plant', exposure: people.exposure });
+  const notes = [...(event?.notes ?? []), ...people.notes];
 
   const digest = {
     index: b.period.index,
@@ -1124,7 +1208,8 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
     ...(loans.interest || loans.principal || loans.missed.length ? { interest: loans.interest, repaid: loans.principal, missed: loans.missed } : {}),
     ...(wages.wages || wages.owed ? { wages: wages.wages, owed: wages.owed } : {}),
     worked: !!work,
-    ...(event ? { event } : {}),
+    ...(event ? { event: { kind: event.kind, outcome: event.outcome, band: event.band, change: event.change, ...(eventCost ? { cost: eventCost } : {}) } } : {}),
+    ...(notes.length ? { staff: notes } : {}),
     ...(boost ? { boost } : {}),
     actions: b.period.slots.map((s) => ({ action: s.action, by: s.by, band: s.band, ...(s.staff ? { staff: true } : {}) })),
     bands: stateBands(b, p),
@@ -1140,5 +1225,5 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
     liquidate(b, b.period.endDay, 'failed', out, p);
     return;
   }
-  startPeriod(b, b.period.index + 1, b.period.endDay, weekday, seed, p);
+  startPeriod(b, b.period.index + 1, b.period.endDay, weekday, seed, p, traits);
 }

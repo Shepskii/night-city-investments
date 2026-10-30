@@ -26,6 +26,7 @@ export const SKILLS = Object.freeze({
   electronics: skill('Electronics/Security Tech', 'tech'),
   handgun: skill('Handgun', 'ref'),
   humanPerception: skill('Human Perception', 'emp'),
+  interrogation: skill('Interrogation', 'cool'),
   landVehicleTech: skill('Land Vehicle Tech', 'tech'),
   librarySearch: skill('Library Search', 'int'),
   localExpert: skill('Local Expert', 'int'),
@@ -299,6 +300,12 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     lowerBy: 3,
     /** eb a week per point of base, by stage (part-time at a side business). */
     rate: Object.freeze([5, 9, 14]),
+    /**
+     * Masters ask more (E2): each point of base above `premiumFrom` costs `premium` times the rate on
+     * top, so the best margin is at Expert until a company is near its ceiling.
+     */
+    premiumFrom: 15,
+    premium: 2,
     /** The share of the going rate the partners may offer. */
     offer: Object.freeze({ min: 0.8, max: 1.5 }),
     /** Floor staff lift the takings by (base − floorBase) × floorLift each; sales by half that. In total, at most the stage's cap. */
@@ -317,6 +324,63 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     maxShifts: 2,
     /** A fired employee is paid this many weeks' wages. */
     severanceWeeks: 1,
+    /**
+     * Loyalty (E2, DESIGN §33.4), 0 to 100, for NPCs and recruits (a player character's is the
+     * player's own). It starts at `start`, moved `perTen` for each 10% of the going rate offered above
+     * or below it; a paid week adds `paidWeek` up to `paidCap`, a profitable month `profitMonth`, a
+     * bonus `bonusPerQuarter` for each quarter of a week's wage. Below `quitBelow` an employee may quit
+     * as a week closes (`quitChance`), below `walkBelow` they walk out, and `unpaidWeeks` weeks owed
+     * in a row make them quit. At `devoted` they get +1 on overtime, shrug off poaching, and security
+     * or compliance answers a band better.
+     */
+    loyalty: Object.freeze({
+      start: 50, perTen: 5, paidWeek: 2, paidCap: 60, missed: -15, profitMonth: 3, bonusPerQuarter: 5, extraShift: -3,
+      cut: -10, refused: -10, unanswered: -2, dispute: -5,
+      quitBelow: 25, quitChance: 0.25, walkBelow: 10, unpaidWeeks: 2, devoted: 75, dedicatedFloor: 40,
+      bands: Object.freeze([[24, 'sullen'], [49, 'steady'], [74, 'loyal'], [Infinity, 'devoted']]),
+    }),
+    /** A bonus is paid in quarters of a week's wage, at most this many, once a week per employee. */
+    bonusQuarters: 4,
+    /** At each month's end an employee below `below` loyalty asks for `step` more of the going rate, until the next month's end. */
+    raise: Object.freeze({ below: 50, step: 0.1 }),
+    /** Vetting the applicants for a post: one roll checks them all. */
+    vet: Object.freeze({ uses: Object.freeze([S.humanPerception, S.librarySearch, A.interface]), dv: 13, cost: 50 }),
+    /**
+     * Hidden traits, drawn with each applicant (`chance`, more often from a failed advert) and kept in
+     * the GM's hidden state. A corp plant is drawn only at a company (loose lips in its place before).
+     */
+    traits: Object.freeze({
+      chance: 0.2,
+      failureChance: 0.35,
+      weights: Object.freeze({ lightFingers: 3, looseLips: 2, corpPlant: 1, moonlighter: 3, dedicated: 2, connected: 2 }),
+      good: Object.freeze(['dedicated', 'connected']),
+      /** Light fingers: the event comes this much more often, and costs this much more. */
+      lightFingersWeight: 3,
+      lightFingersLoss: 1.5,
+      /** A moonlighter has other work one week in three, and turns overtime down. */
+      moonlighting: 1 / 3,
+      /** Connected: a manager's or salesperson's base counts this much higher, unseen. */
+      connected: 3,
+      /** A corp plant: Exposure each week, and on being fired. */
+      plantExposure: 1,
+      plantFired: 5,
+    }),
+    /** Staff events (DESIGN §33.4). */
+    events: Object.freeze({
+      /** Light fingers: the share of the week's takings that goes missing, unanswered. */
+      theft: Object.freeze([0.05, 0.15]),
+      /** An accident at work: medical costs by stage. */
+      accident: Object.freeze([100, 250, 500]),
+      /** A pay dispute needs this many staff, on average below this loyalty. */
+      disputeStaff: 4,
+      disputeLoyalty: 50,
+      /** A star turn answered well: Reputation. */
+      starTurn: 2,
+      /** Firing a sullen employee: the chance of a grudge (vandalism) the next week. */
+      grudge: 0.5,
+      /** Archetypes where accidents happen. */
+      accidents: Object.freeze(['garage', 'gunShop', 'security', 'courier']),
+    }),
     /**
      * Advertising a job: the roll, its cost by stage, how often, and how long applicants wait. The band
      * sets how many apply (`count`, the seed picks within it), the range of their base in the post's
@@ -429,6 +493,18 @@ export const EVENTS = Object.freeze({
   windfall: Object.freeze({ weight: 2, good: true, trade: true, uses: [S.business, S.trading, A.operator], hit: Object.freeze({}) }),
   /** Never drawn: it comes the week after a missed fixer-loan payment. */
   collectors: Object.freeze({ weight: 0, security: true, uses: [S.persuasion, S.streetwise, S.trading, A.combatAwareness, A.operator], hit: Object.freeze({ reputation: -3 }) }),
+  /** Never drawn: it may come the week after a sullen employee is fired. */
+  grudge: Object.freeze({ weight: 0, security: true, uses: [S.persuasion, S.streetwise, S.tactics, A.combatAwareness], hit: Object.freeze({ reputation: -2, capacity: -0.05 }) }),
+  /**
+   * Staff events (E2, DESIGN §33.4): drawn only when the business has NPC staff, each settled in
+   * businessPeople.js. `staffId` on the event names the employee it is about, where there is one.
+   */
+  sickDay: Object.freeze({ weight: 2, staff: true, uses: [S.paramedic, A.medicine], hit: Object.freeze({}) }),
+  lightFingers: Object.freeze({ weight: 1, staff: true, uses: [S.humanPerception, S.interrogation, S.librarySearch], hit: Object.freeze({}) }),
+  payDispute: Object.freeze({ weight: 3, staff: true, stage: 2, uses: [S.persuasion, S.business], hit: Object.freeze({}) }),
+  poaching: Object.freeze({ weight: 2, staff: true, uses: [S.persuasion], hit: Object.freeze({}) }),
+  accident: Object.freeze({ weight: 2, staff: true, uses: [S.paramedic, A.medicine], hit: Object.freeze({}) }),
+  starTurn: Object.freeze({ weight: 2, staff: true, good: true, uses: [S.business, S.persuasion], hit: Object.freeze({}) }),
 });
 
 /** The DV for a stage's actions. */

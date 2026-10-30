@@ -1,0 +1,65 @@
+<section class="nci-terminal nci-business nci-hire">
+  <header class="nci-header">
+    <div><strong>{{{who}}}</strong> <span class="nci-muted">{{source}} &middot; {{business}}</span></div>
+  </header>
+  <p class="nci-hint">{{post}} &middot; {{level}} &middot; {{skill}} <strong>{{base}}</strong>{{#if loyalty}} &middot; <span class="nci-loyal nci-loyal-{{loyaltyBand}}">{{loyalty}}</span>{{/if}}</p>
+  {{#each notes}}<p class="nci-warn">{{this}}</p>{{/each}}
+  <p class="nci-hint">{{loyaltyHint}}</p>
+  {{#if blocked}}<p class="nci-warn">{{blocked}}</p>{{/if}}
+  {{#if pending}}<p class="nci-warn">{{pending}}</p>{{/if}}
+
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Staff.Pay"}}</h3>
+    <p class="nci-hint">{{payText}}</p>
+    {{#if ask}}
+    <p class="nci-warn">{{ask}}</p>
+    <div class="nci-actions">
+      {{#if canAgree}}<button type="button" data-action="agreeRaise" data-pct="{{askPct}}"><i class="fas fa-arrow-trend-up"></i> {{localize "NCI.Staff.AgreeRaise"}}</button>{{/if}}
+      {{#if canRefuse}}<button type="button" data-action="refuseRaise"><i class="fas fa-xmark"></i> {{localize "NCI.Staff.RefuseRaise"}}</button>{{/if}}
+    </div>
+    {{/if}}
+    {{#if canPay}}
+    <div class="nci-hirerow">
+      <span class="nci-muted">{{localize "NCI.Staff.PayHint"}}</span>
+      <label>{{localize "NCI.Staff.Pct"}} <input type="number" name="payPct" min="80" max="150" step="5" value="{{pct}}"></label>
+      <button type="button" data-action="proposePay"><i class="fas fa-scale-balanced"></i> {{localize "NCI.Staff.ProposePay"}}</button>
+    </div>
+    {{/if}}
+  </div>
+
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Staff.Bonus"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Staff.BonusHint"}}</p>
+    {{#if bonusGiven}}<p class="nci-muted">{{bonusGiven}}</p>{{/if}}
+    {{#if canBonus}}
+    <div class="nci-hirerow">
+      <label>{{localize "NCI.Staff.BonusAmount"}} <select name="bonusQuarters">{{#each bonusOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+      <span></span>
+      <button type="button" data-action="payBonus"><i class="fas fa-gift"></i> {{localize "NCI.Staff.PayBonus"}}</button>
+    </div>
+    {{/if}}
+  </div>
+
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Staff.Move"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Staff.MoveHint"}}</p>
+    {{#if noMove}}<p class="nci-muted">{{noMove}}</p>{{/if}}
+    {{#if canMove}}
+    <div class="nci-hirerow">
+      <label>{{localize "NCI.Staff.PostLabel"}} <select name="movePost">{{#each moves}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+      <span></span>
+      <button type="button" data-action="movePost"><i class="fas fa-right-left"></i> {{localize "NCI.Staff.MoveButton"}}</button>
+    </div>
+    {{/if}}
+  </div>
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Staff.LetGo"}}</h3>
+    <p class="nci-hint">{{fireText}}</p>
+    {{#if canFire}}<div class="nci-actions"><button type="button" data-action="fireStaff"><i class="fas fa-user-minus"></i> {{localize "NCI.Staff.Fire"}}</button></div>{{/if}}
+  </div>
+
+  <footer class="nci-footer">
+    <button type="button" data-action="close"><i class="fas fa-xmark"></i> {{localize "NCI.Staff.CloseHire"}}</button>
+  </footer>
+</section>

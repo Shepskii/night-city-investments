@@ -7,13 +7,16 @@
  *              trouble when no partner does; a partner can call an employee in to make one of the
  *              business's rolls for overtime pay. Pure; no Foundry globals.
  *
- * An employee: `{ id, actorId, name, source, post, bases, pct, wage, hiredDay, status, owed }`.
+ * An employee: `{ id, actorId, name, source, post, bases, pct, wage, hiredDay, status, owed, loyalty, ... }`.
  *   source   'pc' (a player character), 'npc' (an NPC actor) or 'recruit' (found with a recruiting roll; no actor)
  *   bases    their base by use key (`skill:Business`, `ability:Maker` holds the rank), read by the GM's
  *            service from the character's sheet and refreshed each week; a recruit's is set at hiring
  *   pct      the share of the going rate the partners offered; `wage` is what that comes to now
  *   status   'offered' (waiting for the character, or the GM for an NPC) or 'active'
  *   owed     wages the cash could not cover, paid first the next week
+ *   loyalty  0 to 100 for an NPC or a recruit (E2, businessPeople.js); null for a player character
+ *   candidateId  the applicant a recruit was; their hidden trait is kept under it (see traitOf)
+ *   revealed a trait the partners know of (vetting, or a thief caught), or 'none' when vetted clean
  */
 
 import { createRng } from './rng.js';
@@ -32,6 +35,37 @@ export function levelOf(base, p = BUSINESS_DEFAULTS) {
 
 export const activeStaff = (b) => (b.staff ?? []).filter((s) => s.status === 'active');
 export const staffOf = (b, id) => (b.staff ?? []).find((s) => s.id === id) ?? null;
+
+// ── Loyalty and traits (E2) ──────────────────────────────────────────────────
+
+/** Whether an employee has loyalty: NPCs and recruits do; a player character's is the player's. */
+export const hasLoyalty = (staff) => staff.source !== 'pc';
+
+/** An employee's hidden trait, from the GM's hidden state (`traits` maps applicant or employee id to a trait). */
+export const traitOf = (traits, staff) => traits?.[staff.candidateId ?? staff.id] ?? null;
+
+/** Loyalty as a band the partners see: sullen, steady, loyal or devoted. */
+export function loyaltyBand(loyalty, p = BUSINESS_DEFAULTS) {
+  return p.staff.loyalty.bands.find(([upTo]) => loyalty <= upTo)[1];
+}
+
+/** Move an employee's loyalty, within 0 to 100 (a dedicated employee never below their floor). */
+export function moveLoyalty(staff, by, traits = null, p = BUSINESS_DEFAULTS) {
+  if (!hasLoyalty(staff) || !by) return;
+  const floor = traitOf(traits, staff) === 'dedicated' ? p.staff.loyalty.dedicatedFloor : 0;
+  staff.loyalty = Math.max(floor, Math.min(100, Math.round((staff.loyalty ?? p.staff.loyalty.start) + by)));
+}
+
+/** Loyalty to start with: more for pay above the going rate, less below it. */
+export const startLoyalty = (pct, p = BUSINESS_DEFAULTS) => Math.round(p.staff.loyalty.start + ((pct - 1) / 0.1) * p.staff.loyalty.perTen);
+
+export const devoted = (staff, p = BUSINESS_DEFAULTS) => hasLoyalty(staff) && (staff.loyalty ?? 0) >= p.staff.loyalty.devoted;
+
+/** Whether a moonlighter has other work this week, drawn from the business and the week. */
+export function moonlighting(b, staff, traits, p = BUSINESS_DEFAULTS) {
+  if (traitOf(traits, staff) !== 'moonlighter') return false;
+  return createRng('nci', 'moonlight', b.id, b.period?.index ?? 0, staff.id).chance(p.staff.traits.moonlighting);
+}
 
 /** What counts for a post here: `[{use, adj}]`, adj being taken off a skill that counts a level lower. */
 export function postUses(post, arch, p = BUSINESS_DEFAULTS) {
@@ -69,8 +103,11 @@ export function postBest(staff, post, arch, p = BUSINESS_DEFAULTS) {
 /** An employee's base for a post: their best base among what counts for it (see postBest). */
 export const postBase = (staff, post, arch, p = BUSINESS_DEFAULTS) => postBest(staff, post, arch, p).base;
 
-/** The going weekly wage for a base at a stage. */
-export const goingRate = (base, stage, p = BUSINESS_DEFAULTS) => Math.round(base * (p.staff.rate[stage] ?? p.staff.rate.at(-1)));
+/** The going weekly wage for a base at a stage: a rate per point, and more for each point a Master has above Expert. */
+export function goingRate(base, stage, p = BUSINESS_DEFAULTS) {
+  const st = p.staff;
+  return Math.round((base + st.premium * Math.max(0, base - st.premiumFrom)) * (st.rate[stage] ?? st.rate.at(-1)));
+}
 
 /** What an employee is paid now: the going rate for their post's base, times the share offered. */
 export function wageOf(b, staff, p = BUSINESS_DEFAULTS) {
@@ -80,13 +117,16 @@ export function wageOf(b, staff, p = BUSINESS_DEFAULTS) {
 /** How many floor staff the business has room for: its Capacity, rounded down, and at least one. */
 export const floorRoom = (b) => Math.max(1, Math.floor(b.state.capacity));
 
-/** Whether another employee could take this post (offers waiting count as places taken). */
-export function postOpen(b, post, p = BUSINESS_DEFAULTS) {
+/**
+ * Whether another employee could take this post (offers waiting count as places taken). With
+ * `exceptId`, whether that employee could move to it from their own post.
+ */
+export function postOpen(b, post, p = BUSINESS_DEFAULTS, exceptId = null) {
   const def = POSTS[post];
   if (!def) return fail('bad-post');
   if (b.stage < def.stage) return fail('post-later');
-  const staff = (b.staff ?? []).filter((s) => s.status === 'active' || s.status === 'offered');
-  if (staff.length >= (p.staff.headcount[b.stage] ?? 0)) return fail('no-headcount');
+  const staff = (b.staff ?? []).filter((s) => (s.status === 'active' || s.status === 'offered') && s.id !== exceptId);
+  if (!exceptId && staff.length >= (p.staff.headcount[b.stage] ?? 0)) return fail('no-headcount');
   if (post === 'manager' && staff.some((s) => s.post === 'manager')) return fail('post-taken');
   if (post === 'floor' && staff.filter((s) => s.post === 'floor').length >= floorRoom(b)) return fail('no-floor-room');
   return { ok: true };
@@ -107,10 +147,11 @@ export function recruitCheck(b, post, day, p = BUSINESS_DEFAULTS) {
 
 /**
  * Record an advert for a post: the cost is spent, and the applicants the band brings are drawn from
- * the seed and the request, each with their own base in the post's skills and the wage they ask (a
- * share of the going rate). They replace any applicants still waiting for that post. A fumble brings
- * nobody.
- * @returns {object[]} the applicants
+ * the seed and the request, each with their own base in the post's skills, the wage they ask (a
+ * share of the going rate) and perhaps a hidden trait. They replace any applicants still waiting for
+ * that post. A fumble brings nobody. The traits are not put on the record: the GM's service keeps
+ * them in its hidden state.
+ * @returns {{applicants: object[], traits: object}} `traits` maps applicant id to trait
  */
 export function applyRecruit(b, { result, day, post, key, seed = 'nci', by }, p = BUSINESS_DEFAULTS) {
   const r = p.staff.recruit;
@@ -120,7 +161,7 @@ export function applyRecruit(b, { result, day, post, key, seed = 'nci', by }, p 
   addLedger(b, { day, kind: 'recruit', amount: -cost, actorId: by }, p);
   b.candidates = (b.candidates ?? []).filter((c) => c.expires >= day && c.post !== post);
   const count = r.count[result.band];
-  if (!count) return [];
+  if (!count) return { applicants: [], traits: {} };
   const rng = createRng(seed, 'recruit', b.id, key);
   const pick = ([lo, hi]) => rng.int(lo, hi);
   const applicants = Array.from({ length: pick(count) }, (_, i) => {
@@ -138,7 +179,20 @@ export function applyRecruit(b, { result, day, post, key, seed = 'nci', by }, p 
     };
   });
   b.candidates = [...b.candidates, ...applicants];
-  return applicants;
+  const traits = {};
+  for (const a of applicants) {
+    const trait = drawTrait(rng, result.band, b.stage, p);
+    if (trait) traits[a.id] = trait;
+  }
+  return { applicants, traits };
+}
+
+/** A hidden trait for an applicant, or none. A corp plant only turns up at a company. */
+function drawTrait(rng, band, stage, p = BUSINESS_DEFAULTS) {
+  const t = p.staff.traits;
+  if (!rng.chance(band === 'failure' ? t.failureChance : t.chance)) return null;
+  const trait = rng.weighted({ ...t.weights });
+  return trait === 'corpPlant' && stage < 2 ? 'looseLips' : trait;
 }
 
 /** What an applicant asks a week here: the going rate for their base, times their share. */
@@ -187,12 +241,17 @@ export function enactHire(b, terms, day, ctx, p = BUSINESS_DEFAULTS) {
     const candidate = (b.candidates ?? []).find((c) => c.id === terms.candidateId);
     if (!candidate) return fail('no-candidate');
     const bases = Object.fromEntries(postUses(post, archetypeOf(b), p).filter(({ use }) => use.kind === 'skill').map(({ use }) => [useKey(use), candidate.base]));
-    staff = { id: `stf_${candidate.id}`, actorId: null, name: candidate.name, source: 'recruit', post, bases, pct: terms.pct, hiredDay: day, status: 'active', owed: 0 };
+    staff = {
+      id: `stf_${candidate.id}`, actorId: null, name: candidate.name, source: 'recruit', post, bases, pct: terms.pct, hiredDay: day, status: 'active', owed: 0,
+      // They asked for what they are paid, so they start level.
+      loyalty: p.staff.loyalty.start, candidateId: candidate.id, ...(candidate.revealed ? { revealed: candidate.revealed } : {}),
+    };
     b.candidates = b.candidates.filter((c) => c !== candidate);
   } else {
     staff = {
       id: `stf_${terms.actorId}`, actorId: terms.actorId, name: terms.name, source: terms.source, post,
       bases: ctx.basesOf?.(terms.actorId) ?? {}, pct: terms.pct, hiredDay: null, status: 'offered', owed: 0,
+      loyalty: terms.source === 'pc' ? null : startLoyalty(terms.pct, p),
     };
   }
   staff.wage = wageOf(b, staff, p);
@@ -234,18 +293,24 @@ export function fireOffer(b, staffId) {
 
 /**
  * A firing the partners agreed to: an employee who started is paid a week's wage (and what they are
- * owed) from the cash, as far as it goes; a player character's goes to their eddies.
- * @returns {{ok: true, paid: number, actorId: string|null}}
+ * owed) from the cash, as far as it goes; a player character's goes to their eddies. A thief who was
+ * caught gets no severance. A sullen employee may come back to make trouble (a grudge, next week),
+ * and a corp plant takes what they know with them (Exposure).
+ * @returns {{ok: true, paid: number, actorId: string|null, exposure: number}}
  */
-export function enactFire(b, staffId, day, p = BUSINESS_DEFAULTS) {
+export function enactFire(b, staffId, day, p = BUSINESS_DEFAULTS, { traits = null, seed = 'nci' } = {}) {
   const staff = staffOf(b, staffId);
   if (!staff) return fail('not-staff');
-  const due = staff.status === 'active' ? wageOf(b, staff, p) * p.staff.severanceWeeks + (staff.owed ?? 0) : 0;
+  const severance = staff.status === 'active' && !staff.caught ? wageOf(b, staff, p) * p.staff.severanceWeeks : 0;
+  const due = severance + (staff.status === 'active' ? staff.owed ?? 0 : 0);
   const paid = Math.max(0, Math.min(due, b.till));
   b.till -= paid;
   b.staff = b.staff.filter((s) => s !== staff);
   addLedger(b, { day, kind: 'fired', amount: -paid, staffName: staff.name }, p);
-  return { ok: true, paid, actorId: staff.source === 'pc' ? staff.actorId : null };
+  if (staff.status === 'active' && hasLoyalty(staff) && staff.loyalty < p.staff.loyalty.quitBelow
+    && createRng(seed, 'grudge', b.id, staff.id, day).chance(p.staff.events.grudge)) b.grudge = true;
+  const exposure = traitOf(traits, staff) === 'corpPlant' ? p.staff.traits.plantFired : 0;
+  return { ok: true, paid, actorId: staff.source === 'pc' ? staff.actorId : null, exposure };
 }
 
 // ── Overtime ─────────────────────────────────────────────────────────────────
@@ -263,10 +328,11 @@ export const shiftsOf = (b, staffId) => b.period?.overtime?.[staffId] ?? 0;
  * this roll (an alternative skill's DV step counted against it), with its base.
  * @returns {{ok: true, use: object, dvAdd: number, cost: number} | {ok: false, reason: string}}
  */
-export function staffRoll(b, use, uses, kind, funds, p = BUSINESS_DEFAULTS) {
+export function staffRoll(b, use, uses, kind, funds, p = BUSINESS_DEFAULTS, traits = null) {
   const staff = staffOf(b, use.staffId);
   if (staff?.status !== 'active') return fail('not-staff');
   if (shiftsOf(b, staff.id) >= p.staff.maxShifts) return fail('no-shifts');
+  if (moonlighting(b, staff, traits, p)) return fail('moonlighting');
   const cost = overtimePay(b, staff, kind, p);
   if (funds < cost) return fail('no-funds');
   const best = uses
@@ -274,14 +340,20 @@ export function staffRoll(b, use, uses, kind, funds, p = BUSINESS_DEFAULTS) {
     .filter((x) => x.u.kind !== 'ability' || x.base > 0)
     .sort((a, c) => (c.base - c.dvAdd) - (a.base - a.dvAdd))[0];
   if (!best) return fail('bad-use');
-  return { ok: true, use: { kind: 'staff', staffId: staff.id, via: useKey(best.u), base: best.base }, dvAdd: best.dvAdd, cost };
+  // A devoted employee puts in that bit more (E2).
+  const base = best.base + (devoted(staff, p) ? 1 : 0);
+  return { ok: true, use: { kind: 'staff', staffId: staff.id, via: useKey(best.u), base }, dvAdd: best.dvAdd, cost };
 }
 
-/** Pay an employee's overtime from the cash and count the shift. A player character's goes to their eddies. */
-export function payOvertime(b, staffId, kind, day, by, p = BUSINESS_DEFAULTS) {
+/**
+ * Pay an employee's overtime from the cash and count the shift. A player character's goes to their
+ * eddies. A second shift in a week wears on loyalty.
+ */
+export function payOvertime(b, staffId, kind, day, by, p = BUSINESS_DEFAULTS, traits = null) {
   const staff = staffOf(b, staffId);
   const cost = overtimePay(b, staff, kind, p);
   b.till -= cost;
+  if (shiftsOf(b, staffId) >= 1) moveLoyalty(staff, p.staff.loyalty.extraShift, traits, p);
   b.period.overtime = { ...(b.period.overtime ?? {}), [staffId]: shiftsOf(b, staffId) + 1 };
   addLedger(b, { day, kind: 'overtime', amount: -cost, actorId: by, staffName: staff.name }, p);
   return { cost, actorId: staff.source === 'pc' ? staff.actorId : null };
@@ -289,12 +361,27 @@ export function payOvertime(b, staffId, kind, day, by, p = BUSINESS_DEFAULTS) {
 
 // ── The week ─────────────────────────────────────────────────────────────────
 
-/** Roll a check for an employee, from the seed: the week's draw, as an event is, not a player's roll. */
-function autoRoll(b, staff, base, dv, seed, what) {
+const BANDS = ['fumble', 'failure', 'narrow', 'solid', 'strong', 'exceptional'];
+
+/**
+ * Roll a check for an employee, from the seed: the week's draw, as an event is, not a player's roll.
+ * `better` lifts the result a band (a devoted employee answering trouble).
+ */
+function autoRoll(b, staff, base, dv, seed, what, better = false) {
   const rng = createRng(seed, 'staff', b.id, b.period.index, staff.id, what);
   const roll = cprD10(() => rng.int(1, 10));
   const total = base + roll.total;
-  return { band: bandOf(total - dv, roll.crit), total, dv };
+  const band = bandOf(total - dv, roll.crit);
+  return { band: better ? BANDS[Math.min(BANDS.length - 1, BANDS.indexOf(band) + 1)] : band, total, dv };
+}
+
+/** Staff at work this week: active, and not off sick, injured or downing tools (`idle`). */
+const working = (b, idle) => activeStaff(b).filter((s) => !idle?.has(s.id));
+
+/** A post's base for the week's own work: a connected manager or salesperson counts higher, unseen. */
+function workBase(staff, post, arch, traits, p) {
+  const connected = (post === 'manager' || post === 'sales') && traitOf(traits, staff) === 'connected' ? p.staff.traits.connected : 0;
+  return postBase(staff, post, arch, p) + connected;
 }
 
 /**
@@ -302,23 +389,26 @@ function autoRoll(b, staff, base, dv, seed, what) {
  * contracts, at a company) when no partner did; security answers a security event, and a compliance
  * officer an inspection, that nobody answered. Each is a slot of its own, marked `staff`.
  */
-export function staffShifts(b, seed = 'nci', p = BUSINESS_DEFAULTS) {
+export function staffShifts(b, seed = 'nci', p = BUSINESS_DEFAULTS, { idle = null, traits = null } = {}) {
   const arch = archetypeOf(b);
-  const staff = activeStaff(b);
+  const staff = working(b, idle);
   const slots = b.period.slots;
   const dv = stageDv(b.stage, p);
   const manager = staff.find((s) => s.post === 'manager');
   const worked = b.stage >= 2 ? slots.some((s) => s.action === 'contracts' || s.action === 'shortcuts') : slots.some((s) => s.action === 'work');
   if (manager && !worked) {
     const action = b.stage >= 2 ? 'contracts' : 'work';
-    slots.push({ action, by: manager.id, staff: true, approach: 'standard', bonus: 0, ...autoRoll(b, manager, postBase(manager, 'manager', arch, p), dv, seed, action) });
+    slots.push({ action, by: manager.id, staff: true, approach: 'standard', bonus: 0, ...autoRoll(b, manager, workBase(manager, 'manager', arch, traits, p), dv, seed, action) });
   }
   const event = b.period.event;
   const def = event ? EVENTS[event.kind] : null;
-  if (def && !def.good && !slots.some((s) => s.action === 'respond')) {
+  if (def && !def.good && !def.staff && !slots.some((s) => s.action === 'respond')) {
     const post = event.kind === 'inspection' ? 'compliance' : def.security || event.kind === 'trouble' ? 'security' : null;
     const who = post ? staff.find((s) => s.post === post) : null;
-    if (who) slots.push({ action: 'respond', event: event.kind, by: who.id, staff: true, approach: 'standard', bonus: 0, ...autoRoll(b, who, postBase(who, post, arch, p), dv, seed, 'respond') });
+    if (who) {
+      const roll = autoRoll(b, who, postBase(who, post, arch, p), dv, seed, 'respond', devoted(who, p));
+      slots.push({ action: 'respond', event: event.kind, by: who.id, staff: true, approach: 'standard', bonus: 0, ...roll });
+    }
   }
 }
 
@@ -327,11 +417,11 @@ export function staffShifts(b, seed = 'nci', p = BUSINESS_DEFAULTS) {
  * and the drift a bookkeeper, publicist, compliance officer and salesperson bring.
  * @returns {{lift: number, reputationTarget: number|null}}
  */
-export function staffWeek(b, growthRate = 1, p = BUSINESS_DEFAULTS) {
+export function staffWeek(b, growthRate = 1, p = BUSINESS_DEFAULTS, { idle = null, traits = null } = {}) {
   const st = p.staff;
   const arch = archetypeOf(b);
-  const staff = activeStaff(b);
-  const each = (post) => staff.filter((s) => s.post === post).map((s) => ({ s, base: postBase(s, post, arch, p) }));
+  const staff = working(b, idle);
+  const each = (post) => staff.filter((s) => s.post === post).map((s) => ({ s, base: workBase(s, post, arch, traits, p) }));
   const per = (base) => Math.max(0, base - st.floorBase) * st.floorLift;
   const floor = each('floor').slice(0, floorRoom(b)).reduce((a, x) => a + per(x.base), 0);
   const sales = each('sales').reduce((a, x) => a + per(x.base) * st.salesShare, 0);

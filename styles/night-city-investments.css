@@ -228,6 +228,15 @@
 .nci-app .nci-hirerow label { min-width: 0; }
 .nci-app .nci-hirerow :is(select, input, button) { box-sizing: border-box; width: 100%; height: 30px; margin: 0; }
 .nci-app .nci-hirerow button { width: auto; padding: 0 12px; white-space: nowrap; }
+/* Employees as people (E2): loyalty as a band, and applicants grouped by post. */
+.nci-app .nci-loyal { display: inline-block; padding: 0 6px; border-radius: 3px; font-size: 12px; line-height: 18px; border: 1px solid currentColor; }
+.nci-app .nci-loyal-sullen { color: var(--nci-down); }
+.nci-app .nci-loyal-steady { color: inherit; opacity: 0.8; }
+.nci-app .nci-loyal-loyal { color: var(--nci-up); }
+.nci-app .nci-loyal-devoted { color: var(--nci-up); font-weight: bold; }
+.nci-app .nci-applicants { margin: 0 0 10px; }
+.nci-app .nci-applicants > .nci-gigtop { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0; }
+.nci-app .nci-applicants > .nci-gigtop button { width: auto; }
 /* A proposal's voters: each a character link with their vote beside it, on one line that wraps. */
 .nci-app .nci-proposal .nci-gigtop { margin-bottom: 6px; }
 .nci-app .nci-votes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }

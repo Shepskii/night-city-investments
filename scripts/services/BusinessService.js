@@ -17,10 +17,10 @@
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
-  STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness,
+  STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
-import { log, isActiveGM } from '../utils/helpers.js';
+import { L, log, isActiveGM } from '../utils/helpers.js';
 import { SerialQueue } from '../utils/queue.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
@@ -31,6 +31,7 @@ import { WealthAdapter } from './WealthAdapter.js';
 import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors, staffActors, jobsOf } from './BusinessClient.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
 import { SyndicateCash } from './SyndicateCash.js';
+import { MailService } from './MailService.js';
 
 const RESULTS_CAP = 40;
 /** Requests that may bring gear: the items are looked up here, never taken from the request. */
@@ -75,7 +76,13 @@ class BusinessServiceImpl {
     ]);
   }
 
+  /** A business's hidden traits (applicant or employee id to trait), kept from the players (E2). */
+  traitsOf(businessId) {
+    return businessId ? MarketStore.getBusinessesHidden()[businessId]?.traits ?? {} : {};
+  }
+
   context(business) {
+    const hidden = MarketStore.getBusinessesHidden();
     return {
       approval: game.settings.get(MODULE_ID, SETTINGS.BUSINESS_APPROVAL) !== false,
       weekday: this.weekday(),
@@ -91,8 +98,13 @@ class BusinessServiceImpl {
       newId: `bus_${foundry.utils.randomID(12)}`,
       tickers: this.tickersTaken(business?.id),
       // Hidden from players: an internal audit reads it, and due diligence sees the other businesses (B4c).
-      exposure: business ? (MarketStore.getBusinessesHidden()[business.id]?.exposure ?? 0) : 0,
-      targets: Object.fromEntries(BusinessRepository.all().filter((t) => t.status === 'open' && t.id !== business?.id).map((t) => [t.id, diligenceView(t)])),
+      exposure: business ? (hidden[business.id]?.exposure ?? 0) : 0,
+      // A target with loose lips on its staff tells due diligence more (E2).
+      targets: Object.fromEntries(BusinessRepository.all().filter((t) => t.status === 'open' && t.id !== business?.id).map((t) => [t.id, {
+        ...diligenceView(t),
+        leaky: (t.staff ?? []).some((s) => s.status === 'active' && traitOf(hidden[t.id]?.traits, s) === 'looseLips'),
+      }])),
+      traits: business ? hidden[business.id]?.traits ?? {} : {},
     };
   }
 
@@ -253,18 +265,53 @@ class BusinessServiceImpl {
     await this._pay(out.wealth, out.business, officerId);
     await BusinessRepository.save(out.business);
     await this._moveItems(out);
-    const exposure = out.events.reduce((a, e) => a + (e.exposure ?? 0), 0);
-    if (exposure) {
-      const hidden = MarketStore.getBusinessesHidden();
-      const entry = hidden[out.business.id] ?? { exposure: 0 };
-      // An internal audit can wipe some out, but never below none.
-      await MarketStore.setBusinessesHidden({ ...hidden, [out.business.id]: { ...entry, exposure: Math.max(0, entry.exposure + exposure) } });
-    }
+    await this._saveHidden(out);
     await this._syncJobs(out.business);
+    await this._payslips(out);
     for (const event of out.events.filter((e) => e.type === 'periodClosed')) {
       Hooks.callAll(HOOKS.BUSINESS_PERIOD, { businessId: out.business.id, digest: event.digest });
     }
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: out.business.id, events: out.events });
+  }
+
+  /**
+   * The hidden state a change brings: Exposure, and the traits of new applicants (E2). Traits of people
+   * who have gone (applicants who lapsed, staff who left) are dropped.
+   */
+  async _saveHidden(out) {
+    const exposure = out.events.reduce((a, e) => a + (e.exposure ?? 0), 0);
+    const hidden = MarketStore.getBusinessesHidden();
+    const entry = hidden[out.business.id] ?? { exposure: 0 };
+    const people = new Set([...(out.business.candidates ?? []).map((c) => c.id), ...(out.business.staff ?? []).map((s) => s.candidateId ?? s.id)]);
+    const traits = Object.fromEntries(Object.entries({ ...(entry.traits ?? {}), ...(out.traits ?? {}) }).filter(([id]) => people.has(id)));
+    const sameTraits = JSON.stringify(traits) === JSON.stringify(entry.traits ?? {});
+    if (!exposure && sameTraits) return;
+    // An internal audit can wipe some Exposure out, but never below none.
+    const next = { ...entry, exposure: Math.max(0, (entry.exposure ?? 0) + exposure) };
+    if (Object.keys(traits).length) next.traits = traits;
+    else delete next.traits;
+    await MarketStore.setBusinessesHidden({ ...hidden, [out.business.id]: next });
+  }
+
+  /** A payslip by Messenger mail for each player character paid as a week closes, if the world setting is on. */
+  async _payslips(out) {
+    if (game.settings.get(MODULE_ID, SETTINGS.STAFF_MAIL) === false) return;
+    const eb = (n) => Math.round(Number(n) || 0).toLocaleString();
+    for (const slip of out.events.filter((e) => e.type === 'payslip')) {
+      const actor = game.actors.get(slip.actorId);
+      if (!actor) continue;
+      try {
+        await MailService.fromWire(actor, {
+          subject: L('NCI.Staff.Payslip.Subject', { name: out.business.name }),
+          lines: [
+            L('NCI.Staff.Payslip.Body', { name: out.business.name, post: L(`NCI.Staff.Post.${slip.post}`), wage: eb(slip.wage), paid: eb(slip.paid) }),
+            ...(slip.owed ? [L('NCI.Staff.Payslip.Owed', { owed: eb(slip.owed) })] : []),
+          ],
+        });
+      } catch (error) {
+        log.warn('Payslip mail failed', error);
+      }
+    }
   }
 
   /** Take contributed items off the sheets they came from, and give back those a refund returns. */
@@ -342,7 +389,7 @@ class BusinessServiceImpl {
         // Employees' skills are read again from their sheets before the week is counted.
         const business = normalizeBusiness(structuredClone(stored));
         const reread = refreshStaffBases(business, (id) => this.basesOf(id));
-        const out = advanceBusiness(business, day, opts);
+        const out = advanceBusiness(business, day, { ...opts, traits: this.traitsOf(business.id) });
         if (!out.changed && !reread) continue;
         await this._commit({ ...out, ok: true });
         changed++;

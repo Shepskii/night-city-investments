@@ -361,21 +361,25 @@
     {{#if pending}}<p class="nci-warn">{{pending}}</p>{{/if}}
     {{#if rows.length}}
     <table class="nci-market">
-      <thead><tr><th>{{localize "NCI.Staff.Employee"}}</th><th>{{localize "NCI.Staff.PostLabel"}}</th><th>{{localize "NCI.Staff.Skill"}}</th><th class="num">{{localize "NCI.Staff.Wage"}}</th><th></th></tr></thead>
+      <thead><tr><th>{{localize "NCI.Staff.Employee"}}</th><th>{{localize "NCI.Staff.PostLabel"}}</th><th>{{localize "NCI.Staff.Skill"}}</th><th>{{localize "NCI.Staff.LoyaltyLabel"}}</th><th class="num">{{localize "NCI.Staff.Wage"}}</th><th></th></tr></thead>
       <tbody>
         {{#each rows}}
         <tr>
-          <td><strong>{{{who}}}</strong> <span class="nci-muted">{{source}}</span><div class="nci-muted">{{status}}</div>{{#if owed}}<div class="nci-warn">{{owed}}</div>{{/if}}</td>
+          <td><strong>{{{who}}}</strong> <span class="nci-muted">{{source}}</span><div class="nci-muted">{{status}}</div>{{#if owed}}<div class="nci-warn">{{owed}}</div>{{/if}}{{#each notes}}<div class="nci-warn">{{this}}</div>{{/each}}</td>
           <td>{{post}} <span class="nci-muted">{{level}}</span></td>
           <td>{{skill}} <strong>{{base}}</strong></td>
+          <td>{{#if loyalty}}<span class="nci-loyal nci-loyal-{{loyaltyBand}}">{{loyalty}}</span>{{else}}<span class="nci-muted">&mdash;</span>{{/if}}</td>
           <td class="num">{{wage}}</td>
-          <td class="nci-rowbtns">{{#if canFire}}<button type="button" class="nci-labelled" data-action="proposeFire" data-id="{{id}}"><i class="fas fa-user-minus"></i> {{localize "NCI.Staff.Fire"}}</button>{{/if}}</td>
+          <td class="nci-rowbtns">
+            {{#if canManage}}<button type="button" class="nci-labelled" data-action="openEmployee" data-id="{{id}}"><i class="fas fa-id-badge"></i> {{localize "NCI.Staff.Manage"}}</button>{{/if}}
+            {{#if canFire}}<button type="button" class="nci-labelled" data-action="proposeFire" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.Staff.Withdraw"}}</button>{{/if}}
+          </td>
         </tr>
         {{/each}}
       </tbody>
     </table>
     {{else}}<p class="nci-empty">{{localize "NCI.Staff.None"}}</p>{{/if}}
-    <p class="nci-hint">{{localize "NCI.Staff.OvertimeHint"}}</p>
+    <p class="nci-hint">{{localize "NCI.Staff.OvertimeHint"}} {{localize "NCI.Staff.LoyaltyHint"}}</p>
   </div>
   <div class="nci-block nci-form">
     <h3>{{localize "NCI.Staff.Posts"}}</h3>
@@ -399,10 +403,17 @@
   <div class="nci-block">
     <h3>{{localize "NCI.Staff.Applicants"}}</h3>
     {{#each applicants}}
-    <div class="nci-gig">
-      <div class="nci-gigtop"><strong>{{name}}</strong><span>{{post}}</span><span class="nci-muted">{{level}} ({{base}})</span></div>
-      <div class="nci-muted">{{terms}}</div>
-      {{#if canHire}}<div class="nci-actions"><button type="button" data-action="proposeHire" data-id="{{id}}"><i class="fas fa-user-plus"></i> {{localize "NCI.Staff.ProposeHire"}}</button></div>{{/if}}
+    <div class="nci-applicants">
+      <div class="nci-gigtop"><strong>{{label}}</strong>{{#if canVet}}<button type="button" class="nci-labelled" data-action="vetApplicants" data-post="{{post}}"><i class="fas fa-magnifying-glass"></i> {{localize "NCI.Staff.Vet"}}</button>{{/if}}</div>
+      {{#if canVet}}<p class="nci-hint">{{vetText}}</p>{{/if}}
+      {{#each people}}
+      <div class="nci-gig">
+        <div class="nci-gigtop"><strong>{{name}}</strong><span class="nci-muted">{{level}}{{#if base}} ({{base}}){{/if}}</span></div>
+        <div class="nci-muted">{{terms}}</div>
+        <div class="{{#if bad}}nci-warn{{else}}nci-muted{{/if}}">{{vetted}}</div>
+        {{#if canHire}}<div class="nci-actions"><button type="button" data-action="proposeHire" data-id="{{id}}"><i class="fas fa-user-plus"></i> {{localize "NCI.Staff.ProposeHire"}}</button></div>{{/if}}
+      </div>
+      {{/each}}
     </div>
     {{/each}}
   </div>
@@ -483,7 +494,7 @@
       <thead><tr><th>{{localize "NCI.Business.WeekLabel"}}</th><th>{{localize "NCI.Business.Takings"}}</th><th>{{localize "NCI.Business.Upkeep"}}</th><th>{{localize "NCI.Business.Profit"}}</th><th>{{localize "NCI.Business.Till"}}</th></tr></thead>
       <tbody>
         {{#each digests}}
-        <tr><td>{{week}}<div class="nci-muted">{{dates}}</div><div class="nci-muted">{{actions}}</div>{{#if event}}<div class="nci-muted">{{event}}</div>{{/if}}{{#if loans}}<div class="nci-muted">{{loans}}</div>{{/if}}{{#if wages}}<div class="nci-muted">{{wages}}</div>{{/if}}{{#if gig}}<div class="nci-muted">{{gig}}</div>{{/if}}</td><td>{{takings}}</td><td>{{upkeep}}</td><td class="{{cls}}">{{profit}}</td><td>{{till}}</td></tr>
+        <tr><td>{{week}}<div class="nci-muted">{{dates}}</div><div class="nci-muted">{{actions}}</div>{{#if event}}<div class="nci-muted">{{event}}</div>{{/if}}{{#if loans}}<div class="nci-muted">{{loans}}</div>{{/if}}{{#if wages}}<div class="nci-muted">{{wages}}</div>{{/if}}{{#if people}}<div class="nci-muted">{{people}}</div>{{/if}}{{#if gig}}<div class="nci-muted">{{gig}}</div>{{/if}}</td><td>{{takings}}</td><td>{{upkeep}}</td><td class="{{cls}}">{{profit}}</td><td>{{till}}</td></tr>
         {{/each}}
       </tbody>
     </table>

@@ -10,6 +10,7 @@ import {
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck,
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
+  hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase,
 } from '../../engine/index.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
@@ -351,13 +352,14 @@ function eventContext(business, canAct, free) {
   const uses = eventUses(business, event.kind).map((u) => (u.kind === 'ability' ? u.ability : u.skill) + (u.dvAdd ? ` (DV +${u.dvAdd})` : ''));
   return {
     name: L(`NCI.Event.${event.kind}.Name`),
-    hint: L(`NCI.Event.${event.kind}.Hint`),
+    // A staff event names the employee it is about (E2).
+    hint: L(`NCI.Event.${event.kind}.Hint`, { name: event.staffId ? staffOf(business, event.staffId)?.name ?? '' : '' }),
     good: !!def.good,
     uses: L('NCI.Business.AnswerWith', { skills: uses.join(', ') }),
     answered: answer ? L('NCI.Business.TakenBy', { name: nameOf(business, answer.by), band: L(`NCI.Roll.Band.${answer.band}`) }) : '',
     security: def.security ? L('NCI.Business.SecurityNote') : '',
     canAnswer: canAct && free && !answer,
-    ifNot: def.good ? L('NCI.Business.WindfallIfNot') : L('NCI.Business.EventIfNot'),
+    ifNot: def.staff ? L(`NCI.Event.${event.kind}.IfNot`) : def.good ? L('NCI.Business.WindfallIfNot') : L('NCI.Business.EventIfNot'),
   };
 }
 
@@ -434,7 +436,10 @@ function digestRow(business, d) {
     actions: d.actions.length
       ? d.actions.map((a) => L('NCI.Business.DigestAction', { action: L(a.action === 'respond' ? 'NCI.Business.Answer' : `NCI.Business.Action.${a.action}.Name`), name: nameOf(business, a.by), band: L(`NCI.Roll.Band.${a.band}`) })).join('; ')
       : L('NCI.Business.NoActions'),
-    event: d.event ? L(`NCI.Business.EventOutcome.${d.event.outcome}`, { event: L(`NCI.Event.${d.event.kind}.Name`), change: signed(d.event.change) }) : '',
+    event: d.event ? L(`NCI.Business.EventOutcome.${d.event.outcome}`, { event: L(`NCI.Event.${d.event.kind}.Name`), change: signed(d.event.change) })
+      + (d.event.cost ? ` ${L('NCI.Staff.DigestMedical', { cost: whole(d.event.cost) })}` : '') : '',
+    // What happened to the staff: someone off sick, hurt, poached, caught, quitting, asking for a raise (E2).
+    people: (d.staff ?? []).map((n) => L(`NCI.Staff.Note.${n.kind}`, { name: n.name })).join(' '),
     gig: d.boost ? L('NCI.Business.DigestGig', { pct: signed(Math.round(d.boost * 100)) }) : '',
     wages: d.wages || d.owed ? L(d.owed ? 'NCI.Staff.DigestOwed' : 'NCI.Staff.DigestWages', { wages: whole(d.wages ?? 0), owed: whole(d.owed ?? 0) }) : '',
     loans: d.interest || d.repaid || d.missed?.length
@@ -478,21 +483,56 @@ function skillOf(staff, post, arch) {
   return { skill, base: best.base };
 }
 
-/** Applicants still waiting, with what they ask (they are hired on it). */
-function applicantsOf(business, { canAct, pending }) {
+/** What the partners know of someone's trait: what vetting (or catching a thief) showed. */
+const traitText = (revealed) => (revealed ? L(`NCI.Staff.Trait.${revealed}`) : '');
+
+/**
+ * Applicants still waiting, by post, with what they ask (they are hired on it) and what vetting
+ * showed. Until a strong vetting roll shows their exact skill, the partners see their level and their
+ * ask as a share of the going rate; then the base and the eb. Each post's applicants can be vetted
+ * together, once.
+ */
+function applicantsOf(business, { canAct, runs, pending }) {
   const day = BusinessClient.day();
-  return (business.candidates ?? []).filter((c) => c.expires >= day).map((c) => ({
-    id: c.id,
-    name: c.name,
-    post: postLabel(c.post),
-    level: L(`NCI.Staff.Level.${c.level}`),
-    base: c.base,
-    terms: L('NCI.Staff.ApplicantTerms', {
-      wage: whole(askingWage(business, c)), pct: Math.round((c.pct ?? 1) * 100), rate: whole(goingRate(c.base, business.stage)), date: dayText(c.expires),
-    }),
-    canHire: canAct && !pending && postOpen(business, c.post).ok,
-  }));
+  const waiting = (business.candidates ?? []).filter((c) => c.expires >= day);
+  return [...new Set(waiting.map((c) => c.post))].map((post) => {
+    const vet = vetCheck(business, post, day);
+    return {
+      post,
+      label: postLabel(post),
+      canVet: runs && vet.ok,
+      vetText: L('NCI.Staff.VetHint', { cost: whole(BUSINESS_DEFAULTS.staff.vet.cost), dv: BUSINESS_DEFAULTS.staff.vet.dv }),
+      people: waiting.filter((c) => c.post === post).map((c) => {
+        const full = c.vetted === 'full';
+        return {
+          id: c.id,
+          name: c.name,
+          level: L(`NCI.Staff.Level.${c.level}`),
+          base: full ? c.base : '',
+          terms: full
+            ? L('NCI.Staff.ApplicantTerms', { wage: whole(askingWage(business, c)), pct: Math.round((c.pct ?? 1) * 100), rate: whole(goingRate(c.base, business.stage)), date: dayText(c.expires) })
+            : L('NCI.Staff.ApplicantAsks', { pct: Math.round((c.pct ?? 1) * 100), date: dayText(c.expires) }),
+          vetted: c.vetted === 'failed' ? L('NCI.Staff.VetFailed') : c.revealed ? L('NCI.Staff.VetShows', { trait: traitText(c.revealed) }) : L('NCI.Staff.NotVetted'),
+          bad: !!c.revealed && c.revealed !== 'none' && !BUSINESS_DEFAULTS.staff.traits.good.includes(c.revealed),
+          canHire: canAct && !pending && postOpen(business, c.post).ok,
+        };
+      }),
+    };
+  });
 }
+
+/** What the partners should know about an employee at a glance: a trait, a thief caught, someone hurt, a raise asked for. */
+function staffNotes(business, s) {
+  return [
+    s.revealed && s.revealed !== 'none' ? traitText(s.revealed) : '',
+    s.caught ? L('NCI.Staff.Caught') : '',
+    s.outUntil != null && s.outUntil >= business.period.index ? L('NCI.Staff.Hurt') : '',
+    s.ask ? L('NCI.Staff.Asks', { pct: Math.round(s.ask.pct * 100) }) : '',
+  ].filter(Boolean);
+}
+
+/** Loyalty as the partners see it: a band, or nothing for a player character. */
+const loyaltyText = (s) => (hasLoyalty(s) && s.status === 'active' ? L(`NCI.Staff.Loyalty.${loyaltyBand(s.loyalty ?? 50)}`) : '');
 
 /**
  * The Staff tab (DESIGN §33): the employees, the posts (each with a Hire button that opens the Hire
@@ -524,10 +564,14 @@ function staffContext(business, actor, canAct) {
         wage: whole(s.wage),
         status: s.status === 'offered' ? L(s.source === 'npc' ? 'NCI.Staff.OfferedNpc' : 'NCI.Staff.Offered') : L('NCI.Staff.Since', { date: dayText(s.hiredDay ?? day) }),
         owed: s.owed ? L('NCI.Staff.Owed', { amount: whole(s.owed) }) : '',
-        canFire: canAct && !pending('fire'),
+        loyalty: loyaltyText(s),
+        loyaltyBand: hasLoyalty(s) ? loyaltyBand(s.loyalty ?? 50) : '',
+        notes: staffNotes(business, s),
+        canManage: canAct && s.status === 'active',
+        canFire: canAct && s.status === 'offered' && !pending('fire'),
       };
     }),
-    applicants: applicantsOf(business, { canAct, pending: pending('hire') }),
+    applicants: applicantsOf(business, { canAct, runs: canAct && !!actor && canRun(business, actor.id), pending: pending('hire') }),
     posts: posts.map((id) => ({
       value: id,
       label: postLabel(id),
@@ -567,6 +611,61 @@ export function hireContext(business, account, post) {
     advertText: L('NCI.Staff.AdvertiseHint', { cost: whole(BUSINESS_DEFAULTS.staff.recruit.cost[business.stage]) }),
     canAdvertise: runs && advert.ok && !pending,
     advertBlocked: open.ok && canAct && !advert.ok ? L(`NCI.Business.Reason.${advert.reason}`) : open.ok && canAct && !runs ? L('NCI.Company.NotOfficer') : '',
+  };
+}
+
+/**
+ * The Employee window for one employee (E2): their pay and any raise they asked for, a bonus, moving
+ * them to another post, and letting them go. Changing pay and firing are proposals; a bonus, a move
+ * and refusing a raise are day-to-day running, for whoever runs the business.
+ * @param {object} account - the picked account (a character, or a syndicate as one of its officers)
+ */
+export function employeeContext(business, account, staffId) {
+  const s = staffOf(business, staffId);
+  if (!s) return { name: '', blocked: L('NCI.Business.Reason.not-staff') };
+  const arch = archetypeOf(business);
+  const canAct = !!account && BusinessClient.canAct(business, account.id) && !(account.isSyndicate && !account.isOfficer) && s.status === 'active';
+  const runs = canAct && canRun(business, account.id);
+  const pending = (kind) => business.proposals.some((x) => x.kind === kind);
+  const rate = goingRate(postBase(s, s.post, arch), business.stage);
+  const { skill, base } = skillOf(s, s.post, arch);
+  const bonus = bonusCheck(business, s.id, 1);
+  const given = (business.period.staffBonus ?? {})[s.id];
+  const moves = POST_IDS.filter((id) => id !== s.post && POSTS[id].stage <= business.stage && postOpen(business, id, undefined, s.id).ok);
+  const severance = s.caught ? 0 : wageOf(business, s);
+  return {
+    business: business.name,
+    name: s.name,
+    who: actorLink(s.actorId, s.name),
+    source: L(`NCI.Staff.Source.${s.source}`),
+    post: postLabel(s.post),
+    level: L(`NCI.Staff.Level.${levelOf(base)}`),
+    skill,
+    base,
+    loyalty: loyaltyText(s),
+    loyaltyBand: hasLoyalty(s) ? loyaltyBand(s.loyalty ?? 50) : '',
+    loyaltyHint: hasLoyalty(s) ? L('NCI.Staff.LoyaltyHint') : L('NCI.Staff.LoyaltyPc'),
+    notes: staffNotes(business, s),
+    payText: L('NCI.Staff.PayNow', { wage: whole(wageOf(business, s)), pct: Math.round(s.pct * 100), rate: whole(rate) }),
+    pct: Math.round(s.pct * 100),
+    canPay: canAct && !pending('pay'),
+    ask: s.ask ? L('NCI.Staff.AskText', { pct: Math.round(s.ask.pct * 100), wage: whole(Math.round(rate * s.ask.pct)) }) : '',
+    askPct: s.ask ? Math.round(s.ask.pct * 100) : 0,
+    canAgree: !!s.ask && canAct && !pending('pay'),
+    canRefuse: !!s.ask && runs,
+    bonusOptions: Array.from({ length: BUSINESS_DEFAULTS.staff.bonusQuarters }, (_, i) => ({
+      value: i + 1,
+      label: L(`NCI.Staff.BonusQuarter.${i + 1}`, { amount: whole(Math.round((wageOf(business, s) * (i + 1)) / 4)) }),
+    })),
+    bonusGiven: given ? L('NCI.Staff.BonusGiven', { amount: whole(given) }) : '',
+    canBonus: runs && (bonus.ok || bonus.reason === 'no-funds') && !given,
+    moves: moves.map((id) => ({ value: id, label: postLabel(id) })),
+    canMove: runs && moves.length > 0,
+    noMove: runs && !moves.length ? L('NCI.Staff.NoMove') : '',
+    fireText: L(s.caught ? 'NCI.Staff.FireCaught' : 'NCI.Staff.FireHint', { amount: whole(severance) }),
+    canFire: canAct && !pending('fire'),
+    pending: pending('pay') || pending('fire') ? L('NCI.Staff.Pending') : '',
+    blocked: !canAct ? L('NCI.Staff.CannotManage') : '',
   };
 }
 
@@ -634,6 +733,7 @@ function partnersContext(business, actor) {
         // Who a hire or a firing is about, and the post (DESIGN §33).
         who: proposal.terms?.name ?? '',
         post: proposal.terms?.post ? postLabel(proposal.terms.post) : '',
+        pct: proposal.terms?.pct != null ? Math.round(proposal.terms.pct * 100) : '',
       }),
       rule: L(`NCI.Business.Rule.${PROPOSAL_RULES[proposal.kind]}`, { date: dayText(proposal.expires ?? proposal.day) }),
       // Each voter, linked to their character, and how they voted.

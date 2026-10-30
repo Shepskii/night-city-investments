@@ -175,10 +175,23 @@ test('the week closes: the wage is paid to Nova, and the ledger and the GM tab s
   const b = business();
   const wealth = S.WealthAdapter.get(nova);
   env.clock.ms += (b.period.endDay - Math.floor(env.clock.ms / DAY_MS)) * DAY_MS;
-  await S.BusinessService.onTick();
+  // The payslip goes by Messenger mail (E2).
+  const { MailService } = await import('../scripts/services/MailService.js');
+  const sent = [];
+  const fromWire = MailService.fromWire;
+  MailService.fromWire = async (actor, mail) => { sent.push({ to: actor.id, ...mail }); return { ok: true }; };
+  try {
+    await S.BusinessService.onTick();
+  } finally {
+    MailService.fromWire = fromWire;
+  }
   const week = business().digests.at(-1);
   assert.ok(week.wages > 0);
   assert.equal(S.WealthAdapter.get(nova), wealth + week.wages);
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].to, nova.id);
+  assert.equal(sent[0].subject, 'Payslip: Back Room');
+  assert.match(sent[0].lines[0], new RegExp(`Floor: this week's wage ${week.wages} eb, ${week.wages} eb paid into your account`));
 
   const ledger = await renderBusiness(windowFor(med, 'ledger'));
   assertClean(ledger, 'ledger with wages');
@@ -218,8 +231,21 @@ test('advertising brings applicants the partners can hire on what they ask; Nova
   const html = await renderBusiness(windowFor(med, 'staff'));
   assertClean(html, 'staff tab with applicants');
   assert.match(text(html), /Applicants/);
-  assert.match(text(html), /Asks \d+ eb a week/);
+  assert.match(text(html), /Asks \d+% of the going rate for their skill/, 'unvetted, only their level and their ask as a share');
+  assert.match(text(html), /Not vetted/);
+  assert.match(html, /data-action="vetApplicants" data-post="manager"/);
   assert.match(html, new RegExp(`data-action="proposeHire" data-id="${candidate.id}"`));
+
+  // Vetting the post's applicants: one roll for them all; afterwards they cannot be vetted again.
+  dice = [10, 1];
+  await S.BusinessClient.roll(med, business(), { type: 'vetRoll', businessId: business().id, post: 'manager', use: { kind: 'skill', skill: 'Human Perception', stat: 'emp' } }, { title: 'Vet' });
+  await S.BusinessService.processActor(med);
+  assert.equal(receipt(med).ok, true, receipt(med).reason);
+  assert.ok(business().candidates.every((c) => c.vetted), 'every applicant for the post was checked');
+  const vetted = await renderBusiness(windowFor(med, 'staff'));
+  assertClean(vetted, 'staff tab after vetting');
+  assert.match(text(vetted), /Vetted:/);
+  assert.doesNotMatch(vetted, /data-action="vetApplicants"/);
   const tail = html.split('data-action="openHire"').at(-1);
   assert.match(tail, /Applicants/, 'the applicants sit at the foot of the Staff tab, after the posts');
   const Hire = (await import('../scripts/ui/Business/HireDialogApp.js')).HireDialogApp;
@@ -311,5 +337,67 @@ test('actors that are not characters (a player-owned container of upgrade projec
     assert.doesNotMatch(staff, /Upgrade Projects/);
   } finally {
     game.actors.splice(game.actors.indexOf(box), 1);
+  }
+});
+
+test('the Employee window: a recruit\'s loyalty band, a bonus paid, a raise asked for and agreed; the GM sees loyalty and the hidden trait', async () => {
+  const { MarketStore } = await import('../scripts/data/MarketStore.js');
+  const { EmployeeDialogApp } = await import('../scripts/ui/Business/EmployeeDialogApp.js');
+  const b = structuredClone(business());
+  const room = b.staff.length;
+  b.staff.push({
+    id: 'stf_ad-1', actorId: null, name: 'Vera Voss', source: 'recruit', post: 'security', bases: { 'skill:Tactics': 11 }, pct: 1, wage: 99,
+    hiredDay: b.openedDay, status: 'active', owed: 0, loyalty: 40, candidateId: 'ad-1', ask: { pct: 1.1, day: b.openedDay },
+  });
+  await S.BusinessRepository.save(b);
+  await MarketStore.setBusinessesHidden({ ...MarketStore.getBusinessesHidden(), [b.id]: { exposure: 0, traits: { 'ad-1': 'lightFingers' } } });
+
+  const html = await renderBusiness(windowFor(med, 'staff'));
+  assertClean(html, 'staff tab with a recruit');
+  assert.match(text(html), /Vera Voss recruit .* Steady/);
+  assert.match(text(html), /Asks for a raise to 110% of the going rate/);
+  assert.match(html, /data-action="openEmployee" data-id="stf_ad-1"/);
+  assert.doesNotMatch(text(html), /Light fingers/, 'the trait is hidden from the partners');
+
+  const app = new EmployeeDialogApp({ actorId: med.id, businessId: b.id, staffId: 'stf_ad-1' });
+  const dialog = render('templates/dialogs/employee.hbs', await app._prepareContext());
+  assertClean(dialog, 'employee window');
+  assert.match(text(dialog), /Paid 99 eb a week: 100% of the going rate \(99 eb\)/);
+  assert.match(text(dialog), /They ask for 110% of the going rate \(109 eb a week\)/);
+  for (const action of ['agreeRaise', 'refuseRaise', 'payBonus', 'movePost', 'fireStaff', 'proposePay']) assert.match(dialog, new RegExp(`data-action="${action}"`), action);
+  assert.match(text(dialog), /A quarter of a week(&#x27;|')s wage \(25 eb\)/);
+
+  const till = business().till;
+  await EmployeeDialogApp.DEFAULT_OPTIONS.actions.payBonus.call(app);
+  await S.BusinessService.processActor(med);
+  assert.equal(receipt(med).ok, true, receipt(med).reason);
+  const vera = () => business().staff.find((s) => s.id === 'stf_ad-1');
+  assert.equal(business().till, till - 25);
+  assert.equal(vera().loyalty, 45);
+  const after = render('templates/dialogs/employee.hbs', await app._prepareContext());
+  assert.match(text(after), /A bonus of 25 eb was paid this week/);
+  assert.doesNotMatch(after, /data-action="payBonus"/);
+
+  await EmployeeDialogApp.DEFAULT_OPTIONS.actions.agreeRaise.call(app, null, { dataset: { pct: '110' } });
+  await S.BusinessService.processActor(med);
+  assert.equal(receipt(med).ok, true, receipt(med).reason);
+  assert.equal(vera().pct, 1.1, "the Medtech's majority carries it");
+  assert.equal(vera().ask, undefined);
+  assert.equal(vera().loyalty, 50);
+
+  const gm = new Apps.GMConsole();
+  gm.tab = 'businesses';
+  const console = render('templates/gm/console.hbs', await gm._prepareContext());
+  assertClean(console, 'GM tab with loyalty and traits');
+  assert.match(text(console), /Vera Voss \(Security, 109 eb, loyalty 50, trait: Light fingers\)/);
+  assert.equal(business().staff.length, room + 1);
+});
+
+test('every data-action in the Business window and the staff windows has a handler', async () => {
+  const { EmployeeDialogApp } = await import('../scripts/ui/Business/EmployeeDialogApp.js');
+  const { HireDialogApp } = await import('../scripts/ui/Business/HireDialogApp.js');
+  for (const [file, App] of [['templates/business/business.hbs', Apps.Business], ['templates/dialogs/employee.hbs', EmployeeDialogApp], ['templates/dialogs/hire.hbs', HireDialogApp]]) {
+    const used = [...readFileSync(join(root, file), 'utf8').matchAll(/data-action="([^"]+)"/g)].map((m) => m[1]);
+    for (const action of new Set(used)) assert.ok(action in App.DEFAULT_OPTIONS.actions, `${file}: no handler for "${action}"`);
   }
 });

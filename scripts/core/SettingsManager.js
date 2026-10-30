@@ -348,6 +348,15 @@ export function registerSettings() {
     default: true,
   });
 
+  s.register(MODULE_ID, SETTINGS.STAFF_MAIL, {
+    name: 'NCI.Settings.StaffMail.Name',
+    hint: 'NCI.Settings.StaffMail.Hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
   s.register(MODULE_ID, SETTINGS.BUSINESS_WEEKDAY, {
     name: 'NCI.Settings.BusinessWeekday.Name',
     hint: 'NCI.Settings.BusinessWeekday.Hint',

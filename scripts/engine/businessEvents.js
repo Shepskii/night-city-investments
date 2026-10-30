@@ -12,18 +12,25 @@ import { createRng } from './rng.js';
 import { EVENTS, BUSINESS_DEFAULTS, districtOf } from './businessConfig.js';
 import { archetypeOf, clamp } from './businessRecord.js';
 import { bandPassed } from './rolls.js';
+import { staffEventWeight, staffEventTarget, settleStaffEvent } from './businessPeople.js';
 
 /** How likely an event is this week: the base chance, the district's risk, and less once registered. */
 export function eventChance(b, p = BUSINESS_DEFAULTS) {
   return Math.min(0.9, p.events.chance * districtOf(b.district).risk * (b.stage >= 1 ? p.events.registeredFactor : 1));
 }
 
-/** Draw this week's event, or none. */
-export function drawEvent(b, seed = 'nci', p = BUSINESS_DEFAULTS) {
+/**
+ * Draw this week's event, or none. Staff events join the table when there are NPC staff (E2); one
+ * about an employee names them (`staffId`).
+ */
+export function drawEvent(b, seed = 'nci', p = BUSINESS_DEFAULTS, traits = null) {
   const rng = createRng(seed, 'business-event', b.id, b.period.index);
   if (!rng.chance(eventChance(b, p))) return null;
-  const weights = Object.fromEntries(Object.entries(EVENTS).filter(([, e]) => (e.stage ?? 0) <= b.stage).map(([k, e]) => [k, e.weight]));
-  return { kind: rng.weighted(weights) };
+  const weights = Object.fromEntries(Object.entries(EVENTS).filter(([, e]) => (e.stage ?? 0) <= b.stage)
+    .map(([k, e]) => [k, e.staff ? staffEventWeight(b, k, traits, p) : e.weight]).filter(([, w]) => w > 0));
+  const kind = rng.weighted(weights);
+  const staffId = EVENTS[kind].staff ? staffEventTarget(b, kind, rng, p) : null;
+  return { kind, ...(staffId ? { staffId } : {}) };
 }
 
 /** The ways an event may be answered: its own skills and abilities, and the trade's skills where it says so. */
@@ -47,10 +54,11 @@ export function eventUses(b, kind) {
  * @returns {{kind: string, outcome: string, band: string|null, change: number}|null}
  *          `change` is what the event does to the takings, in eb
  */
-export function settleEvent(b, takings, slots, p = BUSINESS_DEFAULTS) {
+export function settleEvent(b, takings, slots, p = BUSINESS_DEFAULTS, staffCtx = {}) {
   const event = b.period.event;
   if (!event) return null;
   const def = EVENTS[event.kind];
+  if (def.staff) return settleStaffEvent(b, takings, slots, staffCtx, p);
   const answer = slots.find((s) => s.action === 'respond');
   const safe = slots.find((s) => s.action === 'keepSafe');
 

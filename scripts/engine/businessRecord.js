@@ -105,6 +105,8 @@ export function normalizeBusiness(raw) {
     retry: b.retry ?? {},
     /** A fixer's payment was missed: collectors come next week. */
     collectors: b.collectors === true,
+    /** A sullen employee was let go: they may come back to make trouble next week (E2). */
+    grudge: b.grudge === true,
     /** Gigs run for the business, newest last, and next week's takings change from them. */
     gigs: b.gigs ?? [],
     boost: Number(b.boost ?? 0),
@@ -135,6 +137,15 @@ export function normalizeBusiness(raw) {
       hiredDay: x.hiredDay ?? null,
       status: x.status === 'offered' ? 'offered' : 'active',
       owed: int(x.owed),
+      // E2 (businessPeople.js): loyalty (none for a player character), the applicant they were, a trait
+      // the partners know of, a thief caught, hurt until a week, weeks unpaid, a raise asked for.
+      loyalty: x.source === 'pc' ? null : int(x.loyalty ?? 50),
+      ...(x.candidateId ? { candidateId: String(x.candidateId) } : {}),
+      ...(x.revealed ? { revealed: String(x.revealed) } : {}),
+      ...(x.caught ? { caught: true } : {}),
+      ...(x.outUntil != null ? { outUntil: int(x.outUntil) } : {}),
+      ...(x.unpaid ? { unpaid: int(x.unpaid) } : {}),
+      ...(x.ask ? { ask: { pct: Number(x.ask.pct), day: int(x.ask.day) } } : {}),
     })),
     candidates: b.candidates ?? [],
     lastRecruit: b.lastRecruit ?? null,

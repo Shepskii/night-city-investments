@@ -51,6 +51,7 @@ export const SETTINGS = Object.freeze({
   SYNDICATES_ENABLED: 'syndicatesEnabled',
   SYNDICATE_APPROVAL: 'syndicateApproval',
   SYNDICATE_MAIL: 'syndicateMail',
+  STAFF_MAIL: 'staffMail',
 });
 
 /** Flag keys under flags[MODULE_ID] on journals. */

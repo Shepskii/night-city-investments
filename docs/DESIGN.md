@@ -450,7 +450,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B2 | **Done (v0.11.0), see §30.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
 | B3 | **Built (v0.12), see §31; not yet released.** Player syndicates, and syndicates owning or investing in businesses |
 | B4 | **Built (v0.13), see §32; not yet released.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
-| E | **E1 built (v0.13), see §33.9; E2 and E3 proposed, see §33.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
+| E | **E1 and E2 built (v0.13), see §33.9 and §33.10; E3 proposed, see §33.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
 | B5 | **v0.14.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
 | B6 | **v0.15.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
 | B7 | Downtime bridge (separate module, after B2): company work through Crew Tools downtime, businesses on Night City Map |
@@ -1381,7 +1381,7 @@ A week with neither contracts nor shortcuts is an unworked week, as a shop's wee
 
 **Built:** officers and the information rolls in `scripts/engine/businessCompany.js` (`officersOf`, `canRun`, `officerProposal`, `infoCheck`, `applyInternalAudit`, `applyDiligence`, `exposureBand`), the `elect` and `dismiss` proposal kinds, `auditRoll` and `diligenceRoll` requests, and the service resolving a due diligence target by name. Tests in `tests/businessCompany.test.mjs` and `tests/businessWindows.test.mjs`. None of B4 has been tried in the test world yet.
 
-## 33. Proposal: employees (not built)
+## 33. Employees (E1 and E2 built; E3 proposed)
 
 Characters, player or NPC, can work for a player business as **employees**. Partners own a business and run it; employees work in it for a wage. Their skills lift what the business earns according to the job they hold, they can be called in to make the business's rolls for overtime pay, and they bring loyalty, staff events and training with them. Employees work at every stage (§26.0) and for a syndicate's business too (B3b), so this phase sits beside B1 to B4 rather than after them. It should be built before going public (B5), because wages change a company's profit, and so its valuation.
 
@@ -1558,4 +1558,45 @@ A floor hire breaks even near the registered stage's ceiling and earns clearly a
 
 **Also fixed:** the vote lines for electing and dismissing officers had no text (`NCI.Business.Proposed.elect` and `dismiss`), and several requests from B4 had no confirmation message.
 
-**Not built yet:** a player character rolling their own overtime with their own Luck (on call), the Messenger payslip, changing an employee's post, and everything in E2 and E3 (loyalty, quitting over pay, vetting and traits, staff events, bonuses, training, share grants, an Exec's team). Not yet tried in the test world.
+**Not built yet:** a player character rolling their own overtime with their own Luck (on call), and everything in E3 (training, share grants, an Exec's team). The payslip, changing an employee's post, and the rest of the list E1 left are built in E2 (§33.10). Not yet tried in the test world.
+
+### 33.10 E2 as built
+
+E2 is `scripts/engine/businessPeople.js` (pure), with small hooks in `businessStaff.js`, `businessEvents.js` and the weekly close, tested in `tests/businessPeople.test.mjs` and `tests/staffFlow.test.mjs`. It follows §33.3 and §33.4, with these decisions made before and while building it:
+
+- **Masters ask more.** This fixes the target E1 missed. Each point of base above 15 costs three times the rate (`premiumFrom` 15, `premium` 2), so a Master's going rate at a registered business is (16 + 2) × 9 = 162 eb, not 144. Measured with the engine (a clinic, a solid week's work, the floor post's margin against having no one):
+
+  | Stage, Capacity | Base 9 | 12 | 13 | 15 | 16 | 17 |
+  |---|---|---|---|---|---|---|
+  | side business, 1.3 | −28 | −27 | −26 | −25 | −34 | −49 |
+  | registered, 4.5 | −23 | +8 | +18 | **+39** | +31 | +23 |
+  | company, 8 | −21 | +43 | +64 | **+107** | +100 | +93 |
+  | company, 14 | +59 | +202 | +250 | +345 | +365 | +384 |
+
+  The best margin is now at Expert, except at a company near its Capacity ceiling, where a Master still earns more.
+- **Loyalty** is kept for NPCs and recruits only; a player character's is the player's own (shown as a dash). It follows the table in §33.4: it starts at 50, ±5 for each 10% of the going rate offered (an applicant starts at 50, being paid what they asked). A paid week adds +2 up to 60, a missed wage −15, a profitable month (every fourth week) +3, a second overtime shift −3, an unanswered bad event −2. The partners see the band (sullen below 25, steady, loyal, devoted from 75); the GM sees the number in the Businesses tab. At a week's close an employee below 25 quits one week in four (drawn from the seed), one below 10 walks out, and two weeks owed in a row make them quit. Devoted staff get +1 on overtime, ignore poaching, and roll security's and compliance's automatic answers a band better.
+- **Pay changes and raises.** A `pay` proposal (majority) sets a new share of the going rate: a raise gives +5 loyalty per 10%, a cut −5 per 10% and another −10. At each month's end an employee below 50 loyalty asks for 10% more (up to 150%). Agreeing is a pay proposal at what they asked; **Turn it down** (`refuseRaise`) costs 10 loyalty, and so does ignoring it until the next month's end.
+- **Bonuses** (`bonus`): one to four quarters of a week's wage, paid at once from the cash, +5 loyalty per quarter, once a week per employee. A player character's goes to their eddies.
+- **Moving post** (`movePost`) is day-to-day running, not a vote: whoever runs the business moves an employee to another post that has room, at the same share of the going rate for their skill there.
+- **The Employee window** (`EmployeeDialogApp`) opens from the Manage button on each row of the staff table. It covers pay (and any raise asked for), a bonus, moving post and letting them go. The staff table gains a Loyalty column and notes: a known trait, a thief caught, hurt at work, a raise asked for. An offer still waiting keeps a Withdraw button in the row.
+- **Traits** are drawn with each applicant (one in five; about one in three from a failed advert), from the same seed as the advert. They are kept in the GM's hidden state (`traits`, by applicant id; a recruit keeps their applicant id as `candidateId`), never on the record, and the service drops traits of people who have gone. NPC actors hired directly have no trait: the GM plays them as written. What each does:
+  - **light fingers:** the light fingers event three times as likely, and 1.5× the loss;
+  - **loose lips:** due diligence on the business counts a band better (the B4c roll, through the service's target list);
+  - **corp plant:** a company only (loose lips before), 1 Exposure a week and 5 when fired;
+  - **moonlighter:** has other work one week in three, and turns overtime down that week (`moonlighting`);
+  - **dedicated:** loyalty never below 40;
+  - **connected:** a manager's or salesperson's base counts 3 higher for the week's own work, unseen (their wage does not show it).
+- **Vetting** (`vetRoll`): a Vet button over each post's applicants checks them all with one roll (Human Perception, Library Search or Interface, DV 13, 50 eb). A pass sets each applicant's `revealed` to their trait or `none`; a strong or exceptional pass also shows their exact base (`vetted: 'full'`). A failure tells nothing, and those applicants cannot be vetted again. Until a strong vetting shows their base, applicants show only their level and their ask as a share of the going rate; afterwards, their base and their ask in eb. A recruit hired keeps what vetting showed.
+- **Staff events** join the weekly table only when there are NPC staff, each with its own settling (`settleStaffEvent`). Sick day, accident and poaching name the employee (`staffId`) when drawn.
+  - **Sick day:** unless answered (Paramedic or Medicine), that employee's post does nothing this week.
+  - **Light fingers:** unanswered, 5–15% of the takings go missing (half on a failed answer). A pass catches the thief: the employee with the trait, otherwise the least loyal. A caught thief (`caught`) can be let go without severance, and a trait caught this way is known (`revealed`).
+  - **Pay dispute:** a company with 4 or more NPC staff averaging below 50 loyalty. Unless answered (Persuasion or Business) or every NPC employee has had a bonus this week, all staff do nothing this week, each loses 5 loyalty, and the usual share of the takings is lost.
+  - **Poaching offer:** for the best NPC hand. They leave unless the event is answered (Persuasion), they had a raise of 10% or more this week, or they are devoted.
+  - **Accident at work:** garage, gun shop, security and courier only. Unanswered, medical bills of 100, 250 or 500 eb by stage come from the cash (half on a failed answer), and the employee is out this week and the next (`outUntil`).
+  - **Star turn** (good): answered well, Reputation +2.
+  - **Grudge:** not in the table. Letting a sullen employee go brings it the next week half the time (`b.grudge`, as the fixer's collectors). It is a security event that hits Reputation and Capacity.
+- **Payslips.** As a week closes, each player character on the staff gets a Night City Messenger mail from the market wire with their wage, what was paid and anything owed. A world setting, *Payslips by Messenger*, turns it off.
+- **The digest** lists what happened to the staff (off sick, hurt, poached, caught, asks for a raise, quit, walked out, quit unpaid), and an accident's medical bills.
+- **No migration.** The normalizer fills in loyalty (50, or none for a player character) and keeps the new fields.
+
+**Not built yet:** a player character on call rolling their own overtime with their own Luck, and E3.

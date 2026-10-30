@@ -4,7 +4,7 @@
  * @description Action handlers run with `this` set to the console window.
  */
 
-import { holders, totalUnits, bookValue, lastDigest, fundingShortfall, ARCHETYPES } from '../../../engine/index.js';
+import { holders, totalUnits, bookValue, lastDigest, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty } from '../../../engine/index.js';
 import { BusinessService } from '../../../services/BusinessService.js';
 import { BusinessApp } from '../../Business/BusinessApp.js';
 import { dayText } from '../../Business/context.js';
@@ -68,6 +68,15 @@ export function waiting() {
     || (business.staff ?? []).some((s) => s.status === 'offered' && s.source === 'npc')).length;
 }
 
+/** An employee's true loyalty and hidden trait, for the GM. */
+function staffExtra(s, traits) {
+  const trait = traitOf(traits, s);
+  return [
+    hasLoyalty(s) ? L('NCI.GMBusiness.StaffLoyalty', { loyalty: s.loyalty ?? 50 }) : '',
+    trait ? L('NCI.GMBusiness.StaffTrait', { trait: L(`NCI.Staff.Trait.${trait}`) }) : '',
+  ].filter(Boolean).map((x) => `, ${x}`).join('');
+}
+
 export function context() {
   const rows = BusinessService.snapshot().map(({ business: b, hidden }) => {
     const units = totalUnits(b);
@@ -108,9 +117,14 @@ export function context() {
       last: last ? L('NCI.GMBusiness.LastWeek', { n: last.index, profit: signed(last.profit), takings: whole(last.takings), upkeep: whole(last.upkeep) }) : '',
       week: b.status === 'open' ? L('NCI.GMBusiness.Week', { n: b.period.index, end: dayText(b.period.endDay), used: b.period.slots.length }) : '',
       event: b.status === 'open' && b.period.event ? L('NCI.GMBusiness.Event', { event: L(`NCI.Event.${b.period.event.kind}.Name`) }) : '',
-      // HTML, as the partners.
+      // HTML, as the partners. The GM sees true loyalty and hidden traits (E2).
       staff: (b.staff ?? []).filter((s) => s.status === 'active')
-        .map((s) => escapeHtml(L('NCI.GMBusiness.StaffOne', { name: '\u0000', post: L(`NCI.Staff.Post.${s.post}`), wage: whole(s.wage) })).replace('\u0000', actorLink(s.actorId, s.name))).join(', '),
+        .map((s) => escapeHtml(L('NCI.GMBusiness.StaffOne', { name: '\u0000', post: L(`NCI.Staff.Post.${s.post}`), wage: whole(s.wage), extra: staffExtra(s, hidden.traits) })).replace('\u0000', actorLink(s.actorId, s.name))).join(', '),
+      applicants: (b.candidates ?? []).length ? L('NCI.GMBusiness.Applicants', {
+        list: b.candidates.map((c) => L('NCI.GMBusiness.ApplicantOne', {
+          name: c.name, post: L(`NCI.Staff.Post.${c.post}`), base: c.base, trait: hidden.traits?.[c.id] ? `, ${L(`NCI.Staff.Trait.${hidden.traits[c.id]}`)}` : '',
+        })).join(', '),
+      }) : '',
       offers: (b.staff ?? []).filter((s) => s.status === 'offered' && s.source === 'npc').map((s) => ({
         id: s.id, text: escapeHtml(L('NCI.GMBusiness.StaffOffer', { name: '\u0000', post: L(`NCI.Staff.Post.${s.post}`), wage: whole(s.wage) })).replace('\u0000', actorLink(s.actorId, s.name)),
       })),

@@ -462,6 +462,14 @@
           "solid": "Two Skilled applicants, asking about the going rate.",
           "strong": "Two or three applicants, Skilled to Expert, some asking under the going rate.",
           "exceptional": "Three applicants, Expert to Master, some asking under the going rate."
+        },
+        "vetRoll": {
+          "fumble": "The checks tell you nothing.",
+          "failure": "The checks tell you nothing.",
+          "narrow": "Each applicant's trait, or that they are clean.",
+          "solid": "Each applicant's trait, or that they are clean.",
+          "strong": "Each applicant's trait, and their exact skill.",
+          "exceptional": "Each applicant's trait, and their exact skill."
         }
       },
       "Employee": "Employee",
@@ -1531,6 +1539,10 @@
         "Name": "Player syndicates",
         "Hint": "Let players pool money in a syndicate that trades on the market as one account. Turning this off refuses new syndicate requests; existing syndicates keep their holdings and nothing is deleted."
       },
+      "StaffMail": {
+        "Name": "Payslips by Messenger",
+        "Hint": "Send a player character who works for a player business a Night City Messenger payslip from the market wire each week, with what they were paid and anything still owed."
+      },
       "SyndicateMail": {
         "Name": "Mail syndicate members",
         "Hint": "Send members a Night City Messenger mail from the market wire when a proposal opens and when it passes, fails or lapses, when an agreed payment fails, when their redemption is paid, and when the syndicate is wound up."
@@ -1708,10 +1720,14 @@
       "Week": "Week {n} closes on or after {end}; slots used: {used}.",
       "Event": "This week: {event}.",
       "Staff": "Staff",
-      "StaffOne": "{name} ({post}, {wage} eb)",
+      "StaffOne": "{name} ({post}, {wage} eb{extra})",
       "StaffOffer": "{name}, an NPC, is offered a job as {post} at {wage} eb a week. Answer for them.",
       "StaffAccept": "Take the job",
-      "StaffDecline": "Turn it down"
+      "StaffDecline": "Turn it down",
+      "StaffLoyalty": "loyalty {loyalty}",
+      "StaffTrait": "trait: {trait}",
+      "Applicants": "Applicants: {list}",
+      "ApplicantOne": "{name} ({post}, base {base}{trait})"
     },
     "District": {
       "exec": "Executive Zone", "westbrook": "New Westbrook", "japan": "Old Japan Town", "watson": "Watson Development",
@@ -1729,7 +1745,14 @@
       "collectors": { "Name": "Debt collectors", "Hint": "The fixer wants the payment you missed, and has sent people to make the point." },
       "trouble": { "Name": "Trouble with a customer", "Hint": "A customer, or a job, has gone wrong in a way people will talk about." },
       "inspection": { "Name": "An inspection", "Hint": "The city's inspectors want to see the books and the licences." },
-      "windfall": { "Name": "A big order", "Hint": "Someone with money wants something done this week, if you can deliver." }
+      "windfall": { "Name": "A big order", "Hint": "Someone with money wants something done this week, if you can deliver." },
+      "grudge": { "Name": "An old grudge", "Hint": "Someone you let go has come back with friends to make a point." },
+      "sickDay": { "Name": "Off sick", "Hint": "{name} has called in sick.", "IfNot": "If nobody sees to it, {name}'s post does nothing this week." },
+      "lightFingers": { "Name": "Light fingers", "Hint": "Stock and cash have been going missing, and it looks like an inside job.", "IfNot": "If nobody looks into it, 5% to 15% of the week's takings walk out of the door. Catch the thief and they can be let go without severance." },
+      "payDispute": { "Name": "A pay dispute", "Hint": "The staff say they are not paid enough, and they mean to stop work.", "IfNot": "If nobody talks them round (or pays every employee a bonus this week), the staff down tools for the week and lose loyalty." },
+      "poaching": { "Name": "A poaching offer", "Hint": "A rival has offered {name} a better job.", "IfNot": "If nobody makes the case to stay (or gives a raise of 10% or more this week), {name} leaves, unless devoted to you." },
+      "accident": { "Name": "An accident at work", "Hint": "{name} has been hurt on the job.", "IfNot": "If nobody patches them up, the business pays the medical bills and {name} is out for this week and the next." },
+      "starTurn": { "Name": "A star turn", "Hint": "One of the staff has done something people are talking about.", "IfNot": "Make the most of it and Reputation rises; otherwise the moment passes." }
     },
     "Weekday": { "0": "Sunday", "1": "Monday", "2": "Tuesday", "3": "Wednesday", "4": "Thursday", "5": "Friday", "6": "Saturday" },
     "Syndicate": {
@@ -2005,6 +2028,14 @@
         "quit": "{staff} quit",
         "fired": "{staff} let go",
         "overtime": "Overtime for {staff}, called in by {name}",
+        "vet": "{name} vetted the applicants",
+        "bonus": "A bonus for {staff}, paid by {name}",
+        "raise": "{staff} given a raise",
+        "payCut": "{staff}'s pay cut",
+        "raiseRefused": "{staff}'s raise turned down",
+        "moved": "{staff} moved to another post by {name}",
+        "poached": "{staff} poached by a rival",
+        "medical": "Medical bills",
         "wages": "Wages"
       },
       "CapTable": "Partners",
@@ -2083,7 +2114,8 @@
         "elect": "{name} proposes electing an officer.",
         "dismiss": "{name} proposes dismissing an officer.",
         "hire": "{name} proposes hiring {who} as {post}.",
-        "fire": "{name} proposes letting {who} go."
+        "fire": "{name} proposes letting {who} go.",
+        "pay": "{name} proposes paying {who} {pct}% of the going rate."
       },
       "Rule": {
         "unanimous": "Needs every partner; lapses after {date}.",
@@ -2202,7 +2234,11 @@
         "recruitRoll": "The advert is out.",
         "acceptJob": "You have taken the job.",
         "declineJob": "Job turned down.",
-        "quitJob": "You have quit."
+        "quitJob": "You have quit.",
+        "vetRoll": "The checks are under way.",
+        "bonus": "Bonus paid.",
+        "refuseRaise": "Raise turned down.",
+        "movePost": "Moved."
       },
       "Reason": {
         "bad-use": "that skill does not fit this roll",
@@ -2306,6 +2342,12 @@
         "already-staff": "already on the staff",
         "no-offer": "there is no job offer waiting",
         "no-shifts": "that employee has worked two overtime shifts this week",
+        "moonlighting": "that employee has other work this week and will not come in",
+        "no-applicants": "there are no applicants for this post left to vet",
+        "bonus-given": "that employee has had a bonus this week",
+        "same-pay": "that is what they are paid now",
+        "same-post": "they already hold that post",
+        "no-ask": "they have not asked for a raise",
         "staff-not-allowed": "an employee cannot be called in for that"
       }
     },
@@ -2394,7 +2436,81 @@
       "Applicants": "Applicants",
       "ApplicantTerms": "Asks {wage} eb a week ({pct}% of the going rate, {rate} eb). Waits until {date}.",
       "NoApplicants": "No applicants waiting for this post.",
-      "CloseHire": "Close"
+      "CloseHire": "Close",
+      "LoyaltyLabel": "Loyalty",
+      "Loyalty": {
+        "sullen": "Sullen",
+        "steady": "Steady",
+        "loyal": "Loyal",
+        "devoted": "Devoted"
+      },
+      "LoyaltyHint": "Loyalty rises with paid weeks, good months and bonuses, and falls with missed wages, extra shifts, cuts and refused raises. Sullen staff may quit, and steal; devoted staff try harder and ignore rivals' offers.",
+      "LoyaltyPc": "A player character's loyalty is their own.",
+      "Manage": "Manage",
+      "ManageTitle": "Employee: {name}",
+      "CannotManage": "Only a partner who can act for the business can manage its staff.",
+      "Withdraw": "Withdraw offer",
+      "Trait": {
+        "none": "clean",
+        "lightFingers": "Light fingers",
+        "looseLips": "Loose lips",
+        "corpPlant": "Corp plant",
+        "moonlighter": "Moonlighter",
+        "dedicated": "Dedicated",
+        "connected": "Connected"
+      },
+      "Caught": "Caught stealing: can be let go without severance.",
+      "Hurt": "Hurt at work: off this week.",
+      "Asks": "Asks for a raise to {pct}% of the going rate.",
+      "Pay": "Pay",
+      "PayNow": "Paid {wage} eb a week: {pct}% of the going rate ({rate} eb) for their skill in this post.",
+      "PayHint": "A change of pay needs a majority. A raise lifts loyalty; a cut hurts it more than the difference.",
+      "ProposePay": "Propose pay",
+      "AskText": "They ask for {pct}% of the going rate ({wage} eb a week) by the month's end. Ignored, it counts as refused.",
+      "AgreeRaise": "Agree to the raise",
+      "RefuseRaise": "Turn it down",
+      "Bonus": "Bonus",
+      "BonusHint": "Paid now from the business's cash, once a week: each quarter of a week's wage lifts loyalty. A player character's goes to their eddies.",
+      "BonusAmount": "Amount",
+      "BonusQuarter": {
+        "1": "A quarter of a week's wage ({amount} eb)",
+        "2": "Half a week's wage ({amount} eb)",
+        "3": "Three quarters of a week's wage ({amount} eb)",
+        "4": "A week's wage ({amount} eb)"
+      },
+      "BonusGiven": "A bonus of {amount} eb was paid this week.",
+      "PayBonus": "Pay bonus",
+      "Move": "Move to another post",
+      "MoveHint": "Moves them at once, at the same share of the going rate for their skill in the new post.",
+      "MoveButton": "Move",
+      "NoMove": "No other post has room.",
+      "LetGo": "Let them go",
+      "FireHint": "Needs a majority. They are paid a week's wage ({amount} eb) and anything owed. Letting a sullen employee go may bring trouble later.",
+      "FireCaught": "Needs a majority. Caught stealing, they get no severance, only anything owed.",
+      "Vet": "Vet applicants",
+      "VetTitle": "{name}: vetting the {post} applicants",
+      "VetHint": "Check every applicant for this post at once: Human Perception (an interview), Library Search (a records search) or Interface, DV {dv}, costing {cost} eb. A pass shows any hidden trait; a strong pass also their exact skill.",
+      "NotVetted": "Not vetted.",
+      "VetFailed": "Vetted: the checks told you nothing.",
+      "VetShows": "Vetted: {trait}.",
+      "ApplicantAsks": "Asks {pct}% of the going rate for their skill. Waits until {date}.",
+      "DigestMedical": "Medical bills {cost} eb.",
+      "Note": {
+        "sick": "{name} was off sick.",
+        "hurt": "{name} was hurt at work.",
+        "poached": "{name} was poached by a rival.",
+        "stayed": "{name} turned a rival's offer down.",
+        "caught": "{name} was caught stealing.",
+        "asks": "{name} asks for a raise.",
+        "quit": "{name} quit.",
+        "walked": "{name} walked out.",
+        "unpaid": "{name} quit, unpaid."
+      },
+      "Payslip": {
+        "Subject": "Payslip: {name}",
+        "Body": "{name}, {post}: this week's wage {wage} eb, {paid} eb paid into your account.",
+        "Owed": "Still owed to you: {owed} eb."
+      }
     }
   }
 }
