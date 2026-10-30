@@ -15,7 +15,7 @@
       </select>
     </label>
     {{#unless noLuck}}
-    <label>{{localize "NCI.Roll.Luck"}} <span class="nci-muted">(0–{{luckMax}})</span>
+    <label><span>{{localize "NCI.Roll.Luck"}} <span class="nci-muted">(0–{{luckMax}})</span></span>
       <input type="number" name="luck" value="{{luck}}" min="0" max="{{luckMax}}" step="1">
     </label>
     {{/unless}}

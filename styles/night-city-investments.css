@@ -110,9 +110,10 @@
 .nci-app tr.nci-row:nth-child(even) { background: var(--nci-row-alt); }
 .nci-app tr.nci-row:hover { background: var(--nci-row-hover); }
 /* Tables in the GM Console, the Business window and the Portfolio tab use the market window's two row shades, clickable or not. */
-.nci-app :is(.nci-console, .nci-business, .nci-portfolio) table > tbody > tr { background: var(--nci-row); }
-.nci-app :is(.nci-console, .nci-business, .nci-portfolio) table > tbody > tr:nth-child(even) { background: var(--nci-row-alt); }
-.nci-app :is(.nci-console, .nci-business, .nci-portfolio) table > tbody > tr.nci-row:hover { background: var(--nci-row-hover); }
+/* Row shading in every window, the roll dialog and the editors included. */
+.nci-app :is(.nci-console, .nci-business, .nci-portfolio, .nci-editor) table > tbody > tr { background: var(--nci-row); }
+.nci-app :is(.nci-console, .nci-business, .nci-portfolio, .nci-editor) table > tbody > tr:nth-child(even) { background: var(--nci-row-alt); }
+.nci-app :is(.nci-console, .nci-business, .nci-portfolio, .nci-editor) table > tbody > tr.nci-row:hover { background: var(--nci-row-hover); }
 
 .nci-app .nci-badge {
   font-size: 10px;
@@ -219,6 +220,14 @@
 .nci-app .nci-kv span { color: var(--nci-label); }
 .nci-app .nci-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; }
 .nci-app .nci-actions button { width: auto; padding: 0 10px; }
+/* A labelled box on one line: the label's text, then the box, centred on each other. */
+.nci-app label.nci-inline { flex-direction: row; align-items: center; gap: 8px; margin: 6px 0; }
+.nci-app label.nci-inline input { flex: none; width: 80px; height: 30px; }
+/* The Hire window's character form: the boxes in columns, every box and the button the same height on one line. */
+.nci-app .nci-hirerow { display: grid; grid-template-columns: minmax(0, 1fr) 160px auto; gap: 10px; align-items: end; margin: 8px 0; }
+.nci-app .nci-hirerow label { min-width: 0; }
+.nci-app .nci-hirerow :is(select, input, button) { box-sizing: border-box; width: 100%; height: 30px; margin: 0; }
+.nci-app .nci-hirerow button { width: auto; padding: 0 12px; white-space: nowrap; }
 /* A proposal's voters: each a character link with their vote beside it, on one line that wraps. */
 .nci-app .nci-proposal .nci-gigtop { margin-bottom: 6px; }
 .nci-app .nci-votes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
@@ -233,7 +242,8 @@
 .nci-app .nci-rowbtns button.nci-labelled { width: auto; padding: 0 8px; }
 
 .nci-app .nci-editor label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--nci-label); }
-.nci-app .nci-editor .nci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-bottom: 8px; }
+.nci-app .nci-editor .nci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-bottom: 8px; align-items: end; }
+.nci-app .nci-roll .nci-grid :is(select, input) { box-sizing: border-box; height: 30px; margin: 0; }
 .nci-app .nci-editor .wide { grid-column: 1 / -1; margin-bottom: 8px; }
 .nci-app .nci-editor .nci-check { flex-direction: row; align-items: center; gap: 6px; }
 .nci-app .nci-editor fieldset { border: 1px solid var(--nci-accent-dim); margin-bottom: 8px; }

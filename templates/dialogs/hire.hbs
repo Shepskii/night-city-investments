@@ -10,9 +10,9 @@
     <h3>{{localize "NCI.Staff.HireCharacter"}}</h3>
     <p class="nci-hint">{{localize "NCI.Staff.HireCharacterHint"}} {{rateText}}</p>
     {{#if canHire}}{{#if people.length}}
-    <div class="nci-actions">
+    <div class="nci-hirerow">
       <label>{{localize "NCI.Staff.Who"}} <select name="staffActor">{{#each people}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
-      <label>{{localize "NCI.Staff.Pct"}} <input type="number" name="staffPct" min="80" max="150" step="5" value="100" class="nci-days"></label>
+      <label>{{localize "NCI.Staff.Pct"}} <input type="number" name="staffPct" min="80" max="150" step="5" value="100"></label>
       <button type="button" data-action="hireCharacter"><i class="fas fa-user-plus"></i> {{localize "NCI.Staff.ProposeHire"}}</button>
     </div>
     {{else}}<p class="nci-muted">{{localize "NCI.Staff.NoPeople"}}</p>{{/if}}{{/if}}

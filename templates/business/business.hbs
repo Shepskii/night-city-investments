@@ -380,10 +380,8 @@
   <div class="nci-block nci-form">
     <h3>{{localize "NCI.Staff.Posts"}}</h3>
     {{#if canDrop}}
-    <div class="nci-actions">
-      <p class="nci-hint"><i class="fas fa-hand-pointer"></i> {{localize "NCI.Staff.DropHint"}}</p>
-      <label>{{localize "NCI.Staff.Pct"}} <input type="number" name="dropPct" min="80" max="150" step="5" value="100" class="nci-days"></label>
-    </div>
+    <p class="nci-hint"><i class="fas fa-hand-pointer"></i> {{localize "NCI.Staff.DropHint"}}</p>
+    <label class="nci-inline">{{localize "NCI.Staff.Pct"}} <input type="number" name="dropPct" min="80" max="150" step="5" value="100" class="nci-days"></label>
     {{/if}}
     <table class="nci-market"><tbody>
       {{#each posts}}
