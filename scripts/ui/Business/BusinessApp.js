@@ -20,7 +20,7 @@ import { CashbookDialogApp } from './CashbookDialogApp.js';
 import { L } from '../format.js';
 import { pickerContext, startContext, businessContext, usableActors, jobsContext } from './context.js';
 
-const TABS = ['overview', 'week', 'projects', 'ledger', 'partners', 'staff', 'growth'];
+const TABS = ['overview', 'ledger', 'week', 'projects', 'staff', 'partners', 'growth'];
 
 /** Read a named input from the form block around the clicked button. */
 const field = (target, name) => target.closest('.nci-form')?.querySelector(`[name="${name}"]`);
