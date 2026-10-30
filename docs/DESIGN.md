@@ -1623,7 +1623,9 @@ What a project builds is added to the business's assets at cost, as an expansion
 
 ## 35. Proposal: after E3, B5 and B6 (not built)
 
-Four directions for player businesses once employees (E3), going public (B5) and corporate play (B6) are in. Nothing here is decided: each part lists the choices to make before it is built. They share one new idea, **standing with factions** (§35.3), so that comes first in the phasing (§35.5) even though it is the third topic.
+Four directions for player businesses once employees (E3), going public (B5) and corporate play (B6) are in. The user settled the main choices on 2026-10-31 (§35.6); the rest is still a sketch. They share one new idea, **standing with factions** (§35.3), which comes first in the phasing (§35.5) even though it is the third topic.
+
+**Everything stays in this module.** Other modules are read only through a bridge (the map bridge, the Crew Tools bridge B7, Night City Messenger's API), and nothing here depends on one being installed.
 
 **What already exists to build on:**
 - **Hidden state and investigations:** the GM-only control journal already keeps each business's Exposure, and NCPD Financial Crimes already audits, warns and penalises (§22, heat). B6 adds investigations and hidden ownership.
@@ -1634,7 +1636,9 @@ Four directions for player businesses once employees (E3), going public (B5) and
 
 ### 35.1 Underworld: a front for illegal work
 
-**The idea.** A business can run a **back room**: an illegal operation behind the legitimate shop, which the front hides and launders. It earns more than the shop, in money the books cannot show, and it carries the risk of raids, gangs, informants and investigations. It is opt-in for the table: a world setting turns underworld content off, and the GM approves each back room.
+**The idea.** A business can run a **back room**: an illegal operation behind the legitimate shop, which the front hides and launders. It earns more than the shop, in money the books cannot show, and it carries the risk of raids, gangs, informants and investigations. **Underworld content is on by default**; a world setting turns it off. Opening a back room waits for the GM, as a new business does, when the business-approval setting is on.
+
+**What players see:** the dirty cash in eddies (it is theirs to spend or launder), but the back room's Exposure, the raid risk and their standing with gangs only as bands, as Exposure is now.
 
 **What each front hides** (the archetype decides the operation, its skills, and the trouble it draws):
 
@@ -1660,7 +1664,7 @@ Four directions for player businesses once employees (E3), going public (B5) and
 - **Gangs (with §35.3):** the district's gangs take an interest. Protection money stops being only a cost line and becomes a relationship: pay, refuse, or make a deal. A gang can offer to be a silent partner, putting in money for a cut, an underworld angel with strings attached; your standing with it moves its demands and its protection.
 - **At a company (stage 2):** corporate crime instead of a back room: dumping, bribing regulators and off-books black ops. This grows from the company's Shortcuts action and Exposure, and ties into B6's regulator and investigations.
 
-**To decide:** whether dirty cash may ever be counted as an asset (and so be stolen or seized); laundering caps and the Exposure it costs; whether raids can close a business outright; whether a gang can take a stake in the cap table (seen or hidden, as B6's hidden ownership); and how much of this the players see (bands, as for Exposure, or nothing).
+**Still to decide:** whether dirty cash counts as an asset (and so can be stolen or seized); the laundering caps and the Exposure they cost; whether a raid can close a business outright; and whether a gang can take a stake in the cap table, seen or hidden (as B6's hidden ownership).
 
 ### 35.2 Production: making goods
 
@@ -1682,18 +1686,25 @@ Four directions for player businesses once employees (E3), going public (B5) and
 **How it would work** (a first sketch):
 - **A workshop** is a project (§34) that opens production, with one or two **lines** by stage. A line names a GM-approved list of compendium items for that business type (set in the GM Console, with defaults), so players cannot produce anything they like.
 - **A production run** picks an item and a quantity. Materials come from the cash (about half the market price, as Cyberpunk RED's fabrication rules), the time comes from business days or floor staff's time, and a roll uses the trade skill or Maker at the fabrication DV for the item's price category. The band sets how many come out good, and whether any are excellent quality.
-- **Stock** sits on the business record as an asset at cost: in book value, and counted for B5's valuation.
+- **Stock** sits on the business record as an asset at cost: in book value, and counted for B5's valuation. The items themselves are kept on the business's **stock sheet** (below).
 - **Selling stock** goes through the shop: each week some stock sells at a margin, limited by Capacity and Reputation, and adds to takings. A partner can also buy an item at cost, or the GM can let one be taken onto a sheet (made from the compendium entry, as gear comes back now when a business never opens). A back room fences illegal stock at a higher margin, with Exposure.
 - **Crew Tools (B7):** a business workshop gives a player character's own Crew Tools fabrication or upgrade project a facility bonus (cheaper or faster). The business can also commission a player character Tech's project, paying them from the cash. Nothing is duplicated: Crew Tools keeps the crafting rules.
 - **The market:** a production contract with a listed company in the sector (a supplier or a buyer) counts as a contract for that company and lifts it a little, as a small gig does. Selling large volumes in a sector could nudge that sector's mood.
 
-**To decide:** whether items are ever created on sheets automatically or always by the GM; how fast stock sells and whether it can go stale; caps on production value per week, so eddies cannot be farmed; and whether quality is tracked.
+**The stock sheet** (the user's choice: production goes to an inventory). Each producing business gets a Cyberpunk RED **container** actor as its storeroom, the way Crew Tools makes its "Upgrade Projects" containers:
+- **Made by the GM's service** when the first workshop is finished: named "Stock — <business>", in a "Night City Investments" actor folder, flagged with the business's id (`flags.night-city-investments.stockFor`). Like every non-character actor, it is left out of the module's character lists.
+- **Owned by the GM; partners (and officers, at a company) are Observers.** They can open the sheet and see real items with their art, descriptions and stats, but cannot drag them out. Its Cyberpunk RED container settings are set so players cannot sell to it, take from it, move, edit or delete items (these flags need checking against the system's version).
+- **The business record stays in charge of the money.** It lists the stock (the item, how many, the unit cost) and the service keeps the sheet's items in step after each production run, sale or hand-out. Taking an item goes through a request in the Business window: buy it at cost into the character's eddies, give it to a partner (it is created on their sheet from the container's copy and leaves the container), sell it through the shop, or fence it. So the till, eddies and book value always move together.
+- **The GM may still move items by hand.** The service notices an item added to or removed from the container (Foundry's item hooks) and asks the GM what it was: written off, given away, or stock found. It never guesses.
+- **Later, perhaps:** Cyberpunk RED's shop mode, with characters buying straight from the sheet and the price going into the till, if the system gives a hook for a purchase. To check.
+
+**Still to decide:** how fast stock sells through the shop, and whether it can go stale; caps on production value per week, so eddies cannot be farmed; and whether quality is tracked.
 
 ### 35.3 Faction standing, and moving markets
 
-**The idea.** A business (and a syndicate, and perhaps a character) has **standing** with factions: corporations and gangs. Standing runs from −100 to 100, drifts back toward 0, and is shown to players as a band (hostile, wary, neutral, friendly, allied), with the number for the GM.
+**The idea.** A **business** has **standing** with factions: corporations and gangs. Standing runs from −100 to 100 and drifts back toward 0. Players see it only as a band (hostile, wary, neutral, friendly, allied); the GM sees the number. Characters' own reputation stays with Crew Tools: this module does not track it, though a Crew Tools bridge (B7) could later let a partner's reputation help a roll aimed at a faction.
 
-- **Factions** are a GM-edited list. Each has a name, a kind (corp, gang or other), a linked market company (its ticker) for a corp, and the districts it holds for a gang. Gangs can be seeded from Night City Map's district list, so a business's district already names whose turf it is on.
+- **Factions** are a GM-edited list kept in this module. Each has a name, a kind (corp, gang or other), a linked market company (its ticker) for a corp, and the districts it holds for a gang. The module ships its own starting list of the canonical gangs by district, with Night City Map's district ids, so a business's district already names whose turf it is on. With the map bridge installed, the GM can import the map's gang list instead.
 - **What moves standing:**
   - **Gigs:** a map gig for a client faction raises standing with it on success and lowers it on failure, scaled like gig impacts. A gig against a faction's interests lowers it, where the gig names a target or rival.
   - **Business actions:** a company's Contracts and Relations actions can be aimed at a named faction. So can new actions for smaller businesses: "Court a client", "Pay respects" (to a gang) and "Undercut a rival".
@@ -1709,7 +1720,7 @@ Four directions for player businesses once employees (E3), going public (B5) and
   - Once B5 has listed player companies, factions can act against them too: a hostile corp's smear campaign moves your price.
   - Coordinated campaigns (several characters or a syndicate trading together) were left for B6 in §31; standing and these actions belong with them.
 
-**To decide:** whether standing is held by the business, the character, or both (and whether a syndicate shares its members'); whether players can see a faction's exact standing; how big a smear campaign can move a price, and how it sits with the GM's approval of gig impacts; and whether Night City Map should hold the faction list (so other modules share it) or this module should.
+**Still to decide:** how big a smear campaign can move a price, and how it sits with the GM's approval of gig impacts; whether a syndicate's businesses share one standing or each keep their own; and whether a faction can be hidden from players until they first deal with it.
 
 ### 35.4 Further Night City Messenger integration
 
@@ -1738,12 +1749,12 @@ Four directions for player businesses once employees (E3), going public (B5) and
 
 Each step ends as the others do: engine tests, flow tests, a simulator check that nothing becomes a money farm (dirty cash and production first), and a run in the test world.
 
-### 35.6 Questions to settle first
+### 35.6 Decisions (2026-10-31)
 
-1. **Tone and opt-in:** should underworld content be on by default, or off until the GM turns it on?
-2. **Who holds standing:** the business, the character, or both?
-3. **Where factions live:** in this module, or in Night City Map for every module to share?
-4. **Items on sheets:** may production put items on character sheets, or does the GM always hand them out?
-5. **Visibility:** do players see dirty cash, Exposure from the back room, and standing as numbers or only as bands?
-6. **Order:** factions first (as proposed), or production first, since it does not need B6?
+1. **Underworld content is on by default**, with a world setting to turn it off.
+2. **Standing belongs to the business.** Characters' reputation is managed by Crew Tools.
+3. **Everything stays in this module** unless it can be done through a bridge: the faction list, standing and the starting gang list are this module's own.
+4. **Production goes to an inventory:** a container actor for each producing business, as its stock sheet (§35.2), with the business record in charge of the money.
+5. **Players see dirty cash as values**; Exposure and standing only as bands.
+6. **Factions first** (F1), then fronts (U1), then production (P1).
 
