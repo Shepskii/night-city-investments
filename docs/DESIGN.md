@@ -450,6 +450,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B2 | **Done (v0.11.0), see §30.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
 | B3 | **Built (v0.12), see §31; not yet released.** Player syndicates, and syndicates owning or investing in businesses |
 | B4 | **Built (v0.13), see §32; not yet released.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
+| E | **Proposed, see §33.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
 | B5 | **v0.14.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
 | B6 | **v0.15.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
 | B7 | Downtime bridge (separate module, after B2): company work through Crew Tools downtime, businesses on Night City Map |
@@ -1379,3 +1380,152 @@ A week with neither contracts nor shortcuts is an unworked week, as a shop's wee
 - **Due diligence** (Library Search or Business; 200 eb) on another business, named as the players know it (their client cannot list other businesses, so nothing is revealed about which exist): a pass tells its state bands and a range for its book value, ±30% on a narrow pass down to ±5% on an exceptional one. What it found is kept with the company (the last five).
 
 **Built:** officers and the information rolls in `scripts/engine/businessCompany.js` (`officersOf`, `canRun`, `officerProposal`, `infoCheck`, `applyInternalAudit`, `applyDiligence`, `exposureBand`), the `elect` and `dismiss` proposal kinds, `auditRoll` and `diligenceRoll` requests, and the service resolving a due diligence target by name. Tests in `tests/businessCompany.test.mjs` and `tests/businessWindows.test.mjs`. None of B4 has been tried in the test world yet.
+
+## 33. Proposal: employees (not built)
+
+Characters, player or NPC, can work for a player business as **employees**. Partners own a business and run it; employees work in it for a wage. Their skills lift what the business earns according to the job they hold, they can be called in to make the business's rolls for overtime pay, and they bring loyalty, staff events and training with them. Employees work at every stage (§26.0) and for a syndicate's business too (B3b), so this phase sits beside B1 to B4 rather than after them. It should be built before going public (B5), because wages change a company's profit, and so its valuation.
+
+**Choices made** (decided before writing this):
+- **Who can be hired:**
+  - a player character, who accepts an offer, as an investor does (§30);
+  - an NPC actor linked to a Night City Messenger contact tagged `staff` or `employee` (the same rule as investors, with its own tags);
+  - a **recruit** found on the street with a recruiting roll: a generated name and skill level, so the GM need not build an actor for every shop hand.
+- **Posts.** An employee holds a post, and the post decides which of their skills count and what they do for the business.
+- **From stage 0.** A side business can take on 1 employee, a registered business 3, a chartered company 8. Wages make early hires a cost rather than a gain, so the business's growth decides when staff pay off.
+- **Extras in the design:** loyalty, staff events and vetting, training and share grants, and an Exec's Teamwork team as staff.
+
+### 33.1 Skill levels and posts
+
+**Skill base.** An employee's base in a skill is stat + skill, the number a roll adds to the d10 (§26). An employee's base for a post is their best base among the post's skills. A role ability that fits the business (a Medtech's Medicine at a clinic, a Tech's Maker at a garage) counts one level higher. Bases fall into four levels, matching the hired professionals' fixed bases (10, 13 and 16):
+
+| Level | Base | A recruit's base |
+|---|---|---|
+| Green | 8 or less | 7 |
+| Skilled | 9 to 12 | 10 |
+| Expert | 13 to 15 | 13 |
+| Master | 16 or more | 16 |
+
+**Reading skills.** Players' clients cannot read an NPC actor's sheet, so the GM's service reads the NPC's sheet when they are hired and again each week. It records their base in every skill and ability a business roll names (`bases`), and the roll dialog and the Staff tab read from that record. A recruit has their level's base in their post's skills and is Green (7) in everything else. A player character's bases are read from their own sheet, as for a partner.
+
+**Posts.** A business may have one manager; the other posts take as many people as its headcount allows. Floor staff are also limited to the business's Capacity, rounded down (at least 1), so expansions make room for more hands.
+
+| Post | Stage | Skills that count | What it does each week |
+|---|---|---|---|
+| Floor | any | the archetype's trade skills (§29); its role abilities count one level higher | lifts the takings by (base − 6) × 1.5%: 6% for a base of 10, 15% for 16 |
+| Manager | any | Business, or the trade skills at one level lower | when no partner works the shop (or, at stage 2, chases contracts), the manager does: the engine rolls the action with the manager's base against the stage's DV, drawn from the seed when the week closes, so the week is not unworked. A side business's crew can go on gigs without losing the week |
+| Security | any | Tactics, Brawling, Handgun, Melee Weapon, Human Perception; Combat Awareness and Backup a level higher | a shakedown, break-in or trouble with a customer that no partner answers is answered by security, drawn from the seed, without using a slot |
+| Bookkeeper | registered and up | Accounting (Business a level lower) | the Cost base trimmed by 0.3% to 1% a week, down to its floor, and the complementary +1 for preparing the monthly report |
+| Sales | company | Business, Persuasion, Trading | the takings up by half a floor post's lift, and Reputation drifts toward 55 rather than 50 |
+| Publicist | company | Composition, Wardrobe & Style, Persuasion; Credibility and Charismatic Impact a level higher | Reputation up by 0.5 to 1.5 a week |
+| Compliance | company | Bureaucracy, Local Expert | Compliance up by 0.5 to 1.5 a week, and an inspection is answered as security answers a shakedown |
+
+Floor lift is capped in total by stage: 15% at a side business, 35% registered and 60% chartered. The figures above are starting values, to be calibrated with the growth simulator, aiming at these results:
+- a floor hire roughly breaks even near the registered stage's Capacity ceiling, and earns clearly at stage 2;
+- a better employee costs more and earns more, with the best margin at Expert;
+- an employee's overtime is never dearer than a hired professional of the same level.
+
+### 33.2 Wages and overtime
+
+**Wages.** An employee's going rate is a rate per point of their post's base each week: 5 eb at a side business (part-time), 9 eb registered and 14 eb at a company. So a Skilled floor hand with a base of 12 costs 60, 108 or 168 eb a week. The partners may offer more or less than the going rate: each 10% above it adds 5 to starting loyalty, each 10% below takes 5 off, and an NPC or recruit refuses less than 80%. Wages are an upkeep line, paid from the cash when the week closes, after the takings and before loan payments, and they count against the week's profit. A player character's wage goes to their eddies, with a payslip by Messenger mail if the world setting is on (as for syndicate mail).
+
+**Unpaid wages.** If the cash cannot cover every wage, those left unpaid are owed (back pay, paid first next week) and lose 15 loyalty. Two weeks unpaid and they quit.
+
+**Overtime.** A partner (an officer, at a company) can call an employee in for any of the business's rolls: an action slot, a complementary check, an event response, a report preparation, an audit or due diligence. In the roll dialog, the employee appears beside the hired professionals (`use: {kind: 'staff', staffId}`), with their base for the skill chosen and the overtime pay:
+
+| Overtime | Pay, from the cash |
+|---|---|
+| Taking an action slot, answering an event, preparing a report, an information roll | 50% of a week's wage |
+| A complementary check (+1) | 25% of a week's wage |
+
+The usual levers apply except Luck, which is a character's own, and extra time, since the overtime is their time. A player-character employee can roll their own overtime on their own client, with their own Luck, once a partner has put them on call for that week. Each employee works at most two overtime shifts a week, and each shift after the first costs 3 loyalty. Overtime is the cheaper way to get a roll made: a Skilled employee's overtime at a registered business costs about 54 eb, where a hired professional of the same level costs 150.
+
+### 33.3 Hiring, leaving and firing
+
+**Recruiting** (`recruitRoll`). A partner looks for someone for a post: a Business, Streetwise or Library Search roll at the stage's DV, costing 50, 100 or 200 eb by stage for the ads, the fixer's cut and the drinks. The band sets the candidate's level: a narrow pass Green or Skilled, solid Skilled, strong Expert, exceptional Expert or Master. The candidate is drawn from the seed: their name, their level, and perhaps a hidden trait (§33.4). A failed roll finds nobody, and a fumble finds someone worse than nobody: a candidate with a bad trait. A candidate waits 7 days to be hired.
+
+**Hiring.** A `hire` proposal names the candidate, NPC or player character, the post and the wage. It passes on a majority of the votes (a majority of the shares at a company). A player character must accept the offer from their own window; the GM accepts for an NPC from the Businesses tab, as for an NPC investor. A partner cannot also be an employee of the same business.
+
+**Leaving.**
+- **Quitting.** An employee whose loyalty falls below 25 may quit when a week closes (drawn from the seed), and one below 10 quits at once. A player character can quit any time, with a week's notice.
+- **Firing.** A `fire` proposal passes on a majority and costs a week's wage in severance. Firing an employee with loyalty below 25 may bring a grudge event later.
+- **When a partner leaves.** An Exec's team leaves with the Exec (§33.5).
+
+**A player character's view.** An employee who is a player character is not given the business's record (that would show them its ledger). The GM's service mirrors their job onto their own actor as a flag: the business, their post, their wage, their loyalty, whether they are on call, and any roll asked of them. The Business window shows that to them as a Job view.
+
+### 33.4 Loyalty, vetting and staff events
+
+**Loyalty**, from 0 to 100, starts at 50 (moved by the wage offered) and is shown to the partners as a band (sullen, steady, loyal, devoted).
+
+| Moves it up | Moves it down |
+|---|---|
+| a paid week: +2, up to 60 | a missed wage: −15 |
+| a profitable month: +3 | a second overtime shift in a week: −3 |
+| a bonus (paid from the cash): +5 per quarter-week's wage | a pay cut, or a refused raise: −10 |
+| a share grant (§33.5): +20 | an event left unanswered that hurt the shop: −2 |
+
+Below 25 an employee may quit, steals more readily and gives poaching offers a hearing. At 75 and above they get +1 on their overtime rolls, ignore poaching, and a security or compliance employee answers events as if one band better.
+
+**Vetting** (`vetRoll`). Before hiring, a partner may check a candidate: Human Perception (an interview) or Library Search (a records search), or a Netrunner's Interface, at DV 13, costing 50 eb. A pass reveals any hidden trait. A trait is drawn with the candidate (about one in five has one) and kept in the GM-only control journal, like Exposure. The GM sees every trait in the Businesses tab.
+
+| Trait | Effect |
+|---|---|
+| Light fingers | theft events are more likely and cost more |
+| Loose lips | rivals' due diligence on this business gets a band better (B6) |
+| Corp plant | a company only: 1 Exposure a week, and a whistleblower risk if fired (B6) |
+| Moonlighter | refuses one overtime call in three |
+| Dedicated (good) | loyalty never falls below 40 |
+| Connected (good) | a recruit's level counts one higher for Manager and Sales |
+
+**Staff events.** These join the weekly event table (§30) when a business has staff, answered as other events are:
+
+| Event | Unanswered | Answered with |
+|---|---|---|
+| Sick day | one employee's post does nothing this week | Paramedic, Medicine, or overtime cover |
+| Light fingers | 5% to 15% of the week's takings missing | Human Perception, Interrogation, Library Search; a pass catches the thief, who can be fired without severance |
+| Pay dispute (company, 4 or more staff, average loyalty below 50) | the staff down tools: an unworked week, and −5 loyalty each | Persuasion or Business; or a bonus |
+| Poaching offer | the best employee leaves, unless their loyalty is 75 or more | Persuasion; or a 10% raise |
+| Accident at work (garage, gun shop, security, courier) | medical costs from the cash, and the employee is out for a week | Paramedic, Medicine |
+| Star turn (good) | Reputation +2 if answered | Business or Persuasion, to make the most of it |
+
+### 33.5 Training, share grants and an Exec's team
+
+**Training.** Once every 4 weeks per employee, the partners can pay to raise an NPC employee's base in their post's skills by 1. It costs 50 eb per point of their current base and 2 business days from a partner whose own base is higher (a mentor), or twice the eb with no mentor (a course). Training can raise a base by at most 4 over what it was at hiring, and to no more than 18. A better employee wants a better wage: at the next month's end they ask for the new going rate, and refusing them costs 10 loyalty. A player character trains with their own Improvement Points as usual, and the service reads their sheet's new bases.
+
+**Share grants** (company only). A `grant` proposal, passed on a majority of the shares, issues new shares without a vote to an employee, up to 5% of the company in total across all grants. They vest after 12 weeks and are lost if the employee leaves first. While vesting they add 20 loyalty and keep it at 50 or above. Once vested, the employee holds them like an angel investor (§30): a share of every payout, and a share of the proceeds if the company closes. From B5 they take part in the listing like any holder.
+
+**An Exec's team.** A partner who is an Exec may staff their Teamwork team as employees: one team member for each 3 ranks of Teamwork, rounded up. Their level comes from the Exec's rank: Green at ranks 1 to 3, Skilled at 4 to 6, Expert at 7 to 9, Master at 10. Team members take no wage, start with 75 loyalty, take headcount places, and leave if the Exec leaves the business. This sits beside Teamwork's use as an ability on Chase contracts (§32.2).
+
+### 33.6 Other links
+
+- **Gigs** (§26.5). An employee in trouble (kidnapped, arrested, owing a gang) is a ready gig hook for the GM. Through the map bridge a gig can name an employee, and its outcome moves their loyalty, or brings them back.
+- **Syndicates** (B3b). A syndicate's business hires like any other. Its officers act for it, and wages and overtime count against the officer's daily limit.
+- **Going public** (B5). A bookkeeper and every officer see the weekly digests, so a player-character bookkeeper trading the company's shares falls in the officers' insider window (§26.4).
+- **Corporate play** (B6). A fired disloyal employee, or a corp plant, can be the source a regulator's investigation starts from. A rival poaching your staff is a B6 move.
+- **Perks for player-character employees.** A staff discount, such as cheaper installs at the clinic or repairs at the garage, is shown on their Job view as a note for the GM to honour. The module does not change prices on the sheet.
+
+### 33.7 Record, requests and windows
+
+- **Record.** The business record gains:
+  - `staff`: one entry per employee, holding the id, the actor id (or none, for a recruit), the name, the source (`pc`, `npc`, `recruit` or `team`), the post, the bases, the wage, the day hired, loyalty, back pay owed, this week's overtime shifts, when they last trained, and any grant;
+  - `candidates`: recruits waiting to be hired, with their expiry.
+
+  Traits stay in the control journal, and a schema migration adds the empty lists.
+- **Requests:**
+  - `recruitRoll` and `vetRoll`;
+  - the proposal kinds `hire`, `fire` and `grant`;
+  - `acceptJob` and `quitJob`, for a player character;
+  - `setPost`, `onCall`, `bonus` and `train`;
+  - `{kind: 'staff'}` as a roll's use, checked by the GM's service like a hire.
+- **Windows.**
+  - **Business window:** a Staff tab (the staff, their posts, levels, wages and loyalty bands, candidates, recruiting and vetting); wages and overtime lines on the Ledger tab and in the digest; employees in the roll dialog. A player-character employee sees the Job view.
+  - **GM Console:** the Businesses tab shows each employee's true loyalty and traits, and NPC offers waiting to be accepted.
+
+### 33.8 Phasing
+
+| Step | What is built |
+|---|---|
+| E1 Staff | posts, levels, wages, headcount, hiring player characters, tagged NPCs and recruits, overtime in the roll dialog, the Staff tab and Job view |
+| E2 People | loyalty, quitting and firing, vetting and traits, staff events, bonuses |
+| E3 Careers | training, share grants, an Exec's team, and the B5 and B6 links when those phases are built |
+
+Each step ends as the others do: engine tests, flow tests, a schema migration, a simulator check of the wage and lift targets in §33.1, and a run in the test world.
