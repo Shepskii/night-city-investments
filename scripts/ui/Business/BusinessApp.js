@@ -16,6 +16,7 @@ import { BaseApplication } from '../BaseApplication.js';
 import { RollDialogApp } from './RollDialogApp.js';
 import { HireDialogApp } from './HireDialogApp.js';
 import { EmployeeDialogApp } from './EmployeeDialogApp.js';
+import { CashbookDialogApp } from './CashbookDialogApp.js';
 import { L } from '../format.js';
 import { pickerContext, startContext, businessContext, usableActors, jobsContext } from './context.js';
 
@@ -77,6 +78,7 @@ export class BusinessApp extends BaseApplication {
       proposeHire: BusinessApp._onProposeHire,
       proposeFire: BusinessApp._onProposeFire,
       openEmployee: BusinessApp._onOpenEmployee,
+      openCashbook: BusinessApp._onOpenCashbook,
       vetApplicants: BusinessApp._onVetApplicants,
       acceptJob: BusinessApp._onJob,
       declineJob: BusinessApp._onJob,
@@ -464,6 +466,13 @@ export class BusinessApp extends BaseApplication {
     const business = this.business;
     if (!business || !this.actor) return;
     EmployeeDialogApp.ask({ actorId: this.actorId, businessId: business.id, staffId: target.dataset.id });
+  }
+
+  /** A week in the Ledger tab's digests: its cashbook, in a window of its own. */
+  static _onOpenCashbook(event, target) {
+    const business = this.business;
+    if (!business) return;
+    CashbookDialogApp.ask({ businessId: business.id, index: Number(target.dataset.index) });
   }
 
   /** Vet every applicant waiting for a post: one roll. */

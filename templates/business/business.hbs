@@ -494,7 +494,7 @@
       <thead><tr><th>{{localize "NCI.Business.WeekLabel"}}</th><th>{{localize "NCI.Business.Takings"}}</th><th>{{localize "NCI.Business.Upkeep"}}</th><th>{{localize "NCI.Business.Profit"}}</th><th>{{localize "NCI.Business.Till"}}</th></tr></thead>
       <tbody>
         {{#each digests}}
-        <tr><td>{{week}}<div class="nci-muted">{{dates}}</div><div class="nci-muted">{{actions}}</div>{{#if event}}<div class="nci-muted">{{event}}</div>{{/if}}{{#if loans}}<div class="nci-muted">{{loans}}</div>{{/if}}{{#if wages}}<div class="nci-muted">{{wages}}</div>{{/if}}{{#if people}}<div class="nci-muted">{{people}}</div>{{/if}}{{#if gig}}<div class="nci-muted">{{gig}}</div>{{/if}}</td><td>{{takings}}</td><td>{{upkeep}}</td><td class="{{cls}}">{{profit}}</td><td>{{till}}</td></tr>
+        <tr class="nci-row" data-action="openCashbook" data-index="{{index}}" title="{{localize 'NCI.Cashbook.Open'}}"><td>{{week}}<div class="nci-muted">{{dates}}</div><div class="nci-muted">{{actions}}</div>{{#if event}}<div class="nci-muted">{{event}}</div>{{/if}}{{#if loans}}<div class="nci-muted">{{loans}}</div>{{/if}}{{#if wages}}<div class="nci-muted">{{wages}}</div>{{/if}}{{#if people}}<div class="nci-muted">{{people}}</div>{{/if}}{{#if gig}}<div class="nci-muted">{{gig}}</div>{{/if}}</td><td>{{takings}}</td><td>{{upkeep}}</td><td class="{{cls}}">{{profit}}</td><td>{{till}}</td></tr>
         {{/each}}
       </tbody>
     </table>

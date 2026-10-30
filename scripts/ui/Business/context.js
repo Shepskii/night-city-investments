@@ -363,18 +363,76 @@ function eventContext(business, canAct, free) {
   };
 }
 
+/** One ledger entry in words, with its amount. */
+function ledgerLine(business, e) {
+  return {
+    date: dayText(e.day),
+    what: L(`NCI.Business.Ledger.${e.kind}${e.gear > 0 ? 'Gear' : ''}`, { name: e.actorId ? nameOf(business, e.actorId) : '', staff: e.staffName ?? '', seller: e.sellerId ? nameOf(business, e.sellerId) : '', price: whole(e.price ?? 0), salvage: whole(e.salvage ?? 0), gear: whole(e.gear ?? 0) }),
+    amount: e.amount ? signed(e.amount) : '',
+    cls: e.amount > 0 ? 'nci-up' : e.amount < 0 ? 'nci-down' : '',
+  };
+}
+
+/** Ledger entries the week's close writes; the cashbook shows them from the digest instead. */
+const AT_CLOSE = new Set(['takings', 'upkeep', 'wages', 'medical']);
+/** Entries made while the business was being set up, into the money held for it rather than its cash. */
+const FORMING = new Set(['founded', 'contribution', 'setupLoss', 'refund']);
+
+/**
+ * The cashbook for one closed week: the income and expenses that make up its profit (the takings, the
+ * week's event, the upkeep by part, medical bills, wages, loan interest), the loan repaid, and every
+ * other payment in or out of the cash that week (overtime, hired help, adverts, bonuses, draws,
+ * top-ups and the like), which do not count in the profit. A week closed before the digest kept the
+ * upkeep's parts shows the upkeep as one line.
+ */
+export function cashbookContext(business, index) {
+  const d = business.digests.find((x) => x.index === index);
+  if (!d) return { business: business.name, week: L('NCI.Business.Week', { n: index }), gone: L('NCI.Cashbook.Gone') };
+  const row = digestRow(business, d);
+  const line = (label, amount, note = '') => ({ label, note, amount: signed(amount), cls: amount > 0 ? 'nci-up' : amount < 0 ? 'nci-down' : '' });
+  const change = d.event?.change ?? 0;
+  const gross = d.gross ?? d.takings - change;
+  const event = change ? line(L(`NCI.Event.${d.event.kind}.Name`), change, L(`NCI.Cashbook.Outcome.${d.event.outcome}`)) : null;
+  // A windfall is income; what trouble cost is an expense.
+  const income = [line(L('NCI.Cashbook.Takings'), gross, d.boost ? row.gig : ''), ...(change > 0 ? [event] : [])];
+  const upkeep = d.costs
+    ? ['running', 'rent', 'licence', 'protection'].filter((k) => d.costs[k]).map((k) => line(L(`NCI.Cashbook.Cost.${k}`), -d.costs[k]))
+    : [line(L('NCI.Business.Upkeep'), -d.upkeep)];
+  const expenses = [
+    ...(change < 0 ? [event] : []),
+    ...upkeep,
+    ...(d.event?.cost ? [line(L('NCI.Cashbook.Medical'), -d.event.cost, L(`NCI.Event.${d.event.kind}.Name`))] : []),
+    ...(d.wages ? [line(L('NCI.Cashbook.Wages'), -d.wages, d.owed ? L('NCI.Cashbook.Owed', { owed: whole(d.owed) }) : '')] : []),
+    ...(d.interest ? [line(L('NCI.Cashbook.Interest'), -d.interest)] : []),
+  ];
+  const totalIn = gross + Math.max(change, 0);
+  const totalOut = Math.max(-change, 0) + d.upkeep + (d.event?.cost ?? 0) + (d.wages ?? 0) + (d.interest ?? 0);
+  // An entry made before entries were marked with their week is placed by its date (setting-up entries left out).
+  const inWeek = (e) => (e.week != null ? e.week === d.index : e.day >= d.startDay && e.day <= d.endDay && !FORMING.has(e.kind));
+  return {
+    business: business.name,
+    week: row.week,
+    dates: row.dates,
+    activity: [row.actions, row.event, row.people, row.loans].filter(Boolean),
+    income,
+    expenses,
+    totalIn: signed(totalIn),
+    totalOut: signed(-totalOut),
+    profit: row.profit,
+    profitCls: row.cls,
+    repaid: d.repaid ? signed(-d.repaid) : '',
+    other: business.ledger.filter((e) => inWeek(e) && !AT_CLOSE.has(e.kind) && e.amount).map((e) => ledgerLine(business, e)),
+    till: row.till,
+  };
+}
+
 function ledgerContext(business, actor) {
   const last = lastDigest(business);
   const allowance = actor ? drawAllowance(business, actor.id) : 0;
   return {
     last: last ? digestRow(business, last) : null,
     digests: [...business.digests].reverse().map((d) => digestRow(business, d)),
-    entries: [...business.ledger].reverse().slice(0, LEDGER_ROWS).map((e) => ({
-      date: dayText(e.day),
-      what: L(`NCI.Business.Ledger.${e.kind}${e.gear > 0 ? 'Gear' : ''}`, { name: e.actorId ? nameOf(business, e.actorId) : '', staff: e.staffName ?? '', seller: e.sellerId ? nameOf(business, e.sellerId) : '', price: whole(e.price ?? 0), salvage: whole(e.salvage ?? 0), gear: whole(e.gear ?? 0) }),
-      amount: e.amount ? signed(e.amount) : '',
-      cls: e.amount > 0 ? 'nci-up' : e.amount < 0 ? 'nci-down' : '',
-    })),
+    entries: [...business.ledger].reverse().slice(0, LEDGER_ROWS).map((e) => ledgerLine(business, e)),
     allowance,
     allowanceText: allowance > 0 ? L('NCI.Business.DrawAllowance', { amount: whole(allowance) }) : L('NCI.Business.NoDraw'),
     canDraw: business.status === 'open' && allowance > 0,
@@ -426,6 +484,7 @@ function moneyContext(business, actor) {
 
 function digestRow(business, d) {
   return {
+    index: d.index,
     week: L('NCI.Business.Week', { n: d.index }),
     dates: `${dayText(d.startDay)} – ${dayText(d.endDay)}`,
     takings: whole(d.takings),

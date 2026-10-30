@@ -1170,6 +1170,11 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, params
   const takings = Math.max(0, base + (event?.change ?? 0));
   const fixed = (stage.rent + (stage.licence ?? 0)) * district.rent + stage.protection * protection * district.risk;
   const upkeep = Math.round((arch.costs * b.state.capacity ** 0.85 * b.state.costFactor + fixed) * part);
+  // What the upkeep is made of, for the week's cashbook; protection money takes the rounding.
+  const running = Math.round(arch.costs * b.state.capacity ** 0.85 * b.state.costFactor * part);
+  const rent = Math.round(stage.rent * district.rent * part);
+  const licence = Math.round((stage.licence ?? 0) * district.rent * part);
+  const costs = { running, rent, licence, protection: upkeep - running - rent - licence };
   // The week's takings come in before its loan payments go out, so a week that earns the payment makes it.
   b.till += takings - upkeep;
   // A staff event's bills (an accident at work) come out of the cash too.
@@ -1202,7 +1207,10 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, params
     startDay: b.period.startDay,
     endDay: b.period.endDay,
     takings,
+    // The takings before the week's event, and the upkeep's parts (cashbook).
+    gross: base,
     upkeep,
+    costs,
     profit,
     till: b.till,
     ...(loans.interest || loans.principal || loans.missed.length ? { interest: loans.interest, repaid: loans.principal, missed: loans.missed } : {}),

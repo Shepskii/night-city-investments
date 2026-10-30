@@ -1,0 +1,47 @@
+<section class="nci-terminal nci-business nci-cashbook">
+  <header class="nci-header">
+    <div><strong>{{week}}</strong> <span class="nci-muted">{{business}}</span></div>
+    <div class="nci-muted">{{dates}}</div>
+  </header>
+  {{#if gone}}<p class="nci-empty">{{gone}}</p>{{else}}
+  {{#each activity}}<p class="nci-hint">{{this}}</p>{{/each}}
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Cashbook.Income"}}</h3>
+    <table class="nci-market"><tbody>
+      {{#each income}}<tr><td>{{label}}{{#if note}} <span class="nci-muted">{{note}}</span>{{/if}}</td><td class="num {{cls}}">{{amount}}</td></tr>{{/each}}
+      <tr class="nci-total"><td>{{localize "NCI.Cashbook.TotalIn"}}</td><td class="num">{{totalIn}}</td></tr>
+    </tbody></table>
+  </div>
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Cashbook.Expenses"}}</h3>
+    <table class="nci-market"><tbody>
+      {{#each expenses}}<tr><td>{{label}}{{#if note}} <span class="nci-muted">{{note}}</span>{{/if}}</td><td class="num {{cls}}">{{amount}}</td></tr>{{/each}}
+      <tr class="nci-total"><td>{{localize "NCI.Cashbook.TotalOut"}}</td><td class="num">{{totalOut}}</td></tr>
+    </tbody></table>
+  </div>
+
+  <div class="nci-block">
+    <table class="nci-market"><tbody>
+      <tr class="nci-total"><td>{{localize "NCI.Business.Profit"}}</td><td class="num {{profitCls}}">{{profit}}</td></tr>
+      {{#if repaid}}<tr><td>{{localize "NCI.Cashbook.Repaid"}} <span class="nci-muted">{{localize "NCI.Cashbook.RepaidHint"}}</span></td><td class="num nci-down">{{repaid}}</td></tr>{{/if}}
+    </tbody></table>
+  </div>
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Cashbook.Other"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Cashbook.OtherHint"}}</p>
+    {{#if other.length}}
+    <table class="nci-market"><tbody>
+      {{#each other}}<tr><td class="nci-muted">{{date}}</td><td>{{what}}</td><td class="num {{cls}}">{{amount}}</td></tr>{{/each}}
+    </tbody></table>
+    {{else}}<p class="nci-empty">{{localize "NCI.Cashbook.NoOther"}}</p>{{/if}}
+  </div>
+
+  <p><strong>{{localize "NCI.Cashbook.TillAtClose"}}</strong> {{till}} eb</p>
+  {{/if}}
+  <footer class="nci-footer">
+    <button type="button" data-action="close"><i class="fas fa-xmark"></i> {{localize "NCI.Staff.CloseHire"}}</button>
+  </footer>
+</section>

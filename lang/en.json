@@ -1687,6 +1687,41 @@
         "closed": "dissolved"
       }
     },
+    "Cashbook": {
+      "Title": "{name}: cashbook, week {n}",
+      "Open": "Open this week's cashbook",
+      "Gone": "This week's figures are no longer kept: the business keeps its last 12 weeks.",
+      "Income": "Income",
+      "Expenses": "Expenses",
+      "TotalIn": "Total income",
+      "TotalOut": "Total expenses",
+      "Takings": "Takings",
+      "Cost": {
+        "running": "Running costs",
+        "rent": "Rent",
+        "licence": "Licence fees",
+        "protection": "Protection money"
+      },
+      "Medical": "Medical bills",
+      "Wages": "Wages",
+      "Owed": "{owed} eb still owed",
+      "Interest": "Loan interest",
+      "Repaid": "Loans repaid",
+      "RepaidHint": "the principal, not counted in the profit",
+      "Outcome": {
+        "answered": "answered",
+        "failed": "answered, but failed",
+        "fumbled": "answered, badly",
+        "unanswered": "unanswered",
+        "covered": "covered",
+        "windfall": "made the most of it",
+        "missed": "missed"
+      },
+      "Other": "Other money in and out",
+      "OtherHint": "Paid in or out of the cash during the week, and not counted in the profit: overtime, hired help, adverts, bonuses, draws, top-ups, loans and the like.",
+      "NoOther": "Nothing else this week.",
+      "TillAtClose": "Cash at the close:"
+    },
     "GMBusiness": {
       "CharterApprove": "Approve the charter",
       "CharterReject": "Turn the charter down",
@@ -2071,7 +2106,7 @@
       "Leave": "Leave",
       "LeaveConfirm": "Offer your stake to your partners? They have the buy-out window to buy it at book value; after that it goes to your heir.",
       "DecisionsHint": "Closing needs every partner with a vote; one refusal ends the proposal.",
-      "Tab": { "overview": "Overview", "week": "This week", "projects": "Projects", "ledger": "Ledger", "partners": "Partners", "growth": "Growth", "staff": "Staff" },
+      "Tab": { "overview": "Overview", "week": "Work", "projects": "Projects", "ledger": "Ledger", "partners": "Partners", "growth": "Growth", "staff": "Staff" },
       "DaysLeft": "You have {n} business day(s) left this week.",
       "WaitingVote": "{n} proposal(s) waiting for votes on the Partners tab.",
       "Projects": "Projects",

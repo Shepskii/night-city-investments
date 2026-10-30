@@ -235,5 +235,6 @@ export function close(b, day, reason) {
 
 /** Add a ledger entry, keeping the last `ledgerCap`. */
 export function addLedger(b, entry, p) {
-  b.ledger = [...b.ledger, { ...entry, amount: int(entry.amount) }].slice(-p.ledgerCap);
+  // Each entry is marked with the operating week it belongs to, for that week's cashbook.
+  b.ledger = [...b.ledger, { ...(b.period ? { week: b.period.index } : {}), ...entry, amount: int(entry.amount) }].slice(-p.ledgerCap);
 }

@@ -197,6 +197,25 @@ test('the week closes: the wage is paid to Nova, and the ledger and the GM tab s
   assertClean(ledger, 'ledger with wages');
   assert.match(text(ledger), /Wages \d+ eb/);
   assert.match(text(ledger), /Overtime for Nova, called in by Medtech/);
+  assert.match(ledger, /data-tab="week" class="">Work</, 'the week tab is called Work');
+
+  // Each weekly digest opens the week's cashbook.
+  assert.match(ledger, new RegExp(`class="nci-row" data-action="openCashbook" data-index="${week.index}"`));
+  const { CashbookDialogApp } = await import('../scripts/ui/Business/CashbookDialogApp.js');
+  assert.ok('openCashbook' in Apps.Business.DEFAULT_OPTIONS.actions);
+  const book = new CashbookDialogApp({ businessId: business().id, index: week.index });
+  const ctx = await book._prepareContext();
+  const cashbook = render('templates/dialogs/cashbook.hbs', ctx);
+  assertClean(cashbook, 'cashbook');
+  const words = text(cashbook);
+  for (const line of ['Income', 'Takings', 'Expenses', 'Running costs', 'Rent', 'Licence fees', 'Protection money', 'Wages', 'Total income', 'Total expenses', 'Profit', 'Cash at the close']) {
+    assert.match(words, new RegExp(line), line);
+  }
+  assert.equal(Object.values(week.costs).reduce((a, v) => a + v, 0), week.upkeep, "the upkeep's parts add up to it");
+  const eb = (s) => Number(String(s).replace(/[^\d-]/g, ''));
+  assert.equal(eb(ctx.totalIn) + eb(ctx.totalOut), week.profit, 'income less expenses is the profit');
+  assert.match(words, /Other money in and out .* Overtime for Nova, called in by Medtech -54/, "the week's overtime, outside the profit");
+  assert.doesNotMatch(words, /Founded by|put money in/, "money put in while setting up was not the business's cash");
 
   const app = new Apps.GMConsole();
   app.tab = 'businesses';
