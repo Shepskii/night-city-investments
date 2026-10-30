@@ -20,7 +20,6 @@ import { MarketClock } from '../../services/MarketClockService.js';
 import { L, whole, signed } from '../format.js';
 import { weeklyBars, balanceLine } from '../components/chart.js';
 import { actorLink } from '../actorLink.js';
-import { escapeHtml } from '../../utils/text.js';
 
 const DAY_MS = 86_400_000;
 const LEDGER_ROWS = 15;
@@ -601,9 +600,11 @@ function partnersContext(business, actor) {
         post: proposal.terms?.post ? postLabel(proposal.terms.post) : '',
       }),
       rule: L(`NCI.Business.Rule.${PROPOSAL_RULES[proposal.kind]}`, { date: dayText(proposal.expires ?? proposal.day) }),
-      // HTML: each voter's name links to their character.
-      votes: holders(business).filter((p) => p.voting)
-        .map((p) => `${actorLink(p.actorId, p.name)}: ${escapeHtml(L(`NCI.Business.Vote.${proposal.votes[p.actorId] === true ? 'yes' : proposal.votes[p.actorId] === false ? 'no' : 'none'}`))}`).join(', '),
+      // Each voter, linked to their character, and how they voted.
+      voters: holders(business).filter((p) => p.voting).map((p) => {
+        const state = proposal.votes[p.actorId] === true ? 'yes' : proposal.votes[p.actorId] === false ? 'no' : 'none';
+        return { who: actorLink(p.actorId, p.name), state, label: L(`NCI.Business.Vote.${state}`) };
+      }),
       canVote: !!me?.voting && ['active', 'leaving'].includes(me.status) && proposal.votes[actor.id] === undefined,
     })),
   };

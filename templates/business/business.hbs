@@ -584,17 +584,25 @@
   <div class="nci-block">
     <h3>{{localize "NCI.Business.Decisions"}}</h3>
     {{#each proposals}}
-    <div class="nci-gig">
-      <p><strong>{{text}}</strong> <span class="nci-muted">{{rule}}</span></p>
-      <p class="nci-muted">{{{votes}}}</p>
+    <div class="nci-gig nci-proposal">
+      <div class="nci-gigtop"><strong>{{text}}</strong><span class="nci-muted">{{rule}}</span></div>
+      <div class="nci-votes">
+        {{#each voters}}<span class="nci-vote">{{{who}}}<span class="nci-vote-{{state}}">{{label}}</span></span>{{/each}}
+      </div>
       {{#if canVote}}
-      <button type="button" data-action="vote" data-id="{{id}}" data-yes="true"><i class="fas fa-check"></i> {{localize "NCI.Business.VoteYes"}}</button>
-      <button type="button" data-action="vote" data-id="{{id}}" data-yes="false"><i class="fas fa-xmark"></i> {{localize "NCI.Business.VoteNo"}}</button>
+      <div class="nci-actions">
+        <button type="button" data-action="vote" data-id="{{id}}" data-yes="true"><i class="fas fa-check"></i> {{localize "NCI.Business.VoteYes"}}</button>
+        <button type="button" data-action="vote" data-id="{{id}}" data-yes="false"><i class="fas fa-xmark"></i> {{localize "NCI.Business.VoteNo"}}</button>
+      </div>
       {{/if}}
     </div>
     {{/each}}
-    {{#if canPropose}}<button type="button" data-action="proposeClose"><i class="fas fa-door-closed"></i> {{localize "NCI.Business.ProposeClose"}}</button>{{/if}}
-    {{#if canLeave}}<button type="button" data-action="leave"><i class="fas fa-person-walking-arrow-right"></i> {{localize "NCI.Business.Leave"}}</button>{{/if}}
+    {{#if canPropose}}<div class="nci-actions">
+      <button type="button" data-action="proposeClose"><i class="fas fa-door-closed"></i> {{localize "NCI.Business.ProposeClose"}}</button>
+      {{#if canLeave}}<button type="button" data-action="leave"><i class="fas fa-person-walking-arrow-right"></i> {{localize "NCI.Business.Leave"}}</button>{{/if}}
+    </div>{{else}}{{#if canLeave}}<div class="nci-actions">
+      <button type="button" data-action="leave"><i class="fas fa-person-walking-arrow-right"></i> {{localize "NCI.Business.Leave"}}</button>
+    </div>{{/if}}{{/if}}
     <p class="nci-hint">{{localize "NCI.Business.DecisionsHint"}}</p>
   </div>
   {{/with}}

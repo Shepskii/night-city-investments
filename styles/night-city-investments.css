@@ -219,6 +219,14 @@
 .nci-app .nci-kv span { color: var(--nci-label); }
 .nci-app .nci-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; }
 .nci-app .nci-actions button { width: auto; padding: 0 10px; }
+/* A proposal's voters: each a character link with their vote beside it, on one line that wraps. */
+.nci-app .nci-proposal .nci-gigtop { margin-bottom: 6px; }
+.nci-app .nci-votes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.nci-app .nci-vote { display: inline-flex; align-items: center; gap: 6px; }
+.nci-app .nci-vote-yes { color: var(--nci-up); }
+.nci-app .nci-vote-no { color: var(--nci-down); }
+.nci-app .nci-vote-none { color: var(--color-text-dark-inactive, #888); font-style: italic; }
+.nci-app .nci-proposal .nci-actions { margin: 8px 0 2px; }
 .nci-app .nci-days { width: 64px; }
 .nci-app .nci-rowbtns { white-space: nowrap; text-align: right; }
 .nci-app .nci-rowbtns button { width: 26px; padding: 0; }
@@ -290,8 +298,9 @@
 .nci-app a.content-link.nci-who:hover { --cpr-background-content-link: var(--nci-row-hover); background: var(--nci-row-hover) !important; border-color: var(--nci-accent-bright); color: #fff; }
 .nci-app a.content-link.nci-who::before { content: none; }
 .nci-app a.content-link.nci-who .nci-avatar { width: 20px; height: 20px; flex: none; margin: 0; border: 1px solid var(--nci-accent-dim); border-radius: 50%; object-fit: cover; object-position: top; }
-/* A name with no actor behind it, sized to sit beside the links. */
-.nci-app span.nci-who { display: inline-flex; align-items: center; height: 24px; vertical-align: middle; }
+/* A name with no actor behind it (a syndicate, a recruit): the same pill, dashed and without a portrait. */
+.nci-app span.nci-who { display: inline-flex; align-items: center; box-sizing: border-box; height: 24px; padding: 0 8px; margin: 1px 0; vertical-align: middle;
+  border: 1px dashed var(--nci-accent-dim); border-radius: 12px; color: #e8e2e3; font-size: 13px; font-weight: 600; font-style: normal; line-height: 22px; white-space: nowrap; }
 .nci-app .nci-pick { display: inline-flex; align-items: center; gap: 4px; margin-right: 10px; }
 /* A post on the Staff tab that a character can be dragged onto. */
 .nci-app .nci-business tr.nci-droppost td:first-child { border-left: 2px dashed var(--nci-accent-dim); }
