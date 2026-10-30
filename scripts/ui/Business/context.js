@@ -184,7 +184,7 @@ function projectEffect(business, kind) {
     case 'refit':
       return L('NCI.Project.Effect.refit', { now: business.state.costFactor.toFixed(3), after: Math.max(BUSINESS_DEFAULTS.costFloor, business.state.costFactor - P.refit.cut).toFixed(3) });
     case 'security':
-      return L('NCI.Project.Effect.security', { level: up.security, max: P.security.levels, cut: Math.round((1 - protectionFactor(business)) * 100) });
+      return L(up.security ? 'NCI.Project.Effect.security' : 'NCI.Project.Effect.securityNone', { level: up.security, max: P.security.levels, cut: Math.round((1 - protectionFactor(business)) * 100) });
     case 'storefront':
       return L(up.storefront.length ? 'NCI.Project.Effect.storefrontAgain' : 'NCI.Project.Effect.storefront', { rep: P.storefront.reputation, target: 50 + P.storefront.target });
     case 'staffRoom':

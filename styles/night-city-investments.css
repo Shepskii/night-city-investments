@@ -234,10 +234,10 @@
 /* Under a count in the header (Work, Staff), the row's buttons sit in a row on the right, under it. */
 .nci-app td.nci-endbtns > button { display: inline-flex; vertical-align: middle; width: auto; margin: 0 0 0 4px; padding: 0 10px; }
 /* The Projects tab: Capacity against the stage's ceiling (now, and what the next expansion adds), and a project's progress. */
-.nci-app .nci-capacity { grid-template-columns: 110px minmax(160px, 320px) 1fr; }
-.nci-app .nci-capbar { display: flex; height: 14px; background: #1c1517; border: 1px solid #2a2023; overflow: hidden; }
-.nci-app .nci-capnow { background: #3a6f9a; }
-.nci-app .nci-capnext { background: repeating-linear-gradient(45deg, #3a6f9a66 0 4px, transparent 4px 8px); }
+.nci-app .nci-standing.nci-capacity { grid-template-columns: 110px minmax(200px, 360px) 1fr; }
+.nci-app .nci-capbar { display: flex; height: 14px; background: #2a2023; border: 1px solid #4a3a3e; overflow: hidden; }
+.nci-app .nci-capnow { background: #4f9bd9; }
+.nci-app .nci-capnext { background: repeating-linear-gradient(45deg, #4f9bd9 0 3px, #2a2023 3px 7px); }
 .nci-app .nci-progress { height: 10px; margin: 6px 0; background: #1c1517; border: 1px solid #2a2023; overflow: hidden; }
 .nci-app .nci-progress > span { display: block; height: 100%; background: var(--nci-up); }
 /* The cashbook: totals stand out from the lines above them. */

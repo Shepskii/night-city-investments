@@ -1708,6 +1708,7 @@
         "expansion": "Capacity {now} → {after} (the ceiling at this stage is {cap}).",
         "refit": "Cost base {now} → {after}; it creeps back up week by week.",
         "security": "Level {level} of {max} (protection money −{cut}% now): each level cuts it a further 25% and halves break-ins.",
+        "securityNone": "No upgrade yet (up to {max} levels): each level cuts protection money by 25% and halves break-ins.",
         "storefront": "Reputation +{rep} at once, and from then on it settles toward {target} rather than 50. Once a stage.",
         "storefrontAgain": "Reputation +{rep} at once. Once a stage.",
         "staffRoom": "One more place for staff ({places} now), and paid weeks lift NPC staff loyalty to {cap}. Once a stage."
