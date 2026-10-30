@@ -449,3 +449,32 @@ test('an applicant can be turned away: they leave the list, with their hidden tr
   assert.equal(MarketStore.getBusinessesHidden()[b.id].traits['ad9-1'], undefined, 'the trait goes too');
   assert.match(text(await renderBusiness(windowFor(med, 'ledger'))), /Oz Petrov turned away by Medtech/);
 });
+
+test('the Projects tab: days left in the header, Capacity against the ceiling, the project under way with its crew, every kind, and a history table', async () => {
+  const b = structuredClone(business());
+  b.till = 1300;
+  b.projects = [
+    { id: 'p1', kind: 'expansion', stage: 1, cost: 2500, gain: 0.8, daysNeeded: 6, days: 6, startedDay: b.openedDay, doneDay: b.openedDay + 3, status: 'done', crew: { [med.id]: 3, [fix.id]: 3 } },
+    { id: 'p2', kind: 'refit', stage: 1, cost: 1500, daysNeeded: 4, days: 1, startedDay: b.openedDay + 5, status: 'active', crew: { [fix.id]: 1 } },
+  ];
+  await S.BusinessRepository.save(b);
+  const html = await renderBusiness(windowFor(med, 'projects'));
+  assertClean(html, 'projects tab');
+  const words = text(html);
+  assert.match(words, /Capacity [\d.]+ of 4\.50/);
+  assert.match(html, /class="nci-capbar"/);
+  assert.match(words, /Under way Refit started .*, 1,500 eb 1 of 4 business days done\./);
+  assert.match(words, /Worked on by: Fixer 1/);
+  assert.match(html, /data-action="addDays" data-id="p2"/);
+  assert.match(words, /Project What it does Cost \(eb\) Business days Business days left 3\/3/);
+  assert.match(words, /One project at a time/);
+  assert.doesNotMatch(html, /data-action="proposeProject"/, 'nothing can be proposed while a project runs');
+  assert.match(words, /Finished Project Result .* Expansion Capacity \+0\.8 2,500 6 Medtech 3, Fixer 3/);
+
+  // Finished, the kinds can be proposed; one the cash cannot cover says so in figures.
+  b.projects[1].status = 'done';
+  await S.BusinessRepository.save(b);
+  const free = await renderBusiness(windowFor(med, 'projects'));
+  assert.match(free, /data-action="proposeProject" data-kind="staffRoom"/);
+  assert.match(text(free), /Needs 2,000 eb; the cash holds 1,300 eb/);
+});

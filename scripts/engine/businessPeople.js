@@ -165,6 +165,8 @@ export function settleStaffEvent(b, takings, slots, { traits = null, seed = 'nci
  */
 export function loyaltyWeek(b, { monthEnd = false, monthProfit = 0, unanswered = false, traits = null, seed = 'nci', day = 0 } = {}, p = BUSINESS_DEFAULTS) {
   const L = p.staff.loyalty;
+  // A staff room lets a paid week lift loyalty higher.
+  const paidCap = b.upgrades?.staffRoom?.length ? p.projects.staffRoom.paidCap : L.paidCap;
   const notes = [];
   let exposure = 0;
   for (const s of npcStaff(b)) {
@@ -174,7 +176,7 @@ export function loyaltyWeek(b, { monthEnd = false, monthProfit = 0, unanswered =
       s.unpaid = (s.unpaid ?? 0) + 1;
     } else {
       s.unpaid = 0;
-      if (s.loyalty < L.paidCap) moveLoyalty(s, Math.min(L.paidWeek, L.paidCap - s.loyalty), traits, p);
+      if (s.loyalty < paidCap) moveLoyalty(s, Math.min(L.paidWeek, paidCap - s.loyalty), traits, p);
     }
     if (unanswered) moveLoyalty(s, L.unanswered, traits, p);
     if (monthEnd) {

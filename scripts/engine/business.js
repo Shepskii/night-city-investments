@@ -45,6 +45,10 @@
  *   { key, type: 'movePost', businessId, staffId, post }
  *   { key, type: 'propose', kind: 'pay', staffId, pct }          a new share of the going rate
  *
+ * Projects (businessGrowth.js):
+ *   { key, type: 'propose', kind: 'project', project }   project: expansion, refit, security, storefront or staffRoom
+ *   { key, type: 'propose', kind: 'expansion' }          the same as project 'expansion' (older windows)
+ *
  * `context.traits` is the business's hidden traits (applicant or employee id to trait), from the GM's
  * hidden state; a result's `traits` are new ones for the service to keep there, never on the record.
  */
@@ -65,7 +69,8 @@ import {
   fail, close, addLedger,
 } from './businessRecord.js';
 import {
-  daysLeft, spendDays, activeProject, expansionOffer, startExpansion, addProjectDays, milestones, stepUpCheck, applyStepUp, votingUnits,
+  daysLeft, spendDays, activeProject, expansionOffer, addProjectDays, milestones, stepUpCheck, applyStepUp, votingUnits,
+  projectOffer, startProject, protectionFactor, reputationBaseline, PROJECT_KINDS,
 } from './businessGrowth.js';
 import {
   canCharter, startCharter, charterRollCheck, applyCharterRoll, approveCharter, dropCharter, fundCharter,
@@ -81,7 +86,8 @@ import {
   idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost, rejectApplicant,
 } from './businessPeople.js';
 
-export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck };
+export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, projectOffer, PROJECT_KINDS };
+export { upgradesOf, protectionFactor, breakInFactor, reputationBaseline } from './businessGrowth.js';
 export { fixerOffer, bankCheck, angelCheck, openLoans, averageProfit };
 
 export {
@@ -130,7 +136,7 @@ export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'st
  * with a vote; starting an expansion is a day-to-day choice, a majority of the voting units.
  */
 export const PROPOSAL_RULES = Object.freeze({
-  close: 'unanimous', stepUp: 'unanimous', expansion: 'majority', fixerLoan: 'majority', bankLoan: 'majority', investor: 'unanimous', angel: 'unanimous',
+  close: 'unanimous', stepUp: 'unanimous', expansion: 'majority', project: 'majority', fixerLoan: 'majority', bankLoan: 'majority', investor: 'unanimous', angel: 'unanimous',
   // A company's officers are elected and dismissed by a majority of the shares (B4c).
   elect: 'majority', dismiss: 'majority',
   // Taking an employee on, or letting one go (DESIGN §33).
@@ -893,6 +899,11 @@ function canPropose(b, kind, request, ctx, p) {
     }
     case 'expansion':
       return expansionOffer(b, p);
+    case 'project': {
+      if (!PROJECT_KINDS.includes(request.project)) return fail('bad-project');
+      const offer = projectOffer(b, request.project, p);
+      return offer.ok ? { ok: true, terms: { project: request.project, cost: offer.cost, days: offer.days } } : fail(offer.reason);
+    }
     case 'elect':
     case 'dismiss':
       return officerProposal(b, kind, request.actorId);
@@ -962,7 +973,9 @@ function settleProposals(b, day, out, p, ctx = {}) {
 function enact(b, proposal, day, p, ctx, out) {
   switch (proposal.kind) {
     case 'expansion':
-      return startExpansion(b, proposal.id, day, p);
+      return startProject(b, 'expansion', proposal.id, day, p);
+    case 'project':
+      return startProject(b, proposal.terms.project, proposal.id, day, p);
     case 'fixerLoan':
       return takeFixerLoan(b, proposal.id, proposal.terms.amount, day, p);
     case 'bankLoan':
@@ -1160,7 +1173,8 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, params
   // Floor and sales staff lift the takings; a bookkeeper, publicist and compliance officer move the state.
   const team = staffWeek(b, g, p, { idle, traits });
   workMult *= 1 + team.lift;
-  b.state.reputation = clamp(b.state.reputation + ((team.reputationTarget ?? 50) - b.state.reputation) * p.reputationDrift, 0, 100);
+  // Reputation settles toward 50 (55 with a salesperson), higher with a storefront.
+  b.state.reputation = clamp(b.state.reputation + (reputationBaseline(b, team.reputationTarget ?? 50, p) - b.state.reputation) * p.reputationDrift, 0, 100);
   if (b.state.compliance != null) b.state.compliance = clamp(b.state.compliance + (p.complianceBaseline - b.state.compliance) * p.reputationDrift, 0, 100);
   b.state.costFactor = Math.min(1, b.state.costFactor + p.costCreep);
 
@@ -1173,7 +1187,8 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, params
   b.boost = 0;
   const event = settleEvent(b, base, b.period.slots, p, { traits, seed, day: b.period.endDay });
   const takings = Math.max(0, base + (event?.change ?? 0));
-  const fixed = (stage.rent + (stage.licence ?? 0)) * district.rent + stage.protection * protection * district.risk;
+  // A security upgrade cuts the protection money for good.
+  const fixed = (stage.rent + (stage.licence ?? 0)) * district.rent + stage.protection * protection * protectionFactor(b, p) * district.risk;
   const upkeep = Math.round((arch.costs * b.state.capacity ** 0.85 * b.state.costFactor + fixed) * part);
   // What the upkeep is made of, for the week's cashbook; protection money takes the rounding.
   const running = Math.round(arch.costs * b.state.capacity ** 0.85 * b.state.costFactor * part);

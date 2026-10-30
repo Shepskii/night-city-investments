@@ -96,6 +96,8 @@ export function normalizeBusiness(raw) {
     losingPeriods: int(b.losingPeriods),
     proposals: b.proposals ?? [],
     projects: b.projects ?? [],
+    /** Upgrades from projects: security's level, the stages a storefront and a staff room were built at. */
+    upgrades: { security: int(b.upgrades?.security ?? 0), storefront: b.upgrades?.storefront ?? [], staffRoom: b.upgrades?.staffRoom ?? [] },
     /** The partners' agreement to step up, and when a failed registration may be tried again. */
     stepUp: b.stepUp ?? null,
     loans: b.loans ?? [],

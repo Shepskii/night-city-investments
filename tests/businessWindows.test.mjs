@@ -159,7 +159,8 @@ test('open: every tab renders, and the week offers its five actions', async () =
   assert.match(growth, /To become a Registered business/);
   assert.match(growth, /4 full weeks open/);
   const projects = text(await renderBusiness(windowFor(med, 'projects')));
-  assert.match(projects, /business day\(s\) left this week/);
+  assert.match(projects, /Business days left 3\/3/);
+  assert.match(projects, /Expansion .* Refit .* Security upgrade .* Storefront .* Staff room/);
   const partners = text(await renderBusiness(windowFor(med, 'partners')));
   assert.match(partners, /Medtech/);
   assert.match(partners, /Book value per unit/);

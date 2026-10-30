@@ -13,6 +13,7 @@ import { EVENTS, BUSINESS_DEFAULTS, districtOf } from './businessConfig.js';
 import { archetypeOf, clamp } from './businessRecord.js';
 import { bandPassed } from './rolls.js';
 import { staffEventWeight, staffEventTarget, settleStaffEvent } from './businessPeople.js';
+import { breakInFactor } from './businessGrowth.js';
 
 /** How likely an event is this week: the base chance, the district's risk, and less once registered. */
 export function eventChance(b, p = BUSINESS_DEFAULTS) {
@@ -27,7 +28,8 @@ export function drawEvent(b, seed = 'nci', p = BUSINESS_DEFAULTS, traits = null)
   const rng = createRng(seed, 'business-event', b.id, b.period.index);
   if (!rng.chance(eventChance(b, p))) return null;
   const weights = Object.fromEntries(Object.entries(EVENTS).filter(([, e]) => (e.stage ?? 0) <= b.stage)
-    .map(([k, e]) => [k, e.staff ? staffEventWeight(b, k, traits, p) : e.weight]).filter(([, w]) => w > 0));
+    // A security upgrade keeps break-ins away.
+    .map(([k, e]) => [k, e.staff ? staffEventWeight(b, k, traits, p) : k === 'theft' ? e.weight * breakInFactor(b, p) : e.weight]).filter(([, w]) => w > 0));
   const kind = rng.weighted(weights);
   const staffId = EVENTS[kind].staff ? staffEventTarget(b, kind, rng, p) : null;
   return { kind, ...(staffId ? { staffId } : {}) };

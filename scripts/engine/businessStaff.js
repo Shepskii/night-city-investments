@@ -114,6 +114,9 @@ export function wageOf(b, staff, p = BUSINESS_DEFAULTS) {
   return Math.round(goingRate(postBase(staff, staff.post, archetypeOf(b), p), b.stage, p) * (staff.pct ?? 1));
 }
 
+/** How many employees the business may have: the stage's headcount, and a place more for each staff room. */
+export const headcountOf = (b, p = BUSINESS_DEFAULTS) => (p.staff.headcount[b.stage] ?? 0) + (b.upgrades?.staffRoom?.length ?? 0) * p.projects.staffRoom.headcount;
+
 /** How many floor staff the business has room for: its Capacity, rounded down, and at least one. */
 export const floorRoom = (b) => Math.max(1, Math.floor(b.state.capacity));
 
@@ -126,7 +129,7 @@ export function postOpen(b, post, p = BUSINESS_DEFAULTS, exceptId = null) {
   if (!def) return fail('bad-post');
   if (b.stage < def.stage) return fail('post-later');
   const staff = (b.staff ?? []).filter((s) => (s.status === 'active' || s.status === 'offered') && s.id !== exceptId);
-  if (!exceptId && staff.length >= (p.staff.headcount[b.stage] ?? 0)) return fail('no-headcount');
+  if (!exceptId && staff.length >= headcountOf(b, p)) return fail('no-headcount');
   if (post === 'manager' && staff.some((s) => s.post === 'manager')) return fail('post-taken');
   if (post === 'floor' && staff.filter((s) => s.post === 'floor').length >= floorRoom(b)) return fail('no-floor-room');
   return { ok: true };

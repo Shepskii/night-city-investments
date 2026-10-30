@@ -169,6 +169,23 @@ export const BUSINESS_DEFAULTS = Object.freeze({
   ]),
   /** Business days each partner with a vote has a week, for projects and extra time, without Crew Tools. */
   businessDays: 3,
+  /**
+   * Projects beside an expansion (the stage's `expansion` above): paid from the cash when the partners
+   * agree, then finished with business days, one project at a time. `cost` and `days` are by stage.
+   *   refit       the Cost base down `cut` at once, never below its floor; again whenever there is room
+   *   security    levels up to `levels`: each cuts protection money by `protection`, and break-ins come
+   *               `breakIns` times as often per level
+   *   storefront  Reputation up `reputation` at once, once a stage; once there is one, Reputation
+   *               settles `target` higher
+   *   staffRoom   once a stage: `headcount` more places each, and paid weeks lift NPC staff loyalty to
+   *               `paidCap` rather than 60
+   */
+  projects: Object.freeze({
+    refit: Object.freeze({ cost: Object.freeze([600, 1500, 5000]), days: Object.freeze([2, 4, 6]), cut: 0.05 }),
+    security: Object.freeze({ cost: Object.freeze([800, 2000, 6000]), days: Object.freeze([2, 3, 5]), levels: 2, protection: 0.25, breakIns: 0.5 }),
+    storefront: Object.freeze({ cost: Object.freeze([700, 1800, 6000]), days: Object.freeze([2, 4, 6]), reputation: 5, target: 3 }),
+    staffRoom: Object.freeze({ cost: Object.freeze([500, 1200, 4000]), days: Object.freeze([2, 3, 5]), headcount: 1, paidCap: 70 }),
+  }),
   /** Side business to registered business (DESIGN §26.0). Bureaucracy, or Local Expert or Persuasion at DV +2. */
   registration: Object.freeze({
     // Reputation drifts back toward 50 and events knock it down, so the bar is near that baseline, not on it.

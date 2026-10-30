@@ -1600,3 +1600,20 @@ E2 is `scripts/engine/businessPeople.js` (pure), with small hooks in `businessSt
 - **No migration.** The normalizer fills in loyalty (50, or none for a player character) and keeps the new fields.
 
 **Not built yet:** a player character on call rolling their own overtime with their own Luck, and E3.
+
+## 34. Projects beside expansion (built 2026-10-31)
+
+The Projects tab offered only an expansion (§30). Four more kinds of project now sit beside it, chosen by the user, each paid from the cash once a majority of the votes agrees (a `project` proposal naming the kind; the older `expansion` proposal still works) and finished with business days. **One project at a time.** Costs and days are by stage (side business / registered / company):
+
+| Project | Cost (eb) | Days | Effect |
+|---|---|---|---|
+| Expansion | 1,500 / 2,500 / 8,000 | 3 / 6 / 9 | Capacity +0.25 / +0.8 / +1.5, up to the stage's ceiling (as before) |
+| Refit | 600 / 1,500 / 5,000 | 2 / 4 / 6 | Cost base −0.05 at once, never below its floor; repeatable while there is room, since the Cost base creeps back up |
+| Security upgrade | 800 / 2,000 / 6,000 | 2 / 3 / 5 | Levels 1 and 2: each cuts protection money by 25% and halves how often break-ins are drawn |
+| Storefront | 700 / 1,800 / 6,000 | 2 / 4 / 6 | Reputation +5 at once, once a stage; once there is one, Reputation settles 3 higher (53, or 58 with a salesperson) |
+| Staff room | 500 / 1,200 / 4,000 | 2 / 3 / 5 | Once a stage: one more headcount place each, and paid weeks lift NPC staff loyalty to 70 rather than 60 (E2) |
+
+What a project builds is added to the business's assets at cost, as an expansion's fit-out is. Upgrades are kept on the record (`upgrades`: security's level, and the stages a storefront and a staff room were built at); the normalizer fills it in, so no migration.
+
+**The tab** follows the Work and Staff tabs: a short intro; Capacity as a bar against the stage's ceiling, with the next expansion's gain hatched; the project under way with a progress bar, who has put days in (`crew`), and the add-days row; a table of every kind with what it would do from where the business stands, its cost and days, a Propose button under the header's "Business days left 3/3", and why it cannot start, in figures for money ("Needs 2,000 eb; the cash holds 1,300 eb"); and a table of the projects finished, with their cost, days, result and crew.
+

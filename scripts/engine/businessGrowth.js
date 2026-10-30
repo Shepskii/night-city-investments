@@ -24,37 +24,105 @@ export function spendDays(b, actorId, n) {
   b.period.days = { ...(b.period.days ?? {}), [actorId]: (b.period.days?.[actorId] ?? 0) + n };
 }
 
-// ── Expansion projects ───────────────────────────────────────────────────────
+// ── Projects ─────────────────────────────────────────────────────────────────
+
+/** Every kind of project, in display order: an expansion, and the upgrades of `projects`. */
+export const PROJECT_KINDS = Object.freeze(['expansion', 'refit', 'security', 'storefront', 'staffRoom']);
 
 export const activeProject = (b) => b.projects.find((x) => x.status === 'active') ?? null;
 
-/** Whether an expansion can be started now, and what it would cost and give. */
-export function expansionOffer(b, p = BUSINESS_DEFAULTS) {
+/** The upgrades a business has: security's level, and the stages a storefront and a staff room were built at. */
+export const upgradesOf = (b) => ({ security: b.upgrades?.security ?? 0, storefront: b.upgrades?.storefront ?? [], staffRoom: b.upgrades?.staffRoom ?? [] });
+
+/**
+ * Whether a project of this kind can be started now, and what it would cost (eb from the cash) and
+ * take (business days). An expansion also gives its Capacity `gain`. A refusal for want of money
+ * says how much is needed (`cost`).
+ */
+export function projectOffer(b, kind, p = BUSINESS_DEFAULTS) {
   const stage = p.stages[b.stage];
-  const ex = stage?.expansion;
-  if (!ex) return fail('no-expansion');
+  let cost;
+  let days;
+  let extra = {};
+  if (kind === 'expansion') {
+    const ex = stage?.expansion;
+    if (!ex) return fail('no-expansion');
+    ({ cost, days } = ex);
+    extra = { gain: ex.gain };
+  } else {
+    const def = p.projects[kind];
+    if (!def) return fail('bad-project');
+    cost = def.cost[b.stage] ?? def.cost.at(-1);
+    days = def.days[b.stage] ?? def.days.at(-1);
+  }
   if (activeProject(b)) return fail('project-running');
-  if (b.state.capacity >= stage.capacityCap - 1e-6) return fail('at-capacity');
-  if (b.till < ex.cost) return fail('no-funds');
-  return { ok: true, cost: ex.cost, gain: ex.gain, days: ex.days };
+  const up = upgradesOf(b);
+  if (kind === 'expansion' && b.state.capacity >= stage.capacityCap - 1e-6) return fail('at-capacity');
+  if (kind === 'refit' && b.state.costFactor <= p.costFloor + 0.005) return fail('at-floor');
+  if (kind === 'security' && up.security >= p.projects.security.levels) return fail('top-level');
+  if ((kind === 'storefront' || kind === 'staffRoom') && up[kind].includes(b.stage)) return fail('built-here');
+  if (b.till < cost) return { ok: false, reason: 'no-funds', cost, days };
+  return { ok: true, cost, days, ...extra };
 }
 
-/** Start an expansion, paid from the till at once. The fit-out is worth what it cost. */
-export function startExpansion(b, id, day, p = BUSINESS_DEFAULTS) {
-  const offer = expansionOffer(b, p);
+/** Whether an expansion can be started now, and what it would cost and give. */
+export const expansionOffer = (b, p = BUSINESS_DEFAULTS) => projectOffer(b, 'expansion', p);
+
+/** Start a project, paid from the cash at once. What it builds is worth what it cost. */
+export function startProject(b, kind, id, day, p = BUSINESS_DEFAULTS) {
+  const offer = projectOffer(b, kind, p);
   if (!offer.ok) return offer;
   b.till -= offer.cost;
   b.assets += offer.cost;
   b.projects = [...b.projects, {
-    id, kind: 'expansion', stage: b.stage, cost: offer.cost, gain: offer.gain, daysNeeded: offer.days, days: 0, startedDay: day, status: 'active', crew: {},
+    id, kind, stage: b.stage, cost: offer.cost, ...(offer.gain != null ? { gain: offer.gain } : {}), daysNeeded: offer.days, days: 0, startedDay: day, status: 'active', crew: {},
   }];
-  addLedger(b, { day, kind: 'expansion', amount: -offer.cost }, p);
+  addLedger(b, { day, kind: kind === 'expansion' ? 'expansion' : 'project', project: kind, amount: -offer.cost }, p);
   return { ok: true };
 }
 
+/** Start an expansion, paid from the cash at once. */
+export const startExpansion = (b, id, day, p = BUSINESS_DEFAULTS) => startProject(b, 'expansion', id, day, p);
+
+/** What a finished project does. */
+function finishProject(b, project, growthRate, p) {
+  const def = p.projects[project.kind];
+  const up = upgradesOf(b);
+  switch (project.kind) {
+    case 'expansion': {
+      const cap = p.stages[b.stage]?.capacityCap ?? b.state.capacity;
+      b.state.capacity = clamp(b.state.capacity + project.gain * growthRate, 0.5, Math.max(cap, b.state.capacity));
+      break;
+    }
+    case 'refit':
+      b.state.costFactor = Math.max(p.costFloor, b.state.costFactor - def.cut);
+      break;
+    case 'security':
+      b.upgrades = { ...up, security: Math.min(def.levels, up.security + 1) };
+      break;
+    case 'storefront':
+      b.state.reputation = clamp(b.state.reputation + def.reputation, 0, 100);
+      b.upgrades = { ...up, storefront: [...up.storefront, project.stage] };
+      break;
+    case 'staffRoom':
+      b.upgrades = { ...up, staffRoom: [...up.staffRoom, project.stage] };
+      break;
+    default:
+  }
+}
+
+/** Protection money after security upgrades: a share of what it would be. */
+export const protectionFactor = (b, p = BUSINESS_DEFAULTS) => Math.max(0, 1 - upgradesOf(b).security * p.projects.security.protection);
+
+/** How much more often break-ins come, after security upgrades. */
+export const breakInFactor = (b, p = BUSINESS_DEFAULTS) => p.projects.security.breakIns ** upgradesOf(b).security;
+
+/** Where Reputation settles: higher once there is a storefront. */
+export const reputationBaseline = (b, base = 50, p = BUSINESS_DEFAULTS) => base + (upgradesOf(b).storefront.length ? p.projects.storefront.target : 0);
+
 /**
- * Put business days into the running project. When it has its days it is done and Capacity rises,
- * up to the stage's ceiling.
+ * Put business days into the running project. When it has its days it is done and takes effect (an
+ * expansion's Capacity rises up to the stage's ceiling).
  * @returns {{ok: true, done: boolean} | {ok: false, reason: string}}
  */
 export function addProjectDays(b, actorId, projectId, n, { growthRate = 1, day, params: p = BUSINESS_DEFAULTS } = {}) {
@@ -68,8 +136,7 @@ export function addProjectDays(b, actorId, projectId, n, { growthRate = 1, day, 
   project.days += used;
   project.crew = { ...project.crew, [actorId]: (project.crew?.[actorId] ?? 0) + used };
   if (project.days < project.daysNeeded) return { ok: true, done: false };
-  const cap = p.stages[b.stage]?.capacityCap ?? b.state.capacity;
-  b.state.capacity = clamp(b.state.capacity + project.gain * growthRate, 0.5, Math.max(cap, b.state.capacity));
+  finishProject(b, project, growthRate, p);
   project.status = 'done';
   project.doneDay = day;
   return { ok: true, done: true };

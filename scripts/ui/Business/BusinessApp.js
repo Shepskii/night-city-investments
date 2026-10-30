@@ -53,7 +53,7 @@ export class BusinessApp extends BaseApplication {
       buyout: BusinessApp._onBuyout,
       proposeClose: BusinessApp._onProposeClose,
       vote: BusinessApp._onVote,
-      proposeExpansion: BusinessApp._onProposeExpansion,
+      proposeProject: BusinessApp._onProposeProject,
       addDays: BusinessApp._onAddDays,
       proposeStepUp: BusinessApp._onProposeStepUp,
       stepUpRoll: BusinessApp._onStepUpRoll,
@@ -322,8 +322,9 @@ export class BusinessApp extends BaseApplication {
     return this._send('vote', { proposalId: target.dataset.id, yes: target.dataset.yes === 'true' });
   }
 
-  static _onProposeExpansion() {
-    return this._send('propose', { kind: 'expansion' });
+  /** A project's Propose button on the Projects tab: any kind, a majority of the votes. */
+  static _onProposeProject(event, target) {
+    return this._send('propose', { kind: 'project', project: target.dataset.kind });
   }
 
   static _onAddDays(event, target) {

@@ -276,22 +276,64 @@
 
   {{#if ../isProjects}}
   {{#with projects}}
-  <div class="nci-block nci-form">
+  <div class="nci-block">
     <h3>{{localize "NCI.Business.Projects"}}</h3>
-    <p class="nci-hint">{{localize "NCI.Business.ProjectsIntro"}} {{daysText}}</p>
-    {{#with active}}
-    <p><strong>{{text}}</strong></p>
-    {{#if canAdd}}
-    <label>{{localize "NCI.Business.DaysToAdd"}}<input type="number" name="days" min="1" max="{{max}}" step="1" value="1" class="nci-days"></label>
-    <button type="button" data-action="addDays" data-id="{{id}}"><i class="fas fa-hammer"></i> {{localize "NCI.Business.AddDays"}}</button>
-    {{/if}}
-    {{/with}}
-    {{#if offer}}<p>{{offer}}</p>{{/if}}
-    {{#if pending}}<p class="nci-warn">{{pending}}</p>{{/if}}
-    {{#if blocked}}<p class="nci-muted">{{blocked}}</p>{{/if}}
-    {{#if canPropose}}<button type="button" data-action="proposeExpansion"><i class="fas fa-up-right-and-down-left-from-center"></i> {{localize "NCI.Business.ProposeExpansion"}}</button>{{/if}}
-    {{#if done.length}}<ul class="nci-muted">{{#each done}}<li>{{this}}</li>{{/each}}</ul>{{/if}}
+    <p class="nci-hint">{{localize "NCI.Project.Intro"}}</p>
+    <div class="nci-standing nci-capacity">
+      <span class="nci-standing-label">{{localize "NCI.Business.State.capacity"}}</span>
+      <span class="nci-capbar" title="{{capacity.text}}"><span class="nci-capnow" style="width: {{capacity.now}}%"></span><span class="nci-capnext" style="width: {{capacity.next}}%"></span></span>
+      <span>{{capacity.text}} <span class="nci-muted">{{capacity.nextText}}</span></span>
+    </div>
   </div>
+
+  {{#with active}}
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Project.UnderWay"}}</h3>
+    <div class="nci-gigtop"><strong>{{name}}</strong><span class="nci-muted">{{started}}</span></div>
+    <div class="nci-progress" title="{{progress}}"><span style="width: {{pct}}%"></span></div>
+    <p>{{progress}} <span class="nci-muted">{{effect}}</span></p>
+    <p class="nci-muted">{{crew}}</p>
+    {{#if canAdd}}
+    <div class="nci-hirerow">
+      <span class="nci-muted">{{localize "NCI.Project.AddHint"}}</span>
+      <label>{{localize "NCI.Business.DaysToAdd"}} <input type="number" name="days" min="1" max="{{max}}" step="1" value="1"></label>
+      <button type="button" data-action="addDays" data-id="{{id}}"><i class="fas fa-hammer"></i> {{localize "NCI.Business.AddDays"}}</button>
+    </div>
+    {{/if}}
+  </div>
+  {{/with}}
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Project.Choose"}}</h3>
+    {{#if pending}}<p class="nci-warn">{{pending}}</p>{{/if}}
+    {{#if running}}<p class="nci-muted">{{running}}</p>{{/if}}
+    <table class="nci-market">
+      <thead><tr><th>{{localize "NCI.Project.Project"}}</th><th>{{localize "NCI.Project.Effect.Label"}}</th><th class="num">{{localize "NCI.Project.Cost"}}</th><th class="num">{{localize "NCI.Project.Days"}}</th><th class="nci-slots{{#if noDays}} nci-slots-none{{/if}}">{{daysFree}}</th></tr></thead>
+      <tbody>
+        {{#each kinds}}
+        <tr>
+          <td><strong>{{name}}</strong><div class="nci-muted">{{hint}}</div></td>
+          <td>{{effect}}{{#if blocked}}<div class="nci-warn">{{blocked}}</div>{{/if}}</td>
+          <td class="num">{{cost}}</td>
+          <td class="num">{{days}}</td>
+          <td class="nci-rowbtns nci-endbtns">{{#if canPropose}}<button type="button" data-action="proposeProject" data-kind="{{kind}}"><i class="fas fa-helmet-safety"></i> {{localize "NCI.Project.Propose"}}</button>{{/if}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  {{#if done.length}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.Project.Finished"}}</h3>
+    <table class="nci-market">
+      <thead><tr><th>{{localize "NCI.Project.Done"}}</th><th>{{localize "NCI.Project.Project"}}</th><th>{{localize "NCI.Project.Result.Label"}}</th><th class="num">{{localize "NCI.Project.Cost"}}</th><th class="num">{{localize "NCI.Project.Days"}}</th><th>{{localize "NCI.Project.CrewLabel"}}</th></tr></thead>
+      <tbody>
+        {{#each done}}<tr><td class="nci-muted">{{done}}<div>{{localize "NCI.Project.Since" date=started}}</div></td><td><strong>{{name}}</strong></td><td>{{result}}</td><td class="num">{{cost}}</td><td class="num">{{days}}</td><td class="nci-muted">{{crew}}</td></tr>{{/each}}
+      </tbody>
+    </table>
+  </div>
+  {{/if}}
   {{else}}
   <p class="nci-empty">{{localize "NCI.Business.NotOpenYet"}}</p>
   {{/with}}

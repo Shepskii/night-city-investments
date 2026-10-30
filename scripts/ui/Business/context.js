@@ -6,7 +6,8 @@
 import {
   ARCHETYPES, ACTION_IDS, partnerOf, holders, totalUnits, unitValue, shareOf, bookValue, drawAllowance, fundingShortfall,
   stateBands, lastDigest, gearValue, rollSpec, BUSINESS_DEFAULTS,
-  daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
+  daysLeft, activeProject, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
+  projectOffer, PROJECT_KINDS, upgradesOf, protectionFactor, headcountOf,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck,
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
@@ -169,24 +170,101 @@ export function businessContext(business, actor) {
   };
 }
 
+/** What a project of each kind does, from where the business stands now. */
+function projectEffect(business, kind) {
+  const P = BUSINESS_DEFAULTS.projects;
+  const up = upgradesOf(business);
+  const cap = BUSINESS_DEFAULTS.stages[business.stage]?.capacityCap ?? business.state.capacity;
+  const offer = projectOffer(business, kind);
+  switch (kind) {
+    case 'expansion': {
+      const gain = offer.gain ?? BUSINESS_DEFAULTS.stages[business.stage]?.expansion?.gain ?? 0;
+      return L('NCI.Project.Effect.expansion', { now: business.state.capacity.toFixed(2), after: Math.min(cap, business.state.capacity + gain).toFixed(2), cap: cap.toFixed(2) });
+    }
+    case 'refit':
+      return L('NCI.Project.Effect.refit', { now: business.state.costFactor.toFixed(3), after: Math.max(BUSINESS_DEFAULTS.costFloor, business.state.costFactor - P.refit.cut).toFixed(3) });
+    case 'security':
+      return L('NCI.Project.Effect.security', { level: up.security, max: P.security.levels, cut: Math.round((1 - protectionFactor(business)) * 100) });
+    case 'storefront':
+      return L(up.storefront.length ? 'NCI.Project.Effect.storefrontAgain' : 'NCI.Project.Effect.storefront', { rep: P.storefront.reputation, target: 50 + P.storefront.target });
+    case 'staffRoom':
+      return L('NCI.Project.Effect.staffRoom', { places: headcountOf(business), cap: P.staffRoom.paidCap });
+    default:
+      return '';
+  }
+}
+
+/** Why a project cannot start, in words and, for money, in figures. */
+function projectBlock(business, offer) {
+  if (offer.reason === 'no-funds') return L('NCI.Project.NeedsCash', { cost: whole(offer.cost), till: whole(business.till) });
+  return L(`NCI.Business.Reason.${offer.reason}`);
+}
+
+/**
+ * The Projects tab: the business days a partner has left this week (in the table's header), the
+ * project under way with its progress and who has worked on it, every kind of project with what it
+ * would do, cost and take (each proposed from its own row), Capacity against the stage's ceiling, and
+ * the projects finished.
+ */
 function projectsContext(business, actor, canAct) {
   const project = activeProject(business);
-  const offer = expansionOffer(business);
-  const pending = business.proposals.some((x) => x.kind === 'expansion');
+  const pending = business.proposals.some((x) => x.kind === 'project' || x.kind === 'expansion');
   const left = actor ? daysLeft(business, actor.id) : 0;
+  const total = BUSINESS_DEFAULTS.businessDays;
+  const stage = BUSINESS_DEFAULTS.stages[business.stage];
+  const cap = stage?.capacityCap ?? business.state.capacity;
+  const gain = stage?.expansion?.gain ?? 0;
+  const pct = (v) => Math.max(0, Math.min(100, (v / cap) * 100)).toFixed(1);
+  const crew = (p) => Object.entries(p.crew ?? {}).map(([id, n]) => `${nameOf(business, id)} ${n}`).join(', ');
+  const name = (kind) => L(`NCI.Project.Kind.${kind}`);
   return {
-    daysText: canAct ? L('NCI.Business.DaysLeft', { n: left }) : '',
+    daysFree: canAct ? L('NCI.Project.DaysFree', { free: left, total }) : '',
+    noDays: canAct && left <= 0,
+    capacity: {
+      text: L('NCI.Project.Capacity', { now: business.state.capacity.toFixed(2), cap: cap.toFixed(2) }),
+      now: pct(business.state.capacity),
+      next: pct(Math.min(cap - business.state.capacity, gain)),
+      nextText: business.state.capacity < cap - 1e-6 ? L('NCI.Project.CapacityNext', { gain }) : L('NCI.Project.CapacityFull'),
+    },
     active: project ? {
       id: project.id,
-      text: L('NCI.Business.ProjectProgress', { days: project.days, need: project.daysNeeded, gain: project.gain, date: dayText(project.startedDay) }),
+      name: name(project.kind),
+      started: L('NCI.Project.Started', { date: dayText(project.startedDay), cost: whole(project.cost ?? 0) }),
+      progress: L('NCI.Project.Progress', { days: project.days, need: project.daysNeeded }),
+      pct: Math.round((project.days / Math.max(1, project.daysNeeded)) * 100),
+      crew: crew(project) ? L('NCI.Project.Crew', { crew: crew(project) }) : L('NCI.Project.NoCrew'),
+      effect: projectEffect(business, project.kind),
       canAdd: canAct && left > 0,
-      max: Math.min(left, project.daysNeeded - project.days),
+      max: Math.max(1, Math.min(left, project.daysNeeded - project.days)),
     } : null,
-    offer: !project && offer.ok ? L('NCI.Business.ExpansionOffer', { cost: whole(offer.cost), gain: offer.gain, days: offer.days }) : '',
-    canPropose: canAct && !project && !pending && offer.ok,
-    pending: pending ? L('NCI.Business.ExpansionPending') : '',
-    blocked: !project && !offer.ok ? L(`NCI.Business.Reason.${offer.reason}`) : '',
-    done: business.projects.filter((x) => x.status === 'done').reverse().map((x) => L('NCI.Business.ProjectDone', { gain: x.gain, date: dayText(x.doneDay ?? x.startedDay) })),
+    kinds: PROJECT_KINDS.map((kind) => {
+      const offer = projectOffer(business, kind);
+      const def = kind === 'expansion' ? stage?.expansion : BUSINESS_DEFAULTS.projects[kind];
+      const cost = offer.cost ?? (kind === 'expansion' ? def?.cost : def?.cost[business.stage]) ?? 0;
+      const days = offer.days ?? (kind === 'expansion' ? def?.days : def?.days[business.stage]) ?? 0;
+      return {
+        kind,
+        name: name(kind),
+        hint: L(`NCI.Project.Hint.${kind}`),
+        effect: projectEffect(business, kind),
+        cost: whole(cost),
+        days,
+        canPropose: canAct && !pending && offer.ok,
+        // Nothing more to say while one is running: the row above says so.
+        blocked: offer.ok || offer.reason === 'project-running' ? '' : projectBlock(business, offer),
+      };
+    }),
+    running: project ? L('NCI.Project.OneAtATime') : '',
+    pending: pending ? L('NCI.Project.Pending') : '',
+    done: business.projects.filter((x) => x.status === 'done').reverse().map((x) => ({
+      name: name(x.kind ?? 'expansion'),
+      done: dayText(x.doneDay ?? x.startedDay),
+      started: dayText(x.startedDay),
+      cost: x.cost != null ? whole(x.cost) : '',
+      days: x.daysNeeded ?? '',
+      result: L(`NCI.Project.Result.${x.kind ?? 'expansion'}`, { gain: x.gain ?? '' }),
+      crew: crew(x),
+    })),
   };
 }
 
@@ -369,7 +447,7 @@ function eventContext(business, canAct, free) {
 function ledgerLine(business, e) {
   return {
     date: dayText(e.day),
-    what: L(`NCI.Business.Ledger.${e.kind}${e.gear > 0 ? 'Gear' : ''}`, { name: e.actorId ? nameOf(business, e.actorId) : '', staff: e.staffName ?? '', seller: e.sellerId ? nameOf(business, e.sellerId) : '', price: whole(e.price ?? 0), salvage: whole(e.salvage ?? 0), gear: whole(e.gear ?? 0) }),
+    what: L(`NCI.Business.Ledger.${e.kind}${e.gear > 0 ? 'Gear' : ''}`, { name: e.actorId ? nameOf(business, e.actorId) : '', staff: e.staffName ?? '', project: e.project ? L(`NCI.Project.Kind.${e.project}`) : '', seller: e.sellerId ? nameOf(business, e.sellerId) : '', price: whole(e.price ?? 0), salvage: whole(e.salvage ?? 0), gear: whole(e.gear ?? 0) }),
     amount: e.amount ? signed(e.amount) : '',
     cls: e.amount > 0 ? 'nci-up' : e.amount < 0 ? 'nci-down' : '',
   };
@@ -605,7 +683,7 @@ function staffContext(business, actor, canAct) {
   const day = BusinessClient.day();
   const arch = archetypeOf(business);
   const pending = (kind) => business.proposals.some((x) => x.kind === kind);
-  const max = BUSINESS_DEFAULTS.staff.headcount[business.stage] ?? 0;
+  const max = headcountOf(business);
   const staff = business.staff ?? [];
   const posts = POST_IDS.filter((id) => POSTS[id].stage <= business.stage);
   const open = posts.filter((id) => postOpen(business, id).ok);
@@ -797,6 +875,7 @@ function partnersContext(business, actor) {
         who: proposal.terms?.name ?? '',
         post: proposal.terms?.post ? postLabel(proposal.terms.post) : '',
         pct: proposal.terms?.pct != null ? Math.round(proposal.terms.pct * 100) : '',
+        project: proposal.terms?.project ? L(`NCI.Project.Kind.${proposal.terms.project}`) : '',
       }),
       rule: L(`NCI.Business.Rule.${PROPOSAL_RULES[proposal.kind]}`, { date: dayText(proposal.expires ?? proposal.day) }),
       // Each voter, linked to their character, and how they voted.
