@@ -454,6 +454,10 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B5 | **v0.14.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
 | B6 | **v0.15.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
 | B7 | Downtime bridge (separate module, after B2): company work through Crew Tools downtime, businesses on Night City Map |
+| F1 | **Proposed, see §35.3.** Faction standing with corps and gangs, moved by gigs and business actions; smear campaigns through the impact pipeline; after B6 |
+| U1 | **Proposed, see §35.1.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships; after F1 and B6 |
+| P1 | **Proposed, see §35.2.** Production: workshops, lines, stock, selling and fencing; after E3 |
+| M | **Proposed, see §35.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |
 
 ## 15. Decisions
@@ -1616,4 +1620,130 @@ The Projects tab offered only an expansion (§30). Four more kinds of project no
 What a project builds is added to the business's assets at cost, as an expansion's fit-out is. Upgrades are kept on the record (`upgrades`: security's level, and the stages a storefront and a staff room were built at); the normalizer fills it in, so no migration.
 
 **The tab** follows the Work and Staff tabs: a short intro; Capacity as a bar against the stage's ceiling, with the next expansion's gain hatched; the project under way with a progress bar, who has put days in (`crew`), and the add-days row; a table of every kind with what it would do from where the business stands, its cost and days, a Propose button under the header's "Business days left 3/3", and why it cannot start, in figures for money ("Needs 2,000 eb; the cash holds 1,300 eb"); and a table of the projects finished, with their cost, days, result and crew.
+
+## 35. Proposal: after E3, B5 and B6 (not built)
+
+Four directions for player businesses once employees (E3), going public (B5) and corporate play (B6) are in. Nothing here is decided: each part lists the choices to make before it is built. They share one new idea, **standing with factions** (§35.3), so that comes first in the phasing (§35.5) even though it is the third topic.
+
+**What already exists to build on:**
+- **Hidden state and investigations:** the GM-only control journal already keeps each business's Exposure, and NCPD Financial Crimes already audits, warns and penalises (§22, heat). B6 adds investigations and hidden ownership.
+- **Night City Map:** it keeps a list of gangs for each district (`GANGS` in its `encounters.js`), keyed by the same district ids as a business (Tyger Claws, Voodoo Boys and 6th Street in Watson; Maelstrom, Red Chrome Legion and Iron Sights in South Night City; none in the Executive Zone). Its gigs already reach this module through the map bridge, with a client, a reward and a runner.
+- **Crew Tools:** it already runs a Maker's fabrication and upgrade projects from compendium items, and downtime "crafting, or hustle". The B7 bridge (§26.8) already plans to spend its downtime on business work.
+- **Night City Messenger:** contacts and tags (staff, broker, investor), mail from the market wire and from NCPD, data shards, networks with ICE, access logs and traces, contact breaches, scheduled messages and contact groups.
+- **The market:** gig impacts on a company's price with a delay and a headline (`impactKernel`), sector moods, and insider-trading heat for runners and tipped characters.
+
+### 35.1 Underworld: a front for illegal work
+
+**The idea.** A business can run a **back room**: an illegal operation behind the legitimate shop, which the front hides and launders. It earns more than the shop, in money the books cannot show, and it carries the risk of raids, gangs, informants and investigations. It is opt-in for the table: a world setting turns underworld content off, and the GM approves each back room.
+
+**What each front hides** (the archetype decides the operation, its skills, and the trouble it draws):
+
+| Front | Back room | Its skills | Draws |
+|---|---|---|---|
+| Clinic | Black-market cyberware, ripping, scrubbing stolen chrome | Cybertech, Paramedic; Medicine | Scavengers, Bozos, NCPD |
+| Garage | Chop shop, untraceable rides | Basic Tech, Land Vehicle Tech; Maker | Gangs whose rides you strip, insurers |
+| Bar | Gambling, dealing, a meeting place | Streetwise, Persuasion; Charismatic Impact | Rival dealers, vice raids |
+| Info shop | Data fencing, a netrunner's den | Library Search, Interface | Corp netsec, NetWatch |
+| Gun shop | Unregistered arms, military-grade kit | Weaponstech, Trading; Operator | Militech-style corp security, NCPD |
+| Courier | Smuggling | Drive Land Vehicle, Local Expert; Moto | Customs, rival smugglers |
+| Boutique, food stall | Laundering for others, a dead drop | Business, Streetwise | Whoever's money it is |
+| Media | Blackmail, braindance bootlegs | Composition, Photography; Credibility | The people in the footage |
+| Security | Muscle for hire, protection rackets | Tactics, Persuasion; Combat Awareness | Rival crews |
+
+**How it would work** (a first sketch):
+- **Opening one** is a project (§34) with its own roll, and needs the GM's approval. Its size grows like the front's Capacity, and it is capped by it: a back room cannot outgrow its front without being obvious.
+- **Dirty money.** The back room's takings go to a separate **dirty cash** pot, not the till: off the books, out of the monthly report, and not counted in book value or a listed company's valuation. Partners can take it as eddies with no draw cap, but every eddy raises Exposure.
+- **Laundering** moves dirty cash into the till through the front's takings. It is capped at a share of the legitimate takings each week (around 25–40%, by front): a launder action (Accounting, Business; Bribery at DV +2). A bookkeeper (E1) makes it cleaner. A poor roll leaves traces that an audit, an inspection or B6's investigators can find.
+- **Weekly actions:** "Work the back room" (the operation's skills), "Launder", "Pay off" (Bribery: cuts Exposure and raid odds), and "Lie low" (no takings, Exposure falls faster).
+- **Staff (E1/E2):** new roles a back room unlocks, such as fence, runner, cook or chemist, and muscle (the security role). The corp plant trait becomes an **informant**, the most dangerous trait there is. Loyalty matters more: a sullen employee who knows about the back room can sell you out.
+- **Events:** a raid (NCPD, corp security or NetWatch by front), a rival operation muscling in, a bad batch, an informant, a gang taking a cut, and an offer you can't refuse. A raid answered badly means fines, seized dirty cash and gear, Compliance and Reputation hits, and NCPD heat for the partners, with B6's investigation opened.
+- **Gangs (with §35.3):** the district's gangs take an interest. Protection money stops being only a cost line and becomes a relationship: pay, refuse, or make a deal. A gang can offer to be a silent partner, putting in money for a cut, an underworld angel with strings attached; your standing with it moves its demands and its protection.
+- **At a company (stage 2):** corporate crime instead of a back room: dumping, bribing regulators and off-books black ops. This grows from the company's Shortcuts action and Exposure, and ties into B6's regulator and investigations.
+
+**To decide:** whether dirty cash may ever be counted as an asset (and so be stolen or seized); laundering caps and the Exposure it costs; whether raids can close a business outright; whether a gang can take a stake in the cap table (seen or hidden, as B6's hidden ownership); and how much of this the players see (bands, as for Exposure, or nothing).
+
+### 35.2 Production: making goods
+
+**The idea.** Businesses whose trade is making things can **produce stock**: items from the Cyberpunk RED compendiums that are sold through the shop, given to the partners, or (with a back room) fenced. This module does business-scale stock lines; a single character's crafting stays with Crew Tools.
+
+**Which businesses make what:**
+
+| Business | Lines | Notes |
+|---|---|---|
+| Gun shop | Ammunition, weapon attachments, then weapons | the clearest fit; illegal kit only through a back room |
+| Garage | Vehicle upgrades, parts | installs on a character's vehicle are a service, not stock |
+| Clinic | Cyberware and its options, pharmaceuticals | installs stay with the GM and the sheet; the clinic sells the chrome |
+| Info shop | Programs, data, cyberdeck hardware | a netrunner's den sells black ICE |
+| Boutique | Fashion and clothing items | Wardrobe & Style |
+| Media | Braindance recordings, screamsheets | low value, high Reputation |
+| Bar, food stall | Food and drink | flavour; their value is in takings, not stock |
+| Courier, security | None | service businesses |
+
+**How it would work** (a first sketch):
+- **A workshop** is a project (§34) that opens production, with one or two **lines** by stage. A line names a GM-approved list of compendium items for that business type (set in the GM Console, with defaults), so players cannot produce anything they like.
+- **A production run** picks an item and a quantity. Materials come from the cash (about half the market price, as Cyberpunk RED's fabrication rules), the time comes from business days or floor staff's time, and a roll uses the trade skill or Maker at the fabrication DV for the item's price category. The band sets how many come out good, and whether any are excellent quality.
+- **Stock** sits on the business record as an asset at cost: in book value, and counted for B5's valuation.
+- **Selling stock** goes through the shop: each week some stock sells at a margin, limited by Capacity and Reputation, and adds to takings. A partner can also buy an item at cost, or the GM can let one be taken onto a sheet (made from the compendium entry, as gear comes back now when a business never opens). A back room fences illegal stock at a higher margin, with Exposure.
+- **Crew Tools (B7):** a business workshop gives a player character's own Crew Tools fabrication or upgrade project a facility bonus (cheaper or faster). The business can also commission a player character Tech's project, paying them from the cash. Nothing is duplicated: Crew Tools keeps the crafting rules.
+- **The market:** a production contract with a listed company in the sector (a supplier or a buyer) counts as a contract for that company and lifts it a little, as a small gig does. Selling large volumes in a sector could nudge that sector's mood.
+
+**To decide:** whether items are ever created on sheets automatically or always by the GM; how fast stock sells and whether it can go stale; caps on production value per week, so eddies cannot be farmed; and whether quality is tracked.
+
+### 35.3 Faction standing, and moving markets
+
+**The idea.** A business (and a syndicate, and perhaps a character) has **standing** with factions: corporations and gangs. Standing runs from −100 to 100, drifts back toward 0, and is shown to players as a band (hostile, wary, neutral, friendly, allied), with the number for the GM.
+
+- **Factions** are a GM-edited list. Each has a name, a kind (corp, gang or other), a linked market company (its ticker) for a corp, and the districts it holds for a gang. Gangs can be seeded from Night City Map's district list, so a business's district already names whose turf it is on.
+- **What moves standing:**
+  - **Gigs:** a map gig for a client faction raises standing with it on success and lowers it on failure, scaled like gig impacts. A gig against a faction's interests lowers it, where the gig names a target or rival.
+  - **Business actions:** a company's Contracts and Relations actions can be aimed at a named faction. So can new actions for smaller businesses: "Court a client", "Pay respects" (to a gang) and "Undercut a rival".
+  - **Events and the back room:** answering a gang's shakedown, refusing protection, serving a rival, or getting caught.
+  - **Each faction's standing moves at most so much a week, and repeated favours count for less** (as gigs for your own business do now), so it cannot be farmed.
+- **What standing does:**
+  - Friendly corps give supplier discounts (Cost base), contract bonuses, and access: a supply contract, an investor, a buyer for a listed company's shares in B6.
+  - Friendly gangs mean less protection money and fewer shakedowns, and they offer partnerships.
+  - Hostile factions bring events: sabotage, a smear campaign, a raid tipped off, poaching your staff (E2), or a hostile bid (B6).
+- **Moving market prices** with what already exists:
+  - A gig's effect on a company's price stays as it is. Standing adds who you have helped or hurt.
+  - New actions aimed at a listed company, such as a smear campaign (Composition, Persuasion) or a leak (Library Search, with an Interface or netrunner element), go through the impact pipeline with a delay and a generic headline. Anyone who trades the target before the news lands draws insider-trading heat (§22), the same rule as gig runners.
+  - Once B5 has listed player companies, factions can act against them too: a hostile corp's smear campaign moves your price.
+  - Coordinated campaigns (several characters or a syndicate trading together) were left for B6 in §31; standing and these actions belong with them.
+
+**To decide:** whether standing is held by the business, the character, or both (and whether a syndicate shares its members'); whether players can see a faction's exact standing; how big a smear campaign can move a price, and how it sits with the GM's approval of gig impacts; and whether Night City Map should hold the faction list (so other modules share it) or this module should.
+
+### 35.4 Further Night City Messenger integration
+
+**Built so far:** mail from the market wire (broker replies, syndicate mail, payslips), NCPD Financial Crimes notices, CorpNet sessions gating direct trading, and contacts tagged staff, broker or investor, read for hiring and investors.
+
+**Options, roughly in order of value for the effort:**
+1. **Events arrive as messages.** A shakedown comes from the gang's contact, an inspection from the city, a poaching offer from the rival, with a link that opens the Work tab to answer it. The GM can write in that contact's voice. This uses existing mail plus a contact per sender (created or reused, like the market wire).
+2. **The weekly digest by mail** to partners who want it, with the profit, the cash and anything waiting (votes, raises asked for, applicants), and a link to the cashbook. A per-character setting, beside the payslips.
+3. **Staff as contacts.** A hired recruit becomes a Night City Messenger contact (name, generated portrait, tagged staff), so players can message them and the GM can answer. Loyalty moments arrive as messages from them ("we need to talk about my pay"). Applicants answer an advert by mail.
+4. **A business's own inbox:** each business as a contact with an address. Customers, suppliers, gangs and corps write to it, and the partners read it together (a contact group for the partners and officers).
+5. **Underworld (§35.1):** a fixer contact offers fence deals; gangs send demands; messages that burn after reading. **Data shards** as evidence: the back room's real ledger is a shard that B6's investigators can find, a rival can steal, or a player can use for blackmail.
+6. **Networks:** a company's intranet as a Messenger network, with ICE and access logs. Officers read insider documents there, and its access log is evidence for insider-trading heat (who read the monthly report before it was published). An info shop's or back room's network can be breached as an event (Messenger's breach and trace).
+7. **Scheduled reminders:** loan payments due, a raise asked for that runs out, a charter's funding window closing, sent with Messenger's scheduling.
+8. **Marketing:** a storefront project (§34) or a Promote action could send spam mail from the business to characters. Flavour, low priority.
+
+**To check before building:** which of these Messenger's integration API already exposes to other modules (its `IntegrationBridge`) and which need new API in Messenger. Then, for each, whether messages are sent from the GM's client only (as now) or a player's.
+
+### 35.5 Phasing
+
+| Step | What | Needs |
+|---|---|---|
+| F1 Factions | the faction list and standing; gigs and business actions moving it; standing's effects on costs and events; smear campaigns through the impact pipeline | B6 (hostile bids, coordinated campaigns) |
+| U1 Fronts | back rooms, dirty cash, laundering, raids, gang relationships, informants | F1, B6 (investigations, hidden ownership) |
+| P1 Production | workshops, lines, production runs, stock, selling and fencing | E3 (staff time); B7 for the Crew Tools link; U1 for fencing |
+| M | the Messenger options, alongside each step: events as messages and the digest with F1; staff as contacts any time; shards and networks with U1 and B6 | a check of Messenger's API |
+
+Each step ends as the others do: engine tests, flow tests, a simulator check that nothing becomes a money farm (dirty cash and production first), and a run in the test world.
+
+### 35.6 Questions to settle first
+
+1. **Tone and opt-in:** should underworld content be on by default, or off until the GM turns it on?
+2. **Who holds standing:** the business, the character, or both?
+3. **Where factions live:** in this module, or in Night City Map for every module to share?
+4. **Items on sheets:** may production put items on character sheets, or does the GM always hand them out?
+5. **Visibility:** do players see dirty cash, Exposure from the back room, and standing as numbers or only as bands?
+6. **Order:** factions first (as proposed), or production first, since it does not need B6?
 
