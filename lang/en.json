@@ -2319,7 +2319,7 @@
       "Wage": "Wage a week (eb)",
       "WageWeek": "{wage} eb a week",
       "Since": "since {date}",
-      "Offered": "offered the job, waiting for an answer",
+      "Offered": "Job offer made, waiting for response",
       "OfferedNpc": "Job offer made, waiting for response",
       "Owed": "{amount} eb in wages owed",
       "None": "No staff yet.",
