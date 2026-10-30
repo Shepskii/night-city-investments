@@ -211,7 +211,9 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
   if (request.type === 'auditRoll' || request.type === 'diligenceRoll') {
     const check = infoCheck(b, request.type === 'auditRoll' ? 'audit' : 'diligence', day, p);
     if (!check.ok) return check;
-    if (request.type === 'diligenceRoll' && (!request.targetId || request.targetId === b.id)) return fail('bad-target');
+    // The player's window knows the target only by the name typed; the GM's service finds its id before the roll is applied.
+    const named = String(request.targetName ?? '').trim().toLowerCase();
+    if (request.type === 'diligenceRoll' && (request.targetId ? request.targetId === b.id : !named || named === b.name.toLowerCase())) return fail('bad-target');
     return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - check.cost, operatorRank, p, b, traits });
   }
 

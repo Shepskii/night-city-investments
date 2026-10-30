@@ -139,6 +139,10 @@ test('due diligence on another business tells how it stands and roughly what it 
   const ctx = { targets: { rival: target } };
   const b = company();
   assert.equal(rollSpec(b, { type: 'diligenceRoll', use: { kind: 'skill', skill: 'Library Search', stat: 'int' } }, 'med', { day: DAY }).reason, 'bad-target');
+  // The player's roll dialog has only the name typed: a rival's name may be rolled for, the company's own may not.
+  assert.equal(rollSpec(b, { type: 'diligenceRoll', targetName: 'Some Rival', use: { kind: 'skill', skill: 'Library Search', stat: 'int' } }, 'med', { day: DAY }).ok, true);
+  assert.equal(rollSpec(b, { type: 'diligenceRoll', targetName: ` ${b.name.toUpperCase()} `, use: { kind: 'skill', skill: 'Library Search', stat: 'int' } }, 'med', { day: DAY }).reason, 'bad-target');
+  assert.equal(rollSpec(b, { type: 'diligenceRoll', targetId: b.id, use: { kind: 'skill', skill: 'Library Search', stat: 'int' } }, 'med', { day: DAY }).reason, 'bad-target');
   const out = apply(b, { type: 'diligenceRoll', businessId: 'b1', targetId: 'rival', use: { kind: 'skill', skill: 'Library Search', stat: 'int' } }, MED, { check: check(14, 8, 15), context: ctx }).business;
   const found = out.intel.at(-1);
   assert.deepEqual([found.name, found.bands.reputation], ['Rival Clinic', 'good']);
