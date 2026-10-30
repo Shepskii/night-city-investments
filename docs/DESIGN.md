@@ -449,7 +449,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B1 | **Done (v0.10.0), see §29.** Side businesses: the roll levers, the Business window and the GM's Businesses tab, partnerships, four archetypes, the weekly loop |
 | B2 | **Done (v0.11.0), see §30.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
 | B3 | **Built (v0.12), see §31; not yet released.** Player syndicates, and syndicates owning or investing in businesses |
-| B4 | **Building (v0.13), see §32.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
+| B4 | **Built (v0.13), see §32; not yet released.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
 | B5 | **v0.14.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
 | B6 | **v0.15.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
 | B7 | Downtime bridge (separate module, after B2): company work through Crew Tools downtime, businesses on Night City Map |
@@ -1318,7 +1318,7 @@ How it works:
 - **Members see its businesses.** The Business window offers a syndicate to every active member; one who is not an officer sees its businesses read-only. A Portfolio row opens the Business window as the account picked in the terminal, and a change in a syndicate's members updates who can see its businesses at once (`BusinessRepository.refreshOwnership`), not at the business's next save.
 - **Smaller fixes.** No units are sold while a syndicate is worth nothing (they would cost nothing); any member may end a terminal session they opened as an officer; a trade the members agreed that cannot be placed is noted in the syndicate's history; a business payment takes money before it pays any out, so a short payer stops it cleanly; data upgrades and the self-check include syndicates' accounts.
 
-## 32. Phase B4: chartered companies (building for v0.13)
+## 32. Phase B4: chartered companies (built for v0.13)
 
 A registered business that has grown far enough becomes a **chartered company**: stage 2 of the same business record (§26.0), with a cap table of shares, more action slots, the five company actions, monthly reports and elected officers. This section turns §26.2 to §26.4 into what is built. It is built in three steps: **B4a** the charter, **B4b** the company loop, **B4c** officers, control and information rolls.
 
@@ -1369,3 +1369,13 @@ A week with neither contracts nor shortcuts is an unworked week, as a shop's wee
 **The monthly report.** Every four weeks after the charter, the company publishes a report summing those weeks (takings, upkeep, profit). In the report's last week an officer may prepare it (`reportRoll`: Accounting, or Business at DV +2): the band shifts the profit it reports (−8% to +10%); Bold is **aggressive reporting**, doubling the shift and adding Exposure. With no preparation the report shows what was earned. The roll's total and band are kept with the report, for an audit later (§26.6). While the company is private the report moves nothing on the market; from B5 the reported profit feeds the valuation and the earnings impact. Reports show in the Ledger tab; the This week tab says which week of the month it is and offers the preparation in the last.
 
 **Built:** `scripts/engine/businessCompany.js` (the company's week, `reportCheck`, `closeReportWeek`), the company actions in `businessConfig.js` (`COMPANY_ACTIONS`, `actionIdsFor`), tests in `tests/businessCompany.test.mjs`.
+
+### 32.3 B4c: officers, control and information
+
+**Officers.** At the charter every partner with a vote becomes an officer (they ran the business). After that the shareholders elect (`elect`) and dismiss (`dismiss`) officers by a majority of the shares, through the usual proposals; a company always keeps at least one. Only officers run a company: they take its action slots, answer its events, prepare its report and make the information rolls. Any holder may still help with a complementary check, so a shareholder who is not an officer has a roll that matters. Control is the existing majority rule: holders of more than half the shares carry every majority proposal. The Partners tab marks officers and offers the elections; the This week tab tells a shareholder who is not an officer why they cannot act.
+
+**Information rolls** (once a week each, paid from the company's cash):
+- **Internal audit** (Accounting, Business at DV +2; 300 eb). A pass tells the officers the company's Exposure band (clean, low, moderate, high), which is otherwise hidden; a strong result also wipes 5 points of it out, an exceptional one 10. The GM's service passes the hidden Exposure to the engine and lowers it, never below zero.
+- **Due diligence** (Library Search or Business; 200 eb) on another business, named as the players know it (their client cannot list other businesses, so nothing is revealed about which exist): a pass tells its state bands and a range for its book value, ±30% on a narrow pass down to ±5% on an exceptional one. What it found is kept with the company (the last five).
+
+**Built:** officers and the information rolls in `scripts/engine/businessCompany.js` (`officersOf`, `canRun`, `officerProposal`, `infoCheck`, `applyInternalAudit`, `applyDiligence`, `exposureBand`), the `elect` and `dismiss` proposal kinds, `auditRoll` and `diligenceRoll` requests, and the service resolving a due diligence target by name. Tests in `tests/businessCompany.test.mjs` and `tests/businessWindows.test.mjs`. None of B4 has been tried in the test world yet.

@@ -326,3 +326,35 @@ test('a registered business shows the charter: milestones, the ticker, the rolls
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('a company shows its officers, the information rolls and the report; a shareholder who is not an officer cannot take its actions', async () => {
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  try {
+    await S.BusinessRepository.save({
+      ...b, stage: 2, till: 5000, company: { ticker: 'BRC', sector: 'health', charteredDay: b.period.startDay }, officers: [med.id],
+      state: { ...b.state, compliance: 50 }, charter: null, proposals: [], reportWeeks: 1,
+    });
+    const officer = await renderBusiness(windowFor(med, 'week'));
+    assertClean(officer, 'company week');
+    assert.match(text(officer), /Chase contracts/);
+    assert.match(officer, /data-action="actionRoll" data-id="contracts"/);
+    assert.match(officer, /data-action="auditRoll"/);
+    assert.match(officer, /name="targetName"/);
+    assert.match(text(officer), /Week 2 of 4 toward this month/);
+    assert.doesNotMatch(officer, /data-action="reportRoll"/, 'only in the last week');
+
+    const holder = await renderBusiness(windowFor(fix, 'week'));
+    assertClean(holder, 'shareholder week');
+    assert.match(text(holder), /not an officer/);
+    assert.doesNotMatch(holder, /data-action="actionRoll"/);
+    assert.doesNotMatch(holder, /data-action="auditRoll"/);
+
+    const partners = await renderBusiness(windowFor(med, 'partners'));
+    assertClean(partners, 'company partners');
+    assert.match(text(partners), /officer/);
+    assert.match(partners, new RegExp(`data-action="proposeElect" data-id="${fix.id}"`));
+  } finally {
+    await S.BusinessRepository.save(saved);
+  }
+});

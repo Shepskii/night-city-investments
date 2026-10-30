@@ -8,7 +8,7 @@ import {
   stateBands, lastDigest, weekdayOf, gearValue, rollSpec, BUSINESS_DEFAULTS,
   daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
-  actionIdsFor, reportCheck,
+  actionIdsFor, reportCheck, canRun, officersOf, infoCheck,
 } from '../../engine/index.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
@@ -278,6 +278,8 @@ function weekContext(business, actor, canAct) {
   const taken = new Map(period.slots.map((s) => [s.action, s]));
   const helped = actor ? period.helpers.includes(actor.id) : true;
   const free = period.slots.length < slots;
+  // A company is run by its officers; any holder may still help.
+  const runs = canAct && canRun(business, actor.id);
   return {
     from: dayText(period.startDay),
     to: dayText(period.endDay),
@@ -294,18 +296,46 @@ function weekContext(business, actor, canAct) {
         hint: L(`NCI.Business.Action.${id}.Hint`),
         taken: slot ? L('NCI.Business.TakenBy', { name: nameOf(business, slot.by), band: L(`NCI.Roll.Band.${slot.band}`) }) : '',
         bonus: bonus ? L('NCI.Business.BonusWaiting') : '',
-        canRoll: canAct && free && !slot,
+        canRoll: runs && free && !slot,
         canHelp: canAct && !helped && !slot,
       };
     }),
     helped: actor && helped && canAct ? L('NCI.Business.AlreadyHelped') : '',
-    event: eventContext(business, canAct, free),
+    event: eventContext(business, runs, free),
     report: business.stage >= 2 ? {
       text: L('NCI.Company.ReportWeek', { n: (business.reportWeeks ?? 0) + 1, of: BUSINESS_DEFAULTS.report.weeks }),
       prepared: business.reportPrep ? L(business.reportPrep.bold ? 'NCI.Company.PreparedBold' : 'NCI.Company.Prepared', { band: L(`NCI.Roll.Band.${business.reportPrep.band}`) }) : '',
-      canPrepare: canAct && reportCheck(business).ok,
+      canPrepare: runs && reportCheck(business).ok,
     } : null,
+    notOfficer: business.stage >= 2 && canAct && !runs ? L('NCI.Company.NotOfficer') : '',
+    info: business.stage >= 2 ? infoContext(business, runs) : null,
     unworkedNote: L('NCI.Business.UnworkedNote'),
+  };
+}
+
+/** A company's information rolls: the last internal audit, and what due diligence has found (B4c). */
+function infoContext(business, runs) {
+  const day = BusinessClient.day();
+  const audit = business.lastAudit;
+  const cost = BUSINESS_DEFAULTS.info;
+  return {
+    audit: audit
+      ? (audit.exposure ? L('NCI.Company.AuditResult', { date: dayText(audit.day), band: L(`NCI.Company.Exposure.${audit.exposure}`) }) : L('NCI.Company.AuditFailed', { date: dayText(audit.day) }))
+      : L('NCI.Company.NoAudit'),
+    canAudit: runs && infoCheck(business, 'audit', day).ok,
+    auditHint: L('NCI.Company.AuditHint', { cost: whole(cost.auditCost) }),
+    canDiligence: runs && infoCheck(business, 'diligence', day).ok,
+    diligenceHint: L('NCI.Company.DiligenceHint', { cost: whole(cost.diligenceCost) }),
+    intel: [...(business.intel ?? [])].reverse().map((x) => ({
+      name: x.name,
+      date: dayText(x.day),
+      found: x.bands
+        ? L('NCI.Company.IntelFound', {
+          bands: Object.entries(x.bands).map(([k, v]) => `${L(`NCI.Business.State.${k}`)} ${L(`NCI.Business.Band.${k}.${v}`)}`).join(', '),
+          low: whole(x.range[0]), high: whole(x.range[1]),
+        })
+        : L('NCI.Company.IntelNothing'),
+    })),
   };
 }
 
@@ -452,8 +482,15 @@ function partnersContext(business, actor) {
       heir: p.heirId ? L('NCI.Business.HeirIs', { name: game.actors.get(p.heirId)?.name ?? p.heirId }) : '',
       leaving: p.status === 'leaving' ? L('NCI.Business.LeavingSince', { date: dayText((p.leavingSince ?? 0) + business.agreement.buyoutDays) }) : '',
       buyout: p.status === 'leaving' && open && canAct && p.actorId !== actor?.id ? L('NCI.Business.BuyFor', { price: whole(Math.round(p.units * value)) }) : '',
+      // A company's officers, and electing or dismissing one by a majority of the shares (B4c).
+      officer: business.stage >= 2 && officersOf(business).includes(p.actorId) ? L('NCI.Company.Officer') : '',
+      canElect: business.stage >= 2 && canAct && open && p.status === 'active' && p.voting && !officersOf(business).includes(p.actorId)
+        && !business.proposals.some((x) => x.kind === 'elect'),
+      canDismiss: business.stage >= 2 && canAct && open && officersOf(business).includes(p.actorId) && officersOf(business).length > 1
+        && !business.proposals.some((x) => x.kind === 'dismiss'),
     })),
     unitValue: units > 0 ? value.toFixed(2) : '',
+    isCompany: business.stage >= 2,
     agreement: [
       sweat ? L('NCI.Business.Agreement.sweat', { name: nameOf(business, sweat.actorId), pct: sweat.pct }) : L('NCI.Business.Agreement.noSweat'),
       L('NCI.Business.Agreement.decision'),

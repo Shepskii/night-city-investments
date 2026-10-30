@@ -234,6 +234,26 @@ export const BUSINESS_DEFAULTS = Object.freeze({
    * the profit it reports, Bold (aggressive reporting) doubles the shift and adds Exposure. The total is
    * kept, for an audit later (§26.6).
    */
+  /**
+   * Information rolls (DESIGN §26.4, B4c). An internal audit (Accounting, Business at DV +2) reveals the
+   * company's own Exposure band and, on a strong or better roll, wipes some of it out; due diligence
+   * (Library Search or Business) reveals another business's state bands and a range for its value.
+   * Each costs eb from the company's cash and can be done once a week.
+   */
+  info: Object.freeze({
+    dv: 'difficult',
+    auditUses: Object.freeze([S.accounting, Object.freeze({ ...S.business, dvAdd: 2 })]),
+    diligenceUses: Object.freeze([S.librarySearch, S.business]),
+    auditCost: 300,
+    diligenceCost: 200,
+    cooldown: 7,
+    auditCut: Object.freeze({ strong: 5, exceptional: 10 }),
+    /** Exposure bands: below each threshold. */
+    exposureBands: Object.freeze([[5, 'clean'], [15, 'low'], [30, 'moderate'], [Infinity, 'high']]),
+    /** Due diligence's value range: ± this share of book value, by band. */
+    spread: Object.freeze({ narrow: 0.3, solid: 0.2, strong: 0.1, exceptional: 0.05 }),
+    intelCap: 5,
+  }),
   report: Object.freeze({
     weeks: 4,
     dv: 'difficult',

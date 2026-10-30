@@ -206,6 +206,8 @@ export function formCompany(b, day, p = BUSINESS_DEFAULTS) {
   b.state.compliance = clamp((b.state.compliance ?? p.complianceBaseline) + (c.compliance[rolls.registration?.band] ?? 0), 0, 100);
   b.stage = 2;
   b.company = { ticker: b.charter.ticker, sector: charterSector(b, p), charteredDay: day };
+  // Those who ran the business become its first officers; later the shareholders elect them (B4c).
+  b.officers = holders(b).filter((x) => x.voting).map((x) => x.actorId);
   b.charter = { ...b.charter, status: 'formed', formedDay: day };
   b.stepUp = null;
   addLedger(b, { day, kind: 'chartered', amount: paid }, p);

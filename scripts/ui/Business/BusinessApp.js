@@ -58,6 +58,10 @@ export class BusinessApp extends BaseApplication {
       charterRoll: BusinessApp._onCharterRoll,
       charterFund: BusinessApp._onCharterFund,
       reportRoll: BusinessApp._onReportRoll,
+      auditRoll: BusinessApp._onAuditRoll,
+      diligenceRoll: BusinessApp._onDiligenceRoll,
+      proposeElect: BusinessApp._onProposeElect,
+      proposeDismiss: BusinessApp._onProposeDismiss,
       respond: BusinessApp._onRespond,
       proposeFixerLoan: BusinessApp._onProposeFixerLoan,
       proposeBankLoan: BusinessApp._onProposeBankLoan,
@@ -373,6 +377,25 @@ export class BusinessApp extends BaseApplication {
   /** Prepare the monthly report (DESIGN §26.4): Accounting; Bold in the dialog is aggressive reporting. */
   static _onReportRoll() {
     this._roll({ type: 'reportRoll' }, L('NCI.Company.PrepareTitle', { name: this.business?.name ?? '' }));
+  }
+
+  static _onAuditRoll() {
+    this._roll({ type: 'auditRoll' }, L('NCI.Company.AuditTitle', { name: this.business?.name ?? '' }));
+  }
+
+  /** Due diligence on another business, named as the player knows it (B4c). */
+  static _onDiligenceRoll(event, target) {
+    const targetName = value(target, 'targetName').trim();
+    if (!targetName) return ui.notifications.warn(L('NCI.Business.Reason.no-target'));
+    return this._roll({ type: 'diligenceRoll', targetName }, L('NCI.Company.DiligenceTitle', { name: targetName }));
+  }
+
+  static _onProposeElect(event, target) {
+    return this._send('propose', { kind: 'elect', actorId: target.dataset.id });
+  }
+
+  static _onProposeDismiss(event, target) {
+    return this._send('propose', { kind: 'dismiss', actorId: target.dataset.id });
   }
 
   static _onStepUpRoll() {

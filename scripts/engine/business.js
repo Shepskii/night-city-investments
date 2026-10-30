@@ -52,7 +52,9 @@ import {
 import {
   canCharter, startCharter, charterRollCheck, applyCharterRoll, approveCharter, dropCharter, fundCharter,
 } from './businessCharter.js';
-import { companyWeek, reportCheck, closeReportWeek } from './businessCompany.js';
+import {
+  companyWeek, reportCheck, closeReportWeek, canRun, officerProposal, applyOfficerProposal, infoCheck, applyInternalAudit, applyDiligence,
+} from './businessCompany.js';
 
 export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck };
 export { fixerOffer, bankCheck, angelCheck, openLoans, averageProfit };
@@ -64,7 +66,7 @@ export {
 
 export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
-  'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll',
+  'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll',
 ]);
 
 /** Item types that are not things a business can own. */
@@ -95,7 +97,7 @@ export function itemGear(item, actorId, p = BUSINESS_DEFAULTS) {
 }
 
 /** Requests that carry a roll. */
-export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll']);
+export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll']);
 
 /**
  * What each kind of proposal needs to pass (DESIGN §26.0): closing and stepping up need every partner
@@ -103,6 +105,8 @@ export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'st
  */
 export const PROPOSAL_RULES = Object.freeze({
   close: 'unanimous', stepUp: 'unanimous', expansion: 'majority', fixerLoan: 'majority', bankLoan: 'majority', investor: 'unanimous', angel: 'unanimous',
+  // A company's officers are elected and dismissed by a majority of the shares (B4c).
+  elect: 'majority', dismiss: 'majority',
 });
 
 // ── What a roll needs ────────────────────────────────────────────────────────
@@ -153,6 +157,16 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     const can = request.type === 'loanRoll' ? bankCheck(b, actorId, day, p) : angelCheck(b, actorId, day, p);
     if (!can.ok) return can;
     return allowed(can.uses, use, { dv: can.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p });
+  }
+
+  // A company is run by its officers; any holder may still help (a complementary check).
+  if (['action', 'respond', 'reportRoll', 'auditRoll', 'diligenceRoll'].includes(request.type) && !canRun(b, actorId)) return fail('not-officer');
+
+  if (request.type === 'auditRoll' || request.type === 'diligenceRoll') {
+    const check = infoCheck(b, request.type === 'auditRoll' ? 'audit' : 'diligence', day, p);
+    if (!check.ok) return check;
+    if (request.type === 'diligenceRoll' && (!request.targetId || request.targetId === b.id)) return fail('bad-target');
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - check.cost, operatorRank, p });
   }
 
   if (request.type === 'respond') {
@@ -466,6 +480,27 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       out.events.push({ type: 'roll', action: 'report', band: r.band, exposure: (r.exposure ?? 0) + (bold ? p.report.boldExposure : 0) });
       break;
     }
+    case 'auditRoll':
+    case 'diligenceRoll': {
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
+      if (!spec.ok) return spec;
+      if (!check?.ok) return fail(check?.reason ?? 'no-roll');
+      if (request.use.kind === 'hire') {
+        const fee = hireFee(request.use.hire, ctx.operatorRank, p);
+        b.till -= fee;
+        log('hire', -fee);
+      }
+      const r = check.result;
+      if (r.extra) spendDays(b, actor.id, 1);
+      if (request.type === 'auditRoll') {
+        const done = applyInternalAudit(b, { result: r, day, exposure: ctx.exposure ?? 0, by: actor.id }, p);
+        out.events.push({ type: 'roll', action: 'audit', band: r.band, exposure: (r.exposure ?? 0) + done.exposure });
+      } else {
+        applyDiligence(b, { result: r, day, targetId: request.targetId, target: ctx.targets?.[request.targetId] ?? null, by: actor.id }, p);
+        out.events.push({ type: 'roll', action: 'diligence', band: r.band, exposure: r.exposure ?? 0 });
+      }
+      break;
+    }
     case 'charterFund': {
       const done = fundCharter(b, actor, request.cash, day, p);
       if (!done.ok) return done;
@@ -752,6 +787,9 @@ function canPropose(b, kind, request, ctx, p) {
     }
     case 'expansion':
       return expansionOffer(b, p);
+    case 'elect':
+    case 'dismiss':
+      return officerProposal(b, kind, request.actorId);
     case 'fixerLoan': {
       const offer = fixerOffer(b, request.amount, p);
       return offer.ok ? { ok: true, terms: { amount: offer.amount } } : offer;
@@ -821,6 +859,9 @@ function enact(b, proposal, day, p, ctx) {
     case 'investor':
       inviteInvestor(b, proposal.terms, ctx.actors ?? {});
       return { ok: true };
+    case 'elect':
+    case 'dismiss':
+      return applyOfficerProposal(b, proposal.kind, proposal.terms.actorId);
     case 'angel':
       findAngel(b, ctx.seed ?? 'nci', proposal.id, p.investors.angel.names, p);
       return { ok: true };

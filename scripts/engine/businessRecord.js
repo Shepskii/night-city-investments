@@ -118,6 +118,10 @@ export function normalizeBusiness(raw) {
     reports: b.reports ?? [],
     reportWeeks: int(b.reportWeeks),
     reportPrep: b.reportPrep ?? null,
+    /** A company's officers (actor ids), its last internal audit, and what due diligence found. */
+    officers: b.officers ?? [],
+    lastAudit: b.lastAudit ?? null,
+    intel: b.intel ?? [],
   };
 }
 

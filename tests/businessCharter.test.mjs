@@ -117,6 +117,7 @@ test('with all three rolled the charter waits for the GM; with no shortfall it i
   assert.equal(formed.stage, 2);
   assert.deepEqual(formed.company, { ticker: 'BRC', sector: 'health', charteredDay: DAY });
   assert.deepEqual(formed.partners.map((p) => sharesOf(formed, p.actorId)), units, 'units become shares one for one');
+  assert.deepEqual(formed.officers, ['med', 'fix'], 'those who ran it become its first officers');
   assert.equal(formed.state.reputation, 55 + 3, 'a solid plan: Reputation +3');
   assert.equal(formed.state.compliance, 50 + 3, 'a solid registration: Compliance +3');
 });

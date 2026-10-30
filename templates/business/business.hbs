@@ -216,6 +216,27 @@
     {{#if helped}}<p class="nci-muted">{{helped}}</p>{{/if}}
     <p class="nci-hint">{{unworkedNote}}</p>
   </div>
+  {{#if notOfficer}}<p class="nci-warn">{{notOfficer}}</p>{{/if}}
+  {{#with info}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.Company.Information"}}</h3>
+    <p class="nci-hint">{{auditHint}}</p>
+    <p>{{audit}}</p>
+    {{#if canAudit}}<button type="button" data-action="auditRoll"><i class="fas fa-magnifying-glass-dollar"></i> {{localize "NCI.Company.Audit"}}</button>{{/if}}
+    <p class="nci-hint">{{diligenceHint}}</p>
+    {{#if canDiligence}}
+    <div class="nci-actions nci-form">
+      <label>{{localize "NCI.Company.Target"}} <input type="text" name="targetName" maxlength="60"></label>
+      <button type="button" data-action="diligenceRoll"><i class="fas fa-binoculars"></i> {{localize "NCI.Company.Diligence"}}</button>
+    </div>
+    {{/if}}
+    {{#if intel.length}}
+    <table class="nci-market"><tbody>
+      {{#each intel}}<tr><td><strong>{{name}}</strong> <span class="nci-muted">{{date}}</span></td><td>{{found}}</td></tr>{{/each}}
+    </tbody></table>
+    {{/if}}
+  </div>
+  {{/with}}
   {{#with report}}
   <div class="nci-block">
     <h3>{{localize "NCI.Company.Report"}}</h3>
@@ -407,19 +428,22 @@
       <tbody>
         {{#each rows}}
         <tr>
-          <td><strong>{{name}}</strong> <span class="nci-muted">{{status}}{{#if voting}} &middot; {{voting}}{{/if}}</span>
+          <td><strong>{{name}}</strong> <span class="nci-muted">{{status}}{{#if voting}} &middot; {{voting}}{{/if}}{{#if officer}} &middot; {{officer}}{{/if}}</span>
             <div class="nci-muted">{{put}}{{#if gear}} &middot; {{gear}}{{/if}}</div>
             {{#if heir}}<div class="nci-muted">{{heir}}</div>{{/if}}
             {{#if leaving}}<div class="nci-warn">{{leaving}}</div>{{/if}}
           </td>
           <td>{{units}}</td>
           <td>{{share}}</td>
-          <td class="nci-rowbtns">{{#if buyout}}<button type="button" data-action="buyout" data-id="{{actorId}}">{{buyout}}</button>{{/if}}</td>
+          <td class="nci-rowbtns">{{#if buyout}}<button type="button" data-action="buyout" data-id="{{actorId}}">{{buyout}}</button>{{/if}}
+            {{#if canElect}}<button type="button" class="nci-labelled" data-action="proposeElect" data-id="{{actorId}}"><i class="fas fa-user-tie"></i> {{localize "NCI.Company.Elect"}}</button>{{/if}}
+            {{#if canDismiss}}<button type="button" class="nci-labelled" data-action="proposeDismiss" data-id="{{actorId}}"><i class="fas fa-user-slash"></i> {{localize "NCI.Company.Dismiss"}}</button>{{/if}}</td>
         </tr>
         {{/each}}
       </tbody>
     </table>
     {{#if unitValue}}<p class="nci-hint">{{localize "NCI.Business.UnitValue" value=unitValue}}</p>{{/if}}
+    {{#if isCompany}}<p class="nci-hint">{{localize "NCI.Company.OfficersHint"}}</p>{{/if}}
   </div>
   <div class="nci-block nci-form">
     <h3>{{localize "NCI.Business.AgreementTitle"}}</h3>

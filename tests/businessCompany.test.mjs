@@ -20,7 +20,7 @@ const BUREAUCRACY = { kind: 'skill', skill: 'Bureaucracy', stat: 'int' };
 function apply(business, request, actor, extra = {}) {
   const out = applyBusinessRequest({
     business, request: { key: `k${Math.random()}`, ...request }, actor, day: extra.day ?? DAY, check: extra.check,
-    context: { approval: false, weekday: MONDAY, actors: ACTORS, newId: 'b1', seed: 'test', growthRate: 1 },
+    context: { approval: false, weekday: MONDAY, actors: ACTORS, newId: 'b1', seed: 'test', growthRate: 1, ...extra.context },
   });
   if (extra.expect !== false) assert.equal(out.ok, true, `${request.type}: ${out.reason}`);
   return out;
@@ -32,7 +32,7 @@ function company() {
   b = apply(b, { type: 'join', businessId: 'b1', cash: 1500 }, FIX).business;
   b = apply(b, { type: 'setupRoll', businessId: 'b1', use: cybertech }, MED, { check: check(14, 9, 13) }).business;
   const out = normalizeBusiness({
-    ...b, stage: 2, till: 20000, assets: 10000, company: { ticker: 'BRC', sector: 'health', charteredDay: DAY - 1 },
+    ...b, stage: 2, till: 20000, assets: 10000, company: { ticker: 'BRC', sector: 'health', charteredDay: DAY - 1 }, officers: ['med', 'fix'],
     state: { ...b.state, capacity: 4, compliance: 50, reputation: 55 },
   });
   delete out.period.event;
@@ -107,4 +107,43 @@ test('aggressive reporting (Bold) doubles the shift and leaves Exposure; an unpr
   const plain = close(b).business.reports.at(-1);
   assert.equal(plain.reported, plain.profit);
   assert.equal(plain.prep, undefined);
+});
+
+test('only officers run a company; any holder may still help, and officers are elected and dismissed by a majority of shares', () => {
+  const b = normalizeBusiness({ ...company(), officers: ['med'] });
+  assert.equal(rollSpec(b, { type: 'action', action: 'contracts', use: BUSINESS }, 'fix', { day: DAY }).reason, 'not-officer');
+  assert.equal(rollSpec(b, { type: 'assist', forAction: 'contracts', use: { kind: 'skill', skill: 'Library Search', stat: 'int' } }, 'fix', { day: DAY }).ok, true, 'a holder may help');
+  const elected = apply(b, { type: 'propose', businessId: 'b1', kind: 'elect', actorId: 'fix' }, MED).business;
+  assert.deepEqual(elected.officers.sort(), ['fix', 'med'], 'the Medtech holds the majority');
+  assert.equal(apply(elected, { type: 'propose', businessId: 'b1', kind: 'elect', actorId: 'fix' }, MED, { expect: false }).reason, 'already-officer');
+  const dismissed = apply(elected, { type: 'propose', businessId: 'b1', kind: 'dismiss', actorId: 'fix' }, MED).business;
+  assert.deepEqual(dismissed.officers, ['med']);
+  assert.equal(apply(dismissed, { type: 'propose', businessId: 'b1', kind: 'dismiss', actorId: 'med' }, MED, { expect: false }).reason, 'last-officer');
+});
+
+test('an internal audit costs eb, can be done once a week, and tells the officers the Exposure band; a strong one wipes some out', () => {
+  const b = company();
+  const out = apply(b, { type: 'auditRoll', businessId: 'b1', use: ACCOUNTING }, MED, { check: check(14, 8, 15), context: { exposure: 12 } });
+  assert.equal(out.business.till, b.till - BUSINESS_DEFAULTS.info.auditCost);
+  assert.equal(out.business.lastAudit.band, 'strong');
+  assert.equal(out.business.lastAudit.exposure, 'low', '12 less the 5 a strong audit wipes out: low');
+  assert.equal(out.events.find((e) => e.action === 'audit').exposure, -5);
+  assert.equal(rollSpec(out.business, { type: 'auditRoll', use: ACCOUNTING }, 'med', { day: DAY + 3 }).reason, 'info-delay');
+  assert.equal(rollSpec(out.business, { type: 'auditRoll', use: ACCOUNTING }, 'med', { day: DAY + 7 }).ok, true);
+  const blind = apply(b, { type: 'auditRoll', businessId: 'b1', use: ACCOUNTING }, MED, { check: check(8, 3, 15), context: { exposure: 40 } }).business;
+  assert.equal(blind.lastAudit.exposure, undefined, 'a failed audit reveals nothing');
+});
+
+test('due diligence on another business tells how it stands and roughly what it is worth', () => {
+  const target = { name: 'Rival Clinic', bands: { reputation: 'good', capacity: 'busy', costs: 'fair' }, value: 40000 };
+  const ctx = { targets: { rival: target } };
+  const b = company();
+  assert.equal(rollSpec(b, { type: 'diligenceRoll', use: { kind: 'skill', skill: 'Library Search', stat: 'int' } }, 'med', { day: DAY }).reason, 'bad-target');
+  const out = apply(b, { type: 'diligenceRoll', businessId: 'b1', targetId: 'rival', use: { kind: 'skill', skill: 'Library Search', stat: 'int' } }, MED, { check: check(14, 8, 15), context: ctx }).business;
+  const found = out.intel.at(-1);
+  assert.deepEqual([found.name, found.bands.reputation], ['Rival Clinic', 'good']);
+  assert.deepEqual(found.range, [36000, 44000], 'a strong roll: within 10%');
+  assert.equal(out.till, b.till - BUSINESS_DEFAULTS.info.diligenceCost);
+  const miss = apply(b, { type: 'diligenceRoll', businessId: 'b1', targetId: 'rival', use: { kind: 'skill', skill: 'Library Search', stat: 'int' } }, MED, { check: check(8, 3, 15), context: ctx }).business;
+  assert.equal(miss.intel.at(-1).bands, undefined);
 });

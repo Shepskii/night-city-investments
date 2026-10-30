@@ -16,7 +16,7 @@
 
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
-  applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter,
+  applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { log, isActiveGM } from '../utils/helpers.js';
@@ -85,6 +85,9 @@ class BusinessServiceImpl {
       investors: investorActors().map((a) => a.id),
       newId: `bus_${foundry.utils.randomID(12)}`,
       tickers: this.tickersTaken(business?.id),
+      // Hidden from players: an internal audit reads it, and due diligence sees the other businesses (B4c).
+      exposure: business ? (MarketStore.getBusinessesHidden()[business.id]?.exposure ?? 0) : 0,
+      targets: Object.fromEntries(BusinessRepository.all().filter((t) => t.status === 'open' && t.id !== business?.id).map((t) => [t.id, diligenceView(t)])),
     };
   }
 
@@ -141,6 +144,13 @@ class BusinessServiceImpl {
     if (!as.ok) return this._receipt(actor, request, as);
     const business = request.type === 'found' ? null : BusinessRepository.get(request.businessId);
     if (request.type !== 'found' && !business) return this._receipt(actor, request, { ok: false, reason: 'no-business' });
+    // Due diligence names its target as a player knows it, by name; a player's client cannot list them (B4c).
+    if (request.type === 'diligenceRoll' && !request.targetId) {
+      const wanted = String(request.targetName ?? '').trim().toLowerCase();
+      const target = BusinessRepository.all().find((t) => t.status === 'open' && t.id !== business?.id && t.name.trim().toLowerCase() === wanted);
+      if (!target) return this._receipt(actor, request, { ok: false, reason: 'no-target' });
+      request = { ...request, targetId: target.id };
+    }
 
     const day = this.day();
     const context = this.context(business);
@@ -235,7 +245,8 @@ class BusinessServiceImpl {
     if (exposure) {
       const hidden = MarketStore.getBusinessesHidden();
       const entry = hidden[out.business.id] ?? { exposure: 0 };
-      await MarketStore.setBusinessesHidden({ ...hidden, [out.business.id]: { ...entry, exposure: entry.exposure + exposure } });
+      // An internal audit can wipe some out, but never below none.
+      await MarketStore.setBusinessesHidden({ ...hidden, [out.business.id]: { ...entry, exposure: Math.max(0, entry.exposure + exposure) } });
     }
     for (const event of out.events.filter((e) => e.type === 'periodClosed')) {
       Hooks.callAll(HOOKS.BUSINESS_PERIOD, { businessId: out.business.id, digest: event.digest });
