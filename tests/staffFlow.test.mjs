@@ -237,3 +237,24 @@ test('a character dragged from the Actors directory onto an open post proposes h
   assert.equal(hired.pct, 1.2);
   assert.equal(hired.status, 'offered');
 });
+
+test('characters are listed as links to their actor, with their portrait; a name with no actor stays plain', async () => {
+  const { actorLink } = await import('../scripts/ui/actorLink.js');
+  rook.img = 'portraits/rook.webp';
+  const link = actorLink(rook.id);
+  assert.match(link, /^<a class="content-link nci-who" draggable="true" data-link data-uuid="[^"]*a_Rook" data-id="a_Rook" data-type="Actor"/);
+  assert.match(link, /<img class="nci-avatar" src="portraits\/rook\.webp" alt="">Rook<\/a>$/);
+  assert.equal(actorLink(null, 'Mira <Sato>'), '<span class="nci-who">Mira &lt;Sato&gt;</span>', 'escaped, and no link');
+
+  const partners = await renderBusiness(windowFor(med, 'partners'));
+  assertClean(partners, 'partners with links');
+  assert.match(partners, /data-uuid="[^"]*a_Medtech"[^>]*><img class="nci-avatar" src="[^"]+" alt="">Medtech<\/a>/);
+  const staff = await renderBusiness(windowFor(med, 'staff'));
+  assert.match(staff, /data-id="a_Rook" data-type="Actor"/, 'an employee with a character links to it');
+
+  const app = new Apps.GMConsole();
+  app.tab = 'businesses';
+  const gm = render('templates/gm/console.hbs', await app._prepareContext());
+  assertClean(gm, 'GM tab with links');
+  assert.match(gm, /data-id="a_Fixer" data-type="Actor"/);
+});

@@ -79,7 +79,7 @@
     {{#if start.partners.length}}
     <fieldset>
       <legend>{{localize "NCI.Business.Invite"}}</legend>
-      {{#each start.partners}}<label><input type="checkbox" name="invite" value="{{id}}"> {{name}}</label>{{/each}}
+      {{#each start.partners}}<span class="nci-pick"><input type="checkbox" name="invite" value="{{id}}" aria-label="{{name}}"> {{{who}}}</span>{{/each}}
     </fieldset>
     {{/if}}
     <div class="nci-grid">
@@ -365,7 +365,7 @@
       <tbody>
         {{#each rows}}
         <tr>
-          <td><strong>{{name}}</strong> <span class="nci-muted">{{source}}</span><div class="nci-muted">{{status}}</div>{{#if owed}}<div class="nci-warn">{{owed}}</div>{{/if}}</td>
+          <td><strong>{{{who}}}</strong> <span class="nci-muted">{{source}}</span><div class="nci-muted">{{status}}</div>{{#if owed}}<div class="nci-warn">{{owed}}</div>{{/if}}</td>
           <td>{{post}} <span class="nci-muted">{{level}}</span></td>
           <td class="num">{{base}}</td>
           <td class="num">{{wage}}</td>
@@ -532,7 +532,7 @@
       <tbody>
         {{#each rows}}
         <tr>
-          <td><strong>{{name}}</strong> <span class="nci-muted">{{status}}{{#if voting}} &middot; {{voting}}{{/if}}{{#if officer}} &middot; {{officer}}{{/if}}</span>
+          <td><strong>{{{who}}}</strong> <span class="nci-muted">{{status}}{{#if voting}} &middot; {{voting}}{{/if}}{{#if officer}} &middot; {{officer}}{{/if}}</span>
             <div class="nci-muted">{{put}}{{#if gear}} &middot; {{gear}}{{/if}}</div>
             {{#if heir}}<div class="nci-muted">{{heir}}</div>{{/if}}
             {{#if leaving}}<div class="nci-warn">{{leaving}}</div>{{/if}}
@@ -586,7 +586,7 @@
     {{#each proposals}}
     <div class="nci-gig">
       <p><strong>{{text}}</strong> <span class="nci-muted">{{rule}}</span></p>
-      <p class="nci-muted">{{votes}}</p>
+      <p class="nci-muted">{{{votes}}}</p>
       {{#if canVote}}
       <button type="button" data-action="vote" data-id="{{id}}" data-yes="true"><i class="fas fa-check"></i> {{localize "NCI.Business.VoteYes"}}</button>
       <button type="button" data-action="vote" data-id="{{id}}" data-yes="false"><i class="fas fa-xmark"></i> {{localize "NCI.Business.VoteNo"}}</button>

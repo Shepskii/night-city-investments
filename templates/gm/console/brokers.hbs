@@ -62,7 +62,7 @@
   <table class="nci-market"><tbody>
     {{#each broker.grants}}
     <tr>
-      <td>{{name}}</td>
+      <td>{{{who}}}</td>
       <td class="nci-rowbtns"><button type="button" data-action="toggleGrant" data-id="{{id}}" class="nci-labelled{{#if granted}} active{{/if}}">{{#if granted}}{{localize "NCI.GMConsole.GrantOn"}}{{else}}{{localize "NCI.GMConsole.GrantOff"}}{{/if}}</button></td>
     </tr>
     {{/each}}

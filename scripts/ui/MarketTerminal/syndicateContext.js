@@ -13,6 +13,7 @@ import { pendingSyndicateRequests } from '../../services/SyndicateClient.js';
 import { describeProposal, reasonText } from '../../services/SyndicateMail.js';
 import { syndicateKey } from '../accounts.js';
 import { L, money, whole, signed } from '../format.js';
+import { actorLink } from '../actorLink.js';
 
 const DAY_MS = 86_400_000;
 const LEDGER_ROWS = 10;
@@ -65,6 +66,7 @@ export function syndicateContext(account, portfolio, prices, stakes = 0) {
     pending: waiting.length,
     members: s.members.filter((m) => ['active', 'invited'].includes(m.status)).map((m) => ({
       name: m.name || game.actors.get(m.actorId)?.name || '?',
+      who: actorLink(m.actorId, m.name),
       role: m.status === 'invited' ? L('NCI.Syndicate.Invited') : L(`NCI.Syndicate.Role.${m.role}`),
       units: m.status === 'active' ? units(m.units) : '',
       share: m.status === 'active' ? share(m) : '',
@@ -143,6 +145,6 @@ export function characterSyndicates(actor, prices = {}) {
     inviteOptions: game.actors
       .filter((a) => a.type === 'character' && a.hasPlayerOwner && a.id !== actor.id)
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map((a) => ({ id: a.id, name: a.name })),
+      .map((a) => ({ id: a.id, name: a.name, who: actorLink(a.id, a.name) })),
   };
 }

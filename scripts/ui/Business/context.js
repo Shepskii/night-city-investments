@@ -19,6 +19,8 @@ import { businessAccounts } from '../accounts.js';
 import { MarketClock } from '../../services/MarketClockService.js';
 import { L, whole, signed } from '../format.js';
 import { weeklyBars, balanceLine } from '../components/chart.js';
+import { actorLink } from '../actorLink.js';
+import { escapeHtml } from '../../utils/text.js';
 
 const DAY_MS = 86_400_000;
 const LEDGER_ROWS = 15;
@@ -117,7 +119,7 @@ export function startContext(app) {
   return {
     archetypes: archetypeOptions(),
     districts: districtOptions(),
-    partners: others.map((a) => ({ id: a.id, name: a.name })),
+    partners: others.map((a) => ({ id: a.id, name: a.name, who: actorLink(a.id, a.name) })),
     // A syndicate spends from its brokerage account.
     wealth: whole(actor?.isSyndicate ? freeCash(SyndicateRepository.portfolio(actor.id)) : actor?.system?.wealth?.value ?? 0),
     maxSweat: BUSINESS_DEFAULTS.maxSweatPct,
@@ -490,6 +492,7 @@ function staffContext(business, actor, canAct) {
       return {
         id: s.id,
         name: s.name,
+        who: actorLink(s.actorId, s.name),
         source: L(`NCI.Staff.Source.${s.source}`),
         post: postLabel(s.post),
         level: L(`NCI.Staff.Level.${levelOf(base)}`),
@@ -559,6 +562,7 @@ function partnersContext(business, actor) {
     rows: business.partners.filter((p) => p.status !== 'declined').map((p) => ({
       actorId: p.actorId,
       name: p.name,
+      who: actorLink(p.actorId, p.name),
       status: L(`NCI.Business.PartnerStatus.${p.status}`),
       units: business.status === 'forming' ? '' : whole(p.units),
       share: units > 0 && ['active', 'leaving'].includes(p.status) ? `${((p.units / units) * 100).toFixed(1)}%` : '',
@@ -597,7 +601,9 @@ function partnersContext(business, actor) {
         post: proposal.terms?.post ? postLabel(proposal.terms.post) : '',
       }),
       rule: L(`NCI.Business.Rule.${PROPOSAL_RULES[proposal.kind]}`, { date: dayText(proposal.expires ?? proposal.day) }),
-      votes: holders(business).filter((p) => p.voting).map((p) => `${p.name}: ${L(`NCI.Business.Vote.${proposal.votes[p.actorId] === true ? 'yes' : proposal.votes[p.actorId] === false ? 'no' : 'none'}`)}`).join(', '),
+      // HTML: each voter's name links to their character.
+      votes: holders(business).filter((p) => p.voting)
+        .map((p) => `${actorLink(p.actorId, p.name)}: ${escapeHtml(L(`NCI.Business.Vote.${proposal.votes[p.actorId] === true ? 'yes' : proposal.votes[p.actorId] === false ? 'no' : 'none'}`))}`).join(', '),
       canVote: !!me?.voting && ['active', 'leaving'].includes(me.status) && proposal.votes[actor.id] === undefined,
     })),
   };

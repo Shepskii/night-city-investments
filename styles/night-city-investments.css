@@ -275,6 +275,12 @@
 .nci-app .nci-readonly .nci-drop { display: none; }
 .nci-app .nci-business .nci-drop { border: 1px dashed var(--nci-accent-dim); padding: 6px 8px; margin-bottom: 8px; min-height: 36px; }
 .nci-app .nci-business .nci-drop.nci-over { border-color: var(--nci-accent-bright); }
+/* A character's name: a link to their actor, with their portrait (scripts/ui/actorLink.js). */
+.nci-app a.content-link.nci-who { display: inline-flex; align-items: center; gap: 4px; padding: 0 4px 0 0; background: none; border: none; color: inherit; font-weight: inherit; white-space: nowrap; vertical-align: middle; }
+.nci-app a.content-link.nci-who:hover { color: var(--nci-accent-bright); text-shadow: none; }
+.nci-app a.content-link.nci-who::before { content: none; }
+.nci-app .nci-avatar { width: 22px; height: 22px; flex: none; border: 1px solid var(--nci-accent-dim); border-radius: 50%; object-fit: cover; object-position: top; }
+.nci-app .nci-pick { display: inline-flex; align-items: center; gap: 4px; margin-right: 10px; }
 /* A post on the Staff tab that a character can be dragged onto. */
 .nci-app .nci-business tr.nci-droppost td:first-child { border-left: 2px dashed var(--nci-accent-dim); }
 .nci-app .nci-business tr.nci-droppost.nci-over td { background: var(--nci-row-hover); }

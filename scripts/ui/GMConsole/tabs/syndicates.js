@@ -15,6 +15,8 @@ import { HeatService } from '../../../services/HeatService.js';
 import { describeProposal } from '../../../services/SyndicateMail.js';
 import { L, money, whole } from '../../format.js';
 import { confirm, report } from '../shared.js';
+import { actorLink } from '../../actorLink.js';
+import { escapeHtml } from '../../../utils/text.js';
 
 async function onApprove(event, target) {
   report(await SyndicateService.approve(target.dataset.id));
@@ -74,7 +76,8 @@ export function context() {
       isClosed: s.status === 'closed',
       members: s.members.filter((m) => ['active', 'invited'].includes(m.status)).map((m) => {
         const share = m.status === 'active' && units > 0 ? `, ${((m.units / units) * 100).toFixed(0)}%` : '';
-        return `${m.name} (${m.status === 'invited' ? L('NCI.Syndicate.Invited') : L(`NCI.Syndicate.Role.${m.role}`)}${share})`;
+        // HTML: each member's name links to their character.
+        return `${actorLink(m.actorId, m.name)} (${escapeHtml(m.status === 'invited' ? L('NCI.Syndicate.Invited') : L(`NCI.Syndicate.Role.${m.role}`))}${share})`;
       }).join(', '),
       money: L('NCI.GMSyndicate.Money', { cash: whole(portfolio.cash), total: whole(total), nav: money(nav), limit: whole(s.rules.tradeLimit) }),
       holdings: Object.keys(held).length ? Object.entries(held).map(([id, qty]) => `${tickerOf(id)} ${qty}`).join(', ') : L('NCI.GMSyndicate.NoHoldings'),

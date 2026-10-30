@@ -7,6 +7,7 @@
 import { L, daysInclusive } from '../../format.js';
 import { HeatService } from '../../../services/HeatService.js';
 import { companyOptions } from '../shared.js';
+import { actorLink } from '../../actorLink.js';
 
 async function onHeatApprove(event, target) {
   const card = target.closest('.nci-gig');
@@ -62,6 +63,7 @@ function build(companyOptions) {
   const penalty = (p) => ({
     id: p.id,
     name: p.name,
+    who: actorLink(p.actorId, p.name),
     kind: p.kind,
     isFine: p.kind === 'fine',
     amount: p.params.amount,
@@ -81,6 +83,7 @@ function build(companyOptions) {
     characters: snap.characters.map((c) => ({
       actorId: c.actorId,
       name: c.name,
+      who: actorLink(c.actorId, c.name),
       heat: c.heat,
       width: Math.min(100, Math.round(c.heat)),
       tier: c.tier,
@@ -107,6 +110,7 @@ function build(companyOptions) {
       quiet: !a.results.length,
       results: a.results.map((r) => ({
         name: r.name,
+        who: actorLink(r.actorId, r.name),
         gain: r.applied ?? r.gain,
         covered: r.covered ? L('NCI.Heat.CoverHalved', { gain: r.gain }) : '',
         trades: r.trades.map((t) => L('NCI.Heat.Trade', {

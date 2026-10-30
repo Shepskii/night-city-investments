@@ -10,6 +10,8 @@ import { BusinessApp } from '../../Business/BusinessApp.js';
 import { dayText } from '../../Business/context.js';
 import { L, whole, signed } from '../../format.js';
 import { confirm, report } from '../shared.js';
+import { actorLink } from '../../actorLink.js';
+import { escapeHtml } from '../../../utils/text.js';
 
 async function onApprove(event, target) {
   report(await BusinessService.approve(target.dataset.id));
@@ -88,9 +90,10 @@ export function context() {
       isForming: b.status === 'forming',
       isOpen: b.status === 'open',
       location: [b.district ? L(`NCI.District.${b.district}`) : '', b.location].filter(Boolean).join(', '),
+      // HTML: each partner's name links to their character.
       partners: b.partners.filter((p) => p.status !== 'declined').map((p) => {
         const share = units > 0 && ['active', 'leaving'].includes(p.status) ? ` ${((p.units / units) * 100).toFixed(0)}%` : '';
-        return `${p.name} (${L(`NCI.Business.PartnerStatus.${p.status}`)}${share})`;
+        return `${actorLink(p.actorId, p.name)} (${escapeHtml(L(`NCI.Business.PartnerStatus.${p.status}`))}${share})`;
       }).join(', '),
       leavers: holders(b).filter((p) => p.status === 'active').map((p) => ({ value: p.actorId, label: p.name })),
       money: b.status === 'forming' || b.status === 'pending'
@@ -105,9 +108,11 @@ export function context() {
       last: last ? L('NCI.GMBusiness.LastWeek', { n: last.index, profit: signed(last.profit), takings: whole(last.takings), upkeep: whole(last.upkeep) }) : '',
       week: b.status === 'open' ? L('NCI.GMBusiness.Week', { n: b.period.index, end: dayText(b.period.endDay), used: b.period.slots.length }) : '',
       event: b.status === 'open' && b.period.event ? L('NCI.GMBusiness.Event', { event: L(`NCI.Event.${b.period.event.kind}.Name`) }) : '',
-      staff: (b.staff ?? []).filter((s) => s.status === 'active').map((s) => L('NCI.GMBusiness.StaffOne', { name: s.name, post: L(`NCI.Staff.Post.${s.post}`), wage: whole(s.wage) })).join(', '),
+      // HTML, as the partners.
+      staff: (b.staff ?? []).filter((s) => s.status === 'active')
+        .map((s) => escapeHtml(L('NCI.GMBusiness.StaffOne', { name: '\u0000', post: L(`NCI.Staff.Post.${s.post}`), wage: whole(s.wage) })).replace('\u0000', actorLink(s.actorId, s.name))).join(', '),
       offers: (b.staff ?? []).filter((s) => s.status === 'offered' && s.source === 'npc').map((s) => ({
-        id: s.id, text: L('NCI.GMBusiness.StaffOffer', { name: s.name, post: L(`NCI.Staff.Post.${s.post}`), wage: whole(s.wage) }),
+        id: s.id, text: escapeHtml(L('NCI.GMBusiness.StaffOffer', { name: '\u0000', post: L(`NCI.Staff.Post.${s.post}`), wage: whole(s.wage) })).replace('\u0000', actorLink(s.actorId, s.name)),
       })),
       closed: b.status === 'closed' ? L(`NCI.Business.Closed.${b.closeReason ?? 'closed'}`, { date: dayText(b.closedDay ?? 0) }) : '',
     };

@@ -14,6 +14,8 @@ import { BusinessClient, operatorRankOf } from '../../services/BusinessClient.js
 import { SkillAdapter } from '../../services/SkillAdapter.js';
 import { BaseApplication } from '../BaseApplication.js';
 import { L, whole } from '../format.js';
+import { actorLink } from '../actorLink.js';
+import { escapeHtml } from '../../utils/text.js';
 
 const useLabel = (use) => (use.kind === 'ability' ? use.ability : use.skill);
 
@@ -170,7 +172,10 @@ export class RollDialogApp extends BaseApplication {
 
     return {
       title: this.rollTitle,
-      actorName: this.account?.isSyndicate ? L('NCI.Syndicate.PickerLabel', { name: this.account.name, as: actor.name }) : actor.name,
+      // HTML: the character rolling links to their sheet.
+      actorName: this.account?.isSyndicate
+        ? escapeHtml(L('NCI.Syndicate.PickerLabel', { name: this.account.name, as: '\u0000' })).replace('\u0000', actorLink(actor.id, actor.name))
+        : actorLink(actor.id, actor.name),
       uses: options.map((o) => ({ key: o.key, label: o.label, selected: o.key === chosen?.key })),
       approaches: Object.keys(APPROACHES).map((id) => ({ id, label: L(`NCI.Roll.Approach.${id}`), hint: L(`NCI.Roll.ApproachHint.${id}`), checked: id === levers.approach })),
       luck: levers.luck,

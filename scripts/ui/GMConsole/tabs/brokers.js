@@ -9,6 +9,7 @@ import { BrokerRepository } from '../../../data/BrokerRepository.js';
 import { TerminalAccess } from '../../../services/TerminalAccess.js';
 import { TradingSettings } from '../../../services/TradingSettings.js';
 import { field, confirm, report } from '../shared.js';
+import { actorLink } from '../../actorLink.js';
 
 async function onAddBrokerActor(event, target) {
   const id = field(target, 'brokerActor');
@@ -99,6 +100,6 @@ function build() {
     terminalMode: TradingSettings.mode() === 'terminal',
     actorOptions: game.actors.filter((a) => a.type === 'character' || a.type === 'npc').map((a) => ({ value: a.id, label: a.name })),
     contactOptions: BrokerRepository.candidateContacts().map((c) => ({ value: c.id, label: c.name })),
-    grants: actors.map((a) => ({ id: a.id, name: a.name, granted: TerminalAccess.granted(a) })),
+    grants: actors.map((a) => ({ id: a.id, name: a.name, who: actorLink(a.id, a.name), granted: TerminalAccess.granted(a) })),
   };
 }

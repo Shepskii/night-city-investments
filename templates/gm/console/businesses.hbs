@@ -9,7 +9,7 @@
   {{#each businesses.pending}}
   <div class="nci-gig">
     <div class="nci-gigtop"><strong>{{name}}</strong><span class="nci-muted">{{archetype}}{{#if location}} &middot; {{location}}{{/if}}</span></div>
-    <div class="nci-muted">{{partners}}</div>
+    <div class="nci-muted">{{{partners}}}</div>
     <div>{{money}}</div>
     <div class="nci-muted">{{setup}}</div>
     <div class="nci-actions">
@@ -26,7 +26,7 @@
   {{#each businesses.active}}
   <div class="nci-gig">
     <div class="nci-gigtop"><strong>{{name}}</strong><span>{{status}}</span><span class="nci-muted">{{archetype}}{{#if location}} &middot; {{location}}{{/if}}</span></div>
-    <div class="nci-muted">{{partners}}</div>
+    <div class="nci-muted">{{{partners}}}</div>
     <div>{{money}}</div>
     {{#if setup}}<div class="nci-muted">{{setup}}</div>{{/if}}
     {{#if state}}<div class="nci-muted">{{state}}</div>{{/if}}
@@ -41,9 +41,9 @@
     {{/if}}
     {{/if}}
     {{#if last}}<div class="nci-muted">{{last}}</div>{{/if}}
-    {{#if staff}}<div class="nci-muted">{{localize "NCI.GMBusiness.Staff"}}: {{staff}}</div>{{/if}}
+    {{#if staff}}<div class="nci-muted">{{localize "NCI.GMBusiness.Staff"}}: {{{staff}}}</div>{{/if}}
     {{#each offers}}
-    <div class="nci-warn">{{text}}</div>
+    <div class="nci-warn">{{{text}}}</div>
     <div class="nci-actions">
       <button type="button" data-action="businessStaffAnswer" data-id="{{../id}}" data-staff="{{id}}" data-yes="true"><i class="fas fa-handshake"></i> {{localize "NCI.GMBusiness.StaffAccept"}}</button>
       <button type="button" data-action="businessStaffAnswer" data-id="{{../id}}" data-staff="{{id}}" data-yes="false"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.StaffDecline"}}</button>

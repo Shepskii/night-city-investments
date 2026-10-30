@@ -150,7 +150,7 @@
     <h3>{{localize "NCI.Syndicate.Members"}}</h3>
     <table class="nci-market"><tbody>
       {{#each members}}
-      <tr><td><strong>{{name}}</strong>{{#if isMe}} <span class="nci-muted">({{localize "NCI.Syndicate.You"}})</span>{{/if}}{{#if leaving}} <span class="nci-warn">{{leaving}}</span>{{/if}}</td>
+      <tr><td><strong>{{{who}}}</strong>{{#if isMe}} <span class="nci-muted">({{localize "NCI.Syndicate.You"}})</span>{{/if}}{{#if leaving}} <span class="nci-warn">{{leaving}}</span>{{/if}}</td>
         <td>{{role}}</td><td class="num">{{units}}</td><td class="num">{{share}}</td><td class="num">{{#if value}}{{value}} eb{{/if}}</td></tr>
       {{/each}}
     </tbody></table>
@@ -224,7 +224,7 @@
         <button type="button" data-action="synFound"><i class="fas fa-people-group"></i> {{localize "NCI.Syndicate.FoundButton"}}</button>
       </div>
       {{#if inviteOptions.length}}
-      <div class="nci-invites">{{localize "NCI.Syndicate.Invite"}}: {{#each inviteOptions}}<label><input type="checkbox" name="synInvite" value="{{id}}"> {{name}}</label> {{/each}}</div>
+      <div class="nci-invites">{{localize "NCI.Syndicate.Invite"}}: {{#each inviteOptions}}<span class="nci-pick"><input type="checkbox" name="synInvite" value="{{id}}" aria-label="{{name}}"> {{{who}}}</span> {{/each}}</div>
       {{/if}}
     </div>
     {{/with}}
