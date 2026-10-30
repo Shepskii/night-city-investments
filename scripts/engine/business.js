@@ -39,7 +39,7 @@ import {
   angelCheck, findAngel, applyAngelRoll, openLoans, averageProfit,
 } from './businessFinance.js';
 import {
-  ARCHETYPES, ACTIONS, BUSINESS_DEFAULTS, DISTRICTS, EVENTS, districtOf, stageDv, actionUses, helpUses, setupUses, usesInclude, useKey,
+  ARCHETYPES, ACTIONS, BUSINESS_DEFAULTS, DISTRICTS, EVENTS, districtOf, stageDv, actionUses, helpUses, setupUses, usesInclude, useKey, actionFor, actionIdsFor, COMPANY_ACTION_IDS,
 } from './businessConfig.js';
 import {
   BUSINESS_SCHEMA, BUSINESS_STATUS, weekdayOf, nextBoundary, newPeriod, int, clamp, text, normalizeBusiness, archetypeOf, holders, voters,
@@ -52,6 +52,7 @@ import {
 import {
   canCharter, startCharter, charterRollCheck, applyCharterRoll, approveCharter, dropCharter, fundCharter,
 } from './businessCharter.js';
+import { companyWeek, reportCheck, closeReportWeek } from './businessCompany.js';
 
 export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck };
 export { fixerOffer, bankCheck, angelCheck, openLoans, averageProfit };
@@ -63,7 +64,7 @@ export {
 
 export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
-  'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund',
+  'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll',
 ]);
 
 /** Item types that are not things a business can own. */
@@ -94,7 +95,7 @@ export function itemGear(item, actorId, p = BUSINESS_DEFAULTS) {
 }
 
 /** Requests that carry a roll. */
-export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll']);
+export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll']);
 
 /**
  * What each kind of proposal needs to pass (DESIGN §26.0): closing and stepping up need every partner
@@ -163,19 +164,25 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
   }
 
   if (request.type === 'action') {
-    if (!ACTIONS[request.action]) return fail('bad-action');
+    if (!actionFor(b.stage, request.action)) return fail('bad-action');
     const slots = p.stages[b.stage]?.slots ?? 1;
     if (b.period.slots.length >= slots) return fail('no-slot');
     if (b.period.slots.some((s) => s.action === request.action)) return fail('action-taken');
     const bonusAvailable = b.period.bonuses.some((x) => x.action === request.action && !x.used);
-    return allowed(actionUses(request.action, arch), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p });
+    return allowed(actionUses(request.action, arch, b.stage), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p });
   }
 
   if (request.type === 'assist') {
-    if (!ACTIONS[request.forAction]) return fail('bad-action');
+    if (!actionFor(b.stage, request.forAction)) return fail('bad-action');
     if (b.period.helpers.includes(actorId)) return fail('helped');
     if (b.period.slots.some((s) => s.action === request.forAction)) return fail('action-taken');
-    return allowed(helpUses(request.forAction, arch), use, { dv: dvOf(p.helpDv), allowHire: false, bonusAvailable: false, extraAvailable });
+    return allowed(helpUses(request.forAction, arch, b.stage), use, { dv: dvOf(p.helpDv), allowHire: false, bonusAvailable: false, extraAvailable });
+  }
+
+  if (request.type === 'reportRoll') {
+    const check = reportCheck(b, p);
+    if (!check.ok) return check;
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p });
   }
   return fail('bad-request');
 }
@@ -441,6 +448,22 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       out.events.push({ type: 'roll', action: `charter.${request.part}`, band: r.band, exposure: r.exposure });
       if (done.refused) out.events.push({ type: 'charterRefused' });
       if (done.awaiting) out.events.push({ type: 'charterAwaiting' });
+      break;
+    }
+    case 'reportRoll': {
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p });
+      if (!spec.ok) return spec;
+      if (!check?.ok) return fail(check?.reason ?? 'no-roll');
+      if (request.use.kind === 'hire') {
+        const fee = hireFee(request.use.hire, ctx.operatorRank, p);
+        b.till -= fee;
+        log('hire', -fee);
+      }
+      const r = check.result;
+      if (r.extra) spendDays(b, actor.id, 1);
+      const bold = r.approach === 'bold';
+      b.reportPrep = { band: r.band, total: r.total ?? null, bold, by: actor.id, day };
+      out.events.push({ type: 'roll', action: 'report', band: r.band, exposure: (r.exposure ?? 0) + (bold ? p.report.boldExposure : 0) });
       break;
     }
     case 'charterFund': {
@@ -934,16 +957,28 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
   const slot = (action) => b.period.slots.find((s) => s.action === action);
   const scale = (s) => approachOf(s.approach).effect;
 
-  const work = slot('work');
-  const workMult = work ? 1 + (fx.work[work.band] - 1) * scale(work) : p.unworked;
-  const promote = slot('promote');
-  if (promote) b.state.reputation += fx.promote[promote.band] * scale(promote) * g;
-  const source = slot('source');
-  if (source) b.state.costFactor = Math.max(p.costFloor, b.state.costFactor - fx.source[source.band] * scale(source));
-  const fixUp = slot('fixUp');
-  if (fixUp) b.state.capacity = clamp(b.state.capacity + fx.fixUp[fixUp.band] * stage.fixUpScale * scale(fixUp) * g, 0.5, stage.capacityCap);
-  const safe = slot('keepSafe');
-  const protection = safe ? 1 - fx.keepSafe[safe.band] * scale(safe) : 1;
+  // A chartered company takes the five company actions; a smaller business the shop actions.
+  let work;
+  let workMult;
+  let protection;
+  if (b.stage >= 2) {
+    const week = companyWeek(b, { growthRate: g, params: p });
+    work = week.worked;
+    workMult = week.workMult;
+    protection = week.protection;
+    if (week.exposure) out.events.push({ type: 'shortcuts', exposure: week.exposure });
+  } else {
+    work = slot('work');
+    workMult = work ? 1 + (fx.work[work.band] - 1) * scale(work) : p.unworked;
+    const promote = slot('promote');
+    if (promote) b.state.reputation += fx.promote[promote.band] * scale(promote) * g;
+    const source = slot('source');
+    if (source) b.state.costFactor = Math.max(p.costFloor, b.state.costFactor - fx.source[source.band] * scale(source));
+    const fixUp = slot('fixUp');
+    if (fixUp) b.state.capacity = clamp(b.state.capacity + fx.fixUp[fixUp.band] * stage.fixUpScale * scale(fixUp) * g, 0.5, stage.capacityCap);
+    const safe = slot('keepSafe');
+    protection = safe ? 1 - fx.keepSafe[safe.band] * scale(safe) : 1;
+  }
 
   b.state.reputation = clamp(b.state.reputation + (50 - b.state.reputation) * p.reputationDrift, 0, 100);
   if (b.state.compliance != null) b.state.compliance = clamp(b.state.compliance + (p.complianceBaseline - b.state.compliance) * p.reputationDrift, 0, 100);
@@ -985,6 +1020,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', params: p }, out) {
   addLedger(b, { day: b.period.endDay, kind: 'takings', amount: takings, period: b.period.index }, p);
   addLedger(b, { day: b.period.endDay, kind: 'upkeep', amount: -upkeep, period: b.period.index }, p);
   out.events.push({ type: 'periodClosed', digest });
+  if (b.stage >= 2) closeReportWeek(b, b.period.endDay, out, p);
 
   b.losingPeriods = b.till < 0 ? b.losingPeriods + 1 : 0;
   if (b.losingPeriods >= p.failurePeriods) {

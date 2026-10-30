@@ -1351,3 +1351,21 @@ Each part is rolled once. A failed business plan or registration is a setback, n
 **Formed.** The business becomes stage 2: its units are now shares (the same numbers), what was paid in goes into its cash, it has the ticker and its market sector, and the business plan and registration bands shift its Reputation and Compliance. Until B4b, a chartered company runs the stage-2 weekly loop with the shop actions, using the B0 prototype's stage 2: three action slots, actions at DV 17 (Professional), a Capacity ceiling of 14, 150 eb a week of rent, licences and protection, and expansions of 8,000 eb for +1.5 Capacity.
 
 **B4a as built.** The charter is `scripts/engine/businessCharter.js` (pure, with `tests/businessCharter.test.mjs`), wired into the business engine: the stage-1 `stepUp` proposal names the ticker (checked against the market's and other charters' tickers, which the service passes as `context.tickers`), `charterRoll` (one of `plan`, `registration`, `capital`) and `charterFund` requests, `approveBusinessCharter` and `rejectBusinessCharter` for the GM (the Businesses tab), and the funding window lapsing on the weekly advance. A business now records the day it registered (`registeredDay`; older ones are read from their ledger). The Growth tab shows the charter's milestones, sector and quote range, the ticker form, each roll's result with its Roll button, what the GM is weighing, and the funding form; the roll dialog says what each band of each charter roll means. A syndicate partner's charter payment counts against its officer's daily limit like any other payment in. Not yet tried in the test world.
+
+### 32.2 B4b: the company loop
+
+**The five company actions** replace the shop actions at stage 2 (three slots a week, at DV 17), each with alternative skills at DV +2 and the role abilities that fit:
+
+| Action | Skill (alternatives at DV +2), abilities | Effect by band |
+|---|---|---|
+| Chase contracts | Business (Persuasion, Trading); Teamwork, Operator, Maker | multiplies the week's takings (60% to 138%) and lifts Reputation a little |
+| Tighten the books | Accounting (Business); Moto | the Cost base down (up to 6%) |
+| Investor relations | Trading (Persuasion, Wardrobe & Style); Credibility, Charismatic Impact | Reputation up (up to 8) |
+| Permits and compliance | Bureaucracy (Local Expert, Persuasion); Backup | Compliance up (up to 8), and less protection money that week |
+| Shortcuts | Bribery (Streetwise); Operator | multiplies the takings most (70% to 160%), always adds Exposure (more on a failure), and a fumble costs 8 Compliance |
+
+A week with neither contracts nor shortcuts is an unworked week, as a shop's week without Work the shop is. Capacity grows only through expansions at this stage. Complementary checks work as before.
+
+**The monthly report.** Every four weeks after the charter, the company publishes a report summing those weeks (takings, upkeep, profit). In the report's last week an officer may prepare it (`reportRoll`: Accounting, or Business at DV +2): the band shifts the profit it reports (−8% to +10%); Bold is **aggressive reporting**, doubling the shift and adding Exposure. With no preparation the report shows what was earned. The roll's total and band are kept with the report, for an audit later (§26.6). While the company is private the report moves nothing on the market; from B5 the reported profit feeds the valuation and the earnings impact. Reports show in the Ledger tab; the This week tab says which week of the month it is and offers the preparation in the last.
+
+**Built:** `scripts/engine/businessCompany.js` (the company's week, `reportCheck`, `closeReportWeek`), the company actions in `businessConfig.js` (`COMPANY_ACTIONS`, `actionIdsFor`), tests in `tests/businessCompany.test.mjs`.

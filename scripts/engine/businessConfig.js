@@ -43,6 +43,7 @@ export const SKILLS = Object.freeze({
 /** Role abilities, by the name Cyberpunk RED gives them (`system.mainRoleAbility`). */
 export const ABILITIES = Object.freeze({
   backup: ability('Backup'),
+  teamwork: ability('Teamwork'),
   charismaticImpact: ability('Charismatic Impact'),
   combatAwareness: ability('Combat Awareness'),
   credibility: ability('Credibility'),
@@ -104,6 +105,32 @@ export const ACTIONS = Object.freeze({
   fixUp: Object.freeze({ skills: [S.basicTech], abilities: [A.maker], help: [S.electronics, S.landVehicleTech] }),
   keepSafe: Object.freeze({ skills: [S.tactics, S.persuasion], abilities: [A.combatAwareness, A.backup], help: [S.streetwise, S.humanPerception] }),
 });
+
+/** A chartered company's five actions (DESIGN §26.4, §32): they replace the shop actions at stage 2. */
+export const COMPANY_ACTION_IDS = Object.freeze(['contracts', 'books', 'relations', 'permits', 'shortcuts']);
+
+/** Each company action's skill, its alternatives at DV +2, the role abilities that fit, and its help. */
+export const COMPANY_ACTIONS = Object.freeze({
+  contracts: Object.freeze({
+    skills: [S.business, Object.freeze({ ...S.persuasion, dvAdd: 2 }), Object.freeze({ ...S.trading, dvAdd: 2 })],
+    abilities: [A.teamwork, A.operator, A.maker], help: [S.librarySearch, S.humanPerception],
+  }),
+  books: Object.freeze({ skills: [S.accounting, Object.freeze({ ...S.business, dvAdd: 2 })], abilities: [A.moto], help: [S.librarySearch, S.business] }),
+  relations: Object.freeze({
+    skills: [S.trading, Object.freeze({ ...S.persuasion, dvAdd: 2 }), Object.freeze({ ...S.wardrobe, dvAdd: 2 })],
+    abilities: [A.credibility, A.charismaticImpact], help: [S.humanPerception, S.wardrobe],
+  }),
+  permits: Object.freeze({
+    skills: [S.bureaucracy, Object.freeze({ ...S.localExpert, dvAdd: 2 }), Object.freeze({ ...S.persuasion, dvAdd: 2 })],
+    abilities: [A.backup], help: [S.localExpert, S.librarySearch],
+  }),
+  shortcuts: Object.freeze({ skills: [S.bribery, Object.freeze({ ...S.streetwise, dvAdd: 2 })], abilities: [A.operator], help: [S.streetwise, S.humanPerception] }),
+});
+
+/** The action ids a business at this stage can take. */
+export const actionIdsFor = (stage) => (stage >= 2 ? COMPANY_ACTION_IDS : ACTION_IDS);
+/** The definition of an action, for this stage. */
+export const actionFor = (stage, id) => (stage >= 2 ? COMPANY_ACTIONS[id] : ACTIONS[id]) ?? null;
 
 const byBand = (values) => Object.freeze(Object.fromEntries(['fumble', 'failure', 'narrow', 'solid', 'strong', 'exceptional'].map((b, i) => [b, values[i]])));
 
@@ -183,6 +210,38 @@ export const BUSINESS_DEFAULTS = Object.freeze({
   /** Either loss is capped at this share of the money held for the business. */
   setupLossCap: 0.5,
   helpDv: 'everyday',
+  /**
+   * A chartered company's actions (bands: fumble, failure, narrow, solid, strong, exceptional).
+   * Contracts multiply the week's takings and lift Reputation a little; the books cut the Cost base;
+   * investor relations lift Reputation; permits lift Compliance and cut the protection money;
+   * shortcuts (Bribery) multiply the takings most, and always add Exposure.
+   */
+  company: Object.freeze({
+    contracts: byBand([0.6, 0.85, 1.0, 1.12, 1.22, 1.38]),
+    contractsReputation: byBand([-2, 0, 1, 1, 2, 3]),
+    books: byBand([-0.03, 0, 0.015, 0.03, 0.045, 0.06]),
+    relations: byBand([-3, 0, 2, 4, 6, 8]),
+    permits: byBand([-6, 0, 2, 4, 6, 8]),
+    permitsProtection: byBand([-0.5, 0, 0.25, 0.5, 0.75, 1]),
+    shortcuts: byBand([0.7, 0.9, 1.15, 1.3, 1.45, 1.6]),
+    shortcutsExposure: byBand([12, 6, 3, 3, 2, 2]),
+    /** A fumbled shortcut is noticed: Compliance falls this much. */
+    shortcutsFumbleCompliance: 8,
+  }),
+  /**
+   * The monthly report (DESIGN §26.4): every 4 weeks after the charter the company sums its weeks. In
+   * the report's last week an officer may prepare it (Accounting, Business at DV +2): the band shifts
+   * the profit it reports, Bold (aggressive reporting) doubles the shift and adds Exposure. The total is
+   * kept, for an audit later (§26.6).
+   */
+  report: Object.freeze({
+    weeks: 4,
+    dv: 'difficult',
+    uses: Object.freeze([S.accounting, Object.freeze({ ...S.business, dvAdd: 2 })]),
+    shift: byBand([-0.08, -0.03, 0, 0.03, 0.06, 0.1]),
+    boldExposure: 4,
+    cap: 12,
+  }),
   /** A hired professional's fee by tier, from the till; a Fixer's Operator takes 5% off per rank, up to 40%. */
   hireFees: Object.freeze({ cheap: 50, good: 150, best: 400 }),
   operatorDiscount: Object.freeze({ perRank: 0.05, max: 0.4 }),
@@ -283,8 +342,8 @@ export const EVENTS = Object.freeze({
 export const stageDv = (stage, p = BUSINESS_DEFAULTS) => DV_LADDER[p.stages[stage]?.dv ?? 'everyday'];
 
 /** Every way an action may be rolled: its own skills (or the trade skills, for work) and abilities. */
-export function actionUses(actionId, archetype) {
-  const action = ACTIONS[actionId];
+export function actionUses(actionId, archetype, stage = 0) {
+  const action = actionFor(stage, actionId);
   if (!action) return [];
   const own = actionId === 'work' ? [...(archetype?.trade ?? [])] : [...action.skills];
   return [...own, ...action.abilities];
@@ -295,10 +354,10 @@ export function actionUses(actionId, archetype) {
  * abilities. As in the rules, a complementary check is a different, related skill, so the action's
  * own skills and abilities are left out (otherwise a lone owner would help themselves each week).
  */
-export function helpUses(actionId, archetype) {
-  const action = ACTIONS[actionId];
+export function helpUses(actionId, archetype, stage = 0) {
+  const action = actionFor(stage, actionId);
   if (!action) return [];
-  const own = new Set(actionUses(actionId, archetype).map(useKey));
+  const own = new Set(actionUses(actionId, archetype, stage).map(useKey));
   return dedupeUses([...action.help, ...(archetype?.abilities ?? [])]).filter((u) => !own.has(useKey(u)));
 }
 

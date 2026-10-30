@@ -57,6 +57,7 @@ export class BusinessApp extends BaseApplication {
       proposeCharter: BusinessApp._onProposeCharter,
       charterRoll: BusinessApp._onCharterRoll,
       charterFund: BusinessApp._onCharterFund,
+      reportRoll: BusinessApp._onReportRoll,
       respond: BusinessApp._onRespond,
       proposeFixerLoan: BusinessApp._onProposeFixerLoan,
       proposeBankLoan: BusinessApp._onProposeBankLoan,
@@ -367,6 +368,11 @@ export class BusinessApp extends BaseApplication {
     const cash = amount(target, 'cash');
     if (await this._proposeIfOver('charterFund', { businessId: this.business?.id, cash }, cash, this.business?.name)) return null;
     return this._send('charterFund', { cash });
+  }
+
+  /** Prepare the monthly report (DESIGN §26.4): Accounting; Bold in the dialog is aggressive reporting. */
+  static _onReportRoll() {
+    this._roll({ type: 'reportRoll' }, L('NCI.Company.PrepareTitle', { name: this.business?.name ?? '' }));
   }
 
   static _onStepUpRoll() {

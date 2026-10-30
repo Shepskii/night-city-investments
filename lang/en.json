@@ -269,6 +269,54 @@
       "HireOption": "{who} (base {base}, {fee} eb from the business)",
       "HireNote": "A hired professional's fixed base replaces your stat and skill. Their fee is paid from the business even if the roll fails, and Luck cannot be spent on their roll.",
       "Meaning": {
+        "contracts": {
+          "fumble": "A deal goes sour: the week's takings fall to 60%, and Reputation slips.",
+          "failure": "Nothing signed: the takings fall to 85%.",
+          "narrow": "A contract or two: normal takings.",
+          "solid": "Good contracts: takings up 12%.",
+          "strong": "Strong contracts: takings up 22%.",
+          "exceptional": "A landmark deal: takings up 38%, and Reputation up."
+        },
+        "books": {
+          "fumble": "A costly mess: the Cost base rises.",
+          "failure": "No savings found.",
+          "narrow": "A little trimmed off the Cost base.",
+          "solid": "The Cost base down 3%.",
+          "strong": "The Cost base down 4.5%.",
+          "exceptional": "The Cost base down 6%."
+        },
+        "relations": {
+          "fumble": "An investor call goes badly: Reputation down 3.",
+          "failure": "No one is impressed.",
+          "narrow": "Reputation up 2.",
+          "solid": "Reputation up 4.",
+          "strong": "Reputation up 6.",
+          "exceptional": "The street loves you: Reputation up 8."
+        },
+        "permits": {
+          "fumble": "A lapsed licence: Compliance down 6, and more protection money.",
+          "failure": "No progress with the paperwork.",
+          "narrow": "Compliance up 2, a little less protection money.",
+          "solid": "Compliance up 4, half the protection money.",
+          "strong": "Compliance up 6, a quarter of the protection money.",
+          "exceptional": "Compliance up 8, no protection money this week."
+        },
+        "shortcuts": {
+          "fumble": "It goes wrong: the takings fall to 70%, Compliance drops 8, and a heavy trail is left.",
+          "failure": "The palm-greasing fails: takings fall to 90%, and a trail is left.",
+          "narrow": "A shortcut taken: takings up 15%, and a trail.",
+          "solid": "A good shortcut: takings up 30%, and a trail.",
+          "strong": "A smooth shortcut: takings up 45%, and a faint trail.",
+          "exceptional": "Perfect: takings up 60%, and only a faint trail."
+        },
+        "reportRoll": {
+          "fumble": "A botched report: it shows 8% less profit (16% if Bold).",
+          "failure": "Sloppy figures: 3% less profit (6% if Bold).",
+          "narrow": "A plain report: the profit as earned.",
+          "solid": "A polished report: 3% more profit (6% if Bold).",
+          "strong": "A persuasive report: 6% more profit (12% if Bold).",
+          "exceptional": "A masterpiece: 10% more profit (20% if Bold)."
+        },
         "charter": {
           "plan": {
             "fumble": "A muddled plan: Reputation starts 8 lower.",
@@ -1512,6 +1560,21 @@
         "Body": "The syndicate has been dissolved. Its cash was paid into the members' brokerage balances by units."
       }
     },
+    "Company": {
+      "Report": "Monthly report",
+      "ReportWeek": "Week {n} of {of} toward this month's report.",
+      "ReportHint": "Every four weeks the company sums its weeks in a report. In the last week an officer may prepare it with Accounting (Business at DV +2): a good roll reports a little more profit, a bad one less. Choosing Bold is aggressive reporting: twice the shift, and a trail that an audit may find later.",
+      "Prepare": "Prepare the report",
+      "PrepareTitle": "Preparing {name}'s monthly report",
+      "Prepared": "Prepared ({band}).",
+      "PreparedBold": "Prepared aggressively ({band}).",
+      "Standard": "standard reporting",
+      "Reports": "Monthly reports",
+      "ReportLabel": "Report",
+      "Reported": "Reported profit",
+      "ReportSpan": "{from} to {to}",
+      "NoReports": "The first report comes four weeks after the charter."
+    },
     "Charter": {
       "Gains": "Chartering makes the business a company: three action slots a week, a Capacity ceiling of 14, shares in place of units, and later monthly reports and officers. Rent, licences and actions (DV 17) cost more. It takes every partner's agreement, naming the ticker, then three rolls any partner can make: the business plan, the registration and the capital structure. The 2,000 eb filing fee is paid when you agree, whatever happens.",
       "SectorLine": "As a company it would be in the {sector} sector.",
@@ -1824,7 +1887,12 @@
         "promote": { "Name": "Promote", "Hint": "Persuasion, Wardrobe & Style, Composition, Credibility or Charismatic Impact: Reputation and foot traffic up." },
         "source": { "Name": "Source supplies", "Hint": "Trading, Streetwise or Operator: the Cost base down." },
         "fixUp": { "Name": "Fix the place up", "Hint": "Basic Tech or Maker: Capacity up, so more takings are possible." },
-        "keepSafe": { "Name": "Keep it safe", "Hint": "Tactics, Persuasion, Combat Awareness or Backup: less protection money this week." }
+        "keepSafe": { "Name": "Keep it safe", "Hint": "Tactics, Persuasion, Combat Awareness or Backup: less protection money this week." },
+        "contracts": { "Name": "Chase contracts", "Hint": "Business (Persuasion or Trading at DV +2), Teamwork, Operator or Maker: sets the week's takings, and Reputation up a little." },
+        "books": { "Name": "Tighten the books", "Hint": "Accounting (Business at DV +2) or Moto: the Cost base down." },
+        "relations": { "Name": "Investor relations", "Hint": "Trading (Persuasion or Wardrobe & Style at DV +2), Credibility or Charismatic Impact: Reputation up." },
+        "permits": { "Name": "Permits and compliance", "Hint": "Bureaucracy (Local Expert or Persuasion at DV +2) or Backup: Compliance up, and less protection money this week." },
+        "shortcuts": { "Name": "Shortcuts", "Hint": "Bribery (Streetwise at DV +2) or Operator: the biggest lift to the takings, but it always leaves a trail (Exposure), and a fumble costs Compliance." }
       },
       "Draws": "Owner draws",
       "DrawAllowance": "You may draw up to {amount} eb: your share of last week's profit.",
@@ -1869,6 +1937,7 @@
         "charterDropped": "Charter dropped",
         "charterFund": "{name} paid toward the charter",
         "chartered": "Chartered as a company",
+        "report": "Monthly report published",
         "gigDone": "A gig for the business went well",
         "gigFailed": "A gig for the business went wrong",
         "loan": "A loan",
@@ -2121,6 +2190,9 @@
         "not-funding": "the charter is not taking payments",
         "over-funded": "that is more than the charter can take",
         "not-awaiting": "no charter is waiting for that",
+        "not-company": "only a chartered company reports monthly",
+        "not-report-week": "the report can only be prepared in its last week",
+        "report-prepared": "this month's report has been prepared",
         "step-up-delay": "the registration cannot be tried again yet",
         "no-event": "there is nothing to answer this week",
         "event-answered": "this week's event has already been answered",

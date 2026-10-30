@@ -216,6 +216,14 @@
     {{#if helped}}<p class="nci-muted">{{helped}}</p>{{/if}}
     <p class="nci-hint">{{unworkedNote}}</p>
   </div>
+  {{#with report}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.Company.Report"}}</h3>
+    <p class="nci-hint">{{text}} {{localize "NCI.Company.ReportHint"}}</p>
+    {{#if prepared}}<p><strong>{{prepared}}</strong></p>{{/if}}
+    {{#if canPrepare}}<button type="button" data-action="reportRoll"><i class="fas fa-file-invoice-dollar"></i> {{localize "NCI.Company.Prepare"}}</button>{{/if}}
+  </div>
+  {{/with}}
   {{else}}
   <p class="nci-empty">{{localize "NCI.Business.NotOpenYet"}}</p>
   {{/with}}
@@ -353,6 +361,19 @@
     {{/if}}
   </div>
   {{/with}}
+  {{#if reports}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.Company.Reports"}}</h3>
+    {{#if reports.length}}
+    <table class="nci-market">
+      <thead><tr><th>{{localize "NCI.Company.ReportLabel"}}</th><th class="num">{{localize "NCI.Business.Takings"}}</th><th class="num">{{localize "NCI.Business.Upkeep"}}</th><th class="num">{{localize "NCI.Business.Profit"}}</th><th class="num">{{localize "NCI.Company.Reported"}}</th><th></th></tr></thead>
+      <tbody>
+        {{#each reports}}<tr><td>#{{index}} <span class="nci-muted">{{when}}</span></td><td class="num">{{takings}}</td><td class="num">{{upkeep}}</td><td class="num {{cls}}">{{profit}}</td><td class="num">{{reported}}</td><td class="nci-muted">{{prep}}</td></tr>{{/each}}
+      </tbody>
+    </table>
+    {{else}}<p class="nci-empty">{{localize "NCI.Company.NoReports"}}</p>{{/if}}
+  </div>
+  {{/if}}
   <div class="nci-block">
     <h3>{{localize "NCI.Business.Weeks"}}</h3>
     {{#if digests.length}}

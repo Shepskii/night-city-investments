@@ -114,6 +114,10 @@ export function normalizeBusiness(raw) {
     charter: b.charter ?? null,
     /** Once chartered: `{ ticker, sector, charteredDay }`. */
     company: b.company ?? null,
+    /** A company's monthly reports, newest last; the weeks closed toward the next; its preparation roll. */
+    reports: b.reports ?? [],
+    reportWeeks: int(b.reportWeeks),
+    reportPrep: b.reportPrep ?? null,
   };
 }
 

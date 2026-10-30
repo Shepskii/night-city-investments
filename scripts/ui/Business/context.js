@@ -8,6 +8,7 @@ import {
   stateBands, lastDigest, weekdayOf, gearValue, rollSpec, BUSINESS_DEFAULTS,
   daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
+  actionIdsFor, reportCheck,
 } from '../../engine/index.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
@@ -283,7 +284,8 @@ function weekContext(business, actor, canAct) {
     closesOn: L(`NCI.Weekday.${weekdayOf(period.endDay)}`),
     slotsText: L('NCI.Business.SlotsUsed', { used: period.slots.length, total: slots }),
     daysText: canAct ? L('NCI.Business.DaysLeft', { n: daysLeft(business, actor.id) }) : '',
-    actions: ACTION_IDS.map((id) => {
+    // A chartered company has the five company actions; a smaller business the shop actions.
+    actions: actionIdsFor(business.stage).map((id) => {
       const slot = taken.get(id);
       const bonus = period.bonuses.some((b) => b.action === id && !b.used);
       return {
@@ -298,6 +300,11 @@ function weekContext(business, actor, canAct) {
     }),
     helped: actor && helped && canAct ? L('NCI.Business.AlreadyHelped') : '',
     event: eventContext(business, canAct, free),
+    report: business.stage >= 2 ? {
+      text: L('NCI.Company.ReportWeek', { n: (business.reportWeeks ?? 0) + 1, of: BUSINESS_DEFAULTS.report.weeks }),
+      prepared: business.reportPrep ? L(business.reportPrep.bold ? 'NCI.Company.PreparedBold' : 'NCI.Company.Prepared', { band: L(`NCI.Roll.Band.${business.reportPrep.band}`) }) : '',
+      canPrepare: canAct && reportCheck(business).ok,
+    } : null,
     unworkedNote: L('NCI.Business.UnworkedNote'),
   };
 }
@@ -338,6 +345,16 @@ function ledgerContext(business, actor) {
     canDraw: business.status === 'open' && allowance > 0,
     canTopUp: business.status === 'open' && (actor ? partnerOf(business, actor.id)?.status === 'active' : false),
     money: business.status === 'open' ? moneyContext(business, actor) : null,
+    reports: business.stage >= 2 ? [...business.reports].reverse().map((r) => ({
+      index: r.index,
+      when: L('NCI.Company.ReportSpan', { from: dayText(r.fromDay), to: dayText(r.toDay) }),
+      takings: whole(r.takings),
+      upkeep: whole(r.upkeep),
+      profit: signed(r.profit),
+      reported: signed(r.reported),
+      prep: r.prep ? L(r.prep.bold ? 'NCI.Company.PreparedBold' : 'NCI.Company.Prepared', { band: L(`NCI.Roll.Band.${r.prep.band}`) }) : L('NCI.Company.Standard'),
+      cls: r.profit >= 0 ? 'nci-up' : 'nci-down',
+    })) : null,
   };
 }
 
