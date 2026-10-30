@@ -86,6 +86,7 @@ class BusinessServiceImpl {
       investors: investorActors().map((a) => a.id),
       // Who may be hired, and their bases read from their sheets (DESIGN §33).
       staffActors: Object.fromEntries(staffActors().map((a) => [a.id, a.source])),
+      staffNames: Object.fromEntries(staffActors().map((a) => [a.id, a.name])),
       basesOf: (id) => this.basesOf(id),
       newId: `bus_${foundry.utils.randomID(12)}`,
       tickers: this.tickersTaken(business?.id),

@@ -63,13 +63,14 @@ export function investorActors() {
 
 /**
  * The characters a business may hire (DESIGN §33): player characters ('pc'), and NPCs linked to NCM
- * contacts tagged staff or employee ('npc').
+ * contacts tagged staff or employee ('npc'), whether the NPC is a character or a Cyberpunk RED mook.
+ * Other actors (containers, vehicles, Black ICE) never are.
  * @returns {{id: string, name: string, source: 'pc'|'npc'}[]}
  */
 export function staffActors() {
   const tagged = new Set(STAFF_TAGS.flatMap((tag) => NcmAdapter.contactsTagged(tag)).map((c) => c?.actorId).filter(Boolean));
   return game.actors
-    .filter((a) => a.type === 'character' && (a.hasPlayerOwner || tagged.has(a.id)))
+    .filter((a) => (a.type === 'character' && a.hasPlayerOwner) || (['character', 'mook'].includes(a.type) && tagged.has(a.id)))
     .map((a) => ({ id: a.id, name: a.name, source: a.hasPlayerOwner ? 'pc' : 'npc' }));
 }
 

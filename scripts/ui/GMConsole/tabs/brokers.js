@@ -93,12 +93,14 @@ function build() {
     enabled: b.enabled,
     minWithdrawal: b.minWithdrawal,
   }));
-  const actors = game.actors.filter((a) => a.hasPlayerOwner);
+  // Player characters only: a player may own other actors too, such as a container for upgrade projects.
+  const actors = game.actors.filter((a) => a.type === 'character' && a.hasPlayerOwner);
   return {
     brokers,
     direct: { commission: `${(direct.commissionBps / 100).toFixed(2)}%`, flatFee: direct.flatFee, dv: direct.dv, network: direct.network },
     terminalMode: TradingSettings.mode() === 'terminal',
-    actorOptions: game.actors.filter((a) => a.type === 'character' || a.type === 'npc').map((a) => ({ value: a.id, label: a.name })),
+    // A broker's own actor: a character or a Cyberpunk RED NPC ('mook'), never a container, vehicle or Black ICE.
+    actorOptions: game.actors.filter((a) => a.type === 'character' || a.type === 'mook').map((a) => ({ value: a.id, label: a.name })),
     contactOptions: BrokerRepository.candidateContacts().map((c) => ({ value: c.id, label: c.name })),
     grants: actors.map((a) => ({ id: a.id, name: a.name, who: actorLink(a.id, a.name), granted: TerminalAccess.granted(a) })),
   };

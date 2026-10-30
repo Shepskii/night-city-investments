@@ -258,3 +258,21 @@ test('characters are listed as links to their actor, with their portrait; a name
   assertClean(gm, 'GM tab with links');
   assert.match(gm, /data-id="a_Fixer" data-type="Actor"/);
 });
+
+test('actors that are not characters (a player-owned container of upgrade projects) are left out of every list', async () => {
+  const box = { id: 'a_Box', name: 'Upgrade Projects — Nova', type: 'container', hasPlayerOwner: true, isOwner: true, testUserPermission: () => true, getFlag: () => undefined, items: [] };
+  game.actors.push(box);
+  try {
+    const { staffActors } = await import('../scripts/services/BusinessClient.js');
+    assert.equal(staffActors().some((a) => a.id === 'a_Box'), false, 'not offered as an employee');
+    const brokers = await import('../scripts/ui/GMConsole/tabs/brokers.js');
+    const ctx = brokers.context().broker;
+    assert.equal(ctx.grants.some((g) => g.id === 'a_Box'), false, 'not offered terminal access');
+    assert.equal(ctx.actorOptions.some((o) => o.value === 'a_Box'), false, 'not offered as a broker');
+    assert.ok(ctx.grants.some((g) => g.id === nova.id), 'a player character still is');
+    const staff = await renderBusiness(windowFor(med, 'staff'));
+    assert.doesNotMatch(staff, /Upgrade Projects/);
+  } finally {
+    game.actors.splice(game.actors.indexOf(box), 1);
+  }
+});

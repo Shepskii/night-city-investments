@@ -135,7 +135,7 @@ export function applyRecruit(b, { result, day, post, key, seed = 'nci', by }, p 
  * Whether a hire can be proposed, and its terms: a candidate found by recruiting, or a character
  * (a player character, or an NPC linked to a Messenger contact tagged staff or employee), for a post
  * at a share of the going rate (`pct`, as a percentage).
- * @param {object} ctx - `staffActors` maps the characters that may be hired to 'pc' or 'npc'; `actors` their names
+ * @param {object} ctx - `staffActors` maps the characters that may be hired to 'pc' or 'npc'; `staffNames` their names
  */
 export function hireOffer(b, request, ctx, day, p = BUSINESS_DEFAULTS) {
   const pct = Math.round(Number(request.pct ?? 100)) / 100;
@@ -154,7 +154,7 @@ export function hireOffer(b, request, ctx, day, p = BUSINESS_DEFAULTS) {
   if ((b.staff ?? []).some((s) => s.actorId === actorId)) return fail('already-staff');
   const open = postOpen(b, request.post, p);
   if (!open.ok) return open;
-  return { ok: true, terms: { actorId, name: ctx.actors?.[actorId] ?? actorId, source, post: request.post, pct } };
+  return { ok: true, terms: { actorId, name: ctx.staffNames?.[actorId] ?? ctx.actors?.[actorId] ?? actorId, source, post: request.post, pct } };
 }
 
 /**
