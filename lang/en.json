@@ -1652,6 +1652,7 @@
       "Roll": "Roll",
       "RollTitle": "{part} for {name}",
       "Awaiting": "Waiting for the GM: a capital quote of {quote} eb, of which the business's net assets cover {assets} eb, leaving {shortfall} eb to pay in.",
+      "AwaitingCovered": "Waiting for the GM: a capital quote of {quote} eb, covered in full by the business's net assets ({assets} eb), so nothing is paid in.",
       "Funding": "The GM has approved the charter. Pay in {shortfall} eb by {date} ({paid} eb so far, at most {max} eb): each payment buys shares at book value. The company is formed when it is met.",
       "Fund": "Pay in",
       "Refused": "The capital structure roll failed, so the charter was refused. You can agree to try again from {date}.",

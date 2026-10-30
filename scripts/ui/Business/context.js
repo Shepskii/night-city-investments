@@ -328,7 +328,7 @@ function charterContext(business, actor, canAct, m, pending) {
     parts: status === 'rolling' || status === 'awaiting' || status === 'funding' ? parts : [],
     ticker: c?.ticker ?? '',
     agreed: status === 'rolling' ? L('NCI.Charter.Agreed', { ticker: c.ticker }) : '',
-    awaiting: status === 'awaiting' ? L('NCI.Charter.Awaiting', { quote: whole(c.quote), assets: whole(c.netAssets), shortfall: whole(c.shortfall) }) : '',
+    awaiting: status === 'awaiting' ? L(c.shortfall > 0 ? 'NCI.Charter.Awaiting' : 'NCI.Charter.AwaitingCovered', { quote: whole(c.quote), assets: whole(c.netAssets), shortfall: whole(c.shortfall) }) : '',
     funding: status === 'funding' ? L('NCI.Charter.Funding', {
       paid: whole(charterPaid(business)), shortfall: whole(c.shortfall), date: dayText(c.fundingEnds), max: whole(Math.round(c.shortfall * (1 + BUSINESS_DEFAULTS.charter.extraShare))),
     }) : '',
