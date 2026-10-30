@@ -456,12 +456,12 @@
           "exceptional": "No protection money this week."
         },
         "recruitRoll": {
-          "fumble": "Nobody worth hiring turns up, and the ads are wasted.",
-          "failure": "Nobody suitable.",
-          "narrow": "A Green or Skilled candidate.",
-          "solid": "A Skilled candidate.",
-          "strong": "An Expert candidate.",
-          "exceptional": "An Expert, or even a Master."
+          "fumble": "Nobody answers the advert.",
+          "failure": "One weak applicant, asking well over the going rate.",
+          "narrow": "One or two applicants, Green to Skilled, asking a little over the going rate.",
+          "solid": "Two Skilled applicants, asking about the going rate.",
+          "strong": "Two or three applicants, Skilled to Expert, some asking under the going rate.",
+          "exceptional": "Three applicants, Expert to Master, some asking under the going rate."
         }
       },
       "Employee": "Employee",
@@ -1998,7 +1998,7 @@
         "missedPayment": "A loan payment missed",
         "investment": "{name} bought in",
         "angel": "An angel investor bought in",
-        "recruit": "{name} went recruiting",
+        "recruit": "{name} advertised a job",
         "hired": "{staff} hired",
         "jobOffered": "{staff} offered a job",
         "jobDeclined": "{staff} turned the job down",
@@ -2199,7 +2199,7 @@
         "reportRoll": "Report preparation recorded.",
         "auditRoll": "Audit recorded.",
         "diligenceRoll": "Due diligence recorded.",
-        "recruitRoll": "Recruiting roll recorded.",
+        "recruitRoll": "The advert is out.",
         "acceptJob": "You have taken the job.",
         "declineJob": "Job turned down.",
         "quitJob": "You have quit."
@@ -2357,9 +2357,9 @@
         "recruit": "recruit"
       },
       "Recruit": "Recruiting",
-      "RecruitHint": "Look for someone for a post: Business, Streetwise or Library Search at this stage's DV, costing {cost} eb for the ads and the drinks. The better the roll, the better the candidate. Once a week; a candidate waits 7 days.",
+      "RecruitHint": "Hire a post's staff from its Hire button: a character (a player character, or an NPC tagged staff or employee in Night City Messenger), or advertise the job, a Business, Streetwise or Library Search roll at this stage's DV costing {cost} eb, once a week. A good advert brings up to three applicants, better skilled and asking less; a poor one fewer and dearer. Applicants wait 7 days. The going rate is {rate} eb a week for each point of skill.",
       "RecruitRoll": "Look for someone",
-      "RecruitTitle": "{name}: looking for {post} staff",
+      "RecruitTitle": "{name}: advertising for {post} staff",
       "NoOpenPost": "Every place is taken: no post is open.",
       "CandidateTerms": "Going rate {rate} eb a week. Waits until {date}.",
       "Pct": "Pay (% of the going rate)",
@@ -2381,7 +2381,20 @@
       "DropHint": "Drag a character from the Actors directory onto an open post to propose hiring them for it, at this pay.",
       "DropHere": "Drop a character here",
       "DropActorOnly": "Only a character can be dropped on a post.",
-      "DropConfirm": "Propose hiring {name} as {post} at {pct}% of the going rate? It needs a majority of the votes."
+      "DropConfirm": "Propose hiring {name} as {post} at {pct}% of the going rate? It needs a majority of the votes.",
+      "Skill": "Skill",
+      "SkillAbility": "{name} (rank {rank})",
+      "SkillLower": "{name}, a level lower",
+      "Hire": "Hire",
+      "HireTitle": "Hire: {post}",
+      "CannotHire": "Only a partner who can act for the business can hire.",
+      "Advertise": "Advertise job",
+      "AdvertiseHint": "Advertise the job: a Business, Streetwise or Library Search roll at this stage's DV, costing {cost} eb, once a week. The better the roll, the more applicants (up to three), the better their skill and the less they ask. A new advert replaces the applicants still waiting for this post. Each applicant is hired on the wage they ask.",
+      "AdvertiseRoll": "Advertise job",
+      "Applicants": "Applicants",
+      "ApplicantTerms": "Asks {wage} eb a week ({pct}% of the going rate, {rate} eb). Waits until {date}.",
+      "NoApplicants": "No applicants waiting for this post.",
+      "CloseHire": "Close"
     }
   }
 }

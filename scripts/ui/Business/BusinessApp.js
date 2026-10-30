@@ -14,6 +14,7 @@ import { SyndicateClient } from '../../services/SyndicateClient.js';
 import { accountFor } from '../accounts.js';
 import { BaseApplication } from '../BaseApplication.js';
 import { RollDialogApp } from './RollDialogApp.js';
+import { HireDialogApp } from './HireDialogApp.js';
 import { L } from '../format.js';
 import { pickerContext, startContext, businessContext, usableActors, jobsContext } from './context.js';
 
@@ -71,9 +72,8 @@ export class BusinessApp extends BaseApplication {
       proposeAngel: BusinessApp._onProposeAngel,
       angelRoll: BusinessApp._onAngelRoll,
       removeGear: BusinessApp._onRemoveGear,
-      recruitRoll: BusinessApp._onRecruitRoll,
+      openHire: BusinessApp._onOpenHire,
       proposeHire: BusinessApp._onProposeHire,
-      proposeHireActor: BusinessApp._onProposeHireActor,
       proposeFire: BusinessApp._onProposeFire,
       acceptJob: BusinessApp._onJob,
       declineJob: BusinessApp._onJob,
@@ -449,18 +449,16 @@ export class BusinessApp extends BaseApplication {
     return this._send('propose', { kind: 'dismiss', actorId: target.dataset.id });
   }
 
-  /** Look for someone for a post (DESIGN §33): a roll, and a candidate if it passes. */
-  static _onRecruitRoll(event, target) {
-    const post = value(target, 'recruitPost');
-    this._roll({ type: 'recruitRoll', post }, L('NCI.Staff.RecruitTitle', { post: L(`NCI.Staff.Post.${post}`), name: this.business?.name ?? '' }));
+  /** A post's Hire button (DESIGN §33): the Hire window, to hire a character or advertise the job. */
+  static _onOpenHire(event, target) {
+    const business = this.business;
+    if (!business || !this.actor) return;
+    HireDialogApp.ask({ actorId: this.actorId, businessId: business.id, post: target.dataset.post });
   }
 
+  /** An applicant waiting from an advert, hired on what they asked. */
   static _onProposeHire(event, target) {
-    return this._send('propose', { kind: 'hire', candidateId: target.dataset.id, pct: amount(target, 'pct') || 100 });
-  }
-
-  static _onProposeHireActor(event, target) {
-    return this._send('propose', { kind: 'hire', actorId: value(target, 'staffActor'), post: value(target, 'staffPost'), pct: amount(target, 'staffPct') || 100 });
+    return this._send('propose', { kind: 'hire', candidateId: target.dataset.id });
   }
 
   static async _onProposeFire(event, target) {

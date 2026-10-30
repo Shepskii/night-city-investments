@@ -9,7 +9,7 @@ import {
   daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck,
-  POST_IDS, POSTS, levelOf, postBase, goingRate, postOpen, recruitCheck, archetypeOf,
+  POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
 } from '../../engine/index.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
@@ -468,26 +468,50 @@ function investorsContext(business, actor, canAct) {
 /** A post's name and what it does. */
 const postLabel = (post) => L(`NCI.Staff.Post.${post}`);
 
+/** The skill an employee's post counts, and what it comes to: "Paramedic", "Medicine (rank 4)", "Cybertech, a level lower". */
+function skillOf(staff, post, arch) {
+  const best = postBest(staff, post, arch);
+  if (!best.use) return { skill: '—', base: best.base };
+  const skill = best.use.kind === 'ability'
+    ? L('NCI.Staff.SkillAbility', { name: best.use.ability, rank: staffBase(staff, best.use) })
+    : best.adj ? L('NCI.Staff.SkillLower', { name: best.use.skill }) : best.use.skill;
+  return { skill, base: best.base };
+}
+
+/** Applicants still waiting, for every post or one, with what they ask (they are hired on it). */
+function applicantsOf(business, { post = null, canAct, pending }) {
+  const day = BusinessClient.day();
+  return (business.candidates ?? []).filter((c) => c.expires >= day && (!post || c.post === post)).map((c) => ({
+    id: c.id,
+    name: c.name,
+    post: postLabel(c.post),
+    level: L(`NCI.Staff.Level.${c.level}`),
+    base: c.base,
+    terms: L('NCI.Staff.ApplicantTerms', {
+      wage: whole(askingWage(business, c)), pct: Math.round((c.pct ?? 1) * 100), rate: whole(goingRate(c.base, business.stage)), date: dayText(c.expires),
+    }),
+    canHire: canAct && !pending && postOpen(business, c.post).ok,
+  }));
+}
+
 /**
- * The Staff tab (DESIGN §33): the employees, the candidates recruiting found, and what the partners
- * can do: recruit for a post, hire a candidate or a character, let someone go.
+ * The Staff tab (DESIGN §33): the employees, the posts (each with a Hire button that opens the Hire
+ * window, and a drop target for a character dragged from the Actors directory), and the applicants
+ * waiting from an advert.
  */
 function staffContext(business, actor, canAct) {
   const day = BusinessClient.day();
   const arch = archetypeOf(business);
-  const runs = canAct && canRun(business, actor.id);
   const pending = (kind) => business.proposals.some((x) => x.kind === kind);
   const max = BUSINESS_DEFAULTS.staff.headcount[business.stage] ?? 0;
   const staff = business.staff ?? [];
   const posts = POST_IDS.filter((id) => POSTS[id].stage <= business.stage);
   const open = posts.filter((id) => postOpen(business, id).ok);
-  const recruit = open.length ? recruitCheck(business, open[0], day) : null;
-  const taken = new Set([...business.partners.filter((x) => ['invited', 'active', 'leaving'].includes(x.status)).map((x) => x.actorId), ...staff.map((s) => s.actorId)]);
-  const cost = BUSINESS_DEFAULTS.staff.recruit.cost[business.stage];
+  const canHire = canAct && !pending('hire');
   return {
     headcount: L('NCI.Staff.Headcount', { n: staff.length, max }),
     rows: staff.map((s) => {
-      const base = postBase(s, s.post, arch);
+      const { skill, base } = skillOf(s, s.post, arch);
       return {
         id: s.id,
         name: s.name,
@@ -495,6 +519,7 @@ function staffContext(business, actor, canAct) {
         source: L(`NCI.Staff.Source.${s.source}`),
         post: postLabel(s.post),
         level: L(`NCI.Staff.Level.${levelOf(base)}`),
+        skill,
         base,
         wage: whole(s.wage),
         status: s.status === 'offered' ? L(s.source === 'npc' ? 'NCI.Staff.OfferedNpc' : 'NCI.Staff.Offered') : L('NCI.Staff.Since', { date: dayText(s.hiredDay ?? day) }),
@@ -502,35 +527,47 @@ function staffContext(business, actor, canAct) {
         canFire: canAct && !pending('fire'),
       };
     }),
-    candidates: (business.candidates ?? []).filter((c) => c.expires >= day).map((c) => ({
-      id: c.id,
-      name: c.name,
-      post: postLabel(c.post),
-      level: L(`NCI.Staff.Level.${c.level}`),
-      base: c.base,
-      rate: whole(goingRate(c.base, business.stage)),
-      expires: dayText(c.expires),
-      canHire: canAct && !pending('hire') && postOpen(business, c.post).ok,
-    })),
-    // A character dragged from the Actors directory onto an open post proposes hiring them for it.
+    applicants: applicantsOf(business, { canAct, pending: pending('hire') }),
     posts: posts.map((id) => ({
       value: id,
       label: postLabel(id),
       hint: L(`NCI.Staff.PostHint.${id}`),
-      open: open.includes(id),
-      droppable: canAct && !pending('hire') && open.includes(id),
-      holders: staff.filter((s) => s.post === id).map((s) => s.name).join(', '),
+      canHire: canHire && open.includes(id),
     })),
-    openPosts: open.map((id) => ({ value: id, label: postLabel(id) })),
-    canRecruit: runs && !!recruit?.ok,
-    recruitText: L('NCI.Staff.RecruitHint', { cost: whole(cost) }),
-    recruitBlocked: runs && open.length && recruit && !recruit.ok ? L(`NCI.Business.Reason.${recruit.reason}`) : !open.length ? L('NCI.Staff.NoOpenPost') : '',
+    canDrop: canHire && open.length > 0,
+    recruitText: L('NCI.Staff.RecruitHint', { cost: whole(BUSINESS_DEFAULTS.staff.recruit.cost[business.stage]), rate: BUSINESS_DEFAULTS.staff.rate[business.stage] }),
+    noOpen: open.length ? '' : L('NCI.Staff.NoOpenPost'),
+    pending: pending('hire') || pending('fire') ? L('NCI.Staff.Pending') : '',
+  };
+}
+
+/**
+ * The Hire window for one post: hiring a character, advertising the job (a roll whose result brings
+ * one to three applicants), and the applicants waiting for this post.
+ * @param {object} account - the picked account (a character, or a syndicate as one of its officers)
+ */
+export function hireContext(business, account, post) {
+  const day = BusinessClient.day();
+  const canAct = !!account && BusinessClient.canAct(business, account.id) && !(account.isSyndicate && !account.isOfficer);
+  const pending = business.proposals.some((x) => x.kind === 'hire');
+  const open = postOpen(business, post);
+  const advert = recruitCheck(business, post, day);
+  const runs = canAct && canRun(business, account.id);
+  const taken = new Set([...business.partners.filter((x) => ['invited', 'active', 'leaving'].includes(x.status)).map((x) => x.actorId), ...(business.staff ?? []).map((s) => s.actorId)]);
+  return {
+    business: business.name,
+    post: postLabel(post),
+    hint: L(`NCI.Staff.PostHint.${post}`),
+    rateText: L('NCI.Staff.RateHint', { rate: BUSINESS_DEFAULTS.staff.rate[business.stage] }),
+    blocked: !open.ok ? L(`NCI.Business.Reason.${open.reason}`) : !canAct ? L('NCI.Staff.CannotHire') : '',
+    pending: pending ? L('NCI.Staff.Pending') : '',
+    canHire: open.ok && canAct && !pending,
     people: staffActors().filter((a) => !taken.has(a.id)).sort((a, b) => a.name.localeCompare(b.name))
       .map((a) => ({ value: a.id, label: `${a.name}${a.source === 'npc' ? ` (${L('NCI.Staff.Source.npc')})` : ''}` })),
-    canHireActor: canAct && !pending('hire') && open.length > 0,
-    canDrop: canAct && !pending('hire') && open.length > 0,
-    rateText: L('NCI.Staff.RateHint', { rate: BUSINESS_DEFAULTS.staff.rate[business.stage] }),
-    pending: pending('hire') || pending('fire') ? L('NCI.Staff.Pending') : '',
+    advertText: L('NCI.Staff.AdvertiseHint', { cost: whole(BUSINESS_DEFAULTS.staff.recruit.cost[business.stage]) }),
+    canAdvertise: runs && advert.ok && !pending,
+    advertBlocked: open.ok && canAct && !advert.ok ? L(`NCI.Business.Reason.${advert.reason}`) : open.ok && canAct && !runs ? L('NCI.Company.NotOfficer') : '',
+    applicants: applicantsOf(business, { post, canAct, pending }),
   };
 }
 

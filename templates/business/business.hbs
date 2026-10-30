@@ -361,13 +361,13 @@
     {{#if pending}}<p class="nci-warn">{{pending}}</p>{{/if}}
     {{#if rows.length}}
     <table class="nci-market">
-      <thead><tr><th>{{localize "NCI.Staff.Employee"}}</th><th>{{localize "NCI.Staff.PostLabel"}}</th><th class="num">{{localize "NCI.Staff.Base"}}</th><th class="num">{{localize "NCI.Staff.Wage"}}</th><th></th></tr></thead>
+      <thead><tr><th>{{localize "NCI.Staff.Employee"}}</th><th>{{localize "NCI.Staff.PostLabel"}}</th><th>{{localize "NCI.Staff.Skill"}}</th><th class="num">{{localize "NCI.Staff.Wage"}}</th><th></th></tr></thead>
       <tbody>
         {{#each rows}}
         <tr>
           <td><strong>{{{who}}}</strong> <span class="nci-muted">{{source}}</span><div class="nci-muted">{{status}}</div>{{#if owed}}<div class="nci-warn">{{owed}}</div>{{/if}}</td>
           <td>{{post}} <span class="nci-muted">{{level}}</span></td>
-          <td class="num">{{base}}</td>
+          <td>{{skill}} <strong>{{base}}</strong></td>
           <td class="num">{{wage}}</td>
           <td class="nci-rowbtns">{{#if canFire}}<button type="button" class="nci-labelled" data-action="proposeFire" data-id="{{id}}"><i class="fas fa-user-minus"></i> {{localize "NCI.Staff.Fire"}}</button>{{/if}}</td>
         </tr>
@@ -377,59 +377,38 @@
     {{else}}<p class="nci-empty">{{localize "NCI.Staff.None"}}</p>{{/if}}
     <p class="nci-hint">{{localize "NCI.Staff.OvertimeHint"}}</p>
   </div>
-  <div class="nci-block">
+  <div class="nci-block nci-form">
     <h3>{{localize "NCI.Staff.Posts"}}</h3>
     {{#if canDrop}}
-    <div class="nci-actions nci-form">
+    <div class="nci-actions">
       <p class="nci-hint"><i class="fas fa-hand-pointer"></i> {{localize "NCI.Staff.DropHint"}}</p>
       <label>{{localize "NCI.Staff.Pct"}} <input type="number" name="dropPct" min="80" max="150" step="5" value="100" class="nci-days"></label>
     </div>
     {{/if}}
     <table class="nci-market"><tbody>
       {{#each posts}}
-      <tr{{#if droppable}} class="nci-droppost" data-post="{{value}}" title="{{localize 'NCI.Staff.DropHere'}}"{{/if}}>
-        <td><strong>{{label}}</strong>{{#if holders}}<div class="nci-muted">{{holders}}</div>{{/if}}</td>
+      <tr{{#if canHire}} class="nci-droppost" data-post="{{value}}" title="{{localize 'NCI.Staff.DropHere'}}"{{/if}}>
+        <td><strong>{{label}}</strong></td>
         <td class="nci-muted">{{hint}}</td>
-        <td class="nci-muted">{{#if droppable}}<i class="fas fa-user-plus"></i> {{localize "NCI.Staff.DropHere"}}{{/if}}</td>
+        <td class="nci-rowbtns">{{#if canHire}}<button type="button" class="nci-labelled" data-action="openHire" data-post="{{value}}"><i class="fas fa-user-plus"></i> {{localize "NCI.Staff.Hire"}}</button>{{/if}}</td>
       </tr>
       {{/each}}
     </tbody></table>
-  </div>
-  <div class="nci-block nci-form">
-    <h3>{{localize "NCI.Staff.Recruit"}}</h3>
+    {{#if noOpen}}<p class="nci-muted">{{noOpen}}</p>{{/if}}
     <p class="nci-hint">{{recruitText}}</p>
-    {{#if recruitBlocked}}<p class="nci-muted">{{recruitBlocked}}</p>{{/if}}
-    {{#if canRecruit}}
-    <div class="nci-actions">
-      <label>{{localize "NCI.Staff.PostLabel"}} <select name="recruitPost">{{#each openPosts}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
-      <button type="button" data-action="recruitRoll"><i class="fas fa-dice-d10"></i> {{localize "NCI.Staff.RecruitRoll"}}</button>
-    </div>
-    {{/if}}
-    {{#each candidates}}
-    <div class="nci-gig nci-form">
+  </div>
+  {{#if applicants.length}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.Staff.Applicants"}}</h3>
+    {{#each applicants}}
+    <div class="nci-gig">
       <div class="nci-gigtop"><strong>{{name}}</strong><span>{{post}}</span><span class="nci-muted">{{level}} ({{base}})</span></div>
-      <div class="nci-muted">{{localize "NCI.Staff.CandidateTerms" rate=rate date=expires}}</div>
-      {{#if canHire}}
-      <div class="nci-actions">
-        <label>{{localize "NCI.Staff.Pct"}} <input type="number" name="pct" min="80" max="150" step="5" value="100" class="nci-days"></label>
-        <button type="button" data-action="proposeHire" data-id="{{id}}"><i class="fas fa-user-plus"></i> {{localize "NCI.Staff.ProposeHire"}}</button>
-      </div>
-      {{/if}}
+      <div class="nci-muted">{{terms}}</div>
+      {{#if canHire}}<div class="nci-actions"><button type="button" data-action="proposeHire" data-id="{{id}}"><i class="fas fa-user-plus"></i> {{localize "NCI.Staff.ProposeHire"}}</button></div>{{/if}}
     </div>
     {{/each}}
   </div>
-  <div class="nci-block nci-form">
-    <h3>{{localize "NCI.Staff.HireCharacter"}}</h3>
-    <p class="nci-hint">{{localize "NCI.Staff.HireCharacterHint"}} {{rateText}}</p>
-    {{#if canHireActor}}{{#if people.length}}
-    <div class="nci-grid">
-      <label>{{localize "NCI.Staff.Who"}}<select name="staffActor">{{#each people}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
-      <label>{{localize "NCI.Staff.PostLabel"}}<select name="staffPost">{{#each openPosts}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
-      <label>{{localize "NCI.Staff.Pct"}}<input type="number" name="staffPct" min="80" max="150" step="5" value="100"></label>
-    </div>
-    <button type="button" data-action="proposeHireActor"><i class="fas fa-user-plus"></i> {{localize "NCI.Staff.ProposeHire"}}</button>
-    {{else}}<p class="nci-muted">{{localize "NCI.Staff.NoPeople"}}</p>{{/if}}{{/if}}
-  </div>
+  {{/if}}
   {{/with}}
   {{/if}}
 

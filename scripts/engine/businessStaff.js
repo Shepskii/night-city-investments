@@ -52,17 +52,22 @@ export function staffBase(staff, use, p = BUSINESS_DEFAULTS) {
 }
 
 /**
- * An employee's base for a post: their best base among what counts for it. A role ability counts as
- * its rank plus `abilityBonus` (a level above that rank as a skill); one they lack does not count.
+ * An employee's best for a post: the use that counts most and what it comes to. A role ability counts
+ * as its rank plus `abilityBonus` (a level above that rank as a skill); one they lack does not count.
+ * @returns {{base: number, use: object|null, adj: number}} `adj` is what a skill a level lower took off
  */
-export function postBase(staff, post, arch, p = BUSINESS_DEFAULTS) {
-  const values = postUses(post, arch, p).map(({ use, adj }) => {
-    const base = staffBase(staff, use, p);
-    if (use.kind === 'ability') return base > 0 ? base + p.staff.abilityBonus + adj : 0;
-    return base + adj;
-  });
-  return Math.max(0, ...values);
+export function postBest(staff, post, arch, p = BUSINESS_DEFAULTS) {
+  let best = { base: 0, use: null, adj: 0 };
+  for (const { use, adj } of postUses(post, arch, p)) {
+    const own = staffBase(staff, use, p);
+    const base = use.kind === 'ability' ? (own > 0 ? own + p.staff.abilityBonus + adj : 0) : own + adj;
+    if (base > best.base) best = { base, use, adj };
+  }
+  return best;
 }
+
+/** An employee's base for a post: their best base among what counts for it (see postBest). */
+export const postBase = (staff, post, arch, p = BUSINESS_DEFAULTS) => postBest(staff, post, arch, p).base;
 
 /** The going weekly wage for a base at a stage. */
 export const goingRate = (base, stage, p = BUSINESS_DEFAULTS) => Math.round(base * (p.staff.rate[stage] ?? p.staff.rate.at(-1)));
@@ -89,22 +94,23 @@ export function postOpen(b, post, p = BUSINESS_DEFAULTS) {
 
 // ── Recruiting ───────────────────────────────────────────────────────────────
 
-/** Whether a recruiting roll can be made now, for a post, and its DV, skills and cost. */
+/** Whether a job can be advertised now, for a post, and the roll's DV, skills and cost. */
 export function recruitCheck(b, post, day, p = BUSINESS_DEFAULTS) {
   const r = p.staff.recruit;
   const open = postOpen(b, post, p);
   if (!open.ok) return open;
   if (b.lastRecruit != null && day < b.lastRecruit + r.cooldown) return fail('recruit-delay');
-  if ((b.candidates ?? []).filter((c) => c.expires >= day).length >= r.maxCandidates) return fail('too-many-candidates');
   const cost = r.cost[b.stage] ?? r.cost.at(-1);
   if (b.till < cost) return fail('no-funds');
   return { ok: true, dv: stageDv(b.stage, p), uses: [...r.uses], cost };
 }
 
 /**
- * Record a recruiting roll: the cost is spent; a pass finds a candidate for the post, drawn from the
- * seed and the request, whose level the band sets. A failure finds nobody.
- * @returns {object|null} the candidate
+ * Record an advert for a post: the cost is spent, and the applicants the band brings are drawn from
+ * the seed and the request, each with their own base in the post's skills and the wage they ask (a
+ * share of the going rate). They replace any applicants still waiting for that post. A fumble brings
+ * nobody.
+ * @returns {object[]} the applicants
  */
 export function applyRecruit(b, { result, day, post, key, seed = 'nci', by }, p = BUSINESS_DEFAULTS) {
   const r = p.staff.recruit;
@@ -112,41 +118,51 @@ export function applyRecruit(b, { result, day, post, key, seed = 'nci', by }, p 
   b.till -= cost;
   b.lastRecruit = day;
   addLedger(b, { day, kind: 'recruit', amount: -cost, actorId: by }, p);
-  b.candidates = (b.candidates ?? []).filter((c) => c.expires >= day);
-  if (!result.success) return null;
+  b.candidates = (b.candidates ?? []).filter((c) => c.expires >= day && c.post !== post);
+  const count = r.count[result.band];
+  if (!count) return [];
   const rng = createRng(seed, 'recruit', b.id, key);
-  const levels = r.levels[result.band] ?? ['green'];
-  const level = levels[rng.int(0, levels.length - 1)];
-  const candidate = {
-    id: key,
-    name: `${r.firstNames[rng.int(0, r.firstNames.length - 1)]} ${r.lastNames[rng.int(0, r.lastNames.length - 1)]}`,
-    post,
-    level,
-    base: p.staff.recruitBase[level],
-    expires: day + r.candidateDays,
-  };
-  b.candidates = [...b.candidates, candidate];
-  return candidate;
+  const pick = ([lo, hi]) => rng.int(lo, hi);
+  const applicants = Array.from({ length: pick(count) }, (_, i) => {
+    const [lo, hi] = r.ask[result.band];
+    const base = pick(r.base[result.band]);
+    return {
+      id: `${key}-${i + 1}`,
+      name: `${r.firstNames[rng.int(0, r.firstNames.length - 1)]} ${r.lastNames[rng.int(0, r.lastNames.length - 1)]}`,
+      post,
+      level: levelOf(base, p),
+      base,
+      // What they ask, to the nearest 5% of the going rate.
+      pct: Math.round((lo + rng.next() * (hi - lo)) * 20) / 20,
+      expires: day + r.candidateDays,
+    };
+  });
+  b.candidates = [...b.candidates, ...applicants];
+  return applicants;
 }
+
+/** What an applicant asks a week here: the going rate for their base, times their share. */
+export const askingWage = (b, candidate, p = BUSINESS_DEFAULTS) => Math.round(goingRate(candidate.base, b.stage, p) * (candidate.pct ?? 1));
 
 // ── Hiring, accepting, firing ────────────────────────────────────────────────
 
 /**
- * Whether a hire can be proposed, and its terms: a candidate found by recruiting, or a character
- * (a player character, or an NPC linked to a Messenger contact tagged staff or employee), for a post
- * at a share of the going rate (`pct`, as a percentage).
+ * Whether a hire can be proposed, and its terms: an applicant to an advert, on what they asked, or a
+ * character (a player character, or an NPC linked to a Messenger contact tagged staff or employee), for
+ * a post at a share of the going rate (`pct`, as a percentage).
  * @param {object} ctx - `staffActors` maps the characters that may be hired to 'pc' or 'npc'; `staffNames` their names
  */
 export function hireOffer(b, request, ctx, day, p = BUSINESS_DEFAULTS) {
-  const pct = Math.round(Number(request.pct ?? 100)) / 100;
-  if (!(pct >= p.staff.offer.min && pct <= p.staff.offer.max)) return fail('bad-wage');
+  // An applicant is hired on what they asked.
   if (request.candidateId) {
     const candidate = (b.candidates ?? []).find((c) => c.id === request.candidateId && c.expires >= day);
     if (!candidate) return fail('no-candidate');
     const open = postOpen(b, candidate.post, p);
     if (!open.ok) return open;
-    return { ok: true, terms: { candidateId: candidate.id, name: candidate.name, post: candidate.post, pct } };
+    return { ok: true, terms: { candidateId: candidate.id, name: candidate.name, post: candidate.post, pct: candidate.pct ?? 1 } };
   }
+  const pct = Math.round(Number(request.pct ?? 100)) / 100;
+  if (!(pct >= p.staff.offer.min && pct <= p.staff.offer.max)) return fail('bad-wage');
   const actorId = String(request.actorId ?? '');
   const source = ctx.staffActors?.[actorId];
   if (!source) return fail('not-staff');

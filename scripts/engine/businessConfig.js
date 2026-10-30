@@ -293,8 +293,7 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     headcount: Object.freeze([1, 3, 8]),
     /** Levels: up to and including each base. */
     levels: Object.freeze([[8, 'green'], [12, 'skilled'], [15, 'expert'], [Infinity, 'master']]),
-    /** A recruit's base in their post's skills, by level; everything else they roll at `recruitOther`. */
-    recruitBase: Object.freeze({ green: 7, skilled: 10, expert: 13, master: 16 }),
+    /** A recruit has their own base in their post's skills (see `recruit`); everything else they roll at this. */
     recruitOther: 7,
     abilityBonus: 9,
     lowerBy: 3,
@@ -318,15 +317,20 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     maxShifts: 2,
     /** A fired employee is paid this many weeks' wages. */
     severanceWeeks: 1,
-    /** Looking for someone: the roll, its cost by stage, how often, and how long a candidate waits. */
+    /**
+     * Advertising a job: the roll, its cost by stage, how often, and how long applicants wait. The band
+     * sets how many apply (`count`, the seed picks within it), the range of their base in the post's
+     * skills (`base`), and the range of what they ask, as a share of the going rate (`ask`): a poor
+     * advert brings fewer, weaker applicants who ask more; a fumble brings nobody.
+     */
     recruit: Object.freeze({
       uses: Object.freeze([S.business, S.streetwise, S.librarySearch]),
       cost: Object.freeze([50, 100, 200]),
       cooldown: 7,
       candidateDays: 7,
-      maxCandidates: 3,
-      /** The levels a pass can find, by band; where there are two, the seed picks. */
-      levels: Object.freeze({ narrow: Object.freeze(['green', 'skilled']), solid: Object.freeze(['skilled']), strong: Object.freeze(['expert']), exceptional: Object.freeze(['expert', 'master']) }),
+      count: Object.freeze({ failure: [1, 1], narrow: [1, 2], solid: [2, 2], strong: [2, 3], exceptional: [3, 3] }),
+      base: Object.freeze({ failure: [6, 8], narrow: [7, 11], solid: [9, 12], strong: [10, 14], exceptional: [12, 17] }),
+      ask: Object.freeze({ failure: [1.1, 1.4], narrow: [1.0, 1.3], solid: [0.95, 1.2], strong: [0.9, 1.15], exceptional: [0.85, 1.1] }),
       firstNames: Object.freeze(['Ana', 'Benji', 'Chen', 'Dara', 'Eli', 'Farah', 'Gus', 'Hana', 'Ivo', 'Jade', 'Kofi', 'Lupe', 'Marek', 'Nia', 'Oz', 'Priya', 'Rico', 'Suki', 'Teo', 'Vera']),
       lastNames: Object.freeze(['Alvarez', 'Brook', 'Cho', 'Dunn', 'Esposito', 'Faulk', 'Grant', 'Hale', 'Ito', 'Jansen', 'Kowalski', 'Lam', 'Moreau', 'Nakamura', 'Ortiz', 'Petrov', 'Ruiz', 'Silva', 'Tran', 'Voss']),
     }),

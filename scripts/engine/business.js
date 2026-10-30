@@ -536,8 +536,8 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       spendFor('roll');
       const r = check.result;
       if (r.extra) spendDays(b, actor.id, 1);
-      const candidate = applyRecruit(b, { result: r, day, post: request.post, key: request.key, seed: ctx.seed, by: actor.id }, p);
-      out.events.push({ type: 'roll', action: 'recruit', band: r.band, exposure: r.exposure ?? 0 }, ...(candidate ? [{ type: 'candidate', candidate }] : []));
+      const applicants = applyRecruit(b, { result: r, day, post: request.post, key: request.key, seed: ctx.seed, by: actor.id }, p);
+      out.events.push({ type: 'roll', action: 'recruit', band: r.band, exposure: r.exposure ?? 0 }, { type: 'applicants', post: request.post, applicants });
       break;
     }
     case 'acceptJob':

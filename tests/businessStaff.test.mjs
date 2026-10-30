@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   applyBusinessRequest, advanceBusiness, normalizeBusiness, rollSpec, BUSINESS_DEFAULTS,
-  levelOf, postBase, goingRate, wageOf, postOpen, staffOf, ARCHETYPES,
+  levelOf, postBase, goingRate, wageOf, postOpen, staffOf, ARCHETYPES, postBest,
 } from '../scripts/engine/index.js';
 import { resolveRoll } from '../scripts/engine/rolls.js';
 
@@ -62,6 +62,10 @@ test('a base reads as a level; a post counts its own skills, a fitting role abil
   assert.equal(postBase({ bases: BASES.nova }, 'floor', arch), 12, 'Paramedic, a clinic trade skill');
   assert.equal(postBase({ bases: BASES.doc }, 'floor', arch), 13, 'Medicine 4 counts as 13');
   assert.equal(postBase({ bases: BASES.nova }, 'manager', arch), 9, 'Business 6, or the trade a level lower: 12 − 3');
+  const doc = postBest({ bases: BASES.doc }, 'floor', arch);
+  assert.deepEqual([doc.use.ability, doc.base], ['Medicine', 13], 'the use that counts, for the Skill column');
+  const nova = postBest({ bases: BASES.nova }, 'manager', arch);
+  assert.deepEqual([nova.use.skill, nova.adj], ['Paramedic', -3]);
   assert.equal(goingRate(12, 0), 60);
   assert.equal(goingRate(12, 1), 108);
   assert.equal(goingRate(12, 2), 168);
@@ -80,23 +84,39 @@ test('headcount by stage, one manager, floor staff no more than the Capacity, an
 test('recruiting costs eb and finds a candidate whose level the band sets; a failure finds nobody; once a week', () => {
   const b = clinic();
   const out = recruit(b, 'floor', 8);
-  const candidate = out.business.candidates[0];
+  const applicants = out.business.candidates;
   assert.equal(out.business.till, b.till - st.recruit.cost[1]);
-  assert.equal(candidate.level, 'expert', 'a strong roll finds an expert');
-  assert.equal(candidate.base, 13);
-  assert.ok(candidate.name.includes(' '));
+  // A strong advert (14 + 8 against 15): two or three applicants, base 10 to 14, asking 90% to 115%.
+  assert.ok(applicants.length >= 2 && applicants.length <= 3, `${applicants.length} applicants`);
+  for (const a of applicants) {
+    assert.ok(a.base >= 10 && a.base <= 14, `base ${a.base}`);
+    assert.ok(a.pct >= 0.9 && a.pct <= 1.15, `asks ${a.pct}`);
+    assert.equal(a.level, levelOf(a.base));
+    assert.ok(a.name.includes(' '));
+    assert.equal(a.post, 'floor');
+  }
+  assert.deepEqual(applicants.map((a) => a.id).slice(0, 2), ['r1-1', 'r1-2']);
   assert.equal(rollSpec(out.business, { type: 'recruitRoll', post: 'floor' }, 'med', { day: DAY + 3 }).reason, 'recruit-delay');
-  assert.equal(recruit(b, 'floor', 0).business.candidates.length, 0, 'a fumble finds nobody');
+  assert.equal(recruit(b, 'floor', 0).business.candidates.length, 0, 'a fumble brings nobody');
+  // A failed advert (14 + 0, a fumble aside): one weak applicant who asks well over the going rate.
+  const weak = apply(b, { type: 'recruitRoll', businessId: 'b1', post: 'floor', use: BUSINESS, key: 'r9' }, MED, { check: check(10, 3, 15) }).business.candidates;
+  assert.equal(weak.length, 1);
+  assert.ok(weak[0].base <= 8 && weak[0].pct >= 1.1);
+  // A new advert for the post replaces the applicants still waiting for it.
+  const again = apply(out.business, { type: 'recruitRoll', businessId: 'b1', post: 'floor', use: BUSINESS, key: 'r2' }, MED, { day: DAY + 7, check: check(10, 3, 15) }).business.candidates;
+  assert.deepEqual(again.map((a) => a.id), ['r2-1']);
   assert.equal(rollSpec(b, { type: 'recruitRoll', post: 'sales' }, 'med', { day: DAY }).reason, 'post-later');
 });
 
 test('hiring a recruit starts them at once; a character is offered the job and accepts it from their own character', () => {
   let b = recruit(clinic(), 'floor', 8).business;
-  b = hire(b, { candidateId: 'r1', pct: 120 });
+  const applicant = b.candidates[0];
+  b = hire(b, { candidateId: applicant.id, pct: 150 });
   const recruitStaff = b.staff[0];
   assert.equal(recruitStaff.status, 'active');
-  assert.equal(recruitStaff.wage, Math.round(goingRate(13, 1) * 1.2));
-  assert.equal(b.candidates.length, 0);
+  assert.equal(recruitStaff.wage, Math.round(goingRate(applicant.base, 1) * applicant.pct), 'hired on what they asked, whatever pay was proposed');
+  assert.equal(b.candidates.length, b.candidates.filter((c) => c.id !== applicant.id).length);
+  assert.equal(b.candidates.some((c) => c.id === applicant.id), false);
 
   assert.equal(apply(b, { type: 'propose', businessId: 'b1', kind: 'hire', actorId: 'nova', post: 'floor', pct: 70 }, MED, { expect: false }).reason, 'bad-wage');
   assert.equal(apply(b, { type: 'propose', businessId: 'b1', kind: 'hire', actorId: 'fix', post: 'manager' }, MED, { expect: false }).reason, 'not-staff');
@@ -158,14 +178,14 @@ test('an employee called in for overtime rolls their best for it, at its DV, for
 
 test('a manager works the shop when no partner does; security answers trouble nobody answered', () => {
   let b = recruit(clinic(), 'manager', 8).business;
-  b = hire(b, { candidateId: 'r1' });
+  b = hire(b, { candidateId: 'r1-1' });
   const managed = close(b).business.digests.at(-1);
   assert.equal(managed.worked, true);
   assert.equal(managed.actions[0].action, 'work');
   assert.equal(managed.actions[0].staff, true);
 
   let g = recruit(clinic(), 'security', 8).business;
-  g = hire(g, { candidateId: 'r1' });
+  g = hire(g, { candidateId: 'r1-1' });
   g = normalizeBusiness({ ...g, period: { ...g.period, event: { kind: 'shakedown' } } });
   const guarded = advanceBusiness(g, g.period.endDay, { weekday: MONDAY, seed: 'test' }).business.digests.at(-1);
   assert.notEqual(guarded.event.outcome, 'unanswered');
@@ -187,7 +207,7 @@ test('at a company, a bookkeeper gives the report its +1, and a publicist lifts 
   let b = clinic({ stage: 2, capacity: 6, till: 20000 });
   b = normalizeBusiness({ ...b, company: { ticker: 'BRC', sector: 'health', charteredDay: DAY - 1 }, officers: ['med', 'fix'], reportWeeks: 3 });
   b = recruit(b, 'bookkeeper', 8).business;
-  b = hire(b, { candidateId: 'r1' });
+  b = hire(b, { candidateId: 'r1-1' });
   assert.equal(rollSpec(b, { type: 'reportRoll' }, 'med', { day: DAY }).bonusAvailable, true);
   assert.equal(rollSpec(b, { type: 'recruitRoll', post: 'publicist' }, 'med', { day: DAY }).reason, 'recruit-delay');
   const plain = close(b).business.state.reputation;

@@ -1,0 +1,38 @@
+<section class="nci-terminal nci-business nci-hire">
+  <header class="nci-header">
+    <div><strong>{{post}}</strong> <span class="nci-muted">{{business}}</span></div>
+  </header>
+  <p class="nci-hint">{{hint}}</p>
+  {{#if blocked}}<p class="nci-warn">{{blocked}}</p>{{/if}}
+  {{#if pending}}<p class="nci-warn">{{pending}}</p>{{/if}}
+
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Staff.HireCharacter"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Staff.HireCharacterHint"}} {{rateText}}</p>
+    {{#if canHire}}{{#if people.length}}
+    <div class="nci-actions">
+      <label>{{localize "NCI.Staff.Who"}} <select name="staffActor">{{#each people}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+      <label>{{localize "NCI.Staff.Pct"}} <input type="number" name="staffPct" min="80" max="150" step="5" value="100" class="nci-days"></label>
+      <button type="button" data-action="hireCharacter"><i class="fas fa-user-plus"></i> {{localize "NCI.Staff.ProposeHire"}}</button>
+    </div>
+    {{else}}<p class="nci-muted">{{localize "NCI.Staff.NoPeople"}}</p>{{/if}}{{/if}}
+  </div>
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Staff.Advertise"}}</h3>
+    <p class="nci-hint">{{advertText}}</p>
+    {{#if advertBlocked}}<p class="nci-muted">{{advertBlocked}}</p>{{/if}}
+    {{#if canAdvertise}}<div class="nci-actions"><button type="button" data-action="advertise"><i class="fas fa-dice-d10"></i> {{localize "NCI.Staff.AdvertiseRoll"}}</button></div>{{/if}}
+    {{#each applicants}}
+    <div class="nci-gig">
+      <div class="nci-gigtop"><strong>{{name}}</strong><span class="nci-muted">{{level}} ({{base}})</span></div>
+      <div class="nci-muted">{{terms}}</div>
+      {{#if canHire}}<div class="nci-actions"><button type="button" data-action="hireApplicant" data-id="{{id}}"><i class="fas fa-user-plus"></i> {{localize "NCI.Staff.ProposeHire"}}</button></div>{{/if}}
+    </div>
+    {{else}}<p class="nci-empty">{{localize "NCI.Staff.NoApplicants"}}</p>{{/each}}
+  </div>
+
+  <footer class="nci-footer">
+    <button type="button" data-action="close"><i class="fas fa-xmark"></i> {{localize "NCI.Staff.CloseHire"}}</button>
+  </footer>
+</section>
