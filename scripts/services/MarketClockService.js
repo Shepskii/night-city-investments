@@ -58,9 +58,36 @@ export const MarketClock = {
     }
   },
 
-  /** A day's weekday on the world's calendar, 0 = Sunday (Simple Calendar's first weekday). */
+  /**
+   * A day's weekday on the world's calendar: Simple Calendar's own for that date (an index into its
+   * weekdays), asked date by date, since its weeks need not run on unbroken from year to year; or the
+   * real calendar's, 0 = Sunday, shifted as Simple Calendar's are today when it cannot say.
+   */
   weekdayOf(day) {
-    return (weekdayOf(day) + this.weekdayOffset()) % 7;
+    const offset = this.weekdayOffset();
+    try {
+      const sc = globalThis.SimpleCalendar?.api;
+      if (sc?.dateToTimestamp && this._onCalendar()) {
+        const d = new Date(day * DAY_MS);
+        const date = sc.timestampToDate(sc.dateToTimestamp({ year: d.getUTCFullYear(), month: d.getUTCMonth(), day: d.getUTCDate() - 1, hour: 12, minute: 0, second: 0 }));
+        if (Number.isInteger(date?.dayOfTheWeek)) return date.dayOfTheWeek;
+      }
+    } catch {
+      // The real calendar's, shifted.
+    }
+    return (weekdayOf(day) + offset) % 7;
+  },
+
+  /** Whether Simple Calendar keeps 7-day weeks and the clock is on its date (no shift needed today). */
+  _onCalendar() {
+    try {
+      const sc = globalThis.SimpleCalendar.api;
+      if ((sc.getAllWeekdays?.() ?? []).length !== 7) return false;
+      const today = sc.timestampToDate(sc.timestamp());
+      return dayIndex(Date.UTC(today.year, today.month, today.day + 1)) === dayIndex(this.calendarMs());
+    } catch {
+      return false;
+    }
   },
 
   /** A day's weekday by name: Simple Calendar's own name where it has one. */

@@ -18,11 +18,16 @@ export const BUSINESS_STATUS = Object.freeze(['forming', 'pending', 'open', 'clo
 /** 0 = Sunday. Day 0 of the epoch was a Thursday. */
 export const weekdayOf = (day) => (((day + 4) % 7) + 7) % 7;
 
-/** The first day after `day` that falls on `weekday`: where an operating period ends. */
+/**
+ * The first day after `day` that falls on `weekday`: where an operating period ends. `weekday` is a
+ * real-calendar weekday (0 = Sunday), or a test of whether a day is the closing day on the world's own
+ * calendar, whose weeks need not run on unbroken (a Simple Calendar year may restart its weekdays). A
+ * test that finds no closing day within two weeks closes a week after `day`.
+ */
 export function nextBoundary(day, weekday) {
-  let d = day + 1;
-  while (weekdayOf(d) !== weekday) d++;
-  return d;
+  const closes = typeof weekday === 'function' ? weekday : (d) => weekdayOf(d) === weekday;
+  for (let d = day + 1; d <= day + 14; d++) if (closes(d)) return d;
+  return day + 7;
 }
 
 export function newPeriod(index, startDay, weekday) {

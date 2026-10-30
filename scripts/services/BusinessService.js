@@ -52,10 +52,14 @@ class BusinessServiceImpl {
     return dayIndex(MarketClock.nowMs());
   }
 
+  /**
+   * The day business weeks close on, as a test the engine applies day by day: the setting is a weekday
+   * on the world's calendar, and Simple Calendar's weeks need not run on unbroken across a year.
+   */
   weekday() {
     const d = Math.floor(Number(game.settings.get(MODULE_ID, SETTINGS.BUSINESS_WEEKDAY)));
-    // The setting is a weekday on the world's calendar; the engine counts real-calendar weekdays.
-    return ((d >= 0 && d <= 6 ? d : 1) - MarketClock.weekdayOffset() + 7) % 7;
+    const target = d >= 0 && d <= 6 ? d : 1;
+    return (day) => MarketClock.weekdayOf(day) === target;
   }
 
   /** The world seed: weekly events are drawn from it, the business and the week. */
