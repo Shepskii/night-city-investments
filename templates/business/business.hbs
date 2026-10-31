@@ -103,7 +103,7 @@
   {{#with business}}
   <header class="nci-header">
     <div><strong>{{name}}</strong> <span class="nci-muted">{{archetype}}{{#if location}} &middot; {{location}}{{/if}}</span></div>
-    <div>{{stage}} &middot; <strong>{{statusLabel}}</strong></div>
+    <div>{{stage}}{{#if ticker}} ({{ticker}}){{/if}} &middot; <strong>{{statusLabel}}</strong></div>
   </header>
 
   {{#if invited}}

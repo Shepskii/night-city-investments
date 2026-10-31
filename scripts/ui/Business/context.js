@@ -167,6 +167,8 @@ export function businessContext(business, actor) {
     archetype: L(`NCI.Business.Archetype.${business.archetype}.Name`),
     location: [business.district ? L(`NCI.District.${business.district}`) : '', business.location].filter(Boolean).join(', '),
     stage: L(`NCI.Business.Stage.${business.stage}`),
+    // The company's ticker once the charter set it, listed or not (B4).
+    ticker: business.company?.ticker ?? '',
     status,
     statusLabel: L(`NCI.Business.Status.${status}`),
     isForming: status === 'forming',
@@ -320,7 +322,7 @@ function growthContext(business, actor, canAct) {
     agreed: business.stage === 0 && business.stepUp?.approved ? L('NCI.Business.StepUpAgreed') : '',
     retry: business.stepUp?.retryDay != null && day < business.stepUp.retryDay ? L('NCI.Business.StepUpRetry', { date: dayText(business.stepUp.retryDay) }) : '',
     canRoll: business.stage === 0 && canAct && !!check?.ok,
-    gains: m.available ? L(business.stage === 2 ? 'NCI.Listing.Gains' : business.stage === 1 ? 'NCI.Charter.Gains' : 'NCI.Business.RegisterGains', { multiple: business.stage === 2 ? sectorMultiple(business) : '', sector: business.stage === 2 ? L(`NCI.Sector.${charterSector(business)}`) : '' }) : '',
+    gains: m.available ? L(business.stage === 2 ? 'NCI.Listing.Gains' : business.stage === 1 ? 'NCI.Charter.Gains' : 'NCI.Business.RegisterGains', { multiple: business.stage === 2 ? sectorMultiple(business) : '', sector: business.stage === 2 ? L(`NCI.Sector.${charterSector(business)}`) : '', ticker: business.company?.ticker ?? '' }) : '',
     charter: business.stage === 1 ? charterContext(business, actor, canAct, m, pending) : null,
     listing: business.stage === 2 ? listingContext(business, actor, canAct, m, pending) : null,
   };

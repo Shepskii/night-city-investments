@@ -265,6 +265,17 @@ test('a character\'s stakes in open businesses show in the terminal\'s Portfolio
   assert.equal(stakes[0].value, Math.round(shareOf(b, med.id) * bookValue(b)));
   assert.equal(stakes[0].stage, 'Registered business');
   assert.deepEqual([stakes[0].till, stakes[0].book], [b.till.toLocaleString(), bookValue(b).toLocaleString()], 'the cash and book value of the business too');
+  assert.equal(stakes[0].ticker, '', 'no ticker before a charter');
+  // A chartered company's ticker shows beside its name, listed or not.
+  await S.BusinessRepository.save({ ...b, company: { ticker: 'BRC', sector: 'health', charteredDay: b.period.startDay } });
+  try {
+    const chartered = new MarketTerminalApp()._privateStakes(med);
+    assert.equal(chartered[0].ticker, 'BRC');
+    const row = Handlebars.compile('{{#each stakes}}<td><strong>{{name}}</strong>{{#if ticker}} ({{ticker}}){{/if}} <span class="nci-muted">{{stage}}</span></td>{{/each}}')({ stakes: chartered });
+    assert.match(row, /Back Room<\/strong> \(BRC\)/);
+  } finally {
+    await S.BusinessRepository.save(b);
+  }
 });
 
 test('the Gigs tab shows a gig for the players\' business in its own section', async () => {
@@ -350,6 +361,8 @@ test('a company shows its officers, the information rolls and the report; a shar
       ],
     });
     const officer = await renderBusiness(windowFor(med, 'week'));
+    // The ticker in the header, on every tab, once chartered (listed or not).
+    assert.match(officer, /Chartered company \(BRC\) &middot;/);
     assertClean(officer, 'company week');
     assert.match(text(officer), /Chase contracts/);
     assert.match(officer, /data-action="actionRoll" data-id="contracts"/);
@@ -375,6 +388,7 @@ test('a company shows its officers, the information rolls and the report; a shar
     // Going public (B5a): the Growth tab's listing checklist, V, and (once agreed and approved) the prospectus rolls.
     const growth = text(await renderBusiness(windowFor(med, 'growth')));
     assert.match(growth, /To become a Listed company/);
+    assert.match(growth, /Listing puts the company on the market as BRC/);
     assert.match(growth, /Market valuation of at least 500,000 eb/);
     assert.match(growth, /No unresolved compliance concerns/);
     assert.match(growth, /Market valuation now: [\d,]+ eb \(sector multiple 12\)/);

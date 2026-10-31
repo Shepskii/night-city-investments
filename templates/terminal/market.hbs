@@ -129,7 +129,7 @@
       <tbody>
       {{#each portfolio.stakes}}
       <tr data-action="manageBusiness" data-id="{{id}}" class="nci-row" title="{{localize 'NCI.Portfolio.Manage'}}">
-        <td><strong>{{name}}</strong> <span class="nci-muted">{{stage}}</span></td>
+        <td><strong>{{name}}</strong>{{#if ticker}} ({{ticker}}){{/if}} <span class="nci-muted">{{stage}}</span></td>
         <td class="num">{{till}} eb</td><td class="num">{{book}} eb</td><td class="num">{{share}}</td><td class="num">{{value}} eb</td></tr>
       {{/each}}
       </tbody>

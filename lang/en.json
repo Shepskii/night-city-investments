@@ -1666,7 +1666,7 @@
       "IntelNothing": "nothing useful found"
     },
     "Listing": {
-      "Gains": "Listing puts the company on the market: its shares trade on the terminal, the shareholders' holdings move into their brokerage portfolios (locked for 28 days), and the shares floated in the offering raise cash for the company. It takes every shareholder with a vote, naming the float (20% to 40% of the company); the listing fee is paid when you agree, whatever happens; then the GM approves, and two prospectus rolls must pass. The valuation is net assets plus a year of the reported profit at the {sector} sector's multiple of {multiple}; cash paid in counts only after 28 days.",
+      "Gains": "Listing puts the company on the market as {ticker}: its shares trade on the terminal, the shareholders' holdings move into their brokerage portfolios (locked for 28 days), and the shares floated in the offering raise cash for the company. It takes every shareholder with a vote, naming the float (20% to 40% of the company); the listing fee is paid when you agree, whatever happens; then the GM approves, and two prospectus rolls must pass. The valuation is net assets plus a year of the reported profit at the {sector} sector's multiple of {multiple}; cash paid in counts only after 28 days.",
       "Valuation": "Market valuation now: {v} eb (sector multiple {multiple}).",
       "ReportV": "report #{n}: {v} eb",
       "Float": "Float",
