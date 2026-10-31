@@ -450,10 +450,10 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B2 | **Done (v0.11.0), see §30.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
 | B3 | **Done (v0.12.0), see §31.** Player syndicates, and syndicates owning or investing in businesses |
 | B4 | **Done (v0.12.0), see §32.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
-| E | **E1 and E2 done (v0.12.0), see §33.9 and §33.10; E3 built (not yet released), see §33.11.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
+| E | **E1 and E2 done (v0.12.0), see §33.9 and §33.10; E3 done (v0.13.0), see §33.11.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
 | Projects | **Done (v0.12.0), see §34.** Projects beside expansion: refit, security upgrade, storefront, staff room; the Projects tab reworked |
-| B5 | **v0.13.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
-| B6 | **v0.14.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
+| B5 | **v0.14.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
+| B6 | **v0.15.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
 | B7 | Downtime bridge (separate module, after B2): company work through Crew Tools downtime, businesses on Night City Map |
 | F1 | **Proposed, see §35.3.** Faction standing with corps and gangs, moved by gigs and business actions; smear campaigns through the impact pipeline; after B6 |
 | U1 | **Proposed, see §35.1.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships; after F1 and B6 |
@@ -1089,8 +1089,8 @@ The work is split into phases that each end with something usable at the table. 
 | B2 Growing | v0.11 | the clinic registers, takes a loan, opens a second chair and brings in an investor |
 | B3 Syndicates (parallel) | v0.12 | a crew pools money and trades as one account |
 | B4 Chartered companies | v0.12 | the clinic becomes a company with officers and monthly reports |
-| B5 Going public | v0.13 | an IPO other players subscribe to in the terminal |
-| B6 Corporate play | v0.14 | takeovers, buybacks, hidden owners and investigations |
+| B5 Going public | v0.14 | an IPO other players subscribe to in the terminal |
+| B6 Corporate play | v0.15 | takeovers, buybacks, hidden owners and investigations |
 | B7 Downtime bridge (separate module) | after B2 | company work spends Crew Tools downtime |
 
 **B0 Groundwork.**
@@ -1146,13 +1146,13 @@ The work is split into phases that each end with something usable at the table. 
 - Information rolls: internal audit and due diligence.
 - Officers, elections and control (§26.3).
 
-**B5 Going public (v0.13).**
+**B5 Going public (v0.14).**
 - The valuation *V*, the listing checklist, the listing application and the prospectus rolls (§26.4a).
 - On approval, the company's market entry and the standard IPO flow.
 - Earnings impacts on fair value, capped dividends and the liquidity cap (§26.7), insider windows for officers (§26.4), and the delisting review.
 - The links between the Business window and the terminal: Manage company and View on market (§26.8a).
 
-**B6 Corporate play (v0.14).**
+**B6 Corporate play (v0.15).**
 - Takeovers, dilution, buybacks and insolvency for companies.
 - Hidden ownership (§26.6): nominees, syndicate chains, the disclosure threshold, opposed investigations, and Netrunner espionage.
 - Coordinated syndicate campaigns.
@@ -1669,7 +1669,9 @@ E2 is `scripts/engine/businessPeople.js` (pure), with small hooks in `businessSt
 - **Following the Exec.** Before every request and weekly close the GM's service brings each team in step (`refreshTeams`): a team whose Exec is no longer an active partner leaves; a changed rank moves the members' level, and a smaller team loses its newest members; the digest notes who left.
 - **Tests.** `tests/businessPeople.test.mjs` (the size and level by rank, the refusals, overtime, the refresh, leaving with the Exec) and `tests/staffFlow.test.mjs` (the Hire window, a member joining through the GM's service, the Staff tab).
 
-**E3 is complete** (training, on call, two jobs, share grants, an Exec's team); not yet released.
+**E3 is complete** (training, on call, two jobs, share grants, an Exec's team), released in v0.13.0.
+
+**Tried in the test world before release** (2026-10-31): a player character (Bunk) on call at Charter Test Clinic, their overtime held for the payslip, which then led to payslips naming overtime apart from the wage and the Job view showing overtime due; two jobs for Tyger, at both clinics, marked at each, loyalty capped at 74, and a Double-booked event drawn and shown on the Work tab (once clients were reloaded); an Exec's team member dragged in from the Actors directory. Training, share grants vesting and the other two-jobs events are covered by the tests but were not seen live.
 
 ## 34. Projects beside expansion (v0.12.0)
 
