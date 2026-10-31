@@ -30,7 +30,7 @@ export class GMConsoleApp extends BaseApplication {
   static DEFAULT_OPTIONS = {
     id: 'nci-gm-console',
     window: { title: 'NCI.GMConsole.Title', icon: 'fas fa-sliders' },
-    position: { width: 1100, height: 680 },
+    position: { width: 1200, height: 680 },
     actions: {
       switchTab: GMConsoleApp._onTab,
       ...Object.assign({}, ...Object.values(TABS).map((tab) => tab.actions)),

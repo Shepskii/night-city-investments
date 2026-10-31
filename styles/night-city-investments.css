@@ -102,7 +102,11 @@
   margin-bottom: 8px;
 }
 
+/* Foundry's application windows give every table a 1rem margin all round; with the full width that pushes
+   a table 1rem past the right edge. Keep the space above and below, and let the window's own padding
+   set the space either side, the same left and right. */
 .nci-app table { width: 100%; border-collapse: collapse; }
+.application.nci-app table { margin-left: 0; margin-right: 0; }
 .nci-app th { text-align: left; color: var(--nci-label); font-weight: normal; border-bottom: 1px solid var(--nci-accent-dim); padding: 4px 6px; }
 .nci-app td { padding: 4px 6px; border-bottom: 1px solid #1a1415; }
 .nci-app .num { text-align: right; font-variant-numeric: tabular-nums; }
