@@ -448,12 +448,12 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B0 | **Done, see §26.9 (B0 findings).** Groundwork for player businesses and syndicates: the business growth simulator (`tools/business-model.mjs`), the storage schema, and the Crew Tools spike (from its source; a run in the test world is still to do) |
 | B1 | **Done (v0.10.0), see §29.** Side businesses: the roll levers, the Business window and the GM's Businesses tab, partnerships, four archetypes, the weekly loop |
 | B2 | **Done (v0.11.0), see §30.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
-| B3 | **Built (v0.12), see §31; not yet released.** Player syndicates, and syndicates owning or investing in businesses |
-| B4 | **Built (v0.13), see §32; not yet released.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
-| E | **E1 and E2 built (v0.13), see §33.9 and §33.10; E3 proposed, see §33.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
-| Projects | **Built (v0.13), see §34; not yet released.** Projects beside expansion: refit, security upgrade, storefront, staff room; the Projects tab reworked |
-| B5 | **v0.14.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
-| B6 | **v0.15.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
+| B3 | **Done (v0.12.0), see §31.** Player syndicates, and syndicates owning or investing in businesses |
+| B4 | **Done (v0.12.0), see §32.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
+| E | **E1 and E2 done (v0.12.0), see §33.9 and §33.10; E3 proposed, see §33.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
+| Projects | **Done (v0.12.0), see §34.** Projects beside expansion: refit, security upgrade, storefront, staff room; the Projects tab reworked |
+| B5 | **v0.13.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
+| B6 | **v0.14.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
 | B7 | Downtime bridge (separate module, after B2): company work through Crew Tools downtime, businesses on Night City Map |
 | F1 | **Proposed, see §35.3.** Faction standing with corps and gangs, moved by gigs and business actions; smear campaigns through the impact pipeline; after B6 |
 | U1 | **Proposed, see §35.1.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships; after F1 and B6 |
@@ -1088,9 +1088,9 @@ The work is split into phases that each end with something usable at the table. 
 | B1 Side businesses | v0.10 | the Medtech and Fixer open the clinic and earn from it |
 | B2 Growing | v0.11 | the clinic registers, takes a loan, opens a second chair and brings in an investor |
 | B3 Syndicates (parallel) | v0.12 | a crew pools money and trades as one account |
-| B4 Chartered companies | v0.13 | the clinic becomes a company with officers and monthly reports |
-| B5 Going public | v0.14 | an IPO other players subscribe to in the terminal |
-| B6 Corporate play | v0.15 | takeovers, buybacks, hidden owners and investigations |
+| B4 Chartered companies | v0.12 | the clinic becomes a company with officers and monthly reports |
+| B5 Going public | v0.13 | an IPO other players subscribe to in the terminal |
+| B6 Corporate play | v0.14 | takeovers, buybacks, hidden owners and investigations |
 | B7 Downtime bridge (separate module) | after B2 | company work spends Crew Tools downtime |
 
 **B0 Groundwork.**
@@ -1140,19 +1140,19 @@ The work is split into phases that each end with something usable at the table. 
 - The syndicate account (§26.1): units and NAV, roles, proposals and votes with deadlines, the broker and treasurer, and collective heat.
 - Integration: a syndicate as a business partner or owner, with private stakes valued at book value or *V* in its NAV.
 
-**B4 Chartered companies (v0.13).**
+**B4 Chartered companies (v0.12).**
 - The charter (§26.2, §26.2a): three rolls with the graded outcome, the starting state, the capital quote, the funding window and escrow, net assets credited for a growing business, and units converting to restricted shares.
 - The company loop (§26.4): action slots by capacity, the five skill actions with alternative skills, report preparation (Bold reporting included), private monthly reports, Compliance and Exposure.
 - Information rolls: internal audit and due diligence.
 - Officers, elections and control (§26.3).
 
-**B5 Going public (v0.14).**
+**B5 Going public (v0.13).**
 - The valuation *V*, the listing checklist, the listing application and the prospectus rolls (§26.4a).
 - On approval, the company's market entry and the standard IPO flow.
 - Earnings impacts on fair value, capped dividends and the liquidity cap (§26.7), insider windows for officers (§26.4), and the delisting review.
 - The links between the Business window and the terminal: Manage company and View on market (§26.8a).
 
-**B6 Corporate play (v0.15).**
+**B6 Corporate play (v0.14).**
 - Takeovers, dilution, buybacks and insolvency for companies.
 - Hidden ownership (§26.6): nominees, syndicate chains, the disclosure threshold, opposed investigations, and Netrunner espionage.
 - Coordinated syndicate campaigns.
@@ -1266,7 +1266,7 @@ B2 as built, with the decisions made while building it. The design it follows is
 
 **Tested in the test world** (Foundry 12.343, Cyberpunk RED Core v0.92.4): gear dragged from a sheet (one item and several), valued from the item, leaving the sheet and coming back when the business was cancelled; founding in a district; a fixer's loan, an expansion finished with business days, answering events (a shortage, a breakdown, debt collectors) with extra time and Luck; weekly closes with interest, a missed payment and the collectors; the registration checklist, agreement and roll with a hired professional; a bank loan; finding an angel and a failed pitch; a character invited as an investor accepting from their own window; private stakes in the Portfolio tab. It found and fixed: loaded ammunition refused as installed and priced per round; a player's stale copy of a business they had left; a loan payment checked before the week's takings came in; the dialog offering a hire the till could not pay. Not tried live: a successful angel pitch, an inspection, a gig for a player's business, and the registered business's second slot (all covered by tests).
 
-## 31. Phase B3: syndicates (built for v0.12)
+## 31. Phase B3: syndicates (v0.12.0)
 
 A syndicate is a crew's shared brokerage account: members pool money, officers trade it on the market, and everyone holds units in it. This section turns §26.1 into what is built, with the choices made at the start of B3. It is built in two steps: **B3a**, the account (below), then **B3b**, syndicates as partners and owners of businesses.
 
@@ -1301,7 +1301,7 @@ A syndicate is a crew's shared brokerage account: members pool money, officers t
 
 **GM Console.** A Syndicates tab: each syndicate with its members, units, NAV and portfolio, approving or refusing pending ones, passing or vetoing a proposal, and closing a syndicate.
 
-**B3a as built.** The engine is `scripts/engine/syndicate.js` (pure, with `tests/syndicate.test.mjs`); storage `SyndicateRepository` (its `account(id)` stands in for an actor wherever a portfolio is read or written, and `PortfolioRepository.accounts()` lists characters and active syndicates for the GM's services); the GM side `SyndicateService`, run in the portfolio service's queue because deposits and redemptions write members' own accounts, with a "Syndicates" step after orders in the after-tick sequence; the player side `SyndicateClient` and `SyndicateWatcher`; the terminal's picker, Syndicate panel and founding form (`ui/accounts.js`, `ui/MarketTerminal/syndicateContext.js`); the trade dialog's limit note and proposal; and the GM Console's Syndicates tab. Two settings: player syndicates on or off, and GM approval of new ones (both on by default). Each side of a cash movement has its own ledger line: the member's reads "paid into a syndicate", "redeemed from a syndicate" or "paid out by a dissolved syndicate", and the syndicate's "paid in by a member" and so on. `tests/syndicateFlow.test.mjs` runs the services from founding to dissolving, and `tests/syndicateWindows.test.mjs` renders the windows. Not yet tried in the test world.
+**B3a as built.** The engine is `scripts/engine/syndicate.js` (pure, with `tests/syndicate.test.mjs`); storage `SyndicateRepository` (its `account(id)` stands in for an actor wherever a portfolio is read or written, and `PortfolioRepository.accounts()` lists characters and active syndicates for the GM's services); the GM side `SyndicateService`, run in the portfolio service's queue because deposits and redemptions write members' own accounts, with a "Syndicates" step after orders in the after-tick sequence; the player side `SyndicateClient` and `SyndicateWatcher`; the terminal's picker, Syndicate panel and founding form (`ui/accounts.js`, `ui/MarketTerminal/syndicateContext.js`); the trade dialog's limit note and proposal; and the GM Console's Syndicates tab. Two settings: player syndicates on or off, and GM approval of new ones (both on by default). Each side of a cash movement has its own ledger line: the member's reads "paid into a syndicate", "redeemed from a syndicate" or "paid out by a dissolved syndicate", and the syndicate's "paid in by a member" and so on. `tests/syndicateFlow.test.mjs` runs the services from founding to dissolving, and `tests/syndicateWindows.test.mjs` renders the windows.
 
 **B3b: syndicates in businesses, as built.** A syndicate can be a business partner or its only owner. Choices made at the start of B3b:
 - **Its officers act for it.** Any officer takes the syndicate's turns in a business (the weekly slot, helping, the setup roll and the rest), rolling with their own skills and Luck; members who are not officers cannot.
@@ -1324,7 +1324,9 @@ How it works:
 - **Members see its businesses.** The Business window offers a syndicate to every active member; one who is not an officer sees its businesses read-only. A Portfolio row opens the Business window as the account picked in the terminal, and a change in a syndicate's members updates who can see its businesses at once (`BusinessRepository.refreshOwnership`), not at the business's next save.
 - **Smaller fixes.** No units are sold while a syndicate is worth nothing (they would cost nothing); any member may end a terminal session they opened as an officer; a trade the members agreed that cannot be placed is noted in the syndicate's history; a business payment takes money before it pays any out, so a short payer stops it cleanly; data upgrades and the self-check include syndicates' accounts.
 
-## 32. Phase B4: chartered companies (built for v0.13)
+**Tested in the test world** (v0.12.0, 2026-10-31): a syndicate as a business partner, an officer acting for it from the Business window's account picker, a draw paid into the syndicate's account, its NAV counting the business stake, and an officer's order over the daily limit becoming a vote, carried at once by the officer's own units. It found and fixed: members mailed "vote on this" for a proposal already carried (they now hear only how it ended, and the proposer is told what happened). Not tried live: redemptions and dissolving, the other syndicate mails, and a non-officer member's read-only view (all covered by tests).
+
+## 32. Phase B4: chartered companies (v0.12.0)
 
 A registered business that has grown far enough becomes a **chartered company**: stage 2 of the same business record (§26.0), with a cap table of shares, more action slots, the five company actions, monthly reports and elected officers. This section turns §26.2 to §26.4 into what is built. It is built in three steps: **B4a** the charter, **B4b** the company loop, **B4c** officers, control and information rolls.
 
@@ -1356,7 +1358,7 @@ Each part is rolled once. A failed business plan or registration is a setback, n
 
 **Formed.** The business becomes stage 2: its units are now shares (the same numbers), what was paid in goes into its cash, it has the ticker and its market sector, and the business plan and registration bands shift its Reputation and Compliance. Until B4b, a chartered company runs the stage-2 weekly loop with the shop actions, using the B0 prototype's stage 2: three action slots, actions at DV 17 (Professional), a Capacity ceiling of 14, 150 eb a week of rent, licences and protection, and expansions of 8,000 eb for +1.5 Capacity.
 
-**B4a as built.** The charter is `scripts/engine/businessCharter.js` (pure, with `tests/businessCharter.test.mjs`), wired into the business engine: the stage-1 `stepUp` proposal names the ticker (checked against the market's and other charters' tickers, which the service passes as `context.tickers`), `charterRoll` (one of `plan`, `registration`, `capital`) and `charterFund` requests, `approveBusinessCharter` and `rejectBusinessCharter` for the GM (the Businesses tab), and the funding window lapsing on the weekly advance. A business now records the day it registered (`registeredDay`; older ones are read from their ledger). The Growth tab shows the charter's milestones, sector and quote range, the ticker form, each roll's result with its Roll button, what the GM is weighing, and the funding form; the roll dialog says what each band of each charter roll means. A syndicate partner's charter payment counts against its officer's daily limit like any other payment in. Not yet tried in the test world.
+**B4a as built.** The charter is `scripts/engine/businessCharter.js` (pure, with `tests/businessCharter.test.mjs`), wired into the business engine: the stage-1 `stepUp` proposal names the ticker (checked against the market's and other charters' tickers, which the service passes as `context.tickers`), `charterRoll` (one of `plan`, `registration`, `capital`) and `charterFund` requests, `approveBusinessCharter` and `rejectBusinessCharter` for the GM (the Businesses tab), and the funding window lapsing on the weekly advance. A business now records the day it registered (`registeredDay`; older ones are read from their ledger). The Growth tab shows the charter's milestones, sector and quote range, the ticker form, each roll's result with its Roll button, what the GM is weighing, and the funding form; the roll dialog says what each band of each charter roll means. A syndicate partner's charter payment counts against its officer's daily limit like any other payment in.
 
 ### 32.2 B4b: the company loop
 
@@ -1384,9 +1386,11 @@ A week with neither contracts nor shortcuts is an unworked week, as a shop's wee
 - **Internal audit** (Accounting, Business at DV +2; 300 eb). A pass tells the officers the company's Exposure band (clean, low, moderate, high), which is otherwise hidden; a strong result also wipes 5 points of it out, an exceptional one 10. The GM's service passes the hidden Exposure to the engine and lowers it, never below zero.
 - **Due diligence** (Library Search or Business; 200 eb) on another business, named as the players know it (their client cannot list other businesses, so nothing is revealed about which exist): a pass tells its state bands and a range for its book value, ±30% on a narrow pass down to ±5% on an exceptional one. What it found is kept with the company (the last five).
 
-**Built:** officers and the information rolls in `scripts/engine/businessCompany.js` (`officersOf`, `canRun`, `officerProposal`, `infoCheck`, `applyInternalAudit`, `applyDiligence`, `exposureBand`), the `elect` and `dismiss` proposal kinds, `auditRoll` and `diligenceRoll` requests, and the service resolving a due diligence target by name. Tests in `tests/businessCompany.test.mjs` and `tests/businessWindows.test.mjs`. None of B4 has been tried in the test world yet.
+**Built:** officers and the information rolls in `scripts/engine/businessCompany.js` (`officersOf`, `canRun`, `officerProposal`, `infoCheck`, `applyInternalAudit`, `applyDiligence`, `exposureBand`), the `elect` and `dismiss` proposal kinds, `auditRoll` and `diligenceRoll` requests, and the service resolving a due diligence target by name. Tests in `tests/businessCompany.test.mjs` and `tests/businessWindows.test.mjs`.
 
-## 33. Employees (E1 and E2 built; E3 proposed)
+**Tested in the test world** (v0.12.0, 2026-10-31, on "Charter Test Clinic", a registered clinic made to meet the milestones): the milestones, agreement and fee; the three charter rolls (a hired professional, extra time); GM approval forming the company at once (its net assets covered the quote); the five-action Work tab, Chase contracts and Shortcuts lifting the takings and leaving Exposure; internal audits (a fumble, a pass, an exceptional one wiping Exposure); due diligence; two monthly reports, one standard and one Bold; an investor invited and accepting; an officer elected and dismissed, the last officer kept. It found and fixed: due diligence refused from a player's window (the target is named, and only the GM's service finds its id); weeks closing on the wrong weekday after New Year, because the world's Simple Calendar restarts its weekdays each year (weeks now close on the calendar's own closing day, asked date by date); the charter waiting line when the net assets cover the quote; an audit not saying what it found before wiping it. Changed on the user's request: the monthly report on the Ledger tab, each report opening a window with the real figures beside the reported ones, and shareholders holding shares in place of partners holding units from chartering on. Not tried live: the funding window, a refused or failed charter, and the other three company actions (all covered by tests).
+
+## 33. Employees (E1 and E2 in v0.12.0; E3 proposed)
 
 Characters, player or NPC, can work for a player business as **employees**. Partners own a business and run it; employees work in it for a wage. Their skills lift what the business earns according to the job they hold, they can be called in to make the business's rolls for overtime pay, and they bring loyalty, staff events and training with them. Employees work at every stage (§26.0) and for a syndicate's business too (B3b), so this phase sits beside B1 to B4 rather than after them. It should be built before going public (B5), because wages change a company's profit, and so its valuation.
 
@@ -1431,7 +1435,7 @@ Floor lift is capped in total by stage: 15% at a side business, 35% registered a
 
 ### 33.2 Wages and overtime
 
-**Wages.** An employee's going rate is a rate per point of their post's base each week: 5 eb at a side business (part-time), 9 eb registered and 14 eb at a company. So a Skilled floor hand with a base of 12 costs 60, 108 or 168 eb a week. The partners may offer more or less than the going rate: each 10% above it adds 5 to starting loyalty, each 10% below takes 5 off, and an NPC or recruit refuses less than 80%. Wages are an upkeep line, paid from the cash when the week closes, after the takings and before loan payments, and they count against the week's profit. A player character's wage goes to their eddies, with a payslip by Messenger mail if the world setting is on (as for syndicate mail).
+**Wages.** An employee's going rate is a rate per point of their post's base each week: 5 eb at a side business (part-time), 9 eb registered and 14 eb at a company. So a Skilled floor hand with a base of 12 costs 60, 108 or 168 eb a week. The partners may offer more or less than the going rate: each 10% above it adds 5 to starting loyalty, each 10% below takes 5 off, and an NPC or recruit refuses less than 80%. Wages are an upkeep line, paid from the cash when the week closes, after the takings and before loan payments, and they count against the week's profit. A player character's wage comes attached to a payslip by Messenger mail, for them to claim (as a broker's withdrawal does); with the world setting off, or a mail that cannot be sent, it goes straight to their eddies instead.
 
 **Unpaid wages.** If the cash cannot cover every wage, those left unpaid are owed (back pay, paid first next week) and lose 15 loyalty. Two weeks unpaid and they quit.
 
@@ -1574,7 +1578,7 @@ A floor hire breaks even near the registered stage's ceiling and earns clearly a
 
 **Also fixed:** the vote lines for electing and dismissing officers had no text (`NCI.Business.Proposed.elect` and `dismiss`), and several requests from B4 had no confirmation message.
 
-**Not built yet:** a player character rolling their own overtime with their own Luck (on call), and everything in E3 (training, share grants, an Exec's team). The payslip, changing an employee's post, and the rest of the list E1 left are built in E2 (§33.10). Not yet tried in the test world.
+**Not built yet:** a player character rolling their own overtime with their own Luck (on call), and everything in E3 (training, share grants, an Exec's team). The payslip, changing an employee's post, and the rest of the list E1 left are built in E2 (§33.10).
 
 ### 33.10 E2 as built
 
@@ -1611,13 +1615,15 @@ E2 is `scripts/engine/businessPeople.js` (pure), with small hooks in `businessSt
   - **Accident at work:** garage, gun shop, security and courier only. Unanswered, medical bills of 100, 250 or 500 eb by stage come from the cash (half on a failed answer), and the employee is out this week and the next (`outUntil`).
   - **Star turn** (good): answered well, Reputation +2.
   - **Grudge:** not in the table. Letting a sullen employee go brings it the next week half the time (`b.grudge`, as the fixer's collectors). It is a security event that hits Reputation and Capacity.
-- **Payslips.** As a week closes, each player character on the staff gets a Night City Messenger mail from the market wire with their wage, what was paid and anything owed. A world setting, *Payslips by Messenger*, turns it off.
+- **Payslips.** As a week closes, each player character on the staff gets a Night City Messenger mail from the market wire with their wage, what was paid and anything owed, and the wage paid attached for them to claim (changed for v0.12.0; it used to go straight to their sheet). A world setting, *Payslips by Messenger*, turns the mail off, and the wage then goes straight to their sheet, as it does if the mail cannot be sent.
 - **The digest** lists what happened to the staff (off sick, hurt, poached, caught, asks for a raise, quit, walked out, quit unpaid), and an accident's medical bills.
 - **No migration.** The normalizer fills in loyalty (50, or none for a player character) and keeps the new fields.
 
 **Not built yet:** a player character on call rolling their own overtime with their own Luck, and E3.
 
-## 34. Projects beside expansion (built 2026-10-31)
+**Tested in the test world** (v0.12.0, 2026-10-31, at the Splice Chrome Clinic): overtime for a help and for a slot, a second shift's loyalty cost, an advert, vetting with an exceptional result, turning an applicant away, hiring, a bonus, a raise, moving an employee to another role, weekly loyalty, staff events (a star turn, a sick day), letting an employee go, an NPC offered a job and the GM answering, and a fourth hire once a staff room was built. It found and fixed: the employee a staff event is about could answer it; Item Piles actors offered as heirs and hires; "Proposal made." shown for a proposal the proposer's units carried at once. Changed on the user's request: a player character's wage comes on their payslip mail to claim. Not tried live: a player character's job from offer to payslip, raises asked at a month's end, hidden traits at work, and a sullen employee quitting or stealing (all covered by tests).
+
+## 34. Projects beside expansion (v0.12.0)
 
 The Projects tab offered only an expansion (§30). Four more kinds of project now sit beside it, chosen by the user, each paid from the cash once a majority of the votes agrees (a `project` proposal naming the kind; the older `expansion` proposal still works) and finished with business days. **One project at a time.** Costs and days are by stage (side business / registered / company):
 
@@ -1632,6 +1638,8 @@ The Projects tab offered only an expansion (§30). Four more kinds of project no
 What a project builds is added to the business's assets at cost, as an expansion's fit-out is. Upgrades are kept on the record (`upgrades`: security's level, and the stages a storefront and a staff room were built at); the normalizer fills it in, so no migration.
 
 **The tab** follows the Work and Staff tabs: a short intro; Capacity as a bar against the stage's ceiling, with the next expansion's gain hatched; the project under way with a progress bar, who has put days in (`crew`), and the add-days row; a table of every kind with what it would do from where the business stands, its cost and days, a Propose button under the header's "Business days left 3/3", and why it cannot start, in figures for money ("Needs 2,000 eb; the cash holds 1,300 eb"); and a table of the projects finished, with their cost, days, result and crew.
+
+**Tested in the test world** (v0.12.0): a staff room, built with business days and making room for a fourth employee. Not tried live: a refit, a security upgrade and a storefront (covered by tests).
 
 ## 35. Proposal: after E3, B5 and B6 (not built)
 
