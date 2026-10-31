@@ -169,7 +169,8 @@ export function businessContext(business, actor) {
     name: business.name,
     archetype: L(`NCI.Business.Archetype.${business.archetype}.Name`),
     location: [business.district ? L(`NCI.District.${business.district}`) : '', business.location].filter(Boolean).join(', '),
-    stage: L(`NCI.Business.Stage.${business.stage}`),
+    // A listed company shows as stage 3, though it runs on stage 2's numbers (B5b).
+    stage: L(`NCI.Business.Stage.${business.listing?.status === 'listed' ? 3 : business.stage}`),
     // The company's ticker once the charter set it, listed or not (B4).
     ticker: business.company?.ticker ?? '',
     status,
@@ -357,6 +358,8 @@ function listingContext(business, actor, canAct, m, pending) {
     prospectus: status === 'prospectus' ? L('NCI.Listing.Prospectus') : '',
     parts: ['prospectus', 'ready', 'failed'].includes(status) && Object.keys(l.rolls ?? {}).length + (status === 'prospectus' ? 1 : 0) ? parts : [],
     ready: status === 'ready' ? L('NCI.Listing.Ready', { price: l.offer.price.toLocaleString(), shares: whole(l.offer.shares), float: pct(l.offer.float) }) : '',
+    scheduled: status === 'scheduled' ? L('NCI.Listing.Scheduled', { ticker: business.company?.ticker ?? '', price: l.offer.price.toLocaleString(), shares: whole(l.offer.shares), date: dayText(l.listDay ?? day) }) : '',
+    listed: status === 'listed' ? L('NCI.Listing.Listed', { ticker: business.company?.ticker ?? '', date: dayText(l.listedDay ?? day), price: l.offer.price.toLocaleString(), until: dayText((l.listedDay ?? day) + BUSINESS_DEFAULTS.listing.lockupDays) }) : '',
     refused: status === 'failed' ? L('NCI.Listing.Failed', { date: dayText(l.retryDay ?? day) }) : status === 'rejected' ? L('NCI.Listing.Rejected', { date: dayText(l.retryDay ?? day) }) : '',
   };
 }
@@ -1121,7 +1124,8 @@ function partnersContext(business, actor) {
     rows: business.partners.filter((p) => p.status !== 'declined').map((p) => ({
       actorId: p.actorId,
       name: p.name,
-      who: actorLink(holderActorId(business, p), p.name),
+      // The shares the market holds after a listing (B5b) are shown as the public float.
+      who: p.market ? L('NCI.Business.MarketHolder') : actorLink(holderActorId(business, p), p.name),
       status: LT(business, `NCI.Business.PartnerStatus.${p.status}`),
       units: business.status === 'forming' ? '' : whole(p.units),
       share: units > 0 && ['active', 'leaving'].includes(p.status) ? `${((p.units / units) * 100).toFixed(1)}%` : '',

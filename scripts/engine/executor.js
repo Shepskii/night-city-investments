@@ -36,7 +36,7 @@
 import { quote } from './quotes.js';
 import { pathRange } from './pricePath.js';
 import { TIME_EPS } from './clock.js';
-import { checkTrigger, validateOrder, executeFill, computeFees } from './orderEngine.js';
+import { sellableQty, checkTrigger, validateOrder, executeFill, computeFees } from './orderEngine.js';
 import { planDeposit, planDirectWithdrawal } from './cash.js';
 import { brokerTermsFeeProfile, fundOrderPrice } from './executorSupport.js';
 import { pickLatency } from './brokerTerms.js';
@@ -146,6 +146,7 @@ export function runOrders({ portfolio, tick, market, feeProfile = {}, onlyIds = 
       fees,
       minOrder: isFund && order.side === 'buy' ? (asset.fund?.minBuy ?? 0) : 0,
       reservedQty: reservedShares(p.orders, order.assetId, order.id),
+      tick,
     });
     if (!check.ok) {
       reject(order, check.reason);
@@ -248,6 +249,8 @@ function placeOrder({ p, request, tick, market, settings }) {
   } else {
     const held = p.lots.filter((l) => l.assetId === request.assetId).reduce((s, l) => s + l.qty, 0);
     if (held - reservedShares(p.orders, request.assetId) < qty) return fail('insufficient-shares');
+    // A listed player company's shareholders cannot sell until the lock-up ends (B5b).
+    if (sellableQty(p.lots, request.assetId, tick) - reservedShares(p.orders, request.assetId) < qty) return fail('locked-up');
   }
 
   const order = {

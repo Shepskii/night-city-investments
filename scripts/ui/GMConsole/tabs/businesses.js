@@ -99,7 +99,7 @@ export function context() {
       status: L(`NCI.Business.Status.${b.status}`),
       isPending: b.status === 'pending',
       // A listing under way (B5a), and waiting for the GM.
-      listing: b.listing && ['awaiting', 'prospectus', 'ready'].includes(b.listing.status) ? {
+      listing: b.listing && ['awaiting', 'prospectus', 'ready', 'scheduled'].includes(b.listing.status) ? {
         awaiting: b.listing.status === 'awaiting',
         text: L(`NCI.GMBusiness.Listing.${b.listing.status}`, {
           ticker: b.company?.ticker ?? '', valuation: whole(b.listing.valuation ?? 0), float: Math.round((b.listing.float ?? 0) * 100), exposure: hidden.exposure ?? 0,

@@ -49,11 +49,19 @@ export function heldQty(lots, assetId) {
   return lots.filter((l) => l.assetId === assetId).reduce((sum, l) => sum + l.qty, 0);
 }
 
+/** Whether a lot is locked at `tick` (a listed player company's shareholders, for the lock-up, B5b). */
+const locked = (lot, tick) => tick != null && lot.lockedUntil != null && lot.lockedUntil > tick;
+
+/** Shares of an asset that can be sold at `tick`: those not still locked up. */
+export function sellableQty(lots, assetId, tick) {
+  return lots.filter((l) => l.assetId === assetId && !locked(l, tick)).reduce((sum, l) => sum + l.qty, 0);
+}
+
 /**
  * Check an order against the portfolio before filling.
  * @returns {{ok: true} | {ok: false, reason: string}}
  */
-export function validateOrder({ order, price, cash, lots, fees = 0, minOrder = 0, assetActive = true, reservedQty = 0 }) {
+export function validateOrder({ order, price, cash, lots, fees = 0, minOrder = 0, assetActive = true, reservedQty = 0, tick = null }) {
   if (!assetActive) return { ok: false, reason: 'halted' };
   if (!Number.isInteger(order.qty) || order.qty <= 0) return { ok: false, reason: 'invalid-qty' };
   const gross = round(order.qty * price);
@@ -62,6 +70,8 @@ export function validateOrder({ order, price, cash, lots, fees = 0, minOrder = 0
     if (cash < gross + fees) return { ok: false, reason: 'insufficient-funds' };
   } else if (order.qty > heldQty(lots, order.assetId) - reservedQty) {
     return { ok: false, reason: 'insufficient-shares' };
+  } else if (order.qty > sellableQty(lots, order.assetId, tick) - reservedQty) {
+    return { ok: false, reason: 'locked-up' };
   }
   return { ok: true };
 }
@@ -70,11 +80,12 @@ export function validateOrder({ order, price, cash, lots, fees = 0, minOrder = 0
  * Remove `qty` shares from the oldest lots first.
  * @returns {{lots: object[], costBasis: number} | null} null when there are not enough shares
  */
-export function consumeLotsFifo(lots, assetId, qty) {
-  if (heldQty(lots, assetId) < qty) return null;
+export function consumeLotsFifo(lots, assetId, qty, tick = null) {
+  if (sellableQty(lots, assetId, tick) < qty) return null;
   const ordered = lots
     .map((lot, index) => ({ lot, index }))
-    .filter(({ lot }) => lot.assetId === assetId)
+    // Shares still locked up are not sold (B5b).
+    .filter(({ lot }) => lot.assetId === assetId && !locked(lot, tick))
     .sort((a, b) => (a.lot.acquiredTick ?? 0) - (b.lot.acquiredTick ?? 0) || a.index - b.index);
 
   const remaining = new Map(lots.map((l) => [l.id, l.qty]));
@@ -135,7 +146,7 @@ export function executeFill({ portfolio, order, price, fees = 0, tick, lotId = n
     };
   }
 
-  const consumed = consumeLotsFifo(portfolio.lots, order.assetId, order.qty);
+  const consumed = consumeLotsFifo(portfolio.lots, order.assetId, order.qty, tick);
   if (!consumed) return { ok: false, reason: 'insufficient-shares' };
   const proceeds = gross - fees;
   const settle = Math.max(0, Math.floor(settleTicks));

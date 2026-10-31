@@ -58,7 +58,8 @@ export const BusinessRepository = {
    * character or a syndicate (whose stakes count in its value per unit, DESIGN §31).
    */
   stakesOf(ownerId) {
-    return Math.round(this.all().filter((b) => b.status === 'open').reduce((sum, b) => sum + shareOf(b, ownerId) * bookValue(b), 0));
+    // A listed company's shares are in portfolios, valued on the market (B5b).
+    return Math.round(this.all().filter((b) => b.status === 'open' && b.listing?.status !== 'listed').reduce((sum, b) => sum + shareOf(b, ownerId) * bookValue(b), 0));
   },
 
   /**

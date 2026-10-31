@@ -369,6 +369,8 @@
     </tbody></table>
     {{/if}}
     {{#if ready}}<p class="nci-up"><strong>{{ready}}</strong></p>{{/if}}
+    {{#if scheduled}}<p class="nci-up"><strong>{{scheduled}}</strong></p>{{/if}}
+    {{#if listed}}<p class="nci-up"><strong>{{listed}}</strong></p>{{/if}}
     {{/with}}
     {{#with charter}}
     <p class="nci-hint">{{localize "NCI.Charter.SectorLine" sector=sector}} {{range}}</p>

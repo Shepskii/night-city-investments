@@ -18,6 +18,7 @@ import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
   STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
+  isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter, isItemPile } from '../utils/helpers.js';
@@ -32,6 +33,8 @@ import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors, st
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
 import { SyndicateCash } from './SyndicateCash.js';
 import { MailService } from './MailService.js';
+import { PortfolioRepository } from '../data/PortfolioRepository.js';
+import { PortfolioService } from './PortfolioService.js';
 
 const RESULTS_CAP = 40;
 /** Requests that may bring gear: the items are looked up here, never taken from the request. */
@@ -131,6 +134,86 @@ class BusinessServiceImpl {
     return true;
   }
 
+  /**
+   * A listed company's shareholders are whoever holds its shares (B5b): read from every brokerage
+   * portfolio (characters and syndicates) before each change. Returns whether anything changed.
+   */
+  _syncHolders(business) {
+    if (!isListed(business)) return false;
+    const companyId = business.company?.ticker;
+    const holdings = {};
+    const names = {};
+    for (const account of PortfolioRepository.accounts().filter((a) => PortfolioRepository.hasPortfolio(a))) {
+      const qty = heldQty(PortfolioRepository.get(account).lots ?? [], companyId);
+      if (qty > 0) {
+        holdings[account.id] = qty;
+        names[account.id] = account.name;
+      }
+    }
+    return syncListedHolders(business, holdings, names);
+  }
+
+  /**
+   * An offer ready to list (both prospectus rolls passed) becomes a market company under its ticker,
+   * unlisted, with its IPO window open (B5b, §26.4a step 5): players subscribe on the terminal, and on
+   * the listing day the market's IPO service lists it. Nothing happens if the company exists already.
+   */
+  async _scheduleListing(business) {
+    if (business?.listing?.status !== 'ready') return;
+    const day = this.day();
+    const input = listingCompany(business, day);
+    const existing = CompanyRepository.get(input.id);
+    if (existing && existing.businessId !== business.id) {
+      log.warn(`Listing ${business.name}: the ticker ${input.id} is taken by another company`);
+      return;
+    }
+    if (!existing) {
+      const made = await CompanyRepository.save(input);
+      if (!made.ok) {
+        log.warn(`Listing ${business.name} failed`, made.errors);
+        return;
+      }
+    }
+    const b = normalizeBusiness(structuredClone(BusinessRepository.get(business.id) ?? business));
+    if (scheduleListing(b, day).ok) await BusinessRepository.save(b);
+    Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+  }
+
+  /**
+   * The market listed a company (its IPO filled): if it is a player company, finish the listing
+   * (B5b): the float's proceeds into its cash, and each character's or syndicate's shares into their
+   * brokerage portfolio, locked up; then the shareholders are read from the portfolios.
+   */
+  onIpo(companyId) {
+    if (!isActiveGM()) return Promise.resolve();
+    return this._queue.run(async () => {
+      const company = CompanyRepository.get(companyId);
+      if (!company?.businessId) return;
+      const stored = BusinessRepository.get(company.businessId);
+      if (!stored) return;
+      const b = normalizeBusiness(structuredClone(stored));
+      const tick = timeOf(MarketStore.getPublic());
+      const done = completeListing(b, { day: this.day(), tick });
+      if (!done.ok) return;
+      const price = b.listing.offer.price;
+      for (const h of done.holdings) {
+        const account = game.actors.get(h.actorId) ?? SyndicateRepository.account(h.actorId);
+        if (!account) continue;
+        await PortfolioService.transformActor(account, (p) => ({
+          portfolio: {
+            ...p,
+            lots: [...(p.lots ?? []), { id: `lot_list_${company.id}_${h.actorId}`, assetType: 'stock', assetId: company.id, qty: h.units, unitCost: price, acquiredTick: tick, drip: false, lockedUntil: done.lockedUntil }],
+            ledger: [...(p.ledger ?? []), { ts: tick, kind: 'listing', assetId: company.id, qty: h.units, amount: 0, ref: b.id }],
+          },
+          changed: true,
+        }));
+      }
+      this._syncHolders(b);
+      await BusinessRepository.save(b);
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+    });
+  }
+
   /** A character's base in every skill and role ability a business roll names, from their sheet. */
   basesOf(actorId) {
     const actor = game.actors.get(actorId);
@@ -196,6 +279,7 @@ class BusinessServiceImpl {
     if (business) {
       markElsewhere(business, BusinessRepository.all());
       this._markConcerns(business);
+      this._syncHolders(business);
       // An Exec's team follows the Exec: their rank now, and whether they are still a partner (E3).
       const team = refreshTeams(business, (id) => this.basesOf(id), this.day());
       if (team.notes.length) business.pendingNotes = [...(business.pendingNotes ?? []), ...team.notes];
@@ -301,6 +385,7 @@ class BusinessServiceImpl {
     await this._syncJobs(out.business);
     await this._payslips(out);
     await this._twoJobs(out);
+    await this._scheduleListing(out.business);
     for (const event of out.events.filter((e) => e.type === 'periodClosed')) {
       Hooks.callAll(HOOKS.BUSINESS_PERIOD, { businessId: out.business.id, digest: event.digest });
     }
@@ -504,7 +589,7 @@ class BusinessServiceImpl {
         // Employees' skills are read again from their sheets before the week is counted.
         const business = normalizeBusiness(structuredClone(stored));
         const reread = refreshStaffBases(business, (id) => this.basesOf(id));
-        const marked = markElsewhere(business, BusinessRepository.all()) | this._markConcerns(business);
+        const marked = markElsewhere(business, BusinessRepository.all()) | this._markConcerns(business) | this._syncHolders(business);
         const team = refreshTeams(business, (id) => this.basesOf(id), day);
         if (team.notes.length) business.pendingNotes = [...(business.pendingNotes ?? []), ...team.notes];
         const out = advanceBusiness(business, day, { ...opts, traits: this.traitsOf(business.id) });

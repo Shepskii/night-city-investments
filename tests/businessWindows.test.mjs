@@ -419,6 +419,17 @@ test('a company shows its officers, the information rolls and the report; a shar
     assert.match(rolls, /data-action="prospectusRoll" data-part="filing"/);
     assert.match(rolls, /data-action="prospectusRoll" data-part="offering"/);
     game.settings.set('night-city-investments', 'listingThreshold', 500000);
+    // Scheduled, then listed (B5b): the Growth tab says so; the header calls it a Listed company; the market's shares are the public float.
+    const sch = S.BusinessRepository.all()[0];
+    await S.BusinessRepository.save({ ...sch, listing: { status: 'scheduled', float: 0.25, offer: { price: 12.5, float: 0.25, shares: 300 }, listDay: sch.period.startDay + 5, rolls: {} } });
+    assert.match(text(await renderBusiness(windowFor(med, 'growth'))), /The offering is open: 300 new shares of BRC at 12.5 eb a share/);
+    await S.BusinessRepository.save({ ...sch, listing: { status: 'listed', float: 0.25, offer: { price: 12.5, float: 0.25, shares: 300 }, listedDay: sch.period.startDay, shares: 1300, rolls: {} },
+      partners: [...sch.partners, { actorId: 'npc:market', name: '', status: 'active', cash: 0, gear: [], units: 300, voting: false, heirId: null, leavingSince: null, npc: true, market: true }] });
+    const listedGrowth = await renderBusiness(windowFor(med, 'growth'));
+    assert.match(text(listedGrowth), /Listed on the market as BRC since/);
+    assert.match(listedGrowth, /Listed company \(BRC\) &middot;/);
+    assert.match(text(await renderBusiness(windowFor(med, 'partners'))), /Public float \(the market\)/);
+    await S.BusinessRepository.save({ ...sch, listing: null });
     await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], reports: cur.reports, listing: null });
     // Each report opens a window of its own: the real figures beside the reported ones.
     assert.match(ledger, /class="nci-row" data-action="openReport" data-index="2"/);

@@ -313,6 +313,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
   listing: Object.freeze({
     threshold: 500000, sustained: 3, minReports: 3, minDays: 56, compliance: 50, exposureCap: 15, lockinDays: 28,
     fee: 0.02, dv: 'professional', retryDays: 14, minFloat: 0.2, maxFloat: 0.4, floatStep: 0.05, lockupDays: 28, maxFactor: 0.15,
+    /** The IPO's subscription window, from the offer being set to the listing day (B5b). */
+    ipoWindowDays: 5,
     multiples: Object.freeze({ tech: 14, biotech: 13, health: 12, finance: 11, security: 10, arms: 10, media: 9, energy: 9, transport: 8, construction: 7, consumer: 7, other: 6 }),
     uses: Object.freeze({
       filing: Object.freeze([S.accounting, Object.freeze({ ...S.business, dvAdd: 2 })]),

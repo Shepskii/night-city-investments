@@ -4,7 +4,7 @@
  * @description The weekly close runs after each market tick, as a step of registerTickSequence.js.
  */
 
-import { MODULE_ID, FLAGS } from '../utils/constants.js';
+import { MODULE_ID, FLAGS, HOOKS } from '../utils/constants.js';
 import { isActiveGM } from '../utils/helpers.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
 import { BusinessService } from '../services/BusinessService.js';
@@ -22,6 +22,10 @@ export function registerBusinessSystem(initializer) {
     for (const hook of ['createJournalEntry', 'updateJournalEntry', 'deleteJournalEntry']) {
       Hooks.on(hook, (journal, changes) => BusinessWatcher.onJournal(journal, hook === 'updateJournalEntry' ? changes : null));
     }
+    // A player company's IPO listed on the market: finish its listing (B5b).
+    Hooks.on(HOOKS.CORPORATE_ACTION, (action) => {
+      if (isActiveGM() && action?.type === 'ipo') BusinessService.onIpo(action.companyId);
+    });
   });
 
   initializer.register('ready', 47, 'Business startup', async () => {

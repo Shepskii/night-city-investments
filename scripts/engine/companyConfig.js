@@ -94,6 +94,8 @@ export function sanitizeCompany(input) {
       },
       status: COMPANY_STATUSES.includes(input.status) ? input.status : 'active',
       ipo: cleanIpo(input.ipo),
+      // A player company (B5b): the business record it lists.
+      ...(input.businessId ? { businessId: String(input.businessId) } : {}),
       /** Cumulative split factor, so index levels and resets stay on the post-split basis. */
       splitFactor: Math.max(1, Math.round(num(input.splitFactor, 1) * 10000) / 10000),
       split: {

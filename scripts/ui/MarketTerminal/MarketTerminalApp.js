@@ -479,7 +479,8 @@ export class MarketTerminalApp extends BaseApplication {
    */
   _privateStakes(actor) {
     return BusinessRepository.forActor(actor.id)
-      .filter((b) => b.status === 'open' && shareOf(b, actor.id) > 0)
+      // A listed company's shares are a market holding, not a private stake (B5b).
+      .filter((b) => b.status === 'open' && b.listing?.status !== 'listed' && shareOf(b, actor.id) > 0)
       .map((b) => ({
         id: b.id,
         name: b.name,

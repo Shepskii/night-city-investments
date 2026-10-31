@@ -110,3 +110,19 @@ test('each monthly report records V', () => {
   assert.equal(r.index, 4);
   assert.ok(r.valuation > 0);
 });
+
+test('the lock-up: locked shares are held but cannot be sold until it ends; free ones go first', async () => {
+  const { validateOrder, consumeLotsFifo, sellableQty, heldQty } = await import('../scripts/engine/orderEngine.js');
+  const lots = [
+    { id: 'l1', assetId: 'PLAY', qty: 100, unitCost: 10, acquiredTick: 1, lockedUntil: 30 },
+    { id: 'l2', assetId: 'PLAY', qty: 20, unitCost: 12, acquiredTick: 5 },
+  ];
+  assert.deepEqual([heldQty(lots, 'PLAY'), sellableQty(lots, 'PLAY', 10), sellableQty(lots, 'PLAY', 30)], [120, 20, 120]);
+  const sell = (qty, tick) => validateOrder({ order: { side: 'sell', assetId: 'PLAY', qty }, price: 10, cash: 0, lots, tick });
+  assert.equal(sell(30, 10).reason, 'locked-up');
+  assert.equal(sell(20, 10).ok, true);
+  assert.equal(sell(30, 31).ok, true, 'free once the lock-up ends');
+  const out = consumeLotsFifo(lots, 'PLAY', 20, 10);
+  assert.deepEqual(out.lots.map((l) => [l.id, l.qty]), [['l1', 100]], 'the free lot is sold, the locked one kept');
+  assert.equal(consumeLotsFifo(lots, 'PLAY', 21, 10), null);
+});

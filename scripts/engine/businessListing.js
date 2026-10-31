@@ -147,3 +147,85 @@ export function applyProspectusRoll(b, actorId, part, result, day, p = BUSINESS_
   addLedger(b, { day, kind: 'listingReady', amount: 0 }, p);
   return { passed, ready: true, failed: false };
 }
+
+// ── The listing itself (B5b) ─────────────────────────────────────────────────
+
+/** Whether the company is listed on the market. */
+export const isListed = (b) => b?.listing?.status === 'listed';
+
+/** A day index as the market's ISO date. */
+const isoDay = (day) => new Date(day * 86_400_000).toISOString().slice(0, 10);
+
+/**
+ * The market company a ready listing becomes (§26.4a step 5): the company's ticker and sector, priced at
+ * the offer, unlisted until its IPO in `ipoWindowDays`, with the float as the shares players may
+ * subscribe for, its shares outstanding those held now plus the float, and a thin market.
+ */
+export function listingCompany(b, day, p = BUSINESS_DEFAULTS) {
+  const o = b.listing.offer;
+  const window = p.listing.ipoWindowDays;
+  return {
+    id: b.company.ticker, ticker: b.company.ticker, name: b.name, sector: b.company.sector ?? 'other', businessId: b.id,
+    listed: false, initialPrice: o.price, sharesOutstanding: totalUnits(b) + o.shares, liquidity: 1, volatility: 3,
+    ipo: { date: isoDay(day + window), price: o.price, windowDays: window, allocation: o.shares },
+  };
+}
+
+/** The market company is made: the offering is open until the listing day. */
+export function scheduleListing(b, day, p = BUSINESS_DEFAULTS) {
+  if (b.listing?.status !== 'ready') return fail('not-ready');
+  Object.assign(b.listing, { status: 'scheduled', listDay: day + p.listing.ipoWindowDays });
+  addLedger(b, { day, kind: 'listingScheduled', amount: 0 }, p);
+  return { ok: true };
+}
+
+/**
+ * The company has listed (its IPO filled): the whole float is sold (what players did not take, the
+ * market did), so the cash gains the float at the offer price; the shares the market holds are kept as
+ * a silent holding, `npc:market`. Returns the holders whose shares now go into their portfolios
+ * (characters and syndicates; NPC holders stay on the record), locked for the lock-up.
+ * @returns {{ok: true, holdings: {actorId: string, units: number}[], proceeds: number, lockedUntil: number}}
+ */
+export function completeListing(b, { day, tick }, p = BUSINESS_DEFAULTS) {
+  if (b.listing?.status !== 'scheduled') return fail('not-scheduled');
+  const o = b.listing.offer;
+  const holdings = b.partners.filter((x) => ['active', 'leaving'].includes(x.status) && !x.npc && x.units > 0).map((x) => ({ actorId: x.actorId, units: x.units }));
+  const proceeds = Math.round(o.shares * o.price);
+  b.till += proceeds;
+  addLedger(b, { day, kind: 'ipoProceeds', amount: proceeds }, p);
+  b.partners.push({ actorId: 'npc:market', name: '', status: 'active', cash: 0, gear: [], units: o.shares, voting: false, heirId: null, leavingSince: null, npc: true, market: true });
+  Object.assign(b.listing, { status: 'listed', listedDay: day, shares: totalUnits(b), lockedUntil: tick + p.listing.lockupDays });
+  return { ok: true, holdings, proceeds, lockedUntil: tick + p.listing.lockupDays };
+}
+
+/**
+ * After listing, the shareholders are whoever holds the shares in their portfolio (the user's choice):
+ * each character's or syndicate's holding sets their shares and their vote, read before every change;
+ * one who sold out leaves; a new buyer joins. NPC holders keep theirs; the market holds the rest.
+ * Officers who no longer hold shares drop out (officersOf reads only holders with a vote).
+ * @param {Object<string, number>} holdings - account id to shares of the ticker held
+ * @param {Object<string, string>} names - account id to name, for new holders
+ * @returns {boolean} whether anything changed
+ */
+export function syncListedHolders(b, holdings, names = {}) {
+  if (!isListed(b)) return false;
+  const before = JSON.stringify(b.partners);
+  for (const x of b.partners) {
+    if (x.npc) continue;
+    const qty = Math.max(0, Math.floor(holdings[x.actorId] ?? 0));
+    x.units = qty;
+    if (qty > 0) x.status = 'active';
+    else if (['active', 'leaving'].includes(x.status)) x.status = 'left';
+  }
+  for (const [actorId, qty] of Object.entries(holdings)) {
+    if (qty > 0 && !b.partners.some((x) => x.actorId === actorId)) {
+      b.partners.push({ actorId, name: names[actorId] ?? '', status: 'active', cash: 0, gear: [], units: Math.floor(qty), voting: true, heirId: null, leavingSince: null });
+    }
+  }
+  const market = b.partners.find((x) => x.market);
+  if (market) {
+    const others = b.partners.filter((x) => x !== market && ['active', 'leaving'].includes(x.status)).reduce((a, x) => a + x.units, 0);
+    market.units = Math.max(0, (b.listing.shares ?? 0) - others);
+  }
+  return JSON.stringify(b.partners) !== before;
+}

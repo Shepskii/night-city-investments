@@ -78,6 +78,7 @@ export function normalizeBusiness(raw) {
       leavingSince: p.leavingSince ?? null,
       ...(p.offer ? { offer: { amount: int(p.offer.amount), price: Number(p.offer.price) } } : {}),
       ...(p.npc ? { npc: true } : {}),
+      ...(p.market ? { market: true } : {}),
       ...(p.actorRef ? { actorRef: String(p.actorRef) } : {}),
       // Shares an employee was granted (E3): how many of the holder's units came that way.
       ...(p.grant ? { grant: true, grantUnits: int(p.grantUnits ?? p.units) } : {}),
@@ -214,7 +215,8 @@ export const lastDigest = (b) => b.digests.at(-1) ?? null;
 /** What a partner may still draw this period: their share of last week's profit, less what they drew. */
 export function drawAllowance(b, actorId) {
   const last = lastDigest(b);
-  if (b.status !== 'open' || !last || last.profit <= 0 || !b.period) return 0;
+  // A listed company pays its holders as the market does (B5c), not by draws.
+  if (b.status !== 'open' || !last || last.profit <= 0 || !b.period || b.listing?.status === 'listed') return 0;
   const share = Math.floor(last.profit * shareOf(b, actorId));
   return Math.max(0, Math.min(share - (b.period.draws[actorId] ?? 0), b.till));
 }
