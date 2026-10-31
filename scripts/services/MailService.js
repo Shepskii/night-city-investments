@@ -112,6 +112,7 @@ export const MailService = {
     if (event.side === 'sell' && typeof event.realized === 'number') {
       lines.push(L('NCI.Mail.Filled.Realized', { pnl: `${event.realized >= 0 ? '+' : ''}${eb(event.realized)}` }));
     }
+    if (event.waiting) lines.push(L('NCI.Mail.Filled.Waiting', { name: a.name, qty: event.waiting }));
     if (event.side === 'sell' && event.settleDays > 0) {
       lines.push(L('NCI.Mail.Filled.Settles', { days: days(event.settleDays) }));
     }

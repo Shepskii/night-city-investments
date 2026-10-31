@@ -320,6 +320,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     earningsDelayDays: 1,
     /** Dividends after listing (B5c, §26.7): the payout ratio by default and its steps, at most `monthlyYield` of V a month, at most `holderCap` eb to one holder. */
     dividend: Object.freeze({ payout: 0.3, step: 0.1, monthlyYield: 0.01, holderCap: 5000 }),
+    /** The liquidity cap (B5c): each market day the market buys at most this share of the float from players, by the offering's demand, plus `perOperatorRank` for each rank of a Fixer officer's Operator. */
+    liquidity: Object.freeze({ daily: byBand([0.1, 0.1, 0.1, 0.15, 0.2, 0.3]), perOperatorRank: 0.02 }),
     multiples: Object.freeze({ tech: 14, biotech: 13, health: 12, finance: 11, security: 10, arms: 10, media: 9, energy: 9, transport: 8, construction: 7, consumer: 7, other: 6 }),
     uses: Object.freeze({
       filing: Object.freeze([S.accounting, Object.freeze({ ...S.business, dvAdd: 2 })]),

@@ -288,3 +288,14 @@ export function payListedDividend(b, report, holdings, day, p = BUSINESS_DEFAULT
   if (kept) kept.dividend = { perShare, paid };
   return { perShare, payments, paid };
 }
+
+/**
+ * The shares of a listed company the market buys from players in one market day (B5c, the liquidity
+ * cap): a share of the float by the demand the offering found, more with a Fixer officer's Operator.
+ * Selling beyond it waits for the next day; buying is not limited.
+ */
+export function dailySellCap(b, operatorRank = 0, p = BUSINESS_DEFAULTS) {
+  const l = p.listing.liquidity;
+  const share = (l.daily[b.listing?.rolls?.offering?.band] ?? l.daily.narrow) + Math.max(0, operatorRank) * l.perOperatorRank;
+  return Math.max(1, Math.floor((b.listing?.offer?.shares ?? 0) * share));
+}

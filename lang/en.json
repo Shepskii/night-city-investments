@@ -84,6 +84,7 @@
       "NextTick": "Executes next tick",
       "EtaDays": "Due in {n} day(s)",
       "Working": "Working",
+      "WaitingBuyers": "Waiting for buyers: the market takes no more today",
       "PendingRequests": "Requests waiting for the GM",
       "NoGM": "No GM is online. Your requests are saved and will be handled when one connects."
     },
@@ -525,7 +526,8 @@
         "TimingBetter": "I got you {bps} basis points better than the quoted value.",
         "TimingWorse": "The timing went {bps} basis points against you.",
         "Realized": "Realised result: {pnl} eb.",
-        "Settles": "The money reaches your balance in {days}."
+        "Settles": "The money reaches your balance in {days}.",
+        "Waiting": "The market would take no more {name} today; the other {qty} shares wait for the next market day."
       },
       "Rejected": {
         "Subject": "Order {ref} rejected",

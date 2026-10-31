@@ -172,3 +172,34 @@ test('dividends: the voted payout ratio of the real profit, within a month\'s yi
   const carried = apply(voted, { type: 'vote', businessId: 'b1', proposalId: voted.proposals[0].id, yes: true }, MED).business;
   assert.equal(payoutRatio(carried), 0.6);
 });
+
+test('the liquidity cap: the market buys a share of the float a day by the offering\'s demand, more with a Fixer officer\'s Operator; a bigger sale fills in part and the rest waits a day', async () => {
+  const { dailySellCap, runOrders } = await import('../scripts/engine/index.js');
+  const listed = (band) => ({ listing: { status: 'listed', offer: { shares: 400 }, rolls: { offering: band ? { band } : {} } } });
+  assert.equal(dailySellCap(listed(null)), 40, 'narrow when unknown: 10%');
+  assert.equal(dailySellCap(listed('exceptional')), 120);
+  assert.equal(dailySellCap(listed('solid'), 3), Math.floor(400 * (0.15 + 3 * L.liquidity.perOperatorRank)));
+
+  const portfolio = {
+    cash: 0,
+    lots: [{ id: 'l1', assetId: 'PLAY', qty: 100, unitCost: 10, acquiredTick: 1 }, { id: 'l2', assetId: 'ACME', qty: 100, unitCost: 10, acquiredTick: 1 }],
+    orders: [
+      { id: 'o_a', side: 'sell', assetType: 'stock', assetId: 'PLAY', qty: 60, type: 'market', expiry: 'day', route: 'direct', status: 'open', submittedTick: 10, eligibleTick: 10, expiresTick: 11, reserve: 0 },
+      { id: 'o_b', side: 'sell', assetType: 'stock', assetId: 'PLAY', qty: 10, type: 'market', expiry: 'day', route: 'direct', status: 'open', submittedTick: 10.1, eligibleTick: 10.1, expiresTick: 11, reserve: 0 },
+      { id: 'o_c', side: 'sell', assetType: 'stock', assetId: 'ACME', qty: 60, type: 'market', expiry: 'day', route: 'direct', status: 'open', submittedTick: 10.2, eligibleTick: 10.2, expiresTick: 11, reserve: 0 },
+    ],
+  };
+  const market = { PLAY: { listed: true, active: true, price: 10, liquidity: 1, sellCap: 40 }, ACME: { listed: true, active: true, price: 10, liquidity: 5 } };
+  const day1 = runOrders({ portfolio, tick: 10.5, market });
+  const order = (p, id) => p.orders.find((o) => o.id === id);
+  assert.deepEqual([order(day1.portfolio, 'o_a_10').status, order(day1.portfolio, 'o_a_10').qty], ['filled', 40], 'the part the market takes');
+  assert.deepEqual([order(day1.portfolio, 'o_a').status, order(day1.portfolio, 'o_a').qty, order(day1.portfolio, 'o_a').eligibleTick, order(day1.portfolio, 'o_a').waiting], ['open', 20, 11, 'liquidity']);
+  assert.deepEqual([order(day1.portfolio, 'o_b').status, order(day1.portfolio, 'o_b').eligibleTick], ['open', 11], 'nothing left today: it waits whole');
+  assert.equal(order(day1.portfolio, 'o_c').status, 'filled', 'other stocks are not capped');
+  assert.equal(day1.events.find((e) => e.orderId === 'o_a_10').waiting, 20);
+  assert.equal(day1.portfolio.lots.find((l) => l.assetId === 'PLAY').qty, 60);
+
+  const day2 = runOrders({ portfolio: day1.portfolio, tick: 11, market: { ...market, PLAY: { ...market.PLAY, sellCap: 40 } } });
+  assert.deepEqual([order(day2.portfolio, 'o_a').status, order(day2.portfolio, 'o_b').status], ['filled', 'filled'], 'the next day takes the rest');
+  assert.equal(day2.portfolio.lots.find((l) => l.assetId === 'PLAY').qty, 30);
+});

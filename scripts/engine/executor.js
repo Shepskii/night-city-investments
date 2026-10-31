@@ -20,7 +20,9 @@
  *   { key, type: 'removeAlert', alertId }
  *   { key, type: 'requestStatement' }                 ask for a statement by mail (built by the GM service)
  *
- * `market` maps assetId -> { listed, active, price, liquidity, kind?: 'fund', fund?: {loadBps, exitBps, minBuy}, ipo?: {open, price} }.
+ * `market` maps assetId -> { listed, active, price, liquidity, kind?: 'fund', fund?: {loadBps, exitBps, minBuy}, ipo?: {open, price}, sellCap? }.
+ * `sellCap` (a listed player company, B5c): the shares the market will still buy from players today; a
+ * sell beyond it fills in part and the rest waits for the next market day.
  *
  * `settings`:
  *   mode      'terminal' (direct trading needs a live terminal session) | 'open' (legacy: anyone may trade directly)
@@ -105,6 +107,13 @@ export function runOrders({ portfolio, tick, market, feeProfile = {}, onlyIds = 
     close(order, { status: 'rejected', reason, closedTick: tick });
     events.push({ type: 'orderRejected', orderId: order.id, assetId: order.assetId, side: order.side, qty: order.qty, route: order.route, reason });
   };
+  // The market buys only so many of a player company's shares a day (B5c): what is left waits for the next.
+  const capLeft = {};
+  const today = Math.floor(tick + TIME_EPS);
+  const wait = (order, qty) => {
+    const next = today + 1;
+    p = { ...p, orders: p.orders.map((x) => (x.id === order.id ? { ...x, qty, eligibleTick: next, expiresTick: Math.max(x.expiresTick, next + 1), waiting: 'liquidity' } : x)) };
+  };
 
   for (const order of due) {
     const asset = market[order.assetId];
@@ -135,11 +144,22 @@ export function runOrders({ portfolio, tick, market, feeProfile = {}, onlyIds = 
       price = trig.price;
     }
 
+    const capped = order.side === 'sell' && !isFund && Number.isFinite(asset.sellCap);
+    if (capped) capLeft[order.assetId] ??= Math.max(0, asset.sellCap);
+    const qty = capped ? Math.min(order.qty, capLeft[order.assetId]) : order.qty;
+    if (qty <= 0) {
+      wait(order, order.qty);
+      continue;
+    }
+    // A part fill is its own filled order; the original keeps the rest, waiting.
+    const part = qty < order.qty;
+    const filling = part ? { ...order, id: `${order.id}_${today}`, qty } : order;
+
     const profile = order.feeProfile ?? feeProfile;
-    const gross = Math.round(order.qty * price);
+    const gross = Math.round(filling.qty * price);
     const fees = computeFees(gross, profile);
     const check = validateOrder({
-      order,
+      order: filling,
       price,
       cash: p.cash,
       lots: p.lots,
@@ -154,7 +174,7 @@ export function runOrders({ portfolio, tick, market, feeProfile = {}, onlyIds = 
     }
 
     const fill = executeFill({
-      portfolio: p, order, price, fees, tick, lotId: `lot_${order.id}`,
+      portfolio: p, order: filling, price, fees, tick, lotId: `lot_${order.id}`,
       settleTicks: order.side === 'sell' ? Math.max(settleDays, isFund ? (asset.fund?.redeemDelay ?? 0) : 0) : 0,
     });
     if (!fill.ok) {
@@ -164,18 +184,24 @@ export function runOrders({ portfolio, tick, market, feeProfile = {}, onlyIds = 
 
     p = fill.portfolio;
     p = { ...p, stats: { ...p.stats, realized: p.stats.realized + (fill.realized ?? 0) } };
-    close(order, {
-      status: 'filled', filledTick: tick, closedTick: tick, fillPrice: price, fees, realized: fill.realized, timingBps,
-    });
+    const filled = { status: 'filled', filledTick: tick, closedTick: tick, fillPrice: price, fees, realized: fill.realized, timingBps };
+    if (capped) capLeft[order.assetId] -= qty;
+    if (part) {
+      p = { ...p, orders: [...p.orders, { ...filling, ...filled, waiting: undefined }] };
+      wait(order, order.qty - qty);
+    } else {
+      close(order, { ...filled, waiting: undefined });
+    }
     events.push({
       type: 'orderFilled',
-      orderId: order.id,
+      orderId: filling.id,
+      ...(part ? { partOf: order.id, waiting: order.qty - qty } : {}),
       side: order.side,
       assetId: order.assetId,
       assetType: order.assetType,
       route: order.route,
       brokerId: order.brokerId ?? null,
-      qty: order.qty,
+      qty: filling.qty,
       price,
       gross: fill.gross,
       fees,

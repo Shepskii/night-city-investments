@@ -10,6 +10,7 @@
 import {
   applyRequests, runOrders, OPEN, PROCESSED_CAP, lockedOut, sessionActive, dueWithdrawals, markWithdrawalPaid, failPaidWithdrawal,
   ipoStatus, ipoPrice, dayIndex, checkAlerts, releaseSettled, HEAT_ACTIONS, canAttempt, currentHeat, heatTier, scrutinyFor,
+  dailySellCap, TIME_EPS,
 } from '../engine/index.js';
 import { HOOKS, MODULE_ID, SETTINGS } from '../utils/constants.js';
 import { log, isActiveGM } from '../utils/helpers.js';
@@ -18,6 +19,8 @@ import { FundRepository } from '../data/FundRepository.js';
 import { BrokerRepository } from '../data/BrokerRepository.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
+import { BusinessRepository } from '../data/BusinessRepository.js';
+import { SyndicateRepository } from '../data/SyndicateRepository.js';
 import { WealthAdapter } from './WealthAdapter.js';
 import { TradingSettings } from './TradingSettings.js';
 import { TerminalAccess } from './TerminalAccess.js';
@@ -64,6 +67,38 @@ class PortfolioServiceImpl {
       };
     }
     return out;
+  }
+
+  /**
+   * The market as the GM's executor trades on it: with each listed player company's liquidity cap
+   * (B5c), the shares the market will still buy from players today, after what every account sold.
+   */
+  tradingMarket() {
+    const market = this.market();
+    const listed = BusinessRepository.all().filter((b) => b.listing?.status === 'listed' && market[b.company?.ticker]);
+    if (!listed.length) return market;
+    const today = Math.floor(this.tick() + TIME_EPS);
+    const sold = {};
+    for (const account of PortfolioRepository.accounts().filter((a) => PortfolioRepository.hasPortfolio(a))) {
+      for (const o of PortfolioRepository.get(account).orders ?? []) {
+        if (o.side === 'sell' && o.status === 'filled' && Math.floor((o.filledTick ?? -1) + TIME_EPS) === today) sold[o.assetId] = (sold[o.assetId] ?? 0) + o.qty;
+      }
+    }
+    for (const b of listed) {
+      const id = b.company.ticker;
+      market[id] = { ...market[id], sellCap: Math.max(0, dailySellCap(b, this._fixerOperator(b)) - (sold[id] ?? 0)) };
+    }
+    return market;
+  }
+
+  /** The best Operator rank among a company's officers who are Fixers (a syndicate officer counts its own officers). */
+  _fixerOperator(b) {
+    const actorsOf = (id) => {
+      const actor = game.actors.get(id);
+      if (actor) return [actor];
+      return (SyndicateRepository.get(id)?.members ?? []).filter((m) => m.status === 'active' && m.role === 'officer').map((m) => game.actors.get(m.actorId)).filter(Boolean);
+    };
+    return Math.max(0, ...(b.officers ?? []).flatMap(actorsOf).map((actor) => SkillAdapter.readAbility(actor, 'Operator').rank));
   }
 
   /**
@@ -163,7 +198,7 @@ class PortfolioServiceImpl {
       const portfolio = PortfolioRepository.get(actor);
       const wealth = WealthAdapter.get(actor);
       const out = applyRequests({
-        portfolio, requests: [request], wealth, tick: this.tick(), market: this.market(), settings: this.settings({}, actor),
+        portfolio, requests: [request], wealth, tick: this.tick(), market: this.tradingMarket(), settings: this.settings({}, actor),
       });
       if (out.wealth !== wealth) await WealthAdapter.set(actor, out.wealth, 'Night City Investments: brokerage transfer');
       await PortfolioRepository.save(actor, out.portfolio);
@@ -268,7 +303,7 @@ class PortfolioServiceImpl {
     const tick = this.tick();
     const checks = await this._checks(actor, pending, portfolio, tick);
     const result = applyRequests({
-      portfolio, requests: pending, wealth, tick, market: this.market(), settings: this.settings(checks, actor),
+      portfolio, requests: pending, wealth, tick, market: this.tradingMarket(), settings: this.settings(checks, actor),
     });
     if (!result.changed) return;
 
@@ -288,13 +323,15 @@ class PortfolioServiceImpl {
     const result = runOrders({
       portfolio,
       tick: this.tick(),
-      market: this.market(),
+      market: this.tradingMarket(),
       path,
       feeProfile: TradingSettings.forExecutor().direct,
       seed: TradingSettings.seed(),
       settleDays: TradingSettings.settlementDays(),
     });
-    const changed = result.portfolio.orders.some((o, i) => o.status !== portfolio.orders[i]?.status);
+    // A sale waiting on the liquidity cap moves to the next day without changing its status (B5c).
+    const changed = result.portfolio.orders.length !== portfolio.orders.length
+      || result.portfolio.orders.some((o, i) => o.status !== portfolio.orders[i]?.status || o.eligibleTick !== portfolio.orders[i]?.eligibleTick);
     if (!changed) return;
 
     await PortfolioRepository.save(actor, result.portfolio);

@@ -152,3 +152,25 @@ test("a listed company's report pays the dividend into the holders' brokerage ba
   await settle();
   assert.equal(cashOf(alice), before.alice + Math.floor(700 * perShare));
 });
+
+test('the market buys only so many of a listed player company\'s shares a day; the rest of a sale waits for the next day', async () => {
+  const cap = E.dailySellCap(business());
+  await S.TickService.advanceDays(1);
+  await settle();
+  const have = held(cass);
+  assert.ok(have > 0, 'cass still holds some');
+  // Bob's lock-up has not ended, so only Cass sells; give her more than a day's cap to sell.
+  const extra = cap + 5 - have;
+  if (extra > 0) {
+    await S.PortfolioRepository.save(cass, { ...portfolio(cass), lots: [...portfolio(cass).lots, { id: 'lot_extra', assetType: 'stock', assetId: 'PLAY', qty: extra, unitCost: 100, acquiredTick: 0, drip: false }] });
+  }
+  const qty = held(cass);
+  const key = await S.PortfolioClient.submit(cass, 'placeOrder', { route: 'direct', side: 'sell', assetId: 'PLAY', qty, orderType: 'market', expiry: 'day' });
+  await settle();
+  assert.equal(resultOf(cass, key).ok, true);
+  assert.equal(held(cass), qty - cap, 'a day\'s cap sold');
+  assert.equal(portfolio(cass).orders.find((o) => o.id === `o_${key}`).waiting, 'liquidity');
+  await S.TickService.advanceDays(1);
+  await settle();
+  assert.equal(held(cass), 0, 'the rest sold the next day');
+});

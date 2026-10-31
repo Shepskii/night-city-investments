@@ -537,6 +537,8 @@ export class MarketTerminalApp extends BaseApplication {
       text: describeOrder(o),
       when: o.type === 'ipo'
         ? L('NCI.Ipo.AwaitingListing')
+        // The market bought all it would of a player company today (B5c): the sale waits.
+        : o.waiting === 'liquidity' ? L('NCI.Portfolio.WaitingBuyers')
         : L(o.eligibleTick > tick ? 'NCI.Portfolio.EtaDays' : 'NCI.Portfolio.Working', { n: Math.max(1, Math.ceil(o.eligibleTick - tick - 1e-6)) }),
       route: o.type === 'ipo' ? L('NCI.Ipo.Offer') : L(`NCI.Route.${o.route ?? 'direct'}`),
       expiry: L(`NCI.Expiry.${o.expiry}`),
