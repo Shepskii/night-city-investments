@@ -1346,7 +1346,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, params
   for (const s of activeStaff(b).filter((x) => x.source === 'pc' && x.actorId)) {
     out.events.push({
       type: 'payslip', actorId: s.actorId, staffId: s.id, post: s.post, wage: Math.round(s.wage * part), paid: wages.pay[s.actorId] ?? 0, owed: s.owed ?? 0,
-      overtime: b.period.pcOvertime?.[s.actorId] ?? 0,
+      overtime: b.period.pcOvertime?.[s.actorId] ?? 0, shifts: shiftsOf(b, s.id),
     });
   }
   const loans = payLoans(b, b.period.endDay, p);

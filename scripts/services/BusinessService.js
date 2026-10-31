@@ -317,11 +317,12 @@ class BusinessServiceImpl {
       if (mail) {
         try {
           const result = await MailService.fromWire(actor, {
-            subject: L('NCI.Staff.Payslip.Subject', { name: out.business.name }),
+            // Wage and overtime each on a line of their own, so a week with overtime says so.
+            subject: L(overtime ? 'NCI.Staff.Payslip.SubjectOvertime' : 'NCI.Staff.Payslip.Subject', { name: out.business.name }),
             lines: [
               L('NCI.Staff.Payslip.Body', { name: out.business.name, post: L(`NCI.Staff.Post.${slip.post}`), wage: eb(slip.wage), paid: eb(wage) }),
-              ...(overtime ? [L('NCI.Staff.Payslip.Overtime', { overtime: eb(overtime) })] : []),
-              ...(paid ? [L('NCI.Staff.Payslip.Attached', { paid: eb(paid) })] : []),
+              ...(overtime ? [L('NCI.Staff.Payslip.Overtime', { overtime: eb(overtime), shifts: slip.shifts || 1 })] : []),
+              ...(paid ? [L(overtime ? 'NCI.Staff.Payslip.AttachedBoth' : 'NCI.Staff.Payslip.Attached', { paid: eb(paid), wage: eb(wage), overtime: eb(overtime) })] : []),
               ...(slip.owed ? [L('NCI.Staff.Payslip.Owed', { owed: eb(slip.owed) })] : []),
             ],
             eddies: paid,
@@ -379,6 +380,8 @@ class BusinessServiceImpl {
       const jobs = staff ? [...kept, {
         businessId: business.id, businessName: business.name, archetype: business.archetype, stage: business.stage,
         staffId: staff.id, post: staff.post, status: staff.status, wage: staff.wage, hiredDay: staff.hiredDay, owed: staff.owed,
+        // Overtime worked this week, paid with the next payslip (E3).
+        overtime: business.period?.pcOvertime?.[actor.id] ?? 0,
         // The rolls a partner asked of them (E3), with what their roll dialog needs, since they cannot read the business.
         asks: this._asksFor(business, staff, actor),
       }] : kept;

@@ -193,12 +193,12 @@ test('the week closes: the wage is paid to Nova, and the ledger and the GM tab s
   assert.equal(S.WealthAdapter.get(nova), wealth);
   assert.equal(sent.length, 1);
   assert.equal(sent[0].to, nova.id);
-  assert.equal(sent[0].subject, 'Payslip: Back Room');
+  assert.equal(sent[0].subject, 'Payslip: Back Room (wage and overtime)', 'a week with overtime says so');
   // Nova's overtime earlier this week (54 eb) comes on the payslip with the wage (E3).
   assert.equal(sent[0].eddies, week.wages + 54);
-  assert.match(sent[0].lines[1], /Overtime this week: 54 eb/);
+  assert.equal(sent[0].lines[1], 'Overtime: 54 eb for 1 shift(s) worked this week, on top of the wage.');
   assert.match(sent[0].lines[0], new RegExp(`Floor: this week's wage ${week.wages} eb, ${week.wages} eb of it paid`));
-  assert.match(sent[0].lines[2], new RegExp(`claim ${week.wages + 54} eb from this message`));
+  assert.equal(sent[0].lines[2], `Attached: ${week.wages + 54} eb to claim from this message (${week.wages} eb wage and 54 eb overtime).`);
   // A payslip that cannot be sent (no Messenger) pays the sheet instead, so the wage is never lost.
   MailService.fromWire = async () => ({ ok: false, error: 'no-wire' });
   try {
@@ -287,6 +287,9 @@ test('on call (E3): a partner asks Nova for a slot; Nova rolls it from the Job v
   assert.equal(business().till, till - ask.pay);
   assert.equal(business().period.pcOvertime[nova.id], before + ask.pay);
   assert.equal(business().period.asks.length, 0, 'done, so no longer asked');
+  // Nova's Job view says what overtime is waiting for the next payslip.
+  const owedView = text(render('templates/business/business.hbs', await windowFor(nova)._prepareContext()));
+  assert.match(owedView, new RegExp(`Overtime this week: ${before + ask.pay} eb, paid with your next payslip`));
 
   // A roll asked can be declined.
   await send(med, 'askStaff', { businessId: business().id, staffId, roll: { type: 'assist', forAction: 'work' } });

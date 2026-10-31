@@ -2721,6 +2721,7 @@
       "CancelAsk": "Withdraw",
       "AskNone": "Nothing they could be asked for now.",
       "Asked": "{name} asks you to roll: {what} (overtime {pay} eb, on your payslip).",
+      "OvertimeDue": "Overtime this week: {amount} eb, paid with your next payslip.",
       "RollAsked": "Roll",
       "DeclineAsk": "Decline",
       "Train": "Training",
@@ -2739,9 +2740,11 @@
       "TrainCourse": "Send them on a course ({cost} eb)",
       "Payslip": {
         "Subject": "Payslip: {name}",
+        "SubjectOvertime": "Payslip: {name} (wage and overtime)",
         "Body": "{name}, {post}: this week's wage {wage} eb, {paid} eb of it paid.",
         "Attached": "Your pay is attached: claim {paid} eb from this message.",
-        "Overtime": "Overtime this week: {overtime} eb, attached with your wage.",
+        "Overtime": "Overtime: {overtime} eb for {shifts} shift(s) worked this week, on top of the wage.",
+        "AttachedBoth": "Attached: {paid} eb to claim from this message ({wage} eb wage and {overtime} eb overtime).",
         "Owed": "Still owed to you: {owed} eb."
       }
     }

@@ -1009,6 +1009,7 @@ export function jobsContext(actor) {
     offered: j.status === 'offered',
     since: j.hiredDay != null ? dayText(j.hiredDay) : '',
     owed: j.owed ? L('NCI.Staff.Owed', { amount: whole(j.owed) }) : '',
+    overtime: j.overtime ? L('NCI.Staff.OvertimeDue', { amount: whole(j.overtime) }) : '',
     // Rolls a partner asked of them (E3).
     asks: (j.asks ?? []).map((a) => ({ id: a.id, text: L('NCI.Staff.Asked', { what: a.what, name: a.by, pay: whole(a.pay) }) })),
   }));
