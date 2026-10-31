@@ -315,6 +315,9 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     fee: 0.02, dv: 'professional', retryDays: 14, minFloat: 0.2, maxFloat: 0.4, floatStep: 0.05, lockupDays: 28, maxFactor: 0.15,
     /** The IPO's subscription window, from the offer being set to the listing day (B5b). */
     ipoWindowDays: 5,
+    /** After listing (B5c): a report moves fair value toward V per share, at most this far (a log-return) either way, from the day after. */
+    earningsCap: 0.5,
+    earningsDelayDays: 1,
     multiples: Object.freeze({ tech: 14, biotech: 13, health: 12, finance: 11, security: 10, arms: 10, media: 9, energy: 9, transport: 8, construction: 7, consumer: 7, other: 6 }),
     uses: Object.freeze({
       filing: Object.freeze([S.accounting, Object.freeze({ ...S.business, dvAdd: 2 })]),

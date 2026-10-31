@@ -126,3 +126,13 @@ test('the lock-up: locked shares are held but cannot be sold until it ends; free
   assert.deepEqual(out.lots.map((l) => [l.id, l.qty]), [['l1', 100]], 'the free lot is sold, the locked one kept');
   assert.equal(consumeLotsFifo(lots, 'PLAY', 21, 10), null);
 });
+
+test('after listing, a report points the price at V per share, moved at most earningsCap either way', async () => {
+  const { earningsTarget, earningsAmount } = await import('../scripts/engine/index.js');
+  const b = normalizeBusiness({ ...company(), listing: { status: 'listed', shares: 2000 } });
+  assert.equal(earningsTarget(b, { valuation: 300000 }), 150);
+  assert.ok(Math.abs(earningsAmount(150, 100) - Math.log(1.5)) < 1e-9);
+  assert.equal(earningsAmount(400, 100), L.earningsCap, 'a doubling and more is held to the cap');
+  assert.equal(earningsAmount(10, 100), -L.earningsCap);
+  assert.equal(earningsAmount(0, 100), 0);
+});

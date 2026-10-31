@@ -1009,6 +1009,7 @@
       "FundClosed": "{name} is closed. Unit holders are paid {price} eb per unit.",
       "FundDistribution": "{name} pays a distribution of {amount} eb per unit.",
       "Ipo": "{name} ({ticker}) goes public today at {price} eb per share.",
+      "PlayerReport": "{name} ({ticker}) reports a month's profit of {profit} eb; the company is valued at about {value} eb.",
       "IpoOversubscribed": "The {name} offer was oversubscribed. Each subscription was filled at {pct}%."
     },
     "Controls": {

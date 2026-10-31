@@ -110,3 +110,23 @@ test('a ready listing becomes a market company with an IPO; on listing the float
   // A listed company is not a private stake any more.
   assert.equal(S.BusinessRepository.stakesOf(alice.id), 0);
 });
+
+test('after listing, a monthly report moves the stock toward its valuation per share, and makes the news', async () => {
+  const b = business();
+  const before = S.MarketStore.getPublic().companies.PLAY.price;
+  const target = before * 1.5;
+  await S.BusinessService._afterReports({ business: b, events: [{ type: 'reportPublished', report: { index: 9, reported: 5000, profit: 5000, valuation: Math.round(target * b.listing.shares) } }] });
+  await settle();
+  const impact = S.MarketStore.getControls().impacts.find((i) => i.sourceKey === 'report:bus_play:9');
+  assert.ok(impact, 'queued');
+  assert.equal(impact.permanent, 1, 'fair value settles at the target');
+  assert.ok(Math.abs(impact.amount - Math.log(1.5)) < 0.01);
+  // The same report again changes nothing.
+  await S.BusinessService._afterReports({ business: b, events: [{ type: 'reportPublished', report: { index: 9, reported: 5000, profit: 5000, valuation: Math.round(target * b.listing.shares) } }] });
+  await settle();
+  assert.equal(S.MarketStore.getControls().impacts.filter((i) => i.sourceKey === 'report:bus_play:9').length, 1);
+  assert.ok(S.MarketStore.getNews().items.some((n) => n.headline.includes('PlayerReport') || n.headline.includes('reports a month')));
+  await S.TickService.advanceDays(6);
+  await settle();
+  assert.ok(S.MarketStore.getPublic().companies.PLAY.price > before * 1.25, `the price rises toward the target (${before} to ${S.MarketStore.getPublic().companies.PLAY.price})`);
+});

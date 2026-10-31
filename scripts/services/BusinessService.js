@@ -18,7 +18,7 @@ import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
   STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
-  isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf,
+  isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter, isItemPile } from '../utils/helpers.js';
@@ -35,6 +35,8 @@ import { SyndicateCash } from './SyndicateCash.js';
 import { MailService } from './MailService.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { PortfolioService } from './PortfolioService.js';
+import { TickService } from './TickService.js';
+import { NewsService } from './NewsService.js';
 
 const RESULTS_CAP = 40;
 /** Requests that may bring gear: the items are looked up here, never taken from the request. */
@@ -132,6 +134,38 @@ class BusinessServiceImpl {
     if (!!business.listingConcerns === over) return false;
     business.listingConcerns = over;
     return true;
+  }
+
+  /**
+   * A listed company's monthly report reaches the market (B5c): the stock's fair value moves toward its
+   * valuation per share over a few days (the market's impact kernel, wholly permanent), and the news
+   * carries the report.
+   */
+  async _afterReports(out) {
+    const b = out.business;
+    if (!isListed(b)) return;
+    const ticker = b.company?.ticker;
+    for (const e of out.events.filter((x) => x.type === 'reportPublished')) {
+      const report = e.report;
+      const price = MarketStore.getPublic().companies?.[ticker]?.price ?? 0;
+      const target = earningsTarget(b, report);
+      const amount = earningsAmount(target, price);
+      const key = `report:${b.id}:${report.index}`;
+      if (amount) {
+        await TickService.updateControls((controls, { tick }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
+          ...controls,
+          impacts: [...controls.impacts, makeImpact({
+            id: `imp_${b.id}_${report.index}`, target: { type: 'company', id: ticker }, amount, onsetTick: tick + BUSINESS_DEFAULTS.listing.earningsDelayDays,
+            permanent: 1, sourceKey: key, source: 'report', meta: { businessId: b.id, report: report.index, target: Math.round(target * 100) / 100 },
+          })],
+        }));
+      }
+      await NewsService.post({
+        headline: L('NCI.News.PlayerReport', { name: b.name, ticker, profit: Math.round(report.reported).toLocaleString(), value: Math.round(report.valuation).toLocaleString() }),
+        tone: report.reported > 0 ? 'up' : 'down',
+        companyIds: [ticker],
+      });
+    }
   }
 
   /**
@@ -386,6 +420,7 @@ class BusinessServiceImpl {
     await this._payslips(out);
     await this._twoJobs(out);
     await this._scheduleListing(out.business);
+    await this._afterReports(out);
     for (const event of out.events.filter((e) => e.type === 'periodClosed')) {
       Hooks.callAll(HOOKS.BUSINESS_PERIOD, { businessId: out.business.id, digest: event.digest });
     }

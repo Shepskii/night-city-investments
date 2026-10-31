@@ -229,3 +229,21 @@ export function syncListedHolders(b, holdings, names = {}) {
   }
   return JSON.stringify(b.partners) !== before;
 }
+
+// ── After listing (B5c) ──────────────────────────────────────────────────────
+
+/** The share price a listed company's report points to (the user's choice): its valuation per share outstanding. */
+export function earningsTarget(b, report) {
+  const shares = b.listing?.shares ?? totalUnits(b);
+  return shares > 0 && report?.valuation > 0 ? report.valuation / shares : 0;
+}
+
+/**
+ * The market impact a report makes (§26.4 monthly report): the log-return that would take the price to
+ * the target, within `earningsCap` either way; the market's impact kernel moves fair value there over
+ * a few days.
+ */
+export function earningsAmount(target, price, p = BUSINESS_DEFAULTS) {
+  if (!(target > 0 && price > 0)) return 0;
+  return clamp(Math.log(target / price), -p.listing.earningsCap, p.listing.earningsCap);
+}
