@@ -450,7 +450,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B2 | **Done (v0.11.0), see §30.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
 | B3 | **Done (v0.12.0), see §31.** Player syndicates, and syndicates owning or investing in businesses |
 | B4 | **Done (v0.12.0), see §32.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
-| E | **E1 and E2 done (v0.12.0), see §33.9 and §33.10; E3 under way (training built), see §33.11.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
+| E | **E1 and E2 done (v0.12.0), see §33.9 and §33.10; E3 under way (training and on call built), see §33.11.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
 | Projects | **Done (v0.12.0), see §34.** Projects beside expansion: refit, security upgrade, storefront, staff room; the Projects tab reworked |
 | B5 | **v0.13.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
 | B6 | **v0.14.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
@@ -1619,7 +1619,7 @@ E2 is `scripts/engine/businessPeople.js` (pure), with small hooks in `businessSt
 - **The digest** lists what happened to the staff (off sick, hurt, poached, caught, asks for a raise, quit, walked out, quit unpaid), and an accident's medical bills.
 - **No migration.** The normalizer fills in loyalty (50, or none for a player character) and keeps the new fields.
 
-**Not built yet:** a player character on call rolling their own overtime with their own Luck, and the rest of E3 (§33.11).
+**Not built yet:** the rest of E3 (§33.11): two jobs, share grants and the Exec's team.
 
 **Tested in the test world** (v0.12.0, 2026-10-31, at the Splice Chrome Clinic): overtime for a help and for a slot, a second shift's loyalty cost, an advert, vetting with an exceptional result, turning an applicant away, hiring, a bonus, a raise, moving an employee to another role, weekly loyalty, staff events (a star turn, a sick day), letting an employee go, an NPC offered a job and the GM answering, and a fourth hire once a staff room was built. It found and fixed: the employee a staff event is about could answer it; Item Piles actors offered as heirs and hires; "Proposal made." shown for a proposal the proposer's units carried at once. Changed on the user's request: a player character's wage comes on their payslip mail to claim. Not tried live: a player character's job from offer to payslip, raises asked at a month's end, hidden traits at work, and a sullen employee quitting or stealing (all covered by tests).
 
@@ -1635,6 +1635,13 @@ E2 is `scripts/engine/businessPeople.js` (pure), with small hooks in `businessSt
 - **Pay.** No raise is asked for afterwards, as the plan had it: a wage is worked out from the employee's base every week, so it rises with the trained skill from the next close.
 - **Windows.** The Employee window's Training section names the skill and how far training has taken it, whether the account picked can mentor, the two buttons with their cost, and when training can next be done. Ledger lines "trained, mentored by…" and "sent on a course by…".
 - **Tests.** `tests/businessPeople.test.mjs` (course, mentor, delay, limit, player character, a sheet re-read) and `tests/staffFlow.test.mjs` (the window, and a course through the GM's service).
+
+**A player character on call (E3b).**
+- **Asking.** Whoever runs the business asks a player character on the staff for one of this week's rolls from their Employee window's On call section (`askStaff`): a free action slot, the week's event, or a help with an action not yet taken. The roll must be one the partner could make now. One request at a time per employee, kept on the week (`period.asks`); it lapses when the week closes. The partner can withdraw it, and the employee can decline it (`cancelAsk`). An NPC is still called in from the roll dialog, as before.
+- **The employee's roll.** The GM's service mirrors each request onto the player character's job (`jobs[].asks`) with what their roll dialog needs (the ways it may be rolled, the DV, any +1 waiting, the overtime, what each result means), since an employee cannot read the business. Their Job view shows it with Roll and Decline buttons; the roll dialog opens from the job, and they roll with their own skills and Luck (`staffRoll`), with the approach and any +1 waiting, but no extra time (business days are the partners') and no hired professional. The GM's service checks everything again: the request is still theirs, they have an overtime shift left, the cash can pay, the slot is still free.
+- **What it counts as.** The slot, the event's answer or the help is the employee's (`by` their staff id), as an NPC's overtime is. It is one of their two shifts a week.
+- **Overtime on the payslip** (the user's choice): a player character's overtime, whether asked for or called in from the roll dialog, comes from the cash when they roll and is added to that week's payslip (`period.pcOvertime`), claimed from the mail with the wage. The payslip says how much was overtime.
+- **Tests.** `tests/staffFlow.test.mjs` runs it end to end: the Employee window's options, asking, the job carrying the request, the Job view, the roll dialog from the job, the roll counting with Nova's own Luck, the overtime for the payslip, and declining. (The fake Foundry's characters now record Luck spent.)
 
 ## 34. Projects beside expansion (v0.12.0)
 

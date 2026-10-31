@@ -144,7 +144,7 @@ test('the partners hire a player character, who accepts from their own window an
   assert.match(staff, /108/, '12 × 9 eb at a registered business');
 });
 
-test('the roll dialog offers the employee for overtime; their roll counts, the overtime comes from the cash and goes to them', async () => {
+test('the roll dialog offers the employee for overtime; their roll counts, the overtime comes from the cash, for their payslip', async () => {
   const b = business();
   const dialog = new Apps.Roll({ actorId: med.id, businessId: b.id, request: { type: 'action', businessId: b.id, action: 'work' }, rollTitle: 'Work' });
   const html = render('templates/dialogs/roll.hbs', await dialog._prepareContext());
@@ -162,7 +162,8 @@ test('the roll dialog offers the employee for overtime; their roll counts, the o
   assert.equal(slot.by, b.staff[0].id);
   assert.equal(slot.total, 19, "Nova's 12 and the 7; no Luck for an employee");
   assert.equal(after.till, till - 54);
-  assert.equal(S.WealthAdapter.get(nova), wealth + 54);
+  assert.equal(S.WealthAdapter.get(nova), wealth, "a player character's overtime goes on the week's payslip, not straight to the sheet");
+  assert.equal(after.period.pcOvertime[nova.id], 54);
   assert.equal(SkillLuck(med), 4, "the Medtech's Luck is untouched");
 
   const week = text(await renderBusiness(windowFor(med, 'week')));
@@ -193,9 +194,11 @@ test('the week closes: the wage is paid to Nova, and the ledger and the GM tab s
   assert.equal(sent.length, 1);
   assert.equal(sent[0].to, nova.id);
   assert.equal(sent[0].subject, 'Payslip: Back Room');
-  assert.equal(sent[0].eddies, week.wages);
+  // Nova's overtime earlier this week (54 eb) comes on the payslip with the wage (E3).
+  assert.equal(sent[0].eddies, week.wages + 54);
+  assert.match(sent[0].lines[1], /Overtime this week: 54 eb/);
   assert.match(sent[0].lines[0], new RegExp(`Floor: this week's wage ${week.wages} eb, ${week.wages} eb of it paid`));
-  assert.match(sent[0].lines[1], new RegExp(`claim ${week.wages} eb from this message`));
+  assert.match(sent[0].lines[2], new RegExp(`claim ${week.wages + 54} eb from this message`));
   // A payslip that cannot be sent (no Messenger) pays the sheet instead, so the wage is never lost.
   MailService.fromWire = async () => ({ ok: false, error: 'no-wire' });
   try {
@@ -241,6 +244,60 @@ test('the week closes: the wage is paid to Nova, and the ledger and the GM tab s
   assert.match(text(gm), /Medtech partner 3,000 66\.7% Fixer partner 1,500 33\.3%/);
   assert.match(text(gm), /Cash \S+ eb Book value \S+ eb Reputation \d+ Capacity \d\.\d\d Exposure \d+/);
   assert.doesNotMatch(text(gm), /takings|slots used|Cost base|Setup roll/);
+});
+
+test('on call (E3): a partner asks Nova for a slot; Nova rolls it from the Job view with their own Luck; the overtime goes on the payslip', async () => {
+  const { EmployeeDialogApp } = await import('../scripts/ui/Business/EmployeeDialogApp.js');
+  const staffId = business().staff.find((s) => s.actorId === nova.id).id;
+  // The Medtech's Employee window offers the week's rolls.
+  const manage = new EmployeeDialogApp({ actorId: med.id, businessId: business().id, staffId });
+  const managed = render('templates/dialogs/employee.hbs', await manage._prepareContext());
+  assertClean(managed, 'employee window on call');
+  assert.match(text(managed), /On call/);
+  assert.match(managed, /<option value="action:promote">Take the slot: Promote<\/option>/);
+  await send(med, 'askStaff', { businessId: business().id, staffId, roll: { type: 'action', action: 'promote' } });
+  assert.equal(receipt(med).ok, true, receipt(med).reason);
+  assert.equal(business().period.asks.length, 1);
+  assert.equal((await send(med, 'askStaff', { businessId: business().id, staffId, roll: { type: 'respond' } }), receipt(med).reason), 'already-asked');
+
+  // It is on Nova's job, with what the dialog needs (Nova cannot read the business).
+  const job = nova.getFlag('night-city-investments', 'jobs')[0].find((j) => j.businessId === business().id);
+  assert.equal(job.asks.length, 1);
+  assert.equal(job.asks[0].what, 'Promote');
+  assert.ok(job.asks[0].uses.length > 0 && job.asks[0].dv > 0);
+  const jobView = render('templates/business/business.hbs', await windowFor(nova)._prepareContext());
+  assert.match(text(jobView), /Medtech asks you to roll: Promote \(overtime \d+ eb, on your payslip\)/);
+  assert.match(jobView, /data-action="rollAsked"/);
+
+  // Nova rolls it with their own skills and Luck; the slot is Nova's, the overtime from the cash, for the payslip.
+  const ask = job.asks[0];
+  const dialog = new Apps.Roll({ actorId: nova.id, businessId: business().id, request: { type: 'staffRoll', businessId: business().id, askId: ask.id }, rollTitle: 'Promote', asked: { ...ask, businessName: 'Back Room' } });
+  const dialogHtml = render('templates/dialogs/roll.hbs', await dialog._prepareContext());
+  assertClean(dialogHtml, 'asked roll dialog');
+  assert.match(text(dialogHtml), /Asked of you as an employee/);
+  const till = business().till;
+  const before = business().period.pcOvertime?.[nova.id] ?? 0;
+  dice = [8];
+  await S.BusinessClient.rollAsked(nova, { businessId: business().id, ask, use: ask.uses[0], levers: { luck: 1 }, title: 'Promote' });
+  await S.BusinessService.processActor(nova);
+  assert.equal(receipt(nova).ok, true, receipt(nova).reason);
+  const slot = business().period.slots.find((s) => s.action === 'promote');
+  assert.equal(slot.by, staffId);
+  assert.equal(slot.luck, 1, "Nova's own Luck");
+  assert.equal(business().till, till - ask.pay);
+  assert.equal(business().period.pcOvertime[nova.id], before + ask.pay);
+  assert.equal(business().period.asks.length, 0, 'done, so no longer asked');
+
+  // A roll asked can be declined.
+  await send(med, 'askStaff', { businessId: business().id, staffId, roll: { type: 'assist', forAction: 'work' } });
+  const id = business().period.asks[0]?.id;
+  if (id) {
+    await send(nova, 'cancelAsk', { businessId: business().id, askId: id });
+    assert.equal(receipt(nova).ok, true, receipt(nova).reason);
+    assert.equal(business().period.asks.length, 0);
+  } else {
+    assert.equal(receipt(med).reason, 'no-shifts', 'Nova has worked both shifts this week');
+  }
 });
 
 test('advertising brings applicants the partners can hire on what they ask; Nova can quit, and the job leaves the Job view', async () => {

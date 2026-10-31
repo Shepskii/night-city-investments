@@ -35,7 +35,10 @@
       <tr>
         <td><strong>{{name}}</strong> <span class="nci-muted">{{archetype}}</span>
           <div class="nci-muted">{{post}} &middot; {{localize "NCI.Staff.WageWeek" wage=wage}}{{#if since}} &middot; {{localize "NCI.Staff.Since" date=since}}{{/if}}</div>
-          {{#if owed}}<div class="nci-warn">{{owed}}</div>{{/if}}</td>
+          {{#if owed}}<div class="nci-warn">{{owed}}</div>{{/if}}
+          {{#each asks}}<div class="nci-warn">{{text}}
+            <button type="button" class="nci-labelled" data-action="rollAsked" data-business="{{../businessId}}" data-id="{{id}}"><i class="fas fa-dice-d10"></i> {{localize "NCI.Staff.RollAsked"}}</button>
+            <button type="button" class="nci-labelled" data-action="declineAsk" data-business="{{../businessId}}" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.Staff.DeclineAsk"}}</button></div>{{/each}}</td>
         <td class="nci-rowbtns">
           {{#if offered}}
           <button type="button" class="nci-labelled" data-action="acceptJob" data-id="{{businessId}}"><i class="fas fa-handshake"></i> {{localize "NCI.Staff.Accept"}}</button>

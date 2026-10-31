@@ -144,6 +144,18 @@ class BusinessClientImpl {
     return this.submit(actor, request.type, { ...request, use, rollId: messageId });
   }
 
+  /**
+   * A player character on the staff rolls what a partner asked of them (E3), from their job: they cannot
+   * read the business, so the DV and the ways to roll come with the job. The GM's service checks it all.
+   */
+  async rollAsked(actor, { businessId, ask, use, levers = {}, title }) {
+    const { messageId } = await SkillAdapter.leverCheck(actor, {
+      dv: ask.dv, title, use, levers: { ...levers, bonus: ask.bonusAvailable ? levers.bonus : 0, extra: 0 },
+    });
+    if (!messageId) return null;
+    return this.submit(actor, 'staffRoll', { businessId, askId: ask.id, use, rollId: messageId });
+  }
+
   /** Is this character a partner who can act for the business (active, with a vote)? */
   canAct(business, actorId) {
     const p = partnerOf(business, actorId);

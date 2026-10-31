@@ -363,7 +363,9 @@ export function payOvertime(b, staffId, kind, day, by, p = BUSINESS_DEFAULTS, tr
   if (shiftsOf(b, staffId) >= 1) moveLoyalty(staff, p.staff.loyalty.extraShift, traits, p);
   b.period.overtime = { ...(b.period.overtime ?? {}), [staffId]: shiftsOf(b, staffId) + 1 };
   addLedger(b, { day, kind: 'overtime', amount: -cost, actorId: by, staffName: staff.name }, p);
-  return { cost, actorId: staff.source === 'pc' ? staff.actorId : null };
+  // A player character's overtime is paid with the week's wage, on their payslip (E3).
+  if (staff.source === 'pc' && staff.actorId) b.period.pcOvertime = { ...(b.period.pcOvertime ?? {}), [staff.actorId]: (b.period.pcOvertime?.[staff.actorId] ?? 0) + cost };
+  return { cost, actorId: null };
 }
 
 // ── The week ─────────────────────────────────────────────────────────────────

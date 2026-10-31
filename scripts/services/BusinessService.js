@@ -17,7 +17,7 @@
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
-  STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome,
+  STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter } from '../utils/helpers.js';
@@ -309,14 +309,18 @@ class BusinessServiceImpl {
     for (const slip of out.events.filter((e) => e.type === 'payslip')) {
       const actor = game.actors.get(slip.actorId);
       if (!actor) continue;
-      const paid = Math.max(0, Math.round(Number(slip.paid) || 0));
+      // The wage paid, and any overtime this week (E3), both claimed from the payslip.
+      const wage = Math.max(0, Math.round(Number(slip.paid) || 0));
+      const overtime = Math.max(0, Math.round(Number(slip.overtime) || 0));
+      const paid = wage + overtime;
       let sent = false;
       if (mail) {
         try {
           const result = await MailService.fromWire(actor, {
             subject: L('NCI.Staff.Payslip.Subject', { name: out.business.name }),
             lines: [
-              L('NCI.Staff.Payslip.Body', { name: out.business.name, post: L(`NCI.Staff.Post.${slip.post}`), wage: eb(slip.wage), paid: eb(paid) }),
+              L('NCI.Staff.Payslip.Body', { name: out.business.name, post: L(`NCI.Staff.Post.${slip.post}`), wage: eb(slip.wage), paid: eb(wage) }),
+              ...(overtime ? [L('NCI.Staff.Payslip.Overtime', { overtime: eb(overtime) })] : []),
               ...(paid ? [L('NCI.Staff.Payslip.Attached', { paid: eb(paid) })] : []),
               ...(slip.owed ? [L('NCI.Staff.Payslip.Owed', { owed: eb(slip.owed) })] : []),
             ],
@@ -375,9 +379,34 @@ class BusinessServiceImpl {
       const jobs = staff ? [...kept, {
         businessId: business.id, businessName: business.name, archetype: business.archetype, stage: business.stage,
         staffId: staff.id, post: staff.post, status: staff.status, wage: staff.wage, hiredDay: staff.hiredDay, owed: staff.owed,
+        // The rolls a partner asked of them (E3), with what their roll dialog needs, since they cannot read the business.
+        asks: this._asksFor(business, staff, actor),
       }] : kept;
       if (JSON.stringify(jobs) !== JSON.stringify(jobsOf(actor))) await actor.setFlag(MODULE_ID, FLAGS.JOBS, [jobs]);
     }
+  }
+
+  /**
+   * The rolls asked of a player character on the staff, as their roll dialog needs them: what it is,
+   * who asked, the ways they may roll it and the DV (for their own sheet), any +1 waiting, the overtime,
+   * and what each result would mean. One they can no longer make (the slot taken) is left out.
+   */
+  _asksFor(business, staff, actor) {
+    const day = this.day();
+    return asksFor(business, staff.id).map((ask) => {
+      const spec = rollSpec(business, { type: 'staffRoll', askId: ask.id, use: null }, actor.id, { day, operatorRank: this.context(business).operatorRank });
+      if (!spec.ok) return null;
+      const r = ask.roll;
+      const event = business.period.event?.kind;
+      const what = r.type === 'action' ? L(`NCI.Business.Action.${r.action}.Name`)
+        : r.type === 'respond' ? L('NCI.Staff.AskRespond', { event: event ? L(`NCI.Event.${event}.Name`) : '' })
+          : L('NCI.Staff.AskHelp', { action: L(`NCI.Business.Action.${r.forAction}.Name`) });
+      return {
+        id: ask.id, what, by: business.partners.find((x) => x.actorId === ask.by)?.name ?? '',
+        uses: spec.uses, dv: spec.dv, bonusAvailable: !!spec.bonusAvailable, pay: spec.pay ?? 0,
+        meaning: r.type === 'action' ? r.action : r.type === 'respond' ? (EVENTS[event]?.good ? 'respondGood' : 'respond') : 'assist',
+      };
+    }).filter(Boolean);
   }
 
   async _receipt(actor, request, out) {

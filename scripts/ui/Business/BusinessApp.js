@@ -14,6 +14,7 @@ import { SyndicateClient } from '../../services/SyndicateClient.js';
 import { accountFor } from '../accounts.js';
 import { BaseApplication } from '../BaseApplication.js';
 import { RollDialogApp } from './RollDialogApp.js';
+import { jobsOf } from '../../services/BusinessClient.js';
 import { HireDialogApp } from './HireDialogApp.js';
 import { EmployeeDialogApp } from './EmployeeDialogApp.js';
 import { CashbookDialogApp } from './CashbookDialogApp.js';
@@ -86,6 +87,8 @@ export class BusinessApp extends BaseApplication {
       acceptJob: BusinessApp._onJob,
       declineJob: BusinessApp._onJob,
       quitJob: BusinessApp._onJob,
+      rollAsked: BusinessApp._onRollAsked,
+      declineAsk: BusinessApp._onDeclineAsk,
     },
   };
 
@@ -470,6 +473,24 @@ export class BusinessApp extends BaseApplication {
     if (type === 'quitJob' && !(await this._confirm('NCI.Staff.QuitConfirm'))) return null;
     if (!this.actor || this.actor.isSyndicate) return null;
     return BusinessClient.submit(this.actor, type, { businessId: target.dataset.id });
+  }
+
+  /** A roll a partner asked of this character as an employee (E3): the roll dialog, from their job. */
+  static _onRollAsked(event, target) {
+    if (!this.actor || this.actor.isSyndicate) return null;
+    const job = jobsOf(this.actor).find((j) => j.businessId === target.dataset.business);
+    const ask = job?.asks?.find((a) => a.id === target.dataset.id);
+    if (!ask) return null;
+    return RollDialogApp.ask({
+      actorId: this.actorId, businessId: job.businessId, request: { type: 'staffRoll', businessId: job.businessId, askId: ask.id },
+      title: `${job.businessName}: ${ask.what}`, asked: { ...ask, businessName: job.businessName },
+    });
+  }
+
+  /** Turn a roll asked of them down. */
+  static _onDeclineAsk(event, target) {
+    if (!this.actor || this.actor.isSyndicate) return null;
+    return BusinessClient.submit(this.actor, 'cancelAsk', { businessId: target.dataset.business, askId: target.dataset.id });
   }
 
   static _onStepUpRoll() {

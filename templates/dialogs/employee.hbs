@@ -53,6 +53,22 @@
     {{/if}}
   </div>
 
+  {{#with onCall}}
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Staff.OnCall"}}</h3>
+    <p class="nci-hint">{{text}}</p>
+    {{#each asked}}<p class="nci-warn">{{text}}{{#if canCancel}} <button type="button" class="nci-labelled" data-action="cancelAsk" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.Staff.CancelAsk"}}</button>{{/if}}</p>{{/each}}
+    {{#if none}}<p class="nci-muted">{{none}}</p>{{/if}}
+    {{#if canAsk}}
+    <div class="nci-hirerow">
+      <label>{{localize "NCI.Staff.AskLabel"}} <select name="askRoll">{{#each options}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+      <span></span>
+      <button type="button" data-action="askStaff"><i class="fas fa-phone"></i> {{localize "NCI.Staff.AskButton"}}</button>
+    </div>
+    {{/if}}
+  </div>
+  {{/with}}
+
   {{#with training}}
   <div class="nci-block nci-form">
     <h3>{{localize "NCI.Staff.Train"}}</h3>

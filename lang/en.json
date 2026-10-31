@@ -482,7 +482,8 @@
       },
       "Employee": "Employee",
       "StaffOption": "{name}, employee: {via} {base} (overtime {pay} eb)",
-      "StaffNote": "An employee called in rolls with their own skill and cannot use Luck or business days. The overtime, {pay} eb, comes from the business's cash."
+      "StaffNote": "An employee called in rolls with their own skill and cannot use Luck or business days. The overtime, {pay} eb, comes from the business's cash.",
+      "AskedNote": "Asked of you as an employee: one of your overtime shifts, {pay} eb from the business's cash onto your payslip. You roll with your own skills and Luck; there is no extra time, since business days are the partners'."
     },
     "Mail": {
       "Days": { "one": "{n} day", "many": "{n} days" },
@@ -2404,6 +2405,9 @@
         "movePost": "Moved.",
         "rejectApplicant": "Applicant turned away.",
         "train": "Training paid for.",
+        "askStaff": "Asked.",
+        "cancelAsk": "Done.",
+        "staffRoll": "Your roll for the business is recorded.",
         "trainRoll": "Your lesson is recorded."
       },
       "Settled": {
@@ -2535,6 +2539,10 @@
         "train-max": "training cannot take them further",
         "no-mentor": "a mentor's own skill must be higher than theirs",
         "mentor-roll": "mentoring is a roll: use the Mentor button",
+        "not-on-call": "only a player character on the staff can be asked for a roll",
+        "already-asked": "they have already been asked for a roll this week",
+        "no-ask": "that roll is no longer asked of them",
+        "not-asked": "that roll was not asked of you",
         "same-pay": "that is what they are paid now",
         "same-post": "they already hold that role",
         "bad-project": "there is no such project",
@@ -2702,6 +2710,19 @@
         "walked": "{name} walked out.",
         "unpaid": "{name} quit, unpaid."
       },
+      "OnCall": "On call",
+      "OnCallHint": "A player character on the staff can be asked for one of this week's rolls: a free action slot, the week's event, or a help. They roll it themselves, from their own Job view, with their own skills and Luck. It is one of their two overtime shifts, and the overtime is paid from the cash onto their payslip.",
+      "AskLabel": "Roll",
+      "AskButton": "Ask them",
+      "AskSlot": "Take the slot: {action}",
+      "AskRespond": "Answer the event: {event}",
+      "AskHelp": "Help with {action}",
+      "AskedOf": "Asked to roll: {what} (by {name}).",
+      "CancelAsk": "Withdraw",
+      "AskNone": "Nothing they could be asked for now.",
+      "Asked": "{name} asks you to roll: {what} (overtime {pay} eb, on your payslip).",
+      "RollAsked": "Roll",
+      "DeclineAsk": "Decline",
       "Train": "Training",
       "TrainHint": "Once every {every} weeks, an NPC employee's best skill for their role can rise by 1: {perPoint} eb for each point of it now, from the business's cash. A partner whose own skill is higher can mentor them, spending {days} business days and rolling Education (or Persuasion, a step harder) at the business's DV: a failure teaches nothing, though the eb and days are spent. Otherwise it is a course, at twice the eb, which always teaches. Training adds at most {max} in all, and never takes a skill above {cap}. Their wage follows the new skill.",
       "TrainNow": "{skill} {base} (trained +{trained} of {max}).",
@@ -2720,6 +2741,7 @@
         "Subject": "Payslip: {name}",
         "Body": "{name}, {post}: this week's wage {wage} eb, {paid} eb of it paid.",
         "Attached": "Your pay is attached: claim {paid} eb from this message.",
+        "Overtime": "Overtime this week: {overtime} eb, attached with your wage.",
         "Owed": "Still owed to you: {owed} eb."
       }
     }

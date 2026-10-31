@@ -42,6 +42,10 @@
  *   { key, type: 'bonus', businessId, staffId, quarters }        quarters of a week's wage, from the cash
  *   { key, type: 'train', businessId, staffId }                  E3: a course: their best skill for the post +1
  *   { key, type: 'trainRoll', businessId, staffId, use, rollId } E3: a mentor's lesson, rolled (Education)
+ *   { key, type: 'askStaff', businessId, staffId, roll }         E3: ask a player character on the staff for a roll:
+ *                                                                roll {type: 'action', action} | {type: 'respond'} | {type: 'assist', forAction}
+ *   { key, type: 'cancelAsk', businessId, askId }                withdrawn by whoever runs it, or declined by the employee
+ *   { key, type: 'staffRoll', businessId, askId, use, rollId }   from the employee's own character: the roll asked of them
  *   { key, type: 'refuseRaise', businessId, staffId }
  *   { key, type: 'rejectApplicant', businessId, candidateId }    turn an applicant away
  *   { key, type: 'movePost', businessId, staffId, post }
@@ -82,10 +86,10 @@ import {
 } from './businessCompany.js';
 import {
   activeStaff, recruitCheck, applyRecruit, hireOffer, enactHire, answerJob, quitJob, fireOffer, enactFire, staffRoll, payOvertime, staffShifts,
-  staffWeek, payWages,
+  staffWeek, payWages, staffOf, shiftsOf, overtimePay,
 } from './businessStaff.js';
 import {
-  idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost, rejectApplicant, applyTraining, mentorCheck,
+  idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost, rejectApplicant, applyTraining, mentorCheck, askOf, askCheck,
 } from './businessPeople.js';
 
 export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, projectOffer, PROJECT_KINDS };
@@ -100,7 +104,7 @@ export {
 export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
   'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll',
-  'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant',
+  'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant', 'askStaff', 'cancelAsk',
 ]);
 
 /** Item types that are not things a business can own. */
@@ -131,7 +135,7 @@ export function itemGear(item, actorId, p = BUSINESS_DEFAULTS) {
 }
 
 /** Requests that carry a roll. */
-export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll']);
+export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll', 'staffRoll']);
 
 /**
  * What each kind of proposal needs to pass (DESIGN §26.0): closing and stepping up need every partner
@@ -174,6 +178,8 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
   }
 
   if (b.status !== 'open') return fail('not-open');
+  // A player character on the staff rolling what a partner asked of them (E3): not a partner themselves.
+  if (request.type === 'staffRoll') return askedSpec(b, request, actorId, use, { day, operatorRank, p, traits, extraAvailable: false });
   if (me?.status !== 'active' || !me.voting) return fail('not-partner');
   const extraAvailable = daysLeft(b, actorId, p) > 0;
 
@@ -268,6 +274,33 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
  * called in for overtime (`overtime` is 'roll' or 'help', null where none can be) needs a shift left
  * and the pay, and rolls their best use for it, with its DV step.
  */
+/**
+ * What a player character on call may roll for the roll a partner asked of them: the roll's own skills
+ * and DV, with their own Luck and any +1 waiting, but no extra time (business days are the partners'),
+ * no hired professional and no employee; the overtime must still be payable, and they need a shift left.
+ */
+function askedSpec(b, request, actorId, use, { day, operatorRank, p, traits }) {
+  const ask = askOf(b, request.askId);
+  if (!ask) return fail('no-ask');
+  const staff = staffOf(b, ask.staffId);
+  if (staff?.status !== 'active' || staff.actorId !== actorId) return fail('not-asked');
+  if (shiftsOf(b, staff.id) >= p.staff.maxShifts) return fail('no-shifts');
+  const cost = overtimePay(b, staff, ask.roll.type === 'assist' ? 'help' : 'roll', p);
+  if (b.till < cost) return fail('no-funds');
+  let inner;
+  if (ask.roll.type === 'assist') {
+    // A help is the employee's own, whoever else has helped.
+    if (!actionFor(b.stage, ask.roll.forAction)) return fail('bad-action');
+    if (b.period.helpers.includes(staff.id)) return fail('helped');
+    if (b.period.slots.some((s) => s.action === ask.roll.forAction)) return fail('action-taken');
+    inner = { ok: true, uses: helpUses(ask.roll.forAction, archetypeOf(b), b.stage), dv: dvOf(p.helpDv), bonusAvailable: false };
+  } else {
+    inner = rollSpec(b, { ...ask.roll, use: null }, ask.by, { day, operatorRank, params: p, traits });
+    if (!inner.ok) return inner;
+  }
+  return allowed(inner.uses, use, { dv: inner.dv, allowHire: false, bonusAvailable: inner.bonusAvailable, extraAvailable: false, funds: b.till - cost, p, b, overtime: null, traits, pay: cost });
+}
+
 function allowed(uses, use, { funds = 0, operatorRank = 0, p = BUSINESS_DEFAULTS, b = null, overtime = 'roll', traits = null, ...spec }) {
   if (use?.kind === 'staff') {
     if (!overtime || !b) return fail('staff-not-allowed');
@@ -589,6 +622,58 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (r.extra) spendDays(b, actor.id, 1);
       const checked = applyVet(b, { result: r, day, post: request.post, traits: ctx.traits, by: actor.id }, p);
       out.events.push({ type: 'roll', action: 'vet', band: r.band, exposure: r.exposure ?? 0 }, { type: 'vetted', post: request.post, count: checked.length });
+      break;
+    }
+    case 'askStaff': {
+      if (b.status !== 'open') return fail('not-open');
+      if (me?.status !== 'active' || !me.voting) return fail('not-partner');
+      if (!canRun(b, actor.id)) return fail('not-officer');
+      const roll = request.roll ?? {};
+      const can = askCheck(b, request.staffId, roll, p);
+      if (!can.ok) return can;
+      // The roll must be one the partner could make now (a free slot, an unanswered event).
+      if (roll.type !== 'assist') {
+        const now = rollSpec(b, { type: roll.type, action: roll.action, use: null }, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
+        if (!now.ok) return now;
+      } else if (!actionFor(b.stage, roll.forAction) || b.period.slots.some((s) => s.action === roll.forAction)) return fail('action-taken');
+      const clean = roll.type === 'action' ? { type: 'action', action: roll.action } : roll.type === 'assist' ? { type: 'assist', forAction: roll.forAction } : { type: 'respond' };
+      b.period.asks = [...(b.period.asks ?? []), { id: request.key, staffId: request.staffId, roll: clean, by: actor.id, day }];
+      out.events.push({ type: 'asked', staffId: request.staffId, roll: clean });
+      break;
+    }
+    case 'cancelAsk': {
+      const ask = askOf(b, request.askId);
+      if (!ask) return fail('no-ask');
+      // Withdrawn by whoever runs the business, or declined by the employee asked.
+      const employee = staffOf(b, ask.staffId)?.actorId === actor.id;
+      if (!employee && !(me?.status === 'active' && me.voting && canRun(b, actor.id))) return fail('not-partner');
+      b.period.asks = b.period.asks.filter((a) => a.id !== ask.id);
+      out.events.push({ type: 'askCancelled', staffId: ask.staffId, declined: employee });
+      break;
+    }
+    case 'staffRoll': {
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
+      if (!spec.ok) return spec;
+      if (!check?.ok) return fail(check?.reason ?? 'no-roll');
+      const ask = askOf(b, request.askId);
+      const staff = staffOf(b, ask.staffId);
+      payOvertime(b, staff.id, ask.roll.type === 'assist' ? 'help' : 'roll', day, ask.by, p, ctx.traits);
+      b.period.asks = b.period.asks.filter((a) => a.id !== ask.id);
+      const r = check.result;
+      const roll = { use: useKey(request.use), band: r.band, total: r.total, dv: r.dv, approach: r.approach, luck: r.luck };
+      if (ask.roll.type === 'action') {
+        if (r.bonus) {
+          const bonus = b.period.bonuses.find((x) => x.action === ask.roll.action && !x.used);
+          if (bonus) bonus.used = true;
+        }
+        b.period.slots.push({ action: ask.roll.action, by: staff.id, ...roll, bonus: r.bonus });
+      } else if (ask.roll.type === 'respond') {
+        b.period.slots.push({ action: 'respond', event: b.period.event.kind, by: staff.id, ...roll, bonus: 0 });
+      } else {
+        b.period.helpers.push(staff.id);
+        if (r.success) b.period.bonuses.push({ id: request.key, action: ask.roll.forAction, by: staff.id, used: false });
+      }
+      out.events.push({ type: 'roll', action: ask.roll.type === 'action' ? ask.roll.action : ask.roll.type, band: r.band, exposure: r.exposure, staffId: staff.id });
       break;
     }
     case 'trainRoll': {
@@ -1259,7 +1344,10 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, params
   // A payslip for each player character on the staff (DESIGN §33.2). Their wage is not paid to their
   // sheet here: the GM's service attaches it to the payslip mail for them to claim (`paid`).
   for (const s of activeStaff(b).filter((x) => x.source === 'pc' && x.actorId)) {
-    out.events.push({ type: 'payslip', actorId: s.actorId, staffId: s.id, post: s.post, wage: Math.round(s.wage * part), paid: wages.pay[s.actorId] ?? 0, owed: s.owed ?? 0 });
+    out.events.push({
+      type: 'payslip', actorId: s.actorId, staffId: s.id, post: s.post, wage: Math.round(s.wage * part), paid: wages.pay[s.actorId] ?? 0, owed: s.owed ?? 0,
+      overtime: b.period.pcOvertime?.[s.actorId] ?? 0,
+    });
   }
   const loans = payLoans(b, b.period.endDay, p);
   const profit = takings - upkeep - eventCost - wages.wages - loans.interest;

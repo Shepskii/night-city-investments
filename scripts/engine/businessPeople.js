@@ -14,7 +14,7 @@ import { BUSINESS_DEFAULTS, EVENTS, POSTS, useKey } from './businessConfig.js';
 import { archetypeOf, fail, addLedger, clamp } from './businessRecord.js';
 import { daysLeft, spendDays } from './businessGrowth.js';
 import {
-  activeStaff, staffOf, hasLoyalty, traitOf, moveLoyalty, postOpen, postBase, wageOf, postUses, staffBase,
+  activeStaff, staffOf, hasLoyalty, traitOf, moveLoyalty, postOpen, postBase, wageOf, postUses, staffBase, shiftsOf,
 } from './businessStaff.js';
 
 /** Staff with loyalty and a life of their own: NPCs and recruits who have started. */
@@ -395,4 +395,28 @@ export function mentorCheck(b, staffId, actorId, day, p = BUSINESS_DEFAULTS) {
   const can = trainCheck(b, staffId, { mentor: true, mentorBase: Infinity, days, day }, p);
   if (!can.ok) return can;
   return { ok: true, uses: [...t.uses], cost: can.cost, extraAvailable: days > t.mentorDays };
+}
+
+// ── On call (E3) ─────────────────────────────────────────────────────────────
+
+/** The rolls a partner may ask of a player character on the staff: an action slot, the week's event, a help. */
+export const ASK_TYPES = Object.freeze(['action', 'respond', 'assist']);
+
+/** A roll asked of an employee this week, by its id. */
+export const askOf = (b, askId) => (b.period?.asks ?? []).find((a) => a.id === askId) ?? null;
+
+/** The rolls asked of one employee this week (one at a time). */
+export const asksFor = (b, staffId) => (b.period?.asks ?? []).filter((a) => a.staffId === staffId);
+
+/**
+ * Whether a player character on the staff can be asked for a roll (DESIGN §33.11): a player character,
+ * not already asked, with an overtime shift left this week. An NPC is called in from the roll dialog.
+ */
+export function askCheck(b, staffId, roll, p = BUSINESS_DEFAULTS) {
+  const staff = staffOf(b, staffId);
+  if (staff?.status !== 'active' || staff.source !== 'pc') return fail('not-on-call');
+  if (!ASK_TYPES.includes(roll?.type)) return fail('bad-request');
+  if (asksFor(b, staffId).length) return fail('already-asked');
+  if (shiftsOf(b, staffId) >= p.staff.maxShifts) return fail('no-shifts');
+  return { ok: true, staff };
 }

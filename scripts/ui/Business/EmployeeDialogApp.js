@@ -28,6 +28,8 @@ export class EmployeeDialogApp extends BaseApplication {
       payBonus: EmployeeDialogApp._onPayBonus,
       movePost: EmployeeDialogApp._onMovePost,
       trainStaff: EmployeeDialogApp._onTrain,
+      askStaff: EmployeeDialogApp._onAsk,
+      cancelAsk: EmployeeDialogApp._onCancelAsk,
       fireStaff: EmployeeDialogApp._onFire,
       close: EmployeeDialogApp._onClose,
     },
@@ -129,6 +131,19 @@ export class EmployeeDialogApp extends BaseApplication {
       request: { type: 'trainRoll', businessId: business.id, staffId: this.staffId },
       title: L('NCI.Staff.TrainTitle', { name: staff.name, business: business.name }),
     });
+  }
+
+  /** Ask a player character on the staff for one of this week's rolls (E3). */
+  static _onAsk() {
+    const value = this._value('askRoll');
+    if (!value) return null;
+    const [type, id] = value.split(':');
+    const roll = type === 'action' ? { type, action: id } : type === 'assist' ? { type, forAction: id } : { type: 'respond' };
+    return this._send('askStaff', { roll });
+  }
+
+  static _onCancelAsk(event, target) {
+    return this._send('cancelAsk', { askId: target.dataset.id });
   }
 
   static async _onFire() {

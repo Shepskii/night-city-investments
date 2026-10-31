@@ -33,8 +33,8 @@ export class RollDialogApp extends BaseApplication {
   };
 
   /** Open the dialog for one roll. `afterRoll` runs once the roll has been made and sent (not on Cancel). */
-  static ask({ actorId, businessId, request, title, afterRoll = null }) {
-    const app = new RollDialogApp({ id: `nci-roll-${String(actorId).replace(/[^\w-]/g, '_')}-${businessId}`, actorId, businessId, request, rollTitle: title, afterRoll });
+  static ask({ actorId, businessId, request, title, afterRoll = null, asked = null }) {
+    const app = new RollDialogApp({ id: `nci-roll-${String(actorId).replace(/[^\w-]/g, '_')}-${businessId}`, actorId, businessId, request, rollTitle: title, afterRoll, asked });
     app.render({ force: true });
     return app;
   }
@@ -46,6 +46,8 @@ export class RollDialogApp extends BaseApplication {
     this.request = options.request;
     this.rollTitle = options.rollTitle;
     this.afterRoll = options.afterRoll ?? null;
+    /** A roll a partner asked of this character as an employee (E3): its DV and ways, from their job. */
+    this.asked = options.asked ?? null;
     /** What the player has chosen so far: `use` is a use key, or `hire:<tier>`. */
     this.choice = { use: null, approach: 'standard', luck: 0, bonus: true, extra: false };
   }
@@ -67,7 +69,10 @@ export class RollDialogApp extends BaseApplication {
   }
 
   get business() {
-    return BusinessRepository.get(this.businessId);
+    const business = BusinessRepository.get(this.businessId);
+    // An employee asked for a roll cannot read the business: what the dialog needs comes with the ask.
+    if (!business && this.asked) return { id: this.businessId, name: this.asked.businessName ?? '', partners: [], staff: [], period: {} };
+    return business;
   }
 
   static _onCancel() {
@@ -129,16 +134,17 @@ export class RollDialogApp extends BaseApplication {
     const spec = actor && business ? this._spec() : null;
     const option = spec?.ok ? this._options(spec).find((o) => o.key === this.choice.use) ?? this._options(spec)[0] : null;
     if (!option) return ui.notifications.warn(L('NCI.Roll.NothingToRoll'));
-    const key = await BusinessClient.roll(this.account, business, { ...this.request, use: option.use }, {
-      title: this.rollTitle,
-      levers: { approach: this.choice.approach, luck: this.choice.luck, bonus: this.choice.bonus ? 1 : 0, extra: this.choice.extra ? 1 : 0 },
-    });
+    const levers = { approach: this.choice.approach, luck: this.choice.luck, bonus: this.choice.bonus ? 1 : 0, extra: this.choice.extra ? 1 : 0 };
+    const key = this.asked
+      ? await BusinessClient.rollAsked(actor, { businessId: this.businessId, ask: this.asked, use: option.use, levers, title: this.rollTitle })
+      : await BusinessClient.roll(this.account, business, { ...this.request, use: option.use }, { title: this.rollTitle, levers });
     await this.close();
     if (key) await this.afterRoll?.();
   }
 
   /** Whether the roll can be made now, and the ways it may be made (no use named yet). */
   _spec() {
+    if (this.asked) return { ok: true, uses: this.asked.uses, dv: this.asked.dv, bonusAvailable: this.asked.bonusAvailable, extraAvailable: false, allowHire: false };
     return rollSpec(this.business, { ...this.request, use: null }, this.partnerId, { day: BusinessClient.day(), operatorRank: operatorRankOf(this.business) });
   }
 
@@ -167,7 +173,8 @@ export class RollDialogApp extends BaseApplication {
     const preview = previewRoll({ base: chosen?.base ?? 0, dv: full.dv + (chosen?.dvAdd ?? chosen?.use.dvAdd ?? 0), levers });
     const pct = (x) => `${Math.round(x * 100)}%`;
     const good = this.request.type === 'respond' && EVENTS[business.period?.event?.kind]?.good;
-    const meaning = this.request.type === 'action' ? this.request.action
+    const meaning = this.asked ? this.asked.meaning
+      : this.request.type === 'action' ? this.request.action
       : this.request.type === 'charterRoll' ? `charter.${this.request.part}`
         : ['auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll'].includes(this.request.type) ? this.request.type
         : good ? 'respondGood' : this.request.type;
@@ -194,7 +201,8 @@ export class RollDialogApp extends BaseApplication {
       bands: preview.bands.filter((b) => b.chance > 0).reverse().map((b) => ({
         label: L(`NCI.Roll.Band.${b.band}`), chance: pct(b.chance), meaning: L(`NCI.Roll.Meaning.${meaning}.${b.band}`),
       })),
-      hireNote: isStaff ? L('NCI.Roll.StaffNote', { pay: whole(chosen.overtime) }) : isHire ? L('NCI.Roll.HireNote') : '',
+      hireNote: this.asked ? L('NCI.Roll.AskedNote', { pay: whole(this.asked.pay) })
+        : isStaff ? L('NCI.Roll.StaffNote', { pay: whole(chosen.overtime) }) : isHire ? L('NCI.Roll.HireNote') : '',
     };
   }
 }

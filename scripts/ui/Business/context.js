@@ -11,7 +11,7 @@ import {
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck,
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
-  hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey,
+  hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck,
 } from '../../engine/index.js';
 import { SkillAdapter } from '../../services/SkillAdapter.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
@@ -922,10 +922,41 @@ export function employeeContext(business, account, staffId) {
     canMove: runs && moves.length > 0,
     noMove: runs && !moves.length ? L('NCI.Staff.NoMove') : '',
     training: trainingContext(business, s, account, runs),
+    onCall: onCallContext(business, s, account, runs),
     fireText: L(s.caught ? 'NCI.Staff.FireCaught' : 'NCI.Staff.FireHint', { amount: whole(severance) }),
     canFire: canAct && !pending('fire'),
     pending: pending('pay') || pending('fire') ? L('NCI.Staff.Pending') : '',
     blocked: !canAct ? L('NCI.Staff.CannotManage') : '',
+  };
+}
+
+/**
+ * A player character on the staff, on call (E3, DESIGN §33.11): what is asked of them this week, and
+ * the rolls the account picked could ask of them now (a free action slot, the event, a help).
+ */
+function onCallContext(business, s, account, runs) {
+  if (s.source !== 'pc') return null;
+  const asks = asksFor(business, s.id);
+  const label = (r) => (r.type === 'action' ? L('NCI.Staff.AskSlot', { action: L(`NCI.Business.Action.${r.action}.Name`) })
+    : r.type === 'respond' ? L('NCI.Staff.AskRespond', { event: business.period.event ? L(`NCI.Event.${business.period.event.kind}.Name`) : '' })
+      : L('NCI.Staff.AskHelp', { action: L(`NCI.Business.Action.${r.forAction}.Name`) }));
+  const day = BusinessClient.day();
+  const could = (roll) => runs && askCheck(business, s.id, roll).ok
+    && (roll.type === 'assist'
+      ? !business.period.slots.some((x) => x.action === roll.forAction) && !business.period.helpers.includes(s.id)
+      : rollSpec(business, { ...roll, use: null }, account.id, { day }).ok);
+  const ids = actionIdsFor(business.stage);
+  const options = [
+    ...ids.map((action) => ({ type: 'action', action })),
+    { type: 'respond' },
+    ...ids.map((forAction) => ({ type: 'assist', forAction })),
+  ].filter(could).map((r) => ({ value: r.type === 'respond' ? 'respond' : `${r.type}:${r.action ?? r.forAction}`, label: label(r) }));
+  return {
+    text: L('NCI.Staff.OnCallHint'),
+    asked: asks.map((a) => ({ id: a.id, text: L('NCI.Staff.AskedOf', { what: label(a.roll), name: nameOf(business, a.by) }), canCancel: runs })),
+    options,
+    canAsk: options.length > 0 && !asks.length,
+    none: runs && !asks.length && !options.length ? L('NCI.Staff.AskNone') : '',
   };
 }
 
@@ -978,6 +1009,8 @@ export function jobsContext(actor) {
     offered: j.status === 'offered',
     since: j.hiredDay != null ? dayText(j.hiredDay) : '',
     owed: j.owed ? L('NCI.Staff.Owed', { amount: whole(j.owed) }) : '',
+    // Rolls a partner asked of them (E3).
+    asks: (j.asks ?? []).map((a) => ({ id: a.id, text: L('NCI.Staff.Asked', { what: a.what, name: a.by, pay: whole(a.pay) }) })),
   }));
 }
 

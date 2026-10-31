@@ -67,7 +67,10 @@ export function installFakeFoundry({ actors: actorSpecs = [], now = Date.UTC(204
       this.system = { wealth: { value: wealth, transactions: [] } };
       this.hasPlayerOwner = hasPlayerOwner;
     }
-    async update(d) { if (d['system.wealth']) this.system.wealth = structuredClone(d['system.wealth']); }
+    async update(d) {
+      if (d['system.wealth']) this.system.wealth = structuredClone(d['system.wealth']);
+      if (d['system.stats.luck.value'] != null && this.system.stats?.luck) this.system.stats.luck.value = d['system.stats.luck.value'];
+    }
     _changed(changes) { callAll('updateActor', this, changes); }
   }
 
