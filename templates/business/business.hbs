@@ -351,8 +351,9 @@
     <p><strong>{{valuation}}</strong>{{#if history}} <span class="nci-muted">{{history}}</span>{{/if}}</p>
     {{#if refused}}<p class="nci-warn">{{refused}}</p>{{/if}}
     {{#if canPropose}}
-    <div class="nci-actions nci-form">
+    <div class="nci-hirerow nci-form">
       <label>{{localize "NCI.Listing.Float"}} <select name="float">{{#each floats}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+      <span></span>
       <button type="button" data-action="proposeListing"><i class="fas fa-chart-line"></i> {{localize "NCI.Listing.Propose"}}</button>
     </div>
     <p class="nci-hint">{{feeText}}</p>
@@ -374,8 +375,9 @@
     {{#if refused}}<p class="nci-warn">{{refused}}</p>{{/if}}
     {{#if kept}}<p class="nci-hint">{{kept}}</p>{{/if}}
     {{#if canPropose}}
-    <div class="nci-actions nci-form">
-      <label>{{localize "NCI.Charter.Ticker"}} <input type="text" name="ticker" maxlength="5" class="nci-days"></label>
+    <div class="nci-hirerow nci-form">
+      <label>{{localize "NCI.Charter.Ticker"}} <input type="text" name="ticker" maxlength="5"></label>
+      <span></span>
       <button type="button" data-action="proposeCharter"><i class="fas fa-file-signature"></i> {{localize "NCI.Charter.Propose"}}</button>
     </div>
     {{/if}}

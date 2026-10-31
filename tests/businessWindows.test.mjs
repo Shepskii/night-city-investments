@@ -386,6 +386,8 @@ test('a company shows its officers, the information rolls and the report; a shar
     assertClean(ready, 'listing checklist met');
     assert.match(ready, /data-action="proposeListing"/);
     assert.match(ready, /<option value="0.2">20%<\/option>/);
+    assert.doesNotMatch(ready, /data-action="proposeStepUp"/, 'no registering at a company');
+    assert.match(ready, /class="nci-hirerow nci-form">\s*<label>Float/, 'the float and its button on one row');
     const listing = S.BusinessRepository.all()[0];
     await S.BusinessRepository.save({ ...listing, listing: { status: 'awaiting', agreedDay: listing.period.startDay, float: 0.25, fee: 100, valuation: 5000, rolls: {}, retryDay: null } });
     const gmView = await renderConsole();
