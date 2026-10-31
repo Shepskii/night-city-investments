@@ -13,6 +13,7 @@ import {
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
+  capitalOf, issueOptions, rightsLeft, tenderRoom,
 } from '../../engine/index.js';
 import { SkillAdapter } from '../../services/SkillAdapter.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
@@ -1126,6 +1127,42 @@ export function jobsContext(actor) {
   }));
 }
 
+/**
+ * A company's capital (B6a): proposing new shares or a buyback, and taking part in one under way. A
+ * private company's rights issue and tender run here; a listed company's offering and buyback show
+ * their progress.
+ */
+function capitalContext(business, actor, canAct) {
+  const c = capitalOf(business);
+  const day = BusinessClient.day();
+  const me = actor ? partnerOf(business, actor.id) : null;
+  const holder = !!me && ['active', 'leaving'].includes(me.status);
+  const listed = business.listing?.status === 'listed';
+  const busy = ['awaiting', 'prospectus', 'ready', 'scheduled'].includes(business.listing?.status);
+  const issue = c.issue;
+  const bb = c.buyback;
+  const pending = (kind) => business.proposals.some((x) => x.kind === kind);
+  const takenAll = issue?.kind === 'rights' ? Object.values(issue.taken).reduce((a, n) => a + n, 0) : 0;
+  const sellable = holder && bb?.kind === 'tender' ? Math.min(me.units, tenderRoom(business)) : 0;
+  return {
+    intro: L(listed ? 'NCI.Capital.IntroListed' : 'NCI.Capital.Intro'),
+    issueSizes: issueOptions().map((x) => ({ value: x, label: `${Math.round(x * 100)}%` })),
+    canProposeIssue: canAct && !busy && !issue && !pending('issue'),
+    canProposeBuyback: canAct && !busy && !bb && !pending('buyback'),
+    rights: issue?.kind === 'rights' ? {
+      text: L('NCI.Capital.Rights', { shares: whole(issue.shares), price: issue.price.toLocaleString(), date: dayText(issue.endDay), taken: whole(takenAll) }),
+      left: actor ? rightsLeft(business, actor.id) : 0,
+      mine: actor && holder ? L('NCI.Capital.RightsMine', { n: whole(rightsLeft(business, actor.id)), price: issue.price.toLocaleString() }) : '',
+      canTake: !!actor && holder && day <= issue.endDay && rightsLeft(business, actor.id) > 0,
+    } : null,
+    tender: bb?.kind === 'tender' ? {
+      text: L('NCI.Capital.Tender', { price: bb.price.toLocaleString(), date: dayText(bb.endDay), left: whole(bb.budget - bb.spent), bought: whole(bb.bought) }),
+      max: sellable,
+      canSell: !!actor && day <= bb.endDay && sellable > 0,
+    } : null,
+  };
+}
+
 function partnersContext(business, actor) {
   const units = totalUnits(business);
   const value = unitValue(business);
@@ -1169,6 +1206,7 @@ function partnersContext(business, actor) {
     canLeave: open && me?.status === 'active' && holders(business).length > 1,
     canPropose: open && canAct && !business.proposals.some((x) => x.kind === 'close'),
     investors: open ? investorsContext(business, actor, canAct) : null,
+    capital: open && business.stage >= 2 ? capitalContext(business, actor, canAct) : null,
     proposals: business.proposals.map((proposal) => ({
       id: proposal.id,
       // Stepping up is registering, chartering or listing, by the stage it is proposed at.
@@ -1182,6 +1220,9 @@ function partnersContext(business, actor) {
         pct: proposal.terms?.pct != null ? Math.round(proposal.terms.pct * 100) : '',
         share: proposal.terms?.share != null ? (Math.round(proposal.terms.share * 1000) / 10).toLocaleString() : '',
         ratio: proposal.terms?.ratio != null ? Math.round(proposal.terms.ratio * 100) : '',
+        // New shares and buybacks (B6a).
+        shares: proposal.terms?.shares != null ? whole(proposal.terms.shares) : '',
+        budget: proposal.terms?.budget != null ? whole(proposal.terms.budget) : '',
         project: proposal.terms?.project ? L(`NCI.Project.Kind.${proposal.terms.project}`) : '',
       }),
       rule: LT(business, `NCI.Business.Rule.${PROPOSAL_RULES[proposal.kind]}`, { date: dayText(proposal.expires ?? proposal.day) }),

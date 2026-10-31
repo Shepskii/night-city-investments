@@ -98,6 +98,7 @@ import {
 import {
   idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost, rejectApplicant, applyTraining, mentorCheck, askOf, askCheck, grantOffer, enactGrant, vestGrants, addTeamMember,
 } from './businessPeople.js';
+import { issueOffer, startIssue, takeRights, buybackOffer, startBuyback, sellBack, closeCapital } from './businessCapital.js';
 
 export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, projectOffer, PROJECT_KINDS };
 export { upgradesOf, protectionFactor, breakInFactor, reputationBaseline } from './businessGrowth.js';
@@ -112,6 +113,7 @@ export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
   'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll', 'prospectusRoll',
   'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant', 'askStaff', 'cancelAsk', 'addTeam',
+  'rightsTake', 'sellBack',
 ]);
 
 /** Item types that are not things a business can own. */
@@ -158,6 +160,8 @@ export const PROPOSAL_RULES = Object.freeze({
   grant: 'majority',
   // A listed company's payout ratio (B5c).
   payout: 'majority',
+  // New shares and buybacks for a company (B6a).
+  issue: 'majority', buyback: 'majority',
 });
 
 // ── What a roll needs ────────────────────────────────────────────────────────
@@ -782,6 +786,22 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       out.events.push({ type: 'quit', staffId: job.id });
       break;
     }
+    case 'rightsTake': {
+      // A holder takes up new shares in a rights issue (B6a).
+      const done = takeRights(b, actor, request.qty, day, p);
+      if (!done.ok) return done;
+      pay(actor.id, -done.cost);
+      out.events.push({ type: 'rightsTaken', qty: Math.floor(Number(request.qty)), cost: done.cost });
+      break;
+    }
+    case 'sellBack': {
+      // A holder sells units back in a tender (B6a).
+      const done = sellBack(b, actor, request.qty, day, p);
+      if (!done.ok) return done;
+      pay(actor.id, done.cash);
+      out.events.push({ type: 'soldBack', qty: Math.floor(Number(request.qty)), cash: done.cash });
+      break;
+    }
     case 'charterFund': {
       const done = fundCharter(b, actor, request.cash, day, p);
       if (!done.ok) return done;
@@ -1100,6 +1120,10 @@ function canPropose(b, kind, request, ctx, p) {
       return grantOffer(b, request.staffId, request.pct, p);
     case 'payout':
       return payoutOffer(b, request.pct, p);
+    case 'issue':
+      return issueOffer(b, request.pct, p);
+    case 'buyback':
+      return buybackOffer(b, request.budget, p);
     case 'fixerLoan': {
       const offer = fixerOffer(b, request.amount, p);
       return offer.ok ? { ok: true, terms: { amount: offer.amount } } : offer;
@@ -1215,6 +1239,15 @@ function enact(b, proposal, day, p, ctx, out) {
       b.listing.payout = proposal.terms.ratio;
       addLedger(b, { day, kind: 'payoutSet', amount: 0 }, p);
       return { ok: true };
+    case 'issue': {
+      // The terms are checked again: the cash or the shares may have moved since the proposal.
+      const again = issueOffer(b, proposal.terms.pct, p);
+      return again.ok ? startIssue(b, again.terms, day, p) : again;
+    }
+    case 'buyback': {
+      const again = buybackOffer(b, proposal.terms.budget, p);
+      return again.ok ? startBuyback(b, again.terms, day, p) : again;
+    }
     case 'grant': {
       const done = enactGrant(b, proposal.terms, day, ctx.traits, p);
       if (done.ok) out.events.push({ type: 'granted', staffId: proposal.terms.staffId, share: proposal.terms.share });
@@ -1292,6 +1325,8 @@ export function advanceBusiness(business, day, { weekday = 1, growthRate = 1, ac
     out.events.push({ type: 'charterLapsed' });
     changed = true;
   }
+  // A rights issue's or a tender's window that has run out (B6a).
+  if (closeCapital(b, day, p)) changed = true;
   const lapsed = b.proposals.filter((x) => x.expires != null && day > x.expires);
   if (lapsed.length) {
     b.proposals = b.proposals.filter((x) => !lapsed.includes(x));

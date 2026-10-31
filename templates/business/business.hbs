@@ -639,6 +639,47 @@
     <p class="nci-hint">{{@root.business.terms.HeirHint}}</p>
     {{/if}}
   </div>
+  {{#with capital}}
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Capital.Title"}}</h3>
+    <p class="nci-hint">{{intro}}</p>
+    {{#with rights}}
+    <p><strong>{{text}}</strong></p>
+    {{#if mine}}<p class="nci-muted">{{mine}}</p>{{/if}}
+    {{#if canTake}}
+    <div class="nci-hirerow">
+      <label>{{localize "NCI.Capital.Shares"}} <input type="number" name="rightsQty" min="1" max="{{left}}" step="1" value="{{left}}" class="nci-days"></label>
+      <span></span>
+      <button type="button" data-action="takeRights"><i class="fas fa-file-signature"></i> {{localize "NCI.Capital.Take"}}</button>
+    </div>
+    {{/if}}
+    {{/with}}
+    {{#with tender}}
+    <p><strong>{{text}}</strong></p>
+    {{#if canSell}}
+    <div class="nci-hirerow">
+      <label>{{localize "NCI.Capital.Shares"}} <input type="number" name="sellBackQty" min="1" max="{{max}}" step="1" value="1" class="nci-days"></label>
+      <span></span>
+      <button type="button" data-action="sellBack"><i class="fas fa-hand-holding-dollar"></i> {{localize "NCI.Capital.SellBack"}}</button>
+    </div>
+    {{/if}}
+    {{/with}}
+    {{#if canProposeIssue}}
+    <div class="nci-hirerow">
+      <label>{{localize "NCI.Capital.IssueSize"}} <select name="issuePct">{{#each issueSizes}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+      <span></span>
+      <button type="button" data-action="proposeIssue"><i class="fas fa-file-circle-plus"></i> {{localize "NCI.Capital.ProposeIssue"}}</button>
+    </div>
+    {{/if}}
+    {{#if canProposeBuyback}}
+    <div class="nci-hirerow">
+      <label>{{localize "NCI.Capital.Budget"}} <input type="number" name="buybackBudget" min="500" step="100" value="5000" class="nci-days"></label>
+      <span></span>
+      <button type="button" data-action="proposeBuyback"><i class="fas fa-rotate-left"></i> {{localize "NCI.Capital.ProposeBuyback"}}</button>
+    </div>
+    {{/if}}
+  </div>
+  {{/with}}
   {{#with investors}}
   <div class="nci-block nci-form">
     <h3>{{localize "NCI.Business.Investors"}}</h3>

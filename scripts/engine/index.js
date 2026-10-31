@@ -32,6 +32,7 @@ export * from './businessEvents.js';
 export * from './businessStaff.js';
 export * from './businessPeople.js';
 export * from './businessListing.js';
+export * from './businessCapital.js';
 export * from './funds.js';
 export * from './withdrawals.js';
 export * from './brokerMail.js';

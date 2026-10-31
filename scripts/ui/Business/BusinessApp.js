@@ -64,6 +64,10 @@ export class BusinessApp extends BaseApplication {
       charterRoll: BusinessApp._onCharterRoll,
       proposeListing: BusinessApp._onProposeListing,
       proposePayout: BusinessApp._onProposePayout,
+      proposeIssue: BusinessApp._onProposeIssue,
+      proposeBuyback: BusinessApp._onProposeBuyback,
+      takeRights: BusinessApp._onTakeRights,
+      sellBack: BusinessApp._onSellBack,
       prospectusRoll: BusinessApp._onProspectusRoll,
       charterFund: BusinessApp._onCharterFund,
       reportRoll: BusinessApp._onReportRoll,
@@ -404,6 +408,30 @@ export class BusinessApp extends BaseApplication {
   static _onProposePayout(event, target) {
     const pct = Number(value(target, 'payoutPct'));
     return Number.isFinite(pct) ? this._send('propose', { kind: 'payout', pct }) : null;
+  }
+
+  /** Propose new shares, as a share of the shares there are now (B6a). */
+  static _onProposeIssue(event, target) {
+    const pct = Number(value(target, 'issuePct'));
+    return Number.isFinite(pct) ? this._send('propose', { kind: 'issue', pct }) : null;
+  }
+
+  /** Propose a buyback with a budget from the company's cash (B6a). */
+  static _onProposeBuyback(event, target) {
+    return this._send('propose', { kind: 'buyback', budget: amount(target, 'buybackBudget') });
+  }
+
+  /** Take up shares in a rights issue, paid from the account (a syndicate over its limit puts it to a vote). */
+  static async _onTakeRights(event, target) {
+    const qty = amount(target, 'rightsQty');
+    const cost = Math.round(qty * (this.business?.capital?.issue?.price ?? 0));
+    if (await this._proposeIfOver('rightsTake', { businessId: this.business?.id, qty }, cost, this.business?.name)) return null;
+    return this._send('rightsTake', { qty });
+  }
+
+  /** Sell units back to the company in a tender. */
+  static _onSellBack(event, target) {
+    return this._send('sellBack', { qty: amount(target, 'sellBackQty') });
   }
 
   /** A prospectus roll: the filing (Accounting) or the offering (Trading). */

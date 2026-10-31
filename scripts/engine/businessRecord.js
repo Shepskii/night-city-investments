@@ -171,6 +171,8 @@ export function normalizeBusiness(raw) {
     })),
     /** Going public (B5a): the listing under way, and whether hidden Exposure is over its cap (the GM's service marks it). */
     listing: b.listing ?? null,
+    // New shares and buybacks under way (B6a).
+    capital: b.capital ?? { issue: null, buyback: null },
     listingConcerns: !!b.listingConcerns,
     /** Notes from another business's two-jobs events, for this one's next digest (E3). */
     pendingNotes: b.pendingNotes ?? [],

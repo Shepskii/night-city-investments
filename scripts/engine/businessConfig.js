@@ -310,6 +310,15 @@ export const BUSINESS_DEFAULTS = Object.freeze({
    * within `maxFactor`); the float the shareholders agree (`minFloat` to `maxFloat`) is capped by the
    * offering's `demand`. After listing, the rest is locked for `lockupDays`.
    */
+  /**
+   * A company's capital (B6a). New shares: `minPct` to `maxPct` of the shares there are, in `step`s; a
+   * rights issue is open `windowDays`. Buybacks: a budget of at least `minBudget`; a tender is open
+   * `windowDays`.
+   */
+  capital: Object.freeze({
+    issue: Object.freeze({ minPct: 0.05, maxPct: 0.3, step: 0.05, windowDays: 14 }),
+    buyback: Object.freeze({ minBudget: 500, windowDays: 14 }),
+  }),
   listing: Object.freeze({
     threshold: 500000, sustained: 3, minReports: 3, minDays: 56, compliance: 50, exposureCap: 15, lockinDays: 28,
     fee: 0.02, dv: 'professional', retryDays: 14, minFloat: 0.2, maxFloat: 0.4, floatStep: 0.05, lockupDays: 28, maxFactor: 0.15,
