@@ -167,6 +167,18 @@ test('members are mailed when a proposal opens and when it passes', async () => 
   assert.equal(syndicate().rules.tradeLimit, 6000);
 });
 
+test('a proposal carried the moment it is made: no "vote on this" mail, only how it ended', async () => {
+  const { SyndicateMail } = await import('../scripts/services/SyndicateMail.js');
+  const s = syndicate();
+  const proposal = { id: 'p_now', kind: 'limit', by: fix.id, ends: S.BusinessService.day() + 7, terms: { amount: 7000 }, votes: { [fix.id]: true } };
+  const subjects = (events) => SyndicateMail.build(s, events).map((m) => m.subject);
+  const both = subjects([{ type: 'proposed', proposalId: 'p_now', proposal }, { type: 'proposalPassed', proposalId: 'p_now', proposal }]);
+  assert.ok(!both.some((t) => t.includes('Proposed.Subject')), 'nothing left to vote on');
+  assert.ok(both.some((t) => t.includes('Passed.Subject')));
+  const open = subjects([{ type: 'proposed', proposalId: 'p_now', proposal }]);
+  assert.ok(open.some((t) => t.includes('Proposed.Subject')), 'a proposal still open is announced');
+});
+
 test('business payments count against the officer day limit as well as orders', async () => {
   const spent = (await import('../scripts/engine/index.js')).spentToday(syndicate(), med.id, S.BusinessService.day());
   assert.ok(spent >= 3000, `the clinic's 3,000 eb counted: ${spent}`);

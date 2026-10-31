@@ -131,7 +131,14 @@ class SyndicateServiceImpl {
     if (!out.ok) return this._receipt(actor, request, out);
     const { results } = await this._commit(out, actor);
     const inner = results.find((r) => r.key === request.key) ?? null;
-    return this._receipt(actor, request, { ok: inner ? inner.ok : true, ...(inner && !inner.ok ? { reason: inner.reason } : {}), syndicateId: out.books.syndicate.id, ...(inner ? { inner } : {}) });
+    // A proposal this request made or voted on: whether it is still open, or what became of it at once.
+    const proposed = out.events.find((e) => e.type === 'proposed');
+    const settled = out.events.find((e) => ['proposalPassed', 'proposalFailed', 'proposalVoid'].includes(e.type) && (!proposed || e.proposalId === proposed.proposalId));
+    const proposal = settled ? settled.type : proposed ? 'open' : null;
+    return this._receipt(actor, request, {
+      ok: inner ? inner.ok : true, ...(inner && !inner.ok ? { reason: inner.reason } : {}), syndicateId: out.books.syndicate.id, ...(inner ? { inner } : {}),
+      ...(proposal ? { proposal, ...(settled?.reason ? { proposalReason: settled.reason } : {}) } : {}),
+    });
   }
 
   /**
@@ -186,6 +193,7 @@ class SyndicateServiceImpl {
     const result = {
       key: request.key, type: request.type, ok: out.ok, ...(out.ok ? {} : { reason: out.reason }),
       syndicateId: out.syndicateId ?? request.syndicateId ?? null, day: this.day(), ...(out.inner ? { inner: out.inner } : {}),
+      ...(out.proposal ? { proposal: out.proposal, ...(out.proposalReason ? { proposalReason: out.proposalReason } : {}) } : {}),
     };
     await actor.setFlag(MODULE_ID, FLAGS.SYNDICATE_RECEIPTS, [{
       processed: [...r.processed, request.key].slice(-PROCESSED_CAP),

@@ -65,10 +65,14 @@ export const SyndicateMail = {
   build(s, events) {
     const mails = [];
     const all = (subject, lines) => mails.push({ to: 'all', subject, lines });
+    // A proposal the same change also settled (the proposer's units carried it at once) has nothing left to
+    // vote on: its members hear only how it ended.
+    const settled = new Set(events.filter((e) => e.type !== 'proposed' && /^proposal/.test(e.type)).map((e) => e.proposalId));
     for (const e of events) {
       const text = e.proposal ? describeProposal(s, e.proposal) : '';
       switch (e.type) {
         case 'proposed':
+          if (settled.has(e.proposalId)) break;
           all(L('NCI.SyndicateMail.Proposed.Subject'), [text, L('NCI.SyndicateMail.Proposed.Body', { name: memberOf(s, e.proposal.by)?.name ?? '?', date: dayText(e.proposal.ends) })]);
           break;
         case 'proposalPassed':

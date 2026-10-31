@@ -1875,6 +1875,12 @@
     },
     "Weekday": { "0": "Sunday", "1": "Monday", "2": "Tuesday", "3": "Wednesday", "4": "Thursday", "5": "Friday", "6": "Saturday" },
     "Syndicate": {
+      "Settled": {
+        "passed": "Agreed at once: your units carried it, and it has been done.",
+        "failed": "The proposal was turned down.",
+        "void": "Agreed, but it could not be done: {reason}",
+        "open": "Over your limit: sent to the members for a vote."
+      },
       "PickerLabel": "{name} (syndicate, as {as})",
       "Title": "Syndicate: {name}",
       "Nav": "Value per unit (NAV)",

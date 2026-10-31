@@ -53,6 +53,11 @@ export const SyndicateWatcher = {
   },
 
   _announce(result) {
+    // A proposal the request made or voted on: still open for the members, or settled there and then.
+    if (result.ok && result.proposal === 'proposalPassed') return ui.notifications.info(L('NCI.Syndicate.Settled.passed'));
+    if (result.ok && result.proposal === 'proposalFailed') return ui.notifications.info(L('NCI.Syndicate.Settled.failed'));
+    if (result.ok && result.proposal === 'proposalVoid') return ui.notifications.warn(L('NCI.Syndicate.Settled.void', { reason: L(`NCI.Syndicate.Reason.${result.proposalReason}`) }));
+    if (result.ok && result.proposal === 'open' && result.type !== 'propose') return ui.notifications.info(L('NCI.Syndicate.Settled.open'));
     if (result.inner) return PortfolioWatcher._announceResult(result.inner);
     if (result.ok) return ui.notifications.info(L(`NCI.Syndicate.Done.${result.type}`));
     return ui.notifications.warn(L('NCI.Syndicate.Refused', { reason: L(`NCI.Syndicate.Reason.${result.reason}`) }));
