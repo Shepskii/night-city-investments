@@ -37,6 +37,7 @@ import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { PortfolioService } from './PortfolioService.js';
 import { TickService } from './TickService.js';
 import { NewsService } from './NewsService.js';
+import { HeatService } from './HeatService.js';
 
 const RESULTS_CAP = 40;
 /** Requests that may bring gear: the items are looked up here, never taken from the request. */
@@ -159,6 +160,7 @@ class BusinessServiceImpl {
             permanent: 1, sourceKey: key, source: 'report', meta: { businessId: b.id, report: report.index, target: Math.round(target * 100) / 100 },
           })],
         }));
+        await this._insiderWindow(b, key, amount);
       }
       await this._payDividend(b.id, report);
       await NewsService.post({
@@ -167,6 +169,20 @@ class BusinessServiceImpl {
         companyIds: [ticker],
       });
     }
+  }
+
+  /**
+   * Officers and shareholders see a report before the market does (B5c): with insider tracking on, a
+   * watch window runs from the report to the price moving, as for a gig. Officers know it as well as a
+   * gig's runners; other shareholders as if tipped. A syndicate's members count as their syndicate.
+   */
+  async _insiderWindow(b, sourceKey, amount) {
+    const officers = new Set(b.officers ?? []);
+    const holders = b.partners.filter((p) => !p.market && p.status === 'active' && p.units > 0).map((p) => p.actorId);
+    await HeatService.openWindow(
+      { sourceKey, companyId: b.company.ticker, outcome: amount < 0 ? 'failed' : 'success', date: MarketClock.dateString(), delayDays: BUSINESS_DEFAULTS.listing.earningsDelayDays },
+      { runners: [...officers], tipped: holders.filter((id) => !officers.has(id)) },
+    );
   }
 
   /**

@@ -174,3 +174,28 @@ test('the market buys only so many of a listed player company\'s shares a day; t
   await settle();
   assert.equal(held(cass), 0, 'the rest sold the next day');
 });
+
+test('with insider tracking on, a listed company\'s report opens a watch window: an officer who buys before the price moves gains heat', async () => {
+  env.store.set('heatEnabled', true);
+  const { HeatService } = await import('../scripts/services/HeatService.js');
+  const b = business();
+  const price = S.MarketStore.getPublic().companies.PLAY.price;
+  const report = { index: 11, fromDay: 0, toDay: 0, weeks: 4, takings: 30000, upkeep: 10000, profit: 20000, reported: 20000, valuation: Math.round(price * 1.4 * b.listing.shares) };
+  await S.BusinessService._afterReports({ business: b, events: [{ type: 'reportPublished', report }] });
+  await settle();
+  const window = S.MarketStore.getHeat().windows.find((w) => w.sourceKey === 'report:bus_play:11');
+  assert.ok(window, 'opened');
+  assert.deepEqual([window.companyId, window.direction, window.runners.includes(alice.id), window.tipped.includes(alice.id)], ['PLAY', 'up', true, false]);
+
+  await S.PortfolioClient.submit(alice, 'deposit', { amount: 45000 });
+  await settle();
+  const buy = await S.PortfolioClient.submit(alice, 'placeOrder', { route: 'direct', side: 'buy', assetId: 'PLAY', qty: Math.floor(40000 / (price * 1.1)), orderType: 'market', expiry: 'day' });
+  await settle();
+  assert.equal(resultOf(alice, buy).ok, true);
+  await S.TickService.advanceDays(3);
+  await settle();
+  await HeatService._queue;
+  assert.equal(S.MarketStore.getHeat().windows.find((w) => w.sourceKey === 'report:bus_play:11').status !== 'open', true, 'audited');
+  assert.ok(HeatService.heatOf(alice.id) > 0, 'the officer who bought ahead of the move');
+  env.store.set('heatEnabled', false);
+});
