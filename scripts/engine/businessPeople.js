@@ -525,6 +525,8 @@ export function vestGrants(b, day, p = BUSINESS_DEFAULTS) {
       b.partners.push({
         actorId: pc ? staff.actorId : `npc:${staff.id}`, name: staff.name, status: 'active', cash: 0, gear: [], units, voting: false,
         heirId: null, leavingSince: null, grant: true, grantUnits: units, ...(pc ? {} : { npc: true }),
+        // An NPC linked to a character: the character, so windows can link to it.
+        ...(!pc && staff.actorId ? { actorRef: staff.actorId } : {}),
       });
     }
     staff.vested = (staff.vested ?? 0) + staff.grant.share;

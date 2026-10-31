@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   applyBusinessRequest, advanceBusiness, normalizeBusiness, rollSpec, BUSINESS_DEFAULTS, goingRate, wageOf, staffOf,
-  loyaltyBand, moonlighting, staffEventWeight, idleStaff, drawEvent, applyDiligence, postBase, archetypeOf, refreshStaffBases, markElsewhere, moveLoyalty, grantedShare,
+  loyaltyBand, moonlighting, staffEventWeight, idleStaff, drawEvent, applyDiligence, postBase, archetypeOf, refreshStaffBases, markElsewhere, moveLoyalty, grantedShare, holderActorId,
 } from '../scripts/engine/index.js';
 import { resolveRoll } from '../scripts/engine/rolls.js';
 
@@ -262,6 +262,20 @@ test('share grants (E3): at a company, voted on by the shares, up to 5% in all, 
   const left = grant(co, 'stf_a', 2).business;
   left.staff = left.staff.filter((s) => s.id !== 'stf_a');
   assert.equal(grantedShare(left), 0);
+});
+
+test("an NPC's vested grant keeps their character, so windows link to it; a recruit's has none", () => {
+  const co = withStaff(clinic({ stage: 2 }), { ...recruit('d'), source: 'npc', actorId: 'doc', candidateId: undefined }, recruit('r'));
+  for (const s of co.staff) s.grant = { share: 0.01, grantedDay: DAY, vestDay: co.period.endDay };
+  const after = closeWeek(co).business;
+  const doc = after.partners.find((x) => x.actorId === 'npc:stf_d');
+  assert.equal(doc.actorRef, 'doc');
+  assert.equal(holderActorId(after, doc), 'doc');
+  assert.equal(holderActorId(after, after.partners.find((x) => x.actorId === 'npc:stf_r')), null, 'a recruit has no character');
+  // A holding saved before the character was recorded finds it from the staff entry.
+  const older = { ...doc, actorRef: undefined };
+  assert.equal(holderActorId(after, older), 'doc');
+  assert.equal(holderActorId(after, after.partners.find((x) => x.actorId === 'med')), 'med', 'a character holds in their own name');
 });
 
 test('a bonus: quarters of a week\'s wage from the cash, loyalty up 5 for each, once a week', () => {

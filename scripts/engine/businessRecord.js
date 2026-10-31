@@ -78,6 +78,7 @@ export function normalizeBusiness(raw) {
       leavingSince: p.leavingSince ?? null,
       ...(p.offer ? { offer: { amount: int(p.offer.amount), price: Number(p.offer.price) } } : {}),
       ...(p.npc ? { npc: true } : {}),
+      ...(p.actorRef ? { actorRef: String(p.actorRef) } : {}),
       // Shares an employee was granted (E3): how many of the holder's units came that way.
       ...(p.grant ? { grant: true, grantUnits: int(p.grantUnits ?? p.units) } : {}),
     })),
@@ -238,6 +239,17 @@ export function stateBands(b, p = BUSINESS_DEFAULTS) {
     costs: cost > 0.97 ? 'high' : cost > 0.9 ? 'fair' : cost > 0.82 ? 'lean' : 'tight',
     ...(b.state.compliance == null ? {} : { compliance: b.state.compliance < 35 ? 'poor' : b.state.compliance < 50 ? 'shaky' : b.state.compliance < 65 ? 'sound' : 'spotless' }),
   };
+}
+
+/**
+ * The character a holder is, for linking to: their own id, or for an NPC holding under an `npc:` id
+ * (granted shares), the character recorded with the holding or on the staff entry it came from.
+ */
+export function holderActorId(b, holder) {
+  if (!String(holder?.actorId ?? '').startsWith('npc:')) return holder?.actorId ?? null;
+  if (holder.actorRef) return holder.actorRef;
+  const staffId = holder.actorId.slice(4);
+  return (b.staff ?? []).find((s) => s.id === staffId)?.actorId ?? null;
 }
 
 /** A refusal, with its reason. */

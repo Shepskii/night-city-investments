@@ -73,7 +73,7 @@ import {
 import {
   BUSINESS_SCHEMA, BUSINESS_STATUS, weekdayOf, nextBoundary, newPeriod, int, clamp, text, normalizeBusiness, archetypeOf, holders, voters,
   partnerOf, gearValue, totalUnits, bookValue, unitValue, shareOf, lastDigest, drawAllowance, fundingShortfall, hireFee, stateBands,
-  fail, close, addLedger,
+  fail, close, addLedger, holderActorId,
 } from './businessRecord.js';
 import {
   daysLeft, spendDays, activeProject, expansionOffer, addProjectDays, milestones, stepUpCheck, applyStepUp, votingUnits,
@@ -99,7 +99,7 @@ export { fixerOffer, bankCheck, angelCheck, openLoans, averageProfit };
 
 export {
   BUSINESS_SCHEMA, BUSINESS_STATUS, weekdayOf, nextBoundary, normalizeBusiness, archetypeOf, holders, voters,
-  partnerOf, gearValue, totalUnits, bookValue, unitValue, shareOf, lastDigest, drawAllowance, fundingShortfall, hireFee, stateBands,
+  partnerOf, gearValue, totalUnits, bookValue, unitValue, shareOf, lastDigest, drawAllowance, fundingShortfall, hireFee, stateBands, holderActorId,
 };
 
 export const BUSINESS_REQUESTS = Object.freeze([

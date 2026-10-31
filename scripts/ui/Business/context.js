@@ -11,7 +11,7 @@ import {
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck,
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
-  hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare,
+  hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId,
 } from '../../engine/index.js';
 import { SkillAdapter } from '../../services/SkillAdapter.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
@@ -1054,7 +1054,7 @@ function partnersContext(business, actor) {
     rows: business.partners.filter((p) => p.status !== 'declined').map((p) => ({
       actorId: p.actorId,
       name: p.name,
-      who: actorLink(p.actorId, p.name),
+      who: actorLink(holderActorId(business, p), p.name),
       status: LT(business, `NCI.Business.PartnerStatus.${p.status}`),
       units: business.status === 'forming' ? '' : whole(p.units),
       share: units > 0 && ['active', 'leaving'].includes(p.status) ? `${((p.units / units) * 100).toFixed(1)}%` : '',
@@ -1099,7 +1099,7 @@ function partnersContext(business, actor) {
       // Each voter, linked to their character, and how they voted.
       voters: holders(business).filter((p) => p.voting).map((p) => {
         const state = proposal.votes[p.actorId] === true ? 'yes' : proposal.votes[p.actorId] === false ? 'no' : 'none';
-        return { who: actorLink(p.actorId, p.name), state, label: L(`NCI.Business.Vote.${state}`) };
+        return { who: actorLink(holderActorId(business, p), p.name), state, label: L(`NCI.Business.Vote.${state}`) };
       }),
       canVote: !!me?.voting && ['active', 'leaving'].includes(me.status) && proposal.votes[actor.id] === undefined,
     })),

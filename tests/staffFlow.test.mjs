@@ -559,6 +559,21 @@ test('two jobs (E3): something let slip reaches the other business as a report a
   }
 });
 
+test('an NPC holding granted shares is listed on the Shareholders tab as a link to their character, as a player character is', async () => {
+  const saved = structuredClone(business());
+  try {
+    await S.BusinessRepository.save({ ...business(), partners: [...business().partners, {
+      actorId: 'npc:stf_vik', actorRef: rook.id, name: 'Vik', status: 'active', cash: 0, gear: [], units: 20, voting: false, heirId: null, leavingSince: null, npc: true, grant: true, grantUnits: 20,
+    }] });
+    const html = await renderBusiness(windowFor(med, 'partners'));
+    assertClean(html, 'partners with an NPC holder');
+    assert.match(html, new RegExp(`data-id="${rook.id}"[^>]*>.*Vik</a>`));
+    assert.match(html, new RegExp(`data-id="${med.id}"`), 'a player character, linked as before');
+  } finally {
+    await S.BusinessRepository.save(saved);
+  }
+});
+
 test('every data-action in the Business window and the staff windows has a handler', async () => {
   const { EmployeeDialogApp } = await import('../scripts/ui/Business/EmployeeDialogApp.js');
   const { HireDialogApp } = await import('../scripts/ui/Business/HireDialogApp.js');
