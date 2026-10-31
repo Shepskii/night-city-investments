@@ -561,6 +561,50 @@ export function cashbookContext(business, index) {
   };
 }
 
+/**
+ * One published monthly report, in detail: the real figures beside the reported ones (preparing a report
+ * shifts only its profit), how it was prepared, and the weeks it sums while the digests still keep them.
+ */
+export function reportContext(business, index) {
+  const r = (business.reports ?? []).find((x) => x.index === index);
+  const title = L('NCI.Report.Heading', { n: index });
+  if (!r) return { business: business.name, title, gone: L('NCI.Report.Gone') };
+  const cls = (v) => (v > 0 ? 'nci-up' : v < 0 ? 'nci-down' : '');
+  const row = (label, a, b = a, total = false) => ({ label, total, real: a || 0, reported: b || 0 });
+  const line = ({ label, total, real, reported }) => ({
+    label, total, real: signed(real), cls: cls(real), reported: signed(reported), reportedCls: cls(reported),
+    diff: reported === real ? '–' : signed(reported - real), diffCls: cls(reported - real),
+  });
+  // Wages, loan interest and a staff event's bills: what the profit took off besides the upkeep.
+  const otherCosts = r.takings - r.upkeep - r.profit;
+  const prep = r.prep;
+  const pct = r.profit ? Math.round(((r.reported - r.profit) / Math.abs(r.profit)) * 100) : 0;
+  const weeks = business.digests.filter((d) => d.startDay >= r.fromDay && d.endDay <= r.toDay);
+  return {
+    business: business.name,
+    title,
+    dates: `${L('NCI.Company.ReportSpan', { from: dayText(r.fromDay), to: dayText(r.toDay) })} · ${L('NCI.Report.WeekCount', { n: r.weeks })}`,
+    prepared: prep
+      ? L(prep.bold ? 'NCI.Report.PreparedBold' : 'NCI.Report.Prepared', { name: nameOf(business, prep.by), band: L(`NCI.Roll.Band.${prep.band}`), total: prep.total ?? '', pct: signed(pct) })
+      : L('NCI.Report.Standard'),
+    trail: prep?.bold ? L('NCI.Report.Trail') : '',
+    figures: [
+      row(L('NCI.Business.Takings'), r.takings),
+      row(L('NCI.Business.Upkeep'), -r.upkeep),
+      row(L('NCI.Report.OtherCosts'), -otherCosts),
+      row(L('NCI.Business.Profit'), r.profit, r.reported, true),
+    ].map(line),
+    weeks: weeks.map((d) => {
+      const other = d.upkeep - weekCosts(d);
+      return {
+        week: L('NCI.Business.Week', { n: d.index }), dates: `${dayText(d.startDay)} – ${dayText(d.endDay)}`,
+        takings: signed(d.takings), upkeep: signed(-d.upkeep), other: signed(other), otherCls: cls(other), profit: signed(d.profit), cls: cls(d.profit),
+      };
+    }),
+    missing: weeks.length < r.weeks ? L('NCI.Report.Missing', { n: r.weeks - weeks.length }) : '',
+  };
+}
+
 function ledgerContext(business, actor, canAct = false) {
   const last = lastDigest(business);
   const allowance = actor ? drawAllowance(business, actor.id) : 0;

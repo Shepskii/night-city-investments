@@ -17,6 +17,7 @@ import { RollDialogApp } from './RollDialogApp.js';
 import { HireDialogApp } from './HireDialogApp.js';
 import { EmployeeDialogApp } from './EmployeeDialogApp.js';
 import { CashbookDialogApp } from './CashbookDialogApp.js';
+import { ReportDialogApp } from './ReportDialogApp.js';
 import { L } from '../format.js';
 import { pickerContext, startContext, businessContext, usableActors, jobsContext, termKey } from './context.js';
 
@@ -79,6 +80,7 @@ export class BusinessApp extends BaseApplication {
       proposeFire: BusinessApp._onProposeFire,
       openEmployee: BusinessApp._onOpenEmployee,
       openCashbook: BusinessApp._onOpenCashbook,
+      openReport: BusinessApp._onOpenReport,
       rejectApplicant: BusinessApp._onRejectApplicant,
       vetApplicants: BusinessApp._onVetApplicants,
       acceptJob: BusinessApp._onJob,
@@ -431,6 +433,13 @@ export class BusinessApp extends BaseApplication {
     const business = this.business;
     if (!business) return;
     CashbookDialogApp.ask({ businessId: business.id, index: Number(target.dataset.index) });
+  }
+
+  /** A report in the Ledger tab's monthly reports: its real and reported figures, in a window of its own. */
+  static _onOpenReport(event, target) {
+    const business = this.business;
+    if (!business) return;
+    ReportDialogApp.ask({ businessId: business.id, index: Number(target.dataset.index) });
   }
 
   /** Vet every applicant waiting for a post: one roll. */

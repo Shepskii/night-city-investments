@@ -344,6 +344,10 @@ test('a company shows its officers, the information rolls and the report; a shar
       ...b, stage: 2, till: 5000, company: { ticker: 'BRC', sector: 'health', charteredDay: b.period.startDay }, officers: [med.id],
       state: { ...b.state, compliance: 50 }, charter: null, proposals: [], reportWeeks: 1,
       lastAudit: { day: b.period.startDay - 7, band: 'exceptional', by: med.id, exposure: 'clean', found: 'low' },
+      reports: [
+        { index: 1, fromDay: b.period.startDay - 56, toDay: b.period.startDay - 28, weeks: 4, takings: 2781, upkeep: 1848, profit: 933, reported: 933 },
+        { index: 2, fromDay: b.period.startDay - 28, toDay: b.period.startDay, weeks: 4, takings: 2693, upkeep: 2013, profit: 680, reported: 762, prep: { band: 'strong', bold: true, total: 24, by: med.id } },
+      ],
     });
     const officer = await renderBusiness(windowFor(med, 'week'));
     assertClean(officer, 'company week');
@@ -357,6 +361,22 @@ test('a company shows its officers, the information rolls and the report; a shar
     assertClean(ledger, 'company ledger');
     assert.match(text(ledger), /Week 2 of 4 toward this month/);
     assert.doesNotMatch(ledger, /data-action="reportRoll"/, 'only in the last week');
+    // Each report opens a window of its own: the real figures beside the reported ones.
+    assert.match(ledger, /class="nci-row" data-action="openReport" data-index="2"/);
+    assert.ok('openReport' in Apps.Business.DEFAULT_OPTIONS.actions);
+    const { ReportDialogApp } = await import('../scripts/ui/Business/ReportDialogApp.js');
+    const bold = await new ReportDialogApp({ businessId: b.id, index: 2 })._prepareContext();
+    const report = text(render('templates/dialogs/report.hbs', bold));
+    assertClean(render('templates/dialogs/report.hbs', bold), 'report window');
+    assert.match(report, /Prepared aggressively by Medtech \(Strong success, 24\): it reports \+12% on the real profit/);
+    assert.match(report, /Takings \+2,693 \+2,693 –/, 'takings reported as they were');
+    assert.match(report, /Wages, interest and bills 0 0 –/, "a zero cost shows as 0, never -0");
+    assert.match(report, /Profit \+680 \+762 \+82/, 'the profit real, reported, and the difference');
+    assert.match(report, /an internal audit may find/);
+    const plain = text(render('templates/dialogs/report.hbs', await new ReportDialogApp({ businessId: b.id, index: 1 })._prepareContext()));
+    assert.match(plain, /Not prepared: the report shows the profit as earned/);
+    assert.match(plain, /Profit \+933 \+933 –/);
+    assert.match(text(render('templates/dialogs/report.hbs', await new ReportDialogApp({ businessId: b.id, index: 9 })._prepareContext())), /no longer kept/);
 
     const holder = await renderBusiness(windowFor(fix, 'week'));
     assertClean(holder, 'shareholder week');

@@ -1,0 +1,37 @@
+<section class="nci-terminal nci-business nci-cashbook">
+  <header class="nci-header">
+    <div><strong>{{title}}</strong> <span class="nci-muted">{{business}}</span></div>
+    <div class="nci-muted">{{dates}}</div>
+  </header>
+  {{#if gone}}<p class="nci-empty">{{gone}}</p>{{else}}
+  <p class="nci-hint">{{prepared}}</p>
+  {{#if trail}}<p class="nci-warn">{{trail}}</p>{{/if}}
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Report.Figures"}}</h3>
+    <table class="nci-market">
+      <thead><tr><th></th><th class="num">{{localize "NCI.Report.Real"}}</th><th class="num">{{localize "NCI.Report.Reported"}}</th><th class="num">{{localize "NCI.Report.Difference"}}</th></tr></thead>
+      <tbody>
+        {{#each figures}}<tr class="{{#if total}}nci-total{{/if}}"><td>{{label}}</td><td class="num {{cls}}">{{real}}</td><td class="num {{reportedCls}}">{{reported}}</td><td class="num {{diffCls}}">{{diff}}</td></tr>{{/each}}
+      </tbody>
+    </table>
+    <p class="nci-hint">{{localize "NCI.Report.FiguresHint"}}</p>
+  </div>
+
+  <div class="nci-block">
+    <h3>{{localize "NCI.Report.Weeks"}}</h3>
+    {{#if weeks.length}}
+    <table class="nci-market">
+      <thead><tr><th>{{localize "NCI.Business.WeekLabel"}}</th><th class="num">{{localize "NCI.Business.Takings"}}</th><th class="num">{{localize "NCI.Business.Upkeep"}}</th><th class="num">{{localize "NCI.Report.OtherCosts"}}</th><th class="num">{{localize "NCI.Business.Profit"}}</th></tr></thead>
+      <tbody>
+        {{#each weeks}}<tr><td>{{week}} <span class="nci-muted">{{dates}}</span></td><td class="num nci-up">{{takings}}</td><td class="num nci-down">{{upkeep}}</td><td class="num {{otherCls}}">{{other}}</td><td class="num {{cls}}">{{profit}}</td></tr>{{/each}}
+      </tbody>
+    </table>
+    {{/if}}
+    {{#if missing}}<p class="nci-hint">{{missing}}</p>{{/if}}
+  </div>
+  {{/if}}
+  <footer class="nci-footer">
+    <button type="button" data-action="close"><i class="fas fa-xmark"></i> {{localize "NCI.Staff.CloseHire"}}</button>
+  </footer>
+</section>

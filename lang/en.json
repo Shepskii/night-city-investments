@@ -1747,6 +1747,25 @@
       "Since": "started {date}",
       "CrewLabel": "Worked on by"
     },
+    "Report": {
+      "Title": "{name}: monthly report #{n}",
+      "Heading": "Monthly report #{n}",
+      "Open": "Open this report: the real figures beside the reported ones",
+      "Gone": "This report is no longer kept.",
+      "WeekCount": "{n} week(s)",
+      "Figures": "Real and reported",
+      "Real": "Real",
+      "Reported": "Reported",
+      "Difference": "Difference",
+      "OtherCosts": "Wages, interest and bills",
+      "FiguresHint": "Preparing a report shifts only the profit it shows; the takings and costs are reported as they were.",
+      "Prepared": "Prepared by {name} ({band}, {total}): it reports {pct}% on the real profit.",
+      "PreparedBold": "Prepared aggressively by {name} ({band}, {total}): it reports {pct}% on the real profit.",
+      "Standard": "Not prepared: the report shows the profit as earned.",
+      "Trail": "Aggressive reporting leaves a trail that an internal audit may find.",
+      "Weeks": "The weeks it sums",
+      "Missing": "{n} of its weeks are no longer kept (the business keeps its last 12)."
+    },
     "Cashbook": {
       "Title": "{name}: cashbook, week {n}",
       "Open": "Open this week's cashbook",

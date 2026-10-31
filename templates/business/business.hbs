@@ -522,7 +522,7 @@
     <table class="nci-market">
       <thead><tr><th>{{localize "NCI.Company.ReportLabel"}}</th><th class="num">{{localize "NCI.Business.Takings"}}</th><th class="num">{{localize "NCI.Business.Upkeep"}}</th><th class="num">{{localize "NCI.Business.Profit"}}</th><th class="num">{{localize "NCI.Company.Reported"}}</th><th></th></tr></thead>
       <tbody>
-        {{#each reports}}<tr><td>#{{index}} <span class="nci-muted">{{when}}</span></td><td class="num">{{takings}}</td><td class="num">{{upkeep}}</td><td class="num {{cls}}">{{profit}}</td><td class="num">{{reported}}</td><td class="nci-muted">{{prep}}</td></tr>{{/each}}
+        {{#each reports}}<tr class="nci-row" data-action="openReport" data-index="{{index}}" title="{{localize 'NCI.Report.Open'}}"><td>#{{index}} <span class="nci-muted">{{when}}</span></td><td class="num">{{takings}}</td><td class="num">{{upkeep}}</td><td class="num {{cls}}">{{profit}}</td><td class="num">{{reported}}</td><td class="nci-muted">{{prep}}</td></tr>{{/each}}
       </tbody>
     </table>
     {{else}}<p class="nci-empty">{{localize "NCI.Company.NoReports"}}</p>{{/if}}
