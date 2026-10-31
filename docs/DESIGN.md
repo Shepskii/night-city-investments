@@ -1500,6 +1500,17 @@ Below 25 an employee may quit, steals more readily and gives poaching offers a h
 
 **An Exec's team.** A partner who is an Exec may staff their Teamwork team as employees: one team member for each 3 ranks of Teamwork, rounded up. Their level comes from the Exec's rank: Green at ranks 1 to 3, Skilled at 4 to 6, Expert at 7 to 9, Master at 10. Team members take no wage, start with 75 loyalty, take headcount places, and leave if the Exec leaves the business. This sits beside Teamwork's use as an ability on Chase contracts (§32.2).
 
+**Two jobs: divided loyalties** (E3; the user's choices, 2026-10-31). An NPC may hold jobs at two businesses at once (in the test world, Tyger is security at the Splice Chrome Clinic and at Charter Test Clinic). Today the two jobs know nothing of each other. In E3 the GM's service notices an NPC with another employer (the same actor on another business's staff) and passes that to each business's week, as it passes traits. Recruits only ever work for one business; a player character with two jobs is the player's own affair, and none of this applies to them.
+
+- **Shared shifts.** A person works at most 2 overtime shifts a week in total, across every employer. A business calling in an employee who has already worked their shifts elsewhere is refused ("they have already worked their shifts this week").
+- **Staff events, only for an employee with another employer:**
+  - **Double-booked.** Both businesses need them the same week. Answered with Persuasion or Business, they work your shift; otherwise they are off for you that week, like a sick day.
+  - **A full-time offer.** The other employer, named, tries to take them on full time: answered as a poaching offer (Persuasion, or a raise). Lost, they quit you and stay with the rival, so the two businesses' players compete for one employee. The other business does not roll; the event is yours to answer.
+  - **Talking shop.** They let something slip about you at their other job. Unanswered, the other business gains a free due diligence report on yours (your bands and a range for your value, as §32.3). Caught with Human Perception or Interrogation, nothing leaks; on a strong or better result you learn about them instead (a due diligence report on the other business).
+- **Strain.** While they hold two jobs they cannot reach the devoted band at either (loyalty stops at 74), and their chance of a sick day or an accident at work is a third higher.
+- **Seen by whom.** Each business's Staff tab notes "also works for <business>" once anyone at the business has met them there: from the first two-jobs event, or a vetting roll on them as an applicant. The GM's Businesses tab always shows it.
+- **Still to decide when it is built:** whether a business can forbid a second job in its pay terms (a higher pct in return), and whether the player owners of the other business are told when one of these events touches them.
+
 ### 33.6 Other links
 
 - **Gigs** (§26.5). An employee in trouble (kidnapped, arrested, owing a gang) is a ready gig hook for the GM. Through the map bridge a gig can name an employee, and its outcome moves their loyalty, or brings them back.
@@ -1531,7 +1542,7 @@ Below 25 an employee may quit, steals more readily and gives poaching offers a h
 |---|---|
 | E1 Staff | posts, levels, wages, headcount, hiring player characters, tagged NPCs and recruits, overtime in the roll dialog, the Staff tab and Job view |
 | E2 People | loyalty, quitting and firing, vetting and traits, staff events, bonuses |
-| E3 Careers | training, share grants, an Exec's team, and the B5 and B6 links when those phases are built |
+| E3 Careers | training, share grants, an Exec's team, two jobs (divided loyalties, §33.5), and the B5 and B6 links when those phases are built |
 
 Each step ends as the others do: engine tests, flow tests, a schema migration, a simulator check of the wage and lift targets in §33.1, and a run in the test world.
 
