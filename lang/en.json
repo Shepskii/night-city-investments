@@ -1541,7 +1541,7 @@
       },
       "StaffMail": {
         "Name": "Payslips by Messenger",
-        "Hint": "Send a player character who works for a player business a Night City Messenger payslip from the market wire each week, with what they were paid and anything still owed."
+        "Hint": "Send a player character who works for a player business a Night City Messenger payslip from the market wire each week, with their wage attached to claim and anything still owed. Off (or with no Messenger), wages go straight to their sheet."
       },
       "SyndicateMail": {
         "Name": "Mail syndicate members",
@@ -2686,7 +2686,8 @@
       },
       "Payslip": {
         "Subject": "Payslip: {name}",
-        "Body": "{name}, {post}: this week's wage {wage} eb, {paid} eb paid into your account.",
+        "Body": "{name}, {post}: this week's wage {wage} eb, {paid} eb of it paid.",
+        "Attached": "Your pay is attached: claim {paid} eb from this message.",
         "Owed": "Still owed to you: {owed} eb."
       }
     }

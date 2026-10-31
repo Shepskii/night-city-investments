@@ -128,7 +128,7 @@ test('hiring a recruit starts them at once; a character is offered the job and a
   assert.equal(staffOf(b, 'stf_nova').hiredDay, DAY);
 });
 
-test('floor staff lift the takings, wages are paid when the week closes, a player character\'s to their eddies', () => {
+test('floor staff lift the takings, wages are paid when the week closes, a player character\'s on their payslip', () => {
   const plain = close(clinic()).business.digests.at(-1);
   let b = hire(clinic(), { actorId: 'nova', post: 'floor' });
   b = apply(b, { type: 'acceptJob', businessId: 'b1' }, NOVA).business;
@@ -139,7 +139,8 @@ test('floor staff lift the takings, wages are paid when the week closes, a playe
   assert.equal(Math.round(week.takings / plain.takings * 1000) / 1000, Math.round((1 + (12 - 6) * 0.015) * 1000) / 1000, 'a 9% lift');
   assert.ok(Math.abs(week.wages - Math.round(wage * Math.min(1, (b.period.endDay - b.period.startDay) / 7))) <= 1);
   assert.equal(week.profit, week.takings - week.upkeep - week.wages);
-  assert.equal(out.wealth.nova, week.wages);
+  assert.equal(out.wealth.nova ?? 0, 0, 'not straight to their sheet');
+  assert.equal(out.events.find((e) => e.type === 'payslip' && e.actorId === 'nova').paid, week.wages, 'on the payslip, for the mail to carry');
   assert.ok(out.business.ledger.some((e) => e.kind === 'wages'));
 });
 

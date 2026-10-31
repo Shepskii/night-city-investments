@@ -1227,8 +1227,8 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, params
   }
   // Wages next, as far as the cash goes, then the loans.
   const wages = payWages(b, part, b.period.endDay, p);
-  for (const [actorId, eb] of Object.entries(wages.pay)) out.wealth[actorId] = (out.wealth[actorId] ?? 0) + eb;
-  // A payslip for each player character on the staff (DESIGN §33.2).
+  // A payslip for each player character on the staff (DESIGN §33.2). Their wage is not paid to their
+  // sheet here: the GM's service attaches it to the payslip mail for them to claim (`paid`).
   for (const s of activeStaff(b).filter((x) => x.source === 'pc' && x.actorId)) {
     out.events.push({ type: 'payslip', actorId: s.actorId, staffId: s.id, post: s.post, wage: Math.round(s.wage * part), paid: wages.pay[s.actorId] ?? 0, owed: s.owed ?? 0 });
   }

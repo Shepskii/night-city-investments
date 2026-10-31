@@ -298,24 +298,36 @@ class BusinessServiceImpl {
     await MarketStore.setBusinessesHidden({ ...hidden, [out.business.id]: next });
   }
 
-  /** A payslip by Messenger mail for each player character paid as a week closes, if the world setting is on. */
+  /**
+   * Pay each player character on the staff as a week closes: a payslip by Messenger mail with the wage
+   * attached, for them to claim. With payslip mail turned off, or a mail that cannot be sent (no
+   * Messenger, no market wire), the wage goes straight to their sheet instead, so it is never lost.
+   */
   async _payslips(out) {
-    if (game.settings.get(MODULE_ID, SETTINGS.STAFF_MAIL) === false) return;
+    const mail = game.settings.get(MODULE_ID, SETTINGS.STAFF_MAIL) !== false;
     const eb = (n) => Math.round(Number(n) || 0).toLocaleString();
     for (const slip of out.events.filter((e) => e.type === 'payslip')) {
       const actor = game.actors.get(slip.actorId);
       if (!actor) continue;
-      try {
-        await MailService.fromWire(actor, {
-          subject: L('NCI.Staff.Payslip.Subject', { name: out.business.name }),
-          lines: [
-            L('NCI.Staff.Payslip.Body', { name: out.business.name, post: L(`NCI.Staff.Post.${slip.post}`), wage: eb(slip.wage), paid: eb(slip.paid) }),
-            ...(slip.owed ? [L('NCI.Staff.Payslip.Owed', { owed: eb(slip.owed) })] : []),
-          ],
-        });
-      } catch (error) {
-        log.warn('Payslip mail failed', error);
+      const paid = Math.max(0, Math.round(Number(slip.paid) || 0));
+      let sent = false;
+      if (mail) {
+        try {
+          const result = await MailService.fromWire(actor, {
+            subject: L('NCI.Staff.Payslip.Subject', { name: out.business.name }),
+            lines: [
+              L('NCI.Staff.Payslip.Body', { name: out.business.name, post: L(`NCI.Staff.Post.${slip.post}`), wage: eb(slip.wage), paid: eb(paid) }),
+              ...(paid ? [L('NCI.Staff.Payslip.Attached', { paid: eb(paid) })] : []),
+              ...(slip.owed ? [L('NCI.Staff.Payslip.Owed', { owed: eb(slip.owed) })] : []),
+            ],
+            eddies: paid,
+          });
+          sent = !!result?.ok;
+        } catch (error) {
+          log.warn('Payslip mail failed', error);
+        }
       }
+      if (!sent && paid) await this._pay({ [actor.id]: paid }, out.business);
     }
   }
 

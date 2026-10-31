@@ -188,11 +188,22 @@ test('the week closes: the wage is paid to Nova, and the ledger and the GM tab s
   }
   const week = business().digests.at(-1);
   assert.ok(week.wages > 0);
-  assert.equal(S.WealthAdapter.get(nova), wealth + week.wages);
+  // The wage rides on the payslip for Nova to claim, not straight onto the sheet.
+  assert.equal(S.WealthAdapter.get(nova), wealth);
   assert.equal(sent.length, 1);
   assert.equal(sent[0].to, nova.id);
   assert.equal(sent[0].subject, 'Payslip: Back Room');
-  assert.match(sent[0].lines[0], new RegExp(`Floor: this week's wage ${week.wages} eb, ${week.wages} eb paid into your account`));
+  assert.equal(sent[0].eddies, week.wages);
+  assert.match(sent[0].lines[0], new RegExp(`Floor: this week's wage ${week.wages} eb, ${week.wages} eb of it paid`));
+  assert.match(sent[0].lines[1], new RegExp(`claim ${week.wages} eb from this message`));
+  // A payslip that cannot be sent (no Messenger) pays the sheet instead, so the wage is never lost.
+  MailService.fromWire = async () => ({ ok: false, error: 'no-wire' });
+  try {
+    await S.BusinessService._payslips({ business: business(), events: [{ type: 'payslip', actorId: nova.id, post: 'floor', wage: 100, paid: 100, owed: 0 }] });
+  } finally {
+    MailService.fromWire = fromWire;
+  }
+  assert.equal(S.WealthAdapter.get(nova), wealth + 100);
 
   const ledger = await renderBusiness(windowFor(med, 'ledger'));
   assertClean(ledger, 'ledger with wages');

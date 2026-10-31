@@ -70,10 +70,10 @@ export const MailService = {
   },
 
   /** The market wire mails a client. */
-  async fromWire(actor, { subject, lines }) {
+  async fromWire(actor, { subject, lines, eddies = 0 }) {
     const wire = await NcmAdapter.ensureWire();
     if (!wire) return { ok: false, error: 'no-wire' };
-    return sendTo(actor, { fromContactId: wire.id, subject, body: html(lines) });
+    return sendTo(actor, { fromContactId: wire.id, subject, body: html(lines), eddies });
   },
 
   /** The system contact NCPD Financial Crimes mails a client. */
