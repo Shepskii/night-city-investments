@@ -348,6 +348,15 @@ export function registerSettings() {
     default: true,
   });
 
+  s.register(MODULE_ID, SETTINGS.LISTING_THRESHOLD, {
+    name: 'NCI.Settings.ListingThreshold.Name',
+    hint: 'NCI.Settings.ListingThreshold.Hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 500000,
+  });
+
   s.register(MODULE_ID, SETTINGS.STAFF_MAIL, {
     name: 'NCI.Settings.StaffMail.Name',
     hint: 'NCI.Settings.StaffMail.Hint',

@@ -6,6 +6,7 @@
  *              The rest of the weekly close (takings, upkeep, loans, events) is the business's own.
  */
 
+import { valuation } from './businessListing.js';
 import { BUSINESS_DEFAULTS } from './businessConfig.js';
 import { clamp, fail, addLedger, partnerOf, holders, voters, stateBands, bookValue } from './businessRecord.js';
 import { dvOf, approachOf, bandPassed } from './rolls.js';
@@ -89,6 +90,8 @@ export function closeReportWeek(b, day, out, p = BUSINESS_DEFAULTS) {
     reported: Math.round(profit + Math.abs(profit) * shift),
     ...(prep ? { prep: { band: prep.band, bold: prep.bold, total: prep.total, by: prep.by } } : {}),
   };
+  // The market valuation at this report, counting it (B5, §26.4a).
+  report.valuation = valuation({ ...b, reports: [...b.reports, report] }, day, p);
   b.reports = [...b.reports, report].slice(-r.cap);
   b.reportWeeks = 0;
   b.reportPrep = null;

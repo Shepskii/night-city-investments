@@ -61,6 +61,8 @@ export class BusinessApp extends BaseApplication {
       stepUpRoll: BusinessApp._onStepUpRoll,
       proposeCharter: BusinessApp._onProposeCharter,
       charterRoll: BusinessApp._onCharterRoll,
+      proposeListing: BusinessApp._onProposeListing,
+      prospectusRoll: BusinessApp._onProspectusRoll,
       charterFund: BusinessApp._onCharterFund,
       reportRoll: BusinessApp._onReportRoll,
       auditRoll: BusinessApp._onAuditRoll,
@@ -380,6 +382,20 @@ export class BusinessApp extends BaseApplication {
     if (ticker.length < 2) return ui.notifications.warn(L('NCI.Business.Reason.bad-ticker'));
     if (await this._confirm('NCI.Charter.Confirm')) return this._send('propose', { kind: 'stepUp', ticker });
     return null;
+  }
+
+  /** Agree to list (B5a): every shareholder with a vote, naming the float; the fee is paid when agreed. */
+  static async _onProposeListing(event, target) {
+    const float = Number(value(target, 'float'));
+    if (!(float > 0)) return null;
+    if (await this._confirm('NCI.Listing.Confirm')) return this._send('propose', { kind: 'stepUp', float });
+    return null;
+  }
+
+  /** A prospectus roll: the filing (Accounting) or the offering (Trading). */
+  static _onProspectusRoll(event, target) {
+    const part = target.dataset.part;
+    this._roll({ type: 'prospectusRoll', part }, L('NCI.Listing.RollTitle', { part: L(`NCI.Listing.Part.${part}`), name: this.business?.name ?? '' }));
   }
 
   static _onCharterRoll(event, target) {

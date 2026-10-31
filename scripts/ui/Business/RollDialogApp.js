@@ -176,6 +176,7 @@ export class RollDialogApp extends BaseApplication {
     const meaning = this.asked ? this.asked.meaning
       : this.request.type === 'action' ? this.request.action
       : this.request.type === 'charterRoll' ? `charter.${this.request.part}`
+      : this.request.type === 'prospectusRoll' ? `prospectus.${this.request.part}`
         : ['auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll'].includes(this.request.type) ? this.request.type
         : good ? 'respondGood' : this.request.type;
 

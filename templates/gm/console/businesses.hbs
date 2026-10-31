@@ -41,6 +41,15 @@
     </table>
     {{/if}}
     {{#if setup}}<div class="nci-muted">{{setup}}</div>{{/if}}
+    {{#if listing}}
+    <div class="nci-warn">{{listing.text}}</div>
+    {{#if listing.awaiting}}
+    <div class="nci-actions">
+      <button type="button" data-action="businessListingApprove" data-id="{{id}}"><i class="fas fa-chart-line"></i> {{localize "NCI.GMBusiness.ListingApprove"}}</button>
+      <button type="button" data-action="businessListingReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.ListingReject"}}</button>
+    </div>
+    {{/if}}
+    {{/if}}
     {{#if charter}}
     <div class="nci-warn">{{charter.text}}</div>
     {{#if charter.awaiting}}

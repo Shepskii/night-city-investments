@@ -347,6 +347,28 @@
     </tbody></table>
     <p class="nci-hint">{{gains}}</p>
     {{#if pending}}<p class="nci-warn">{{pending}}</p>{{/if}}
+    {{#with listing}}
+    <p><strong>{{valuation}}</strong>{{#if history}} <span class="nci-muted">{{history}}</span>{{/if}}</p>
+    {{#if refused}}<p class="nci-warn">{{refused}}</p>{{/if}}
+    {{#if canPropose}}
+    <div class="nci-actions nci-form">
+      <label>{{localize "NCI.Listing.Float"}} <select name="float">{{#each floats}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+      <button type="button" data-action="proposeListing"><i class="fas fa-chart-line"></i> {{localize "NCI.Listing.Propose"}}</button>
+    </div>
+    <p class="nci-hint">{{feeText}}</p>
+    {{/if}}
+    {{#if awaiting}}<p class="nci-warn">{{awaiting}}</p>{{/if}}
+    {{#if prospectus}}<p><strong>{{prospectus}}</strong></p>{{/if}}
+    {{#if parts.length}}
+    <table class="nci-market"><tbody>
+      {{#each parts}}
+      <tr><td>{{label}}</td><td>{{result}}</td>
+        <td class="nci-rowbtns">{{#if canRoll}}<button type="button" class="nci-labelled" data-action="prospectusRoll" data-part="{{part}}"><i class="fas fa-dice-d10"></i> {{localize "NCI.Charter.Roll"}}</button>{{/if}}</td></tr>
+      {{/each}}
+    </tbody></table>
+    {{/if}}
+    {{#if ready}}<p class="nci-up"><strong>{{ready}}</strong></p>{{/if}}
+    {{/with}}
     {{#with charter}}
     <p class="nci-hint">{{localize "NCI.Charter.SectorLine" sector=sector}} {{range}}</p>
     {{#if refused}}<p class="nci-warn">{{refused}}</p>{{/if}}

@@ -452,7 +452,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B4 | **Done (v0.12.0), see §32.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
 | E | **E1 and E2 done (v0.12.0), see §33.9 and §33.10; E3 done (v0.13.0), see §33.11.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
 | Projects | **Done (v0.12.0), see §34.** Projects beside expansion: refit, security upgrade, storefront, staff room; the Projects tab reworked |
-| B5 | **v0.14.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
+| B5 | **v0.14, under way (B5a built), see §36.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
 | B6 | **v0.15.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
 | B7 | Downtime bridge (separate module, after B2): company work through Crew Tools downtime, businesses on Night City Map |
 | F1 | **Proposed, see §35.3.** Faction standing with corps and gangs, moved by gigs and business actions; smear campaigns through the impact pipeline; after B6 |
@@ -1390,7 +1390,7 @@ A week with neither contracts nor shortcuts is an unworked week, as a shop's wee
 
 **Tested in the test world** (v0.12.0, 2026-10-31, on "Charter Test Clinic", a registered clinic made to meet the milestones): the milestones, agreement and fee; the three charter rolls (a hired professional, extra time); GM approval forming the company at once (its net assets covered the quote); the five-action Work tab, Chase contracts and Shortcuts lifting the takings and leaving Exposure; internal audits (a fumble, a pass, an exceptional one wiping Exposure); due diligence; two monthly reports, one standard and one Bold; an investor invited and accepting; an officer elected and dismissed, the last officer kept. It found and fixed: due diligence refused from a player's window (the target is named, and only the GM's service finds its id); weeks closing on the wrong weekday after New Year, because the world's Simple Calendar restarts its weekdays each year (weeks now close on the calendar's own closing day, asked date by date); the charter waiting line when the net assets cover the quote; an audit not saying what it found before wiping it. Changed on the user's request: the monthly report on the Ledger tab, each report opening a window with the real figures beside the reported ones, and shareholders holding shares in place of partners holding units from chartering on. Not tried live: the funding window, a refused or failed charter, and the other three company actions (all covered by tests).
 
-## 33. Employees (E1 and E2 in v0.12.0; E3 proposed)
+## 33. Employees (E1 and E2 in v0.12.0, E3 in v0.13.0)
 
 Characters, player or NPC, can work for a player business as **employees**. Partners own a business and run it; employees work in it for a wage. Their skills lift what the business earns according to the job they hold, they can be called in to make the business's rolls for overtime pay, and they bring loyalty, staff events and training with them. Employees work at every stage (§26.0) and for a syndicate's business too (B3b), so this phase sits beside B1 to B4 rather than after them. It should be built before going public (B5), because wages change a company's profit, and so its valuation.
 
@@ -1831,3 +1831,20 @@ Each step ends as the others do: engine tests, flow tests, a simulator check tha
 5. **Players see dirty cash as values**; Exposure and standing only as bands.
 6. **Factions first** (F1), then fronts (U1), then production (P1).
 
+
+## 36. Phase B5: going public (v0.14, under way)
+
+The plan is §26.4a (listing eligibility), §26.7 (capped payouts) and the B5 entry in §26.9's phasing.
+
+**The user's choices (2026-10-31).**
+- **In three parts,** each tested and committed before the next: B5a, the valuation, the listing checklist, agreeing to list and the prospectus rolls; B5b, the listing itself (the market entry, the IPO window, holdings into portfolios); B5c, after listing (report earnings moving the price, capped dividends, the liquidity cap, insider windows, the delisting review, the links between the Business window and the terminal).
+- **Holdings into portfolios.** At listing each character's or syndicate's shares become a holding of the new ticker in their brokerage portfolio, locked for 28 days (the lock-up), then tradable; NPC holders (angels, granted NPCs) stay as untraded other holders; the float is new shares sold in the IPO, raising cash for the company.
+- **Control follows holdings.** After listing, votes follow the shares held in characters' and syndicates' portfolios, read at each vote; officers must hold shares; shares held by nobody in particular do not vote.
+- **The threshold stays at 500,000 eb,** as a world setting (*Listing threshold*) the GM can lower.
+
+**B5a as built** (`scripts/engine/businessListing.js`, `tests/businessListing.test.mjs`).
+- **The valuation V** (`valuation`): net assets, less cash newly paid in (investments, top-ups, charter payments, an angel's money) within the 28-day lock-in, plus the last three monthly reports' **reported** profit, averaged and annualised (13 four-week months; never below zero), times the sector multiple (`listing.multiples`: tech 14, biotech 13, health 12, finance 11, security and arms 10, media and energy 9, transport 8, construction and consumer 7, other 6). Reported profit counts, so aggressive reporting lifts V as it would a share price. Each monthly report records V (`report.valuation`); the report window shows it.
+- **The checklist** (`listingMilestones`, the Growth tab at stage 2, "To become a Listed company"): V at the threshold now; V at the threshold on the last 3 reports in a row; at least 3 reports; 56 days since the charter; Compliance 50 or more; no unresolved compliance concerns (the GM's service marks hidden Exposure of 15 or more as `listingConcerns` before every change, so players see only the line); and the listing fee in the cash.
+- **Agreeing.** A `stepUp` proposal at stage 2 naming the float (20% to 40% in 5% steps), needing every shareholder with a vote, as the charter does. When it passes the fee (2% of V) is paid from the cash and the listing waits for the GM (`listing.status` 'awaiting'). A listing turned down or failed may be agreed again after 14 days; the fee is never refunded.
+- **The GM** approves or turns it down in the Businesses tab, which shows V, the float and the hidden Exposure.
+- **The prospectus rolls** (`prospectusRoll`, officers only, a hired professional allowed): the filing (Accounting, or Business at DV +2) and the offering (Trading, or Persuasion at DV +2), at DV 17, with the usual levers. A failure ends the attempt. Both passed, the **offer** is set: the price per share is V per share times 1 + the average of the two results' factors (narrow −5%, solid 0, strong +7%, exceptional +15%, each doubled if rolled Bold, within ±15%); the float is the one agreed, capped by the offering's demand (narrow 20%, solid 25%, strong 30%, exceptional 40%), as new shares making that share of the company. The status is then 'ready'; B5b takes it from there.

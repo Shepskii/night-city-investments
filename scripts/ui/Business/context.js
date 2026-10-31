@@ -12,6 +12,7 @@ import {
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck,
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
+  sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck,
 } from '../../engine/index.js';
 import { SkillAdapter } from '../../services/SkillAdapter.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
@@ -298,7 +299,8 @@ function projectsContext(business, actor, canAct) {
 }
 
 function growthContext(business, actor, canAct) {
-  const m = milestones(business);
+  const threshold = Number(game.settings.get(MODULE_ID, SETTINGS.LISTING_THRESHOLD)) || BUSINESS_DEFAULTS.listing.threshold;
+  const m = milestones(business, undefined, { day: BusinessClient.day(), threshold });
   const day = BusinessClient.day();
   const check = actor ? stepUpCheck(business, actor.id, day) : null;
   const pending = business.proposals.some((x) => x.kind === 'stepUp');
@@ -308,8 +310,8 @@ function growthContext(business, actor, canAct) {
     available: m.available,
     later: m.available ? '' : L('NCI.Business.NextStageLater'),
     items: m.items.map((x) => ({
-      label: L(`NCI.Business.Milestone.${x.id}`, { need: whole(x.need) }),
-      have: whole(x.have),
+      label: L(`NCI.Business.Milestone.${x.id}`, { need: whole(x.need ?? 0) }),
+      have: x.have == null ? '' : whole(x.have),
       met: x.met,
     })),
     canPropose: canAct && m.met && !business.stepUp?.approved && !pending,
@@ -317,8 +319,39 @@ function growthContext(business, actor, canAct) {
     agreed: business.stepUp?.approved ? L('NCI.Business.StepUpAgreed') : '',
     retry: business.stepUp?.retryDay != null && day < business.stepUp.retryDay ? L('NCI.Business.StepUpRetry', { date: dayText(business.stepUp.retryDay) }) : '',
     canRoll: canAct && !!check?.ok,
-    gains: m.available ? L(business.stage === 1 ? 'NCI.Charter.Gains' : 'NCI.Business.RegisterGains') : '',
+    gains: m.available ? L(business.stage === 2 ? 'NCI.Listing.Gains' : business.stage === 1 ? 'NCI.Charter.Gains' : 'NCI.Business.RegisterGains', { multiple: business.stage === 2 ? sectorMultiple(business) : '', sector: business.stage === 2 ? L(`NCI.Sector.${charterSector(business)}`) : '' }) : '',
     charter: business.stage === 1 ? charterContext(business, actor, canAct, m, pending) : null,
+    listing: business.stage === 2 ? listingContext(business, actor, canAct, m, pending) : null,
+  };
+}
+
+/** Going public, for a chartered company (B5a): V, agreeing (the float), the GM, the prospectus rolls, the offer. */
+function listingContext(business, actor, canAct, m, pending) {
+  const l = business.listing;
+  const day = BusinessClient.day();
+  const status = l?.status ?? 'none';
+  const runs = canAct && canRun(business, actor.id);
+  const pct = (x) => Math.round(x * 100);
+  const parts = PROSPECTUS_PARTS.map((part) => {
+    const r = l?.rolls?.[part];
+    return {
+      part, label: L(`NCI.Listing.Part.${part}`),
+      result: r ? L(r.success ? 'NCI.Charter.Passed' : 'NCI.Charter.Failed', { band: L(`NCI.Roll.Band.${r.band}`) }) : L('NCI.Charter.NotRolled'),
+      canRoll: runs && status === 'prospectus' && prospectusCheck(business, part).ok,
+    };
+  });
+  const delay = l?.retryDay != null && day < l.retryDay;
+  return {
+    valuation: L('NCI.Listing.Valuation', { v: whole(m.valuation ?? 0), multiple: sectorMultiple(business) }),
+    history: (business.reports ?? []).slice(-3).filter((r) => r.valuation != null).map((r) => L('NCI.Listing.ReportV', { n: r.index, v: whole(r.valuation) })).join(' · '),
+    floats: floatOptions().map((f) => ({ value: f, label: `${pct(f)}%` })),
+    canPropose: canAct && m.met && !pending && ['none', 'failed', 'rejected'].includes(status) && !delay,
+    feeText: L('NCI.Listing.Fee', { fee: whole(m.fee ?? 0) }),
+    awaiting: status === 'awaiting' ? L('NCI.Listing.Awaiting', { float: pct(l.float), fee: whole(l.fee) }) : '',
+    prospectus: status === 'prospectus' ? L('NCI.Listing.Prospectus') : '',
+    parts: ['prospectus', 'ready', 'failed'].includes(status) && Object.keys(l.rolls ?? {}).length + (status === 'prospectus' ? 1 : 0) ? parts : [],
+    ready: status === 'ready' ? L('NCI.Listing.Ready', { price: l.offer.price.toLocaleString(), shares: whole(l.offer.shares), float: pct(l.offer.float) }) : '',
+    refused: status === 'failed' ? L('NCI.Listing.Failed', { date: dayText(l.retryDay ?? day) }) : status === 'rejected' ? L('NCI.Listing.Rejected', { date: dayText(l.retryDay ?? day) }) : '',
   };
 }
 
@@ -589,6 +622,7 @@ export function reportContext(business, index) {
       ? L(prep.bold ? 'NCI.Report.PreparedBold' : 'NCI.Report.Prepared', { name: nameOf(business, prep.by), band: L(`NCI.Roll.Band.${prep.band}`), total: prep.total ?? '', pct: signed(pct) })
       : L('NCI.Report.Standard'),
     trail: prep?.bold ? L('NCI.Report.Trail') : '',
+    valuation: r.valuation != null ? L('NCI.Report.Valuation', { v: whole(r.valuation) }) : '',
     figures: [
       row(L('NCI.Business.Takings'), r.takings),
       row(L('NCI.Business.Upkeep'), -r.upkeep),

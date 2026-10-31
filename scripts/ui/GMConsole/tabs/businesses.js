@@ -31,6 +31,15 @@ async function onCharterReject(event, target) {
   report(await BusinessService.rejectCharter(target.dataset.id));
 }
 
+async function onListingApprove(event, target) {
+  report(await BusinessService.approveListing(target.dataset.id));
+}
+
+async function onListingReject(event, target) {
+  if (!(await confirm(L('NCI.GMBusiness.ListingReject'), L('NCI.GMBusiness.ListingRejectConfirm')))) return;
+  report(await BusinessService.rejectListing(target.dataset.id));
+}
+
 async function onPartnerLeaves(event, target) {
   const actorId = target.closest('.nci-gig')?.querySelector('[name="leaver"]')?.value;
   if (!actorId) return;
@@ -55,6 +64,8 @@ export const actions = {
   businessApprove: onApprove,
   businessCharterApprove: onCharterApprove,
   businessCharterReject: onCharterReject,
+  businessListingApprove: onListingApprove,
+  businessListingReject: onListingReject,
   businessReject: onReject,
   businessPartnerLeaves: onPartnerLeaves,
   businessRemove: onRemove,
@@ -87,6 +98,14 @@ export function context() {
       archetype: L(`NCI.Business.Archetype.${b.archetype}.Name`),
       status: L(`NCI.Business.Status.${b.status}`),
       isPending: b.status === 'pending',
+      // A listing under way (B5a), and waiting for the GM.
+      listing: b.listing && ['awaiting', 'prospectus', 'ready'].includes(b.listing.status) ? {
+        awaiting: b.listing.status === 'awaiting',
+        text: L(`NCI.GMBusiness.Listing.${b.listing.status}`, {
+          ticker: b.company?.ticker ?? '', valuation: whole(b.listing.valuation ?? 0), float: Math.round((b.listing.float ?? 0) * 100), exposure: hidden.exposure ?? 0,
+          price: b.listing.offer ? b.listing.offer.price.toLocaleString() : '', shares: whole(b.listing.offer?.shares ?? 0),
+        }),
+      } : null,
       charter: b.charter && ['rolling', 'awaiting', 'funding'].includes(b.charter.status) ? {
         awaiting: b.charter.status === 'awaiting',
         text: L(`NCI.GMBusiness.Charter.${b.charter.status}`, {

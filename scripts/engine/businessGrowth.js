@@ -8,6 +8,7 @@
 
 import { BUSINESS_DEFAULTS } from './businessConfig.js';
 import { charterMilestones } from './businessCharter.js';
+import { listingMilestones } from './businessListing.js';
 import { dvOf } from './rolls.js';
 import { partnerOf, holders, addLedger, fail, clamp } from './businessRecord.js';
 
@@ -152,8 +153,10 @@ const weekly = (d) => (d.endDay - d.startDay > 0 ? (d.profit * 7) / (d.endDay - 
  * registered business exists until B4 brings the charter.
  * @returns {{to: number|null, items: {id: string, have: number, need: number, met: boolean}[], met: boolean, available: boolean}}
  */
-export function milestones(b, p = BUSINESS_DEFAULTS) {
+export function milestones(b, p = BUSINESS_DEFAULTS, listing = {}) {
   if (b.stage === 1) return charterMilestones(b, p);
+  // A chartered company's step is the listing (B5a): `listing` gives the day and the threshold setting.
+  if (b.stage === 2) return listingMilestones(b, listing, p);
   if (b.stage !== 0) return { to: b.stage + 1, items: [], met: false, available: false };
   const r = p.registration;
   const full = b.digests.filter((d) => d.endDay - d.startDay >= 7);

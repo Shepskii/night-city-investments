@@ -333,6 +333,24 @@
           "strong": "A persuasive report: 6% more profit (12% if Bold).",
           "exceptional": "A masterpiece: 10% more profit (20% if Bold)."
         },
+        "prospectus": {
+          "filing": {
+            "fumble": "The filing is thrown out: the listing fails, and the fee is spent.",
+            "failure": "The filing is queried and withdrawn: the listing fails, and the fee is spent.",
+            "narrow": "Filed, just: the offer price 5% under the valuation (10% if Bold).",
+            "solid": "Filed cleanly: the offer price at the valuation.",
+            "strong": "A strong filing: the offer price 7% over the valuation (14% if Bold).",
+            "exceptional": "A model filing: the offer price 15% over the valuation (30% if Bold, within 15% in all)."
+          },
+          "offering": {
+            "fumble": "Nobody bites: the listing fails, and the fee is spent.",
+            "failure": "Too little interest: the listing fails, and the fee is spent.",
+            "narrow": "Some interest: a float of up to 20%, the price 5% under (10% if Bold).",
+            "solid": "Good interest: a float of up to 25%, the price at the valuation.",
+            "strong": "Strong demand: a float of up to 30%, the price 7% over (14% if Bold).",
+            "exceptional": "Oversubscribed: a float of up to 40%, the price 15% over (30% if Bold, within 15% in all)."
+          }
+        },
         "charter": {
           "plan": {
             "fumble": "A muddled plan: Reputation starts 8 lower.",
@@ -1548,6 +1566,10 @@
         "Name": "Player syndicates",
         "Hint": "Let players pool money in a syndicate that trades on the market as one account. Turning this off refuses new syndicate requests; existing syndicates keep their holdings and nothing is deleted."
       },
+      "ListingThreshold": {
+        "Name": "Listing threshold (eb)",
+        "Hint": "The market valuation a chartered player company must reach, on three monthly reports in a row, before it can apply to list on the market. Lower it to let companies list sooner."
+      },
       "StaffMail": {
         "Name": "Payslips by Messenger",
         "Hint": "Send a player character who works for a player business a Night City Messenger payslip from the market wire each week, with their wage attached to claim and anything still owed. Off (or with no Messenger), wages go straight to their sheet."
@@ -1642,6 +1664,22 @@
       "DiligenceTitle": "Due diligence on {name}",
       "IntelFound": "{bands}; worth about {low} to {high} eb",
       "IntelNothing": "nothing useful found"
+    },
+    "Listing": {
+      "Gains": "Listing puts the company on the market: its shares trade on the terminal, the shareholders' holdings move into their brokerage portfolios (locked for 28 days), and the shares floated in the offering raise cash for the company. It takes every shareholder with a vote, naming the float (20% to 40% of the company); the listing fee is paid when you agree, whatever happens; then the GM approves, and two prospectus rolls must pass. The valuation is net assets plus a year of the reported profit at the {sector} sector's multiple of {multiple}; cash paid in counts only after 28 days.",
+      "Valuation": "Market valuation now: {v} eb (sector multiple {multiple}).",
+      "ReportV": "report #{n}: {v} eb",
+      "Float": "Float",
+      "Propose": "Propose listing",
+      "Confirm": "Propose listing the company? If every shareholder with a vote agrees, the listing fee is paid from its cash at once, and the listing waits for the GM.",
+      "Fee": "The listing fee, 2% of the valuation, is {fee} eb now.",
+      "Awaiting": "The shareholders have agreed to list, floating {float}% (fee {fee} eb paid). Waiting for the GM.",
+      "Prospectus": "The GM has approved the listing. An officer makes each prospectus roll; both must pass.",
+      "Part": { "filing": "The filing", "offering": "The offering" },
+      "RollTitle": "{part}: {name}'s prospectus",
+      "Ready": "Ready to list: {shares} new shares ({float}% of the company) offered at {price} eb a share. The listing itself comes in the next update.",
+      "Failed": "A prospectus roll failed: the fee is spent. You may agree to list again from {date}.",
+      "Rejected": "The GM turned the listing down: the fee is spent. You may agree to list again from {date}."
     },
     "Charter": {
       "Gains": "Chartering makes the business a company: three action slots a week, a Capacity ceiling of 14, shares in place of units, and later monthly reports and officers. Rent, licences and actions (DV 17) cost more. It takes every partner's agreement, naming the ticker, then three rolls any partner can make: the business plan, the registration and the capital structure. The 2,000 eb filing fee is paid when you agree, whatever happens.",
@@ -1762,6 +1800,7 @@
       "Open": "Open this report: the real figures beside the reported ones",
       "Gone": "This report is no longer kept.",
       "WeekCount": "{n} week(s)",
+      "Valuation": "Market valuation at this report: {v} eb.",
       "Figures": "Real and reported",
       "Real": "Real",
       "Reported": "Reported",
@@ -1855,6 +1894,14 @@
       "StaffLoyalty": "loyalty {loyalty}",
       "StaffTrait": "trait: {trait}",
       "StaffElsewhere": "also works for {name}",
+      "ListingApprove": "Approve the listing",
+      "ListingReject": "Turn the listing down",
+      "ListingRejectConfirm": "Turn this listing down? The listing fee is not refunded; they may agree again in 14 days.",
+      "Listing": {
+        "awaiting": "Listing as {ticker} waiting for you: valuation {valuation} eb, float {float}%. Hidden Exposure {exposure}.",
+        "prospectus": "Listing as {ticker} approved: the prospectus rolls are under way.",
+        "ready": "Listing as {ticker} ready: {shares} shares at {price} eb (the listing itself comes with B5b)."
+      },
       "Applicants": "Applicants: {list}",
       "ApplicantOne": "{name} ({post}, base {base}{trait})"
     },
@@ -2256,7 +2303,14 @@
         "registeredWeeks": "{need} weeks registered",
         "charterProfit": "Average weekly profit of {need} eb over the last 4 weeks",
         "expansions": "At least {need} expansion finished",
-        "charterFee": "{need} eb of the business's cash for the filing fee"
+        "charterFee": "{need} eb of the business's cash for the filing fee",
+        "valuation": "Market valuation of at least {need} eb",
+        "sustained": "At that valuation on the last {need} monthly reports",
+        "reports": "At least {need} monthly reports published",
+        "listedDays": "At least {need} days since the charter",
+        "listingCompliance": "Compliance of at least {need}",
+        "concerns": "No unresolved compliance concerns",
+        "listingFee": "{need} eb of the company's cash for the listing fee"
       },
       "RegisterGains": "Registering means two action slots a week and lower protection money, but rent and licence fees go up, actions are rolled at DV 15, and the business has a Compliance standing to look after. It takes every partner's agreement, then a registration roll: Bureaucracy, or Local Expert or Persuasion at DV +2. The fee is paid whatever the result.",
       "StepUpPending": "Stepping up is waiting for every partner's vote.",

@@ -17,7 +17,7 @@
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
-  STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams,
+  STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter, isItemPile } from '../utils/helpers.js';
@@ -100,6 +100,8 @@ class BusinessServiceImpl {
       staffActors: Object.fromEntries(staffActors().map((a) => [a.id, a.source])),
       staffNames: Object.fromEntries(staffActors().map((a) => [a.id, a.name])),
       basesOf: (id) => this.basesOf(id),
+      // The listing threshold (B5a), a world setting.
+      listingThreshold: this.listingThreshold(),
       // NPC actors an Exec may bring as a team member (E3): not a player's character.
       teamActors: Object.fromEntries(game.actors.filter((a) => ['character', 'mook'].includes(a.type) && !isItemPile(a) && !a.hasPlayerOwner).map((a) => [a.id, a.name])),
       newId: `bus_${foundry.utils.randomID(12)}`,
@@ -113,6 +115,20 @@ class BusinessServiceImpl {
       }])),
       traits: business ? hidden[business.id]?.traits ?? {} : {},
     };
+  }
+
+  /** The valuation a company must reach to list (B5a): the world setting, or the default. */
+  listingThreshold() {
+    const v = Number(game.settings.get(MODULE_ID, SETTINGS.LISTING_THRESHOLD));
+    return v > 0 ? v : BUSINESS_DEFAULTS.listing.threshold;
+  }
+
+  /** Whether a business's hidden Exposure is over the listing cap: shown to players only as "unresolved concerns" (B5a). Returns whether it changed. */
+  _markConcerns(business) {
+    const over = (MarketStore.getBusinessesHidden()[business.id]?.exposure ?? 0) >= BUSINESS_DEFAULTS.listing.exposureCap;
+    if (!!business.listingConcerns === over) return false;
+    business.listingConcerns = over;
+    return true;
   }
 
   /** A character's base in every skill and role ability a business roll names, from their sheet. */
@@ -179,6 +195,7 @@ class BusinessServiceImpl {
     const business = stored ? normalizeBusiness(structuredClone(stored)) : null;
     if (business) {
       markElsewhere(business, BusinessRepository.all());
+      this._markConcerns(business);
       // An Exec's team follows the Exec: their rank now, and whether they are still a partner (E3).
       const team = refreshTeams(business, (id) => this.basesOf(id), this.day());
       if (team.notes.length) business.pendingNotes = [...(business.pendingNotes ?? []), ...team.notes];
@@ -485,7 +502,7 @@ class BusinessServiceImpl {
         // Employees' skills are read again from their sheets before the week is counted.
         const business = normalizeBusiness(structuredClone(stored));
         const reread = refreshStaffBases(business, (id) => this.basesOf(id));
-        const marked = markElsewhere(business, BusinessRepository.all());
+        const marked = markElsewhere(business, BusinessRepository.all()) | this._markConcerns(business);
         const team = refreshTeams(business, (id) => this.basesOf(id), day);
         if (team.notes.length) business.pendingNotes = [...(business.pendingNotes ?? []), ...team.notes];
         const out = advanceBusiness(business, day, { ...opts, traits: this.traitsOf(business.id) });
@@ -529,6 +546,16 @@ class BusinessServiceImpl {
   /** Turn a charter down: anything paid in is refunded; the filing fee is not. */
   rejectCharter(id) {
     return this._gm(id, (b) => rejectBusinessCharter(b, this.day()));
+  }
+
+  /** Approve a listing waiting for the GM (B5a): the prospectus rolls open. */
+  approveListing(id) {
+    return this._gm(id, (b) => approveBusinessListing(b, this.day()));
+  }
+
+  /** Turn a listing down: the fee is not refunded. */
+  rejectListing(id) {
+    return this._gm(id, (b) => rejectBusinessListing(b, this.day()));
   }
 
   /** The GM answers a job offer for an NPC (DESIGN §33). */

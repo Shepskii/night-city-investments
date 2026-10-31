@@ -372,6 +372,32 @@ test('a company shows its officers, the information rolls and the report; a shar
     assert.match(emp, /<option value="0.5">0.5%<\/option>/);
     assert.match(emp, /<option value="5">5%<\/option>/);
     assert.match(emp, /data-action="proposeGrant"/);
+    // Going public (B5a): the Growth tab's listing checklist, V, and (once agreed and approved) the prospectus rolls.
+    const growth = text(await renderBusiness(windowFor(med, 'growth')));
+    assert.match(growth, /To become a Listed company/);
+    assert.match(growth, /Market valuation of at least 500,000 eb/);
+    assert.match(growth, /No unresolved compliance concerns/);
+    assert.match(growth, /Market valuation now: [\d,]+ eb \(sector multiple 12\)/);
+    assert.doesNotMatch(growth, /Propose listing/, 'not yet worth enough');
+    game.settings.set('night-city-investments', 'listingThreshold', 1000);
+    const cur = S.BusinessRepository.all()[0];
+    await S.BusinessRepository.save({ ...cur, company: { ...cur.company, charteredDay: cur.period.startDay - 90 }, reports: [3, 4, 5].map((index) => ({ index, fromDay: 0, toDay: 0, weeks: 4, takings: 100, upkeep: 50, profit: 50, reported: 50, valuation: 5000 })) });
+    const ready = await renderBusiness(windowFor(med, 'growth'));
+    assertClean(ready, 'listing checklist met');
+    assert.match(ready, /data-action="proposeListing"/);
+    assert.match(ready, /<option value="0.2">20%<\/option>/);
+    const listing = S.BusinessRepository.all()[0];
+    await S.BusinessRepository.save({ ...listing, listing: { status: 'awaiting', agreedDay: listing.period.startDay, float: 0.25, fee: 100, valuation: 5000, rolls: {}, retryDay: null } });
+    const gmView = await renderConsole();
+    assertClean(gmView, 'listing waiting for the GM');
+    assert.match(text(gmView), /Listing as BRC waiting for you: valuation 5,000 eb, float 25%/);
+    assert.match(gmView, /data-action="businessListingApprove"/);
+    await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], listing: { ...S.BusinessRepository.all()[0].listing, status: 'prospectus' } });
+    const rolls = await renderBusiness(windowFor(med, 'growth'));
+    assert.match(rolls, /data-action="prospectusRoll" data-part="filing"/);
+    assert.match(rolls, /data-action="prospectusRoll" data-part="offering"/);
+    game.settings.set('night-city-investments', 'listingThreshold', 500000);
+    await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], reports: cur.reports, listing: null });
     // Each report opens a window of its own: the real figures beside the reported ones.
     assert.match(ledger, /class="nci-row" data-action="openReport" data-index="2"/);
     assert.ok('openReport' in Apps.Business.DEFAULT_OPTIONS.actions);

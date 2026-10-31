@@ -168,6 +168,9 @@ export function normalizeBusiness(raw) {
       // E3: a member of an Exec's team: the Exec, and their level by the Exec's Teamwork rank.
       ...(x.source === 'team' ? { leader: String(x.leader ?? ''), teamBase: int(x.teamBase) } : {}),
     })),
+    /** Going public (B5a): the listing under way, and whether hidden Exposure is over its cap (the GM's service marks it). */
+    listing: b.listing ?? null,
+    listingConcerns: !!b.listingConcerns,
     /** Notes from another business's two-jobs events, for this one's next digest (E3). */
     pendingNotes: b.pendingNotes ?? [],
     candidates: b.candidates ?? [],

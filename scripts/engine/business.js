@@ -88,6 +88,9 @@ import {
   companyWeek, reportCheck, closeReportWeek, canRun, officerProposal, applyOfficerProposal, infoCheck, applyInternalAudit, applyDiligence,
 } from './businessCompany.js';
 import {
+  canList, startListing, approveListing, rejectListing, prospectusCheck, applyProspectusRoll,
+} from './businessListing.js';
+import {
   activeStaff, recruitCheck, applyRecruit, hireOffer, enactHire, answerJob, quitJob, fireOffer, enactFire, staffRoll, payOvertime, staffShifts,
   staffWeek, payWages, staffOf, shiftsOf, overtimePay,
 } from './businessStaff.js';
@@ -106,7 +109,7 @@ export {
 
 export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
-  'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll',
+  'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll', 'prospectusRoll',
   'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant', 'askStaff', 'cancelAsk', 'addTeam',
 ]);
 
@@ -138,7 +141,7 @@ export function itemGear(item, actorId, p = BUSINESS_DEFAULTS) {
 }
 
 /** Requests that carry a roll. */
-export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll', 'staffRoll']);
+export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll', 'staffRoll', 'prospectusRoll']);
 
 /**
  * What each kind of proposal needs to pass (DESIGN §26.0): closing and stepping up need every partner
@@ -192,6 +195,14 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     const check = stepUpCheck(b, actorId, day, p);
     if (!check.ok) return check;
     return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - p.registration.fee, operatorRank, p, b, traits });
+  }
+
+  if (request.type === 'prospectusRoll') {
+    // Officers make the prospectus rolls (B5a); a hired professional may too.
+    if (!canRun(b, actorId)) return fail('not-officer');
+    const check = prospectusCheck(b, request.part, p);
+    if (!check.ok) return check;
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
 
   if (request.type === 'charterRoll') {
@@ -575,6 +586,19 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       out.events.push({ type: 'roll', action: `charter.${request.part}`, band: r.band, exposure: r.exposure });
       if (done.refused) out.events.push({ type: 'charterRefused' });
       if (done.awaiting) out.events.push({ type: 'charterAwaiting' });
+      break;
+    }
+    case 'prospectusRoll': {
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
+      if (!spec.ok) return spec;
+      if (!check?.ok) return fail(check?.reason ?? 'no-roll');
+      spendFor('roll');
+      const r = check.result;
+      if (r.extra) spendDays(b, actor.id, 1);
+      const done = applyProspectusRoll(b, actor.id, request.part, r, day, p);
+      out.events.push({ type: 'roll', action: `prospectus.${request.part}`, band: r.band, exposure: r.exposure });
+      if (done.ready) out.events.push({ type: 'listingReady' });
+      if (done.failed) out.events.push({ type: 'listingFailed' });
       break;
     }
     case 'reportRoll': {
@@ -968,6 +992,23 @@ export function rejectBusinessCharter(business, day, p = BUSINESS_DEFAULTS) {
   return { ok: true, business: b, wealth, events: [{ type: 'charterRejected' }] };
 }
 
+/** GM: approve a listing waiting for it (B5a): the prospectus rolls open. */
+export function approveBusinessListing(business, day, p = BUSINESS_DEFAULTS) {
+  const b = structuredClone(normalizeBusiness(business));
+  const done = approveListing(b, day, p);
+  if (!done.ok) return done;
+  addLedger(b, { day, kind: 'listingApproved', amount: 0 }, p);
+  return { ok: true, business: b, wealth: {}, events: [{ type: 'listingApproved' }] };
+}
+
+/** GM: turn a listing down (the fee is not refunded). */
+export function rejectBusinessListing(business, day, p = BUSINESS_DEFAULTS) {
+  const b = structuredClone(normalizeBusiness(business));
+  const done = rejectListing(b, day, p);
+  if (!done.ok) return done;
+  return { ok: true, business: b, wealth: {}, events: [{ type: 'listingRejected' }] };
+}
+
 /** GM: turn a business down before it opens. Every partner gets their share of the escrow back. */
 export function rejectBusiness(business, day, p = BUSINESS_DEFAULTS) {
   const b = structuredClone(normalizeBusiness(business));
@@ -1020,6 +1061,11 @@ function liquidate(b, day, reason, out, p) {
 function canPropose(b, kind, request, ctx, p) {
   switch (kind) {
     case 'stepUp': {
+      // A chartered company steps up by listing, which names the float (B5a).
+      if (b.stage === 2) {
+        const can = canList(b, { float: request.float, day: ctx.day, threshold: ctx.listingThreshold }, p);
+        return can.ok ? { ok: true, terms: { float: can.float } } : can;
+      }
       // A registered business steps up by chartering, which names its ticker (B4a).
       if (b.stage === 1) {
         const can = canCharter(b, { ticker: request.ticker, day: ctx.day, taken: ctx.tickers ?? [] }, p);
@@ -1095,6 +1141,11 @@ function settleProposals(b, day, out, p, ctx = {}) {
     out.events.push({ type: 'proposalPassed', kind: proposal.kind });
     if (proposal.kind === 'close') liquidate(b, day, 'closed', out, p);
     if (proposal.kind === 'stepUp' && b.stage === 0) b.stepUp = { approved: true, retryDay: null };
+    if (proposal.kind === 'stepUp' && b.stage === 2) {
+      const started = startListing(b, { float: proposal.terms?.float, day }, p);
+      if (!started.ok) out.events.push({ type: 'proposalVoid', kind: proposal.kind, reason: started.reason });
+      continue;
+    }
     if (proposal.kind === 'stepUp' && b.stage === 1) {
       const started = startCharter(b, { ticker: proposal.terms?.ticker, day }, p);
       if (!started.ok) out.events.push({ type: 'proposalVoid', kind: proposal.kind, reason: started.reason });
