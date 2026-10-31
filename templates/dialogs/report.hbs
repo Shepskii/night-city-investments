@@ -24,7 +24,7 @@
     <table class="nci-market">
       <thead><tr><th>{{localize "NCI.Business.WeekLabel"}}</th><th class="num">{{localize "NCI.Business.Takings"}}</th><th class="num">{{localize "NCI.Business.Upkeep"}}</th><th class="num">{{localize "NCI.Report.OtherCosts"}}</th><th class="num">{{localize "NCI.Business.Profit"}}</th></tr></thead>
       <tbody>
-        {{#each weeks}}<tr><td>{{week}} <span class="nci-muted">{{dates}}</span></td><td class="num nci-up">{{takings}}</td><td class="num nci-down">{{upkeep}}</td><td class="num {{otherCls}}">{{other}}</td><td class="num {{cls}}">{{profit}}</td></tr>{{/each}}
+        {{#each weeks}}<tr><td>{{week}}<div class="nci-muted">{{dates}}</div></td><td class="num nci-up">{{takings}}</td><td class="num nci-down">{{upkeep}}</td><td class="num {{otherCls}}">{{other}}</td><td class="num {{cls}}">{{profit}}</td></tr>{{/each}}
       </tbody>
     </table>
     {{/if}}
