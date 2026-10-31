@@ -127,6 +127,12 @@ test('an internal audit costs eb, can be done once a week, and tells the officer
   assert.equal(out.business.till, b.till - BUSINESS_DEFAULTS.info.auditCost);
   assert.equal(out.business.lastAudit.band, 'strong');
   assert.equal(out.business.lastAudit.exposure, 'low', '12 less the 5 a strong audit wipes out: low');
+  assert.equal(out.business.lastAudit.found, 'low', 'what it found, before clearing some up');
+  // The test world's case: 6 found ("low"), an exceptional audit clears it all; it says it found low.
+  const cleared = apply(b, { type: 'auditRoll', businessId: 'b1', use: ACCOUNTING }, MED, { check: check(14, 10, 15), context: { exposure: 6 } }).business;
+  assert.deepEqual([cleared.lastAudit.found, cleared.lastAudit.exposure], ['low', 'clean']);
+  const nothing = apply(b, { type: 'auditRoll', businessId: 'b1', use: ACCOUNTING }, MED, { check: check(14, 10, 15), context: { exposure: 0 } }).business;
+  assert.equal(nothing.lastAudit.found, undefined, 'nothing to clear: only the band');
   assert.equal(out.events.find((e) => e.action === 'audit').exposure, -5);
   assert.equal(rollSpec(out.business, { type: 'auditRoll', use: ACCOUNTING }, 'med', { day: DAY + 3 }).reason, 'info-delay');
   assert.equal(rollSpec(out.business, { type: 'auditRoll', use: ACCOUNTING }, 'med', { day: DAY + 7 }).ok, true);

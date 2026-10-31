@@ -343,12 +343,14 @@ test('a company shows its officers, the information rolls and the report; a shar
     await S.BusinessRepository.save({
       ...b, stage: 2, till: 5000, company: { ticker: 'BRC', sector: 'health', charteredDay: b.period.startDay }, officers: [med.id],
       state: { ...b.state, compliance: 50 }, charter: null, proposals: [], reportWeeks: 1,
+      lastAudit: { day: b.period.startDay - 7, band: 'exceptional', by: med.id, exposure: 'clean', found: 'low' },
     });
     const officer = await renderBusiness(windowFor(med, 'week'));
     assertClean(officer, 'company week');
     assert.match(text(officer), /Chase contracts/);
     assert.match(officer, /data-action="actionRoll" data-id="contracts"/);
     assert.match(officer, /data-action="auditRoll"/);
+    assert.match(text(officer), /found Exposure low; the auditors cleaned some of it up, leaving it clean/);
     assert.match(officer, /name="targetName"/);
     assert.doesNotMatch(text(officer), /toward this month/, 'the monthly report is on the Ledger tab');
     const ledger = await renderBusiness(windowFor(med, 'ledger'));

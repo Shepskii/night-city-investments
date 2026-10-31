@@ -5,7 +5,8 @@
  *              only by the GM: the record (`syndicate`) and the syndicate's own brokerage account
  *              (`portfolio`, an ordinary portfolio, so PortfolioRepository reads it as it reads a
  *              character's). Ownership is None by default and Observer for the users of its invited
- *              and active members' characters, so nobody else's client receives it.
+ *              and active members' characters, so only they find it in their windows. Foundry still
+ *              sends the journal to every client, so a player at the browser console can read it.
  */
 
 import { normalizeSyndicate, normalizePortfolio, seenBy, activeMembers } from '../engine/index.js';

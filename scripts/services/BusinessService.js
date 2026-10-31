@@ -102,7 +102,7 @@ class BusinessServiceImpl {
       basesOf: (id) => this.basesOf(id),
       newId: `bus_${foundry.utils.randomID(12)}`,
       tickers: this.tickersTaken(business?.id),
-      // Hidden from players: an internal audit reads it, and due diligence sees the other businesses (B4c).
+      // Kept out of players' windows: an internal audit reads it, and due diligence sees the other businesses (B4c).
       exposure: business ? (hidden[business.id]?.exposure ?? 0) : 0,
       // A target with loose lips on its staff tells due diligence more (E2).
       targets: Object.fromEntries(BusinessRepository.all().filter((t) => t.status === 'open' && t.id !== business?.id).map((t) => [t.id, {

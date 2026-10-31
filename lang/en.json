@@ -1624,6 +1624,7 @@
       "AuditTitle": "Internal audit of {name}",
       "NoAudit": "No internal audit yet.",
       "AuditResult": "Last internal audit ({date}): Exposure {band}.",
+      "AuditCleared": "Last internal audit ({date}): found Exposure {found}; the auditors cleaned some of it up, leaving it {band}.",
       "AuditFailed": "Last internal audit ({date}) found nothing useful.",
       "Exposure": { "clean": "clean", "low": "low", "moderate": "moderate", "high": "high" },
       "DiligenceHint": "Due diligence (Library Search or Business) on another business costs {cost} eb and can be done once a week. Name the business as you know it; a pass tells you how it stands and roughly what it is worth.",

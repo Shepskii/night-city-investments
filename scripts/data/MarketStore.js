@@ -3,7 +3,11 @@
  * @file scripts/data/MarketStore.js
  * @description
  *   public state + history  -> world settings (every client can read, only the GM writes)
- *   hidden engine state     -> a GM-only journal flag (fair value, true regime): never sent to players
+ *   hidden engine state     -> a GM-only journal flag (fair value, true regime): out of players' windows
+ *
+ *   "GM-only" means no window shows it to a player. Foundry sends every world document to every
+ *   client whatever its ownership, so a player at the browser console can still read the control
+ *   journal. The module does not try to hide it from them (see DESIGN.md §3, principle 6).
  */
 
 import { emptyHistory, emptyNews, emptyGigs, emptyHeat, normalizeControls, normalizeGigs, normalizeHeat, timeOf } from '../engine/index.js';
@@ -52,7 +56,7 @@ export const MarketStore = {
     return game.settings.set(MODULE_ID, SETTINGS.MARKET_HISTORY, value);
   },
 
-  /** The GM-only journal; players never receive it because its default ownership is NONE. */
+  /** The GM-only journal (default ownership NONE): no window shows it to players, though their clients hold it. */
   controlJournal() {
     return game.journal.find((j) => j.getFlag(MODULE_ID, FLAGS.CONTROL));
   },
@@ -121,7 +125,7 @@ export const MarketStore = {
     await journal.setFlag(MODULE_ID, FLAGS.SNAPSHOTS, list);
   },
 
-  /** GM control state (biases, impacts, forced regime). Only the GM can read it. */
+  /** GM control state (biases, impacts, forced regime). Only the GM's windows show it. */
   getControls() {
     return normalizeControls(this.readRecord(FLAGS.CONTROLS));
   },
@@ -139,7 +143,7 @@ export const MarketStore = {
     return this._writeRecord(FLAGS.GIGS, value);
   },
 
-  /** Insider-trading heat, the watch windows and the audits. GM only: players cannot read the control journal. */
+  /** Insider-trading heat, the watch windows and the audits. GM only: no player window shows the control journal. */
   getHeat() {
     return normalizeHeat(this.readRecord(FLAGS.HEAT));
   },

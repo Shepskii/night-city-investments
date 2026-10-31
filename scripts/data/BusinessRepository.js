@@ -4,8 +4,9 @@
  * @description The record is a flag on the journal, saved in the one-write wrapped form, and only the
  *              GM writes it. The journal's ownership is None by default and Observer for the users of
  *              its partners' characters (invited ones included, so they can see the invitation), so
- *              nobody else's client receives it. Its hidden part lives in the control journal
- *              (MarketStore.getBusinessesHidden).
+ *              only they find it in their windows. Foundry still sends the journal to every client,
+ *              so a player at the browser console can read it. Its hidden part lives in the control
+ *              journal (MarketStore.getBusinessesHidden), kept from players' windows in the same way.
  */
 
 import { normalizeBusiness, shareOf, bookValue } from '../engine/index.js';

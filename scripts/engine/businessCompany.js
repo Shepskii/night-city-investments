@@ -155,7 +155,13 @@ export function applyInternalAudit(b, { result, day, exposure, by }, p = BUSINES
   b.till -= p.info.auditCost;
   addLedger(b, { day, kind: 'audit', amount: -p.info.auditCost, actorId: by }, p);
   const cut = result.success ? (p.info.auditCut[result.band] ?? 0) : 0;
-  b.lastAudit = { day, band: result.band, by, ...(result.success ? { exposure: exposureBand(Math.max(0, exposure - cut), p) } : {}) };
+  // What the auditors found, and (when they cleared some of it) what is left: bands only, never the points.
+  const wiped = Math.min(cut, Math.max(0, Number(exposure) || 0));
+  b.lastAudit = {
+    day, band: result.band, by,
+    ...(result.success ? { exposure: exposureBand(Math.max(0, exposure - cut), p) } : {}),
+    ...(wiped > 0 ? { found: exposureBand(exposure, p) } : {}),
+  };
   return { exposure: -cut };
 }
 

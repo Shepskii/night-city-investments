@@ -427,7 +427,12 @@ function infoContext(business, runs) {
   const cost = BUSINESS_DEFAULTS.info;
   return {
     audit: audit
-      ? (audit.exposure ? L('NCI.Company.AuditResult', { date: dayText(audit.day), band: L(`NCI.Company.Exposure.${audit.exposure}`) }) : L('NCI.Company.AuditFailed', { date: dayText(audit.day) }))
+      ? (audit.exposure
+        // A strong audit says what it found as well as what it left, after clearing some of it up.
+        ? L(audit.found ? 'NCI.Company.AuditCleared' : 'NCI.Company.AuditResult', {
+          date: dayText(audit.day), band: L(`NCI.Company.Exposure.${audit.exposure}`), found: audit.found ? L(`NCI.Company.Exposure.${audit.found}`) : '',
+        })
+        : L('NCI.Company.AuditFailed', { date: dayText(audit.day) }))
       : L('NCI.Company.NoAudit'),
     canAudit: runs && infoCheck(business, 'audit', day).ok,
     auditHint: L('NCI.Company.AuditHint', { cost: whole(cost.auditCost) }),

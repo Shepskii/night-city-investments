@@ -14,7 +14,8 @@
  *              Players can bring heat down with skill-roll actions (see engine/heatActions.js); their
  *              results arrive as portfolio results and are applied here, once each.
  *
- *              The record lives in the GM-only control journal, so players cannot read it.
+ *              The record lives in the GM-only control journal, so no player window shows it (a player
+ *              at the browser console could still read it; see MarketStore).
  */
 
 import {
