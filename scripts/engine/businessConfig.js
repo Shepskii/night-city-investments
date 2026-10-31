@@ -412,6 +412,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
       grudge: 0.5,
       /** Archetypes where accidents happen. */
       accidents: Object.freeze(['garage', 'gunShop', 'security', 'courier']),
+      /** Two jobs wear people down: a sick day or an accident this much more likely (E3). */
+      twoJobsStrain: 4 / 3,
     }),
     /**
      * Advertising a job: the roll, its cost by stage, how often, and how long applicants wait. The band
@@ -537,6 +539,13 @@ export const EVENTS = Object.freeze({
   poaching: Object.freeze({ weight: 2, staff: true, uses: [S.persuasion], hit: Object.freeze({}) }),
   accident: Object.freeze({ weight: 2, staff: true, uses: [S.paramedic, A.medicine], hit: Object.freeze({}) }),
   starTurn: Object.freeze({ weight: 2, staff: true, good: true, uses: [S.business, S.persuasion], hit: Object.freeze({}) }),
+  /**
+   * Two jobs (E3, DESIGN §33.5): drawn only when an NPC employee also works for another business
+   * (`twoJobs`), about one of them; `rival` on the event names the other business.
+   */
+  doubleBooked: Object.freeze({ weight: 2, staff: true, twoJobs: true, uses: [S.persuasion, S.business], hit: Object.freeze({}) }),
+  fullTimeOffer: Object.freeze({ weight: 1, staff: true, twoJobs: true, uses: [S.persuasion], hit: Object.freeze({}) }),
+  talkingShop: Object.freeze({ weight: 2, staff: true, twoJobs: true, uses: [S.humanPerception, S.interrogation], hit: Object.freeze({}) }),
 });
 
 /** The DV for a stage's actions. */

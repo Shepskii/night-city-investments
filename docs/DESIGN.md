@@ -450,7 +450,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B2 | **Done (v0.11.0), see §30.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
 | B3 | **Done (v0.12.0), see §31.** Player syndicates, and syndicates owning or investing in businesses |
 | B4 | **Done (v0.12.0), see §32.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
-| E | **E1 and E2 done (v0.12.0), see §33.9 and §33.10; E3 under way (training and on call built), see §33.11.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
+| E | **E1 and E2 done (v0.12.0), see §33.9 and §33.10; E3 under way (training, on call and two jobs built), see §33.11.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
 | Projects | **Done (v0.12.0), see §34.** Projects beside expansion: refit, security upgrade, storefront, staff room; the Projects tab reworked |
 | B5 | **v0.13.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
 | B6 | **v0.14.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
@@ -1512,7 +1512,7 @@ Below 25 an employee may quit, steals more readily and gives poaching offers a h
   - **A full-time offer.** The other employer, named, tries to take them on full time: answered as a poaching offer (Persuasion, or a raise). Lost, they quit you and stay with the rival, so the two businesses' players compete for one employee. The other business does not roll; the event is yours to answer.
   - **Talking shop.** They let something slip about you at their other job. Unanswered, the other business gains a free due diligence report on yours (your bands and a range for your value, as §32.3). Caught with Human Perception or Interrogation, nothing leaks; on a strong or better result you learn about them instead (a due diligence report on the other business).
 - **Strain.** While they hold two jobs they cannot reach the devoted band at either (loyalty stops at 74), and their chance of a sick day or an accident at work is a third higher.
-- **Seen by whom.** Each business's Staff tab notes "also works for <business>" once anyone at the business has met them there: from the first two-jobs event, or a vetting roll on them as an applicant. The GM's Businesses tab always shows it.
+- **Seen by whom.** Each business's Staff tab notes "also works for <business>" once the business has run into it: from the first two-jobs event (NPCs are not vetted, so vetting cannot show it). The GM's Businesses tab always shows it.
 - **Settled 2026-10-31:** the other business's owners are told, by a line in their weekly digest, when a two-jobs event at your business touches them (a full-time offer won, something let slip). No "no second job" pay term.
 
 ### 33.6 Other links
@@ -1619,7 +1619,7 @@ E2 is `scripts/engine/businessPeople.js` (pure), with small hooks in `businessSt
 - **The digest** lists what happened to the staff (off sick, hurt, poached, caught, asks for a raise, quit, walked out, quit unpaid), and an accident's medical bills.
 - **No migration.** The normalizer fills in loyalty (50, or none for a player character) and keeps the new fields.
 
-**Not built yet:** the rest of E3 (§33.11): two jobs, share grants and the Exec's team.
+**Not built yet:** the rest of E3 (§33.11): share grants and the Exec's team.
 
 **Tested in the test world** (v0.12.0, 2026-10-31, at the Splice Chrome Clinic): overtime for a help and for a slot, a second shift's loyalty cost, an advert, vetting with an exceptional result, turning an applicant away, hiring, a bonus, a raise, moving an employee to another role, weekly loyalty, staff events (a star turn, a sick day), letting an employee go, an NPC offered a job and the GM answering, and a fourth hire once a staff room was built. It found and fixed: the employee a staff event is about could answer it; Item Piles actors offered as heirs and hires; "Proposal made." shown for a proposal the proposer's units carried at once. Changed on the user's request: a player character's wage comes on their payslip mail to claim. Not tried live: a player character's job from offer to payslip, raises asked at a month's end, hidden traits at work, and a sullen employee quitting or stealing (all covered by tests).
 
@@ -1642,6 +1642,18 @@ E2 is `scripts/engine/businessPeople.js` (pure), with small hooks in `businessSt
 - **What it counts as.** The slot, the event's answer or the help is the employee's (`by` their staff id), as an NPC's overtime is. It is one of their two shifts a week.
 - **Overtime on the payslip** (the user's choice): a player character's overtime, whether asked for or called in from the roll dialog, comes from the cash when they roll and is added to that week's payslip (`period.pcOvertime`), claimed from the mail with the wage. The payslip says how much was overtime.
 - **Tests.** `tests/staffFlow.test.mjs` runs it end to end: the Employee window's options, asking, the job carrying the request, the Job view, the roll dialog from the job, the roll counting with Nova's own Luck, the overtime for the payslip, and declining. (The fake Foundry's characters now record Luck spent.)
+
+**Two jobs (E3c)**, as §33.5 planned, with these choices made in building it:
+- **Where else.** Before every request and every weekly close, the GM's service notes on each NPC employee the other business they also work for, from every open business (`staff.elsewhere`: its id, name, and the overtime shifts they have worked there this week; `markElsewhere`). Only NPCs: a recruit works for one business, and a player character's second job is theirs to juggle. Players' windows show it only once known (`knownElsewhere`, set by the first two-jobs event); the GM's Businesses tab always does.
+- **Shared shifts.** Calling them in is refused once their shifts here and there make two (`shifts-elsewhere`). The roll dialog reads the record as last saved, so it may still offer them; the GM's service, which notes the shifts first, refuses.
+- **Strain.** Their loyalty cannot go above 74 while they hold two jobs (`loyaltyCap`, applied whenever loyalty moves and when the second job is first noted), and sick days and accidents are a third likelier where anyone on the staff is torn.
+- **The events** (weights 2, 1 and 2; drawn only when someone has a second job, about one of them; the event names the other business as drawn):
+  - *Double-booked:* answered with Persuasion or Business they work here; otherwise they are idle this week, like a sick day.
+  - *A full-time offer:* answered with Persuasion, or a raise of 10% or more this week, they stay; otherwise they leave this business (ledger "left to work full time…") and the other business's next digest says they now work there full time.
+  - *Talking shop:* answered with Human Perception or Interrogation and passed, nothing leaks; a strong or exceptional answer also gives this business a due diligence report on the other. Otherwise the other business gets a report on this one (its bands and a value within ±20%), and a digest note.
+- **Reaching the other business.** The weekly close reports the event's effect on the other business (`twoJobs`), and the GM's service carries it out after saving: a report added to its `intel`, and a note added to its `pendingNotes`, which its next close puts in that week's digest. Reports are kept for every business, though the Work tab lists them only at a company.
+- **Fixed in passing:** the "if nobody answers" line of a staff event never named the employee (it showed `{name}`).
+- **Tests.** `tests/businessPeople.test.mjs` (marking, shared shifts, the cap, the weights, each event, the notes) and `tests/staffFlow.test.mjs` (a leak reaching the other business, the Staff and GM tabs, the event on the Work tab).
 
 ## 34. Projects beside expansion (v0.12.0)
 

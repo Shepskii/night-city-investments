@@ -32,6 +32,10 @@ export function staffEventWeight(b, kind, traits = null, p = BUSINESS_DEFAULTS) 
   const staff = npcStaff(b);
   if (!staff.length) return 0;
   const ev = p.staff.events;
+  // Two jobs (E3): its events only with someone who has one; and the strain makes sick days and accidents likelier.
+  const twoJobs = staff.some((s) => s.elsewhere);
+  if (def.twoJobs && !twoJobs) return 0;
+  if (twoJobs && ['sickDay', 'accident'].includes(kind) && (kind !== 'accident' || ev.accidents.includes(b.archetype))) return def.weight * ev.twoJobsStrain;
   if (kind === 'payDispute') {
     const average = staff.reduce((a, s) => a + s.loyalty, 0) / staff.length;
     if (staff.length < ev.disputeStaff || average >= ev.disputeLoyalty) return 0;
@@ -46,6 +50,10 @@ export function staffEventWeight(b, kind, traits = null, p = BUSINESS_DEFAULTS) 
 /** Who a staff event is about, drawn with it: someone off sick or hurt, or the best hand a rival wants. */
 export function staffEventTarget(b, kind, rng, p = BUSINESS_DEFAULTS) {
   const staff = npcStaff(b);
+  if (EVENTS[kind]?.twoJobs) {
+    const torn = staff.filter((s) => s.elsewhere);
+    return torn.length ? torn[rng.int(0, torn.length - 1)].id : null;
+  }
   if (!staff.length || !['sickDay', 'accident', 'poaching'].includes(kind)) return null;
   if (kind === 'poaching') {
     const arch = archetypeOf(b);
@@ -70,6 +78,8 @@ export function idleStaff(b) {
   const event = b.period.event;
   const slots = b.period.slots;
   if (event?.kind === 'sickDay' && event.staffId && !passed(slots)) idle.add(event.staffId);
+  // Double-booked, and nobody kept them: working the other job this week (E3).
+  if (event?.kind === 'doubleBooked' && event.staffId && !passed(slots)) idle.add(event.staffId);
   if (event?.kind === 'payDispute' && !passed(slots) && !allBonused(b)) for (const s of activeStaff(b)) idle.add(s.id);
   return idle;
 }
@@ -88,7 +98,9 @@ export function settleStaffEvent(b, takings, slots, { traits = null, seed = 'nci
   const outcome = !answer ? 'unanswered' : band === 'fumble' ? 'fumbled' : bandPassed(band) ? 'answered' : 'failed';
   const out = { kind: event.kind, outcome, band, change: 0, cost: 0, notes: [] };
   const target = event.staffId ? staffOf(b, event.staffId) : null;
-  const note = (kind, s) => out.notes.push({ kind, staffId: s.id, name: s.name });
+  const note = (kind, s) => out.notes.push({ kind, staffId: s.id, name: s.name, ...(event.rival ? { rival: event.rival.name } : {}) });
+  // A two-jobs event: they are now known here to work for the other business too (E3).
+  if (def?.twoJobs && target) target.knownElsewhere = true;
   const rng = createRng(seed, 'staff-event', b.id, b.period.index);
   const ev = p.staff.events;
 
@@ -119,6 +131,36 @@ export function settleStaffEvent(b, takings, slots, { traits = null, seed = 'nci
       b.staff = b.staff.filter((s) => s !== target);
       addLedger(b, { day, kind: 'poached', amount: 0, staffName: target.name }, p);
       note('poached', target);
+      return out;
+    }
+    case 'doubleBooked':
+      // The work was lost already (idleStaff).
+      if (target && outcome !== 'answered') note('doubleBooked', target);
+      return out;
+    case 'fullTimeOffer': {
+      // The other employer wants them full time: a raise of 10% or more this week keeps them too.
+      if (!target || outcome === 'answered' || (b.period.raised ?? {})[target.id]) {
+        if (target) note('keptFromRival', target);
+        return out;
+      }
+      b.staff = b.staff.filter((s) => s !== target);
+      addLedger(b, { day, kind: 'fullTime', amount: 0, staffName: target.name }, p);
+      note('wentFullTime', target);
+      // Their other employer hears of it in their next digest.
+      if (event.rival) out.cross = { kind: 'gainedFullTime', to: event.rival.businessId, staffName: target.name };
+      return out;
+    }
+    case 'talkingShop': {
+      if (!target) return out;
+      // Something let slip at the other job: the other business learns how this one stands; caught well,
+      // this one learns about the other instead.
+      if (outcome !== 'answered') {
+        note('talked', target);
+        if (event.rival) out.cross = { kind: 'leak', to: event.rival.businessId, staffName: target.name };
+      } else {
+        note('caughtTalking', target);
+        if (event.rival && ['strong', 'exceptional'].includes(band)) out.cross = { kind: 'learn', from: event.rival.businessId, staffName: target.name };
+      }
       return out;
     }
     case 'lightFingers': {

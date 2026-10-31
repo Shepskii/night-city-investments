@@ -1359,7 +1359,11 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, params
   const unanswered = !!event && !EVENTS[event.kind]?.good && event.outcome === 'unanswered';
   const people = loyaltyWeek(b, { monthEnd, monthProfit, unanswered, traits, seed, day: b.period.endDay }, p);
   if (people.exposure) out.events.push({ type: 'plant', exposure: people.exposure });
-  const notes = [...(event?.notes ?? []), ...people.notes];
+  // A two-jobs event reaching the other business: the GM's service carries it out there (E3).
+  if (event?.cross) out.events.push({ type: 'twoJobs', businessId: b.id, ...event.cross });
+  // What reached this business from another's two-jobs event this week, for its digest.
+  const notes = [...(event?.notes ?? []), ...people.notes, ...(b.pendingNotes ?? [])];
+  b.pendingNotes = [];
 
   const digest = {
     index: b.period.index,

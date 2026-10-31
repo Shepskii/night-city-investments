@@ -156,7 +156,12 @@ export function normalizeBusiness(raw) {
       // E3: what training has added to each skill, and when they last trained.
       ...(x.training && Object.keys(x.training).length ? { training: { ...x.training } } : {}),
       ...(x.trainedDay != null ? { trainedDay: int(x.trainedDay) } : {}),
+      // E3 two jobs: the other business they work for (the GM's service notes it), and whether it is known here.
+      ...(x.elsewhere ? { elsewhere: { businessId: String(x.elsewhere.businessId), name: String(x.elsewhere.name ?? ''), shifts: int(x.elsewhere.shifts) } } : {}),
+      ...(x.knownElsewhere ? { knownElsewhere: true } : {}),
     })),
+    /** Notes from another business's two-jobs events, for this one's next digest (E3). */
+    pendingNotes: b.pendingNotes ?? [],
     candidates: b.candidates ?? [],
     lastRecruit: b.lastRecruit ?? null,
   };

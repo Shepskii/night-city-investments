@@ -32,7 +32,9 @@ export function drawEvent(b, seed = 'nci', p = BUSINESS_DEFAULTS, traits = null)
     .map(([k, e]) => [k, e.staff ? staffEventWeight(b, k, traits, p) : k === 'theft' ? e.weight * breakInFactor(b, p) : e.weight]).filter(([, w]) => w > 0));
   const kind = rng.weighted(weights);
   const staffId = EVENTS[kind].staff ? staffEventTarget(b, kind, rng, p) : null;
-  return { kind, ...(staffId ? { staffId } : {}) };
+  // A two-jobs event names the other business, as it stood when it was drawn (E3).
+  const rival = EVENTS[kind].twoJobs ? (b.staff ?? []).find((s) => s.id === staffId)?.elsewhere : null;
+  return { kind, ...(staffId ? { staffId } : {}), ...(rival ? { rival: { businessId: rival.businessId, name: rival.name } } : {}) };
 }
 
 /** The ways an event may be answered: its own skills and abilities, and the trade's skills where it says so. */

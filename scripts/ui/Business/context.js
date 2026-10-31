@@ -468,7 +468,7 @@ function eventContext(business, canAct, free) {
     answered: answer ? L('NCI.Business.TakenBy', { name: nameOf(business, answer.by), band: L(`NCI.Roll.Band.${answer.band}`) }) : '',
     security: def.security ? L('NCI.Business.SecurityNote') : '',
     canAnswer: canAct && free && !answer,
-    ifNot: def.staff ? L(`NCI.Event.${event.kind}.IfNot`) : def.good ? L('NCI.Business.WindfallIfNot') : L('NCI.Business.EventIfNot'),
+    ifNot: def.staff ? L(`NCI.Event.${event.kind}.IfNot`, { name: event.staffId ? staffOf(business, event.staffId)?.name ?? '' : '' }) : def.good ? L('NCI.Business.WindfallIfNot') : L('NCI.Business.EventIfNot'),
   };
 }
 
@@ -694,7 +694,7 @@ function digestRow(business, d, i) {
     event: d.event ? L(`NCI.Business.EventOutcome.${d.event.outcome}`, { event: L(`NCI.Event.${d.event.kind}.Name`), change: signed(d.event.change) })
       + (d.event.cost ? ` ${L('NCI.Staff.DigestMedical', { cost: whole(d.event.cost) })}` : '') : '',
     // What happened to the staff: someone off sick, hurt, poached, caught, quitting, asking for a raise (E2).
-    people: (d.staff ?? []).map((n) => L(`NCI.Staff.Note.${n.kind}`, { name: n.name })).join(' '),
+    people: (d.staff ?? []).map((n) => L(`NCI.Staff.Note.${n.kind}`, { name: n.name, rival: n.rival ?? '' })).join(' '),
     gig: d.boost ? L('NCI.Business.DigestGig', { pct: signed(Math.round(d.boost * 100)) }) : '',
     // The wages have their own column; the note is only for what is still owed.
     wages: d.owed ? L('NCI.Staff.DigestOwed', { wages: whole(d.wages ?? 0), owed: whole(d.owed ?? 0) }) : '',
@@ -786,6 +786,8 @@ function staffNotes(business, s) {
     s.caught ? L('NCI.Staff.Caught') : '',
     s.outUntil != null && s.outUntil >= business.period.index ? L('NCI.Staff.Hurt') : '',
     s.ask ? L('NCI.Staff.Asks', { pct: Math.round(s.ask.pct * 100) }) : '',
+    // Once the business has run into it (a two-jobs event), it knows they work for another business too (E3).
+    s.knownElsewhere && s.elsewhere ? L('NCI.Staff.AlsoWorks', { name: s.elsewhere.name }) : '',
   ].filter(Boolean);
 }
 

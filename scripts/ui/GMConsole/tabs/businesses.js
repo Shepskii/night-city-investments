@@ -74,6 +74,7 @@ function staffExtra(s, traits) {
   return [
     hasLoyalty(s) ? L('NCI.GMBusiness.StaffLoyalty', { loyalty: s.loyalty ?? 50 }) : '',
     trait ? L('NCI.GMBusiness.StaffTrait', { trait: L(`NCI.Staff.Trait.${trait}`) }) : '',
+    s.elsewhere ? L('NCI.GMBusiness.StaffElsewhere', { name: s.elsewhere.name }) : '',
   ].filter(Boolean).map((x) => `, ${x}`).join('');
 }
 

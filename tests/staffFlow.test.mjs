@@ -7,6 +7,7 @@ import Handlebars from 'handlebars';
 import { registerPartials } from './helpers/partials.mjs';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
 import { installFakeChat } from './helpers/fakeChat.mjs';
+import { normalizeBusiness } from '../scripts/engine/index.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 registerPartials(Handlebars, root);
@@ -519,6 +520,42 @@ test('the Employee window: a recruit\'s loyalty band, a bonus paid, a raise aske
   const trained = text(render('templates/dialogs/employee.hbs', await app._prepareContext()));
   assert.match(trained, /Tactics 12 \(trained \+1 of 4\)/);
   assert.match(trained, /Trained recently: next training from/);
+});
+
+test('two jobs (E3): something let slip reaches the other business as a report and a digest note; the Staff tab and GM tab name the other job', async () => {
+  const here = business();
+  const other = normalizeBusiness({ ...structuredClone(here), id: 'bus_other00000001', name: 'Rival Clinic', intel: [], pendingNotes: [], staff: [] });
+  await S.BusinessRepository.save(other);
+  try {
+    await S.BusinessService._twoJobs({ events: [{ type: 'twoJobs', businessId: here.id, kind: 'leak', to: other.id, staffName: 'Vik' }] });
+    const told = S.BusinessRepository.get(other.id);
+    assert.equal(told.intel.at(-1).targetId, here.id, 'a report on the business it was let slip about');
+    assert.ok(told.intel.at(-1).range[1] > told.intel.at(-1).range[0]);
+    assert.deepEqual(told.pendingNotes, [{ kind: 'heardTalk', name: 'Vik', rival: here.name }]);
+    // The Staff tab names the other job once it is known; the GM always sees it.
+    const b = structuredClone(business());
+    b.staff.push({
+      id: 'stf_vik', actorId: rook.id, name: 'Vik', source: 'npc', post: 'security', bases: { 'skill:Tactics': 12 }, pct: 1, wage: 108,
+      hiredDay: b.openedDay, status: 'active', owed: 0, loyalty: 60, elsewhere: { businessId: other.id, name: 'Rival Clinic', shifts: 0 },
+    });
+    await S.BusinessRepository.save(b);
+    assert.doesNotMatch(text(await renderBusiness(windowFor(med, 'staff'))), /Also works for Rival Clinic/, 'not known yet');
+    const gm = new Apps.GMConsole();
+    gm.tab = 'businesses';
+    assert.match(text(render('templates/gm/console.hbs', await gm._prepareContext())), /also works for Rival Clinic/);
+    await S.BusinessRepository.save({ ...business(), staff: business().staff.map((s) => (s.id === 'stf_vik' ? { ...s, knownElsewhere: true } : s)) });
+    assert.match(text(await renderBusiness(windowFor(med, 'staff'))), /Also works for Rival Clinic/);
+    // The event on the Work tab names them, in what it is and in what happens if nobody answers.
+    await S.BusinessRepository.save({ ...business(), period: { ...business().period, event: { kind: 'doubleBooked', staffId: 'stf_vik', rival: { businessId: other.id, name: 'Rival Clinic' } } } });
+    const work = await renderBusiness(windowFor(med, 'week'));
+    assertClean(work, 'two-jobs event');
+    assert.match(text(work), /Vik is wanted at their other job this week as well/);
+    assert.match(text(work), /If nobody persuades Vik to work your shifts/);
+  } finally {
+    await S.BusinessRepository.remove(other.id);
+    const { event, ...period } = business().period;
+    await S.BusinessRepository.save({ ...business(), period: event?.kind === 'doubleBooked' ? period : business().period, staff: business().staff.filter((s) => s.id !== 'stf_vik') });
+  }
 });
 
 test('every data-action in the Business window and the staff windows has a handler', async () => {

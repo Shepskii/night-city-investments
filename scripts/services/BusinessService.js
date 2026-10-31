@@ -17,7 +17,7 @@
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
-  STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS,
+  STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter } from '../utils/helpers.js';
@@ -171,8 +171,11 @@ class BusinessServiceImpl {
     if (!this.enabled()) return this._receipt(actor, request, { ok: false, reason: 'disabled' });
     const as = this._partnerFor(actor, request);
     if (!as.ok) return this._receipt(actor, request, as);
-    const business = request.type === 'found' ? null : BusinessRepository.get(request.businessId);
-    if (request.type !== 'found' && !business) return this._receipt(actor, request, { ok: false, reason: 'no-business' });
+    const stored = request.type === 'found' ? null : BusinessRepository.get(request.businessId);
+    if (request.type !== 'found' && !stored) return this._receipt(actor, request, { ok: false, reason: 'no-business' });
+    // Where else its NPC staff work, and their shifts there, before anything is checked (E3).
+    const business = stored ? normalizeBusiness(structuredClone(stored)) : null;
+    if (business) markElsewhere(business, BusinessRepository.all());
     // Due diligence names its target as a player knows it, by name; a player's client cannot list them (B4c).
     if (request.type === 'diligenceRoll' && !request.targetId) {
       const wanted = String(request.targetName ?? '').trim().toLowerCase();
@@ -273,6 +276,7 @@ class BusinessServiceImpl {
     await this._saveHidden(out);
     await this._syncJobs(out.business);
     await this._payslips(out);
+    await this._twoJobs(out);
     for (const event of out.events.filter((e) => e.type === 'periodClosed')) {
       Hooks.callAll(HOOKS.BUSINESS_PERIOD, { businessId: out.business.id, digest: event.digest });
     }
@@ -333,6 +337,39 @@ class BusinessServiceImpl {
         }
       }
       if (!sent && paid) await this._pay({ [actor.id]: paid }, out.business);
+    }
+  }
+
+  /**
+   * A two-jobs event reaching the other business (E3, DESIGN §33.5): something let slip there gives it a
+   * due diligence report on this one, and a note in its next digest; one caught well gives this one a
+   * report on the other; an employee gone full time there is noted in its digest.
+   */
+  async _twoJobs(out) {
+    const day = this.day();
+    const report = (about, by) => {
+      const view = diligenceView(about);
+      const spread = BUSINESS_DEFAULTS.info.spread.solid;
+      return {
+        targetId: about.id, name: view.name, day, band: 'solid', by, heard: true, bands: view.bands,
+        range: [Math.round((view.value * (1 - spread)) / 100) * 100, Math.round((view.value * (1 + spread)) / 100) * 100],
+      };
+    };
+    const cap = BUSINESS_DEFAULTS.info.intelCap;
+    for (const e of out.events.filter((x) => x.type === 'twoJobs')) {
+      const here = BusinessRepository.get(e.businessId);
+      const other = BusinessRepository.get(e.to ?? e.from);
+      if (!here || !other) continue;
+      if (e.kind === 'leak') {
+        await BusinessRepository.save(normalizeBusiness({
+          ...other, intel: [...(other.intel ?? []), report(here, null)].slice(-cap),
+          pendingNotes: [...(other.pendingNotes ?? []), { kind: 'heardTalk', name: e.staffName, rival: here.name }],
+        }));
+      } else if (e.kind === 'learn') {
+        await BusinessRepository.save(normalizeBusiness({ ...here, intel: [...(here.intel ?? []), report(other, null)].slice(-cap) }));
+      } else if (e.kind === 'gainedFullTime') {
+        await BusinessRepository.save(normalizeBusiness({ ...other, pendingNotes: [...(other.pendingNotes ?? []), { kind: 'gainedFullTime', name: e.staffName, rival: here.name }] }));
+      }
     }
   }
 
@@ -441,8 +478,9 @@ class BusinessServiceImpl {
         // Employees' skills are read again from their sheets before the week is counted.
         const business = normalizeBusiness(structuredClone(stored));
         const reread = refreshStaffBases(business, (id) => this.basesOf(id));
+        const marked = markElsewhere(business, BusinessRepository.all());
         const out = advanceBusiness(business, day, { ...opts, traits: this.traitsOf(business.id) });
-        if (!out.changed && !reread) continue;
+        if (!out.changed && !reread && !marked) continue;
         await this._commit({ ...out, ok: true });
         changed++;
       }

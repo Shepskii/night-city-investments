@@ -53,7 +53,41 @@ export function loyaltyBand(loyalty, p = BUSINESS_DEFAULTS) {
 export function moveLoyalty(staff, by, traits = null, p = BUSINESS_DEFAULTS) {
   if (!hasLoyalty(staff) || !by) return;
   const floor = traitOf(traits, staff) === 'dedicated' ? p.staff.loyalty.dedicatedFloor : 0;
-  staff.loyalty = Math.max(floor, Math.min(100, Math.round((staff.loyalty ?? p.staff.loyalty.start) + by)));
+  staff.loyalty = Math.max(floor, Math.min(loyaltyCap(staff, p), Math.round((staff.loyalty ?? p.staff.loyalty.start) + by)));
+}
+
+/** The most loyalty an employee can have: below devoted while they hold a second job (E3). */
+export const loyaltyCap = (staff, p = BUSINESS_DEFAULTS) => (staff.elsewhere ? p.staff.loyalty.devoted - 1 : 100);
+
+/**
+ * Note on each NPC employee the other business they also work for, if any, and the overtime shifts
+ * they have worked there this week (E3, DESIGN §33.5); the GM's service does this before every change,
+ * from every open business. A recruit only ever works for one business, and a player character's
+ * second job is their own affair. Returns whether anything changed.
+ * @param {object[]} others - every business (this one is skipped)
+ */
+export function markElsewhere(b, others, p = BUSINESS_DEFAULTS) {
+  let changed = false;
+  for (const s of b.staff ?? []) {
+    let where = null;
+    if (s.source === 'npc' && s.actorId && s.status === 'active') {
+      for (const o of others) {
+        if (o.id === b.id || o.status !== 'open') continue;
+        const there = (o.staff ?? []).find((x) => x.actorId === s.actorId && x.status === 'active');
+        if (there) {
+          where = { businessId: o.id, name: o.name, shifts: o.period?.overtime?.[there.id] ?? 0 };
+          break;
+        }
+      }
+    }
+    if (JSON.stringify(where) !== JSON.stringify(s.elsewhere ?? null)) {
+      if (where) s.elsewhere = where;
+      else delete s.elsewhere;
+      if (where && s.loyalty != null) s.loyalty = Math.min(s.loyalty, loyaltyCap(s, p));
+      changed = true;
+    }
+  }
+  return changed;
 }
 
 /** Loyalty to start with: more for pay above the going rate, less below it. */
@@ -339,6 +373,8 @@ export function staffRoll(b, use, uses, kind, funds, p = BUSINESS_DEFAULTS, trai
   const staff = staffOf(b, use.staffId);
   if (staff?.status !== 'active') return fail('not-staff');
   if (shiftsOf(b, staff.id) >= p.staff.maxShifts) return fail('no-shifts');
+  // Two jobs: a person's shifts are shared across every employer (E3).
+  if (shiftsOf(b, staff.id) + (staff.elsewhere?.shifts ?? 0) >= p.staff.maxShifts) return fail('shifts-elsewhere');
   if (moonlighting(b, staff, traits, p)) return fail('moonlighting');
   const cost = overtimePay(b, staff, kind, p);
   if (funds < cost) return fail('no-funds');

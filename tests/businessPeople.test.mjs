@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   applyBusinessRequest, advanceBusiness, normalizeBusiness, rollSpec, BUSINESS_DEFAULTS, goingRate, wageOf, staffOf,
-  loyaltyBand, moonlighting, staffEventWeight, idleStaff, drawEvent, applyDiligence, postBase, archetypeOf, refreshStaffBases,
+  loyaltyBand, moonlighting, staffEventWeight, idleStaff, drawEvent, applyDiligence, postBase, archetypeOf, refreshStaffBases, markElsewhere,
 } from '../scripts/engine/index.js';
 import { resolveRoll } from '../scripts/engine/rolls.js';
 
@@ -164,6 +164,63 @@ test('training: a course or a mentor raises the best skill for the post by 1, on
   const npc = normalizeBusiness({ ...course, staff: course.staff.map((s) => ({ ...s, actorId: 'doc', source: 'npc' })) });
   refreshStaffBases(npc, () => ({ 'skill:Paramedic': 12 }));
   assert.equal(postBase(staffOf(npc, 'stf_a'), 'floor', archetypeOf(npc)), 13);
+});
+
+test('two jobs (E3): an NPC on two staffs is marked; shifts are shared; loyalty stops below devoted', () => {
+  const doc = (id, more = {}) => ({ ...recruit(id, 'floor'), source: 'npc', actorId: 'doc', candidateId: undefined, ...more });
+  const here = withStaff(clinic(), doc('a', { loyalty: 90 }), recruit('r'));
+  const there = normalizeBusiness({ ...withStaff(clinic(), doc('x')), id: 'b2', name: 'Rival Clinic' });
+  there.period.overtime = { stf_x: 1 };
+  assert.equal(markElsewhere(here, [here, there]), true);
+  assert.deepEqual(staffOf(here, 'stf_a').elsewhere, { businessId: 'b2', name: 'Rival Clinic', shifts: 1 });
+  assert.equal(staffOf(here, 'stf_a').loyalty, BUSINESS_DEFAULTS.staff.loyalty.devoted - 1, 'no longer devoted');
+  assert.equal(staffOf(here, 'stf_r').elsewhere, undefined, 'a recruit works here only');
+  assert.equal(markElsewhere(here, [here, there]), false, 'nothing new');
+  // One shift there and one here: no more this week.
+  const use = { kind: 'staff', staffId: 'stf_a' };
+  assert.equal(rollSpec(here, { type: 'action', action: 'promote', use }, 'med', { day: DAY }).ok, true);
+  here.period.overtime = { stf_a: 1 };
+  assert.equal(rollSpec(here, { type: 'action', action: 'promote', use }, 'med', { day: DAY }).reason, 'shifts-elsewhere');
+  // Leaving the other job clears it.
+  assert.equal(markElsewhere(here, [here]), true);
+  assert.equal(staffOf(here, 'stf_a').elsewhere, undefined);
+});
+
+test('two jobs: its events come only with someone torn, and each plays out, reaching the other business', () => {
+  const torn = (more = {}) => ({ ...recruit('a', 'floor', { loyalty: 60 }), source: 'npc', actorId: 'doc', elsewhere: { businessId: 'b2', name: 'Rival Clinic', shifts: 0 }, ...more });
+  const plain = withStaff(clinic(), recruit('a'));
+  const b = withStaff(clinic(), torn());
+  for (const kind of ['doubleBooked', 'fullTimeOffer', 'talkingShop']) {
+    assert.equal(staffEventWeight(plain, kind), 0, `${kind}: nobody torn`);
+    assert.ok(staffEventWeight(b, kind) > 0, kind);
+  }
+  assert.ok(staffEventWeight(b, 'sickDay') > staffEventWeight(plain, 'sickDay'), 'two jobs wear them down');
+  const ev = (kind) => ({ kind, staffId: 'stf_a', rival: { businessId: 'b2', name: 'Rival Clinic' } });
+  const digest = (out) => out.events.find((e) => e.type === 'periodClosed').digest;
+  const cross = (out) => out.events.find((e) => e.type === 'twoJobs');
+  // Double-booked: off here unless kept.
+  const off = structuredClone(b);
+  off.period.event = ev('doubleBooked');
+  assert.ok(idleStaff(off).has('stf_a'));
+  off.period.slots.push(answered());
+  assert.ok(!idleStaff(off).has('stf_a'));
+  const lost = closeWeek(b, { event: ev('doubleBooked') });
+  assert.match(JSON.stringify(digest(lost).staff), /"kind":"doubleBooked".*"rival":"Rival Clinic"/);
+  assert.equal(staffOf(lost.business, 'stf_a').knownElsewhere, true, 'now they know');
+  // A full-time offer: gone, unless answered; the other business hears of it.
+  const gone = closeWeek(b, { event: ev('fullTimeOffer') });
+  assert.equal(staffOf(gone.business, 'stf_a'), null);
+  assert.deepEqual(cross(gone), { type: 'twoJobs', businessId: 'b1', kind: 'gainedFullTime', to: 'b2', staffName: 'Hand a' });
+  assert.ok(staffOf(closeWeek(b, { event: ev('fullTimeOffer'), slots: [answered()] }).business, 'stf_a'));
+  // Talking shop: unanswered, the other business learns about this one; caught well, this one about the other.
+  assert.equal(cross(closeWeek(b, { event: ev('talkingShop') })).kind, 'leak');
+  assert.equal(cross(closeWeek(b, { event: ev('talkingShop'), slots: [answered('strong')] })).kind, 'learn');
+  assert.equal(cross(closeWeek(b, { event: ev('talkingShop'), slots: [answered('solid')] })), undefined, 'caught, but nothing learned');
+  // Notes from another business's events reach this one's next digest, once.
+  const told = normalizeBusiness({ ...b, pendingNotes: [{ kind: 'gainedFullTime', name: 'Vik', rival: 'Rival Clinic' }] });
+  const closed = closeWeek(told);
+  assert.match(JSON.stringify(digest(closed).staff), /gainedFullTime/);
+  assert.deepEqual(closed.business.pendingNotes, []);
 });
 
 test('a bonus: quarters of a week\'s wage from the cash, loyalty up 5 for each, once a week', () => {

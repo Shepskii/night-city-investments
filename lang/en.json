@@ -1854,6 +1854,7 @@
       "StaffDecline": "Turn it down",
       "StaffLoyalty": "loyalty {loyalty}",
       "StaffTrait": "trait: {trait}",
+      "StaffElsewhere": "also works for {name}",
       "Applicants": "Applicants: {list}",
       "ApplicantOne": "{name} ({post}, base {base}{trait})"
     },
@@ -1880,7 +1881,10 @@
       "payDispute": { "Name": "A pay dispute", "Hint": "The staff say they are not paid enough, and they mean to stop work.", "IfNot": "If nobody talks them round (or pays every employee a bonus this week), the staff down tools for the week and lose loyalty." },
       "poaching": { "Name": "A poaching offer", "Hint": "A rival has offered {name} a better job.", "IfNot": "If nobody makes the case to stay (or gives a raise of 10% or more this week), {name} leaves, unless devoted to you." },
       "accident": { "Name": "An accident at work", "Hint": "{name} has been hurt on the job.", "IfNot": "If nobody patches them up, the business pays the medical bills and {name} is out for this week and the next." },
-      "starTurn": { "Name": "A star turn", "Hint": "One of the staff has done something people are talking about.", "IfNot": "Make the most of it and Reputation rises; otherwise the moment passes." }
+      "starTurn": { "Name": "A star turn", "Hint": "One of the staff has done something people are talking about.", "IfNot": "Make the most of it and Reputation rises; otherwise the moment passes." },
+      "doubleBooked": { "Name": "Double-booked", "Hint": "{name} is wanted at their other job this week as well.", "IfNot": "If nobody persuades {name} to work your shifts, they work the other job this week and do nothing here." },
+      "fullTimeOffer": { "Name": "A full-time offer", "Hint": "{name}'s other employer wants them full time.", "IfNot": "If nobody makes the case to stay (or gives a raise of 10% or more this week), {name} leaves to work there full time." },
+      "talkingShop": { "Name": "Talking shop", "Hint": "{name} has been talking about this place at their other job.", "IfNot": "If nobody finds out what was said, the other business learns how this one stands. Caught well, you learn about them instead." }
     },
     "Weekday": { "0": "Sunday", "1": "Monday", "2": "Tuesday", "3": "Wednesday", "4": "Thursday", "5": "Friday", "6": "Saturday" },
     "Syndicate": {
@@ -2184,6 +2188,7 @@
         "trainedMentorFailed": "{staff} mentored by {name}, to no gain",
         "rejected": "{staff} turned away by {name}",
         "poached": "{staff} poached by a rival",
+        "fullTime": "{staff} left to work full time at their other job",
         "medical": "Medical bills",
         "wages": "Wages"
       },
@@ -2551,7 +2556,8 @@
         "built-here": "one was built at this stage already",
         "no-ask": "they have not asked for a raise",
         "staff-not-allowed": "an employee cannot be called in for that",
-        "staff-involved": "the event is about that employee, so they cannot answer it"
+        "staff-involved": "the event is about that employee, so they cannot answer it",
+        "shifts-elsewhere": "they have already worked their shifts this week, counting their other job"
       }
     },
     "Staff": {
@@ -2708,7 +2714,14 @@
         "asks": "{name} asks for a raise.",
         "quit": "{name} quit.",
         "walked": "{name} walked out.",
-        "unpaid": "{name} quit, unpaid."
+        "unpaid": "{name} quit, unpaid.",
+        "doubleBooked": "{name} worked at {rival} this week instead.",
+        "keptFromRival": "{name} turned down a full-time job at {rival}.",
+        "wentFullTime": "{name} left to work for {rival} full time.",
+        "talked": "{name} let slip how things stand here, at {rival}.",
+        "caughtTalking": "{name} was caught talking about this place at {rival}.",
+        "heardTalk": "{name}, who also works at {rival}, let slip how things stand there.",
+        "gainedFullTime": "{name} left {rival} to work here full time."
       },
       "OnCall": "On call",
       "OnCallHint": "A player character on the staff can be asked for one of this week's rolls: a free action slot, the week's event, or a help. They roll it themselves, from their own Job view, with their own skills and Luck. It is one of their two overtime shifts, and the overtime is paid from the cash onto their payslip.",
@@ -2725,6 +2738,7 @@
       "RollAsked": "Roll",
       "DeclineAsk": "Decline",
       "Train": "Training",
+      "AlsoWorks": "Also works for {name}.",
       "TrainHint": "Once every {every} weeks, an NPC employee's best skill for their role can rise by 1: {perPoint} eb for each point of it now, from the business's cash. A partner whose own skill is higher can mentor them, spending {days} business days and rolling Education (or Persuasion, a step harder) at the business's DV: a failure teaches nothing, though the eb and days are spent. Otherwise it is a course, at twice the eb, which always teaches. Training adds at most {max} in all, and never takes a skill above {cap}. Their wage follows the new skill.",
       "TrainNow": "{skill} {base} (trained +{trained} of {max}).",
       "TrainPc": "A player character improves with their own Improvement Points.",
