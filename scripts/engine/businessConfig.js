@@ -365,6 +365,12 @@ export const BUSINESS_DEFAULTS = Object.freeze({
      * `max` over what training has added and never above `cap`. A mentor is a partner whose own base
      * in the skill is higher, and spends `mentorDays` business days on it.
      */
+    /**
+     * Share grants (E3, company only): new shares without a vote for an employee, sized as a share of
+     * the company (`step` to `max`, all grants together no more than `max`), vesting after `vestDays`;
+     * while vesting, loyalty rises by `loyalty` and stays at `floor` or above.
+     */
+    grants: Object.freeze({ max: 0.05, step: 0.005, vestDays: 84, loyalty: 20, floor: 50 }),
     training: Object.freeze({
       every: 28, perPoint: 50, courseFactor: 2, mentorDays: 2, max: 4, cap: 18,
       /** A mentor's roll (the user's choice): Education, or Persuasion a step harder, at the stage's DV. */

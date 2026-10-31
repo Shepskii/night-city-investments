@@ -467,6 +467,7 @@ test('the Employee window: a recruit\'s loyalty band, a bonus paid, a raise aske
   const dialog = render('templates/dialogs/employee.hbs', await app._prepareContext());
   assertClean(dialog, 'employee window');
   assert.match(text(dialog), /Paid 99 eb a week: 100% of the going rate \(99 eb\)/);
+  assert.doesNotMatch(text(dialog), /Share grant/, 'grants are for a company');
   assert.match(text(dialog), /They ask for 110% of the going rate \(109 eb a week\)/);
   for (const action of ['agreeRaise', 'refuseRaise', 'payBonus', 'movePost', 'fireStaff', 'proposePay']) assert.match(dialog, new RegExp(`data-action="${action}"`), action);
   assert.match(text(dialog), /A quarter of a week(&#x27;|')s wage \(25 eb\)/);

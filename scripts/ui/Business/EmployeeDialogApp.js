@@ -29,6 +29,7 @@ export class EmployeeDialogApp extends BaseApplication {
       movePost: EmployeeDialogApp._onMovePost,
       trainStaff: EmployeeDialogApp._onTrain,
       askStaff: EmployeeDialogApp._onAsk,
+      proposeGrant: EmployeeDialogApp._onProposeGrant,
       cancelAsk: EmployeeDialogApp._onCancelAsk,
       fireStaff: EmployeeDialogApp._onFire,
       close: EmployeeDialogApp._onClose,
@@ -131,6 +132,12 @@ export class EmployeeDialogApp extends BaseApplication {
       request: { type: 'trainRoll', businessId: business.id, staffId: this.staffId },
       title: L('NCI.Staff.TrainTitle', { name: staff.name, business: business.name }),
     });
+  }
+
+  /** Propose a share grant for them (E3, company only): a share of the company, voted on by the shares. */
+  static _onProposeGrant() {
+    const pct = Number(this._value('grantPct'));
+    return pct > 0 ? this._send('propose', { kind: 'grant', pct }) : null;
   }
 
   /** Ask a player character on the staff for one of this week's rolls (E3). */

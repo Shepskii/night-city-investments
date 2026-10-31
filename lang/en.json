@@ -2189,6 +2189,8 @@
         "rejected": "{staff} turned away by {name}",
         "poached": "{staff} poached by a rival",
         "fullTime": "{staff} left to work full time at their other job",
+        "granted": "{staff} granted shares, vesting",
+        "vested": "{staff}'s granted shares vested",
         "medical": "Medical bills",
         "wages": "Wages"
       },
@@ -2275,7 +2277,8 @@
         "dismiss": "{name} proposes dismissing an officer.",
         "hire": "{name} proposes hiring {who} as {post}.",
         "fire": "{name} proposes letting {who} go.",
-        "pay": "{name} proposes paying {who} {pct}% of the going rate."
+        "pay": "{name} proposes paying {who} {pct}% of the going rate.",
+        "grant": "{name} proposes granting {who} {share}% of the company in shares."
       },
       "Rule": {
         "unanimous": "Needs every partner; lapses after {date}.",
@@ -2431,6 +2434,7 @@
         "jobOffered": "Agreed: the job is offered. They answer it.",
         "fire": "Agreed: they have been let go.",
         "pay": "Agreed: the new pay starts now.",
+        "grant": "Agreed: the shares are granted, and start vesting.",
         "failed": "The proposal was turned down.",
         "void": "Agreed, but it could not be done: {reason}"
       },
@@ -2557,7 +2561,10 @@
         "no-ask": "they have not asked for a raise",
         "staff-not-allowed": "an employee cannot be called in for that",
         "staff-involved": "the event is about that employee, so they cannot answer it",
-        "shifts-elsewhere": "they have already worked their shifts this week, counting their other job"
+        "shifts-elsewhere": "they have already worked their shifts this week, counting their other job",
+        "grant-vesting": "they already have shares vesting",
+        "bad-grant": "a grant is half a percent to five percent of the company, in half-percent steps",
+        "grant-cap": "that would take grants past five percent of the company"
       }
     },
     "Staff": {
@@ -2721,7 +2728,8 @@
         "talked": "{name} let slip how things stand here, at {rival}.",
         "caughtTalking": "{name} was caught talking about this place at {rival}.",
         "heardTalk": "{name}, who also works at {rival}, let slip how things stand there.",
-        "gainedFullTime": "{name} left {rival} to work here full time."
+        "gainedFullTime": "{name} left {rival} to work here full time.",
+        "vested": "{name}'s granted shares vested: they are a holder now."
       },
       "OnCall": "On call",
       "OnCallHint": "A player character on the staff can be asked for one of this week's rolls: a free action slot, the week's event, or a help. They roll it themselves, from their own Job view, with their own skills and Luck. It is one of their two overtime shifts, and the overtime is paid from the cash onto their payslip.",
@@ -2739,6 +2747,13 @@
       "DeclineAsk": "Decline",
       "Train": "Training",
       "AlsoWorks": "Also works for {name}.",
+      "Grant": "Share grant",
+      "GrantHint": "The shareholders can grant an employee new shares, without a vote: up to {max}% of the company for all grants together, voted on by a majority of the shares. They vest after {weeks} weeks and are lost if the employee leaves first; once vested they are the employee's to keep, even if they leave. While they vest, loyalty rises by {loyalty} and stays at {floor} or above. A player character holds them in their own name and draws their share like any holder; an NPC holds them quietly, like an angel.",
+      "GrantVesting": "{pct}% of the company in shares, vesting on {date}.",
+      "GrantVested": "Holds {pct}% of the company in granted shares.",
+      "GrantLeft": "Left for grants: {pct}% of the company.",
+      "GrantShare": "Share of the company",
+      "ProposeGrant": "Propose the grant",
       "TrainHint": "Once every {every} weeks, an NPC employee's best skill for their role can rise by 1: {perPoint} eb for each point of it now, from the business's cash. A partner whose own skill is higher can mentor them, spending {days} business days and rolling Education (or Persuasion, a step harder) at the business's DV: a failure teaches nothing, though the eb and days are spent. Otherwise it is a course, at twice the eb, which always teaches. Training adds at most {max} in all, and never takes a skill above {cap}. Their wage follows the new skill.",
       "TrainNow": "{skill} {base} (trained +{trained} of {max}).",
       "TrainPc": "A player character improves with their own Improvement Points.",

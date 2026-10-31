@@ -361,6 +361,17 @@ test('a company shows its officers, the information rolls and the report; a shar
     assertClean(ledger, 'company ledger');
     assert.match(text(ledger), /Week 2 of 4 toward this month/);
     assert.doesNotMatch(ledger, /data-action="reportRoll"/, 'only in the last week');
+    // A share grant (E3), at a company only: half-percent steps up to 5%, from the Employee window.
+    const { EmployeeDialogApp } = await import('../scripts/ui/Business/EmployeeDialogApp.js');
+    const withHand = { ...S.BusinessRepository.all()[0], staff: [{ id: 'stf_h', actorId: null, name: 'Hand', source: 'recruit', post: 'floor', bases: { 'skill:Paramedic': 12 }, pct: 1, wage: 168, hiredDay: b.openedDay, status: 'active', owed: 0, loyalty: 50 }] };
+    await S.BusinessRepository.save(withHand);
+    const emp = render('templates/dialogs/employee.hbs', await new EmployeeDialogApp({ actorId: med.id, businessId: b.id, staffId: 'stf_h' })._prepareContext());
+    assertClean(emp, 'employee window at a company');
+    assert.match(text(emp), /Share grant/);
+    assert.match(text(emp), /Left for grants: 5% of the company/);
+    assert.match(emp, /<option value="0.5">0.5%<\/option>/);
+    assert.match(emp, /<option value="5">5%<\/option>/);
+    assert.match(emp, /data-action="proposeGrant"/);
     // Each report opens a window of its own: the real figures beside the reported ones.
     assert.match(ledger, /class="nci-row" data-action="openReport" data-index="2"/);
     assert.ok('openReport' in Apps.Business.DEFAULT_OPTIONS.actions);

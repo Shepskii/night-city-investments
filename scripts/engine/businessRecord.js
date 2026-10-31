@@ -78,6 +78,8 @@ export function normalizeBusiness(raw) {
       leavingSince: p.leavingSince ?? null,
       ...(p.offer ? { offer: { amount: int(p.offer.amount), price: Number(p.offer.price) } } : {}),
       ...(p.npc ? { npc: true } : {}),
+      // Shares an employee was granted (E3): how many of the holder's units came that way.
+      ...(p.grant ? { grant: true, grantUnits: int(p.grantUnits ?? p.units) } : {}),
     })),
     agreement: {
       sweat: b.agreement?.sweat?.actorId ? { actorId: b.agreement.sweat.actorId, pct: clamp(int(b.agreement.sweat.pct), 0, 100) } : null,
@@ -159,6 +161,9 @@ export function normalizeBusiness(raw) {
       // E3 two jobs: the other business they work for (the GM's service notes it), and whether it is known here.
       ...(x.elsewhere ? { elsewhere: { businessId: String(x.elsewhere.businessId), name: String(x.elsewhere.name ?? ''), shifts: int(x.elsewhere.shifts) } } : {}),
       ...(x.knownElsewhere ? { knownElsewhere: true } : {}),
+      // E3 share grants: one vesting, and the share of the company vested so far.
+      ...(x.grant ? { grant: { share: Number(x.grant.share), grantedDay: int(x.grant.grantedDay), vestDay: int(x.grant.vestDay) } } : {}),
+      ...(x.vested ? { vested: Number(x.vested) } : {}),
     })),
     /** Notes from another business's two-jobs events, for this one's next digest (E3). */
     pendingNotes: b.pendingNotes ?? [],

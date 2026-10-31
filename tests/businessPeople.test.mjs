@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   applyBusinessRequest, advanceBusiness, normalizeBusiness, rollSpec, BUSINESS_DEFAULTS, goingRate, wageOf, staffOf,
-  loyaltyBand, moonlighting, staffEventWeight, idleStaff, drawEvent, applyDiligence, postBase, archetypeOf, refreshStaffBases, markElsewhere,
+  loyaltyBand, moonlighting, staffEventWeight, idleStaff, drawEvent, applyDiligence, postBase, archetypeOf, refreshStaffBases, markElsewhere, moveLoyalty, grantedShare,
 } from '../scripts/engine/index.js';
 import { resolveRoll } from '../scripts/engine/rolls.js';
 
@@ -221,6 +221,47 @@ test('two jobs: its events come only with someone torn, and each plays out, reac
   const closed = closeWeek(told);
   assert.match(JSON.stringify(digest(closed).staff), /gainedFullTime/);
   assert.deepEqual(closed.business.pendingNotes, []);
+});
+
+test('share grants (E3): at a company, voted on by the shares, up to 5% in all, vesting after 12 weeks into a holding', () => {
+  const g = BUSINESS_DEFAULTS.staff.grants;
+  const grant = (b0, staffId, pct, expect = true) => apply(b0, { type: 'propose', businessId: 'b1', kind: 'grant', staffId, pct }, MED, { expect });
+  assert.equal(grant(withStaff(clinic(), recruit('a')), 'stf_a', 2, false).reason, 'not-company');
+  const co = withStaff(clinic({ stage: 2 }), recruit('a', 'floor', { loyalty: 40 }), recruit('b'), { ...recruit('p'), source: 'pc', actorId: 'nova', loyalty: null });
+  // The Medtech's majority carries it: vesting, and loyalty up.
+  let b = grant(co, 'stf_a', 2).business;
+  assert.deepEqual(staffOf(b, 'stf_a').grant, { share: 0.02, grantedDay: DAY, vestDay: DAY + g.vestDays });
+  assert.equal(staffOf(b, 'stf_a').loyalty, 60);
+  assert.equal(grant(b, 'stf_a', 1, false).reason, 'grant-vesting');
+  assert.equal(grant(b, 'stf_b', 3.5, false).reason, 'grant-cap', '2% and 3.5% is past 5%');
+  assert.equal(grant(b, 'stf_b', 0.7, false).reason, 'bad-grant', 'half-percent steps');
+  // While they vest, loyalty stays at 50 or above.
+  const keep = structuredClone(b);
+  moveLoyalty(staffOf(keep, 'stf_a'), -40);
+  assert.equal(staffOf(keep, 'stf_a').loyalty, g.floor);
+  // A player character's grant too; then both vest at the close after their vesting day.
+  b = grant(b, 'stf_p', 3).business;
+  for (const s of b.staff) if (s.grant) s.grant.vestDay = b.period.endDay;
+  const before = b.partners.reduce((a, x) => a + x.units, 0);
+  const out = closeWeek(b);
+  const after = out.business;
+  const total = after.partners.filter((x) => x.status === 'active').reduce((a, x) => a + x.units, 0);
+  const npc = after.partners.find((x) => x.actorId === 'npc:stf_a');
+  const pc = after.partners.find((x) => x.actorId === 'nova');
+  assert.ok(npc.npc && !npc.voting && npc.grant, 'an NPC holds them quietly, like an angel');
+  assert.ok(pc && !pc.voting && !pc.npc, 'a player character holds them in their own name');
+  // Vested in turn: the NPC's 2% of the company then, the player character's 3% of it after.
+  assert.ok(Math.abs(pc.units / total - 0.03) < 0.001, `the player character holds 3% (${pc.units}/${total})`);
+  assert.ok(Math.abs(npc.units / (total - pc.units) - 0.02) < 0.001, 'the NPC held 2% before the next grant vested');
+  assert.ok(total > before, 'new shares issued');
+  assert.equal(staffOf(after, 'stf_a').grant, undefined);
+  assert.equal(staffOf(after, 'stf_a').vested, 0.02);
+  assert.match(JSON.stringify(out.events.find((e) => e.type === 'periodClosed').digest.staff), /"kind":"vested"/);
+  assert.ok(Math.abs(grantedShare(after) - 0.05) < 0.005, 'the 5% is used up');
+  // An employee who leaves before vesting loses the grant.
+  const left = grant(co, 'stf_a', 2).business;
+  left.staff = left.staff.filter((s) => s.id !== 'stf_a');
+  assert.equal(grantedShare(left), 0);
 });
 
 test('a bonus: quarters of a week\'s wage from the cash, loyalty up 5 for each, once a week', () => {

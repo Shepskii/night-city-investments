@@ -450,7 +450,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B2 | **Done (v0.11.0), see §30.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
 | B3 | **Done (v0.12.0), see §31.** Player syndicates, and syndicates owning or investing in businesses |
 | B4 | **Done (v0.12.0), see §32.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
-| E | **E1 and E2 done (v0.12.0), see §33.9 and §33.10; E3 under way (training, on call and two jobs built), see §33.11.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
+| E | **E1 and E2 done (v0.12.0), see §33.9 and §33.10; E3 under way (training, on call, two jobs and share grants built), see §33.11.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
 | Projects | **Done (v0.12.0), see §34.** Projects beside expansion: refit, security upgrade, storefront, staff room; the Projects tab reworked |
 | B5 | **v0.13.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
 | B6 | **v0.14.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
@@ -1619,7 +1619,7 @@ E2 is `scripts/engine/businessPeople.js` (pure), with small hooks in `businessSt
 - **The digest** lists what happened to the staff (off sick, hurt, poached, caught, asks for a raise, quit, walked out, quit unpaid), and an accident's medical bills.
 - **No migration.** The normalizer fills in loyalty (50, or none for a player character) and keeps the new fields.
 
-**Not built yet:** the rest of E3 (§33.11): share grants and the Exec's team.
+**Not built yet:** the rest of E3 (§33.11): the Exec's team.
 
 **Tested in the test world** (v0.12.0, 2026-10-31, at the Splice Chrome Clinic): overtime for a help and for a slot, a second shift's loyalty cost, an advert, vetting with an exceptional result, turning an applicant away, hiring, a bonus, a raise, moving an employee to another role, weekly loyalty, staff events (a star turn, a sick day), letting an employee go, an NPC offered a job and the GM answering, and a fourth hire once a staff room was built. It found and fixed: the employee a staff event is about could answer it; Item Piles actors offered as heirs and hires; "Proposal made." shown for a proposal the proposer's units carried at once. Changed on the user's request: a player character's wage comes on their payslip mail to claim. Not tried live: a player character's job from offer to payslip, raises asked at a month's end, hidden traits at work, and a sullen employee quitting or stealing (all covered by tests).
 
@@ -1654,6 +1654,13 @@ E2 is `scripts/engine/businessPeople.js` (pure), with small hooks in `businessSt
 - **Reaching the other business.** The weekly close reports the event's effect on the other business (`twoJobs`), and the GM's service carries it out after saving: a report added to its `intel`, and a note added to its `pendingNotes`, which its next close puts in that week's digest. Reports are kept for every business, though the Work tab lists them only at a company.
 - **Fixed in passing:** the "if nobody answers" line of a staff event never named the employee (it showed `{name}`).
 - **Tests.** `tests/businessPeople.test.mjs` (marking, shared shifts, the cap, the weights, each event, the notes) and `tests/staffFlow.test.mjs` (a leak reaching the other business, the Staff and GM tabs, the event on the Work tab).
+
+**Share grants (E3d)** (the user's choices, 2026-10-31: any employee, sized as a share of the company, kept after leaving):
+- **Proposing.** At a company only, from the Employee window's Share grant section: a `grant` proposal naming a share of the company, 0.5% to 5% in half-percent steps, passed on a majority of the shares. All grants together, vested and vesting, may come to no more than 5% (`grantedShare`; refused as `grant-cap`). One grant vesting per employee at a time.
+- **Vesting.** An agreed grant (`staff.grant`: the share, the day granted, the day it vests) vests 84 days later, at the first weekly close on or after that day (`vestGrants`). New shares are issued then, without a vote, so the grant is exactly its share of the company at that moment. A player character holds them in their own name, as a holder who can draw their share like any other (added to their stake if they already hold one); an NPC or recruit holds them quietly, as an angel does (`npc:<staff id>`). Holders from grants are marked `grant` (`grantUnits`). They keep them if they leave or are let go; an employee who leaves before vesting loses the grant.
+- **Loyalty.** An agreed grant lifts loyalty by 20, and while it vests loyalty cannot fall below 50 (the two-jobs cap of 74 still applies above).
+- **Windows.** The Employee window shows a grant vesting (and when), the share vested, and what is left of the 5%; the Staff tab notes both; the vote reads "proposes granting … 2% of the company in shares"; the digest notes a grant vesting. From B5 granted shares take part in a listing like any holder's.
+- **Tests.** `tests/businessPeople.test.mjs` (company only, the steps and the cap, loyalty and its floor, an NPC's and a player character's grant vesting to exactly their share, a grant lost on leaving) and `tests/businessWindows.test.mjs` (the Employee window's Share grant section).
 
 ## 34. Projects beside expansion (v0.12.0)
 

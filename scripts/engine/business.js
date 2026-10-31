@@ -50,6 +50,7 @@
  *   { key, type: 'rejectApplicant', businessId, candidateId }    turn an applicant away
  *   { key, type: 'movePost', businessId, staffId, post }
  *   { key, type: 'propose', kind: 'pay', staffId, pct }          a new share of the going rate
+ *   { key, type: 'propose', kind: 'grant', staffId, pct }        E3: shares for an employee, pct of the company (0.5 to 5)
  *
  * Projects (businessGrowth.js):
  *   { key, type: 'propose', kind: 'project', project }   project: expansion, refit, security, storefront or staffRoom
@@ -89,7 +90,7 @@ import {
   staffWeek, payWages, staffOf, shiftsOf, overtimePay,
 } from './businessStaff.js';
 import {
-  idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost, rejectApplicant, applyTraining, mentorCheck, askOf, askCheck,
+  idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost, rejectApplicant, applyTraining, mentorCheck, askOf, askCheck, grantOffer, enactGrant, vestGrants,
 } from './businessPeople.js';
 
 export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, projectOffer, PROJECT_KINDS };
@@ -147,6 +148,8 @@ export const PROPOSAL_RULES = Object.freeze({
   elect: 'majority', dismiss: 'majority',
   // Taking an employee on, or letting one go (DESIGN §33).
   hire: 'majority', fire: 'majority', pay: 'majority',
+  // A share grant for an employee (E3, company only).
+  grant: 'majority',
 });
 
 // ── What a roll needs ────────────────────────────────────────────────────────
@@ -1031,6 +1034,8 @@ function canPropose(b, kind, request, ctx, p) {
       return fireOffer(b, request.staffId);
     case 'pay':
       return payOffer(b, request, p);
+    case 'grant':
+      return grantOffer(b, request.staffId, request.pct, p);
     case 'fixerLoan': {
       const offer = fixerOffer(b, request.amount, p);
       return offer.ok ? { ok: true, terms: { amount: offer.amount } } : offer;
@@ -1135,6 +1140,11 @@ function enact(b, proposal, day, p, ctx, out) {
     case 'pay': {
       const done = enactPay(b, proposal.terms, day, ctx.traits, p);
       if (done.ok) out.events.push({ type: 'payChanged', staffId: proposal.terms.staffId, pct: proposal.terms.pct });
+      return done;
+    }
+    case 'grant': {
+      const done = enactGrant(b, proposal.terms, day, ctx.traits, p);
+      if (done.ok) out.events.push({ type: 'granted', staffId: proposal.terms.staffId, share: proposal.terms.share });
       return done;
     }
     case 'angel':
@@ -1362,7 +1372,9 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, params
   // A two-jobs event reaching the other business: the GM's service carries it out there (E3).
   if (event?.cross) out.events.push({ type: 'twoJobs', businessId: b.id, ...event.cross });
   // What reached this business from another's two-jobs event this week, for its digest.
-  const notes = [...(event?.notes ?? []), ...people.notes, ...(b.pendingNotes ?? [])];
+  // Share grants that have vested by the close (E3).
+  const vested = vestGrants(b, b.period.endDay, p);
+  const notes = [...(event?.notes ?? []), ...people.notes, ...vested, ...(b.pendingNotes ?? [])];
   b.pendingNotes = [];
 
   const digest = {

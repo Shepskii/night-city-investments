@@ -69,6 +69,24 @@
   </div>
   {{/with}}
 
+  {{#with grant}}
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Staff.Grant"}}</h3>
+    <p class="nci-hint">{{text}}</p>
+    {{#if vesting}}<p class="nci-warn">{{vesting}}</p>{{/if}}
+    {{#if vested}}<p>{{vested}}</p>{{/if}}
+    {{#if pending}}<p class="nci-warn">{{pending}}</p>{{/if}}
+    <p class="nci-muted">{{left}}</p>
+    {{#if canGrant}}
+    <div class="nci-hirerow">
+      <label>{{localize "NCI.Staff.GrantShare"}} <select name="grantPct">{{#each options}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+      <span></span>
+      <button type="button" data-action="proposeGrant"><i class="fas fa-certificate"></i> {{localize "NCI.Staff.ProposeGrant"}}</button>
+    </div>
+    {{/if}}
+  </div>
+  {{/with}}
+
   {{#with training}}
   <div class="nci-block nci-form">
     <h3>{{localize "NCI.Staff.Train"}}</h3>

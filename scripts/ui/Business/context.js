@@ -11,7 +11,7 @@ import {
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck,
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
-  hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck,
+  hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare,
 } from '../../engine/index.js';
 import { SkillAdapter } from '../../services/SkillAdapter.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
@@ -788,6 +788,9 @@ function staffNotes(business, s) {
     s.ask ? L('NCI.Staff.Asks', { pct: Math.round(s.ask.pct * 100) }) : '',
     // Once the business has run into it (a two-jobs event), it knows they work for another business too (E3).
     s.knownElsewhere && s.elsewhere ? L('NCI.Staff.AlsoWorks', { name: s.elsewhere.name }) : '',
+    // Shares granted (E3).
+    s.grant ? L('NCI.Staff.GrantVesting', { pct: (Math.round(s.grant.share * 1000) / 10).toLocaleString(), date: dayText(s.grant.vestDay) }) : '',
+    s.vested ? L('NCI.Staff.GrantVested', { pct: (Math.round(s.vested * 1000) / 10).toLocaleString() }) : '',
   ].filter(Boolean);
 }
 
@@ -925,10 +928,32 @@ export function employeeContext(business, account, staffId) {
     noMove: runs && !moves.length ? L('NCI.Staff.NoMove') : '',
     training: trainingContext(business, s, account, runs),
     onCall: onCallContext(business, s, account, runs),
+    grant: grantContext(business, s, canAct, pending('grant')),
     fireText: L(s.caught ? 'NCI.Staff.FireCaught' : 'NCI.Staff.FireHint', { amount: whole(severance) }),
     canFire: canAct && !pending('fire'),
     pending: pending('pay') || pending('fire') ? L('NCI.Staff.Pending') : '',
     blocked: !canAct ? L('NCI.Staff.CannotManage') : '',
+  };
+}
+
+/**
+ * A share grant for an employee (E3, company only): one vesting, what has vested, and the shares the
+ * partners could propose within what is left of the grants' 5%.
+ */
+function grantContext(business, s, canAct, pending) {
+  if (business.stage < 2) return null;
+  const g = BUSINESS_DEFAULTS.staff.grants;
+  const left = Math.max(0, g.max - grantedShare(business));
+  const steps = Math.floor((left + 1e-9) / g.step);
+  const pct = (x) => (Math.round(x * 1000) / 10).toLocaleString();
+  return {
+    text: L('NCI.Staff.GrantHint', { max: pct(g.max), weeks: Math.round(g.vestDays / 7), loyalty: g.loyalty, floor: g.floor }),
+    vesting: s.grant ? L('NCI.Staff.GrantVesting', { pct: pct(s.grant.share), date: dayText(s.grant.vestDay) }) : '',
+    vested: s.vested ? L('NCI.Staff.GrantVested', { pct: pct(s.vested) }) : '',
+    left: L('NCI.Staff.GrantLeft', { pct: pct(left) }),
+    options: Array.from({ length: steps }, (_, i) => ({ value: (i + 1) * g.step * 100, label: `${pct((i + 1) * g.step)}%` })),
+    canGrant: canAct && !pending && !s.grant && steps > 0,
+    pending: pending ? L('NCI.Staff.Pending') : '',
   };
 }
 
@@ -1067,6 +1092,7 @@ function partnersContext(business, actor) {
         who: proposal.terms?.name ?? '',
         post: proposal.terms?.post ? postLabel(proposal.terms.post) : '',
         pct: proposal.terms?.pct != null ? Math.round(proposal.terms.pct * 100) : '',
+        share: proposal.terms?.share != null ? (Math.round(proposal.terms.share * 1000) / 10).toLocaleString() : '',
         project: proposal.terms?.project ? L(`NCI.Project.Kind.${proposal.terms.project}`) : '',
       }),
       rule: LT(business, `NCI.Business.Rule.${PROPOSAL_RULES[proposal.kind]}`, { date: dayText(proposal.expires ?? proposal.day) }),

@@ -52,7 +52,8 @@ export function loyaltyBand(loyalty, p = BUSINESS_DEFAULTS) {
 /** Move an employee's loyalty, within 0 to 100 (a dedicated employee never below their floor). */
 export function moveLoyalty(staff, by, traits = null, p = BUSINESS_DEFAULTS) {
   if (!hasLoyalty(staff) || !by) return;
-  const floor = traitOf(traits, staff) === 'dedicated' ? p.staff.loyalty.dedicatedFloor : 0;
+  // Dedicated staff stay at 40 or above; shares vesting keep anyone at 50 or above (E3).
+  const floor = Math.max(traitOf(traits, staff) === 'dedicated' ? p.staff.loyalty.dedicatedFloor : 0, staff.grant ? p.staff.grants.floor : 0);
   staff.loyalty = Math.max(floor, Math.min(loyaltyCap(staff, p), Math.round((staff.loyalty ?? p.staff.loyalty.start) + by)));
 }
 

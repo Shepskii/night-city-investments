@@ -11,7 +11,7 @@
 import { createRng } from './rng.js';
 import { bandPassed } from './rolls.js';
 import { BUSINESS_DEFAULTS, EVENTS, POSTS, useKey } from './businessConfig.js';
-import { archetypeOf, fail, addLedger, clamp } from './businessRecord.js';
+import { archetypeOf, fail, addLedger, clamp, totalUnits } from './businessRecord.js';
 import { daysLeft, spendDays } from './businessGrowth.js';
 import {
   activeStaff, staffOf, hasLoyalty, traitOf, moveLoyalty, postOpen, postBase, wageOf, postUses, staffBase, shiftsOf,
@@ -461,4 +461,76 @@ export function askCheck(b, staffId, roll, p = BUSINESS_DEFAULTS) {
   if (asksFor(b, staffId).length) return fail('already-asked');
   if (shiftsOf(b, staffId) >= p.staff.maxShifts) return fail('no-shifts');
   return { ok: true, staff };
+}
+
+// ── Share grants (E3) ────────────────────────────────────────────────────────
+
+/**
+ * How much of the company share grants take now: shares already vested (holders marked `grant`), and
+ * the share each grant still vesting will come to.
+ */
+export function grantedShare(b) {
+  const total = totalUnits(b);
+  const vested = total > 0 ? b.partners.filter((x) => x.grant && x.status === 'active').reduce((a, x) => a + (x.grantUnits ?? x.units), 0) / total : 0;
+  return vested + (b.staff ?? []).reduce((a, s) => a + (s.grant?.share ?? 0), 0);
+}
+
+/**
+ * Whether a share grant can be proposed (DESIGN §33.5): at a company, to an employee with none vesting,
+ * of `share` (a fraction, in `step`s) within what is left of the grants' `max`.
+ * @param {number} pct - the share as a percentage (0.5 for half a percent)
+ */
+export function grantOffer(b, staffId, pct, p = BUSINESS_DEFAULTS) {
+  const g = p.staff.grants;
+  if (b.stage < 2) return fail('not-company');
+  const staff = staffOf(b, staffId);
+  if (staff?.status !== 'active') return fail('not-staff');
+  if (staff.grant) return fail('grant-vesting');
+  const share = Math.round((Number(pct) || 0) * 10) / 1000;
+  if (!(share >= g.step && share <= g.max) || Math.abs(share / g.step - Math.round(share / g.step)) > 1e-9) return fail('bad-grant');
+  if (grantedShare(b) + share > g.max + 1e-9) return fail('grant-cap');
+  return { ok: true, terms: { staffId: staff.id, name: staff.name, share } };
+}
+
+/** A grant agreed: it starts vesting, and their loyalty rises. */
+export function enactGrant(b, terms, day, traits = null, p = BUSINESS_DEFAULTS) {
+  const g = p.staff.grants;
+  const staff = staffOf(b, terms.staffId);
+  if (staff?.status !== 'active') return fail('not-staff');
+  if (grantedShare(b) + terms.share > g.max + 1e-9) return fail('grant-cap');
+  staff.grant = { share: terms.share, grantedDay: day, vestDay: day + g.vestDays };
+  moveLoyalty(staff, g.loyalty, traits, p);
+  addLedger(b, { day, kind: 'granted', amount: 0, staffName: staff.name }, p);
+  return { ok: true };
+}
+
+/**
+ * Grants that have vested by `day`: new shares are issued, without a vote, to make the grant exactly its
+ * share of the company. A player character becomes a holder in their own name (or adds to the stake
+ * they have); an NPC or recruit holds them silently, as an angel does. They keep them if they leave.
+ * @returns {object[]} notes for the digest
+ */
+export function vestGrants(b, day, p = BUSINESS_DEFAULTS) {
+  const notes = [];
+  for (const staff of (b.staff ?? []).filter((s) => s.grant && day >= s.grant.vestDay)) {
+    const total = totalUnits(b);
+    const units = Math.max(1, Math.round((total * staff.grant.share) / (1 - staff.grant.share)));
+    const pc = staff.source === 'pc' && staff.actorId;
+    const mine = pc ? b.partners.find((x) => x.actorId === staff.actorId && ['active', 'leaving'].includes(x.status)) : null;
+    if (mine) {
+      mine.units += units;
+      mine.grantUnits = (mine.grantUnits ?? 0) + units;
+      mine.grant = true;
+    } else {
+      b.partners.push({
+        actorId: pc ? staff.actorId : `npc:${staff.id}`, name: staff.name, status: 'active', cash: 0, gear: [], units, voting: false,
+        heirId: null, leavingSince: null, grant: true, grantUnits: units, ...(pc ? {} : { npc: true }),
+      });
+    }
+    staff.vested = (staff.vested ?? 0) + staff.grant.share;
+    delete staff.grant;
+    addLedger(b, { day, kind: 'vested', amount: 0, staffName: staff.name }, p);
+    notes.push({ kind: 'vested', staffId: staff.id, name: staff.name });
+  }
+  return notes;
 }
