@@ -452,7 +452,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B4 | **Done (v0.12.0), see §32.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
 | E | **E1 and E2 done (v0.12.0), see §33.9 and §33.10; E3 done (v0.13.0), see §33.11.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
 | Projects | **Done (v0.12.0), see §34.** Projects beside expansion: refit, security upgrade, storefront, staff room; the Projects tab reworked |
-| B5 | **v0.14, built (B5a, B5b and B5c), see §36.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
+| B5 | **Done (v0.14.0), see §36.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
 | B6 | **v0.15.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
 | B7 | Downtime bridge (separate module, after B2): company work through Crew Tools downtime, businesses on Night City Map |
 | F1 | **Proposed, see §35.3.** Faction standing with corps and gangs, moved by gigs and business actions; smear campaigns through the impact pipeline; after B6 |
@@ -1146,7 +1146,7 @@ The work is split into phases that each end with something usable at the table. 
 - Information rolls: internal audit and due diligence.
 - Officers, elections and control (§26.3).
 
-**B5 Going public (v0.14).**
+**B5 Going public (v0.14.0).**
 - The valuation *V*, the listing checklist, the listing application and the prospectus rolls (§26.4a).
 - On approval, the company's market entry and the standard IPO flow.
 - Earnings impacts on fair value, capped dividends and the liquidity cap (§26.7), insider windows for officers (§26.4), and the delisting review.
@@ -1832,7 +1832,7 @@ Each step ends as the others do: engine tests, flow tests, a simulator check tha
 6. **Factions first** (F1), then fronts (U1), then production (P1).
 
 
-## 36. Phase B5: going public (v0.14)
+## 36. Phase B5: going public (v0.14.0)
 
 The plan is §26.4a (listing eligibility), §26.7 (capped payouts) and the B5 entry in §26.9's phasing.
 
@@ -1863,3 +1863,5 @@ The plan is §26.4a (listing eligibility), §26.7 (capped payouts) and the B5 en
 - **Insider heat** (`BusinessService._insiderWindow`, with insider tracking on). Officers and shareholders see a report before the market moves on it, so a report that moves the price opens a heat watch window on the ticker, from the report to the move, as for a gig. Officers count as knowing as well as a gig's runners, other shareholders as tipped; a syndicate's members count as their syndicate. The audit, heat and consequences then follow §22 as usual.
 - **Links.** Once its offering is on the market, the Business window's header has "View on market", opening the terminal on the company's page as the same account. On the terminal, a player company's page has "Manage company" for its officers and shareholders (a syndicate account counts as the syndicate and the character acting for it) and the GM, opening its Business window.
 - **The delisting review** (`reviewListing`, `clearReview`, `delistCompany`; `BusinessService` `_review`, `giveTime`, `delist`). At each report, a market value (price times shares) under 60% of the listing threshold counts a low report; any other report starts the count again. Three in a row put the company under review: a market headline, a mail to every shareholder (a syndicate's active members each), and a 5% dip in fair value. The Business window shows the count and the review. On the GM Console's Businesses tab the GM may **give it time** (the review clears and the count starts again, so three more low reports bring it back) or **delist** it: the company buys the market's float back at the market price from its cash, borrowing from the bank what it lacks; the holders' shares leave their portfolios (open orders on the ticker are cancelled) and are units on the record again; the market company is marked delisted; it is a private stage 2 company again, draws and private stakes as before. A delisted company does not list again.
+
+**Tested in the test world** (before v0.14.0, on "Charter Test Clinic", made to meet the checklist): the Growth tab's listing checklist, valuation and float choice, and the IPO proposal. It found and fixed: the float menu and button out of line, a stray "Propose registering" on a company, the ticker not shown once set (now in the header, the listing text and the Portfolio tab), the proposal worded as registering rather than listing, and player messages naming the GM where the market decides. Not tried live: GM approval and the prospectus rolls, the IPO window and listing day, the lock-up, and all of B5c (earnings, dividends, the liquidity cap, insider heat, the links and the delisting review); all are covered by tests, including the listing end to end through the market's IPO service.
