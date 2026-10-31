@@ -1666,20 +1666,20 @@
       "IntelNothing": "nothing useful found"
     },
     "Listing": {
-      "Gains": "Listing puts the company on the market as {ticker}: its shares trade on the terminal, the shareholders' holdings move into their brokerage portfolios (locked for 28 days), and the shares floated in the offering raise cash for the company. It takes every shareholder with a vote, naming the float (20% to 40% of the company); the listing fee is paid when you agree, whatever happens; then the GM approves, and two prospectus rolls must pass. The valuation is net assets plus a year of the reported profit at the {sector} sector's multiple of {multiple}; cash paid in counts only after 28 days.",
+      "Gains": "Listing puts the company on the market as {ticker}: its shares trade on the terminal, the shareholders' holdings move into their brokerage portfolios (locked for 28 days), and the shares floated in the offering raise cash for the company. It takes every shareholder with a vote, naming the float (20% to 40% of the company); the listing fee is paid when you agree, whatever happens; then the market must accept the application, and two prospectus rolls must pass. The valuation is net assets plus a year of the reported profit at the {sector} sector's multiple of {multiple}; cash paid in counts only after 28 days.",
       "Valuation": "Market valuation now: {v} eb (sector multiple {multiple}).",
       "ReportV": "report #{n}: {v} eb",
       "Float": "Float",
       "Propose": "Propose listing",
-      "Confirm": "Propose listing the company? If every shareholder with a vote agrees, the listing fee is paid from its cash at once, and the listing waits for the GM.",
+      "Confirm": "Propose listing the company? If every shareholder with a vote agrees, the listing fee is paid from its cash at once, and the application waits for the market.",
       "Fee": "The listing fee, 2% of the valuation, is {fee} eb now.",
-      "Awaiting": "The shareholders have agreed to list, floating {float}% (fee {fee} eb paid). Waiting for the GM.",
-      "Prospectus": "The GM has approved the listing. An officer makes each prospectus roll; both must pass.",
+      "Awaiting": "The shareholders have agreed to list, floating {float}% (fee {fee} eb paid). The application is waiting for the market.",
+      "Prospectus": "The market has accepted the application. An officer makes each prospectus roll; both must pass.",
       "Part": { "filing": "The filing", "offering": "The offering" },
       "RollTitle": "{part}: {name}'s prospectus",
       "Ready": "Ready to list: {shares} new shares ({float}% of the company) offered at {price} eb a share. The listing itself comes in the next update.",
       "Failed": "A prospectus roll failed: the fee is spent. You may agree to list again from {date}.",
-      "Rejected": "The GM turned the listing down: the fee is spent. You may agree to list again from {date}."
+      "Rejected": "The market turned the application down: the fee is spent. You may agree to list again from {date}."
     },
     "Charter": {
       "Gains": "Chartering makes the business a company: three action slots a week, a Capacity ceiling of 14, shares in place of units, and later monthly reports and officers. Rent, licences and actions (DV 17) cost more. It takes every partner's agreement, naming the ticker, then three rolls any partner can make: the business plan, the registration and the capital structure. The 2,000 eb filing fee is paid when you agree, whatever happens.",
@@ -2483,7 +2483,7 @@
         "close": "Agreed: the business is closed and its money shared out.",
         "stepUp": "Agreed by every partner: go ahead with the next step on the Growth tab.",
         "stepUpCharter": "Agreed by every partner: the filing fee is paid; make the charter rolls on the Growth tab.",
-        "stepUpList": "Agreed by every shareholder: the listing fee is paid, and the listing waits for the GM.",
+        "stepUpList": "Agreed by every shareholder: the listing fee is paid, and the application waits for the market.",
         "expansion": "Agreed: the expansion is paid for and under way.",
         "project": "Agreed: the project is paid for and under way.",
         "fixerLoan": "Agreed: the fixer's loan is in the cash.",
