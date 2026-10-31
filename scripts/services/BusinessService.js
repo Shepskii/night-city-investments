@@ -20,6 +20,7 @@ import {
   STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
   isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact, payListedDividend,
   reviewListing, clearReview, delistCompany,
+  buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter, isItemPile } from '../utils/helpers.js';
@@ -109,6 +110,8 @@ class BusinessServiceImpl {
       basesOf: (id) => this.basesOf(id),
       // The listing threshold (B5a), a world setting.
       listingThreshold: this.listingThreshold(),
+      // A listed company's price now, for its offering roll (B6a).
+      marketPrice: business?.company?.ticker ? (MarketStore.getPublic().companies?.[business.company.ticker]?.price ?? 0) : 0,
       // NPC actors an Exec may bring as a team member (E3): not a player's character.
       teamActors: Object.fromEntries(game.actors.filter((a) => ['character', 'mook'].includes(a.type) && !isItemPile(a) && !a.hasPlayerOwner).map((a) => [a.id, a.name])),
       newId: `bus_${foundry.utils.randomID(12)}`,
@@ -219,6 +222,93 @@ class BusinessServiceImpl {
       } catch (error) {
         log.warn('Shareholder mail failed', error);
       }
+    }
+  }
+
+  /**
+   * A listed company's offering or buyback has moved on (B6a): an offering set by its roll goes on the
+   * market company's record, where the terminal shows it for subscription; a pulled offering dents the
+   * price. Each makes the news.
+   */
+  async _capitalEvents(out) {
+    const b = out.business;
+    const ticker = b?.company?.ticker;
+    if (!ticker || !isListed(b)) return;
+    for (const e of out.events) {
+      if (e.type === 'offeringSet' && b.capital?.issue?.status === 'open') {
+        const issue = b.capital.issue;
+        const company = CompanyRepository.get(ticker);
+        if (company) await CompanyRepository.save({ ...company, offering: { price: issue.price, shares: issue.shares, endDay: issue.endDay } });
+        await NewsService.post({ headline: L('NCI.News.Offering', { name: b.name, ticker, shares: issue.shares.toLocaleString(), price: issue.price.toLocaleString() }), tone: 'neutral', companyIds: [ticker] });
+      } else if (e.type === 'offeringFailed') {
+        const key = `offering:${b.id}:${this.day()}`;
+        await TickService.updateControls((controls, { tick }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
+          ...controls,
+          impacts: [...controls.impacts, makeImpact({
+            id: `imp_offer_${b.id}_${this.day()}`, target: { type: 'company', id: ticker }, amount: BUSINESS_DEFAULTS.capital.offering.failHit, onsetTick: tick,
+            permanent: 1, sourceKey: key, source: 'offering', meta: { businessId: b.id },
+          })],
+        }));
+        await NewsService.post({ headline: L('NCI.News.OfferingPulled', { name: b.name, ticker }), tone: 'down', companyIds: [ticker] });
+      } else if (e.type === 'buybackTimed') {
+        await NewsService.post({ headline: L('NCI.News.Buyback', { name: b.name, ticker, budget: Math.round(b.capital?.buyback?.budget ?? 0).toLocaleString() }), tone: 'up', companyIds: [ticker] });
+      }
+    }
+  }
+
+  /**
+   * Each market day for listed companies (B6a): an offering whose window has closed is settled (the
+   * subscribers' shares filled, pro rata if oversubscribed, the market taking the rest, the money to
+   * the company, the price diluted), and a buyback buys its day's shares from the float.
+   */
+  async _marketCapital() {
+    const day = this.day();
+    const pub = MarketStore.getPublic();
+    for (const stored of BusinessRepository.all().filter((x) => x.status === 'open' && isListed(x))) {
+      const issue = stored.capital?.issue;
+      const bb = stored.capital?.buyback;
+      const due = issue?.status === 'open' && day > issue.endDay;
+      const buying = bb?.status === 'buying' && bb.lastDay !== day;
+      if (!due && !buying) continue;
+      const b = normalizeBusiness(structuredClone(stored));
+      const ticker = b.company.ticker;
+      const price = pub.companies?.[ticker]?.price ?? 0;
+      let changed = false;
+      if (due) {
+        const tick = timeOf(pub);
+        const portfolios = PortfolioRepository.accounts().filter((a) => PortfolioRepository.hasPortfolio(a)).map((a) => normalizePortfolio(PortfolioRepository.get(a)));
+        const ratio = allocationRatio(ipoDemand(portfolios, ticker), issue.shares);
+        await PortfolioService.transformAll((p) => {
+          const out = settleIpoOrders(p, ticker, issue.price, ratio, tick);
+          return out.changed ? out : null;
+        });
+        const before = b.listing.shares ?? 0;
+        const done = settleOffering(b, day);
+        if (done.ok && price > 0 && before > 0) {
+          // The company is worth what it was plus the money raised, over more shares.
+          const amount = Math.log(((price * before + done.proceeds) / (before + done.shares)) / price);
+          const key = `offering:${b.id}:settled:${day}`;
+          await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
+            ...controls,
+            impacts: [...controls.impacts, makeImpact({
+              id: `imp_offerdone_${b.id}_${day}`, target: { type: 'company', id: ticker }, amount, onsetTick: now, permanent: 1, sourceKey: key, source: 'offering', meta: { businessId: b.id },
+            })],
+          }));
+        }
+        await NewsService.post({ headline: L('NCI.News.OfferingDone', { name: b.name, ticker, shares: done.shares.toLocaleString(), proceeds: Math.round(done.proceeds).toLocaleString() }), tone: 'neutral', companyIds: [ticker] });
+        changed = true;
+      }
+      if (buying) {
+        const d = buybackDay(b, { price, cap: dailySellCap(b, PortfolioService._fixerOperator(b)), day });
+        if (d.qty > 0 && d.done) await NewsService.post({ headline: L('NCI.News.BuybackDone', { name: b.name, ticker }), tone: 'neutral', companyIds: [ticker] });
+        changed = true;
+      }
+      if (!changed) continue;
+      const company = CompanyRepository.get(ticker);
+      if (company) await CompanyRepository.save({ ...company, sharesOutstanding: b.listing.shares, ...(due ? { offering: null } : {}) });
+      this._syncHolders(b);
+      await BusinessRepository.save(b);
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
     }
   }
 
@@ -523,6 +613,7 @@ class BusinessServiceImpl {
     await this._payslips(out);
     await this._twoJobs(out);
     await this._scheduleListing(out.business);
+    await this._capitalEvents(out);
     await this._afterReports(out);
     for (const event of out.events.filter((e) => e.type === 'periodClosed')) {
       Hooks.callAll(HOOKS.BUSINESS_PERIOD, { businessId: out.business.id, digest: event.digest });
@@ -735,6 +826,7 @@ class BusinessServiceImpl {
         await this._commit({ ...out, ok: true });
         changed++;
       }
+      await this._marketCapital();
       return changed;
     });
   }

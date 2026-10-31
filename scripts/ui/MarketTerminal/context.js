@@ -147,6 +147,25 @@ export function ipoRows(actor) {
       canSubscribe: open && !!actor && !mine,
       subscribed: mine ? L('NCI.Ipo.YouAsked', { qty: mine.qty }) : '',
     };
+  }).concat(offeringRows(portfolio, today));
+}
+
+/** Listed player companies' secondary offerings open now (B6a), as rows beside the IPOs. */
+function offeringRows(portfolio, today) {
+  return CompanyRepository.all().filter((c) => c.listed && c.offering && today <= c.offering.endDay).map((c) => {
+    const mine = portfolio ? ipoOrdersFor(portfolio, c.id)[0] : null;
+    return {
+      id: c.id,
+      ticker: c.ticker,
+      name: c.name,
+      sector: L(`NCI.Sector.${c.sector}`),
+      date: L('NCI.Ipo.Secondary'),
+      price: money(c.offering.price),
+      status: L('NCI.Ipo.OfferingOpen', { n: Math.max(0, c.offering.endDay - today) }),
+      capped: L('NCI.Ipo.Capped', { n: c.offering.shares.toLocaleString() }),
+      canSubscribe: !!portfolio && !mine,
+      subscribed: mine ? L('NCI.Ipo.YouAsked', { qty: mine.qty }) : '',
+    };
   });
 }
 

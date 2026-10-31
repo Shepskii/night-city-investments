@@ -11,6 +11,7 @@
 import { BUSINESS_DEFAULTS } from './businessConfig.js';
 import { addLedger, fail, totalUnits, unitValue, partnerOf } from './businessRecord.js';
 import { isListed } from './businessListing.js';
+import { bandPassed, dvOf } from './rolls.js';
 
 const int = (v) => Math.floor(Number(v) || 0);
 const cents = (v) => Math.round(v * 100) / 100;
@@ -175,4 +176,96 @@ export function closeCapital(b, day, p = BUSINESS_DEFAULTS) {
   }
   if (changed) b.capital = c;
   return changed;
+}
+
+// ── A listed company (B6a) ───────────────────────────────────────────────────
+
+/**
+ * Whether an officer can roll for a listed company's offering (`issue`) or buyback (`buyback`) now,
+ * and how: the offering is Trading (Persuasion at DV +2), the timing Trading (Business at DV +2).
+ */
+export function capitalRollCheck(b, kind, p = BUSINESS_DEFAULTS) {
+  if (!isListed(b)) return fail('not-listed');
+  const rec = capitalOf(b)[kind];
+  if (rec?.status !== 'roll') return fail(kind === 'issue' ? 'no-issue' : 'no-buyback');
+  const c = kind === 'issue' ? p.capital.offering : p.capital.timing;
+  return { ok: true, dv: dvOf(c.dv), uses: [...c.uses] };
+}
+
+/**
+ * The offering roll. A pass opens the offering on the market: the new shares at the market price less a
+ * discount by the result, for anyone to subscribe for in the window. A failure pulls it.
+ * @returns {{failed: boolean}}
+ */
+export function applyOfferingRoll(b, actorId, result, { day, price }, p = BUSINESS_DEFAULTS) {
+  const c = p.capital.offering;
+  const issue = capitalOf(b).issue;
+  if (!bandPassed(result.band)) {
+    b.capital.issue = null;
+    addLedger(b, { day, kind: 'offeringFailed', amount: 0 }, p);
+    return { failed: true };
+  }
+  const discount = c.discount[result.band] ?? 0;
+  Object.assign(issue, { status: 'open', band: result.band, by: actorId, discount, price: Math.max(0.01, cents(price * (1 - discount))), endDay: day + c.windowDays });
+  addLedger(b, { day, kind: 'offeringSet', amount: 0 }, p);
+  return { failed: false };
+}
+
+/** The timing roll: the buyback starts, paying the market price adjusted by the result. */
+export function applyTimingRoll(b, actorId, result, day, p = BUSINESS_DEFAULTS) {
+  const bb = capitalOf(b).buyback;
+  Object.assign(bb, { status: 'buying', band: result.band, by: actorId, adj: p.capital.timing.price[result.band] ?? 0 });
+  addLedger(b, { day, kind: 'buybackTimed', amount: 0 }, p);
+  return { ok: true };
+}
+
+/**
+ * One market day of a listed company's buyback: it buys from the market's float, at most `cap` shares,
+ * at the market price adjusted by its timing, while the budget and the cash last; the shares are
+ * retired. It ends when the budget, the cash or the float runs out.
+ * @returns {{qty: number, cost: number, done: boolean}}
+ */
+export function buybackDay(b, { price, cap, day }, p = BUSINESS_DEFAULTS) {
+  const bb = capitalOf(b).buyback;
+  if (bb?.kind !== 'market' || bb.status !== 'buying' || bb.lastDay === day || !(price > 0)) return { qty: 0, cost: 0, done: false };
+  const market = b.partners.find((x) => x.market);
+  const unit = Math.max(0.01, cents(price * (1 + (bb.adj ?? 0))));
+  const affordable = Math.floor(Math.min(bb.budget - bb.spent, Math.max(0, b.till)) / unit);
+  const qty = Math.max(0, Math.min(Math.floor(cap), market?.units ?? 0, affordable));
+  let cost = 0;
+  if (qty > 0) {
+    cost = Math.round(qty * unit);
+    market.units -= qty;
+    b.listing.shares -= qty;
+    b.till -= cost;
+    bb.spent += cost;
+    bb.bought += qty;
+    addLedger(b, { day, kind: 'boughtBack', amount: -cost, price: qty }, p);
+  }
+  bb.lastDay = day;
+  const done = qty === 0 || (market?.units ?? 0) === 0 || Math.min(bb.budget - bb.spent, b.till) < unit;
+  if (done) {
+    addLedger(b, { day, kind: 'buybackClosed', amount: 0, price: bb.bought }, p);
+    b.capital.buyback = null;
+  }
+  return { qty, cost, done };
+}
+
+/**
+ * The offering's window has closed: all the new shares are sold at the offer price, to the players who
+ * subscribed (their shares are in their portfolios already) and the market for the rest, and the
+ * company's cash takes the whole sum. The shareholders are read from the portfolios again after.
+ * @returns {{ok: true, shares: number, proceeds: number} | {ok: false, reason: string}}
+ */
+export function settleOffering(b, day, p = BUSINESS_DEFAULTS) {
+  const issue = capitalOf(b).issue;
+  if (issue?.kind !== 'offering' || issue.status !== 'open') return fail('no-issue');
+  const proceeds = Math.round(issue.shares * issue.price);
+  b.listing.shares = (b.listing.shares ?? totalUnits(b)) + issue.shares;
+  const market = b.partners.find((x) => x.market);
+  if (market) market.units += issue.shares;
+  b.till += proceeds;
+  addLedger(b, { day, kind: 'offeringProceeds', amount: proceeds }, p);
+  b.capital.issue = null;
+  return { ok: true, shares: issue.shares, proceeds };
 }

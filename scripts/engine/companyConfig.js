@@ -94,6 +94,10 @@ export function sanitizeCompany(input) {
       },
       status: COMPANY_STATUSES.includes(input.status) ? input.status : 'active',
       ipo: cleanIpo(input.ipo),
+      // A listed player company's secondary offering (B6a): new shares at a price, open to the end day.
+      offering: input.offering?.price > 0 && input.offering?.shares > 0
+        ? { price: round2(num(input.offering.price, 0)), shares: Math.round(num(input.offering.shares, 0)), endDay: Math.round(num(input.offering.endDay, 0)) }
+        : null,
       // A player company (B5b): the business record it lists.
       ...(input.businessId ? { businessId: String(input.businessId) } : {}),
       /** Cumulative split factor, so index levels and resets stay on the post-split basis. */

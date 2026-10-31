@@ -102,3 +102,53 @@ test('only a company issues or buys back, and not while a listing is under way',
   const listing = normalizeBusiness({ ...company(), listing: { status: 'prospectus' } });
   assert.equal(buybackOffer(listing, 1000).reason, 'listing-open');
 });
+
+/** The clinic, listed: 1,000 shares, 200 of them the market's float. */
+function listed(more = {}) {
+  const b = company();
+  return normalizeBusiness({
+    ...b, till: 50000,
+    listing: { status: 'listed', shares: 4700, offer: { price: 10, shares: 200 }, rolls: { offering: { band: 'solid' } } },
+    partners: [...b.partners, { actorId: 'npc:market', name: '', status: 'active', cash: 0, gear: [], units: 200, voting: false, npc: true, market: true }],
+    ...more,
+  });
+}
+
+test('a listed company\'s offering: voted, then an officer\'s roll sets the discount to the market price and opens it; a failure pulls it; on settling, the cash takes it all', async () => {
+  const { settleOffering } = await import('../scripts/engine/index.js');
+  let b = apply(listed(), { type: 'propose', businessId: 'b1', kind: 'issue', pct: 0.1 }, MED).business;
+  assert.deepEqual([b.capital.issue.kind, b.capital.issue.status, b.capital.issue.shares], ['offering', 'roll', 470]);
+  const roll = (band) => ({ ok: true, result: { band, total: 20, dv: 17, approach: 'normal', luck: 0, extra: 0 } });
+  assert.equal(apply(b, { type: 'issueRoll', businessId: 'b1', use: TRADING }, MED, { check: roll('solid'), expect: false }).reason, 'no-price');
+  const out = apply(b, { type: 'issueRoll', businessId: 'b1', use: TRADING }, MED, { check: roll('solid'), context: { marketPrice: 12 } });
+  const issue = out.business.capital.issue;
+  assert.deepEqual([issue.status, issue.price, issue.endDay], ['open', 11.4, DAY + E.capital.offering.windowDays], '5% under the market price');
+  assert.ok(out.events.some((e) => e.type === 'offeringSet'));
+  const pulled = apply(b, { type: 'issueRoll', businessId: 'b1', use: TRADING }, MED, { check: roll('failure'), context: { marketPrice: 12 } });
+  assert.equal(pulled.business.capital.issue, null);
+  assert.ok(pulled.events.some((e) => e.type === 'offeringFailed'));
+
+  b = out.business;
+  const done = settleOffering(b, DAY + 6);
+  assert.deepEqual([done.shares, done.proceeds], [470, Math.round(470 * 11.4)]);
+  assert.equal(b.listing.shares, 4700 + 470);
+  assert.equal(b.partners.find((x) => x.market).units, 200 + 470, 'the market holds them until the holders are read again');
+  assert.equal(b.capital.issue, null);
+});
+
+test('a listed company\'s buyback: voted, timed by an officer\'s roll, then a day at a time from the float within the cap and the budget, the shares retired', async () => {
+  const { buybackDay } = await import('../scripts/engine/index.js');
+  let b = apply(listed(), { type: 'propose', businessId: 'b1', kind: 'buyback', budget: 1000 }, MED).business;
+  assert.deepEqual([b.capital.buyback.kind, b.capital.buyback.status], ['market', 'roll']);
+  b = apply(b, { type: 'buybackRoll', businessId: 'b1', use: TRADING }, MED, { check: { ok: true, result: { band: 'strong', total: 21, dv: 17, approach: 'normal', luck: 0, extra: 0 } } }).business;
+  assert.deepEqual([b.capital.buyback.status, b.capital.buyback.adj], ['buying', -0.04]);
+  const till = b.till;
+  const d1 = buybackDay(b, { price: 10, cap: 30, day: DAY });
+  assert.deepEqual([d1.qty, d1.cost, d1.done], [30, Math.round(30 * 9.6), false], 'at the cap, 4% under');
+  assert.equal(buybackDay(b, { price: 10, cap: 30, day: DAY }).qty, 0, 'once a day');
+  assert.deepEqual([b.partners.find((x) => x.market).units, b.listing.shares, b.till], [170, 4670, till - d1.cost]);
+  const d2 = buybackDay(b, { price: 10, cap: 500, day: DAY + 1 });
+  assert.equal(d2.qty, Math.floor((1000 - d1.cost) / 9.6), 'the rest of the budget');
+  assert.equal(d2.done, true);
+  assert.equal(b.capital.buyback, null, 'over once the budget is spent');
+});

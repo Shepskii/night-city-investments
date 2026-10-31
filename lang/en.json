@@ -335,6 +335,22 @@
           "strong": "A persuasive report: 6% more profit (12% if Bold).",
           "exceptional": "A masterpiece: 10% more profit (20% if Bold)."
         },
+        "issueRoll": {
+          "fumble": "Nobody bites: the offering is pulled, and the price dips.",
+          "failure": "Too little interest: the offering is pulled, and the price dips.",
+          "narrow": "Some interest: the new shares at 10% under the market price.",
+          "solid": "Good interest: the new shares at 5% under the market price.",
+          "strong": "Strong demand: the new shares at 3% under the market price.",
+          "exceptional": "Oversubscribed: the new shares at the market price."
+        },
+        "buybackRoll": {
+          "fumble": "Badly timed: it pays 3% over the market price.",
+          "failure": "Poorly timed: it pays 2% over the market price.",
+          "narrow": "Timed adequately: it pays the market price.",
+          "solid": "Well timed: it pays 2% under the market price.",
+          "strong": "Sharply timed: it pays 4% under the market price.",
+          "exceptional": "Perfectly timed: it pays 6% under the market price."
+        },
         "prospectus": {
           "filing": {
             "fumble": "The filing is thrown out: the listing fails, and the fee is spent.",
@@ -1015,6 +1031,11 @@
       "PlayerReport": "{name} ({ticker}) reports a month's profit of {profit} eb; the company is valued at about {value} eb.",
       "ListingReview": "{name} ({ticker}) put under review: its market value is too low to stay listed.",
       "PlayerDelisted": "{name} ({ticker}) delisted: the company buys back its public float at {price} eb and goes private.",
+      "Offering": "{name} ({ticker}) offers {shares} new shares at {price} eb.",
+      "OfferingPulled": "{name} ({ticker}) pulls its share offering for lack of interest.",
+      "OfferingDone": "{name} ({ticker}) sells {shares} new shares, raising {proceeds} eb.",
+      "Buyback": "{name} ({ticker}) starts buying back its shares, up to {budget} eb.",
+      "BuybackDone": "{name} ({ticker}) completes its buyback.",
       "IpoOversubscribed": "The {name} offer was oversubscribed. Each subscription was filled at {pct}%."
     },
     "Controls": {
@@ -1447,6 +1468,9 @@
       "ListsOn": "Lists {date}",
       "Capped": "{n} shares on offer",
       "YouAsked": "you asked for {qty}",
+      "Secondary": "Listed: new shares",
+      "OfferingOpen": "Offering open for {n} more day(s)",
+      "OfferingHint": "New shares are offered at {price} eb each. Your money is held, not spent, until the offering closes. If it is oversubscribed you may receive fewer shares.",
       "OrderText": "Subscribe {qty} {ticker} at {price} eb (IPO)",
       "AwaitingListing": "Waiting for the listing",
       "Offer": "IPO",
@@ -1685,7 +1709,15 @@
       "SellBack": "Sell back",
       "Rights": "Rights issue: {shares} new shares at {price} eb each, open until {date}; {taken} taken so far.",
       "RightsMine": "You may take {n} more, at {price} eb each.",
-      "Tender": "Buyback: the company buys shares at {price} eb each until {date}; {left} eb of the budget left, {bought} bought so far."
+      "Tender": "Buyback: the company buys shares at {price} eb each until {date}; {left} eb of the budget left, {bought} bought so far.",
+      "OfferingRoll": "The shareholders agreed to sell {shares} new shares on the market. An officer makes the offering roll, which sets the discount to the market price; a failure pulls the offering.",
+      "OfferingOpen": "Offering {shares} new shares of {ticker} at {price} eb each, open for subscription on the market terminal until {date}; the market takes what players do not.",
+      "OfferingRollButton": "Make the offering roll",
+      "OfferingTitle": "The offering: {name}",
+      "BuybackRoll": "The shareholders agreed a buyback of up to {budget} eb. An officer times it with a roll, which sets the price it pays against the market's.",
+      "BuybackBuying": "Buying back from the market each day ({adj} on the market price): {spent} of {budget} eb spent, {bought} shares bought and retired.",
+      "TimingRollButton": "Time the buyback",
+      "TimingTitle": "Timing the buyback: {name}"
     },
     "Dividend": {
       "Title": "Dividends",
@@ -2294,6 +2326,11 @@
         "listingScheduled": "The offering opened on the market",
         "issueOpened": "New shares put on offer",
         "issueClosed": "The new-share offer closed: {price} taken",
+        "offeringSet": "Offering set: new shares open on the market",
+        "offeringFailed": "The offering roll failed: the offering is pulled",
+        "offeringProceeds": "New shares sold on the market",
+        "buybackTimed": "The buyback was timed and began buying",
+        "boughtBack": "{price} shares bought back from the market",
         "rightsTaken": "{name} took new shares",
         "buybackOpened": "A buyback began",
         "buybackClosed": "The buyback closed: {price} bought back",
@@ -2718,7 +2755,8 @@
         "buyback-open": "a buyback is already under way",
         "no-buyback": "no buyback is under way",
         "over-budget": "that is more than the buyback has left to spend",
-        "last-holder": "someone must still hold shares"
+        "last-holder": "someone must still hold shares",
+        "no-price": "the company has no market price yet"
       }
     },
     "Staff": {

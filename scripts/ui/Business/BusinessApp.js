@@ -68,6 +68,8 @@ export class BusinessApp extends BaseApplication {
       proposeBuyback: BusinessApp._onProposeBuyback,
       takeRights: BusinessApp._onTakeRights,
       sellBack: BusinessApp._onSellBack,
+      issueRoll: BusinessApp._onIssueRoll,
+      buybackRoll: BusinessApp._onBuybackRoll,
       prospectusRoll: BusinessApp._onProspectusRoll,
       charterFund: BusinessApp._onCharterFund,
       reportRoll: BusinessApp._onReportRoll,
@@ -427,6 +429,16 @@ export class BusinessApp extends BaseApplication {
     const cost = Math.round(qty * (this.business?.capital?.issue?.price ?? 0));
     if (await this._proposeIfOver('rightsTake', { businessId: this.business?.id, qty }, cost, this.business?.name)) return null;
     return this._send('rightsTake', { qty });
+  }
+
+  /** A listed company's offering roll (B6a): Trading sets the discount. */
+  static _onIssueRoll() {
+    this._roll({ type: 'issueRoll' }, L('NCI.Capital.OfferingTitle', { name: this.business?.name ?? '' }));
+  }
+
+  /** Time a listed company's buyback (B6a): Trading sets the price it pays. */
+  static _onBuybackRoll() {
+    this._roll({ type: 'buybackRoll' }, L('NCI.Capital.TimingTitle', { name: this.business?.name ?? '' }));
   }
 
   /** Sell units back to the company in a tender. */

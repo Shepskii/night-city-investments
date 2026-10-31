@@ -338,11 +338,13 @@ export class MarketTerminalApp extends BaseApplication {
   /** Ask how many shares to subscribe for, then queue the subscription. */
   static async _onSubscribeIpo(event, target) {
     if (!this.actor) return ui.notifications.warn(L('NCI.Errors.NoActor'));
-    const company = CompanyRepository.upcomingIpos().find((c) => c.id === target.dataset.id);
+    // An IPO, or a listed player company's secondary offering (B6a).
+    const company = CompanyRepository.upcomingIpos().find((c) => c.id === target.dataset.id)
+      ?? CompanyRepository.all().find((c) => c.id === target.dataset.id && c.listed && c.offering);
     if (!company) return undefined;
     const qty = await foundry.applications.api.DialogV2.prompt({
       window: { title: L('NCI.Ipo.SubscribeTitle', { ticker: company.ticker }) },
-      content: `<p>${L('NCI.Ipo.SubscribeHint', { price: money(ipoPrice(company)) })}</p>`
+      content: `<p>${company.listed ? L('NCI.Ipo.OfferingHint', { price: money(company.offering.price) }) : L('NCI.Ipo.SubscribeHint', { price: money(ipoPrice(company)) })}</p>`
         + `<label>${L('NCI.Ipo.Shares')} <input type="number" name="qty" min="1" step="1" value="10" autofocus></label>`,
       ok: { label: L('NCI.Ipo.Subscribe'), callback: (e, button) => Math.floor(Number(button.form.elements.qty.value)) },
       rejectClose: false,

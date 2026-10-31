@@ -313,11 +313,23 @@ export const BUSINESS_DEFAULTS = Object.freeze({
   /**
    * A company's capital (B6a). New shares: `minPct` to `maxPct` of the shares there are, in `step`s; a
    * rights issue is open `windowDays`. Buybacks: a budget of at least `minBudget`; a tender is open
-   * `windowDays`.
+   * `windowDays`. A listed company's offering roll (`offering`) sets the discount to the market price
+   * (a failure pulls it, and the price takes `failHit`); its subscription window is `windowDays`. A
+   * buyback's timing roll (`timing`) sets what it pays over or under the market price.
    */
   capital: Object.freeze({
     issue: Object.freeze({ minPct: 0.05, maxPct: 0.3, step: 0.05, windowDays: 14 }),
     buyback: Object.freeze({ minBudget: 500, windowDays: 14 }),
+    offering: Object.freeze({
+      dv: 'professional', windowDays: 5, failHit: -0.03,
+      uses: Object.freeze([S.trading, Object.freeze({ ...S.persuasion, dvAdd: 2 })]),
+      discount: byBand([0, 0, 0.1, 0.05, 0.03, 0]),
+    }),
+    timing: Object.freeze({
+      dv: 'professional',
+      uses: Object.freeze([S.trading, Object.freeze({ ...S.business, dvAdd: 2 })]),
+      price: byBand([0.03, 0.02, 0, -0.02, -0.04, -0.06]),
+    }),
   }),
   listing: Object.freeze({
     threshold: 500000, sustained: 3, minReports: 3, minDays: 56, compliance: 50, exposureCap: 15, lockinDays: 28,

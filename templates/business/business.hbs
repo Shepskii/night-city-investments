@@ -654,6 +654,14 @@
     </div>
     {{/if}}
     {{/with}}
+    {{#with offering}}
+    <p><strong>{{text}}</strong></p>
+    {{#if canRoll}}<button type="button" data-action="issueRoll"><i class="fas fa-dice-d10"></i> {{localize "NCI.Capital.OfferingRollButton"}}</button>{{/if}}
+    {{/with}}
+    {{#with market}}
+    <p><strong>{{text}}</strong></p>
+    {{#if canRoll}}<button type="button" data-action="buybackRoll"><i class="fas fa-dice-d10"></i> {{localize "NCI.Capital.TimingRollButton"}}</button>{{/if}}
+    {{/with}}
     {{#with tender}}
     <p><strong>{{text}}</strong></p>
     {{#if canSell}}

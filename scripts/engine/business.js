@@ -98,7 +98,9 @@ import {
 import {
   idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost, rejectApplicant, applyTraining, mentorCheck, askOf, askCheck, grantOffer, enactGrant, vestGrants, addTeamMember,
 } from './businessPeople.js';
-import { issueOffer, startIssue, takeRights, buybackOffer, startBuyback, sellBack, closeCapital } from './businessCapital.js';
+import {
+  issueOffer, startIssue, takeRights, buybackOffer, startBuyback, sellBack, closeCapital, capitalRollCheck, applyOfferingRoll, applyTimingRoll,
+} from './businessCapital.js';
 
 export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, projectOffer, PROJECT_KINDS };
 export { upgradesOf, protectionFactor, breakInFactor, reputationBaseline } from './businessGrowth.js';
@@ -113,7 +115,7 @@ export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
   'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll', 'prospectusRoll',
   'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant', 'askStaff', 'cancelAsk', 'addTeam',
-  'rightsTake', 'sellBack',
+  'rightsTake', 'sellBack', 'issueRoll', 'buybackRoll',
 ]);
 
 /** Item types that are not things a business can own. */
@@ -144,7 +146,7 @@ export function itemGear(item, actorId, p = BUSINESS_DEFAULTS) {
 }
 
 /** Requests that carry a roll. */
-export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll', 'staffRoll', 'prospectusRoll']);
+export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll', 'staffRoll', 'prospectusRoll', 'issueRoll', 'buybackRoll']);
 
 /**
  * What each kind of proposal needs to pass (DESIGN §26.0): closing and stepping up need every partner
@@ -202,6 +204,14 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     const check = stepUpCheck(b, actorId, day, p);
     if (!check.ok) return check;
     return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - p.registration.fee, operatorRank, p, b, traits });
+  }
+
+  if (request.type === 'issueRoll' || request.type === 'buybackRoll') {
+    // An officer makes a listed company's offering roll or times its buyback (B6a); a hired professional may too.
+    if (!canRun(b, actorId)) return fail('not-officer');
+    const check = capitalRollCheck(b, request.type === 'issueRoll' ? 'issue' : 'buyback', p);
+    if (!check.ok) return check;
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
 
   if (request.type === 'prospectusRoll') {
@@ -593,6 +603,25 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       out.events.push({ type: 'roll', action: `charter.${request.part}`, band: r.band, exposure: r.exposure });
       if (done.refused) out.events.push({ type: 'charterRefused' });
       if (done.awaiting) out.events.push({ type: 'charterAwaiting' });
+      break;
+    }
+    case 'issueRoll':
+    case 'buybackRoll': {
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
+      if (!spec.ok) return spec;
+      if (!check?.ok) return fail(check?.reason ?? 'no-roll');
+      if (request.type === 'issueRoll' && !(ctx.marketPrice > 0)) return fail('no-price');
+      spendFor('roll');
+      const r = check.result;
+      if (r.extra) spendDays(b, actor.id, 1);
+      out.events.push({ type: 'roll', action: request.type, band: r.band, exposure: r.exposure });
+      if (request.type === 'issueRoll') {
+        const done = applyOfferingRoll(b, actor.id, r, { day, price: ctx.marketPrice }, p);
+        out.events.push({ type: done.failed ? 'offeringFailed' : 'offeringSet' });
+      } else {
+        applyTimingRoll(b, actor.id, r, day, p);
+        out.events.push({ type: 'buybackTimed' });
+      }
       break;
     }
     case 'prospectusRoll': {

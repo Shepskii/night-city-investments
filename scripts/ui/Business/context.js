@@ -13,7 +13,7 @@ import {
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
-  capitalOf, issueOptions, rightsLeft, tenderRoom,
+  capitalOf, issueOptions, rightsLeft, tenderRoom, capitalRollCheck,
 } from '../../engine/index.js';
 import { SkillAdapter } from '../../services/SkillAdapter.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
@@ -1154,6 +1154,19 @@ function capitalContext(business, actor, canAct) {
       left: actor ? rightsLeft(business, actor.id) : 0,
       mine: actor && holder ? L('NCI.Capital.RightsMine', { n: whole(rightsLeft(business, actor.id)), price: issue.price.toLocaleString() }) : '',
       canTake: !!actor && holder && day <= issue.endDay && rightsLeft(business, actor.id) > 0,
+    } : null,
+    // A listed company (B6a): the offering, then its window; the buyback, then its buying.
+    offering: issue?.kind === 'offering' ? {
+      text: issue.status === 'roll'
+        ? L('NCI.Capital.OfferingRoll', { shares: whole(issue.shares) })
+        : L('NCI.Capital.OfferingOpen', { shares: whole(issue.shares), price: issue.price.toLocaleString(), date: dayText(issue.endDay), ticker: business.company?.ticker ?? '' }),
+      canRoll: canAct && canRun(business, actor.id) && capitalRollCheck(business, 'issue').ok,
+    } : null,
+    market: bb?.kind === 'market' ? {
+      text: bb.status === 'roll'
+        ? L('NCI.Capital.BuybackRoll', { budget: whole(bb.budget) })
+        : L('NCI.Capital.BuybackBuying', { budget: whole(bb.budget), spent: whole(bb.spent), bought: whole(bb.bought), adj: `${bb.adj > 0 ? '+' : ''}${Math.round((bb.adj ?? 0) * 100)}%` }),
+      canRoll: canAct && canRun(business, actor.id) && capitalRollCheck(business, 'buyback').ok,
     } : null,
     tender: bb?.kind === 'tender' ? {
       text: L('NCI.Capital.Tender', { price: bb.price.toLocaleString(), date: dayText(bb.endDay), left: whole(bb.budget - bb.spent), bought: whole(bb.bought) }),

@@ -203,6 +203,55 @@ test('with insider tracking on, a listed company\'s report opens a watch window:
   env.store.set('heatEnabled', false);
 });
 
+test('a listed company\'s secondary offering goes on the terminal; subscribers get their shares when it closes, the market the rest, and the company the money', async () => {
+  const day = S.BusinessService.day();
+  const b = E.normalizeBusiness(structuredClone(business()));
+  b.capital = { issue: { kind: 'offering', status: 'roll', shares: 100, startDay: day }, buyback: null };
+  const price = S.MarketStore.getPublic().companies.PLAY.price;
+  E.applyOfferingRoll(b, alice.id, { band: 'solid' }, { day, price });
+  await S.BusinessRepository.save(b);
+  await S.BusinessService._capitalEvents({ business: business(), events: [{ type: 'offeringSet' }] });
+  await settle();
+  const offer = S.CompanyRepository.get('PLAY').offering;
+  assert.ok(offer && offer.shares === 100, 'on the market company\'s record');
+  assert.equal(S.PortfolioService.market().PLAY.ipo.open, true, 'open for subscription');
+
+  await S.PortfolioClient.submit(cass, 'deposit', { amount: 10000 });
+  await settle();
+  const sub = await S.PortfolioClient.submit(cass, 'subscribeIpo', { assetId: 'PLAY', qty: 30 });
+  await settle();
+  assert.equal(resultOf(cass, sub).ok, true, resultOf(cass, sub).reason);
+
+  const before = { shares: business().listing.shares, till: business().till, held: held(cass) };
+  await S.TickService.advanceDays(E.BUSINESS_DEFAULTS.capital.offering.windowDays + 1);
+  await settle();
+  const after = business();
+  assert.equal(after.capital.issue, null, 'settled');
+  assert.equal(held(cass), before.held + 30, 'the subscriber got their shares');
+  assert.equal(after.listing.shares, before.shares + 100);
+  assert.equal(S.CompanyRepository.get('PLAY').sharesOutstanding, before.shares + 100);
+  assert.equal(S.CompanyRepository.get('PLAY').offering, null);
+  assert.ok(after.till >= before.till + Math.round(100 * offer.price) - 1, 'the whole offering paid the company');
+  assert.equal(after.partners.find((x) => x.actorId === cass.id)?.units, held(cass), 'a shareholder by her portfolio');
+});
+
+test('a listed company\'s buyback buys from the float each market day and retires the shares', async () => {
+  const b = E.normalizeBusiness(structuredClone(business()));
+  b.capital = { issue: null, buyback: { kind: 'market', status: 'buying', budget: 3000, spent: 0, bought: 0, adj: 0, startDay: S.BusinessService.day() } };
+  await S.BusinessRepository.save(b);
+  const before = { shares: business().listing.shares, float: business().partners.find((x) => x.market).units };
+  await S.TickService.advanceDays(1);
+  await settle();
+  const after = business();
+  const bought = before.shares - after.listing.shares;
+  assert.ok(bought > 0, 'bought some back');
+  assert.ok(bought <= E.dailySellCap(after), 'within the daily cap');
+  assert.equal(after.partners.find((x) => x.market).units, before.float - bought, 'from the float');
+  assert.equal(S.CompanyRepository.get('PLAY').sharesOutstanding, after.listing.shares);
+  // Done before the next tests.
+  await S.BusinessRepository.save({ ...business(), capital: { issue: null, buyback: null } });
+});
+
 test('a listed company worth too little for three reports goes under review; the GM delists it: the float bought back, shares out of portfolios and onto the record, the company private again', async () => {
   const { MailService } = await import('../scripts/services/MailService.js');
   const sent = [];

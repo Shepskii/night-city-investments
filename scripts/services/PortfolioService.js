@@ -44,6 +44,8 @@ class PortfolioServiceImpl {
       const s = pub.companies?.[c.id];
       if (!s) continue;
       const open = ipoStatus(c, today).state === 'window';
+      // A listed player company's secondary offering is subscribed for like an IPO (B6a).
+      const offering = c.listed && c.offering && today <= c.offering.endDay;
       out[c.id] = {
         listed: c.listed,
         active: c.status === 'active',
@@ -51,6 +53,7 @@ class PortfolioServiceImpl {
         prevClose: s.prevClose,
         liquidity: c.liquidity,
         ...(open ? { ipo: { open: true, price: ipoPrice(c) } } : {}),
+        ...(offering ? { ipo: { open: true, price: c.offering.price } } : {}),
       };
     }
     for (const f of FundRepository.all()) {
