@@ -373,6 +373,9 @@
     {{#if ready}}<p class="nci-up"><strong>{{ready}}</strong></p>{{/if}}
     {{#if scheduled}}<p class="nci-up"><strong>{{scheduled}}</strong></p>{{/if}}
     {{#if listed}}<p class="nci-up"><strong>{{listed}}</strong></p>{{/if}}
+    {{#if review}}<p class="nci-down"><strong>{{review}}</strong></p>{{/if}}
+    {{#if lowReports}}<p class="nci-muted">{{lowReports}}</p>{{/if}}
+    {{#if delisted}}<p><strong>{{delisted}}</strong></p>{{/if}}
     {{/with}}
     {{#with charter}}
     <p class="nci-hint">{{localize "NCI.Charter.SectorLine" sector=sector}} {{range}}</p>

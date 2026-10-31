@@ -19,6 +19,7 @@ import {
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
   STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
   isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact, payListedDividend,
+  reviewListing, clearReview, delistCompany,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter, isItemPile } from '../utils/helpers.js';
@@ -168,6 +169,56 @@ class BusinessServiceImpl {
         tone: report.reported > 0 ? 'up' : 'down',
         companyIds: [ticker],
       });
+      await this._review(b.id, report);
+    }
+  }
+
+  /**
+   * The delisting review (B5c): a listed company worth too little on the market for reports in a row
+   * goes under review, for the GM to delist or give time. The market hears of it and the price dips;
+   * every shareholder is told.
+   */
+  async _review(businessId, report) {
+    const stored = BusinessRepository.get(businessId);
+    if (!stored || !isListed(stored) || stored.listing.reviewedReport === report.index) return;
+    const b = normalizeBusiness(structuredClone(stored));
+    const ticker = b.company?.ticker;
+    const price = MarketStore.getPublic().companies?.[ticker]?.price ?? 0;
+    const marketCap = price * (b.listing.shares ?? 0);
+    const threshold = this.listingThreshold();
+    const done = reviewListing(b, { marketCap, threshold, day: this.day() });
+    b.listing.reviewedReport = report.index;
+    await BusinessRepository.save(b);
+    if (!done.opened) return;
+    const key = `review:${b.id}:${report.index}`;
+    await TickService.updateControls((controls, { tick }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
+      ...controls,
+      impacts: [...controls.impacts, makeImpact({
+        id: `imp_review_${b.id}_${report.index}`, target: { type: 'company', id: ticker }, amount: BUSINESS_DEFAULTS.listing.review.hit, onsetTick: tick,
+        permanent: 1, sourceKey: key, source: 'review', meta: { businessId: b.id },
+      })],
+    }));
+    const value = Math.round(marketCap).toLocaleString();
+    await NewsService.post({ headline: L('NCI.News.ListingReview', { name: b.name, ticker }), tone: 'down', companyIds: [ticker] });
+    await this._mailHolders(b, L('NCI.Listing.Mail.ReviewSubject', { name: b.name }), [L('NCI.Listing.Mail.Review', { name: b.name, ticker, value, floor: Math.round(threshold * BUSINESS_DEFAULTS.listing.review.below).toLocaleString(), n: BUSINESS_DEFAULTS.listing.review.reports })]);
+    Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+  }
+
+  /** A mail to each of a company's shareholders: characters directly, a syndicate's active members each. */
+  async _mailHolders(b, subject, lines) {
+    const ids = new Set();
+    for (const p of b.partners.filter((x) => !x.npc && x.status === 'active' && x.units > 0)) {
+      if (game.actors.get(p.actorId)) ids.add(p.actorId);
+      else for (const m of SyndicateRepository.get(p.actorId)?.members ?? []) if (m.status === 'active') ids.add(m.actorId);
+    }
+    for (const id of ids) {
+      const actor = game.actors.get(id);
+      if (!actor) continue;
+      try {
+        await MailService.fromWire(actor, { subject, lines });
+      } catch (error) {
+        log.warn('Shareholder mail failed', error);
+      }
     }
   }
 
@@ -730,6 +781,58 @@ class BusinessServiceImpl {
   /** Turn a listing down: the fee is not refunded. */
   rejectListing(id) {
     return this._gm(id, (b) => rejectBusinessListing(b, this.day()));
+  }
+
+  /** Give a company under the delisting review time (B5c): the review clears and the count starts again. */
+  giveTime(id) {
+    return this._gm(id, (b) => {
+      const copy = normalizeBusiness(structuredClone(b));
+      const done = clearReview(copy, { day: this.day() });
+      return done.ok ? { ok: true, business: copy, wealth: {}, events: [{ type: 'reviewCleared' }] } : done;
+    });
+  }
+
+  /**
+   * Delist a company under review (B5c): it buys the market's float back and goes private again. The
+   * holders' shares leave their portfolios (open orders on it are cancelled) and are units on the
+   * record again; the market company is marked delisted. The news and every shareholder hear of it.
+   */
+  delist(id) {
+    if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
+    return this._queue.run(async () => {
+      const stored = BusinessRepository.get(id);
+      if (!stored) return { ok: false, reason: 'no-business' };
+      const b = normalizeBusiness(structuredClone(stored));
+      this._syncHolders(b);
+      const ticker = b.company?.ticker;
+      const price = MarketStore.getPublic().companies?.[ticker]?.price ?? 0;
+      const day = this.day();
+      const done = delistCompany(b, { price, day, loanId: `loan_delist_${b.id}_${day}` });
+      if (!done.ok) return done;
+      await this._commit({ business: b, wealth: {}, events: [{ type: 'delisted', cost: done.cost, borrowed: done.borrowed }] });
+
+      const tick = timeOf(MarketStore.getPublic());
+      for (const account of PortfolioRepository.accounts().filter((a) => PortfolioRepository.hasPortfolio(a))) {
+        const qty = heldQty(PortfolioRepository.get(account).lots ?? [], ticker);
+        const open = (PortfolioRepository.get(account).orders ?? []).some((o) => o.assetId === ticker && o.status === 'open');
+        if (!qty && !open) continue;
+        await PortfolioService.transformActor(account, (p) => ({
+          portfolio: {
+            ...p,
+            lots: (p.lots ?? []).filter((l) => l.assetId !== ticker),
+            orders: (p.orders ?? []).map((o) => (o.assetId === ticker && o.status === 'open' ? { ...o, status: 'cancelled', closedTick: tick, reason: 'delisted' } : o)),
+            ledger: qty ? [...(p.ledger ?? []), { ts: tick, kind: 'delisting', assetId: ticker, qty: -qty, amount: 0, ref: b.id }] : (p.ledger ?? []),
+          },
+          changed: true,
+        }));
+      }
+      const company = CompanyRepository.get(ticker);
+      if (company) await CompanyRepository.save({ ...company, status: 'delisted' });
+      await NewsService.post({ headline: L('NCI.News.PlayerDelisted', { name: b.name, ticker, price: price.toLocaleString() }), tone: 'down', companyIds: [ticker] });
+      await this._mailHolders(b, L('NCI.Listing.Mail.DelistedSubject', { name: b.name }), [L('NCI.Listing.Mail.Delisted', { name: b.name, ticker })]);
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+      return { ok: true, business: b, ...done };
+    });
   }
 
   /** The GM answers a job offer for an NPC (DESIGN §33). */

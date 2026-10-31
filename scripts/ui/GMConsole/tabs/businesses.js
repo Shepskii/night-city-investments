@@ -40,6 +40,15 @@ async function onListingReject(event, target) {
   report(await BusinessService.rejectListing(target.dataset.id));
 }
 
+async function onDelist(event, target) {
+  if (!(await confirm(L('NCI.GMBusiness.Delist'), L('NCI.GMBusiness.DelistConfirm')))) return;
+  report(await BusinessService.delist(target.dataset.id));
+}
+
+async function onGiveTime(event, target) {
+  report(await BusinessService.giveTime(target.dataset.id));
+}
+
 async function onPartnerLeaves(event, target) {
   const actorId = target.closest('.nci-gig')?.querySelector('[name="leaver"]')?.value;
   if (!actorId) return;
@@ -66,6 +75,8 @@ export const actions = {
   businessCharterReject: onCharterReject,
   businessListingApprove: onListingApprove,
   businessListingReject: onListingReject,
+  businessDelist: onDelist,
+  businessGiveTime: onGiveTime,
   businessReject: onReject,
   businessPartnerLeaves: onPartnerLeaves,
   businessRemove: onRemove,
@@ -99,9 +110,12 @@ export function context() {
       status: L(`NCI.Business.Status.${b.status}`),
       isPending: b.status === 'pending',
       // A listing under way (B5a), and waiting for the GM.
-      listing: b.listing && ['awaiting', 'prospectus', 'ready', 'scheduled'].includes(b.listing.status) ? {
+      listing: b.listing && (['awaiting', 'prospectus', 'ready', 'scheduled'].includes(b.listing.status) || b.listing.review) ? {
         awaiting: b.listing.status === 'awaiting',
-        text: L(`NCI.GMBusiness.Listing.${b.listing.status}`, {
+        // Under the delisting review (B5c): the GM delists it or gives it time.
+        review: !!b.listing.review,
+        text: L(`NCI.GMBusiness.Listing.${b.listing.review ? 'review' : b.listing.status}`, {
+          value: whole(b.listing.review?.marketCap ?? 0), date: dayText(b.listing.review?.since ?? 0),
           ticker: b.company?.ticker ?? '', valuation: whole(b.listing.valuation ?? 0), float: Math.round((b.listing.float ?? 0) * 100), exposure: hidden.exposure ?? 0,
           price: b.listing.offer ? b.listing.offer.price.toLocaleString() : '', shares: whole(b.listing.offer?.shares ?? 0),
         }),

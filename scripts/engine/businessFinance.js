@@ -35,7 +35,7 @@ export function fixerOffer(b, amount, p = BUSINESS_DEFAULTS) {
   return { ok: true, amount: value, limit };
 }
 
-function makeLoan(b, { id, kind, amount, rate, weeks, day }, p) {
+export function makeLoan(b, { id, kind, amount, rate, weeks, day }, p) {
   const loan = { id, kind, principal: amount, balance: amount, rate, payment: Math.ceil(amount / weeks), startedDay: day, missed: 0 };
   b.loans = [...b.loans, loan];
   b.till += amount;

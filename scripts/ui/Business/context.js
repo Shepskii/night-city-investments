@@ -362,6 +362,10 @@ function listingContext(business, actor, canAct, m, pending) {
     ready: status === 'ready' ? L('NCI.Listing.Ready', { price: l.offer.price.toLocaleString(), shares: whole(l.offer.shares), float: pct(l.offer.float) }) : '',
     scheduled: status === 'scheduled' ? L('NCI.Listing.Scheduled', { ticker: business.company?.ticker ?? '', price: l.offer.price.toLocaleString(), shares: whole(l.offer.shares), date: dayText(l.listDay ?? day) }) : '',
     listed: status === 'listed' ? L('NCI.Listing.Listed', { ticker: business.company?.ticker ?? '', date: dayText(l.listedDay ?? day), price: l.offer.price.toLocaleString(), until: dayText((l.listedDay ?? day) + BUSINESS_DEFAULTS.listing.lockupDays) }) : '',
+    // The delisting review (B5c), and a company taken private again.
+    review: status === 'listed' && l.review ? L('NCI.Listing.Review', { date: dayText(l.review.since), value: whole(l.review.marketCap) }) : '',
+    lowReports: status === 'listed' && !l.review && l.lowReports ? L('NCI.Listing.LowReports', { n: l.lowReports, of: BUSINESS_DEFAULTS.listing.review.reports }) : '',
+    delisted: status === 'delisted' ? L('NCI.Listing.Delisted', { ticker: business.company?.ticker ?? '', date: dayText(l.delistedDay ?? day) }) : '',
     refused: status === 'failed' ? L('NCI.Listing.Failed', { date: dayText(l.retryDay ?? day) }) : status === 'rejected' ? L('NCI.Listing.Rejected', { date: dayText(l.retryDay ?? day) }) : '',
   };
 }

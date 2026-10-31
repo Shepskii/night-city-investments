@@ -128,7 +128,10 @@ test('after listing, a monthly report moves the stock toward its valuation per s
   assert.ok(S.MarketStore.getNews().items.some((n) => n.headline.includes('PlayerReport') || n.headline.includes('reports a month')));
   await S.TickService.advanceDays(6);
   await settle();
-  assert.ok(S.MarketStore.getPublic().companies.PLAY.price > before * 1.25, `the price rises toward the target (${before} to ${S.MarketStore.getPublic().companies.PLAY.price})`);
+  // Fair value carries the permanent move; the price follows it through the noise.
+  const fair = S.MarketStore.getHidden().companies.PLAY.fair;
+  assert.ok(fair > before * 1.35, `fair value moves toward the target (${before} to ${fair})`);
+  assert.ok(S.MarketStore.getPublic().companies.PLAY.price > before, 'and the price rises');
 });
 
 test("a listed company's report pays the dividend into the holders' brokerage balances, by shares held", async () => {
@@ -198,4 +201,45 @@ test('with insider tracking on, a listed company\'s report opens a watch window:
   assert.equal(S.MarketStore.getHeat().windows.find((w) => w.sourceKey === 'report:bus_play:11').status !== 'open', true, 'audited');
   assert.ok(HeatService.heatOf(alice.id) > 0, 'the officer who bought ahead of the move');
   env.store.set('heatEnabled', false);
+});
+
+test('a listed company worth too little for three reports goes under review; the GM delists it: the float bought back, shares out of portfolios and onto the record, the company private again', async () => {
+  const { MailService } = await import('../scripts/services/MailService.js');
+  const sent = [];
+  const fromWire = MailService.fromWire;
+  MailService.fromWire = async (actor, spec) => { sent.push({ actor: actor.id, subject: spec.subject }); return { ok: true }; };
+  try {
+    S.BusinessService.listingThreshold = () => 1e12;
+    // The earlier reports were low at the default threshold too: start the count afresh.
+    await S.BusinessRepository.save({ ...business(), listing: { ...business().listing, review: null, lowReports: 0 } });
+    for (const index of [20, 21, 22]) {
+      await S.BusinessService._afterReports({ business: business(), events: [{ type: 'reportPublished', report: { index, reported: 0, profit: 0, valuation: 0 } }] });
+      await settle();
+    }
+    assert.ok(business().listing.review, 'under review after three low reports');
+    assert.ok(sent.some((m) => m.actor === alice.id && /review/i.test(m.subject)), 'the shareholders told');
+    assert.ok(S.MarketStore.getControls().impacts.some((i) => i.sourceKey === 'review:bus_play:22'), 'the price dips');
+    // The same report again does not count twice.
+    await S.BusinessService._afterReports({ business: business(), events: [{ type: 'reportPublished', report: { index: 22, reported: 0, profit: 0, valuation: 0 } }] });
+    await settle();
+    assert.equal(business().listing.lowReports, 3);
+
+    const aliceHeld = held(alice);
+    const bobHeld = held(bob);
+    const out = await S.BusinessService.delist('bus_play');
+    await settle();
+    assert.equal(out.ok, true);
+    const b = business();
+    assert.equal(b.listing.status, 'delisted');
+    assert.deepEqual([held(alice), held(bob)], [0, 0], 'shares out of the portfolios');
+    const units = (id) => b.partners.find((x) => x.actorId === id)?.units;
+    assert.deepEqual([units(alice.id), units(bob.id)], [aliceHeld, bobHeld], 'and onto the record');
+    assert.equal(b.partners.some((x) => x.market), false);
+    assert.equal(S.CompanyRepository.get('PLAY').status, 'delisted');
+    assert.equal(S.BusinessRepository.stakesOf(alice.id) > 0, true, 'a private stake again');
+    assert.ok(sent.some((m) => m.actor === alice.id && /delisted/i.test(m.subject)));
+  } finally {
+    MailService.fromWire = fromWire;
+    delete S.BusinessService.listingThreshold;
+  }
 });

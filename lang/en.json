@@ -1013,6 +1013,8 @@
       "FundDistribution": "{name} pays a distribution of {amount} eb per unit.",
       "Ipo": "{name} ({ticker}) goes public today at {price} eb per share.",
       "PlayerReport": "{name} ({ticker}) reports a month's profit of {profit} eb; the company is valued at about {value} eb.",
+      "ListingReview": "{name} ({ticker}) put under review: its market value is too low to stay listed.",
+      "PlayerDelisted": "{name} ({ticker}) delisted: the company buys back its public float at {price} eb and goes private.",
       "IpoOversubscribed": "The {name} offer was oversubscribed. Each subscription was filled at {pct}%."
     },
     "Controls": {
@@ -1693,7 +1695,16 @@
       "Scheduled": "The offering is open: {shares} new shares of {ticker} at {price} eb a share, for anyone to subscribe for on the market terminal. {ticker} lists on {date}.",
       "Listed": "Listed on the market as {ticker} since {date}, at an offer price of {price} eb. Shareholders' shares are in their brokerage portfolios, locked up until {until}; the shareholders are now whoever holds them.",
       "Failed": "A prospectus roll failed: the fee is spent. You may agree to list again from {date}.",
-      "Rejected": "The market turned the application down: the fee is spent. You may agree to list again from {date}."
+      "Rejected": "The market turned the application down: the fee is spent. You may agree to list again from {date}.",
+      "Review": "Under the delisting review since {date}: the company's market value ({value} eb) has been too low for three reports in a row. The market may delist it, taking it private again.",
+      "LowReports": "Market value below the listing floor on {n} of {of} reports in a row; at {of}, the company goes under the delisting review.",
+      "Delisted": "Delisted from the market as {ticker} on {date}: the company bought back the public float and is private again.",
+      "Mail": {
+        "ReviewSubject": "{name}: under the delisting review",
+        "Review": "{name} ({ticker}) is worth {value} eb on the market, under the {floor} eb floor for {n} reports in a row. The market has put it under review; it may be delisted and taken private.",
+        "DelistedSubject": "{name}: delisted",
+        "Delisted": "{name} ({ticker}) has been delisted. The company bought the public float back; your shares have left your brokerage portfolio and are shares on its record again."
+      }
     },
     "Charter": {
       "Gains": "Chartering makes the business a company: three action slots a week, a Capacity ceiling of 14, shares in place of units, and later monthly reports and officers. Rent, licences and actions (DV 17) cost more. It takes every partner's agreement, naming the ticker, then three rolls any partner can make: the business plan, the registration and the capital structure. The 2,000 eb filing fee is paid when you agree, whatever happens.",
@@ -1912,11 +1923,15 @@
       "ListingApprove": "Approve the listing",
       "ListingReject": "Turn the listing down",
       "ListingRejectConfirm": "Turn this listing down? The listing fee is not refunded; they may agree again in 14 days.",
+      "Delist": "Delist",
+      "DelistConfirm": "Delist this company? It buys the market's shares back at the market price from its cash (borrowing from the bank what it lacks), the shareholders' shares leave their portfolios and become shares on its record again, and it goes back to being a private company. This cannot be undone.",
+      "GiveTime": "Give it time",
       "Listing": {
         "awaiting": "Listing as {ticker} waiting for you: valuation {valuation} eb, float {float}%. Hidden Exposure {exposure}.",
         "prospectus": "Listing as {ticker} approved: the prospectus rolls are under way.",
         "ready": "Listing as {ticker} ready: {shares} shares at {price} eb; the market company is being made.",
-        "scheduled": "Listing as {ticker} scheduled: {shares} shares at {price} eb, the offering open on the market until the listing day."
+        "scheduled": "Listing as {ticker} scheduled: {shares} shares at {price} eb, the offering open on the market until the listing day.",
+        "review": "{ticker} under the delisting review since {date}: market value {value} eb, too low for three reports in a row. Delist it, or give it time (three more reports)."
       },
       "Applicants": "Applicants: {list}",
       "ApplicantOne": "{name} ({post}, base {base}{trait})"
@@ -2262,6 +2277,9 @@
         "listingFailed": "A prospectus roll failed: the listing stopped",
         "listingReady": "Prospectus passed: the offer is set",
         "listingScheduled": "The offering opened on the market",
+        "listingReview": "Put under the delisting review",
+        "reviewCleared": "The market gave the company time: the review cleared",
+        "buyback": "Public float bought back on delisting",
         "teamJoined": "{staff} joined from {name}'s team",
         "teamLeft": "{staff} left with their Exec's team",
         "vested": "{staff}'s granted shares vested",

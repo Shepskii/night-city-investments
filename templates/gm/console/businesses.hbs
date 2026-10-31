@@ -49,6 +49,12 @@
       <button type="button" data-action="businessListingReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.ListingReject"}}</button>
     </div>
     {{/if}}
+    {{#if listing.review}}
+    <div class="nci-actions">
+      <button type="button" data-action="businessDelist" data-id="{{id}}"><i class="fas fa-ban"></i> {{localize "NCI.GMBusiness.Delist"}}</button>
+      <button type="button" data-action="businessGiveTime" data-id="{{id}}"><i class="fas fa-hourglass-half"></i> {{localize "NCI.GMBusiness.GiveTime"}}</button>
+    </div>
+    {{/if}}
     {{/if}}
     {{#if charter}}
     <div class="nci-warn">{{charter.text}}</div>

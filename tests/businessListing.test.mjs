@@ -203,3 +203,30 @@ test('the liquidity cap: the market buys a share of the float a day by the offer
   assert.deepEqual([order(day2.portfolio, 'o_a').status, order(day2.portfolio, 'o_b').status], ['filled', 'filled'], 'the next day takes the rest');
   assert.equal(day2.portfolio.lots.find((l) => l.assetId === 'PLAY').qty, 30);
 });
+
+test('the delisting review: three low reports in a row open it, a good one resets the count; time clears it; delisting buys back the float, borrowing what the cash lacks', async () => {
+  const { reviewListing, clearReview, delistCompany, isListed } = await import('../scripts/engine/index.js');
+  const R = L.review;
+  const partner = (actorId, units, extra = {}) => ({ actorId, name: actorId, status: 'active', cash: 0, gear: [], units, voting: true, heirId: null, leavingSince: null, ...extra });
+  const b = normalizeBusiness({ ...company(), till: 1000, partners: [partner('med', 700), partner('npc:market', 300, { npc: true, market: true, voting: false })],
+    listing: { status: 'listed', shares: 1000, offer: { price: 100, shares: 300 } } });
+  const low = 500000 * R.below - 1;
+  assert.equal(reviewListing(b, { marketCap: low, threshold: 500000, day: DAY }).opened, false);
+  assert.equal(reviewListing(b, { marketCap: 500000, threshold: 500000, day: DAY }).opened, false);
+  assert.equal(b.listing.lowReports, 0, 'a good report starts the count again');
+  for (let i = 1; i < R.reports; i++) assert.equal(reviewListing(b, { marketCap: low, threshold: 500000, day: DAY }).opened, false);
+  assert.equal(reviewListing(b, { marketCap: low, threshold: 500000, day: DAY }).opened, true);
+  assert.equal(b.listing.review.marketCap, Math.round(low));
+
+  const timed = structuredClone(b);
+  assert.equal(clearReview(timed, { day: DAY }).ok, true);
+  assert.deepEqual([timed.listing.review, timed.listing.lowReports], [null, 0]);
+  assert.equal(delistCompany(timed, { price: 50, day: DAY, loanId: 'l' }).reason, 'no-review');
+
+  const done = delistCompany(b, { price: 50, day: DAY, loanId: 'loan_x' });
+  assert.deepEqual([done.ok, done.cost, done.borrowed], [true, 15000, 14000]);
+  assert.equal(b.till, 0, 'the cash and the loan paid for it');
+  assert.equal(b.loans.find((l) => l.id === 'loan_x').principal, 14000);
+  assert.equal(b.partners.some((x) => x.market), false, 'the float bought back');
+  assert.deepEqual([b.listing.status, b.listing.shares, isListed(b)], ['delisted', 700, false]);
+});

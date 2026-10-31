@@ -10,6 +10,7 @@
 
 import { BUSINESS_DEFAULTS } from './businessConfig.js';
 import { addLedger, fail, totalUnits, clamp } from './businessRecord.js';
+import { makeLoan } from './businessFinance.js';
 import { netAssets, charterSector } from './businessCharter.js';
 import { bandPassed, dvOf } from './rolls.js';
 
@@ -298,4 +299,54 @@ export function dailySellCap(b, operatorRank = 0, p = BUSINESS_DEFAULTS) {
   const l = p.listing.liquidity;
   const share = (l.daily[b.listing?.rolls?.offering?.band] ?? l.daily.narrow) + Math.max(0, operatorRank) * l.perOperatorRank;
   return Math.max(1, Math.floor((b.listing?.offer?.shares ?? 0) * share));
+}
+
+// ── The delisting review (B5c) ───────────────────────────────────────────────
+
+/**
+ * At each report of a listed company: a market value (price times shares) under `review.below` of the
+ * listing threshold counts a low report, anything else starts the count again. `review.reports` in a
+ * row put it under review, for the GM to delist it or give it time.
+ * @returns {{opened: boolean}}
+ */
+export function reviewListing(b, { marketCap, threshold, day }, p = BUSINESS_DEFAULTS) {
+  if (!isListed(b) || b.listing.review) return { opened: false };
+  const r = p.listing.review;
+  b.listing.lowReports = marketCap < threshold * r.below ? (b.listing.lowReports ?? 0) + 1 : 0;
+  if (b.listing.lowReports < r.reports) return { opened: false };
+  b.listing.review = { since: day, marketCap: Math.round(marketCap) };
+  addLedger(b, { day, kind: 'listingReview', amount: 0 }, p);
+  return { opened: true };
+}
+
+/** The GM gives a company under review time: the review clears and the count of low reports starts again. */
+export function clearReview(b, { day }, p = BUSINESS_DEFAULTS) {
+  if (!b.listing?.review) return fail('no-review');
+  b.listing.review = null;
+  b.listing.lowReports = 0;
+  addLedger(b, { day, kind: 'reviewCleared', amount: 0 }, p);
+  return { ok: true };
+}
+
+/**
+ * The GM delists a company under review (the user's choice: back to private). The company buys the
+ * market's float back at the market price from its cash, borrowing what it lacks from the bank; the
+ * holders' shares become units on the record again (their portfolios lose the ticker), and it runs as
+ * a stage 2 business once more, draws and all.
+ * @returns {{ok: true, cost: number, borrowed: number} | {ok: false, reason: string}}
+ */
+export function delistCompany(b, { price, day, loanId }, p = BUSINESS_DEFAULTS) {
+  if (!isListed(b) || !b.listing.review) return fail('no-review');
+  const market = b.partners.find((x) => x.market);
+  const cost = Math.round((market?.units ?? 0) * Math.max(0, price));
+  const borrowed = Math.max(0, cost - Math.max(0, b.till));
+  if (borrowed > 0) {
+    const bank = p.loans.bank;
+    makeLoan(b, { id: loanId, kind: 'bank', amount: borrowed, rate: bank.rate.solid, weeks: bank.weeks, day }, p);
+  }
+  b.till -= cost;
+  addLedger(b, { day, kind: 'buyback', amount: -cost }, p);
+  b.partners = b.partners.filter((x) => !x.market);
+  Object.assign(b.listing, { status: 'delisted', delistedDay: day, review: null, lowReports: 0, shares: totalUnits(b) });
+  return { ok: true, cost, borrowed };
 }
