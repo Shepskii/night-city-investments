@@ -53,6 +53,22 @@
     {{/if}}
   </div>
 
+  {{#with training}}
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Staff.Train"}}</h3>
+    <p class="nci-hint">{{text}}</p>
+    {{#if now}}<p>{{now}}</p>{{/if}}
+    {{#if blocked}}<p class="nci-muted">{{blocked}}</p>{{/if}}
+    {{#if mentorText}}<p class="nci-muted">{{mentorText}}</p>{{/if}}
+    {{#if canCourse}}
+    <div class="nci-actions">
+      {{#if canMentor}}<button type="button" data-action="trainStaff" data-mentor="true"><i class="fas fa-chalkboard-user"></i> {{localize "NCI.Staff.TrainMentor" cost=mentorCost}}</button>{{/if}}
+      <button type="button" data-action="trainStaff" data-mentor="false"><i class="fas fa-graduation-cap"></i> {{localize "NCI.Staff.TrainCourse" cost=courseCost}}</button>
+    </div>
+    {{/if}}
+  </div>
+  {{/with}}
+
   <div class="nci-block">
     <h3>{{localize "NCI.Staff.LetGo"}}</h3>
     <p class="nci-hint">{{fireText}}</p>

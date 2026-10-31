@@ -40,6 +40,7 @@
  * Employees as people (businessPeople.js, E2):
  *   { key, type: 'vetRoll', businessId, post, use, rollId }      check every applicant waiting for a post
  *   { key, type: 'bonus', businessId, staffId, quarters }        quarters of a week's wage, from the cash
+ *   { key, type: 'train', businessId, staffId, mentor }          E3: their best skill for the post +1 (mentor or course)
  *   { key, type: 'refuseRaise', businessId, staffId }
  *   { key, type: 'rejectApplicant', businessId, candidateId }    turn an applicant away
  *   { key, type: 'movePost', businessId, staffId, post }
@@ -83,7 +84,7 @@ import {
   staffWeek, payWages,
 } from './businessStaff.js';
 import {
-  idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost, rejectApplicant,
+  idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost, rejectApplicant, applyTraining,
 } from './businessPeople.js';
 
 export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, projectOffer, PROJECT_KINDS };
@@ -98,7 +99,7 @@ export {
 export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
   'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll',
-  'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'refuseRaise', 'movePost', 'rejectApplicant',
+  'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant',
 ]);
 
 /** Item types that are not things a business can own. */
@@ -583,6 +584,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       break;
     }
     case 'bonus':
+    case 'train':
     case 'refuseRaise':
     case 'movePost':
     case 'rejectApplicant': {
@@ -595,6 +597,10 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
         if (!done.ok) return done;
         if (done.actorId) pay(done.actorId, done.amount);
         out.events.push({ type: 'bonus', staffId: request.staffId, amount: done.amount });
+      } else if (request.type === 'train') {
+        const done = applyTraining(b, request.staffId, { mentor: !!request.mentor, basesOf: ctx.basesOf, by: actor.id, day }, p);
+        if (!done.ok) return done;
+        out.events.push({ type: 'trained', staffId: request.staffId, skill: done.skill, base: done.base });
       } else if (request.type === 'rejectApplicant') {
         const done = rejectApplicant(b, request.candidateId, day, actor.id, p);
         if (!done.ok) return done;

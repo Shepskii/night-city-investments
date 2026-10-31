@@ -4,7 +4,7 @@
  * @description Opened from an employee's Manage button on the Staff tab. The partners can propose a
  *              change of pay (agreeing to a raise the employee asked for is one), and propose letting
  *              them go; whoever runs the business can pay a bonus, move them to another post that has
- *              room, or turn down a raise they asked for. Everything is a request for the GM, as in
+ *              room, train them (E3), or turn down a raise they asked for. Everything is a request for the GM, as in
  *              the Business window.
  */
 
@@ -26,6 +26,7 @@ export class EmployeeDialogApp extends BaseApplication {
       refuseRaise: EmployeeDialogApp._onRefuseRaise,
       payBonus: EmployeeDialogApp._onPayBonus,
       movePost: EmployeeDialogApp._onMovePost,
+      trainStaff: EmployeeDialogApp._onTrain,
       fireStaff: EmployeeDialogApp._onFire,
       close: EmployeeDialogApp._onClose,
     },
@@ -111,6 +112,11 @@ export class EmployeeDialogApp extends BaseApplication {
   static _onMovePost() {
     const post = this._value('movePost');
     return post ? this._send('movePost', { post }) : null;
+  }
+
+  /** Train them: with the account picked as mentor (its business days), or on a course (twice the eb). */
+  static _onTrain(event, target) {
+    return this._send('train', { mentor: target.dataset.mentor === 'true' });
   }
 
   static async _onFire() {

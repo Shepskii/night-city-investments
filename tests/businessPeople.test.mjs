@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   applyBusinessRequest, advanceBusiness, normalizeBusiness, rollSpec, BUSINESS_DEFAULTS, goingRate, wageOf, staffOf,
-  loyaltyBand, moonlighting, staffEventWeight, idleStaff, drawEvent, applyDiligence,
+  loyaltyBand, moonlighting, staffEventWeight, idleStaff, drawEvent, applyDiligence, postBase, archetypeOf, refreshStaffBases,
 } from '../scripts/engine/index.js';
 import { resolveRoll } from '../scripts/engine/rolls.js';
 
@@ -114,6 +114,38 @@ test('a second overtime shift costs loyalty; a devoted employee rolls one better
   const keen = withStaff(clinic(), recruit('b', 'floor', { loyalty: 80 }));
   const devotedSpec = rollSpec(keen, { type: 'action', action: 'promote', use: { kind: 'staff', staffId: 'stf_b' } }, 'med', { day: DAY });
   assert.equal(devotedSpec.use.base, spec.use.base + 1);
+});
+
+test('training: a course or a mentor raises the best skill for the post by 1, once every 4 weeks, at most +4', () => {
+  const t = BUSINESS_DEFAULTS.staff.training;
+  const b = withStaff(clinic({ till: 20000 }), recruit('a', 'floor', { base: 12 }));
+  const wage = staffOf(b, 'stf_a').wage;
+  // A course: twice the eb, no mentor needed.
+  const course = apply(b, { type: 'train', businessId: 'b1', staffId: 'stf_a', mentor: false }, MED).business;
+  assert.equal(course.till, b.till - t.perPoint * 12 * t.courseFactor);
+  assert.equal(postBase(staffOf(course, 'stf_a'), 'floor', archetypeOf(course)), 13);
+  assert.ok(wageOf(course, staffOf(course, 'stf_a')) > wage, 'their wage follows the new skill');
+  assert.ok(course.ledger.some((e) => e.kind === 'trainedCourse'));
+  // Once every 4 weeks.
+  assert.equal(apply(course, { type: 'train', businessId: 'b1', staffId: 'stf_a' }, MED, { expect: false }).reason, 'train-delay');
+  // A mentor whose own skill is higher, four weeks on: the eb once, and their business days.
+  const later = { day: DAY + t.every, context: { basesOf: (id) => (id === 'med' ? { 'skill:Paramedic': 15 } : null) } };
+  const mentored = apply(course, { type: 'train', businessId: 'b1', staffId: 'stf_a', mentor: true }, MED, later).business;
+  assert.equal(mentored.till, course.till - t.perPoint * 13);
+  assert.equal(mentored.period.days.med, t.mentorDays);
+  assert.equal(postBase(staffOf(mentored, 'stf_a'), 'floor', archetypeOf(mentored)), 14);
+  const weak = { day: DAY + t.every, context: { basesOf: () => ({ 'skill:Paramedic': 13 }) } };
+  assert.equal(apply(course, { type: 'train', businessId: 'b1', staffId: 'stf_a', mentor: true }, MED, { ...weak, expect: false }).reason, 'no-mentor');
+  // At most +4 from training.
+  const full = normalizeBusiness({ ...b, staff: b.staff.map((s) => ({ ...s, training: { 'skill:Paramedic': t.max } })) });
+  assert.equal(apply(full, { type: 'train', businessId: 'b1', staffId: 'stf_a' }, MED, { expect: false }).reason, 'train-max');
+  // A player character trains with their own Improvement Points.
+  const pc = withStaff(clinic(), { ...recruit('p'), source: 'pc', actorId: 'nova', loyalty: null });
+  assert.equal(apply(pc, { type: 'train', businessId: 'b1', staffId: 'stf_p' }, MED, { expect: false }).reason, 'not-trainable');
+  // An NPC's sheet is read again each week; what training added stays on top.
+  const npc = normalizeBusiness({ ...course, staff: course.staff.map((s) => ({ ...s, actorId: 'doc', source: 'npc' })) });
+  refreshStaffBases(npc, () => ({ 'skill:Paramedic': 12 }));
+  assert.equal(postBase(staffOf(npc, 'stf_a'), 'floor', archetypeOf(npc)), 13);
 });
 
 test('a bonus: quarters of a week\'s wage from the cash, loyalty up 5 for each, once a week', () => {

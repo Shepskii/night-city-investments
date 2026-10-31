@@ -78,11 +78,15 @@ export function postUses(post, arch, p = BUSINESS_DEFAULTS) {
   ].map((use) => ({ use, adj: 0 })).concat(lower.map((use) => ({ use, adj: -p.staff.lowerBy })));
 }
 
-/** An employee's base in one use, for a roll: stat + skill, or a role ability's rank. */
+/**
+ * An employee's base in one use, for a roll: stat + skill, or a role ability's rank, and what training
+ * has added to a skill (E3; kept apart from `bases`, which an NPC's sheet refreshes every week).
+ */
 export function staffBase(staff, use, p = BUSINESS_DEFAULTS) {
-  const stored = staff.bases?.[useKey(use)];
-  if (stored != null) return int(stored);
-  return use.kind === 'ability' ? 0 : p.staff.recruitOther;
+  const key = useKey(use);
+  const stored = staff.bases?.[key];
+  if (use.kind === 'ability') return stored != null ? int(stored) : 0;
+  return (stored != null ? int(stored) : p.staff.recruitOther) + int(staff.training?.[key] ?? 0);
 }
 
 /**

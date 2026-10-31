@@ -11,8 +11,9 @@ import {
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck,
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
-  hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase,
+  hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey,
 } from '../../engine/index.js';
+import { SkillAdapter } from '../../services/SkillAdapter.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient, operatorRankOf, pendingBusinessRequests, investorActors, staffActors, jobsOf } from '../../services/BusinessClient.js';
@@ -920,10 +921,48 @@ export function employeeContext(business, account, staffId) {
     moves: moves.map((id) => ({ value: id, label: postLabel(id) })),
     canMove: runs && moves.length > 0,
     noMove: runs && !moves.length ? L('NCI.Staff.NoMove') : '',
+    training: trainingContext(business, s, account, runs),
     fireText: L(s.caught ? 'NCI.Staff.FireCaught' : 'NCI.Staff.FireHint', { amount: whole(severance) }),
     canFire: canAct && !pending('fire'),
     pending: pending('pay') || pending('fire') ? L('NCI.Staff.Pending') : '',
     blocked: !canAct ? L('NCI.Staff.CannotManage') : '',
+  };
+}
+
+/**
+ * Training an employee (E3, DESIGN §33.5): the skill it would raise, what a mentor (the account picked,
+ * if their own base is higher) or a course costs, and why it cannot be done now.
+ */
+function trainingContext(business, s, account, runs) {
+  if (!hasLoyalty(s)) return { text: L('NCI.Staff.TrainPc') };
+  const t = BUSINESS_DEFAULTS.staff.training;
+  const skill = trainingSkill(business, s);
+  if (!skill) return { text: L('NCI.Staff.TrainNone') };
+  const day = BusinessClient.day();
+  const actor = account && !account.isSyndicate ? game.actors.get(account.id) : null;
+  const mentorBase = actor ? SkillAdapter.baseFor(actor, skill.use).base : 0;
+  const days = account ? daysLeft(business, account.id) : 0;
+  const course = trainCheck(business, s.id, { mentor: false, day });
+  const mentor = trainCheck(business, s.id, { mentor: true, mentorBase, days, day });
+  const cost = t.perPoint * skill.base;
+  const reason = (r) => ({
+    'train-delay': L('NCI.Staff.TrainNext', { date: dayText(r.next ?? day) }),
+    'train-max': L('NCI.Staff.TrainMax'),
+    'no-funds': L('NCI.Staff.TrainNoFunds'),
+  })[r.reason] ?? '';
+  return {
+    text: L('NCI.Staff.TrainHint', { every: Math.round(t.every / 7), perPoint: t.perPoint, days: t.mentorDays, max: t.max, cap: t.cap }),
+    now: L('NCI.Staff.TrainNow', { skill: skill.use.skill, base: skill.base, trained: s.training?.[useKey(skill.use)] ?? 0, max: t.max }),
+    blocked: course.ok ? '' : reason(course),
+    mentorText: course.ok
+      ? (mentor.ok
+        ? L('NCI.Staff.TrainMentorYes', { base: mentorBase, cost: whole(cost) })
+        : L(mentor.reason === 'no-days' ? 'NCI.Staff.TrainMentorNoDays' : 'NCI.Staff.TrainMentorNo', { base: mentorBase, days: t.mentorDays }))
+      : '',
+    canMentor: runs && mentor.ok,
+    canCourse: runs && course.ok,
+    mentorCost: whole(cost),
+    courseCost: whole(cost * t.courseFactor),
   };
 }
 

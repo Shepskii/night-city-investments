@@ -409,6 +409,12 @@ test('the Employee window: a recruit\'s loyalty band, a bonus paid, a raise aske
   assert.match(text(dialog), /They ask for 110% of the going rate \(109 eb a week\)/);
   for (const action of ['agreeRaise', 'refuseRaise', 'payBonus', 'movePost', 'fireStaff', 'proposePay']) assert.match(dialog, new RegExp(`data-action="${action}"`), action);
   assert.match(text(dialog), /A quarter of a week(&#x27;|')s wage \(25 eb\)/);
+  // Training (E3): her best skill for security, and a course at twice the eb (the Medtech has no Tactics to mentor with).
+  assert.match(text(dialog), /Tactics 11 \(trained \+0 of 4\)/);
+  assert.match(text(dialog), /You cannot mentor them/);
+  assert.match(dialog, /data-action="trainStaff" data-mentor="false"/);
+  assert.doesNotMatch(dialog, /data-mentor="true"/);
+  assert.match(text(dialog), /Send them on a course \(1,100 eb\)/);
 
   const till = business().till;
   await EmployeeDialogApp.DEFAULT_OPTIONS.actions.payBonus.call(app);
@@ -434,6 +440,17 @@ test('the Employee window: a recruit\'s loyalty band, a bonus paid, a raise aske
   assertClean(console, 'GM tab with loyalty and traits');
   assert.match(text(console), /Vera Voss \(Security, 109 eb, loyalty 50, trait: Light fingers\)/);
   assert.equal(business().staff.length, room + 1);
+
+  // Training through the GM's service: a course, from the cash; Tactics 12, and the next training in 4 weeks.
+  const cash = business().till;
+  await EmployeeDialogApp.DEFAULT_OPTIONS.actions.trainStaff.call(app, null, { dataset: { mentor: 'false' } });
+  await S.BusinessService.processActor(med);
+  assert.equal(receipt(med).ok, true, receipt(med).reason);
+  assert.equal(business().till, cash - 1100);
+  assert.deepEqual(vera().training, { 'skill:Tactics': 1 });
+  const trained = text(render('templates/dialogs/employee.hbs', await app._prepareContext()));
+  assert.match(trained, /Tactics 12 \(trained \+1 of 4\)/);
+  assert.match(trained, /Trained recently: next training from/);
 });
 
 test('every data-action in the Business window and the staff windows has a handler', async () => {

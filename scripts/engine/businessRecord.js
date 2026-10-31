@@ -153,6 +153,9 @@ export function normalizeBusiness(raw) {
       ...(x.outUntil != null ? { outUntil: int(x.outUntil) } : {}),
       ...(x.unpaid ? { unpaid: int(x.unpaid) } : {}),
       ...(x.ask ? { ask: { pct: Number(x.ask.pct), day: int(x.ask.day) } } : {}),
+      // E3: what training has added to each skill, and when they last trained.
+      ...(x.training && Object.keys(x.training).length ? { training: { ...x.training } } : {}),
+      ...(x.trainedDay != null ? { trainedDay: int(x.trainedDay) } : {}),
     })),
     candidates: b.candidates ?? [],
     lastRecruit: b.lastRecruit ?? null,

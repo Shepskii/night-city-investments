@@ -10,10 +10,11 @@
 
 import { createRng } from './rng.js';
 import { bandPassed } from './rolls.js';
-import { BUSINESS_DEFAULTS, EVENTS, POSTS } from './businessConfig.js';
+import { BUSINESS_DEFAULTS, EVENTS, POSTS, useKey } from './businessConfig.js';
 import { archetypeOf, fail, addLedger, clamp } from './businessRecord.js';
+import { daysLeft, spendDays } from './businessGrowth.js';
 import {
-  activeStaff, staffOf, hasLoyalty, traitOf, moveLoyalty, postOpen, postBase, wageOf,
+  activeStaff, staffOf, hasLoyalty, traitOf, moveLoyalty, postOpen, postBase, wageOf, postUses, staffBase,
 } from './businessStaff.js';
 
 /** Staff with loyalty and a life of their own: NPCs and recruits who have started. */
@@ -322,4 +323,61 @@ export function movePost(b, staffId, post, day, by, p = BUSINESS_DEFAULTS) {
   staff.wage = wageOf(b, staff, p);
   addLedger(b, { day, kind: 'moved', amount: 0, actorId: by, staffName: staff.name }, p);
   return { ok: true, staff };
+}
+
+// ── Training (E3) ────────────────────────────────────────────────────────────
+
+/** The skill training would raise: the employee's best skill (not a role ability) for their post, and their base in it now. */
+export function trainingSkill(b, staff, p = BUSINESS_DEFAULTS) {
+  let best = null;
+  for (const { use, adj } of postUses(staff.post, archetypeOf(b), p)) {
+    if (use.kind !== 'skill') continue;
+    const base = staffBase(staff, use, p);
+    if (!best || base + adj > best.base + best.adj) best = { use, base, adj };
+  }
+  return best;
+}
+
+/**
+ * Whether an employee can be trained now, and what it costs (DESIGN §33.5). Only NPC staff train this
+ * way; a player character spends their own Improvement Points. With a mentor (`mentorBase`, the
+ * asking partner's own base in the skill, must be higher, and `days` their business days left) it
+ * costs `perPoint` eb per point of the skill now; a course, with no mentor, `courseFactor` times that.
+ * @returns {{ok: true, staff: object, skill: object, key: string, cost: number, next: number} | {ok: false, reason: string, next?: number}}
+ */
+export function trainCheck(b, staffId, { mentor = false, mentorBase = 0, days = 0, day = 0 } = {}, p = BUSINESS_DEFAULTS) {
+  const t = p.staff.training;
+  const staff = staffOf(b, staffId);
+  if (staff?.status !== 'active') return fail('not-staff');
+  if (!hasLoyalty(staff)) return fail('not-trainable');
+  const next = staff.trainedDay != null ? staff.trainedDay + t.every : null;
+  if (next != null && day < next) return { ...fail('train-delay'), next };
+  const skill = trainingSkill(b, staff, p);
+  if (!skill) return fail('not-trainable');
+  const key = useKey(skill.use);
+  if ((staff.training?.[key] ?? 0) >= t.max || skill.base >= t.cap) return fail('train-max');
+  const cost = t.perPoint * skill.base * (mentor ? 1 : t.courseFactor);
+  if (mentor && !(mentorBase > skill.base)) return fail('no-mentor');
+  if (mentor && days < t.mentorDays) return fail('no-days');
+  if (b.till < cost) return fail('no-funds');
+  return { ok: true, staff, skill, key, cost };
+}
+
+/**
+ * Train an employee: the cost from the cash, their best skill for the post up by 1, a mentor's business
+ * days spent. Their wage follows the new base from the next close, as it always follows their skill.
+ * @param {(actorId: string) => object|null} [basesOf] - a character's bases from their sheet (the mentor's)
+ */
+export function applyTraining(b, staffId, { mentor = false, basesOf = null, by, day }, p = BUSINESS_DEFAULTS) {
+  const staff = staffOf(b, staffId);
+  const skill = staff ? trainingSkill(b, staff, p) : null;
+  const mentorBase = mentor && skill ? Number(basesOf?.(by)?.[useKey(skill.use)] ?? 0) : 0;
+  const can = trainCheck(b, staffId, { mentor, mentorBase, days: daysLeft(b, by, p), day }, p);
+  if (!can.ok) return can;
+  b.till -= can.cost;
+  can.staff.training = { ...(can.staff.training ?? {}), [can.key]: (can.staff.training?.[can.key] ?? 0) + 1 };
+  can.staff.trainedDay = day;
+  if (mentor) spendDays(b, by, p.staff.training.mentorDays);
+  addLedger(b, { day, kind: mentor ? 'trainedMentor' : 'trainedCourse', amount: -can.cost, actorId: by, staffName: can.staff.name }, p);
+  return { ok: true, cost: can.cost, skill: can.skill.use.skill, base: can.skill.base + 1 };
 }

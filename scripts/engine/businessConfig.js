@@ -358,6 +358,13 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     }),
     /** A bonus is paid in quarters of a week's wage, at most this many, once a week per employee. */
     bonusQuarters: 4,
+    /**
+     * Training (E3): once every `every` days an NPC employee's best skill for their post rises by 1, for
+     * `perPoint` eb per point of it now (`courseFactor` times that on a course, with no mentor), at most
+     * `max` over what training has added and never above `cap`. A mentor is a partner whose own base
+     * in the skill is higher, and spends `mentorDays` business days on it.
+     */
+    training: Object.freeze({ every: 28, perPoint: 50, courseFactor: 2, mentorDays: 2, max: 4, cap: 18 }),
     /** At each month's end an employee below `below` loyalty asks for `step` more of the going rate, until the next month's end. */
     raise: Object.freeze({ below: 50, step: 0.1 }),
     /** Vetting the applicants for a post: one roll checks them all. */

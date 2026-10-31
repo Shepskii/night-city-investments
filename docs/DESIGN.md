@@ -450,7 +450,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B2 | **Done (v0.11.0), see §30.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
 | B3 | **Done (v0.12.0), see §31.** Player syndicates, and syndicates owning or investing in businesses |
 | B4 | **Done (v0.12.0), see §32.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
-| E | **E1 and E2 done (v0.12.0), see §33.9 and §33.10; E3 proposed, see §33.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
+| E | **E1 and E2 done (v0.12.0), see §33.9 and §33.10; E3 under way (training built), see §33.11.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
 | Projects | **Done (v0.12.0), see §34.** Projects beside expansion: refit, security upgrade, storefront, staff room; the Projects tab reworked |
 | B5 | **v0.13.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
 | B6 | **v0.14.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
@@ -1498,7 +1498,7 @@ Below 25 an employee may quit, steals more readily and gives poaching offers a h
 
 ### 33.5 Training, share grants and an Exec's team
 
-**Training.** Once every 4 weeks per employee, the partners can pay to raise an NPC employee's base in their post's skills by 1. It costs 50 eb per point of their current base and 2 business days from a partner whose own base is higher (a mentor), or twice the eb with no mentor (a course). Training can raise a base by at most 4 over what it was at hiring, and to no more than 18. A better employee wants a better wage: at the next month's end they ask for the new going rate, and refusing them costs 10 loyalty. A player character trains with their own Improvement Points as usual, and the service reads their sheet's new bases.
+**Training** (built in E3, see §33.11). Once every 4 weeks per employee, the partners can pay to raise an NPC employee's base in their post's skills by 1. It costs 50 eb per point of their current base and 2 business days from a partner whose own base is higher (a mentor), or twice the eb with no mentor (a course). Training can raise a base by at most 4 over what it was at hiring, and to no more than 18. A better employee wants a better wage: at the next month's end they ask for the new going rate, and refusing them costs 10 loyalty. A player character trains with their own Improvement Points as usual, and the service reads their sheet's new bases.
 
 **Share grants** (company only). A `grant` proposal, passed on a majority of the shares, issues new shares without a vote to an employee, up to 5% of the company in total across all grants. They vest after 12 weeks and are lost if the employee leaves first. While vesting they add 20 loyalty and keep it at 50 or above. Once vested, the employee holds them like an angel investor (§30): a share of every payout, and a share of the proceeds if the company closes. From B5 they take part in the listing like any holder.
 
@@ -1513,7 +1513,7 @@ Below 25 an employee may quit, steals more readily and gives poaching offers a h
   - **Talking shop.** They let something slip about you at their other job. Unanswered, the other business gains a free due diligence report on yours (your bands and a range for your value, as §32.3). Caught with Human Perception or Interrogation, nothing leaks; on a strong or better result you learn about them instead (a due diligence report on the other business).
 - **Strain.** While they hold two jobs they cannot reach the devoted band at either (loyalty stops at 74), and their chance of a sick day or an accident at work is a third higher.
 - **Seen by whom.** Each business's Staff tab notes "also works for <business>" once anyone at the business has met them there: from the first two-jobs event, or a vetting roll on them as an applicant. The GM's Businesses tab always shows it.
-- **Still to decide when it is built:** whether a business can forbid a second job in its pay terms (a higher pct in return), and whether the player owners of the other business are told when one of these events touches them.
+- **Settled 2026-10-31:** the other business's owners are told, by a line in their weekly digest, when a two-jobs event at your business touches them (a full-time offer won, something let slip). No "no second job" pay term.
 
 ### 33.6 Other links
 
@@ -1619,9 +1619,21 @@ E2 is `scripts/engine/businessPeople.js` (pure), with small hooks in `businessSt
 - **The digest** lists what happened to the staff (off sick, hurt, poached, caught, asks for a raise, quit, walked out, quit unpaid), and an accident's medical bills.
 - **No migration.** The normalizer fills in loyalty (50, or none for a player character) and keeps the new fields.
 
-**Not built yet:** a player character on call rolling their own overtime with their own Luck, and E3.
+**Not built yet:** a player character on call rolling their own overtime with their own Luck, and the rest of E3 (§33.11).
 
 **Tested in the test world** (v0.12.0, 2026-10-31, at the Splice Chrome Clinic): overtime for a help and for a slot, a second shift's loyalty cost, an advert, vetting with an exceptional result, turning an applicant away, hiring, a bonus, a raise, moving an employee to another role, weekly loyalty, staff events (a star turn, a sick day), letting an employee go, an NPC offered a job and the GM answering, and a fourth hire once a staff room was built. It found and fixed: the employee a staff event is about could answer it; Item Piles actors offered as heirs and hires; "Proposal made." shown for a proposal the proposer's units carried at once. Changed on the user's request: a player character's wage comes on their payslip mail to claim. Not tried live: a player character's job from offer to payslip, raises asked at a month's end, hidden traits at work, and a sullen employee quitting or stealing (all covered by tests).
+
+### 33.11 E3 as built
+
+**The user's choices (2026-10-31).** Build E3 in this order, each part tested and committed before the next: training, a player character on call, two jobs, share grants, the Exec's team. A player character on call is asked for a roll by a partner (an officer, at a company): the slot, event or check appears in their Job view with a Roll button, rolled with their own skills and Luck. A player character's overtime goes onto that week's payslip, claimed with the wage, as wages are. For two jobs, the other business's owners are told in their weekly digest (§33.5).
+
+**Training (E3a).**
+- **What it raises.** The employee's best skill for their post, not every skill of the post: the one that counts (a role ability is not trained). It rises by 1, kept apart from the employee's `bases` (`staff.training`, by skill), because an NPC's sheet is read again every week and would wipe it; `staffBase` adds it on top. Moving to another post keeps it on that skill.
+- **Who.** NPC and recruit staff only; a player character improves with their own Improvement Points (refused as `not-trainable`). Whoever runs the business asks for it, from the Employee window, like a bonus.
+- **Cost and limits** (`staff.training`): 50 eb per point of the skill now from the cash with a mentor, twice that on a course; a mentor is the asking partner, whose own base in the skill (read from their sheet by the GM's service, `basesOf`) must be higher, and who spends 2 business days. Once every 28 days (`trainedDay`); at most +4 from training; never above 18.
+- **Pay.** No raise is asked for afterwards, as the plan had it: a wage is worked out from the employee's base every week, so it rises with the trained skill from the next close.
+- **Windows.** The Employee window's Training section names the skill and how far training has taken it, whether the account picked can mentor, the two buttons with their cost, and when training can next be done. Ledger lines "trained, mentored by…" and "sent on a course by…".
+- **Tests.** `tests/businessPeople.test.mjs` (course, mentor, delay, limit, player character, a sheet re-read) and `tests/staffFlow.test.mjs` (the window, and a course through the GM's service).
 
 ## 34. Projects beside expansion (v0.12.0)
 
