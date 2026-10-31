@@ -62,6 +62,7 @@ export class BusinessApp extends BaseApplication {
       proposeCharter: BusinessApp._onProposeCharter,
       charterRoll: BusinessApp._onCharterRoll,
       proposeListing: BusinessApp._onProposeListing,
+      proposePayout: BusinessApp._onProposePayout,
       prospectusRoll: BusinessApp._onProspectusRoll,
       charterFund: BusinessApp._onCharterFund,
       reportRoll: BusinessApp._onReportRoll,
@@ -390,6 +391,12 @@ export class BusinessApp extends BaseApplication {
     if (!(float > 0)) return null;
     if (await this._confirm('NCI.Listing.Confirm')) return this._send('propose', { kind: 'stepUp', float });
     return null;
+  }
+
+  /** Propose a listed company's payout ratio (B5c): a majority of the shares. */
+  static _onProposePayout(event, target) {
+    const pct = Number(value(target, 'payoutPct'));
+    return Number.isFinite(pct) ? this._send('propose', { kind: 'payout', pct }) : null;
   }
 
   /** A prospectus roll: the filing (Accounting) or the offering (Trading). */

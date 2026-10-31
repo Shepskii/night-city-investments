@@ -247,3 +247,44 @@ export function earningsAmount(target, price, p = BUSINESS_DEFAULTS) {
   if (!(target > 0 && price > 0)) return 0;
   return clamp(Math.log(target / price), -p.listing.earningsCap, p.listing.earningsCap);
 }
+
+/** The share of each report's real profit a listed company pays out (voted by the shareholders; 30% by default). */
+export const payoutRatio = (b, p = BUSINESS_DEFAULTS) => b.listing?.payout ?? p.listing.dividend.payout;
+
+/** Whether a payout ratio can be proposed: a listed company, 0% to 100% in 10% steps. `pct` is a percentage. */
+export function payoutOffer(b, pct, p = BUSINESS_DEFAULTS) {
+  if (!isListed(b)) return fail('not-listed');
+  const ratio = Math.round(Number(pct)) / 100;
+  const step = p.listing.dividend.step;
+  if (!(ratio >= 0 && ratio <= 1) || Math.abs(ratio / step - Math.round(ratio / step)) > 1e-9) return fail('bad-payout');
+  if (Math.abs(ratio - payoutRatio(b, p)) < 1e-9) return fail('same-payout');
+  return { ok: true, terms: { ratio } };
+}
+
+/**
+ * Pay a report's dividend (§26.7): the payout ratio of the month's real profit, but never more than
+ * `monthlyYield` of the valuation, nor the cash there is; each holder's share (by shares held in their
+ * portfolio, `holdings`) at most `holderCap`; the market's and NPC holders' shares paid out of the
+ * company too. The cash pays it all; the report records it.
+ * @param {Object<string, number>} holdings - account id to shares held
+ * @returns {{perShare: number, payments: Object<string, number>, paid: number}}
+ */
+export function payListedDividend(b, report, holdings, day, p = BUSINESS_DEFAULTS) {
+  const d = p.listing.dividend;
+  const shares = b.listing?.shares ?? 0;
+  const total = Math.floor(Math.min(Math.max(0, report.profit ?? 0) * payoutRatio(b, p), Math.max(0, report.valuation ?? 0) * d.monthlyYield, Math.max(0, b.till)));
+  const perShare = shares > 0 ? Math.floor((total / shares) * 100) / 100 : 0;
+  const payments = {};
+  if (perShare <= 0) return { perShare: 0, payments, paid: 0 };
+  for (const [id, qty] of Object.entries(holdings)) {
+    const amount = Math.min(d.holderCap, Math.floor(qty * perShare));
+    if (amount > 0) payments[id] = amount;
+  }
+  const silent = b.partners.filter((x) => x.npc && ['active', 'leaving'].includes(x.status)).reduce((a, x) => a + x.units, 0);
+  const paid = Object.values(payments).reduce((a, x) => a + x, 0) + Math.floor(silent * perShare);
+  b.till -= paid;
+  addLedger(b, { day, kind: 'dividendPaid', amount: -paid }, p);
+  const kept = (b.reports ?? []).find((r) => r.index === report.index);
+  if (kept) kept.dividend = { perShare, paid };
+  return { perShare, payments, paid };
+}

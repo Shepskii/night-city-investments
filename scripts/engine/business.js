@@ -53,6 +53,7 @@
  *   { key, type: 'movePost', businessId, staffId, post }
  *   { key, type: 'propose', kind: 'pay', staffId, pct }          a new share of the going rate
  *   { key, type: 'propose', kind: 'grant', staffId, pct }        E3: shares for an employee, pct of the company (0.5 to 5)
+ *   { key, type: 'propose', kind: 'payout', pct }                B5c: a listed company's payout ratio, 0 to 100 in steps of 10
  *
  * Projects (businessGrowth.js):
  *   { key, type: 'propose', kind: 'project', project }   project: expansion, refit, security, storefront or staffRoom
@@ -88,7 +89,7 @@ import {
   companyWeek, reportCheck, closeReportWeek, canRun, officerProposal, applyOfficerProposal, infoCheck, applyInternalAudit, applyDiligence,
 } from './businessCompany.js';
 import {
-  canList, startListing, approveListing, rejectListing, prospectusCheck, applyProspectusRoll,
+  canList, startListing, approveListing, rejectListing, prospectusCheck, applyProspectusRoll, payoutOffer,
 } from './businessListing.js';
 import {
   activeStaff, recruitCheck, applyRecruit, hireOffer, enactHire, answerJob, quitJob, fireOffer, enactFire, staffRoll, payOvertime, staffShifts,
@@ -155,6 +156,8 @@ export const PROPOSAL_RULES = Object.freeze({
   hire: 'majority', fire: 'majority', pay: 'majority',
   // A share grant for an employee (E3, company only).
   grant: 'majority',
+  // A listed company's payout ratio (B5c).
+  payout: 'majority',
 });
 
 // ── What a roll needs ────────────────────────────────────────────────────────
@@ -1095,6 +1098,8 @@ function canPropose(b, kind, request, ctx, p) {
       return payOffer(b, request, p);
     case 'grant':
       return grantOffer(b, request.staffId, request.pct, p);
+    case 'payout':
+      return payoutOffer(b, request.pct, p);
     case 'fixerLoan': {
       const offer = fixerOffer(b, request.amount, p);
       return offer.ok ? { ok: true, terms: { amount: offer.amount } } : offer;
@@ -1206,6 +1211,10 @@ function enact(b, proposal, day, p, ctx, out) {
       if (done.ok) out.events.push({ type: 'payChanged', staffId: proposal.terms.staffId, pct: proposal.terms.pct });
       return done;
     }
+    case 'payout':
+      b.listing.payout = proposal.terms.ratio;
+      addLedger(b, { day, kind: 'payoutSet', amount: 0 }, p);
+      return { ok: true };
     case 'grant': {
       const done = enactGrant(b, proposal.terms, day, ctx.traits, p);
       if (done.ok) out.events.push({ type: 'granted', staffId: proposal.terms.staffId, share: proposal.terms.share });

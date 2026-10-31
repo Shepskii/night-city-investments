@@ -537,6 +537,20 @@
     {{/if}}
   </div>
   {{/with}}
+  {{#with dividends}}
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Dividend.Title"}}</h3>
+    <p class="nci-hint">{{text}}</p>
+    {{#if pending}}<p class="nci-warn">{{pending}}</p>{{/if}}
+    {{#if canPropose}}
+    <div class="nci-hirerow">
+      <label>{{localize "NCI.Dividend.Ratio"}} <select name="payoutPct">{{#each options}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+      <span></span>
+      <button type="button" data-action="proposePayout"><i class="fas fa-hand-holding-dollar"></i> {{localize "NCI.Dividend.Propose"}}</button>
+    </div>
+    {{/if}}
+  </div>
+  {{/with}}
   {{#with report}}
   <div class="nci-block">
     <h3>{{localize "NCI.Company.Report"}}</h3>

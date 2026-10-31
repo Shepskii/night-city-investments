@@ -1667,6 +1667,13 @@
       "IntelFound": "{bands}; worth about {low} to {high} eb",
       "IntelNothing": "nothing useful found"
     },
+    "Dividend": {
+      "Title": "Dividends",
+      "Policy": "After each monthly report the company pays {pct}% of the month's real profit to its shareholders, into their brokerage accounts by the shares they hold; never more than {yield}% of the valuation in a month, nor what the cash holds, and at most {cap} eb to one holder. The market's and NPC holders' share is paid out too.",
+      "Ratio": "Payout ratio",
+      "Propose": "Propose this payout",
+      "Pending": "A new payout ratio is waiting for the shareholders' votes."
+    },
     "Listing": {
       "Gains": "Listing puts the company on the market as {ticker}: its shares trade on the terminal, the shareholders' holdings move into their brokerage portfolios (locked for 28 days), and the shares floated in the offering raise cash for the company. It takes every shareholder with a vote, naming the float (20% to 40% of the company); the listing fee is paid when you agree, whatever happens; then the market must accept the application, and two prospectus rolls must pass. The valuation is net assets plus a year of the reported profit at the {sector} sector's multiple of {multiple}; cash paid in counts only after 28 days.",
       "Valuation": "Market valuation now: {v} eb (sector multiple {multiple}).",
@@ -1805,6 +1812,7 @@
       "Gone": "This report is no longer kept.",
       "WeekCount": "{n} week(s)",
       "Valuation": "Market valuation at this report: {v} eb.",
+      "Dividend": "Dividend paid after it: {perShare} eb a share ({paid} eb in all).",
       "Figures": "Real and reported",
       "Real": "Real",
       "Reported": "Reported",
@@ -2242,6 +2250,15 @@
         "poached": "{staff} poached by a rival",
         "fullTime": "{staff} left to work full time at their other job",
         "granted": "{staff} granted shares, vesting",
+        "dividendPaid": "Dividend paid to the shareholders",
+        "payoutSet": "Payout ratio changed",
+        "ipoProceeds": "The float sold in the IPO",
+        "listingFee": "Listing fee",
+        "listingApproved": "Listing application accepted by the market",
+        "listingRejected": "Listing application turned down by the market",
+        "listingFailed": "A prospectus roll failed: the listing stopped",
+        "listingReady": "Prospectus passed: the offer is set",
+        "listingScheduled": "The offering opened on the market",
         "teamJoined": "{staff} joined from {name}'s team",
         "teamLeft": "{staff} left with their Exec's team",
         "vested": "{staff}'s granted shares vested",
@@ -2344,7 +2361,8 @@
         "hire": "{name} proposes hiring {who} as {post}.",
         "fire": "{name} proposes letting {who} go.",
         "pay": "{name} proposes paying {who} {pct}% of the going rate.",
-        "grant": "{name} proposes granting {who} {share}% of the company in shares."
+        "grant": "{name} proposes granting {who} {share}% of the company in shares.",
+        "payout": "{name} proposes paying {ratio}% of each month's profit as dividends."
       },
       "Rule": {
         "unanimous": "Needs every partner; lapses after {date}.",
@@ -2504,6 +2522,7 @@
         "fire": "Agreed: they have been let go.",
         "pay": "Agreed: the new pay starts now.",
         "grant": "Agreed: the shares are granted, and start vesting.",
+        "payout": "Agreed: the new payout ratio applies from the next report.",
         "failed": "The proposal was turned down.",
         "void": "Agreed, but it could not be done: {reason}"
       },
@@ -2639,7 +2658,10 @@
         "team-full": "your team is as big as your Teamwork allows",
         "no-name": "give them a name",
         "team-unpaid": "a member of an Exec's team takes no wage",
-        "team-no-grant": "a member of an Exec's team is not granted shares"
+        "team-no-grant": "a member of an Exec's team is not granted shares",
+        "not-listed": "only a listed company pays dividends",
+        "bad-payout": "a payout ratio is 0% to 100%, in steps of 10%",
+        "same-payout": "that is the payout ratio already"
       }
     },
     "Staff": {

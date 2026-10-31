@@ -136,3 +136,39 @@ test('after listing, a report points the price at V per share, moved at most ear
   assert.equal(earningsAmount(10, 100), -L.earningsCap);
   assert.equal(earningsAmount(0, 100), 0);
 });
+
+test('dividends: the voted payout ratio of the real profit, within a month\'s yield of V, the cash and a holder\'s cap; silent holders paid too', async () => {
+  const { payListedDividend, payoutRatio, payoutOffer } = await import('../scripts/engine/index.js');
+  const D = L.dividend;
+  const listed = (more = {}) => normalizeBusiness({
+    ...company(), till: 50000,
+    listing: { status: 'listed', shares: 1000, offer: { price: 100 } },
+    partners: [...company().partners, { actorId: 'npc:market', name: '', status: 'active', cash: 0, gear: [], units: 200, voting: false, npc: true, market: true }],
+    reports: [{ index: 4, profit: 10000, reported: 10000, valuation: 2000000 }],
+    ...more,
+  });
+  assert.equal(payoutRatio(listed()), D.payout);
+  // 30% of 10,000 = 3,000 (under 1% of V, 20,000): 3 eb a share.
+  const b = listed();
+  const out = payListedDividend(b, b.reports[0], { med: 500, fix: 300 }, DAY);
+  assert.equal(out.perShare, 3);
+  assert.deepEqual(out.payments, { med: 1500, fix: 900 });
+  assert.equal(out.paid, 1500 + 900 + 200 * 3, "the market's shares are paid out too");
+  assert.equal(b.till, 50000 - out.paid);
+  assert.deepEqual(b.reports[0].dividend, { perShare: 3, paid: out.paid });
+  // A holder's monthly cap, and a month's yield of V.
+  const rich = listed({ reports: [{ index: 4, profit: 1000000, reported: 1000000, valuation: 2000000 }] });
+  const big = payListedDividend(rich, rich.reports[0], { med: 900 }, DAY);
+  assert.equal(big.perShare, 20, 'held to 1% of V (20,000 eb) over 1,000 shares');
+  assert.equal(big.payments.med, D.holderCap, 'one holder gets at most the cap');
+  // A loss pays nothing.
+  assert.equal(payListedDividend(listed({ reports: [{ index: 4, profit: -500, valuation: 2000000 }] }), { index: 4, profit: -500, valuation: 2000000 }, { med: 500 }, DAY).paid, 0);
+  // The ratio is voted: 0% to 100% in tens.
+  assert.equal(payoutOffer(listed(), 50).ok, true);
+  assert.equal(payoutOffer(listed(), 55).reason, 'bad-payout');
+  assert.equal(payoutOffer(company(), 50).reason, 'not-listed');
+  const voted = apply(listed(), { type: 'propose', businessId: 'b1', kind: 'payout', pct: 60 }, FIX).business;
+  assert.equal(voted.proposals.length, 1, "the Fixer's minority waits for a majority");
+  const carried = apply(voted, { type: 'vote', businessId: 'b1', proposalId: voted.proposals[0].id, yes: true }, MED).business;
+  assert.equal(payoutRatio(carried), 0.6);
+});

@@ -18,7 +18,7 @@ import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
   STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
-  isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact,
+  isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact, payListedDividend,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter, isItemPile } from '../utils/helpers.js';
@@ -160,6 +160,7 @@ class BusinessServiceImpl {
           })],
         }));
       }
+      await this._payDividend(b.id, report);
       await NewsService.post({
         headline: L('NCI.News.PlayerReport', { name: b.name, ticker, profit: Math.round(report.reported).toLocaleString(), value: Math.round(report.valuation).toLocaleString() }),
         tone: report.reported > 0 ? 'up' : 'down',
@@ -174,7 +175,12 @@ class BusinessServiceImpl {
    */
   _syncHolders(business) {
     if (!isListed(business)) return false;
-    const companyId = business.company?.ticker;
+    const { holdings, names } = this._holdingsOf(business.company?.ticker);
+    return syncListedHolders(business, holdings, names);
+  }
+
+  /** Who holds a ticker in their brokerage portfolio (characters and syndicates), and how many shares. */
+  _holdingsOf(companyId) {
     const holdings = {};
     const names = {};
     for (const account of PortfolioRepository.accounts().filter((a) => PortfolioRepository.hasPortfolio(a))) {
@@ -184,7 +190,37 @@ class BusinessServiceImpl {
         names[account.id] = account.name;
       }
     }
-    return syncListedHolders(business, holdings, names);
+    return { holdings, names };
+  }
+
+  /**
+   * A listed company's dividend after a report (B5c): the cash pays it, and each holder's share goes into
+   * their brokerage balance, as a market dividend does (counted in their dividends received).
+   */
+  async _payDividend(businessId, report) {
+    const stored = BusinessRepository.get(businessId);
+    if (!stored || !isListed(stored)) return;
+    const b = normalizeBusiness(structuredClone(stored));
+    if ((b.reports ?? []).find((r) => r.index === report.index)?.dividend) return;
+    const ticker = b.company?.ticker;
+    const { holdings } = this._holdingsOf(ticker);
+    const tick = timeOf(MarketStore.getPublic());
+    const done = payListedDividend(b, report, holdings, this.day());
+    if (done.paid <= 0) return;
+    await BusinessRepository.save(b);
+    for (const [id, amount] of Object.entries(done.payments)) {
+      const account = game.actors.get(id) ?? SyndicateRepository.account(id);
+      if (!account) continue;
+      await PortfolioService.transformActor(account, (p) => ({
+        portfolio: {
+          ...p,
+          cash: (p.cash ?? 0) + amount,
+          ledger: [...(p.ledger ?? []), { ts: tick, kind: 'dividend', assetId: ticker, qty: holdings[id], amount, ref: `div:${businessId}:${report.index}` }],
+          stats: { ...(p.stats ?? {}), dividends: (p.stats?.dividends ?? 0) + amount },
+        },
+        changed: true,
+      }));
+    }
   }
 
   /**

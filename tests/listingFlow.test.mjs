@@ -130,3 +130,25 @@ test('after listing, a monthly report moves the stock toward its valuation per s
   await settle();
   assert.ok(S.MarketStore.getPublic().companies.PLAY.price > before * 1.25, `the price rises toward the target (${before} to ${S.MarketStore.getPublic().companies.PLAY.price})`);
 });
+
+test("a listed company's report pays the dividend into the holders' brokerage balances, by shares held", async () => {
+  const b = business();
+  const report = { index: 10, fromDay: 0, toDay: 0, weeks: 4, takings: 30000, upkeep: 10000, profit: 20000, reported: 20000, valuation: 2000000 };
+  await S.BusinessRepository.save({ ...b, reports: [...(b.reports ?? []), report] });
+  const cashOf = (actor) => portfolio(actor).cash;
+  const before = { alice: cashOf(alice), bob: cashOf(bob), cass: cashOf(cass), till: business().till, divs: portfolio(alice).stats.dividends ?? 0 };
+  await S.BusinessService._afterReports({ business: business(), events: [{ type: 'reportPublished', report }] });
+  await settle();
+  // 30% of 20,000 = 6,000 over 1,333 shares: 4.50 a share.
+  const perShare = Math.floor((6000 / 1333) * 100) / 100;
+  assert.equal(cashOf(alice), before.alice + Math.floor(700 * perShare));
+  assert.equal(cashOf(bob), before.bob + Math.floor(300 * perShare));
+  assert.equal(cashOf(cass), before.cass + Math.floor(40 * perShare), 'the outside buyer too');
+  assert.equal(portfolio(alice).stats.dividends, before.divs + Math.floor(700 * perShare), 'counted as dividends received');
+  assert.ok(business().till < before.till, 'paid from the company');
+  assert.equal(business().reports.at(-1).dividend.perShare, perShare);
+  // Paid once only.
+  await S.BusinessService._afterReports({ business: business(), events: [{ type: 'reportPublished', report }] });
+  await settle();
+  assert.equal(cashOf(alice), before.alice + Math.floor(700 * perShare));
+});

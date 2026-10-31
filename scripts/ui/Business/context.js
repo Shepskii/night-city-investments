@@ -12,7 +12,7 @@ import {
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck,
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
-  sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck,
+  sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
 } from '../../engine/index.js';
 import { SkillAdapter } from '../../services/SkillAdapter.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
@@ -632,6 +632,7 @@ export function reportContext(business, index) {
       : L('NCI.Report.Standard'),
     trail: prep?.bold ? L('NCI.Report.Trail') : '',
     valuation: r.valuation != null ? L('NCI.Report.Valuation', { v: whole(r.valuation) }) : '',
+    dividend: r.dividend ? L('NCI.Report.Dividend', { perShare: r.dividend.perShare.toLocaleString(), paid: whole(r.dividend.paid) }) : '',
     figures: [
       row(L('NCI.Business.Takings'), r.takings),
       row(L('NCI.Business.Upkeep'), -r.upkeep),
@@ -654,6 +655,13 @@ function ledgerContext(business, actor, canAct = false) {
   const allowance = actor ? drawAllowance(business, actor.id) : 0;
   return {
     // A company's monthly report: how far into the month it is, and preparing it in the last week (B4b).
+    // A listed company's dividends (B5c): the payout ratio, and proposing another.
+    dividends: business.listing?.status === 'listed' ? {
+      text: L('NCI.Dividend.Policy', { pct: Math.round(payoutRatio(business) * 100), yield: BUSINESS_DEFAULTS.listing.dividend.monthlyYield * 100, cap: whole(BUSINESS_DEFAULTS.listing.dividend.holderCap) }),
+      options: Array.from({ length: 11 }, (_, i) => ({ value: i * 10, label: `${i * 10}%`, selected: i * 10 === Math.round(payoutRatio(business) * 100) })),
+      canPropose: canAct && !business.proposals.some((x) => x.kind === 'payout'),
+      pending: business.proposals.some((x) => x.kind === 'payout') ? L('NCI.Dividend.Pending') : '',
+    } : null,
     report: business.stage >= 2 && business.status === 'open' ? {
       text: L('NCI.Company.ReportWeek', { n: (business.reportWeeks ?? 0) + 1, of: BUSINESS_DEFAULTS.report.weeks }),
       prepared: business.reportPrep ? L(business.reportPrep.bold ? 'NCI.Company.PreparedBold' : 'NCI.Company.Prepared', { band: L(`NCI.Roll.Band.${business.reportPrep.band}`) }) : '',
@@ -1167,6 +1175,7 @@ function partnersContext(business, actor) {
         post: proposal.terms?.post ? postLabel(proposal.terms.post) : '',
         pct: proposal.terms?.pct != null ? Math.round(proposal.terms.pct * 100) : '',
         share: proposal.terms?.share != null ? (Math.round(proposal.terms.share * 1000) / 10).toLocaleString() : '',
+        ratio: proposal.terms?.ratio != null ? Math.round(proposal.terms.ratio * 100) : '',
         project: proposal.terms?.project ? L(`NCI.Project.Kind.${proposal.terms.project}`) : '',
       }),
       rule: LT(business, `NCI.Business.Rule.${PROPOSAL_RULES[proposal.kind]}`, { date: dayText(proposal.expires ?? proposal.day) }),

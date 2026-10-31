@@ -318,6 +318,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     /** After listing (B5c): a report moves fair value toward V per share, at most this far (a log-return) either way, from the day after. */
     earningsCap: 0.5,
     earningsDelayDays: 1,
+    /** Dividends after listing (B5c, §26.7): the payout ratio by default and its steps, at most `monthlyYield` of V a month, at most `holderCap` eb to one holder. */
+    dividend: Object.freeze({ payout: 0.3, step: 0.1, monthlyYield: 0.01, holderCap: 5000 }),
     multiples: Object.freeze({ tech: 14, biotech: 13, health: 12, finance: 11, security: 10, arms: 10, media: 9, energy: 9, transport: 8, construction: 7, consumer: 7, other: 6 }),
     uses: Object.freeze({
       filing: Object.freeze([S.accounting, Object.freeze({ ...S.business, dvAdd: 2 })]),
