@@ -20,7 +20,7 @@ import {
   STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
-import { L, log, isActiveGM, isCharacter } from '../utils/helpers.js';
+import { L, log, isActiveGM, isCharacter, isItemPile } from '../utils/helpers.js';
 import { SerialQueue } from '../utils/queue.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
@@ -100,6 +100,8 @@ class BusinessServiceImpl {
       staffActors: Object.fromEntries(staffActors().map((a) => [a.id, a.source])),
       staffNames: Object.fromEntries(staffActors().map((a) => [a.id, a.name])),
       basesOf: (id) => this.basesOf(id),
+      // NPC actors an Exec may bring as a team member (E3): not a player's character.
+      teamActors: Object.fromEntries(game.actors.filter((a) => ['character', 'mook'].includes(a.type) && !isItemPile(a) && !a.hasPlayerOwner).map((a) => [a.id, a.name])),
       newId: `bus_${foundry.utils.randomID(12)}`,
       tickers: this.tickersTaken(business?.id),
       // Kept out of players' windows: an internal audit reads it, and due diligence sees the other businesses (B4c).

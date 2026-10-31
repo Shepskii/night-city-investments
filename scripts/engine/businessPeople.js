@@ -568,14 +568,23 @@ export function teamCheck(b, actorId, post, rank, p = BUSINESS_DEFAULTS) {
   return { ok: true, base: teamBase(rank, p), size: teamSize(rank, p) };
 }
 
-/** Add a member of the Exec's team to a role: no wage, their level by the Exec's rank, loyal from the start. */
-export function addTeamMember(b, { actorId, post, name, rank, day, key }, p = BUSINESS_DEFAULTS) {
+/**
+ * Add a member of the Exec's team to a role: no wage, their level by the Exec's rank, loyal from the
+ * start. A member may be an NPC actor already made (`memberId`, one the GM's service lists in
+ * `teamActors`: not a player's character, not a partner, not on the staff), named after it.
+ */
+export function addTeamMember(b, { actorId, post, name, rank, day, key, memberId = null, teamActors = {} }, p = BUSINESS_DEFAULTS) {
   const can = teamCheck(b, actorId, post, rank, p);
   if (!can.ok) return can;
-  const label = String(name ?? '').trim().slice(0, 40);
+  if (memberId) {
+    if (!teamActors[memberId]) return fail('not-team-actor');
+    if ((b.staff ?? []).some((s) => s.actorId === memberId)) return fail('already-staff');
+    if (b.partners.some((x) => x.actorId === memberId && ['invited', 'active', 'leaving'].includes(x.status))) return fail('is-partner');
+  }
+  const label = String((memberId ? teamActors[memberId] : name) ?? '').trim().slice(0, 40);
   if (!label) return fail('no-name');
   const staff = {
-    id: `stf_team_${key}`, actorId: null, name: label, source: 'team', leader: actorId, teamBase: can.base, post,
+    id: `stf_team_${key}`, actorId: memberId, name: label, source: 'team', leader: actorId, teamBase: can.base, post,
     bases: teamBases(b, post, can.base, p), pct: 1, wage: 0, hiredDay: day, status: 'active', owed: 0, loyalty: p.staff.team.loyalty,
   };
   b.staff = [...(b.staff ?? []), staff];

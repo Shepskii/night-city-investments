@@ -510,7 +510,8 @@ export function payWages(b, part, day, p = BUSINESS_DEFAULTS) {
 export function refreshStaffBases(b, basesOf, p = BUSINESS_DEFAULTS) {
   let changed = false;
   for (const staff of b.staff ?? []) {
-    if (!staff.actorId) continue;
+    // An Exec's team member's skill follows the Exec's rank, not their own sheet (E3).
+    if (!staff.actorId || staff.source === 'team') continue;
     const bases = basesOf(staff.actorId);
     if (!bases || JSON.stringify(bases) === JSON.stringify(staff.bases)) continue;
     staff.bases = bases;

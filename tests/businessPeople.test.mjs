@@ -303,6 +303,13 @@ test("an Exec's team (E3): Teamwork 5 brings two members at Skilled, unpaid, loy
   const shrunk = refreshTeams(down, exec(2).basesOf);
   assert.deepEqual(down.staff.map((s) => s.name), ['Ruth Kane']);
   assert.equal(shrunk.notes[0].kind, 'teamLeft');
+  // A team member already made (an NPC actor): named after it; their skill follows the rank, not their sheet.
+  const linked = apply(withStaff(clinic({ stage: 2, capacity: 4 })), { type: 'addTeam', businessId: 'b1', post: 'floor', actorId: 'doc' }, MED, { context: { ...exec(5), teamActors: { doc: 'Doc Ruiz' } } }).business;
+  const docMember = linked.staff.find((x) => x.actorId === 'doc');
+  assert.deepEqual([docMember.name, docMember.source, docMember.teamBase], ['Doc Ruiz', 'team', 11]);
+  refreshStaffBases(linked, () => ({ 'skill:Paramedic': 3 }));
+  assert.equal(postBase(staffOf(linked, docMember.id), 'floor', archetypeOf(linked)), 11, 'the sheet does not override the rank');
+  assert.equal(apply(withStaff(clinic({ stage: 2 })), { type: 'addTeam', businessId: 'b1', post: 'floor', actorId: 'nova' }, MED, { context: { ...exec(5), teamActors: { doc: 'Doc Ruiz' } }, expect: false }).reason, 'not-team-actor', "a player's character is not a team member");
   // An Exec who leaves takes the whole team.
   const gone = structuredClone(b);
   gone.partners.find((x) => x.actorId === 'med').status = 'left';

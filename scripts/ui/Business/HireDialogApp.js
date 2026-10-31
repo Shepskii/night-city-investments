@@ -77,17 +77,50 @@ export class HireDialogApp extends BaseApplication {
   /** The "Hire a character" block takes a character dragged from the Actors directory. */
   _onRender(context, options) {
     super._onRender?.(context, options);
-    const zone = this.element?.querySelector('.nci-hiredrop');
-    if (!zone) return;
-    zone.addEventListener('dragover', (event) => {
-      event.preventDefault();
-      zone.classList.add('nci-over');
+    // The "Hire a character" block, and an Exec's team block (E3), each take an actor dragged onto them.
+    for (const [selector, handler] of [['.nci-hiredrop', (e) => this._onDropStaff(e)], ['.nci-teamdrop', (e) => this._onDropTeam(e)]]) {
+      const zone = this.element?.querySelector(selector);
+      if (!zone) continue;
+      zone.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        zone.classList.add('nci-over');
+      });
+      zone.addEventListener('dragleave', () => zone.classList.remove('nci-over'));
+      zone.addEventListener('drop', (event) => {
+        event.stopPropagation();
+        zone.classList.remove('nci-over');
+        handler(event);
+      });
+    }
+  }
+
+  /**
+   * An NPC actor dropped on the Exec's team block (E3): a team member already made, named after the
+   * actor, their skill by the Exec's rank. Checked here as far as this client can, then confirmed.
+   */
+  async _onDropTeam(event) {
+    event.preventDefault();
+    const business = this.business;
+    const account = this.account;
+    if (!business || !account || account.isSyndicate) return null;
+    const data = TextEditor.getDragEventData(event);
+    if (data?.type !== 'Actor' || !data.uuid) return ui.notifications.warn(L('NCI.Staff.DropActorOnly'));
+    const actor = await fromUuid(data.uuid);
+    if (!actor) return ui.notifications.warn(L('NCI.Staff.DropActorOnly'));
+    const refuse = (reason) => ui.notifications.warn(L('NCI.Business.Refused', { reason: L(`NCI.Business.Reason.${reason}`) }));
+    if (!['character', 'mook'].includes(actor.type) || actor.hasPlayerOwner) return refuse('not-team-actor');
+    const partner = partnerOf(business, actor.id);
+    if (partner && ['active', 'leaving', 'invited'].includes(partner.status)) return refuse('is-partner');
+    if ((business.staff ?? []).some((s) => s.actorId === actor.id)) return refuse('already-staff');
+    const ok = await foundry.applications.api.DialogV2.confirm({
+      window: { title: L('NCI.Business.Title') },
+      content: `<p>${L('NCI.Staff.TeamDropConfirm', { name: actor.name, post: L(`NCI.Staff.Post.${this.post}`) })}</p>`,
+      rejectClose: false,
+      modal: true,
     });
-    zone.addEventListener('dragleave', () => zone.classList.remove('nci-over'));
-    zone.addEventListener('drop', (event) => {
-      zone.classList.remove('nci-over');
-      this._onDropStaff(event);
-    });
+    if (!ok) return null;
+    return this._send('addTeam', { post: this.post, actorId: actor.id, name: actor.name });
   }
 
   /**

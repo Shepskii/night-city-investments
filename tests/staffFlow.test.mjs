@@ -595,6 +595,25 @@ test("an Exec's team (E3): the Hire window offers the Exec their team; a member 
     assert.deepEqual([ruth.source, ruth.leader, ruth.wage], ['team', med.id, 0]);
     const staffTab = text(await renderBusiness(windowFor(med, 'staff')));
     assert.match(staffTab, /Ruth Kane Exec(&#x27;|')s team .* unpaid Manage/);
+    // A team member already made: an NPC actor dragged onto the team block, named after it, their skill by the rank.
+    const kade = { id: 'a_Kade', name: 'Kade', type: 'character', hasPlayerOwner: false, img: '', getFlag: () => undefined, testUserPermission: () => true };
+    game.actors.push(kade);
+    globalThis.TextEditor = { getDragEventData: (event) => event.data };
+    globalThis.fromUuid = async (uuid) => [...env.actors, kade].find((a) => `Actor.${a.id}` === uuid) ?? null;
+    let confirmed = null;
+    globalThis.foundry.applications.api.DialogV2 = { confirm: async ({ content }) => { confirmed = content; return true; } };
+    const teamHire = new HireDialogApp({ actorId: med.id, businessId: business().id, post: 'bookkeeper' });
+    assert.match(render('templates/dialogs/hire.hbs', await teamHire._prepareContext()), /nci-drop nci-teamdrop/);
+    const warns = () => (env.notices ?? []).filter(([kind]) => kind === 'warn').at(-1)?.[1] ?? '';
+    await teamHire._onDropTeam({ preventDefault() {}, data: { type: 'Actor', uuid: `Actor.${rook.id}` } });
+    assert.match(warns(), /a team member is an NPC, not a player's character/);
+    await teamHire._onDropTeam({ preventDefault() {}, data: { type: 'Actor', uuid: 'Actor.a_Kade' } });
+    assert.match(confirmed, /Add Kade to your team, as Bookkeeper/);
+    await S.BusinessService.processActor(med);
+    assert.equal(receipt(med).ok, true, receipt(med).reason);
+    const kadeStaff = business().staff.find((s) => s.actorId === 'a_Kade');
+    assert.deepEqual([kadeStaff.source, kadeStaff.name, kadeStaff.post, kadeStaff.teamBase], ['team', 'Kade', 'bookkeeper', 11]);
+    game.actors.splice(game.actors.indexOf(kade), 1);
     // Without Teamwork there is no team to bring.
     med.items.splice(med.items.indexOf(role), 1);
     assert.doesNotMatch(text(render('templates/dialogs/hire.hbs', await hire._prepareContext())), /Your team/);

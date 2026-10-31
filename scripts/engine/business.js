@@ -45,7 +45,8 @@
  *   { key, type: 'askStaff', businessId, staffId, roll }         E3: ask a player character on the staff for a roll:
  *                                                                roll {type: 'action', action} | {type: 'respond'} | {type: 'assist', forAction}
  *   { key, type: 'cancelAsk', businessId, askId }                withdrawn by whoever runs it, or declined by the employee
- *   { key, type: 'addTeam', businessId, post, name }             E3: an Exec puts a member of their Teamwork team in a role
+ *   { key, type: 'addTeam', businessId, post, name, actorId? }   E3: an Exec puts a member of their Teamwork team in a role
+ *                                                                (actorId: an NPC actor already made, dragged into the Hire window)
  *   { key, type: 'staffRoll', businessId, askId, use, rollId }   from the employee's own character: the roll asked of them
  *   { key, type: 'refuseRaise', businessId, staffId }
  *   { key, type: 'rejectApplicant', businessId, candidateId }    turn an applicant away
@@ -651,7 +652,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (!canRun(b, actor.id)) return fail('not-officer');
       // The Exec's own Teamwork rank, read from their sheet by the GM's service.
       const rank = Number(ctx.basesOf?.(actor.id)?.['ability:Teamwork'] ?? 0);
-      const done = addTeamMember(b, { actorId: actor.id, post: request.post, name: request.name, rank, day, key: request.key }, p);
+      const done = addTeamMember(b, { actorId: actor.id, post: request.post, name: request.name, rank, day, key: request.key, memberId: request.actorId ?? null, teamActors: ctx.teamActors ?? {} }, p);
       if (!done.ok) return done;
       out.events.push({ type: 'teamJoined', staffId: done.staff.id });
       break;
