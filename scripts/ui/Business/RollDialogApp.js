@@ -169,7 +169,7 @@ export class RollDialogApp extends BaseApplication {
     const good = this.request.type === 'respond' && EVENTS[business.period?.event?.kind]?.good;
     const meaning = this.request.type === 'action' ? this.request.action
       : this.request.type === 'charterRoll' ? `charter.${this.request.part}`
-        : ['auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll'].includes(this.request.type) ? this.request.type
+        : ['auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll'].includes(this.request.type) ? this.request.type
         : good ? 'respondGood' : this.request.type;
 
     return {

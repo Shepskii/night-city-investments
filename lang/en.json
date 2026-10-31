@@ -463,6 +463,14 @@
           "strong": "Two or three applicants, Skilled to Expert, some asking under the going rate.",
           "exceptional": "Three applicants, Expert to Master, some asking under the going rate."
         },
+        "trainRoll": {
+          "fumble": "A lesson gone wrong: nothing learned, and they lose 5 loyalty.",
+          "failure": "Nothing sinks in: no gain this time.",
+          "narrow": "They pick it up: +1.",
+          "solid": "They pick it up: +1.",
+          "strong": "They pick it up: +1.",
+          "exceptional": "A breakthrough: +1, and they can train again in 2 weeks."
+        },
         "vetRoll": {
           "fumble": "The checks tell you nothing.",
           "failure": "The checks tell you nothing.",
@@ -2172,6 +2180,7 @@
         "moved": "{staff} moved to another post by {name}",
         "trainedMentor": "{staff} trained, mentored by {name}",
         "trainedCourse": "{staff} sent on a course by {name}",
+        "trainedMentorFailed": "{staff} mentored by {name}, to no gain",
         "rejected": "{staff} turned away by {name}",
         "poached": "{staff} poached by a rival",
         "medical": "Medical bills",
@@ -2394,7 +2403,8 @@
         "refuseRaise": "Raise turned down.",
         "movePost": "Moved.",
         "rejectApplicant": "Applicant turned away.",
-        "train": "Training paid for."
+        "train": "Training paid for.",
+        "trainRoll": "Your lesson is recorded."
       },
       "Settled": {
         "close": "Agreed: the business is closed and its money shared out.",
@@ -2524,6 +2534,7 @@
         "train-delay": "they trained recently",
         "train-max": "training cannot take them further",
         "no-mentor": "a mentor's own skill must be higher than theirs",
+        "mentor-roll": "mentoring is a roll: use the Mentor button",
         "same-pay": "that is what they are paid now",
         "same-post": "they already hold that role",
         "bad-project": "there is no such project",
@@ -2692,7 +2703,7 @@
         "unpaid": "{name} quit, unpaid."
       },
       "Train": "Training",
-      "TrainHint": "Once every {every} weeks, an NPC employee's best skill for their role can rise by 1: {perPoint} eb for each point of it now, from the business's cash. A partner whose own skill is higher can mentor them, spending {days} business days; otherwise it is a course, at twice the eb. Training adds at most {max} in all, and never takes a skill above {cap}. Their wage follows the new skill.",
+      "TrainHint": "Once every {every} weeks, an NPC employee's best skill for their role can rise by 1: {perPoint} eb for each point of it now, from the business's cash. A partner whose own skill is higher can mentor them, spending {days} business days and rolling Education (or Persuasion, a step harder) at the business's DV: a failure teaches nothing, though the eb and days are spent. Otherwise it is a course, at twice the eb, which always teaches. Training adds at most {max} in all, and never takes a skill above {cap}. Their wage follows the new skill.",
       "TrainNow": "{skill} {base} (trained +{trained} of {max}).",
       "TrainPc": "A player character improves with their own Improvement Points.",
       "TrainNone": "Their role has no skill to train.",
@@ -2702,7 +2713,8 @@
       "TrainMentorYes": "You can mentor them: your own skill is {base}.",
       "TrainMentorNo": "You cannot mentor them: your own skill ({base}) is not higher than theirs.",
       "TrainMentorNoDays": "You would mentor them, but you need {days} business days left this week.",
-      "TrainMentor": "Mentor them ({cost} eb)",
+      "TrainMentor": "Mentor them: roll ({cost} eb)",
+      "TrainTitle": "Mentoring {name} ({business})",
       "TrainCourse": "Send them on a course ({cost} eb)",
       "Payslip": {
         "Subject": "Payslip: {name}",

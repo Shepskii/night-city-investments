@@ -128,14 +128,32 @@ test('training: a course or a mentor raises the best skill for the post by 1, on
   assert.ok(course.ledger.some((e) => e.kind === 'trainedCourse'));
   // Once every 4 weeks.
   assert.equal(apply(course, { type: 'train', businessId: 'b1', staffId: 'stf_a' }, MED, { expect: false }).reason, 'train-delay');
-  // A mentor whose own skill is higher, four weeks on: the eb once, and their business days.
-  const later = { day: DAY + t.every, context: { basesOf: (id) => (id === 'med' ? { 'skill:Paramedic': 15 } : null) } };
-  const mentored = apply(course, { type: 'train', businessId: 'b1', staffId: 'stf_a', mentor: true }, MED, later).business;
+  // A mentor whose own skill is higher, four weeks on, rolls Education at the stage's DV (15): the eb once, and their business days.
+  const EDUCATION = { kind: 'skill', skill: 'Education', stat: 'int' };
+  const lesson = (b0, die, basesOf = (id) => (id === 'med' ? { 'skill:Paramedic': 15 } : null)) => apply(b0, { type: 'trainRoll', businessId: 'b1', staffId: 'stf_a', use: EDUCATION }, MED, {
+    day: DAY + t.every, check: check(12, die, 15), context: { basesOf }, expect: false,
+  });
+  const mentored = lesson(course, 5).business;
   assert.equal(mentored.till, course.till - t.perPoint * 13);
   assert.equal(mentored.period.days.med, t.mentorDays);
-  assert.equal(postBase(staffOf(mentored, 'stf_a'), 'floor', archetypeOf(mentored)), 14);
-  const weak = { day: DAY + t.every, context: { basesOf: () => ({ 'skill:Paramedic': 13 }) } };
-  assert.equal(apply(course, { type: 'train', businessId: 'b1', staffId: 'stf_a', mentor: true }, MED, { ...weak, expect: false }).reason, 'no-mentor');
+  assert.equal(postBase(staffOf(mentored, 'stf_a'), 'floor', archetypeOf(mentored)), 14, 'a pass teaches');
+  // A failure teaches nothing, though the eb and days are spent; a fumble costs loyalty too.
+  const failed = lesson(course, 2).business;
+  assert.equal(postBase(staffOf(failed, 'stf_a'), 'floor', archetypeOf(failed)), 13);
+  assert.equal(failed.till, course.till - t.perPoint * 13);
+  assert.equal(failed.period.days.med, t.mentorDays);
+  assert.ok(failed.ledger.some((e) => e.kind === 'trainedMentorFailed'));
+  const fumbled = lesson(course, 0).business;
+  assert.equal(staffOf(fumbled, 'stf_a').loyalty, staffOf(course, 'stf_a').loyalty + t.fumbleLoyalty);
+  // An exceptional lesson: they can train again in 2 weeks.
+  const brilliant = lesson(course, 11).business;
+  assert.equal(staffOf(brilliant, 'stf_a').trainedDay + t.every, DAY + t.every + t.quickEvery);
+  // A mentor no better than the employee is refused before anything is spent.
+  assert.equal(lesson(course, 5, () => ({ 'skill:Paramedic': 13 })).reason, 'no-mentor');
+  // Mentoring is always rolled, never by a hired professional or an employee.
+  assert.equal(apply(course, { type: 'train', businessId: 'b1', staffId: 'stf_a', mentor: true }, MED, { day: DAY + t.every, expect: false }).reason, 'mentor-roll');
+  assert.equal(rollSpec(course, { type: 'trainRoll', staffId: 'stf_a', use: { kind: 'hire', hire: 'good' } }, 'med', { day: DAY + t.every }).reason, 'hire-not-allowed');
+  assert.deepEqual(rollSpec(course, { type: 'trainRoll', staffId: 'stf_a' }, 'med', { day: DAY + t.every }).uses.map((u) => u.skill), ['Education', 'Persuasion']);
   // At most +4 from training.
   const full = normalizeBusiness({ ...b, staff: b.staff.map((s) => ({ ...s, training: { 'skill:Paramedic': t.max } })) });
   assert.equal(apply(full, { type: 'train', businessId: 'b1', staffId: 'stf_a' }, MED, { expect: false }).reason, 'train-max');

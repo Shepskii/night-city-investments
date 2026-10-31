@@ -13,6 +13,7 @@ import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient } from '../../services/BusinessClient.js';
 import { accountFor } from '../accounts.js';
 import { BaseApplication } from '../BaseApplication.js';
+import { RollDialogApp } from './RollDialogApp.js';
 import { employeeContext } from './context.js';
 import { L } from '../format.js';
 
@@ -114,9 +115,20 @@ export class EmployeeDialogApp extends BaseApplication {
     return post ? this._send('movePost', { post }) : null;
   }
 
-  /** Train them: with the account picked as mentor (its business days), or on a course (twice the eb). */
+  /**
+   * Train them: on a course (twice the eb), or mentored by the account picked, a roll of their own
+   * (Education) made in the roll dialog, spending their business days.
+   */
   static _onTrain(event, target) {
-    return this._send('train', { mentor: target.dataset.mentor === 'true' });
+    if (target.dataset.mentor !== 'true') return this._send('train', {});
+    const business = this.business;
+    const staff = (business?.staff ?? []).find((s) => s.id === this.staffId);
+    if (!business || !staff || !this.account) return null;
+    return RollDialogApp.ask({
+      actorId: this.actorId, businessId: business.id,
+      request: { type: 'trainRoll', businessId: business.id, staffId: this.staffId },
+      title: L('NCI.Staff.TrainTitle', { name: staff.name, business: business.name }),
+    });
   }
 
   static async _onFire() {

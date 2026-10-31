@@ -368,16 +368,31 @@ export function trainCheck(b, staffId, { mentor = false, mentorBase = 0, days = 
  * days spent. Their wage follows the new base from the next close, as it always follows their skill.
  * @param {(actorId: string) => object|null} [basesOf] - a character's bases from their sheet (the mentor's)
  */
-export function applyTraining(b, staffId, { mentor = false, basesOf = null, by, day }, p = BUSINESS_DEFAULTS) {
+export function applyTraining(b, staffId, { mentor = false, basesOf = null, by, day, result = null }, p = BUSINESS_DEFAULTS) {
+  const t = p.staff.training;
   const staff = staffOf(b, staffId);
   const skill = staff ? trainingSkill(b, staff, p) : null;
   const mentorBase = mentor && skill ? Number(basesOf?.(by)?.[useKey(skill.use)] ?? 0) : 0;
   const can = trainCheck(b, staffId, { mentor, mentorBase, days: daysLeft(b, by, p), day }, p);
   if (!can.ok) return can;
+  // A course always teaches; a mentor's lesson is their roll (E3): narrow or better teaches, an
+  // exceptional one so well they can train again sooner, a fumble puts them off.
+  const band = mentor ? result?.band ?? 'failure' : null;
+  const learned = !mentor || bandPassed(band);
   b.till -= can.cost;
-  can.staff.training = { ...(can.staff.training ?? {}), [can.key]: (can.staff.training?.[can.key] ?? 0) + 1 };
-  can.staff.trainedDay = day;
-  if (mentor) spendDays(b, by, p.staff.training.mentorDays);
-  addLedger(b, { day, kind: mentor ? 'trainedMentor' : 'trainedCourse', amount: -can.cost, actorId: by, staffName: can.staff.name }, p);
-  return { ok: true, cost: can.cost, skill: can.skill.use.skill, base: can.skill.base + 1 };
+  if (learned) can.staff.training = { ...(can.staff.training ?? {}), [can.key]: (can.staff.training?.[can.key] ?? 0) + 1 };
+  can.staff.trainedDay = band === 'exceptional' ? day - (t.every - t.quickEvery) : day;
+  if (band === 'fumble') moveLoyalty(can.staff, t.fumbleLoyalty, null, p);
+  if (mentor) spendDays(b, by, t.mentorDays);
+  addLedger(b, { day, kind: mentor ? (learned ? 'trainedMentor' : 'trainedMentorFailed') : 'trainedCourse', amount: -can.cost, actorId: by, staffName: can.staff.name }, p);
+  return { ok: true, cost: can.cost, skill: can.skill.use.skill, learned, band, base: can.skill.base + (learned ? 1 : 0) };
+}
+
+/** A mentor's roll for an employee: whether it can be made (the mentor's own skill is checked by the GM's service), and how. */
+export function mentorCheck(b, staffId, actorId, day, p = BUSINESS_DEFAULTS) {
+  const t = p.staff.training;
+  const days = daysLeft(b, actorId, p);
+  const can = trainCheck(b, staffId, { mentor: true, mentorBase: Infinity, days, day }, p);
+  if (!can.ok) return can;
+  return { ok: true, uses: [...t.uses], cost: can.cost, extraAvailable: days > t.mentorDays };
 }

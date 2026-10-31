@@ -415,6 +415,14 @@ test('the Employee window: a recruit\'s loyalty band, a bonus paid, a raise aske
   assert.match(dialog, /data-action="trainStaff" data-mentor="false"/);
   assert.doesNotMatch(dialog, /data-mentor="true"/);
   assert.match(text(dialog), /Send them on a course \(1,100 eb\)/);
+  // A mentor's lesson is a roll of their own: Education (or Persuasion), never a hired professional or an employee.
+  const lessonDialog = new Apps.Roll({ actorId: med.id, businessId: b.id, request: { type: 'trainRoll', businessId: b.id, staffId: 'stf_ad-1' }, rollTitle: 'Mentoring Vera Voss' });
+  const lessonHtml = render('templates/dialogs/roll.hbs', await lessonDialog._prepareContext());
+  assertClean(lessonHtml, 'mentor roll dialog');
+  assert.match(text(lessonHtml), /Education/);
+  assert.match(text(lessonHtml), /They pick it up: \+1/);
+  assert.match(text(lessonHtml), /A breakthrough: \+1, and they can train again in 2 weeks/);
+  assert.doesNotMatch(text(lessonHtml), /A good hire|overtime/);
 
   const till = business().till;
   await EmployeeDialogApp.DEFAULT_OPTIONS.actions.payBonus.call(app);

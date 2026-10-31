@@ -23,6 +23,7 @@ export const SKILLS = Object.freeze({
   conversation: skill('Conversation', 'emp'),
   cybertech: skill('Cybertech', 'tech'),
   driveLand: skill('Drive Land Vehicle', 'ref'),
+  education: skill('Education', 'int'),
   electronics: skill('Electronics/Security Tech', 'tech'),
   handgun: skill('Handgun', 'ref'),
   humanPerception: skill('Human Perception', 'emp'),
@@ -364,7 +365,14 @@ export const BUSINESS_DEFAULTS = Object.freeze({
      * `max` over what training has added and never above `cap`. A mentor is a partner whose own base
      * in the skill is higher, and spends `mentorDays` business days on it.
      */
-    training: Object.freeze({ every: 28, perPoint: 50, courseFactor: 2, mentorDays: 2, max: 4, cap: 18 }),
+    training: Object.freeze({
+      every: 28, perPoint: 50, courseFactor: 2, mentorDays: 2, max: 4, cap: 18,
+      /** A mentor's roll (the user's choice): Education, or Persuasion a step harder, at the stage's DV. */
+      uses: Object.freeze([S.education, Object.freeze({ ...S.persuasion, dvAdd: 2 })]),
+      /** An exceptional lesson: they can train again after this many days. A fumble costs loyalty. */
+      quickEvery: 14,
+      fumbleLoyalty: -5,
+    }),
     /** At each month's end an employee below `below` loyalty asks for `step` more of the going rate, until the next month's end. */
     raise: Object.freeze({ below: 50, step: 0.1 }),
     /** Vetting the applicants for a post: one roll checks them all. */

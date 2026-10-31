@@ -40,7 +40,8 @@
  * Employees as people (businessPeople.js, E2):
  *   { key, type: 'vetRoll', businessId, post, use, rollId }      check every applicant waiting for a post
  *   { key, type: 'bonus', businessId, staffId, quarters }        quarters of a week's wage, from the cash
- *   { key, type: 'train', businessId, staffId, mentor }          E3: their best skill for the post +1 (mentor or course)
+ *   { key, type: 'train', businessId, staffId }                  E3: a course: their best skill for the post +1
+ *   { key, type: 'trainRoll', businessId, staffId, use, rollId } E3: a mentor's lesson, rolled (Education)
  *   { key, type: 'refuseRaise', businessId, staffId }
  *   { key, type: 'rejectApplicant', businessId, candidateId }    turn an applicant away
  *   { key, type: 'movePost', businessId, staffId, post }
@@ -84,7 +85,7 @@ import {
   staffWeek, payWages,
 } from './businessStaff.js';
 import {
-  idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost, rejectApplicant, applyTraining,
+  idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost, rejectApplicant, applyTraining, mentorCheck,
 } from './businessPeople.js';
 
 export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, projectOffer, PROJECT_KINDS };
@@ -130,7 +131,7 @@ export function itemGear(item, actorId, p = BUSINESS_DEFAULTS) {
 }
 
 /** Requests that carry a roll. */
-export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll']);
+export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll']);
 
 /**
  * What each kind of proposal needs to pass (DESIGN §26.0): closing and stepping up need every partner
@@ -195,7 +196,7 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
   }
 
   // A company is run by its officers; any holder may still help (a complementary check).
-  if (['action', 'respond', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll'].includes(request.type) && !canRun(b, actorId)) return fail('not-officer');
+  if (['action', 'respond', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll'].includes(request.type) && !canRun(b, actorId)) return fail('not-officer');
 
   if (request.type === 'recruitRoll') {
     const check = recruitCheck(b, request.post, day, p);
@@ -207,6 +208,13 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     const check = vetCheck(b, request.post, day, p);
     if (!check.ok) return check;
     return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - check.cost, operatorRank, p, b, traits });
+  }
+
+  if (request.type === 'trainRoll') {
+    // The mentor's own lesson: no hired professional, no employee called in.
+    const check = mentorCheck(b, request.staffId, actorId, day, p);
+    if (!check.ok) return check;
+    return allowed(check.uses, use, { dv: stageDv(b.stage, p), allowHire: false, bonusAvailable: false, extraAvailable: check.extraAvailable, funds: b.till - check.cost, p, b, overtime: null, traits });
   }
 
   if (request.type === 'auditRoll' || request.type === 'diligenceRoll') {
@@ -583,6 +591,19 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       out.events.push({ type: 'roll', action: 'vet', band: r.band, exposure: r.exposure ?? 0 }, { type: 'vetted', post: request.post, count: checked.length });
       break;
     }
+    case 'trainRoll': {
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
+      if (!spec.ok) return spec;
+      if (!check?.ok) return fail(check?.reason ?? 'no-roll');
+      const r = check.result;
+      // The mentor's own base in the skill, from their sheet, must be higher (checked before anything is spent).
+      const done = applyTraining(b, request.staffId, { mentor: true, basesOf: ctx.basesOf, by: actor.id, day, result: r }, p);
+      if (!done.ok) return done;
+      spendFor('roll');
+      if (r.extra) spendDays(b, actor.id, 1);
+      out.events.push({ type: 'roll', action: 'train', band: r.band, exposure: r.exposure ?? 0 }, { type: 'trained', staffId: request.staffId, learned: done.learned, band: r.band });
+      break;
+    }
     case 'bonus':
     case 'train':
     case 'refuseRaise':
@@ -598,7 +619,9 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
         if (done.actorId) pay(done.actorId, done.amount);
         out.events.push({ type: 'bonus', staffId: request.staffId, amount: done.amount });
       } else if (request.type === 'train') {
-        const done = applyTraining(b, request.staffId, { mentor: !!request.mentor, basesOf: ctx.basesOf, by: actor.id, day }, p);
+        // A course; a mentor's lesson is rolled (trainRoll).
+        if (request.mentor) return fail('mentor-roll');
+        const done = applyTraining(b, request.staffId, { mentor: false, by: actor.id, day }, p);
         if (!done.ok) return done;
         out.events.push({ type: 'trained', staffId: request.staffId, skill: done.skill, base: done.base });
       } else if (request.type === 'rejectApplicant') {
