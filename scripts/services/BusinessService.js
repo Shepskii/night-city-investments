@@ -481,6 +481,8 @@ class BusinessServiceImpl {
     };
     // A proposal (or a vote) that carried at once: say what happened, not that a proposal was made.
     const settled = out.ok ? proposalOutcome(out.events) : null;
+    // A step up carried at once is registering, chartering or listing, by the stage.
+    if (settled?.kind === 'stepUp' && !settled.detail) settled.detail = ['stepUp', 'stepUpCharter', 'stepUpList'][out.business?.stage] ?? 'stepUp';
     if (settled) result.proposal = settled;
     await actor.setFlag(MODULE_ID, FLAGS.BUSINESS_RECEIPTS, [{
       processed: [...r.processed, request.key].slice(-PROCESSED_CAP),

@@ -2314,6 +2314,8 @@
       },
       "RegisterGains": "Registering means two action slots a week and lower protection money, but rent and licence fees go up, actions are rolled at DV 15, and the business has a Compliance standing to look after. It takes every partner's agreement, then a registration roll: Bureaucracy, or Local Expert or Persuasion at DV +2. The fee is paid whatever the result.",
       "StepUpPending": "Stepping up is waiting for every partner's vote.",
+      "StepUpPendingCharter": "Chartering is waiting for every partner's vote on the Partners tab.",
+      "StepUpPendingList": "The listing is waiting for every shareholder's vote on the Shareholders tab.",
       "StepUpAgreed": "The partners have agreed to register. Any partner may make the registration roll.",
       "StepUpRetry": "The last registration was refused; it can be tried again from {date}.",
       "ProposeStepUp": "Propose registering",
@@ -2323,6 +2325,8 @@
       "Proposed": {
         "close": "{name} proposes closing the business.",
         "stepUp": "{name} proposes registering the business.",
+        "stepUpCharter": "{name} proposes chartering the business as a company, ticker {ticker}.",
+        "stepUpList": "{name} proposes listing the company on the market as {ticker} in an IPO, floating {float}% of its shares.",
         "expansion": "{name} proposes an expansion.",
         "project": "{name} proposes a project: {project}.",
         "fixerLoan": "{name} proposes a fixer's loan.",
@@ -2478,6 +2482,8 @@
       "Settled": {
         "close": "Agreed: the business is closed and its money shared out.",
         "stepUp": "Agreed by every partner: go ahead with the next step on the Growth tab.",
+        "stepUpCharter": "Agreed by every partner: the filing fee is paid; make the charter rolls on the Growth tab.",
+        "stepUpList": "Agreed by every shareholder: the listing fee is paid, and the listing waits for the GM.",
         "expansion": "Agreed: the expansion is paid for and under way.",
         "project": "Agreed: the project is paid for and under way.",
         "fixerLoan": "Agreed: the fixer's loan is in the cash.",

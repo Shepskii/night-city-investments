@@ -59,6 +59,9 @@ export const termKey = (business, key) => (business?.stage >= 2 && COMPANY_TERMS
 /** Localise in the wording for this business's stage (see termKey). */
 export const LT = (business, key, data) => L(termKey(business, key), data);
 
+/** The words for a step-up proposal by the stage it is made at: registering, chartering, listing. */
+const STEP_UP_KEYS = Object.freeze(['stepUp', 'stepUpCharter', 'stepUpList']);
+
 /**
  * The overview's charts, from the weekly digests the business keeps (the last 12): takings, upkeep
  * and profit by week, cash at each close, and each standing's band week by week. Only bands are
@@ -318,7 +321,7 @@ function growthContext(business, actor, canAct) {
     })),
     // Registering is stage 0's step; the charter (stage 1) and the listing (stage 2) have their own.
     canPropose: business.stage === 0 && canAct && m.met && !business.stepUp?.approved && !pending,
-    pending: pending ? L('NCI.Business.StepUpPending') : '',
+    pending: pending ? L(`NCI.Business.${{ 0: 'StepUpPending', 1: 'StepUpPendingCharter', 2: 'StepUpPendingList' }[business.stage] ?? 'StepUpPending'}`) : '',
     agreed: business.stage === 0 && business.stepUp?.approved ? L('NCI.Business.StepUpAgreed') : '',
     retry: business.stepUp?.retryDay != null && day < business.stepUp.retryDay ? L('NCI.Business.StepUpRetry', { date: dayText(business.stepUp.retryDay) }) : '',
     canRoll: business.stage === 0 && canAct && !!check?.ok,
@@ -1150,8 +1153,11 @@ function partnersContext(business, actor) {
     investors: open ? investorsContext(business, actor, canAct) : null,
     proposals: business.proposals.map((proposal) => ({
       id: proposal.id,
-      text: L(`NCI.Business.Proposed.${proposal.kind}`, {
+      // Stepping up is registering, chartering or listing, by the stage it is proposed at.
+      text: L(`NCI.Business.Proposed.${proposal.kind === 'stepUp' ? STEP_UP_KEYS[business.stage] ?? 'stepUp' : proposal.kind}`, {
         name: nameOf(business, proposal.by),
+        ticker: proposal.terms?.ticker ?? business.company?.ticker ?? '',
+        float: proposal.terms?.float != null ? Math.round(proposal.terms.float * 100) : '',
         // Who a hire or a firing is about, and the post (DESIGN §33).
         who: proposal.terms?.name ?? '',
         post: proposal.terms?.post ? postLabel(proposal.terms.post) : '',

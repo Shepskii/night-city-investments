@@ -402,6 +402,12 @@ test('a company shows its officers, the information rolls and the report; a shar
     assert.match(ready, /<option value="0.2">20%<\/option>/);
     assert.doesNotMatch(ready, /data-action="proposeStepUp"/, 'no registering at a company');
     assert.match(ready, /class="nci-hirerow nci-form">\s*<label>Float/, 'the float and its button on one row');
+    // A listing waiting for votes reads as an IPO, not as registering.
+    const voting = S.BusinessRepository.all()[0];
+    await S.BusinessRepository.save({ ...voting, proposals: [{ id: 'p_list', kind: 'stepUp', by: med.id, day: voting.period.startDay, expires: voting.period.startDay + 7, votes: { [med.id]: true }, terms: { float: 0.25 } }] });
+    assert.match(text(await renderBusiness(windowFor(med, 'partners'))), /Medtech proposes listing the company on the market as BRC in an IPO, floating 25% of its shares/);
+    assert.match(text(await renderBusiness(windowFor(med, 'growth'))), /The listing is waiting for every shareholder's vote|The listing is waiting for every shareholder&#x27;s vote/);
+    await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], proposals: [] });
     const listing = S.BusinessRepository.all()[0];
     await S.BusinessRepository.save({ ...listing, listing: { status: 'awaiting', agreedDay: listing.period.startDay, float: 0.25, fee: 100, valuation: 5000, rolls: {}, retryDay: null } });
     const gmView = await renderConsole();
