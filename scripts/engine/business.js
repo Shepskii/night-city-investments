@@ -222,6 +222,8 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     if (!event || !EVENTS[event.kind]) return fail('no-event');
     if (b.period.slots.some((s) => s.action === 'respond')) return fail('event-answered');
     if (b.period.slots.length >= (p.stages[b.stage]?.slots ?? 1)) return fail('no-slot');
+    // A staff event's own employee (the one off sick, caught stealing, being poached...) cannot answer it.
+    if (use?.kind === 'staff' && event.staffId && use.staffId === event.staffId) return fail('staff-involved');
     return allowed(eventUses(b, event.kind), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
 

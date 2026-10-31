@@ -2518,7 +2518,8 @@
         "top-level": "security is already at its top level",
         "built-here": "one was built at this stage already",
         "no-ask": "they have not asked for a raise",
-        "staff-not-allowed": "an employee cannot be called in for that"
+        "staff-not-allowed": "an employee cannot be called in for that",
+        "staff-involved": "the event is about that employee, so they cannot answer it"
       }
     },
     "Staff": {

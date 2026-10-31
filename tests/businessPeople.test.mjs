@@ -308,6 +308,20 @@ test('light fingers: takings go missing unless the thief is caught; a caught thi
   assert.equal(staffOf(caught, 'stf_a').revealed, 'lightFingers');
 });
 
+test('the employee a staff event is about cannot be called in to answer it; the others can', () => {
+  const b = withStaff(clinic(), recruit('a', 'security', { base: 13 }), recruit('b', 'floor', { base: 13 }));
+  b.period.event = { kind: 'poaching', staffId: 'stf_a' };
+  const ask = (staffId) => rollSpec(b, { type: 'respond', use: { kind: 'staff', staffId } }, 'med', { day: DAY });
+  assert.equal(ask('stf_a').reason, 'staff-involved');
+  assert.equal(ask('stf_b').ok, true);
+  // The GM's service refuses it too.
+  const out = apply(b, { type: 'respond', businessId: 'b1', use: { kind: 'staff', staffId: 'stf_a' } }, MED, { check: check(13, 6, 15), expect: false });
+  assert.deepEqual([out.ok, out.reason], [false, 'staff-involved']);
+  // An event about nobody in particular takes any employee.
+  b.period.event = { kind: 'trouble' };
+  assert.equal(ask('stf_a').ok, true);
+});
+
 test('a pay dispute: the staff down tools and lose loyalty, unless talked round or all given a bonus', () => {
   const staff = ['a', 'b', 'c', 'd'].map((id) => recruit(id, 'floor', { loyalty: 30 }));
   const b = withStaff(clinic({ stage: 2, capacity: 6, till: 20000 }), ...staff);
