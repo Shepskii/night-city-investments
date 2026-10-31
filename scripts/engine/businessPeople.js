@@ -228,7 +228,7 @@ export function loyaltyWeek(b, { monthEnd = false, monthProfit = 0, unanswered =
         moveLoyalty(s, L.refused, traits, p);
         delete s.ask;
       }
-      if (s.loyalty < p.staff.raise.below && s.pct < p.staff.offer.max) {
+      if (s.source !== 'team' && s.loyalty < p.staff.raise.below && s.pct < p.staff.offer.max) {
         s.ask = { pct: Math.min(p.staff.offer.max, Math.round((s.pct + p.staff.raise.step) * 100) / 100), day };
         notes.push({ kind: 'asks', staffId: s.id, name: s.name });
       }
@@ -318,6 +318,7 @@ export function payBonus(b, staffId, quarters, day, by, traits = null, p = BUSIN
 export function payOffer(b, request, p = BUSINESS_DEFAULTS) {
   const staff = staffOf(b, request.staffId);
   if (staff?.status !== 'active') return fail('not-staff');
+  if (staff.source === 'team') return fail('team-unpaid');
   const pct = Math.round(Number(request.pct)) / 100;
   if (!(pct >= p.staff.offer.min && pct <= p.staff.offer.max)) return fail('bad-wage');
   if (pct === staff.pct) return fail('same-pay');
@@ -362,6 +363,7 @@ export function movePost(b, staffId, post, day, by, p = BUSINESS_DEFAULTS) {
   const open = postOpen(b, post, p, staff.id);
   if (!open.ok) return open;
   staff.post = post;
+  if (staff.source === 'team') staff.bases = teamBases(b, post, staff.teamBase, p);
   staff.wage = wageOf(b, staff, p);
   addLedger(b, { day, kind: 'moved', amount: 0, actorId: by, staffName: staff.name }, p);
   return { ok: true, staff };
@@ -391,7 +393,7 @@ export function trainCheck(b, staffId, { mentor = false, mentorBase = 0, days = 
   const t = p.staff.training;
   const staff = staffOf(b, staffId);
   if (staff?.status !== 'active') return fail('not-staff');
-  if (!hasLoyalty(staff)) return fail('not-trainable');
+  if (!hasLoyalty(staff) || staff.source === 'team') return fail('not-trainable');
   const next = staff.trainedDay != null ? staff.trainedDay + t.every : null;
   if (next != null && day < next) return { ...fail('train-delay'), next };
   const skill = trainingSkill(b, staff, p);
@@ -485,6 +487,7 @@ export function grantOffer(b, staffId, pct, p = BUSINESS_DEFAULTS) {
   if (b.stage < 2) return fail('not-company');
   const staff = staffOf(b, staffId);
   if (staff?.status !== 'active') return fail('not-staff');
+  if (staff.source === 'team') return fail('team-no-grant');
   if (staff.grant) return fail('grant-vesting');
   const share = Math.round((Number(pct) || 0) * 10) / 1000;
   if (!(share >= g.step && share <= g.max) || Math.abs(share / g.step - Math.round(share / g.step)) > 1e-9) return fail('bad-grant');
@@ -535,4 +538,81 @@ export function vestGrants(b, day, p = BUSINESS_DEFAULTS) {
     notes.push({ kind: 'vested', staffId: staff.id, name: staff.name });
   }
   return notes;
+}
+
+// ── An Exec's team (E3) ──────────────────────────────────────────────────────
+
+/** How many team members an Exec's Teamwork rank brings: one for each 3 ranks, rounded up. */
+export const teamSize = (rank, p = BUSINESS_DEFAULTS) => (rank > 0 ? Math.ceil(rank / p.staff.team.per) : 0);
+
+/** A team member's base in their role's skills, by the Exec's Teamwork rank: Green to Master. */
+export const teamBase = (rank, p = BUSINESS_DEFAULTS) => p.staff.team.bases.find(([upTo]) => rank <= upTo)[1];
+
+/** A team member's bases for a role: their level in each of its skills (a skill counting a level lower takes that off, as for anyone). */
+export function teamBases(b, post, base, p = BUSINESS_DEFAULTS) {
+  return Object.fromEntries(postUses(post, archetypeOf(b), p).filter(({ use }) => use.kind === 'skill').map(({ use }) => [useKey(use), base]));
+}
+
+/** The members of one Exec's team on the staff. */
+export const teamOf = (b, leaderId) => (b.staff ?? []).filter((s) => s.source === 'team' && s.leader === leaderId);
+
+/**
+ * Whether an Exec can add a team member to a role (DESIGN §33.5): a partner who runs the business,
+ * with Teamwork (`rank`, read from their sheet), room left in their team, and the role open.
+ */
+export function teamCheck(b, actorId, post, rank, p = BUSINESS_DEFAULTS) {
+  if (!(rank > 0)) return fail('no-teamwork');
+  if (teamOf(b, actorId).length >= teamSize(rank, p)) return fail('team-full');
+  const open = postOpen(b, post, p);
+  if (!open.ok) return open;
+  return { ok: true, base: teamBase(rank, p), size: teamSize(rank, p) };
+}
+
+/** Add a member of the Exec's team to a role: no wage, their level by the Exec's rank, loyal from the start. */
+export function addTeamMember(b, { actorId, post, name, rank, day, key }, p = BUSINESS_DEFAULTS) {
+  const can = teamCheck(b, actorId, post, rank, p);
+  if (!can.ok) return can;
+  const label = String(name ?? '').trim().slice(0, 40);
+  if (!label) return fail('no-name');
+  const staff = {
+    id: `stf_team_${key}`, actorId: null, name: label, source: 'team', leader: actorId, teamBase: can.base, post,
+    bases: teamBases(b, post, can.base, p), pct: 1, wage: 0, hiredDay: day, status: 'active', owed: 0, loyalty: p.staff.team.loyalty,
+  };
+  b.staff = [...(b.staff ?? []), staff];
+  addLedger(b, { day, kind: 'teamJoined', amount: 0, actorId, staffName: label }, p);
+  return { ok: true, staff };
+}
+
+/**
+ * Keep each Exec's team in step with them (the GM's service does this before every change): a team
+ * whose Exec is no longer an active partner leaves; a rank that has changed moves the members' level,
+ * and a team now too big loses its newest members. Returns notes for the digest (who left), and
+ * whether anything changed.
+ * @param {(actorId: string) => object|null} basesOf - a character's bases from their sheet
+ */
+export function refreshTeams(b, basesOf, day = 0, p = BUSINESS_DEFAULTS) {
+  const notes = [];
+  let changed = false;
+  const leaders = [...new Set((b.staff ?? []).filter((s) => s.source === 'team').map((s) => s.leader))];
+  for (const leader of leaders) {
+    const partner = b.partners.find((x) => x.actorId === leader);
+    const rank = Number(basesOf?.(leader)?.['ability:Teamwork'] ?? 0);
+    const keep = partner && ['active'].includes(partner.status) ? teamSize(rank, p) : 0;
+    const team = teamOf(b, leader).sort((x, y) => (x.hiredDay ?? 0) - (y.hiredDay ?? 0));
+    for (const gone of team.slice(keep)) {
+      b.staff = b.staff.filter((s) => s !== gone);
+      addLedger(b, { day, kind: 'teamLeft', amount: 0, staffName: gone.name }, p);
+      notes.push({ kind: 'teamLeft', staffId: gone.id, name: gone.name });
+      changed = true;
+    }
+    if (rank > 0) {
+      const base = teamBase(rank, p);
+      for (const s of team.slice(0, keep).filter((x) => x.teamBase !== base)) {
+        s.teamBase = base;
+        s.bases = teamBases(b, s.post, base, p);
+        changed = true;
+      }
+    }
+  }
+  return { notes, changed };
 }

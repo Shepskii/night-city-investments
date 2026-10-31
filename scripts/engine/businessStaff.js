@@ -150,6 +150,8 @@ export function goingRate(base, stage, p = BUSINESS_DEFAULTS) {
 
 /** What an employee is paid now: the going rate for their post's base, times the share offered. */
 export function wageOf(b, staff, p = BUSINESS_DEFAULTS) {
+  // An Exec's team takes no wage (E3).
+  if (staff.source === 'team') return 0;
   return Math.round(goingRate(postBase(staff, staff.post, archetypeOf(b), p), b.stage, p) * (staff.pct ?? 1));
 }
 
@@ -359,7 +361,9 @@ export function enactFire(b, staffId, day, p = BUSINESS_DEFAULTS, { traits = nul
 
 /** Overtime for one call: a share of the employee's weekly wage. */
 export function overtimePay(b, staff, kind, p = BUSINESS_DEFAULTS) {
-  return Math.round(wageOf(b, staff, p) * (p.staff.overtime[kind] ?? p.staff.overtime.roll));
+  // An Exec's team member is paid overtime as if on the going rate for their skill (E3).
+  const wage = staff.source === 'team' ? goingRate(postBase(staff, staff.post, archetypeOf(b), p), b.stage, p) : wageOf(b, staff, p);
+  return Math.round(wage * (p.staff.overtime[kind] ?? p.staff.overtime.roll));
 }
 
 /** Overtime shifts an employee has worked this week. */

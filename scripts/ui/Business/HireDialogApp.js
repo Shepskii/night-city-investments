@@ -26,6 +26,7 @@ export class HireDialogApp extends BaseApplication {
     actions: {
       hireCharacter: HireDialogApp._onHireCharacter,
       advertise: HireDialogApp._onAdvertise,
+      addTeam: HireDialogApp._onAddTeam,
       close: HireDialogApp._onClose,
     },
   };
@@ -154,6 +155,13 @@ export class HireDialogApp extends BaseApplication {
       title: L('NCI.Staff.RecruitTitle', { post: L(`NCI.Staff.Post.${this.post}`), name: business.name }),
       afterRoll: () => this.close(),
     });
+  }
+
+  /** An Exec puts a member of their Teamwork team in this role, named as typed (E3). */
+  static _onAddTeam() {
+    const name = String(this.element?.querySelector('[name="teamName"]')?.value ?? '').trim();
+    if (!name) return null;
+    return this._send('addTeam', { post: this.post, name });
   }
 
   static _onClose() {

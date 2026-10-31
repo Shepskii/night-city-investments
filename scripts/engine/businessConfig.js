@@ -371,6 +371,11 @@ export const BUSINESS_DEFAULTS = Object.freeze({
      * while vesting, loyalty rises by `loyalty` and stays at `floor` or above.
      */
     grants: Object.freeze({ max: 0.05, step: 0.005, vestDays: 84, loyalty: 20, floor: 50 }),
+    /**
+     * An Exec's team (E3): one member for each `per` ranks of Teamwork, rounded up; their base in their
+     * role's skills by the Exec's rank (`bases`: up to and including each rank); `loyalty` to start.
+     */
+    team: Object.freeze({ per: 3, bases: Object.freeze([[3, 8], [6, 11], [9, 14], [Infinity, 16]]), loyalty: 75 }),
     training: Object.freeze({
       every: 28, perPoint: 50, courseFactor: 2, mentorDays: 2, max: 4, cap: 18,
       /** A mentor's roll (the user's choice): Education, or Persuasion a step harder, at the stage's DV. */

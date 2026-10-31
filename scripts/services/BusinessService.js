@@ -17,7 +17,7 @@
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
-  STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS,
+  STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter } from '../utils/helpers.js';
@@ -175,7 +175,12 @@ class BusinessServiceImpl {
     if (request.type !== 'found' && !stored) return this._receipt(actor, request, { ok: false, reason: 'no-business' });
     // Where else its NPC staff work, and their shifts there, before anything is checked (E3).
     const business = stored ? normalizeBusiness(structuredClone(stored)) : null;
-    if (business) markElsewhere(business, BusinessRepository.all());
+    if (business) {
+      markElsewhere(business, BusinessRepository.all());
+      // An Exec's team follows the Exec: their rank now, and whether they are still a partner (E3).
+      const team = refreshTeams(business, (id) => this.basesOf(id), this.day());
+      if (team.notes.length) business.pendingNotes = [...(business.pendingNotes ?? []), ...team.notes];
+    }
     // Due diligence names its target as a player knows it, by name; a player's client cannot list them (B4c).
     if (request.type === 'diligenceRoll' && !request.targetId) {
       const wanted = String(request.targetName ?? '').trim().toLowerCase();
@@ -479,8 +484,10 @@ class BusinessServiceImpl {
         const business = normalizeBusiness(structuredClone(stored));
         const reread = refreshStaffBases(business, (id) => this.basesOf(id));
         const marked = markElsewhere(business, BusinessRepository.all());
+        const team = refreshTeams(business, (id) => this.basesOf(id), day);
+        if (team.notes.length) business.pendingNotes = [...(business.pendingNotes ?? []), ...team.notes];
         const out = advanceBusiness(business, day, { ...opts, traits: this.traitsOf(business.id) });
-        if (!out.changed && !reread && !marked) continue;
+        if (!out.changed && !reread && !marked && !team.changed) continue;
         await this._commit({ ...out, ok: true });
         changed++;
       }

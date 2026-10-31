@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   applyBusinessRequest, advanceBusiness, normalizeBusiness, rollSpec, BUSINESS_DEFAULTS, goingRate, wageOf, staffOf,
-  loyaltyBand, moonlighting, staffEventWeight, idleStaff, drawEvent, applyDiligence, postBase, archetypeOf, refreshStaffBases, markElsewhere, moveLoyalty, grantedShare, holderActorId,
+  loyaltyBand, moonlighting, staffEventWeight, idleStaff, drawEvent, applyDiligence, postBase, archetypeOf, refreshStaffBases, markElsewhere, moveLoyalty, grantedShare, holderActorId, refreshTeams, overtimePay,
 } from '../scripts/engine/index.js';
 import { resolveRoll } from '../scripts/engine/rolls.js';
 
@@ -276,6 +276,38 @@ test("an NPC's vested grant keeps their character, so windows link to it; a recr
   const older = { ...doc, actorRef: undefined };
   assert.equal(holderActorId(after, older), 'doc');
   assert.equal(holderActorId(after, after.partners.find((x) => x.actorId === 'med')), 'med', 'a character holds in their own name');
+});
+
+test("an Exec's team (E3): Teamwork 5 brings two members at Skilled, unpaid, loyal, leaving with the Exec", () => {
+  const exec = (rank) => ({ basesOf: (id) => (id === 'med' ? { 'ability:Teamwork': rank } : null) });
+  const add = (b0, post, name, rank = 5, expect = true) => apply(b0, { type: 'addTeam', businessId: 'b1', post, name }, MED, { context: exec(rank), expect });
+  let b = withStaff(clinic({ stage: 2, capacity: 4 }));
+  b = add(b, 'floor', 'Ruth Kane').business;
+  const ruth = b.staff.find((s) => s.name === 'Ruth Kane');
+  assert.deepEqual([ruth.source, ruth.leader, ruth.teamBase, ruth.wage, ruth.loyalty], ['team', 'med', 11, 0, BUSINESS_DEFAULTS.staff.team.loyalty]);
+  assert.equal(postBase(ruth, 'floor', archetypeOf(b)), 11, 'Skilled in the role, by the rank');
+  b = add(b, 'security', 'Ivo Lane').business;
+  assert.equal(add(b, 'floor', 'One Too Many', 5, false).reason, 'team-full', 'Teamwork 5: two members');
+  assert.equal(add(withStaff(clinic({ stage: 2 })), 'floor', 'Nobody', 0, false).reason, 'no-teamwork');
+  // No wage; overtime as if on the going rate; no pay change, training or grant.
+  assert.equal(wageOf(b, ruth), 0);
+  assert.ok(overtimePay(b, ruth, 'roll') > 0);
+  assert.equal(apply(b, { type: 'propose', businessId: 'b1', kind: 'pay', staffId: ruth.id, pct: 120 }, MED, { expect: false }).reason, 'team-unpaid');
+  assert.equal(apply(b, { type: 'train', businessId: 'b1', staffId: ruth.id }, MED, { expect: false }).reason, 'not-trainable');
+  assert.equal(apply(b, { type: 'propose', businessId: 'b1', kind: 'grant', staffId: ruth.id, pct: 1 }, MED, { expect: false }).reason, 'team-no-grant');
+  // The team follows the Exec: a higher rank lifts their level; a lower one loses the newest member.
+  const up = structuredClone(b);
+  assert.equal(refreshTeams(up, exec(7).basesOf).changed, true);
+  assert.equal(staffOf(up, ruth.id).teamBase, 14);
+  const down = structuredClone(b);
+  const shrunk = refreshTeams(down, exec(2).basesOf);
+  assert.deepEqual(down.staff.map((s) => s.name), ['Ruth Kane']);
+  assert.equal(shrunk.notes[0].kind, 'teamLeft');
+  // An Exec who leaves takes the whole team.
+  const gone = structuredClone(b);
+  gone.partners.find((x) => x.actorId === 'med').status = 'left';
+  refreshTeams(gone, exec(5).basesOf);
+  assert.equal(gone.staff.length, 0);
 });
 
 test('a bonus: quarters of a week\'s wage from the cash, loyalty up 5 for each, once a week', () => {

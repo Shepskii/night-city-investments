@@ -139,7 +139,7 @@ export function normalizeBusiness(raw) {
       id: String(x.id),
       actorId: x.actorId ?? null,
       name: String(x.name ?? ''),
-      source: ['pc', 'npc', 'recruit'].includes(x.source) ? x.source : 'recruit',
+      source: ['pc', 'npc', 'recruit', 'team'].includes(x.source) ? x.source : 'recruit',
       post: String(x.post ?? 'floor'),
       bases: x.bases ?? {},
       pct: Number(x.pct ?? 1),
@@ -165,6 +165,8 @@ export function normalizeBusiness(raw) {
       // E3 share grants: one vesting, and the share of the company vested so far.
       ...(x.grant ? { grant: { share: Number(x.grant.share), grantedDay: int(x.grant.grantedDay), vestDay: int(x.grant.vestDay) } } : {}),
       ...(x.vested ? { vested: Number(x.vested) } : {}),
+      // E3: a member of an Exec's team: the Exec, and their level by the Exec's Teamwork rank.
+      ...(x.source === 'team' ? { leader: String(x.leader ?? ''), teamBase: int(x.teamBase) } : {}),
     })),
     /** Notes from another business's two-jobs events, for this one's next digest (E3). */
     pendingNotes: b.pendingNotes ?? [],

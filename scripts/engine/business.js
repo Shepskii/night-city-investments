@@ -45,6 +45,7 @@
  *   { key, type: 'askStaff', businessId, staffId, roll }         E3: ask a player character on the staff for a roll:
  *                                                                roll {type: 'action', action} | {type: 'respond'} | {type: 'assist', forAction}
  *   { key, type: 'cancelAsk', businessId, askId }                withdrawn by whoever runs it, or declined by the employee
+ *   { key, type: 'addTeam', businessId, post, name }             E3: an Exec puts a member of their Teamwork team in a role
  *   { key, type: 'staffRoll', businessId, askId, use, rollId }   from the employee's own character: the roll asked of them
  *   { key, type: 'refuseRaise', businessId, staffId }
  *   { key, type: 'rejectApplicant', businessId, candidateId }    turn an applicant away
@@ -90,7 +91,7 @@ import {
   staffWeek, payWages, staffOf, shiftsOf, overtimePay,
 } from './businessStaff.js';
 import {
-  idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost, rejectApplicant, applyTraining, mentorCheck, askOf, askCheck, grantOffer, enactGrant, vestGrants,
+  idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost, rejectApplicant, applyTraining, mentorCheck, askOf, askCheck, grantOffer, enactGrant, vestGrants, addTeamMember,
 } from './businessPeople.js';
 
 export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, projectOffer, PROJECT_KINDS };
@@ -105,7 +106,7 @@ export {
 export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
   'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll',
-  'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant', 'askStaff', 'cancelAsk',
+  'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant', 'askStaff', 'cancelAsk', 'addTeam',
 ]);
 
 /** Item types that are not things a business can own. */
@@ -642,6 +643,17 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       const clean = roll.type === 'action' ? { type: 'action', action: roll.action } : roll.type === 'assist' ? { type: 'assist', forAction: roll.forAction } : { type: 'respond' };
       b.period.asks = [...(b.period.asks ?? []), { id: request.key, staffId: request.staffId, roll: clean, by: actor.id, day }];
       out.events.push({ type: 'asked', staffId: request.staffId, roll: clean });
+      break;
+    }
+    case 'addTeam': {
+      if (b.status !== 'open') return fail('not-open');
+      if (me?.status !== 'active' || !me.voting) return fail('not-partner');
+      if (!canRun(b, actor.id)) return fail('not-officer');
+      // The Exec's own Teamwork rank, read from their sheet by the GM's service.
+      const rank = Number(ctx.basesOf?.(actor.id)?.['ability:Teamwork'] ?? 0);
+      const done = addTeamMember(b, { actorId: actor.id, post: request.post, name: request.name, rank, day, key: request.key }, p);
+      if (!done.ok) return done;
+      out.events.push({ type: 'teamJoined', staffId: done.staff.id });
       break;
     }
     case 'cancelAsk': {

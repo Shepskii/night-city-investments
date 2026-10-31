@@ -11,7 +11,7 @@ import {
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck,
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
-  hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId,
+  hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
 } from '../../engine/index.js';
 import { SkillAdapter } from '../../services/SkillAdapter.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
@@ -826,7 +826,7 @@ function staffContext(business, actor, canAct) {
         level: L(`NCI.Staff.Level.${levelOf(base)}`),
         skill,
         base,
-        wage: whole(s.wage),
+        wage: s.source === 'team' ? L('NCI.Staff.Unpaid') : whole(s.wage),
         status: s.status === 'offered' ? L(s.source === 'npc' ? 'NCI.Staff.OfferedNpc' : 'NCI.Staff.Offered') : L('NCI.Staff.Since', { date: dayText(s.hiredDay ?? day) }),
         owed: s.owed ? L('NCI.Staff.Owed', { amount: whole(s.owed) }) : '',
         loyalty: loyaltyText(s),
@@ -875,6 +875,31 @@ export function hireContext(business, account, post) {
     advertText: L('NCI.Staff.AdvertiseHint', { cost: whole(BUSINESS_DEFAULTS.staff.recruit.cost[business.stage]) }),
     canAdvertise: runs && advert.ok && !pending,
     advertBlocked: open.ok && canAct && !advert.ok ? L(`NCI.Business.Reason.${advert.reason}`) : open.ok && canAct && !runs ? L('NCI.Company.NotOfficer') : '',
+    team: teamContext(business, account, post, runs),
+  };
+}
+
+/**
+ * An Exec's team, in a role's Hire window (E3): shown to a partner with Teamwork, with the members they
+ * have, the room left, and the level their rank gives; adding one names them (a name is offered).
+ */
+function teamContext(business, account, post, runs) {
+  const actor = account && !account.isSyndicate ? game.actors.get(account.id) : null;
+  const rank = actor ? SkillAdapter.baseFor(actor, ABILITIES.teamwork).base : 0;
+  if (!(rank > 0)) return null;
+  const can = teamCheck(business, actor.id, post, rank);
+  const size = teamSize(rank);
+  const members = teamOf(business, actor.id);
+  const first = BUSINESS_DEFAULTS.staff.recruit.firstNames;
+  const last = BUSINESS_DEFAULTS.staff.recruit.lastNames;
+  const n = members.length + (business.staff ?? []).length;
+  return {
+    text: L('NCI.Staff.TeamHint', { rank, size }),
+    have: L('NCI.Staff.TeamHave', { n: members.length, size, names: members.map((m) => m.name).join(', ') || '—' }),
+    level: can.ok ? L('NCI.Staff.TeamLevel', { level: L(`NCI.Staff.Level.${levelOf(can.base)}`), base: can.base }) : '',
+    blocked: !can.ok && can.reason !== 'no-teamwork' ? L(`NCI.Business.Reason.${can.reason}`) : !runs ? L('NCI.Company.NotOfficer') : '',
+    suggested: `${first[(n * 7 + rank) % first.length]} ${last[(n * 11 + 3) % last.length]}`,
+    canAdd: runs && can.ok,
   };
 }
 
@@ -910,9 +935,11 @@ export function employeeContext(business, account, staffId) {
     loyaltyBand: hasLoyalty(s) ? loyaltyBand(s.loyalty ?? 50) : '',
     loyaltyHint: hasLoyalty(s) ? L('NCI.Staff.LoyaltyHint') : L('NCI.Staff.LoyaltyPc'),
     notes: staffNotes(business, s),
-    payText: L('NCI.Staff.PayNow', { wage: whole(wageOf(business, s)), pct: Math.round(s.pct * 100), rate: whole(rate) }),
+    payText: s.source === 'team'
+      ? L('NCI.Staff.TeamPay', { name: nameOf(business, s.leader) })
+      : L('NCI.Staff.PayNow', { wage: whole(wageOf(business, s)), pct: Math.round(s.pct * 100), rate: whole(rate) }),
     pct: Math.round(s.pct * 100),
-    canPay: canAct && !pending('pay'),
+    canPay: canAct && !pending('pay') && s.source !== 'team',
     ask: s.ask ? L('NCI.Staff.AskText', { pct: Math.round(s.ask.pct * 100), wage: whole(Math.round(rate * s.ask.pct)) }) : '',
     askPct: s.ask ? Math.round(s.ask.pct * 100) : 0,
     canAgree: !!s.ask && canAct && !pending('pay'),
@@ -926,9 +953,9 @@ export function employeeContext(business, account, staffId) {
     moves: moves.map((id) => ({ value: id, label: postLabel(id) })),
     canMove: runs && moves.length > 0,
     noMove: runs && !moves.length ? L('NCI.Staff.NoMove') : '',
-    training: trainingContext(business, s, account, runs),
+    training: s.source === 'team' ? null : trainingContext(business, s, account, runs),
     onCall: onCallContext(business, s, account, runs),
-    grant: grantContext(business, s, canAct, pending('grant')),
+    grant: s.source === 'team' ? null : grantContext(business, s, canAct, pending('grant')),
     fireText: L(s.caught ? 'NCI.Staff.FireCaught' : 'NCI.Staff.FireHint', { amount: whole(severance) }),
     canFire: canAct && !pending('fire'),
     pending: pending('pay') || pending('fire') ? L('NCI.Staff.Pending') : '',

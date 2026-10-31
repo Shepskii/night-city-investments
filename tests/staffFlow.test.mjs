@@ -574,6 +574,36 @@ test('an NPC holding granted shares is listed on the Shareholders tab as a link 
   }
 });
 
+test("an Exec's team (E3): the Hire window offers the Exec their team; a member joins through the GM's service, unpaid", async () => {
+  const { HireDialogApp } = await import('../scripts/ui/Business/HireDialogApp.js');
+  const role = { type: 'role', name: 'Exec', system: { rank: 4, mainRoleAbility: 'Teamwork' } };
+  med.items.push(role);
+  const saved = structuredClone(business());
+  try {
+    // Room on the staff for one more.
+    await S.BusinessRepository.save({ ...business(), staff: business().staff.slice(0, 1), candidates: [] });
+    const hire = new HireDialogApp({ actorId: med.id, businessId: business().id, post: 'security' });
+    const html = render('templates/dialogs/hire.hbs', await hire._prepareContext());
+    assertClean(html, 'hire window with a team');
+    assert.match(text(html), /Your team/);
+    assert.match(text(html), /you have Teamwork 4, so up to 2 member\(s\)/);
+    assert.match(text(html), /A team member in this role would be Skilled \(11\)/);
+    assert.match(html, /name="teamName" maxlength="40" value="[^"]+"/);
+    await send(med, 'addTeam', { businessId: business().id, post: 'security', name: 'Ruth Kane' });
+    assert.equal(receipt(med).ok, true, receipt(med).reason);
+    const ruth = business().staff.find((s) => s.name === 'Ruth Kane');
+    assert.deepEqual([ruth.source, ruth.leader, ruth.wage], ['team', med.id, 0]);
+    const staffTab = text(await renderBusiness(windowFor(med, 'staff')));
+    assert.match(staffTab, /Ruth Kane Exec(&#x27;|')s team .* unpaid Manage/);
+    // Without Teamwork there is no team to bring.
+    med.items.splice(med.items.indexOf(role), 1);
+    assert.doesNotMatch(text(render('templates/dialogs/hire.hbs', await hire._prepareContext())), /Your team/);
+  } finally {
+    if (med.items.includes(role)) med.items.splice(med.items.indexOf(role), 1);
+    await S.BusinessRepository.save(saved);
+  }
+});
+
 test('every data-action in the Business window and the staff windows has a handler', async () => {
   const { EmployeeDialogApp } = await import('../scripts/ui/Business/EmployeeDialogApp.js');
   const { HireDialogApp } = await import('../scripts/ui/Business/HireDialogApp.js');

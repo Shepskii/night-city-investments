@@ -450,7 +450,7 @@ Bridge repo `night-city-map-night-city-investments-bridge`: `module.json`, `lang
 | B2 | **Done (v0.11.0), see §30.** Growing: events, loans, registration, investors, expansion projects, private holdings in the portfolio, locations, role abilities, gigs for own business |
 | B3 | **Done (v0.12.0), see §31.** Player syndicates, and syndicates owning or investing in businesses |
 | B4 | **Done (v0.12.0), see §32.** Chartered companies: the charter, the company loop, monthly reports, officers and control |
-| E | **E1 and E2 done (v0.12.0), see §33.9 and §33.10; E3 under way (training, on call, two jobs and share grants built), see §33.11.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
+| E | **E1 and E2 done (v0.12.0), see §33.9 and §33.10; E3 built (not yet released), see §33.11.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
 | Projects | **Done (v0.12.0), see §34.** Projects beside expansion: refit, security upgrade, storefront, staff room; the Projects tab reworked |
 | B5 | **v0.13.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
 | B6 | **v0.14.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
@@ -1619,7 +1619,7 @@ E2 is `scripts/engine/businessPeople.js` (pure), with small hooks in `businessSt
 - **The digest** lists what happened to the staff (off sick, hurt, poached, caught, asks for a raise, quit, walked out, quit unpaid), and an accident's medical bills.
 - **No migration.** The normalizer fills in loyalty (50, or none for a player character) and keeps the new fields.
 
-**Not built yet:** the rest of E3 (§33.11): the Exec's team.
+**Not built yet:** nothing left of E3 (§33.11); the B5 and B6 links come with those phases.
 
 **Tested in the test world** (v0.12.0, 2026-10-31, at the Splice Chrome Clinic): overtime for a help and for a slot, a second shift's loyalty cost, an advert, vetting with an exceptional result, turning an applicant away, hiring, a bonus, a raise, moving an employee to another role, weekly loyalty, staff events (a star turn, a sick day), letting an employee go, an NPC offered a job and the GM answering, and a fourth hire once a staff room was built. It found and fixed: the employee a staff event is about could answer it; Item Piles actors offered as heirs and hires; "Proposal made." shown for a proposal the proposer's units carried at once. Changed on the user's request: a player character's wage comes on their payslip mail to claim. Not tried live: a player character's job from offer to payslip, raises asked at a month's end, hidden traits at work, and a sullen employee quitting or stealing (all covered by tests).
 
@@ -1661,6 +1661,15 @@ E2 is `scripts/engine/businessPeople.js` (pure), with small hooks in `businessSt
 - **Loyalty.** An agreed grant lifts loyalty by 20, and while it vests loyalty cannot fall below 50 (the two-jobs cap of 74 still applies above).
 - **Windows.** The Employee window shows a grant vesting (and when), the share vested, and what is left of the 5%; the Staff tab notes both; the vote reads "proposes granting … 2% of the company in shares"; the digest notes a grant vesting. From B5 granted shares take part in a listing like any holder's.
 - **Tests.** `tests/businessPeople.test.mjs` (company only, the steps and the cap, loyalty and its floor, an NPC's and a player character's grant vesting to exactly their share, a grant lost on leaving) and `tests/businessWindows.test.mjs` (the Employee window's Share grant section).
+- **Linking.** An NPC holding granted shares is recorded under `npc:<staff id>` with their character (`actorRef`), so the Shareholders tab and the GM's owners table link to it as they do a player character (`holderActorId`, which also finds the character from the staff entry for a holding saved before).
+
+**An Exec's team (E3e)** (the user's choices, 2026-10-31: the Exec names each member; overtime costs as if on the going rate; no training or share grants):
+- **Adding.** A partner who runs the business and has Teamwork (read from their sheet) sees a "Your team" section in each role's Hire window and adds a member there, typing a name (one is offered): `addTeam`. One member for each 3 ranks of Teamwork, rounded up; the role must have room, as for any hire (they take headcount places). Their base in the role's skills is set by the Exec's rank: 8 at ranks 1–3, 11 at 4–6, 14 at 7–9, 16 at 10 (`staff.team`); a skill counting a level lower takes that off, as for anyone. Moved to another role, they keep their level in its skills.
+- **On the staff.** Source `team`, with the Exec (`leader`) and their level (`teamBase`). They take no wage (shown as "unpaid"), start at 75 loyalty, never ask for a raise, cannot have their pay changed, be trained or be granted shares; they can be given a bonus, moved, asked for overtime (paid as if on the going rate for their skill), and let go. Staff events and two-jobs rules apply to them as to any NPC.
+- **Following the Exec.** Before every request and weekly close the GM's service brings each team in step (`refreshTeams`): a team whose Exec is no longer an active partner leaves; a changed rank moves the members' level, and a smaller team loses its newest members; the digest notes who left.
+- **Tests.** `tests/businessPeople.test.mjs` (the size and level by rank, the refusals, overtime, the refresh, leaving with the Exec) and `tests/staffFlow.test.mjs` (the Hire window, a member joining through the GM's service, the Staff tab).
+
+**E3 is complete** (training, on call, two jobs, share grants, an Exec's team); not yet released.
 
 ## 34. Projects beside expansion (v0.12.0)
 
