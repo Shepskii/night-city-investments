@@ -173,6 +173,8 @@ export function businessContext(business, actor) {
     stage: L(`NCI.Business.Stage.${business.listing?.status === 'listed' ? 3 : business.stage}`),
     // The company's ticker once the charter set it, listed or not (B4).
     ticker: business.company?.ticker ?? '',
+    // Once its offering is on the market, the company can be opened on the terminal (B5c).
+    onMarket: ['scheduled', 'listed'].includes(business.listing?.status) && !!business.company?.ticker,
     status,
     statusLabel: L(`NCI.Business.Status.${status}`),
     isForming: status === 'forming',

@@ -454,6 +454,7 @@
       <button type="button" data-action="trade" data-side="sell" data-id="{{detail.id}}"><i class="fas fa-minus"></i> {{localize "NCI.Side.sell"}}</button>
       {{/if}}
       <button type="button" data-action="watch" data-id="{{detail.id}}" class="{{#if detail.watched}}active{{/if}}"><i class="fas fa-star"></i> {{localize "NCI.Terminal.Watch"}}</button>
+      {{#if detail.manageId}}<button type="button" data-action="manageBusiness" data-id="{{detail.manageId}}"><i class="fas fa-briefcase"></i> {{localize "NCI.Terminal.ManageCompany"}}</button>{{/if}}
     </div>
     {{/if}}
 

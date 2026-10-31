@@ -44,7 +44,8 @@
       "CompanyNews": "Latest news",
       "TabMarket": "Market",
       "TabPortfolio": "Portfolio",
-      "Watch": "Watch"
+      "Watch": "Watch",
+      "ManageCompany": "Manage company"
     },
     "Portfolio": {
       "PrivateStakes": "Private stakes",
@@ -2270,6 +2271,7 @@
       "CapTable": "Partners",
       "CapTableCompany": "Shareholders",
       "MarketHolder": "Public float (the market)",
+      "ViewOnMarket": "View on market",
       "Partner": "Partner",
       "PartnerCompany": "Shareholder",
       "Units": "Units",

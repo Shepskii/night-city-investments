@@ -79,6 +79,19 @@ export class MarketTerminalApp extends BaseApplication {
     body: { template: `modules/${MODULE_ID}/templates/terminal/market.hbs` },
   };
 
+  /** Open the terminal, optionally on one company's page (from the Business window, B5c) and as one account. */
+  static open(options = {}) {
+    const app = super.open(options);
+    if (options.actorId && accountFor(options.actorId)) app.actorId = options.actorId;
+    if (options.assetId) {
+      app.selectedId = options.assetId;
+      app.cameFrom = null;
+      app.tab = 'market';
+      app.render();
+    }
+    return app;
+  }
+
   tab = 'market';
   selectedId = null;
   /** The tab a company page was opened from, so "Back" returns there. */
@@ -465,12 +478,25 @@ export class MarketTerminalApp extends BaseApplication {
       companyNews,
       statusLabel: c.status === 'active' ? '' : L(`NCI.Status.${c.status}`),
       unlisted: !c.listed,
+      // A player company's officers and shareholders (and the GM) can open its Business window (B5c).
+      manageId: this._manageable(c) ? c.businessId : null,
       tradable: c.status === 'active' && c.listed && !!this.actor,
       watched: watched.has(c.id),
       chart: lineChart(series),
       ranges: RANGES.map((r) => ({ value: r, label: L('NCI.Terminal.Days', { n: r }), active: r === this.range })),
       lore: c.lore ? await TextEditor.enrichHTML(c.lore, { async: true }) : '',
     };
+  }
+
+  /** Whether the viewer may open a market company's Business window: the GM, or one of its officers or shareholders. */
+  _manageable(c) {
+    const b = c.businessId ? BusinessRepository.get(c.businessId) : null;
+    if (!b) return false;
+    if (game.user.isGM) return true;
+    // A syndicate account counts as the syndicate and as the character acting for it.
+    const account = this.actor;
+    const ids = new Set([account?.id, ownerOf(account)?.id].filter(Boolean));
+    return b.partners.some((p) => !p.market && p.status !== 'gone' && ids.has(p.actorId)) || (b.officers ?? []).some((id) => ids.has(id));
   }
 
   /**

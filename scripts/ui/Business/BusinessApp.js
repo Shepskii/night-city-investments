@@ -39,6 +39,7 @@ export class BusinessApp extends BaseApplication {
     position: { width: 1200, height: 660 },
     actions: {
       switchTab: BusinessApp._onTab,
+      viewOnMarket: BusinessApp._onViewOnMarket,
       startNew: BusinessApp._onStartNew,
       cancelStart: BusinessApp._onCancelStart,
       found: BusinessApp._onFound,
@@ -115,6 +116,12 @@ export class BusinessApp extends BaseApplication {
       app.render();
     }
     return app;
+  }
+
+  /** A listed company's page on the market terminal (B5c), as the same account. */
+  static async _onViewOnMarket(event, target) {
+    const { MarketTerminalApp } = await import('../MarketTerminal/MarketTerminalApp.js');
+    MarketTerminalApp.open({ assetId: target.dataset.id, actorId: this.actorId });
   }
 
   tab = 'overview';

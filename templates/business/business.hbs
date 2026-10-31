@@ -103,7 +103,9 @@
   {{#with business}}
   <header class="nci-header">
     <div><strong>{{name}}</strong> <span class="nci-muted">{{archetype}}{{#if location}} &middot; {{location}}{{/if}}</span></div>
-    <div>{{stage}}{{#if ticker}} ({{ticker}}){{/if}} &middot; <strong>{{statusLabel}}</strong></div>
+    <div>{{stage}}{{#if ticker}} ({{ticker}}){{/if}} &middot; <strong>{{statusLabel}}</strong>
+      {{#if onMarket}}<button type="button" data-action="viewOnMarket" data-id="{{ticker}}"><i class="fas fa-chart-line"></i> {{localize "NCI.Business.ViewOnMarket"}}</button>{{/if}}
+    </div>
   </header>
 
   {{#if invited}}
