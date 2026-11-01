@@ -1179,7 +1179,9 @@ class BusinessServiceImpl {
     const day = this.day();
     const hidden = MarketStore.getBusinessesHidden();
     const entry = structuredClone(hidden[stored.id] ?? { exposure: 0 });
-    const mine = entry.known?.[actor.id]?.[holderId] ?? { peeled: 0, tried: -Infinity };
+    // What this investigator has peeled, and when they last tried: started again when the layers change.
+    const stale = entry.known?.[actor.id]?.[holderId];
+    const mine = stale?.ref === request.ref ? stale : { peeled: 0, tried: -Infinity, ref: request.ref };
     // The investigator's own record of when they last tried, so their window refuses before rolling.
     const noteTried = async (when) => {
       const tried = unwrap(actor.getFlag(MODULE_ID, FLAGS.INVESTIGATED)) ?? {};
