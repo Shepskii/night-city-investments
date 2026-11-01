@@ -521,6 +521,23 @@ test('a company\'s later states render cleanly: a regulator\'s case, administrat
     assert.match(tab, /data-action="factionSetStanding"/);
     assert.match(text(tab), /Biotechnica: 35/, 'the GM sees the number');
 
+    // A contract on the Gigs tab: every party it moves, and a tick for a target only found in the text.
+    const extras = ['client', 'contractor', 'target'].map((role) => ({ role, name: `Co ${role}`, percent: role === 'target' ? -1.5 : 3, companyId: 'X', amount: 0.03 }));
+    const { MarketStore } = await import('../scripts/data/MarketStore.js');
+    const gigsBefore = MarketStore.getGigs();
+    await MarketStore.setGigs({ ...gigsBefore, pending: [{
+      id: 'p1', kind: 'business', sourceKey: 'gig:p1', businessId: b.id, client: 'Kiroshi', title: 'Contract', outcome: 'done', reward: 2000, date: '2045-01-01', how: 'tag',
+      reputation: 2, takings: 0.05, factionName: 'Kiroshi Optical', extras, target: { name: 'Co target', how: 'text', factionId: 'f', ticker: 'X' },
+    }] });
+    const gigTab = await renderConsole('gigs');
+    assertClean(gigTab, 'gigs tab');
+    assert.match(text(gigTab), /The client, Co client: \+3% on its share price/);
+    assert.match(text(gigTab), /The contractor, Co contractor/);
+    assert.match(text(gigTab), /The target, Co target: -1\.5%/);
+    assert.match(text(gigTab), /standing with Kiroshi Optical/);
+    assert.match(gigTab, /name="gigUseTarget"/);
+    await MarketStore.setGigs(gigsBefore);
+
     // The Exec's own row against another shareholder's view of it, and the running text.
     const hidden = await rendered({
       masks: { [med.id]: [{ kind: 'nominee', name: 'Vex', day, lastFee: day, ref: 'r1' }, { kind: 'shell', name: 'Kestrel Holdings', day, lastFee: day, ref: 'r2' }] },

@@ -338,6 +338,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     bands: Object.freeze([[-60, 'hostile'], [-20, 'wary'], [20, 'neutral'], [60, 'friendly'], [Infinity, 'allied']]),
     weeklyCap: 15, drift: 2,
     gig: Object.freeze({ done: 6, failed: -8, reward: 1000, size: Object.freeze([0.5, 3]), windowDays: 28 }),
+    /** A gig's target moves the other way from its client, by this share of the client's move: price and standing alike. */
+    target: Object.freeze({ done: -0.5, failed: -0.25 }),
   }),
   /**
    * Regulators (R1, DESIGN §36.7): the chance of a case at each monthly report, by Exposure band; `notice`

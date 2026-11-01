@@ -12,7 +12,7 @@ import {
   GIG_OUTCOMES, resolveClient, matchBusiness, parseReward, planGigImpact, gigHeadlineKey, recentGigAbs, isKnownGig,
   addPending, removePending, addHistory, setMapping, removeMapping, sanitizeGigEdits, normalizeName,
   makeImpact, percentToAmount, logEntry, timeOf,
-  matchFaction,
+  matchFaction, findTarget, targetShare,
 } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
 import { log, isActiveGM, L, isCharacter } from '../utils/helpers.js';
@@ -142,13 +142,27 @@ class GigImpactServiceImpl {
       date: MarketClock.dateString(),
       runners: this._runners(p.runners),
     };
-    // A gig for a player's own business changes the business, not a share price (DESIGN §27.5).
+    const factions = FactionRepository.list();
+    // Who it was aimed at, if anyone: the GM's tag, or the one faction its text names (F1a).
+    const aimed = findTarget(p, factions, CompanyRepository.all({ includeUnlisted: true }));
+    if (aimed) base.target = aimed;
+    // A gig for a player's business, by the GM's tag or because the business is its client (F1a).
     const own = matchBusiness({ client: p.client, notes: p.notes }, BusinessRepository.all());
     if (own) {
-      // Only a gig the GM has tagged for a business counts for its standing with the client (F1a): any
-      // other gig is the crew's own work, and leaves the business's standing alone.
-      const faction = own.how === 'tag' ? matchFaction(p.client, FactionRepository.list()) : null;
-      return this._businessGig(gigs, { ...base, businessId: own.businessId, how: own.how, ...(faction ? { factionId: faction.id, factionName: faction.name } : {}) });
+      // A tagged business is a contractor: its standing with the client moves, and the client's price.
+      // A business that is itself the client has nobody else to stand with.
+      const contractor = own.how === 'tag';
+      const faction = contractor ? matchFaction(p.client, factions) : null;
+      const res = contractor
+        ? resolveClient({ client: p.client, notes: '', text: [p.title, p.desc].filter(Boolean).join(' ') }, CompanyRepository.all({ includeUnlisted: true }), gigs.mappings)
+        : null;
+      const clientCompany = res?.status === 'matched' ? CompanyRepository.get(res.companyId) : null;
+      return this._businessGig(gigs, {
+        ...base, businessId: own.businessId, how: own.how,
+        ...(faction ? { factionId: faction.id, factionName: faction.name } : {}),
+        clientCompanyId: clientCompany && tradable(clientCompany, pub) ? clientCompany.id : null,
+        clientNeedsReview: !!res?.needsReview,
+      });
     }
 
     const res = resolveClient(
@@ -163,7 +177,7 @@ class GigImpactServiceImpl {
       const company = CompanyRepository.get(res.companyId);
       if (!tradable(company, pub)) return this._finish(addHistory(gigs, historyEntry({ ...base, companyId: res.companyId, how: res.how }, 'ignored', { reason: 'not-tradable' })), 'ignored', base);
       const rec = this._planned({ ...base, companyId: company.id, how: res.how }, gigs, company);
-      if (this.approvalRequired() || res.needsReview) {
+      if (this.approvalRequired() || res.needsReview || rec.target?.how === 'text') {
         const queued = { ...rec, kind: 'review', reason: res.needsReview ? res.how : 'approval' };
         await this._commit(addPending(gigs, queued));
         this._notice('Review', queued);
@@ -182,8 +196,9 @@ class GigImpactServiceImpl {
 
   /** Queue a player business's gig for the GM, or apply it when approval is off. */
   async _businessGig(gigs, rec) {
-    const planned = { ...rec, ...(BusinessService.planGig(rec) ?? {}) };
-    if (this.approvalRequired()) {
+    const planned = { ...rec, ...(BusinessService.planGig(rec) ?? {}), extras: this._businessExtras(rec, gigs) };
+    // A near-miss on the client, or a target only found in the text, waits for the GM whatever the setting.
+    if (this.approvalRequired() || rec.clientNeedsReview || rec.target?.how === 'text') {
       const queued = { ...planned, kind: 'business', reason: 'approval' };
       await this._commit(addPending(gigs, queued));
       this._notice('Business', queued);
@@ -193,22 +208,24 @@ class GigImpactServiceImpl {
     return this._applyBusinessGig(gigs, planned);
   }
 
-  async _applyBusinessGig(gigs, rec) {
-    const out = await BusinessService.applyGig(rec);
+  async _applyBusinessGig(startGigs, rec) {
+    const final = this._confirmed(rec);
+    const out = await BusinessService.applyGig(final);
     const status = out.ok ? 'applied' : 'ignored';
+    const gigs = out.ok ? await this._applyExtras(startGigs, final) : startGigs;
     await this._commit(addHistory(gigs, historyEntry({ ...rec, ...(out.plan ?? {}) }, status, out.ok ? { reputation: out.plan.reputation, takings: out.plan.takings } : { reason: out.reason })));
     Hooks.callAll(HOOKS.GIG_IMPACT, { status, record: rec });
     return { ok: true, status, businessId: rec.businessId };
   }
 
   /** Approve a queued gig for a player's business. */
-  approveBusiness(id) {
+  approveBusiness(id, { useTarget = false } = {}) {
     if (!isActiveGM()) return Promise.resolve({ ok: false, status: 'not-gm' });
     return this._queue.run(async () => {
       const gigs = MarketStore.getGigs();
       const rec = gigs.pending.find((p) => p.id === id && p.kind === 'business');
       if (!rec) return { ok: false, status: 'unknown' };
-      return this._applyBusinessGig(removePending(gigs, id), rec);
+      return this._applyBusinessGig(removePending(gigs, id), { ...rec, targetConfirmed: useTarget });
     });
   }
 
@@ -228,7 +245,67 @@ class GigImpactServiceImpl {
       key: rec.sourceKey,
     });
     const headline = L(gigHeadlineKey({ outcome: rec.outcome, percent: plan.percent, key: rec.sourceKey }), { name: company.name, ticker: company.ticker });
-    return { ...rec, ...plan, headline };
+    return { ...rec, ...plan, headline, extras: [...(rec.extras ?? []), ...this._targetExtra(rec, gigs, company.id)] };
+  }
+
+  /**
+   * A gig's move on one other company's price: `share` of what the gig would do to it. Each is its own
+   * market impact with its own headline, sized and limited as any gig is.
+   */
+  _extraImpact(rec, gigs, company, share, role) {
+    const plan = planGigImpact({
+      outcome: rec.outcome, reward: rec.reward, scale: this.scale(), recentAbs: recentGigAbs(gigs, company.id, rec.tick), key: `${rec.sourceKey}:${role}`,
+    });
+    const amount = Math.round(plan.amount * share * 10_000) / 10_000;
+    const percent = Math.round((Math.exp(amount) - 1) * 1000) / 10;
+    const outcome = amount < 0 ? 'failed' : 'done';
+    return {
+      ...plan, role, amount, percent, companyId: company.id, name: company.name, sourceKey: `${rec.sourceKey}:${role}`, outcome,
+      headline: L(gigHeadlineKey({ outcome, percent, key: `${rec.sourceKey}:${role}` }), { name: company.name, ticker: company.ticker }),
+    };
+  }
+
+  /** The target's price, moving the other way from the client's. Nothing if it has no shares, or is a party already. */
+  _targetExtra(rec, gigs, ...partyIds) {
+    if (!rec.target?.ticker || partyIds.includes(rec.target.ticker)) return [];
+    const company = CompanyRepository.get(rec.target.ticker);
+    return tradable(company, MarketStore.getPublic()) ? [this._extraImpact(rec, gigs, company, targetShare(rec.outcome), 'target')] : [];
+  }
+
+  /** Every price a business's gig moves: the client's, the business's own if it is listed, and the target's. */
+  _businessExtras(rec, gigs) {
+    const pub = MarketStore.getPublic();
+    const out = [];
+    const client = rec.clientCompanyId ? CompanyRepository.get(rec.clientCompanyId) : null;
+    if (client) out.push(this._extraImpact(rec, gigs, client, 1, 'client'));
+    const ticker = BusinessRepository.get(rec.businessId)?.company?.ticker;
+    const own = ticker && ticker !== client?.id ? CompanyRepository.get(ticker) : null;
+    if (tradable(own, pub)) out.push(this._extraImpact(rec, gigs, own, 1, 'contractor'));
+    return [...out, ...this._targetExtra(rec, gigs, ...out.map((e) => e.companyId))];
+  }
+
+  /** A target found only in a gig's text counts once the GM has confirmed it; a tagged one always does. */
+  _confirmed(rec) {
+    if (rec.target?.how !== 'text' || rec.targetConfirmed) return rec;
+    return { ...rec, target: null, extras: (rec.extras ?? []).filter((e) => e.role !== 'target') };
+  }
+
+  /** Queue a gig's other impacts, each in the history, with its own heat window. Returns the new gigs record. */
+  async _applyExtras(startGigs, rec) {
+    let gigs = startGigs;
+    for (const e of rec.extras ?? []) {
+      const one = { ...rec, ...e, businessId: null };
+      await this._queueImpact(one);
+      gigs = addHistory(gigs, historyEntry(one, 'applied'));
+      const holders = e.role === 'contractor' ? (BusinessRepository.get(rec.businessId)?.partners ?? []).filter((p) => !p.market && !p.npc).map((p) => p.actorId) : [];
+      const tipped = e.role === 'client' ? await this._tip(one) : [];
+      try {
+        await HeatService.openWindow(one, { tipped: [...tipped, ...holders], runners: rec.runners ?? [] });
+      } catch (error) {
+        log.error('Opening a heat window failed', error);
+      }
+    }
+    return gigs;
   }
 
   async _commit(gigs) {
@@ -253,8 +330,10 @@ class GigImpactServiceImpl {
   // ── Applying ───────────────────────────────────────────────────────────────
 
   /** Queue the impact on the market, record it, and tell the players who asked to hear rumours. */
-  async _applyAndFinish(gigs, rec) {
+  async _applyAndFinish(startGigs, plain) {
+    const rec = this._confirmed(plain);
     await this._queueImpact(rec);
+    const gigs = await this._applyExtras(startGigs, rec);
     await this._commit(addHistory(gigs, historyEntry(rec, 'applied')));
     Hooks.callAll(HOOKS.GIG_IMPACT, { status: 'applied', record: rec });
     await this._afterApply(rec);
@@ -350,6 +429,7 @@ class GigImpactServiceImpl {
       if (fixed.percent == null || fixed.delayDays == null) return { ok: false, status: 'invalid' };
       const final = {
         ...rec,
+        targetConfirmed: !!edits.useTarget,
         percent: fixed.percent,
         amount: Math.round(percentToAmount(fixed.percent) * 10_000) / 10_000,
         delayDays: fixed.delayDays,
@@ -441,11 +521,13 @@ class GigImpactServiceImpl {
           gigs = addPending(gigs, { ...planned, kind: 'review', reason: 'approval', candidates: [] });
           queued += 1;
         } else {
-          await this._queueImpact(planned);
-          gigs = addHistory(gigs, historyEntry(planned, 'applied'));
+          const final = this._confirmed(planned);
+          await this._queueImpact(final);
+          gigs = await this._applyExtras(gigs, final);
+          gigs = addHistory(gigs, historyEntry(final, 'applied'));
           applied += 1;
-          Hooks.callAll(HOOKS.GIG_IMPACT, { status: 'applied', record: planned });
-          await this._afterApply(planned);
+          Hooks.callAll(HOOKS.GIG_IMPACT, { status: 'applied', record: final });
+          await this._afterApply(final);
         }
       }
     }

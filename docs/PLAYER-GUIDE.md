@@ -227,7 +227,7 @@ Any character or syndicate can bid for a chartered player company, private or li
 
 Your business has its own standing with Night City's corporations and gangs, shown on the Overview tab as hostile, wary, neutral, friendly or allied. You'll see the gangs on your turf from the start, and other factions once you've dealt with them. Standing fades slowly if you don't keep it up.
 
-A job your GM marks as done for the business moves its standing with the client. Ordinary crew gigs don't.
+A job your GM marks as done for the business counts as a contract: its Reputation, its share price if it is listed, and its standing with the client and any target all move. Ordinary crew gigs are freelance: they can move the client's and target's share prices, but don't touch your business.
 
 ## Regulators
 

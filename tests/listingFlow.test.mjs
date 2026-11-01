@@ -573,6 +573,43 @@ test('standing: a gig tagged for the business moves its standing with the client
     assert.equal(business().standings.corp_bio, 'neutral', 'the band on the record');
     assert.equal(JSON.stringify(business().standings).includes('12'), false, 'not the number');
 
+    // A freelance gig with a tagged target: the client up, the target down by half; no business touched.
+    const impactsOf = (key) => S.MarketStore.getControls().impacts.filter((i) => i.sourceKey?.startsWith(key));
+    await GigImpactService.report({ gigId: 'free1', sourceKey: 'gig:free1', outcome: 'done', client: 'Biotechnica', reward: 2000, title: 'A job', notes: '[NCI target: Militech]' });
+    await settle();
+    const free = impactsOf('gig:free1');
+    assert.deepEqual(free.map((i) => i.target.id).sort(), ['BIO', 'MIL']);
+    const bioMove = free.find((i) => i.target.id === 'BIO').amount;
+    const milMove = free.find((i) => i.target.id === 'MIL').amount;
+    assert.ok(bioMove > 0 && milMove < 0, 'opposite ways');
+    assert.ok(Math.abs(milMove) < bioMove, 'the target by less');
+    assert.equal(hiddenOf().corp_mil, undefined, 'a freelance gig leaves standing alone');
+
+    // A contract: the listed contractor's own stock, the client's and the target's, and standing with both.
+    await GigImpactService.report({ gigId: 'biz2', sourceKey: 'gig:biz2', outcome: 'done', client: 'Kiroshi Optical', reward: 2000, title: 'Contract', notes: '[NCI: Playco] [NCI target: Zetatech]' });
+    await settle();
+    assert.deepEqual(impactsOf('gig:biz2').map((i) => i.target.id).sort(), ['KIR', 'PLAY', 'ZET']);
+    assert.ok(hiddenOf().corp_kir.value > 0, 'standing with the client');
+    assert.ok(hiddenOf().corp_zet.value < 0, 'and against the target');
+    assert.ok(impactsOf('gig:biz2').find((i) => i.target.id === 'PLAY').amount > 0, 'the contractor rises on a success');
+
+    // A gig whose client is the business: its own stock, no standing, and a named target still hit.
+    const before = Object.keys(hiddenOf()).length;
+    await GigImpactService.report({ gigId: 'own1', sourceKey: 'gig:own1', outcome: 'failed', client: 'Playco', reward: 1000, title: 'Own job', notes: '[NCI target: Network 54]' });
+    await settle();
+    assert.deepEqual(impactsOf('gig:own1').map((i) => i.target.id).sort(), ['N54', 'PLAY']);
+    assert.ok(impactsOf('gig:own1').find((i) => i.target.id === 'N54').amount > 0, 'a failed gig helps its target');
+    assert.equal(Object.keys(hiddenOf()).length, before + 1, 'standing only with the target');
+
+    // A target found only in the text waits for the GM even with approval off, and needs their tick.
+    await GigImpactService.report({ gigId: 'text1', sourceKey: 'gig:text1', outcome: 'done', client: 'Petrochem', reward: 1000, title: 'Job', desc: 'Sabotage the Orbital Air depot.' });
+    await settle();
+    const pending = S.MarketStore.getGigs().pending.find((x) => x.sourceKey === 'gig:text1');
+    assert.equal(pending?.target?.how, 'text');
+    await GigImpactService.approve(pending.id, {});
+    await settle();
+    assert.deepEqual(impactsOf('gig:text1').map((i) => i.target.id), ['PET'], 'unticked: the client only');
+
     // The GM's hand, past the weekly limit; a week's fade.
     assert.equal((await S.BusinessService.setStanding('bus_play', 'gang_maelstrom', -70)).ok, true);
     assert.equal(business().standings.gang_maelstrom, 'hostile');

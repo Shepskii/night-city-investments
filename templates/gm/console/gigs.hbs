@@ -43,6 +43,9 @@
     </div>
     <div class="nci-muted">{{client}}{{#if title}} &middot; {{title}}{{/if}} &middot; {{how}}</div>
     {{#if reason}}<div class="nci-muted">{{reason}}</div>{{/if}}
+    {{#if targetNote}}<div class="nci-muted">{{targetNote}}</div>{{/if}}
+    {{#each alsos}}<div class="nci-muted">{{text}}</div>{{/each}}
+    {{#if confirmTarget}}<label class="nci-inline"><input type="checkbox" name="gigUseTarget"> {{localize "NCI.Gig.ConfirmTarget"}}</label>{{/if}}
     <div class="nci-grid">
       <label>{{localize "NCI.Gig.Percent"}}<input type="number" name="gigPercent" step="0.1" value="{{percent}}"></label>
       <label>{{localize "NCI.Gig.Delay"}}<input type="number" name="gigDelay" min="0" max="30" step="1" value="{{delayDays}}"></label>
@@ -69,6 +72,9 @@
     </div>
     <div class="nci-muted">{{client}}{{#if title}} &middot; {{title}}{{/if}} &middot; {{how}}</div>
     <div>{{effect}}{{#if weaker}} <span class="nci-muted">{{weaker}}</span>{{/if}}</div>
+    {{#if targetNote}}<div class="nci-muted">{{targetNote}}</div>{{/if}}
+    {{#each alsos}}<div class="nci-muted">{{text}}</div>{{/each}}
+    {{#if confirmTarget}}<label class="nci-inline"><input type="checkbox" name="gigUseTarget"> {{localize "NCI.Gig.ConfirmTarget"}}</label>{{/if}}
     <div class="nci-actions">
       <button type="button" data-action="gigApproveBusiness" data-id="{{id}}"><i class="fas fa-check"></i> {{localize "NCI.Gig.Approve"}}</button>
       <button type="button" data-action="gigDiscard" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.Gig.Discard"}}</button>

@@ -4,9 +4,9 @@ How to run the market at the table, steer it, approve and check what players do,
 
 ## The market in your Night City
 
-The published Cyberpunk RED material I could check describes no stock exchange, so this one is the module's invention. A framing that sits well with the setting: with the old global NET gone, it is a local exchange on one of Ziggurat's air-gapped CitiNets, reached through brokers' Agents or a CorpNet terminal. Global names like Arasaka trade thinly here, on rumour. The starter companies are starting points; two of them (Night Corp and Kang Tao) are best known from the 2077 era, so check them against your book and replace them if you prefer.
+Technically speaking, Cyberpunk RED describes no stock exchange in Night City, so this one is the module's invention. A framing that sits well with the setting: with the old global NET gone, it is a local exchange on one of Ziggurat's air-gapped CitiNets, reached through brokers' Agents or a CorpNet terminal. Global names like Arasaka trade thinly here, on rumour. The starter companies are starting points; two of them (Night Corp and Kang Tao) are best known from the 2077 era, so remove or replace them if you prefer.
 
-Re-importing does not overwrite companies a world already has. A world made before v0.16 keeps its old entries: to match the current starter set, edit "Danger Girl" to **Danger Gal**, and make Arasaka thin and volatile (no dividend) in the Company Editor.
+Re-importing does not overwrite companies a world already has.
 
 ## How it works underneath
 
@@ -124,7 +124,12 @@ The **Factions** tab holds the corporations and gangs businesses can stand well 
 
 Standing runs from -100 to 100 for each business; its owners see only a band (hostile, wary, neutral, friendly, allied). It fades 2 points a week and moves at most 15 a week; you can set it by hand on the same tab.
 
-**A gig only counts for a business if you tag it.** Put the business in the gig's GM notes, like `[NCI: Charter Test Clinic]` (its name, ticker or id), with the faction as the client. Every other gig is treated as the crew's own work, and leaves businesses alone.
+**What a gig affects:**
+- **A freelance gig** (the default, including everything Night City Map generates) moves the client's share price and its target's. No player business is touched.
+- **A contract:** name a business in the GM notes, like `[NCI: Charter Test Clinic]` (its name, ticker or id). As well as the client's and target's prices, that business's Reputation and takings move, its own share price if it is listed, and its standing with the client and target. A gig whose client *is* the business counts the same way, without needing the tag.
+- **A target:** gigs don't report one, so add `[NCI target: Militech]` to the notes (a faction or a market company). Failing that, if the title or description names exactly one faction, the approval card asks you to tick that it really is the target. A target moves opposite to the client: half as much on a success, a quarter on a failure.
+
+Private businesses, gangs and unknown clients have no share price, so only the other effects apply. `[NCI: ignore]` still skips a gig. The approval card lists every party before you approve.
 
 ## Regulators
 

@@ -24,7 +24,7 @@ import {
   takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
   restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask,
   concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget, scandalHit, investigationCost, spendDays,
-  moveStanding, driftStanding, standingBands, gigStanding,
+  moveStanding, driftStanding, standingBands, gigStanding, targetShare,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
@@ -1670,6 +1670,8 @@ class BusinessServiceImpl {
       await this._commit(out);
       // A gig tagged for this business, for a faction, moves its standing with them (F1a).
       if (rec.factionId) await this._moveStanding(rec.businessId, rec.factionId, gigStanding(rec));
+      // And its target's, the other way: a faction it worked against, or that fended it off.
+      if (rec.target?.factionId) await this._moveStanding(rec.businessId, rec.target.factionId, gigStanding(rec) * targetShare(rec.outcome));
       return { ok: true, plan: out.plan };
     });
   }

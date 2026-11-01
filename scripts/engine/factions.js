@@ -84,3 +84,35 @@ export function driftStanding(entry, p = BUSINESS_DEFAULTS) {
 
 /** What a business's record shows for its hidden standings: each met faction's band. */
 export const standingBands = (entries = {}, p = BUSINESS_DEFAULTS) => Object.fromEntries(Object.entries(entries).map(([id, e]) => [id, standingBand(e.value, p)]));
+
+const TARGET_TAG = /\[\s*(?:nci|invest|stock)\s+target\s*[:=]\s*([^\]]+?)\s*\]/i;
+
+const hasWords = (text, name) => {
+  const n = normalizeName(name);
+  return n.length >= 5 && ` ${text} `.includes(` ${n} `);
+};
+
+/**
+ * Who a gig is aimed at. Gigs report no target of their own, so it is the GM's tag in the notes
+ * (`[NCI target: Militech]`, a faction or a market company), or failing that the one faction named in
+ * its title or description. One found only in the text is `how: 'text'`, and waits for the GM to confirm.
+ * @returns {{name: string, factionId: string|null, ticker: string, how: 'tag'|'text'}|null}
+ */
+export function findTarget({ client, title, desc, notes }, factions, companies = []) {
+  const tag = TARGET_TAG.exec(String(notes ?? ''))?.[1];
+  const own = matchFaction(client, factions);
+  if (tag) {
+    const faction = matchFaction(tag, factions);
+    if (faction) return faction.id === own?.id ? null : { name: faction.name, factionId: faction.id, ticker: faction.ticker, how: 'tag' };
+    const wanted = normalizeName(tag);
+    const company = companies.find((c) => normalizeName(c.name) === wanted || normalizeName(c.ticker) === wanted);
+    return company ? { name: company.name, factionId: null, ticker: company.ticker, how: 'tag' } : null;
+  }
+  const text = normalizeName([title, desc].filter(Boolean).join(' '));
+  if (!text) return null;
+  const named = factions.filter((f) => f.id !== own?.id && [f.name, ...(f.aliases ?? [])].some((n) => hasWords(text, n)));
+  return named.length === 1 ? { name: named[0].name, factionId: named[0].id, ticker: named[0].ticker, how: 'text' } : null;
+}
+
+/** How much of a client's move its target moves the other way, by the gig's outcome. */
+export const targetShare = (outcome, p = BUSINESS_DEFAULTS) => p.standing.target[outcome === 'failed' ? 'failed' : 'done'];

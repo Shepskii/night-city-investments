@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   BUSINESS_DEFAULTS, DISTRICTS, normalizeFaction, standingBand, matchFaction, turfFactions, gigStanding, moveStanding, driftStanding, standingBands, matchBusiness,
+  findTarget, targetShare,
 } from '../scripts/engine/index.js';
 import { starterFactions } from '../scripts/data/starter-factions.js';
 import { STARTER_COMPANIES } from '../scripts/data/starter-companies.js';
@@ -65,4 +66,20 @@ test('a tag names a business by its id, name or ticker; a tag on nothing else ma
   }
   assert.equal(matchBusiness({ notes: '[NCI: ARA]' }, businesses), null, 'a market company is not a business');
   assert.equal(matchBusiness({ notes: '[NCI: Closed Shop]' }, businesses), null);
+});
+
+test('a gig\'s target: the GM\'s tag first, then the one faction its text names, never its client', () => {
+  const factions = [
+    { id: 'mil', name: 'Militech', ticker: 'MIL', aliases: [], districts: [] }, { id: 'bio', name: 'Biotechnica', ticker: 'BIO', aliases: [], districts: [] },
+    { id: 'mael', name: 'Maelstrom', ticker: '', aliases: [], districts: [] },
+  ];
+  const companies = [{ name: 'Orbital Air', ticker: 'ORB' }];
+  assert.deepEqual(findTarget({ client: 'Biotechnica', notes: '[NCI target: Militech]' }, factions, companies), { name: 'Militech', factionId: 'mil', ticker: 'MIL', how: 'tag' });
+  assert.deepEqual(findTarget({ notes: '[nci target: ORB]' }, factions, companies), { name: 'Orbital Air', factionId: null, ticker: 'ORB', how: 'tag' }, 'a company with no faction');
+  assert.equal(findTarget({ notes: '[NCI target: Nobody]' }, factions, companies), null);
+  assert.equal(findTarget({ client: 'Militech', notes: '[NCI target: Militech]' }, factions, companies), null, 'not its own client');
+  assert.deepEqual(findTarget({ client: 'Biotechnica', desc: 'Hit the Maelstrom crew at the docks.' }, factions), { name: 'Maelstrom', factionId: 'mael', ticker: '', how: 'text' });
+  assert.equal(findTarget({ client: 'Biotechnica', desc: 'A Biotechnica courier run.' }, factions), null, 'its own client, mentioned');
+  assert.equal(findTarget({ desc: 'Militech and Maelstrom are fighting.' }, factions), null, 'two named: not sure which');
+  assert.deepEqual([targetShare('done'), targetShare('failed')], [S.target.done, S.target.failed]);
 });

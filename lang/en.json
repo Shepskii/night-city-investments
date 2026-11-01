@@ -1205,6 +1205,14 @@
       "BusinessLabel": "{name} (players' business)",
       "BusinessEffect": "Reputation {reputation}, next week's takings {takings}%",
       "StandingEffect": "standing with {faction}",
+      "Also": {
+        "client": "The client, {name}: {percent}% on its share price.",
+        "contractor": "The contractor, {name}: {percent}% on its share price.",
+        "target": "The target, {name}: {percent}% on its share price."
+      },
+      "TargetTagged": "Aimed at {name}, by your tag.",
+      "TargetFound": "This gig's text names {name}: it may be the target, or only a mention.",
+      "ConfirmTarget": "Yes, this is the target",
       "Weaker": "(weaker: {n} earlier gig(s) for it this month)",
       "BusinessTitle": "For players' businesses",
       "BusinessHint": "Gigs whose client is a business the players own change that business, not a share price: its Reputation at once and next week's takings. Each gig for the same business within four weeks counts for less than the one before.",
