@@ -60,7 +60,7 @@
     <div class="nci-warn">{{regCase.text}}</div>
     <div class="nci-actions">
       {{#if regCase.lost}}
-      <label>{{localize "NCI.GMBusiness.CaseFine"}} <input type="number" name="caseFine" min="0" step="100" value="{{regCase.fine}}"></label>
+      <label class="nci-inline">{{localize "NCI.GMBusiness.CaseFine"}} <input type="number" name="caseFine" min="0" step="100" value="{{regCase.fine}}"></label>
       <button type="button" data-action="businessCaseFine" data-id="{{id}}"><i class="fas fa-gavel"></i> {{localize "NCI.GMBusiness.CaseApprove"}}</button>
       {{/if}}
       <button type="button" data-action="businessCaseDrop" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.CaseDrop"}}</button>

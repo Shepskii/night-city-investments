@@ -227,6 +227,11 @@
 /* A labelled box on one line: the label's text, then the box, centred on each other. */
 .nci-app label.nci-inline { flex-direction: row; align-items: center; gap: 8px; margin: 6px 0; }
 .nci-app label.nci-inline input { flex: none; width: 80px; height: 30px; }
+/* A labelled box in a row of buttons: the buttons the box's height, all on one line. */
+.nci-app .nci-actions label.nci-inline { margin: 0; }
+.nci-app .nci-actions label.nci-inline ~ button { height: 30px; }
+/* A regulator's case in the Business window: room under its Answer button. */
+.nci-app .nci-case { padding-bottom: 8px; }
 /* The Hire window's character form: the boxes in columns, every box and the button the same height on one line. */
 .nci-app .nci-hirerow { display: grid; grid-template-columns: minmax(0, 1fr) 160px auto; gap: 10px; align-items: end; margin: 8px 0; }
 .nci-app .nci-hirerow label { min-width: 0; }
