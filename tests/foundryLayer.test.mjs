@@ -191,7 +191,7 @@ test('reset restarts every company from its initial price with a new seed', asyn
   await TickService.reset();
   const pub = MarketStore.getPublic();
   assert.equal(pub.tickIndex, 0);
-  assert.equal(pub.companies.ARA.price, 240);
+  assert.equal(pub.companies.ARA.price, 180);
   assert.notEqual(game.settings.get(MODULE, 'worldSeed'), oldSeed);
   assert.equal(MarketStore.getHistory().series.ARA.closes.length, 1);
 });

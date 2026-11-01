@@ -437,6 +437,11 @@ test('a hidden holder on the cap table: others see the outer layer and what thei
   assert.ok(holderWho(b, row, bob.id).includes(bob.name), 'the holder sees themselves');
   assert.ok(holderWho(b, row, null, { truth: true }).includes(bob.name), 'and the GM Console the truth');
   await alice.setFlag('night-city-investments', 'discoveries', [{}]);
+  // Running text (proposals, the ledger) gives the outer layer too, for everyone.
+  const { nameOf } = await import('../scripts/ui/Business/context.js');
+  assert.equal(nameOf(b, bob.id).includes(bob.name), false);
+  assert.ok(nameOf(b, bob.id).includes('Kestrel'));
+  assert.equal(nameOf(b, alice.id), alice.name, 'an unhidden holder by name');
 });
 
 test('a listed company in administration is restructured: its debts become creditors\' shares, added to the market and kept through the holders\' sync', async () => {

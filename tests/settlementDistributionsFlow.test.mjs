@@ -84,11 +84,11 @@ const pub = () => S.MarketStore.getPublic();
 const mails = (a, text) => sent.filter((m) => m.toActorId === a.id && m.subject.includes(text));
 const held = (a, id) => pf(a).lots.filter((l) => l.assetId === id).reduce((s, l) => s + l.qty, 0);
 
-test('setup: both investors hold ARA, and the funds have noted their periods', async () => {
+test('setup: both investors hold MIL, and the funds have noted their periods', async () => {
   for (const a of [alice, bob]) {
     await S.PortfolioClient.submit(a, 'deposit', { amount: 30000 });
     await settle();
-    const k = await S.PortfolioClient.submit(a, 'placeOrder', { route: 'direct', side: 'buy', assetId: 'ARA', qty: 20, orderType: 'market', expiry: 'day' });
+    const k = await S.PortfolioClient.submit(a, 'placeOrder', { route: 'direct', side: 'buy', assetId: 'MIL', qty: 20, orderType: 'market', expiry: 'day' });
     await settle();
     assert.equal(res(a, k).ok, true);
   }
@@ -102,14 +102,14 @@ test('setup: both investors hold ARA, and the funds have noted their periods', a
 test('with a settlement delay, sale proceeds arrive later and cannot be spent meanwhile', async () => {
   env.store.set('settlementDays', 2);
   const cash0 = pf(alice).cash;
-  const k = await S.PortfolioClient.submit(alice, 'placeOrder', { route: 'direct', side: 'sell', assetId: 'ARA', qty: 5, orderType: 'market', expiry: 'day' });
+  const k = await S.PortfolioClient.submit(alice, 'placeOrder', { route: 'direct', side: 'sell', assetId: 'MIL', qty: 5, orderType: 'market', expiry: 'day' });
   await settle();
   assert.equal(res(alice, k).ok, true);
-  assert.equal(held(alice, 'ARA'), 15);
+  assert.equal(held(alice, 'MIL'), 15);
   assert.equal(pf(alice).cash, cash0, 'cash has not moved');
   assert.equal(pf(alice).unsettled.length, 1);
   const owed = pf(alice).unsettled[0].amount;
-  assert.ok(owed > 1000);
+  assert.ok(owed > 800);
 
   const kb = await S.PortfolioClient.submit(alice, 'withdraw', { amount: cash0 + 10 });
   await settle();
@@ -169,8 +169,8 @@ test('big movers in your holdings are mailed to those who opted in', async () =>
   assert.equal(S.NotificationService.moverPct(alice), 5);
   assert.equal(S.NotificationService.moverPct(bob), 5, 'the default');
 
-  const price = pub().companies.ARA.price;
-  assert.equal(await S.MarketControlService.addGlide({ companyId: 'ARA', target: Math.round(price * 1.18 * 100) / 100, days: 1, noise: 'low' }), true);
+  const price = pub().companies.MIL.price;
+  assert.equal(await S.MarketControlService.addGlide({ companyId: 'MIL', target: Math.round(price * 1.18 * 100) / 100, days: 1, noise: 'low' }), true);
   await settle();
   await S.TickService.advance(1);
   await settle();
@@ -226,7 +226,7 @@ test('a distributing fund pays its income out as cash once a quarter', async () 
   const paid = pf(alice).ledger.filter((e) => e.kind === 'dividend' && e.assetId === 'SAFE');
   assert.equal(paid.length, paidBefore + 1);
   assert.equal(paid.at(-1).amount, Math.round(10 * dist.perUnit));
-  // The new quarter also paid ARA's scheduled dividend, so add up everything that came in.
+  // The new quarter also paid MIL's scheduled dividend, so add up everything that came in.
   const income = pf(alice).ledger.slice(ledgerBefore).filter((e) => e.kind === 'dividend').reduce((s, e) => s + e.amount, 0);
   assert.equal(pf(alice).cash, cash0 + income, 'paid as cash');
   assert.equal(pf(bob).ledger.some((e) => e.assetId === 'SAFE'), false, 'only holders are paid');
@@ -240,11 +240,11 @@ test('a distributing fund pays its income out as cash once a quarter', async () 
 });
 
 test('a fund distribution and a stock dividend on the same tick both keep their records', async () => {
-  // Each new quarter above paid ARA's dividend and SAFE's distribution on one tick. Both services
+  // Each new quarter above paid MIL's dividend and SAFE's distribution on one tick. Both services
   // write the dividend records, so neither may write back a copy it read before the other wrote.
   const records = S.MarketStore.getDividendRecords();
   assert.equal(records.SAFE?.lastKey, `dist-${pub().funds.SAFE.lastDist.key}`, 'the distribution is recorded');
-  assert.ok(records.ARA?.lastKey, 'and so is the dividend');
+  assert.ok(records.MIL?.lastKey, 'and so is the dividend');
   // A lost record would announce the same distribution again on a later tick.
   const keys = env.hooksFired
     .filter((h) => h.name === 'night-city-investments.dividendPaid' && h.args[0].companyId === 'SAFE')

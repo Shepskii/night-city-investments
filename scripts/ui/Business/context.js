@@ -129,7 +129,11 @@ export function holderWho(business, p, viewerId = null, { truth = false } = {}) 
   return escapeHtml(withDiscoveries(maskLabel(mask), game.actors.get(viewerId), mask.ref));
 }
 
-const nameOf = (business, actorId) => partnerOf(business, actorId)?.name || (business.staff ?? []).find((s) => s.id === actorId)?.name || game.actors.get(actorId)?.name || '?';
+/**
+ * A name in the window's running text (proposals, the ledger, who took a slot). A hidden holder (B6d)
+ * goes by their outer layer here for everyone: only the cap table and the GM Console say more.
+ */
+export const nameOf = (business, actorId) => (outerMask(business, actorId) ? maskLabel(outerMask(business, actorId)) : null) || partnerOf(business, actorId)?.name || (business.staff ?? []).find((s) => s.id === actorId)?.name || game.actors.get(actorId)?.name || '?';
 
 /** Characters this user can act as: their own, or for a GM the player-owned ones (every character if none). */
 export function usableActors() {

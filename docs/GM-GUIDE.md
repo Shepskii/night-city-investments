@@ -2,6 +2,12 @@
 
 How to run the market at the table, steer it, approve and check what players do, and read the hidden state. For installation and settings see [Getting started](GETTING-STARTED.md); for what players see, the [player guide](PLAYER-GUIDE.md).
 
+## The market in your Night City
+
+The published Cyberpunk RED material I could check describes no stock exchange, so this one is the module's invention. A framing that sits well with the setting: with the old global NET gone, it is a local exchange on one of Ziggurat's air-gapped CitiNets, reached through brokers' Agents or a CorpNet terminal. Global names like Arasaka trade thinly here, on rumour. The starter companies are starting points; two of them (Night Corp and Kang Tao) are best known from the 2077 era, so check them against your book and replace them if you prefer.
+
+Re-importing does not overwrite companies a world already has. A world made before v0.16 keeps its old entries: to match the current starter set, edit "Danger Girl" to **Danger Gal**, and make Arasaka thin and volatile (no dividend) in the Company Editor.
+
 ## How it works underneath
 
 - **Your client does the work.** Players never change portfolios or businesses themselves. Each action is saved as a request on their own character, and the **active GM's** client carries it out and writes the result back. With no GM online, requests wait.

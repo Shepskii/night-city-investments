@@ -101,15 +101,15 @@ test('terminal renders every tab with real data', async () => {
   await S.PortfolioClient.submit(alice, 'deposit', { amount: 20000 });
   await settle();
   env.store.set('directOrderExecution', 'instant');
-  await S.PortfolioClient.submit(alice, 'placeOrder', { side: 'buy', assetId: 'ARA', qty: 10, orderType: 'market', expiry: 'day' });
+  await S.PortfolioClient.submit(alice, 'placeOrder', { side: 'buy', assetId: 'MIL', qty: 10, orderType: 'market', expiry: 'day' });
   await S.PortfolioClient.submit(alice, 'placeOrder', { side: 'buy', assetId: 'MIL', qty: 5, orderType: 'limit', limit: 1, expiry: 'gtc' });
   await settle();
   env.store.set('directOrderExecution', 'nextTick');
-  await S.PortfolioClient.submit(alice, 'setDrip', { assetId: 'ARA', enabled: true });
+  await S.PortfolioClient.submit(alice, 'setDrip', { assetId: 'MIL', enabled: true });
   await S.TickService.advance(3);
-  await S.DividendService.declareSpecial('ARA', 1.25);
+  await S.DividendService.declareSpecial('MIL', 1.25);
   await S.NewsService.post({ headline: 'Quiet day in the Corpo Plaza', tone: 'neutral' });
-  await S.PortfolioClient.toggleWatch(alice, 'ARA');
+  await S.PortfolioClient.toggleWatch(alice, 'MIL');
   await settle();
 
   const app = new Terminal();
@@ -120,7 +120,7 @@ test('terminal renders every tab with real data', async () => {
   assert.ok(text(html).includes('Arasaka'));
   assert.ok(html.includes('<svg'), 'sparklines render');
 
-  app.selectedId = 'ARA';
+  app.selectedId = 'MIL';
   html = render('templates/terminal/market.hbs', await app._prepareContext());
   assertClean(html, 'company page');
   assert.ok(text(html).includes('last 1.25 eb'), 'last dividend shown');
@@ -146,7 +146,7 @@ test('terminal renders every tab with real data', async () => {
 test('GM console renders all four tabs, with controls, queued events and the log filled in', async () => {
   await S.MarketControlService.addBias({ target: 'sector:arms', value: 1.5, days: 12, decay: 'linear' });
   await S.MarketControlService.forceRegime('bear', 4);
-  await S.MarketControlService.addShock({ target: 'company:ARA', percent: -6, delayDays: 2, persistence: 'lasting', headline: 'Arasaka audit' });
+  await S.MarketControlService.addShock({ target: 'company:MIL', percent: -6, delayDays: 2, persistence: 'lasting', headline: 'Arasaka audit' });
   await S.MarketControlService.setHalt(true);
   await S.CorporateActionService.setPrice('CON', 61.5);
   await settle();
@@ -192,16 +192,16 @@ test('every data-action in a template is a real action of its window, and none i
 });
 
 test('company editor and trade dialog render', async () => {
-  const editor = new Editor({ companyId: 'ARA' });
+  const editor = new Editor({ companyId: 'MIL' });
   let html = render('templates/gm/company-editor.hbs', await editor._prepareContext());
   assertClean(html, 'company editor');
-  assert.ok(html.includes('value="ARA"'));
+  assert.ok(html.includes('value="MIL"'));
   assert.ok(html.includes('name="split.auto"'));
 
   html = render('templates/gm/company-editor.hbs', await new Editor({ companyId: null })._prepareContext());
   assertClean(html, 'new company editor');
 
-  const trade = new Trade({ actorId: alice.id, assetId: 'ARA', side: 'sell' });
+  const trade = new Trade({ actorId: alice.id, assetId: 'MIL', side: 'sell' });
   html = render('templates/dialogs/trade.hbs', await trade._prepareContext());
   assertClean(html, 'trade dialog');
   assert.ok(html.includes('<option value="sell" selected>'));
