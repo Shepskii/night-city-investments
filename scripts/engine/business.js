@@ -102,6 +102,7 @@ import {
   issueOffer, startIssue, takeRights, buybackOffer, startBuyback, sellBack, closeCapital, capitalRollCheck, applyOfferingRoll, applyTimingRoll,
 } from './businessCapital.js';
 import { takeoverOffer, makeTakeover, tenderShares, defenceCheck, applyDefence } from './businessTakeover.js';
+import { checkSolvency, ADMINISTRATION_REFUSES } from './businessInsolvency.js';
 
 export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, projectOffer, PROJECT_KINDS };
 export { upgradesOf, protectionFactor, breakInFactor, reputationBaseline } from './businessGrowth.js';
@@ -400,6 +401,8 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
   if (!business) return fail('no-business');
   if (ROLL_REQUESTS.includes(request.type) && !request.use) return fail('bad-use');
   const b = structuredClone(normalizeBusiness(business));
+  // A company in administration takes cash in, but nothing that acts, draws, decides or moves capital (B6c).
+  if (b.administration && ADMINISTRATION_REFUSES.includes(request.type)) return fail('administration');
   const me = partnerOf(b, actor.id);
   const log = (kind, amount, note = {}) => addLedger(b, { day, kind, amount, actorId: actor.id, ...note }, p);
   /** Pay for who made the roll: a hired professional's fee, or an employee's overtime (`kind` 'roll' or 'help'). */
@@ -1576,7 +1579,12 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, params
   if (b.stage >= 2) closeReportWeek(b, b.period.endDay, out, p);
 
   b.losingPeriods = b.till < 0 ? b.losingPeriods + 1 : 0;
-  if (b.losingPeriods >= p.failurePeriods) {
+  if (b.stage >= 2) {
+    // A company goes into administration instead of failing (B6c): the GM restructures or winds it up.
+    const s = checkSolvency(b, b.period.endDay, p);
+    if (s.entered) out.events.push({ type: 'administration', net: b.administration.net });
+    if (s.ended) out.events.push({ type: 'administrationEnded' });
+  } else if (b.losingPeriods >= p.failurePeriods) {
     liquidate(b, b.period.endDay, 'failed', out, p);
     return;
   }

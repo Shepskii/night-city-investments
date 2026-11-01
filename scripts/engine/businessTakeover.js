@@ -154,7 +154,8 @@ export function settleTakeover(b, { day, sellable = null, held = null }, p = BUS
       left -= 1;
     }
   }
-  const transfers = parts.map(({ x, n }) => ({ actorId: x.actorId, qty: n, cash: Math.round(n * t.price), npc: !!x.npc && !x.market, market: !!x.market }))
+  // Each seller is paid rounded down, so the payments never come to more than the escrow holds.
+  const transfers = parts.map(({ x, n }) => ({ actorId: x.actorId, qty: n, cash: Math.floor(n * t.price), npc: !!x.npc && !x.market, market: !!x.market }))
     .filter((r) => r.qty > 0);
   const acquired = transfers.reduce((a, r) => a + r.qty, 0);
   const spent = transfers.reduce((a, r) => a + r.cash, 0);

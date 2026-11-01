@@ -4,7 +4,7 @@
  * @description Action handlers run with `this` set to the console window.
  */
 
-import { holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty, holderActorId } from '../../../engine/index.js';
+import { holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty, holderActorId, debtsOf, solvency } from '../../../engine/index.js';
 import { BusinessService } from '../../../services/BusinessService.js';
 import { BusinessApp } from '../../Business/BusinessApp.js';
 import { dayText, LT } from '../../Business/context.js';
@@ -38,6 +38,16 @@ async function onListingApprove(event, target) {
 async function onListingReject(event, target) {
   if (!(await confirm(L('NCI.GMBusiness.ListingReject'), L('NCI.GMBusiness.ListingRejectConfirm')))) return;
   report(await BusinessService.rejectListing(target.dataset.id));
+}
+
+async function onRestructure(event, target) {
+  if (!(await confirm(L('NCI.GMBusiness.Restructure'), L('NCI.GMBusiness.RestructureConfirm')))) return;
+  report(await BusinessService.restructureBusiness(target.dataset.id));
+}
+
+async function onWindUp(event, target) {
+  if (!(await confirm(L('NCI.GMBusiness.WindUp'), L('NCI.GMBusiness.WindUpConfirm')))) return;
+  report(await BusinessService.windUpBusiness(target.dataset.id));
 }
 
 async function onTakeoverApprove(event, target) {
@@ -85,6 +95,8 @@ export const actions = {
   businessListingReject: onListingReject,
   businessDelist: onDelist,
   businessTakeoverApprove: onTakeoverApprove,
+  businessRestructure: onRestructure,
+  businessWindUp: onWindUp,
   businessTakeoverReject: onTakeoverReject,
   businessGiveTime: onGiveTime,
   businessReject: onReject,
@@ -130,6 +142,10 @@ export function context() {
           price: b.listing.offer ? b.listing.offer.price.toLocaleString() : '', shares: whole(b.listing.offer?.shares ?? 0),
         }),
       } : null,
+      // In administration (B6c): the GM restructures or winds it up.
+      administration: b.administration ? L('NCI.GMBusiness.Administration', {
+        date: dayText(b.administration.since), net: whole(solvency(b)), loans: whole(debtsOf(b).loans), wages: whole(debtsOf(b).wages), overdraft: whole(debtsOf(b).overdraft),
+      }) : '',
       // A takeover offer (B6b): waiting for the GM, or open.
       takeover: b.takeover ? {
         awaiting: b.takeover.status === 'awaiting',

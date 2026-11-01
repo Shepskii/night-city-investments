@@ -290,12 +290,33 @@ test('a takeover bid for a listed company, by ticker: approved with the offer he
   assert.ok(held(alice) <= before.alice - 1 && held(alice) >= before.alice - 20, 'alice sold (pro rata at most 20)');
   // Paid into her balance (other money, such as a dividend, may land in the same days).
   const tendered = portfolio(alice).ledger.find((e) => e.kind === 'tendered' && e.ref === 'bus_play');
-  assert.deepEqual([tendered.qty, tendered.amount], [-(before.alice - held(alice)), Math.round((before.alice - held(alice)) * offer)], 'paid into her balance');
+  assert.deepEqual([tendered.qty, tendered.amount], [-(before.alice - held(alice)), Math.floor((before.alice - held(alice)) * offer)], 'paid into her balance');
   assert.ok(portfolio(alice).cash >= before.aliceCash + tendered.amount);
   assert.equal(after.listing.shares, before.shares, 'no shares made or lost');
   assert.equal(after.partners.find((x) => x.actorId === cass.id)?.units, held(cass), 'a shareholder by her portfolio');
   const settled = portfolio(cass).ledger.find((e) => e.kind === 'takeoverSettled' && e.ref === 'bus_play');
   assert.equal(settled.amount, Math.round(offer * want) - after.lastTakeover.spent, 'what was not spent came back');
+});
+
+test('a listed company in administration is restructured: its debts become creditors\' shares, added to the market and kept through the holders\' sync', async () => {
+  const before = { shares: business().listing.shares, outstanding: S.CompanyRepository.get('PLAY').sharesOutstanding };
+  await S.BusinessRepository.save({
+    ...business(), administration: { since: S.BusinessService.day(), net: -500 },
+    loans: [...(business().loans ?? []), { id: 'loan_test', kind: 'bank', principal: 20000, balance: 20000, rate: 0.01, payment: 1000, startedDay: S.BusinessService.day(), missed: 0 }],
+  });
+  const out = await S.BusinessService.restructureBusiness('bus_play');
+  await settle();
+  assert.equal(out.ok, true, out.reason);
+  const b = business();
+  assert.equal(b.administration, null);
+  assert.equal(b.loans.find((l) => l.id === 'loan_test').balance, 0);
+  assert.equal(b.listing.shares, before.shares + out.shares);
+  assert.equal(S.CompanyRepository.get('PLAY').sharesOutstanding, before.shares + out.shares, 'on the market too');
+  // The creditors stay on the record after the holders are read from the portfolios again.
+  const synced = E.normalizeBusiness(structuredClone(b));
+  S.BusinessService._syncHolders(synced);
+  assert.equal(synced.partners.find((x) => x.actorId === 'npc:creditors')?.units, out.shares);
+  assert.ok(S.MarketStore.getControls().impacts.some((i) => i.source === 'restructure'), 'the price diluted');
 });
 
 test('a listed company worth too little for three reports goes under review; the GM delists it: the float bought back, shares out of portfolios and onto the record, the company private again', async () => {
@@ -337,4 +358,18 @@ test('a listed company worth too little for three reports goes under review; the
     MailService.fromWire = fromWire;
     delete S.BusinessService.listingThreshold;
   }
+});
+
+test('a private company in administration is wound up: the holders are paid what is left in eddies, and it closes', async () => {
+  const b0 = business();
+  assert.equal(b0.listing.status, 'delisted', 'private again after the delisting');
+  await S.BusinessRepository.save({ ...b0, administration: { since: S.BusinessService.day(), net: -1 }, till: 5000, assets: 2000, loans: [] });
+  const wealthBefore = alice.system.wealth.value;
+  const out = await S.BusinessService.windUpBusiness('bus_play');
+  await settle();
+  assert.equal(out.ok, true, out.reason);
+  assert.equal(business().status, 'closed');
+  assert.equal(business().closeReason, 'woundUp');
+  assert.ok(out.perShare > 0 && out.left === 5000 + 1000, 'cash plus half the assets, no debts');
+  assert.ok(alice.system.wealth.value > wealthBefore, 'paid in eddies');
 });

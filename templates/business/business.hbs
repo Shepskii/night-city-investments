@@ -107,6 +107,7 @@
       {{#if onMarket}}<button type="button" data-action="viewOnMarket" data-id="{{ticker}}"><i class="fas fa-chart-line"></i> {{localize "NCI.Business.ViewOnMarket"}}</button>{{/if}}
     </div>
   </header>
+  {{#if administration}}<div class="nci-warn">{{administration}}</div>{{/if}}
 
   {{#if invited}}
   <div class="nci-block nci-form">

@@ -175,6 +175,9 @@ export function normalizeBusiness(raw) {
     capital: b.capital ?? { issue: null, buyback: null },
     // A takeover offer for the company, and the last one closed (B6b).
     takeover: b.takeover ?? null,
+    // Administration (B6c): since when, and the net assets at the last close; closes below zero in a row.
+    administration: b.administration ?? null,
+    insolventPeriods: b.insolventPeriods ?? 0,
     lastTakeover: b.lastTakeover ?? null,
     listingConcerns: !!b.listingConcerns,
     /** Notes from another business's two-jobs events, for this one's next digest (E3). */

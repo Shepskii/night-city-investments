@@ -102,6 +102,7 @@ The **Businesses** tab lists every business with its true state, Exposure includ
 | A business offers an NPC a job | **Accept** or **decline** for the NPC |
 | A player has left the table | Mark the partner as **leaving**, so the others can buy them out or the stake passes to the heir |
 | A character or syndicate bids for a company | **Approve the offer** (the whole offer is held from the bidder's brokerage balance, or the bid lapses if they cannot cover it; it opens for 7 days) or **refuse** it. The tab then shows the offer and what players have tendered |
+| A company is in **administration** (net assets below zero at two closes in a row) | **Restructure** it (debts written off for creditors' shares, the holders diluted, Reputation and Compliance −10) or **Wind it up** (assets sold at half value; owed wages, then loans, then holders; it closes, and a listed company's shares leave portfolios). The tab shows its net assets, loans, wages owed and overdraft. If its owners put in enough cash, it comes out by itself at a close |
 | A listed company is under the **delisting review** | **Give it time** (the review clears), or **Delist** it: it buys back the float (borrowing what its cash lacks) and goes private. Delisting cannot be undone |
 
 The rest runs itself: weeks close, events are drawn, wages are paid, reports are published, and takeover offers close and settle when their 7 days are up.

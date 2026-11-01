@@ -13,7 +13,7 @@ import {
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
-  capitalOf, issueOptions, rightsLeft, tenderRoom, capitalRollCheck, defenceCheck, takeoverPremium, sellableQty,
+  capitalOf, issueOptions, rightsLeft, tenderRoom, capitalRollCheck, defenceCheck, takeoverPremium, sellableQty, debtsOf, solvency,
 } from '../../engine/index.js';
 import { PortfolioRepository } from '../../data/PortfolioRepository.js';
 import { MarketStore } from '../../data/MarketStore.js';
@@ -180,6 +180,10 @@ export function businessContext(business, actor) {
     onMarket: ['scheduled', 'listed'].includes(business.listing?.status) && !!business.company?.ticker,
     status,
     statusLabel: L(`NCI.Business.Status.${status}`),
+    // In administration (B6c): what is stopped, and how cash put in can bring it back.
+    administration: business.administration
+      ? L('NCI.Insolvency.Banner', { date: dayText(business.administration.since), net: whole(solvency(business)), debts: whole(debtsOf(business).total) })
+      : '',
     isForming: status === 'forming',
     isPending: status === 'pending',
     isOpen: status === 'open',

@@ -322,6 +322,16 @@ export const BUSINESS_DEFAULTS = Object.freeze({
    * shares at a premium of `accept.all` over the reference price or more, half at `accept.half` or more,
    * none below; the target's officers' defence roll moves both bars by its `shift`.
    */
+  /**
+   * Insolvency (B6c): a company with net assets below zero at `periods` closes in a row goes into
+   * administration. Restructuring turns its debts into shares at `priceShare` of book value per share
+   * (at least `minPrice`), with standing hits; winding up sells its assets at `salvage` of book value.
+   * Going into administration dents a listed company's price by `hit` (a log-return).
+   */
+  insolvency: Object.freeze({
+    periods: 2, salvage: 0.5, hit: -0.1,
+    restructure: Object.freeze({ priceShare: 0.5, minPrice: 0.01, reputation: -10, compliance: -10 }),
+  }),
   takeover: Object.freeze({
     days: 7,
     accept: Object.freeze({ all: 0.2, half: 0.1 }),

@@ -1041,6 +1041,10 @@
       "PlayerDelisted": "{name} ({ticker}) delisted: the company buys back its public float at {price} eb and goes private.",
       "Offering": "{name} ({ticker}) offers {shares} new shares at {price} eb.",
       "Takeover": "{bidder} bids {price} eb a share for {name} ({ticker}), a {premium}% premium.",
+      "Administration": "{name} ({ticker}) goes into administration, owing more than it owns.",
+      "AdministrationEnded": "{name} ({ticker}) comes out of administration.",
+      "Restructured": "{name} ({ticker}) is restructured: its creditors swap their debts for shares.",
+      "WoundUp": "{name} ({ticker}) is wound up; holders receive {perShare} eb a share.",
       "TakeoverClosed": "{bidder}'s offer for {name} ({ticker}) closes with {shares} shares bought.",
       "TakeoverControl": "{bidder} takes control of {name} ({ticker}), buying {shares} shares at {price} eb.",
       "OfferingPulled": "{name} ({ticker}) pulls its share offering for lack of interest.",
@@ -1707,6 +1711,20 @@
       "IntelFound": "{bands}; worth about {low} to {high} eb",
       "IntelNothing": "nothing useful found"
     },
+    "Insolvency": {
+      "Banner": "In administration since {date}: net assets {net} eb against debts of {debts} eb. No actions, draws, votes, new shares or buybacks until it is resolved; the weeks still close. Cash put in from the Ledger tab that lifts net assets above zero at a weekly close brings it out; otherwise the market restructures it or winds it up.",
+      "Mail": {
+        "InSubject": "{name} is in administration",
+        "In": "{name} has had more debts than assets for two weekly closes (net assets {net} eb), so it is in administration. Its owners cannot act, draw, vote or move capital until it is resolved. Cash put in that brings its net assets above zero at a weekly close ends it; otherwise it will be restructured or wound up.",
+        "OutSubject": "{name} is out of administration",
+        "Out": "{name}'s net assets are above zero again, so it is out of administration and its owners can run it as before.",
+        "RestructuredSubject": "{name} has been restructured",
+        "Restructured": "{name} has been restructured: its debts of {debts} eb became {shares} new shares held by its creditors, without a vote. Your shares are worth a smaller part of the company now. It is out of administration.",
+        "WoundUpSubject": "{name} has been wound up",
+        "WoundUp": "{name} has been wound up. Its assets were sold; {wages} eb went to wages owed and {loans} eb to its lenders, and what was left was shared out at {perShare} eb a share, paid to you in eddies.",
+        "WoundUpListed": "{name} has been wound up. Its assets were sold; {wages} eb went to wages owed and {loans} eb to its lenders, and what was left was paid at {perShare} eb a share into the brokerage balances of those holding its shares, which have left their portfolios."
+      }
+    },
     "Takeover": {
       "Title": "Takeover offer",
       "Hint": "A takeover offer buys the shares holders tender at its price, up to the shares it is for. NPC holders and the public float tender all their shares at a premium of 20% or more over the reference price, half at 10% to 20%, none below; the officers' defence roll moves those bars once. Holders who do not tender keep their shares.",
@@ -2024,6 +2042,11 @@
       "DelistConfirm": "Delist this company? It buys the market's shares back at the market price from its cash (borrowing from the bank what it lacks), the shareholders' shares leave their portfolios and become shares on its record again, and it goes back to being a private company. This cannot be undone.",
       "GiveTime": "Give it time",
       "TakeoverApprove": "Approve the offer",
+      "Administration": "In administration since {date}: net assets {net} eb (loans {loans} eb, wages owed {wages} eb, overdraft {overdraft} eb). Restructure it or wind it up; cash its owners put in that lifts net assets above zero at a close ends it by itself.",
+      "Restructure": "Restructure",
+      "RestructureConfirm": "Restructure this company? Its loans, owed wages and overdraft are written off for new shares at half its book value per share, held by its creditors without a vote; the old holders are diluted, and Reputation and Compliance drop by 10. It leaves administration.",
+      "WindUp": "Wind up",
+      "WindUpConfirm": "Wind this company up? Its assets sell at half their book value; owed wages are paid first, then the loans, then the holders by shares (a listed company's into brokerage balances, its shares leaving portfolios). The business closes. This cannot be undone.",
       "TakeoverReject": "Refuse the offer",
       "Takeover": {
         "awaiting": "Takeover bid by {bidder}: {price} eb a share for up to {shares} shares ({escrow} eb, held from their brokerage balance when approved).",
@@ -2396,6 +2419,10 @@
         "takeoverDropped": "{name}'s takeover offer was withdrawn",
         "takeoverDefence": "{name} defended against the takeover offer",
         "takeoverClosed": "{name}'s takeover offer closed: {price} shares bought",
+        "administration": "Into administration: more debts than assets",
+        "administrationEnded": "Out of administration",
+        "restructured": "Restructured: {price} new shares to its creditors for its debts",
+        "woundUp": "Wound up: assets sold for {salvage} eb and the money paid out",
         "listingReview": "Put under the delisting review",
         "reviewCleared": "The market gave the company time: the review cleared",
         "buyback": "Public float bought back on delisting",
@@ -2520,7 +2547,9 @@
         "closedCompany": "The shareholders closed it on {date}.",
         "failed": "It went under on {date}: its cash stayed below zero for two weeks.",
         "cancelled": "It never opened: everyone took their money back ({date}).",
-        "rejected": "The GM turned it down on {date}; the money went back."
+        "rejected": "The GM turned it down on {date}; the money went back.",
+        "woundUp": "It was wound up on {date}, after going into administration.",
+        "woundUpCompany": "It was wound up on {date}, after going into administration."
       },
       "State": { "reputation": "Reputation", "capacity": "Capacity", "costs": "Cost base", "compliance": "Compliance" },
       "Band": {
@@ -2823,7 +2852,9 @@
         "no-takeover": "no takeover offer is open",
         "own-offer": "you cannot tender to your own offer",
         "defence-done": "the officers have already defended against this offer",
-        "no-target": "no open player company has that ticker"
+        "no-target": "no open player company has that ticker",
+        "administration": "not while the company is in administration",
+        "not-administration": "the company is not in administration"
       }
     },
     "Staff": {

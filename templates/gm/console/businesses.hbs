@@ -49,6 +49,13 @@
       <button type="button" data-action="businessListingReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.ListingReject"}}</button>
     </div>
     {{/if}}
+    {{#if administration}}
+    <div class="nci-warn">{{administration}}</div>
+    <div class="nci-actions">
+      <button type="button" data-action="businessRestructure" data-id="{{id}}"><i class="fas fa-scale-balanced"></i> {{localize "NCI.GMBusiness.Restructure"}}</button>
+      <button type="button" data-action="businessWindUp" data-id="{{id}}"><i class="fas fa-skull"></i> {{localize "NCI.GMBusiness.WindUp"}}</button>
+    </div>
+    {{/if}}
     {{#if takeover}}
     <div class="nci-warn">{{takeover.text}}</div>
     {{#if takeover.awaiting}}

@@ -221,6 +221,18 @@ Any character or syndicate can bid for a chartered player company, private or li
 - **Defence:** the target's officers may make one defence roll (Persuasion or Business). A good result makes NPC holders and the float want a higher premium; a fumble makes them keener.
 - **Control:** a bidder who ends with more than half the shares controls the votes, and can elect and dismiss officers. Holders who did not tender keep their shares.
 
+## Insolvency
+
+A company (chartered or listed) whose debts (its loans, the wages it owes and any overdraft) are more than its cash and assets at two weekly closes in a row goes into **administration**. A banner on the Business window says so.
+
+- **While in administration** nobody can take actions, draw, vote, issue or buy back shares, or bid and tender. The weeks still close, and the takings, costs and events carry on. A listed company pays no dividend, and its price takes a hit.
+- **Rescue it** by putting cash in from the Ledger tab. If its net assets are above zero at a weekly close, it comes out of administration by itself.
+- **Otherwise the market (your GM) decides:**
+  - **Restructuring** writes the debts off in exchange for new shares, held by the creditors with no vote. Your shares become a smaller part of the company, and its Reputation and Compliance drop.
+  - **Winding up** sells the assets at half their value. Owed wages are paid first, then the loans, then whatever is left goes to the holders by shares: in eddies for a private company, or into brokerage balances for a listed one. Then the business closes.
+
+Side and registered businesses don't go into administration: they still close when their cash stays below zero for two losing weeks.
+
 ## Employees
 
 A business can take on staff: one at a side business, three for registered, eight as a company. Open roles are on the **Staff** tab.

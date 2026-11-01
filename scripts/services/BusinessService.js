@@ -22,6 +22,7 @@ import {
   reviewListing, clearReview, delistCompany,
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
   takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
+  restructure, windUp,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter, isItemPile } from '../utils/helpers.js';
@@ -357,7 +358,8 @@ class BusinessServiceImpl {
    */
   async _payDividend(businessId, report) {
     const stored = BusinessRepository.get(businessId);
-    if (!stored || !isListed(stored)) return;
+    // A company in administration pays no dividend (B6c).
+    if (!stored || !isListed(stored) || stored.administration) return;
     const b = normalizeBusiness(structuredClone(stored));
     if ((b.reports ?? []).find((r) => r.index === report.index)?.dividend) return;
     const ticker = b.company?.ticker;
@@ -622,6 +624,7 @@ class BusinessServiceImpl {
     await this._twoJobs(out);
     await this._scheduleListing(out.business);
     await this._capitalEvents(out);
+    await this._insolvencyEvents(out);
     await this._afterReports(out);
     for (const event of out.events.filter((e) => e.type === 'periodClosed')) {
       Hooks.callAll(HOOKS.BUSINESS_PERIOD, { businessId: out.business.id, digest: event.digest });
@@ -1026,6 +1029,120 @@ class BusinessServiceImpl {
   /** A game day as the calendar shows it, for mails. */
   _dayText(day) {
     return MarketClock.dateString(day * 86400000);
+  }
+
+  /**
+   * A company has gone into administration, or come out of it (B6c): its shareholders are told, and a
+   * listed company's news reports it, the price taking a dent on the way in.
+   */
+  async _insolvencyEvents(out) {
+    const b = out.business;
+    if (!b) return;
+    const ticker = isListed(b) ? b.company?.ticker : null;
+    for (const e of out.events) {
+      if (e.type === 'administration') {
+        const terms = { name: b.name, ticker: ticker ?? '', net: Math.round(e.net ?? 0).toLocaleString() };
+        await this._mailHolders(b, L('NCI.Insolvency.Mail.InSubject', terms), [L('NCI.Insolvency.Mail.In', terms)]);
+        if (ticker) {
+          const key = `administration:${b.id}:${this.day()}`;
+          await TickService.updateControls((controls, { tick }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
+            ...controls,
+            impacts: [...controls.impacts, makeImpact({
+              id: `imp_admin_${b.id}_${this.day()}`, target: { type: 'company', id: ticker }, amount: BUSINESS_DEFAULTS.insolvency.hit, onsetTick: tick,
+              permanent: 1, sourceKey: key, source: 'administration', meta: { businessId: b.id },
+            })],
+          }));
+          await NewsService.post({ headline: L('NCI.News.Administration', terms), tone: 'down', companyIds: [ticker] });
+        }
+      } else if (e.type === 'administrationEnded') {
+        await this._mailHolders(b, L('NCI.Insolvency.Mail.OutSubject', { name: b.name }), [L('NCI.Insolvency.Mail.Out', { name: b.name })]);
+        if (ticker) await NewsService.post({ headline: L('NCI.News.AdministrationEnded', { name: b.name, ticker }), tone: 'up', companyIds: [ticker] });
+      }
+    }
+  }
+
+  /**
+   * Restructure a company in administration (B6c): its debts become shares for its creditors. A listed
+   * company's new shares are added to the market, and its price diluted to match.
+   */
+  restructureBusiness(id) {
+    if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
+    return this._queue.run(async () => {
+      const stored = BusinessRepository.get(id);
+      if (!stored?.administration) return { ok: false, reason: 'not-administration' };
+      const b = normalizeBusiness(structuredClone(stored));
+      this._syncHolders(b);
+      const before = b.listing?.shares ?? 0;
+      const done = restructure(b, this.day());
+      if (!done.ok) return done;
+      await this._commit({ ok: true, business: b, wealth: {}, events: [{ type: 'restructured', shares: done.shares }] });
+      const ticker = isListed(b) ? b.company.ticker : null;
+      if (ticker) {
+        const company = CompanyRepository.get(ticker);
+        if (company) await CompanyRepository.save({ ...company, sharesOutstanding: b.listing.shares });
+        if (before > 0) {
+          const key = `restructure:${b.id}:${this.day()}`;
+          await TickService.updateControls((controls, { tick }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
+            ...controls,
+            impacts: [...controls.impacts, makeImpact({
+              id: `imp_restructure_${b.id}_${this.day()}`, target: { type: 'company', id: ticker }, amount: Math.log(before / b.listing.shares), onsetTick: tick,
+              permanent: 1, sourceKey: key, source: 'restructure', meta: { businessId: b.id },
+            })],
+          }));
+        }
+        await NewsService.post({ headline: L('NCI.News.Restructured', { name: b.name, ticker }), tone: 'neutral', companyIds: [ticker] });
+      }
+      const terms = { name: b.name, shares: done.shares.toLocaleString(), debts: done.debts.toLocaleString() };
+      await this._mailHolders(b, L('NCI.Insolvency.Mail.RestructuredSubject', terms), [L('NCI.Insolvency.Mail.Restructured', terms)]);
+      return { ok: true, ...done };
+    });
+  }
+
+  /**
+   * Wind up a company in administration (B6c): it closes, paying owed wages, then its loans, then its
+   * holders by shares. A listed company's holders are paid into their brokerage balances for the shares
+   * in their portfolios, which leave them; the market company is marked bankrupt.
+   */
+  windUpBusiness(id) {
+    if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
+    return this._queue.run(async () => {
+      const stored = BusinessRepository.get(id);
+      if (!stored?.administration) return { ok: false, reason: 'not-administration' };
+      const b = normalizeBusiness(structuredClone(stored));
+      this._syncHolders(b);
+      const ticker = isListed(b) ? b.company.ticker : null;
+      const mailTo = structuredClone(b);
+      const out = { wealth: {}, events: [] };
+      const done = windUp(b, this.day(), out);
+      if (!done.ok) return done;
+      await this._commit({ ok: true, business: b, wealth: out.wealth, events: out.events });
+      if (ticker) {
+        const tick = timeOf(MarketStore.getPublic());
+        for (const account of PortfolioRepository.accounts().filter((a) => PortfolioRepository.hasPortfolio(a))) {
+          const p0 = PortfolioRepository.get(account);
+          const qty = heldQty(p0.lots ?? [], ticker);
+          const open = (p0.orders ?? []).some((o) => o.assetId === ticker && o.status === 'open');
+          if (!qty && !open) continue;
+          const paid = Math.floor(qty * done.perShare);
+          await PortfolioService.transformActor(account, (p) => ({
+            portfolio: {
+              ...p,
+              cash: (p.cash ?? 0) + paid,
+              lots: (p.lots ?? []).filter((l) => l.assetId !== ticker),
+              orders: (p.orders ?? []).map((o) => (o.assetId === ticker && o.status === 'open' ? { ...o, status: 'cancelled', closedTick: tick, reason: 'wound-up' } : o)),
+              ledger: qty ? [...(p.ledger ?? []), { ts: tick, kind: 'windUp', assetId: ticker, qty: -qty, amount: paid, ref: b.id }] : (p.ledger ?? []),
+            },
+            changed: true,
+          }));
+        }
+        const company = CompanyRepository.get(ticker);
+        if (company) await CompanyRepository.save({ ...company, status: 'bankrupt', offering: null });
+        await NewsService.post({ headline: L('NCI.News.WoundUp', { name: b.name, ticker, perShare: done.perShare.toLocaleString() }), tone: 'down', companyIds: [ticker] });
+      }
+      const terms = { name: b.name, perShare: done.perShare.toLocaleString(), wages: Math.round(done.wages).toLocaleString(), loans: Math.round(done.loans).toLocaleString() };
+      await this._mailHolders(mailTo, L('NCI.Insolvency.Mail.WoundUpSubject', terms), [L(ticker ? 'NCI.Insolvency.Mail.WoundUpListed' : 'NCI.Insolvency.Mail.WoundUp', terms)]);
+      return { ok: true, ...done };
+    });
   }
 
   /** Give a company under the delisting review time (B5c): the review clears and the count starts again. */
