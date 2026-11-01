@@ -93,7 +93,7 @@ test('setup: both investors hold some stock', async () => {
   for (const a of [alice, bob]) {
     await S.PortfolioClient.submit(a, 'deposit', { amount: 30000 });
     await settle();
-    const k = await S.PortfolioClient.submit(a, 'placeOrder', { route: 'direct', side: 'buy', assetId: 'ARA', qty: 10, orderType: 'market', expiry: 'day' });
+    const k = await S.PortfolioClient.submit(a, 'placeOrder', { route: 'direct', side: 'buy', assetId: 'PET', qty: 10, orderType: 'market', expiry: 'day' });
     await settle();
     assert.equal(res(a, k).ok, true);
   }
@@ -106,11 +106,11 @@ test('setup: both investors hold some stock', async () => {
 test('price alerts fire after a tick, are mailed unless switched off, and are logged either way', async () => {
   await S.PortfolioClient.setNotify(bob, 'alerts', 'off');
   await settle();
-  const p0 = price('ARA');
-  const ka = await S.PortfolioClient.setAlert(alice, { assetId: 'ARA', kind: 'above', value: Math.round(p0 * 1.15), once: true });
-  const kb = await S.PortfolioClient.setAlert(bob, { assetId: 'ARA', kind: 'above', value: Math.round(p0 * 1.15), once: false });
-  const kc = await S.PortfolioClient.setAlert(alice, { assetId: 'ARA', kind: 'below', value: Math.round(p0 * 0.5) });
-  const kd = await S.PortfolioClient.setAlert(alice, { assetId: 'ARA', kind: 'above', value: 10 });
+  const p0 = price('PET');
+  const ka = await S.PortfolioClient.setAlert(alice, { assetId: 'PET', kind: 'above', value: Math.round(p0 * 1.15), once: true });
+  const kb = await S.PortfolioClient.setAlert(bob, { assetId: 'PET', kind: 'above', value: Math.round(p0 * 1.15), once: false });
+  const kc = await S.PortfolioClient.setAlert(alice, { assetId: 'PET', kind: 'below', value: Math.round(p0 * 0.5) });
+  const kd = await S.PortfolioClient.setAlert(alice, { assetId: 'PET', kind: 'above', value: 10 });
   await settle();
   assert.equal(res(alice, ka).ok && res(bob, kb).ok && res(alice, kc).ok, true);
   assert.equal(res(alice, kd).reason, 'alert-already-met');
@@ -121,14 +121,14 @@ test('price alerts fire after a tick, are mailed unless switched off, and are lo
   assert.equal(pf(alice).alerts.length, 2, 'nothing has crossed yet');
   assert.equal(mailsTo(alice, 'Alert.Subject').length, 0);
 
-  await S.CorporateActionService.setPrice('ARA', Math.round(p0 * 1.3));
+  await S.CorporateActionService.setPrice('PET', Math.round(p0 * 1.3));
   await settle();
   await S.TickService.advance(1);
   await settle();
 
   assert.equal(pf(alice).alerts.length, 1, 'the once alert is spent, the other remains');
   assert.equal(pf(alice).alertLog.length, 1);
-  assert.equal(pf(alice).alertLog[0].assetId, 'ARA');
+  assert.equal(pf(alice).alertLog[0].assetId, 'PET');
   assert.equal(mailsTo(alice, 'Alert.Subject').length, 1, 'mailed');
   assert.equal(sent.find((m) => m.subject.includes('Alert.Subject')).fromContactId, contacts.find((c) => c.tags.includes('market-wire')).id, 'from the market wire');
 
@@ -182,7 +182,7 @@ test('a new month sends monthly statements to those who opted in, and rebalances
   assert.equal(S.MarketStore.getPublic().funds.NC12.rebalanceKey, '2045-Q1', 'its period was noted on the first tick');
   const drift = S.engine.fundComposition(fund, Object.fromEntries(Object.entries(S.MarketStore.getPublic().companies).map(([id, c]) => [id, c.price])));
   const worst = Math.max(...drift.map((c) => Math.abs(c.share - fund.targets[c.companyId])));
-  assert.ok(worst > 0.005, `ARA's jump has pushed the fund off its mix (${worst})`);
+  assert.ok(worst > 0.005, `PET's jump has pushed the fund off its mix (${worst})`);
 
   const alicePrev = mailsTo(alice, 'Statement.Subject').length;
   const prevState = S.MarketStore.getPublic().funds.NC12;
