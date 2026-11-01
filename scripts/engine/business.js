@@ -1363,8 +1363,10 @@ function enact(b, proposal, day, p, ctx, out) {
  */
 export function matchBusiness(gig, businesses) {
   const open = businesses.filter((b) => b.status === 'open');
-  const tag = /\[NCI:\s*([^\]\s]+)\s*\]/i.exec(String(gig.notes ?? ''))?.[1];
-  const tagged = tag ? open.find((b) => b.id === tag) : null;
+  // The GM's tag names the business by its id, its name or its ticker.
+  const tag = /\[NCI:\s*([^\]]+?)\s*\]/i.exec(String(gig.notes ?? ''))?.[1];
+  const named = tag ? normalizeName(tag) : '';
+  const tagged = tag ? open.find((b) => b.id === tag || normalizeName(b.name) === named || (b.company?.ticker && normalizeName(b.company.ticker) === named)) : null;
   if (tagged) return { businessId: tagged.id, how: 'tag' };
   const client = normalizeName(gig.client);
   if (!client) return null;

@@ -89,9 +89,9 @@ const windowFor = (actor, tab = 'overview') => {
   return app;
 };
 const renderBusiness = async (app) => render('templates/business/business.hbs', await app._prepareContext());
-const renderConsole = async () => {
+const renderConsole = async (tab = 'businesses') => {
   const app = new Apps.GMConsole();
-  app.tab = 'businesses';
+  app.tab = tab;
   return render('templates/gm/console.hbs', await app._prepareContext());
 };
 
@@ -504,6 +504,22 @@ test('a company\'s later states render cleanly: a regulator\'s case, administrat
 
     const offer = await rendered({ takeover: { status: 'open', bidderId: 'x', bidderName: 'Raider', price: 12, shares: 100, reference: 10, openDay: day, endDay: day + 7, escrow: 1200, tenders: {}, defence: null } });
     assert.match(text(offer.partners), /Raider offers 12 eb a share/);
+
+    // Factions (F1a): the GM's tab and the owners' bands, with the turf's gangs shown even before any dealing.
+    const { FactionRepository } = await import('../scripts/data/FactionRepository.js');
+    await FactionRepository.importStarter();
+    assert.equal((await S.BusinessService.setStanding(b.id, 'corp_bio', 35)).ok, true);
+    await rendered({ district: 'watson', standings: { corp_bio: 'friendly' } });
+    const overview = text(await renderBusiness(windowFor(med, 'overview')));
+    assert.match(overview, /Standing with factions/);
+    assert.match(overview, /Biotechnica friendly/);
+    assert.match(overview, /Tyger Claws neutral \(your turf\)/);
+    assert.doesNotMatch(overview, /Maelstrom/, 'a faction it has not met, off its turf');
+    const tab = await renderConsole('factions');
+    assertClean(tab, 'factions tab');
+    assert.match(tab, /data-action="factionImport"/);
+    assert.match(tab, /data-action="factionSetStanding"/);
+    assert.match(text(tab), /Biotechnica: 35/, 'the GM sees the number');
 
     // The Exec's own row against another shareholder's view of it, and the running text.
     const hidden = await rendered({

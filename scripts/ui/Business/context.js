@@ -14,13 +14,14 @@ import {
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
   capitalOf, issueOptions, rightsLeft, tenderRoom, capitalRollCheck, defenceCheck, takeoverPremium, sellableQty, debtsOf, solvency,
-  masksOf, outerMask, layerCheck, layerFees, holdingValue, concealedHolders, caseAnswerCheck,
+  masksOf, outerMask, layerCheck, layerFees, holdingValue, concealedHolders, caseAnswerCheck, turfFactions,
 } from '../../engine/index.js';
 import { PortfolioRepository } from '../../data/PortfolioRepository.js';
 import { MarketStore } from '../../data/MarketStore.js';
 import { SkillAdapter } from '../../services/SkillAdapter.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
+import { FactionRepository } from '../../data/FactionRepository.js';
 import { BusinessClient, operatorRankOf, pendingBusinessRequests, investorActors, staffActors, jobsOf } from '../../services/BusinessClient.js';
 import { SyndicateRepository } from '../../data/SyndicateRepository.js';
 import { businessAccounts } from '../accounts.js';
@@ -206,6 +207,8 @@ export function businessContext(business, actor) {
     onMarket: ['scheduled', 'listed'].includes(business.listing?.status) && !!business.company?.ticker,
     status,
     statusLabel: L(`NCI.Business.Status.${status}`),
+    // Standing with factions (F1a): those it has dealt with, and the gangs on its turf; bands only.
+    factions: factionsContext(business),
     // A regulator's case (R1): what it is about, and an officer's answer. The Exposure behind it stays hidden.
     regCase: business.regCase ? {
       text: business.regCase.status === 'notice'
@@ -1247,6 +1250,17 @@ function takeoverContext(business, actor, canAct) {
     canDefend: canAct && canRun(business, actor.id) && defenceCheck(business).ok,
     last: !t && last ? L(last.control ? 'NCI.Takeover.LastControl' : 'NCI.Takeover.Last', { bidder: last.bidderName, shares: whole(last.acquired), price: last.price.toLocaleString(), date: dayText(last.closedDay) }) : '',
   };
+}
+
+/** The factions a business's owners know of: any it has dealt with, and the gangs on its turf, by band. */
+function factionsContext(business) {
+  const all = FactionRepository.list();
+  const met = new Set(Object.keys(business.standings ?? {}));
+  const turf = new Set(turfFactions(all, business.district).map((f) => f.id));
+  return all.filter((f) => met.has(f.id) || turf.has(f.id)).map((f) => {
+    const band = business.standings?.[f.id] ?? 'neutral';
+    return { name: f.name, band, label: L(`NCI.Faction.Band.${band}`), turf: turf.has(f.id) ? L('NCI.Faction.Turf') : '' };
+  });
 }
 
 /**

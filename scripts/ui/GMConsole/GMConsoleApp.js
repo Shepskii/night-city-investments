@@ -20,10 +20,11 @@ import * as gigs from './tabs/gigs.js';
 import * as heat from './tabs/heat.js';
 import * as businesses from './tabs/businesses.js';
 import * as syndicates from './tabs/syndicates.js';
+import * as factions from './tabs/factions.js';
 import * as tools from './tabs/tools.js';
 
 /** In display order. */
-const TABS = { market, events, actions, companies, funds, brokers, gigs, heat, businesses, syndicates, tools };
+const TABS = { market, events, actions, companies, funds, brokers, gigs, heat, businesses, syndicates, factions, tools };
 const PARTIALS = `modules/${MODULE_ID}/templates/gm/console`;
 
 export class GMConsoleApp extends BaseApplication {

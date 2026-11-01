@@ -162,6 +162,14 @@
     {{#if isOpen}}<p class="nci-hint">{{localize "NCI.Business.OpenedOn" date=opened}}</p>{{/if}}
   </div>
 
+  {{#if factions.length}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.Faction.WindowTitle"}}</h3>
+    <div class="nci-factions">
+      {{#each factions}}<span class="nci-faction nci-faction-{{band}}"><strong>{{name}}</strong> {{label}}{{#if turf}} <span class="nci-muted">{{turf}}</span>{{/if}}</span>{{/each}}
+    </div>
+  </div>
+  {{/if}}
   {{#with history}}
   <div class="nci-block nci-history">
     <h3>{{localize "NCI.Business.Standing"}}</h3>

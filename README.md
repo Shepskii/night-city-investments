@@ -65,6 +65,7 @@ Or unzip a release into `Data/modules/night-city-investments`. Then enable **Nig
 - **Gig outcomes** (with the bridge). A completed or failed gig moves its client's share price a few days later.
 - **Insider-trading heat** (optional). A hidden score watches for trades placed ahead of news. Brokers and NCPD warn, and penalties wait for approval.
 - **Hidden from play.** Fair value, the true regime, heat, a business's Exposure, its staff's traits and the strength of hidden owners' layers stay out of players' windows.
+- **Factions.** Corporations and gangs with a standing for each business, moved by jobs done in its name.
 - **Tools.** A self-check, starter macros, suggested companies from Messenger contacts and gigs, and a log of recent trades.
 
 ### How it runs

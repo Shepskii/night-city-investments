@@ -24,6 +24,7 @@ import {
   takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
   restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask,
   concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget, scandalHit, investigationCost, spendDays,
+  moveStanding, driftStanding, standingBands, gigStanding,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
@@ -636,6 +637,7 @@ class BusinessServiceImpl {
     await this._capitalEvents(out);
     await this._insolvencyEvents(out);
     await this._ownershipEvents(out);
+    await this._standingWeek(out);
     await this._regulatorEvents(out);
     await this._publishRegister(out.business);
     await this._afterReports(out);
@@ -1397,6 +1399,56 @@ class BusinessServiceImpl {
     await CompanyRepository.save({ ...company, register });
   }
 
+  /** A business's hidden standing with one faction moves: the number stays hidden, the band goes on its record (F1a). */
+  async _moveStanding(businessId, factionId, amount) {
+    const hidden = MarketStore.getBusinessesHidden();
+    const entry = hidden[businessId] ?? { exposure: 0 };
+    const moved = moveStanding(entry.standing?.[factionId] ?? null, amount, this.day());
+    const standing = { ...(entry.standing ?? {}), [factionId]: moved.entry };
+    await MarketStore.setBusinessesHidden({ ...hidden, [businessId]: { ...entry, standing } });
+    await this._saveBands(businessId, standing);
+    return moved;
+  }
+
+  /** The record's copy of the bands, when they have changed. */
+  async _saveBands(businessId, standing) {
+    const stored = BusinessRepository.get(businessId);
+    if (!stored) return;
+    const bands = standingBands(standing);
+    if (JSON.stringify(bands) === JSON.stringify(stored.standings ?? {})) return;
+    await BusinessRepository.save({ ...normalizeBusiness(structuredClone(stored)), standings: bands });
+    Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId });
+  }
+
+  /** As a business's week closes, its standing with each faction fades a little toward 0 (F1a). */
+  async _standingWeek(out) {
+    if (!out.events?.some((e) => e.type === 'periodClosed')) return;
+    const closes = out.events.filter((e) => e.type === 'periodClosed').length;
+    const hidden = MarketStore.getBusinessesHidden();
+    const entry = hidden[out.business.id];
+    if (!entry?.standing || !Object.keys(entry.standing).length) return;
+    let standing = entry.standing;
+    for (let i = 0; i < closes; i++) standing = Object.fromEntries(Object.entries(standing).map(([id, e]) => [id, driftStanding(e)]));
+    await MarketStore.setBusinessesHidden({ ...hidden, [out.business.id]: { ...entry, standing } });
+    await this._saveBands(out.business.id, standing);
+  }
+
+  /** The GM sets a business's standing with a faction by hand (F1a), past the weekly limit. */
+  setStanding(businessId, factionId, value) {
+    if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
+    return this._queue.run(async () => {
+      if (!BusinessRepository.get(businessId)) return { ok: false, reason: 'no-business' };
+      const hidden = MarketStore.getBusinessesHidden();
+      const entry = hidden[businessId] ?? { exposure: 0 };
+      const before = entry.standing?.[factionId];
+      const clamped = Math.max(-100, Math.min(100, Math.round(Number(value) * 10) / 10));
+      const standing = { ...(entry.standing ?? {}), [factionId]: { weekStart: this.day(), moved: 0, recent: [], ...before, value: clamped } };
+      await MarketStore.setBusinessesHidden({ ...hidden, [businessId]: { ...entry, standing } });
+      await this._saveBands(businessId, standing);
+      return { ok: true };
+    });
+  }
+
   /** A character or a syndicate's account, by id. */
   _account(id) {
     return game.actors.get(id) ?? SyndicateRepository.account(id) ?? null;
@@ -1616,6 +1668,8 @@ class BusinessServiceImpl {
       const out = applyBusinessGig(business, { key: rec.sourceKey, outcome: rec.outcome, reward: rec.reward, day: this.day() });
       if (!out.ok) return out;
       await this._commit(out);
+      // A gig tagged for this business, for a faction, moves its standing with them (F1a).
+      if (rec.factionId) await this._moveStanding(rec.businessId, rec.factionId, gigStanding(rec));
       return { ok: true, plan: out.plan };
     });
   }

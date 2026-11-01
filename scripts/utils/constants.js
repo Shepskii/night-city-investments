@@ -37,6 +37,7 @@ export const SETTINGS = Object.freeze({
   SETTLEMENT_DAYS: 'settlementDays',
   SHOW_TICKER: 'showTicker',
   BROKER_DEFS: 'brokerDefs',
+  FACTION_DEFS: 'factionDefs',
   FUND_DEFS: 'fundDefs',
   WORLD_SEED: 'worldSeed',
   MARKET_STATE: 'marketState',

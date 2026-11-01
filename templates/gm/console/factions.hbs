@@ -1,0 +1,51 @@
+{{#with factions}}
+<div class="nci-block">
+  <h3>{{localize "NCI.Faction.Title"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Faction.Hint"}}</p>
+  <div class="nci-actions">
+    <button type="button" data-action="factionImport"><i class="fas fa-file-import"></i> {{localize "NCI.Faction.Import"}}</button>
+  </div>
+  {{#if rows.length}}
+  <table class="nci-market">
+    <thead><tr><th>{{localize "NCI.Faction.Name"}}</th><th>{{localize "NCI.Faction.KindLabel"}}</th><th>{{localize "NCI.Faction.Ticker"}}</th><th>{{localize "NCI.Faction.Districts"}}</th><th></th></tr></thead>
+    <tbody>
+      {{#each rows}}
+      <tr data-faction-row>
+        <td><input type="text" name="name" value="{{name}}" maxlength="60"></td>
+        <td><select name="kind">{{#each kinds}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></td>
+        <td><input type="text" name="ticker" value="{{ticker}}" maxlength="5" class="nci-days"></td>
+        <td><input type="text" name="districts" value="{{districtText}}"></td>
+        <td class="nci-rowbtns">
+          <button type="button" data-action="factionSave" data-id="{{id}}" title="{{localize 'NCI.Faction.Save'}}"><i class="fas fa-save"></i></button>
+          <button type="button" data-action="factionRemove" data-id="{{id}}" title="{{localize 'NCI.Faction.Remove'}}"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  {{else}}<p class="nci-empty">{{localize "NCI.Faction.None"}}</p>{{/if}}
+  <div class="nci-hirerow" data-faction-row>
+    <label>{{localize "NCI.Faction.Name"}} <input type="text" name="name" maxlength="60"></label>
+    <label>{{localize "NCI.Faction.KindLabel"}} <select name="kind">{{#each newKinds}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <button type="button" data-action="factionAdd"><i class="fas fa-plus"></i> {{localize "NCI.Faction.Add"}}</button>
+  </div>
+  <p class="nci-hint">{{localize "NCI.Faction.DistrictHint" ids=districtIds}}</p>
+</div>
+<div class="nci-block">
+  <h3>{{localize "NCI.Faction.StandingTitle"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Faction.StandingHint"}}</p>
+  {{#each businesses}}
+  <div class="nci-gig" data-standing-row>
+    <div class="nci-gigtop"><strong>{{name}}</strong></div>
+    {{#if standings.length}}
+    <p>{{#each standings}}{{name}}: {{value}} <span class="nci-muted">({{band}})</span>{{#unless @last}} &middot; {{/unless}}{{/each}}</p>
+    {{else}}<p class="nci-muted">{{localize "NCI.Faction.NoStanding"}}</p>{{/if}}
+    <div class="nci-actions">
+      <select name="standingFaction">{{#each ../options}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+      <input type="number" name="standingValue" min="-100" max="100" step="1" value="0" class="nci-days">
+      <button type="button" data-action="factionSetStanding" data-id="{{id}}"><i class="fas fa-handshake"></i> {{localize "NCI.Faction.SetStanding"}}</button>
+    </div>
+  </div>
+  {{else}}<p class="nci-empty">{{localize "NCI.GMBusiness.NoneRunning"}}</p>{{/each}}
+</div>
+{{/with}}

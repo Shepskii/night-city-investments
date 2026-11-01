@@ -37,6 +37,7 @@ export * from './businessTakeover.js';
 export * from './businessInsolvency.js';
 export * from './businessOwnership.js';
 export * from './businessRegulator.js';
+export * from './factions.js';
 export * from './funds.js';
 export * from './withdrawals.js';
 export * from './brokerMail.js';

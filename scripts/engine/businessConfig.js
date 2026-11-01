@@ -330,6 +330,16 @@ export const BUSINESS_DEFAULTS = Object.freeze({
    * Going into administration dents a listed company's price by `hit` (a log-return).
    */
   /**
+   * Standing with factions (F1a, DESIGN §36.3): the bands players see; at most `weeklyCap` of movement
+   * in seven days; `drift` back toward 0 each week. A gig for a faction moves it `done` or `failed`,
+   * scaled by its reward over `reward` within `size`; each in the last `windowDays` makes it count less.
+   */
+  standing: Object.freeze({
+    bands: Object.freeze([[-60, 'hostile'], [-20, 'wary'], [20, 'neutral'], [60, 'friendly'], [Infinity, 'allied']]),
+    weeklyCap: 15, drift: 2,
+    gig: Object.freeze({ done: 6, failed: -8, reward: 1000, size: Object.freeze([0.5, 3]), windowDays: 28 }),
+  }),
+  /**
    * Regulators (R1, DESIGN §36.7): the chance of a case at each monthly report, by Exposure band; `notice`
    * days to answer. An officer rolls `uses` (Bribery costs `bribe` eb from the cash) against `base` + 1d10
    * + `bonus` by band; a win clears `clearShare` of the Exposure. A loss is a fine of `fine` of book value

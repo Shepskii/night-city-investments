@@ -115,7 +115,8 @@ function build(companyOptions) {
     businessGigs: gigs.pending.filter((p) => p.kind === 'business').map((p) => ({
       ...base(p),
       business: businesses.get(p.businessId) ?? p.businessId,
-      effect: ownEffect(p),
+      // A gig tagged for the business, for a faction, also moves its standing with them (F1a).
+      effect: p.factionName ? `${ownEffect(p)}; ${L('NCI.Gig.StandingEffect', { faction: p.factionName })}` : ownEffect(p),
       weaker: p.recent ? L('NCI.Gig.Weaker', { n: p.recent }) : '',
       how: L(`NCI.Gig.How.${p.how}`),
     })),

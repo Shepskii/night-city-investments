@@ -118,6 +118,14 @@ The rest runs itself: weeks close, events are drawn, wages are paid, reports are
 
 **Gigs for a player's business:** a gig whose client is a player business changes its Reputation and takings once approved in the Gigs tab.
 
+## Factions
+
+The **Factions** tab holds the corporations and gangs businesses can stand well or badly with. Press **Import starter factions** to add the market's corporations and Night City's gangs by district, then edit, add or remove as you like. Link a corporation to its ticker, and give a gang its districts, so businesses there see it.
+
+Standing runs from -100 to 100 for each business; its owners see only a band (hostile, wary, neutral, friendly, allied). It fades 2 points a week and moves at most 15 a week; you can set it by hand on the same tab.
+
+**A gig only counts for a business if you tag it.** Put the business in the gig's GM notes, like `[NCI: Charter Test Clinic]` (its name, ticker or id), with the faction as the client. Every other gig is treated as the crew's own work, and leaves businesses alone.
+
 ## Regulators
 
 Exposure now has consequences. A case opens by chance at a monthly report (low 5%, moderate 15%, high 35%), or at once when a corp plant is fired, a Shortcuts roll is fumbled, or NCPD unmasks a holder of over 25% of a company. You can also press **Open a regulator's case** on any company, or **Drop the case** at any stage.

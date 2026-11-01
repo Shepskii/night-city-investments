@@ -550,6 +550,40 @@ test('a regulator\'s case: triggers open it; an officer answers against a hidden
   }
 });
 
+test('standing: a gig tagged for the business moves its standing with the client; any other gig is the crew\'s and leaves it alone; the band goes on the record and the number stays hidden', async () => {
+  const { GigImpactService } = await import('../scripts/services/GigImpactService.js');
+  const { FactionRepository } = await import('../scripts/data/FactionRepository.js');
+  await FactionRepository.importStarter();
+  assert.ok(FactionRepository.get('corp_bio'), 'the starter list is in');
+  const approval = env.store.get('gigImpactApproval');
+  env.store.set('gigImpactApproval', false);
+  const hiddenOf = () => S.MarketStore.getBusinessesHidden().bus_play?.standing ?? {};
+  try {
+    await S.BusinessRepository.save({ ...business(), standings: {} });
+    const hidden = S.MarketStore.getBusinessesHidden();
+    await S.MarketStore.setBusinessesHidden({ ...hidden, bus_play: { ...(hidden.bus_play ?? {}), standing: {} } });
+
+    await GigImpactService.report({ gigId: 'crew1', sourceKey: 'gig:crew1', outcome: 'done', client: 'Biotechnica', reward: 2000, title: 'A crew job' });
+    await settle();
+    assert.deepEqual(hiddenOf(), {}, 'no tag: the crew\'s work, nothing for the business');
+
+    await GigImpactService.report({ gigId: 'biz1', sourceKey: 'gig:biz1', outcome: 'done', client: 'Biotechnica', reward: 2000, title: 'A contract', notes: '[NCI: Playco]' });
+    await settle();
+    assert.equal(hiddenOf().corp_bio?.value, E.BUSINESS_DEFAULTS.standing.gig.done * 2, 'tagged: standing with the client');
+    assert.equal(business().standings.corp_bio, 'neutral', 'the band on the record');
+    assert.equal(JSON.stringify(business().standings).includes('12'), false, 'not the number');
+
+    // The GM's hand, past the weekly limit; a week's fade.
+    assert.equal((await S.BusinessService.setStanding('bus_play', 'gang_maelstrom', -70)).ok, true);
+    assert.equal(business().standings.gang_maelstrom, 'hostile');
+    await S.BusinessService._standingWeek({ business: business(), events: [{ type: 'periodClosed', digest: {} }] });
+    assert.equal(hiddenOf().gang_maelstrom.value, -70 + E.BUSINESS_DEFAULTS.standing.drift);
+    assert.equal(business().standings.gang_maelstrom, 'hostile');
+  } finally {
+    env.store.set('gigImpactApproval', approval);
+  }
+});
+
 test('a listed company in administration is restructured: its debts become creditors\' shares, added to the market and kept through the holders\' sync', async () => {
   const before = { shares: business().listing.shares, outstanding: S.CompanyRepository.get('PLAY').sharesOutstanding };
   await S.BusinessRepository.save({

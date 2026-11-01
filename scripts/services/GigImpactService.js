@@ -12,11 +12,13 @@ import {
   GIG_OUTCOMES, resolveClient, matchBusiness, parseReward, planGigImpact, gigHeadlineKey, recentGigAbs, isKnownGig,
   addPending, removePending, addHistory, setMapping, removeMapping, sanitizeGigEdits, normalizeName,
   makeImpact, percentToAmount, logEntry, timeOf,
+  matchFaction,
 } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
 import { log, isActiveGM, L, isCharacter } from '../utils/helpers.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
+import { FactionRepository } from '../data/FactionRepository.js';
 import { BusinessService } from './BusinessService.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
@@ -142,7 +144,12 @@ class GigImpactServiceImpl {
     };
     // A gig for a player's own business changes the business, not a share price (DESIGN §27.5).
     const own = matchBusiness({ client: p.client, notes: p.notes }, BusinessRepository.all());
-    if (own) return this._businessGig(gigs, { ...base, businessId: own.businessId, how: own.how });
+    if (own) {
+      // Only a gig the GM has tagged for a business counts for its standing with the client (F1a): any
+      // other gig is the crew's own work, and leaves the business's standing alone.
+      const faction = own.how === 'tag' ? matchFaction(p.client, FactionRepository.list()) : null;
+      return this._businessGig(gigs, { ...base, businessId: own.businessId, how: own.how, ...(faction ? { factionId: faction.id, factionName: faction.name } : {}) });
+    }
 
     const res = resolveClient(
       { client: p.client, notes: p.notes, text: [p.title, p.desc, p.notes].filter(Boolean).join(' ') },

@@ -223,6 +223,12 @@ Any character or syndicate can bid for a chartered player company, private or li
 - **Defence:** the target's officers may make one defence roll (Persuasion or Business). A good result makes NPC holders and the float want a higher premium; a fumble makes them keener.
 - **Control:** a bidder who ends with more than half the shares controls the votes, and can elect and dismiss officers. Holders who did not tender keep their shares.
 
+## Standing with factions
+
+Your business has its own standing with Night City's corporations and gangs, shown on the Overview tab as hostile, wary, neutral, friendly or allied. You'll see the gangs on your turf from the start, and other factions once you've dealt with them. Standing fades slowly if you don't keep it up.
+
+A job your GM marks as done for the business moves its standing with the client. Ordinary crew gigs don't.
+
 ## Regulators
 
 Shortcuts, Bold rolls and corp plants leave a hidden trail called **Exposure**. The more of it a company has, the likelier a regulator comes looking at a monthly report. A fired corp plant, a fumbled Shortcuts roll, or a big hidden holder being unmasked brings one at once.
