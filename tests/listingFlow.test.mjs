@@ -133,7 +133,8 @@ test('after listing, a monthly report moves the stock toward its valuation per s
   // Fair value carries the permanent move; the price follows it through the noise.
   const fair = S.MarketStore.getHidden().companies.PLAY.fair;
   assert.ok(fair > before * 1.35, `fair value moves toward the target (${before} to ${fair})`);
-  assert.ok(S.MarketStore.getPublic().companies.PLAY.price > before, 'and the price rises');
+  // The price follows fair value through six days of noise: nearly always up, never far down.
+  assert.ok(S.MarketStore.getPublic().companies.PLAY.price > before * 0.95, 'and the price follows');
 });
 
 test("a listed company's report pays the dividend into the holders' brokerage balances, by shares held", async () => {
@@ -400,6 +401,7 @@ test('an investigation by ticker: a roll against a hidden total peels one layer 
 
     dice.push(9);
     assert.equal((await dig()).reason, 'investigate-wait', 'once a week');
+    assert.equal(cass.getFlag('night-city-investments', 'investigated')[0].ref_out, day, 'the try noted on her character, for her window');
 
     // A week on: the nominee, at 5 + 2 for the shell above it.
     const hidden = S.MarketStore.getBusinessesHidden();

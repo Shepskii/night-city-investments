@@ -1180,13 +1180,22 @@ class BusinessServiceImpl {
     const hidden = MarketStore.getBusinessesHidden();
     const entry = structuredClone(hidden[stored.id] ?? { exposure: 0 });
     const mine = entry.known?.[actor.id]?.[holderId] ?? { peeled: 0, tried: -Infinity };
-    if (day - mine.tried < P.days) return { ok: false, reason: 'investigate-wait' };
+    // The investigator's own record of when they last tried, so their window refuses before rolling.
+    const noteTried = async (when) => {
+      const tried = unwrap(actor.getFlag(MODULE_ID, FLAGS.INVESTIGATED)) ?? {};
+      if (tried[request.ref] !== when) await actor.setFlag(MODULE_ID, FLAGS.INVESTIGATED, [{ ...tried, [request.ref]: when }]);
+    };
+    if (day - mine.tried < P.days) {
+      await noteTried(mine.tried);
+      return { ok: false, reason: 'investigate-wait' };
+    }
     const target = investigationTarget(stored, holderId, entry.layers?.[holderId] ?? [], mine.peeled);
     if (!target.ok) return target;
     const check = await SkillAdapter.verifyLevers(actor, request, { dv: target.dv, use });
     if (!check.ok) return check;
     const r = check.result;
     mine.tried = day;
+    await noteTried(day);
     const company = stored.name;
     if (r.success) {
       mine.peeled += 1;

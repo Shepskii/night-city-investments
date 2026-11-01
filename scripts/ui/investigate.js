@@ -33,11 +33,12 @@ const useLabel = (u) => (u.kind === 'ability' ? u.ability : u.skill);
 export async function investigate(actor, { ticker = null, businessId = null, ref, label }) {
   if (!actor) return ui.notifications.warn(L('NCI.Errors.NoActor'));
   const { uses, days } = BUSINESS_DEFAULTS.ownership.investigate;
-  // Once a week for each holding: refused here, before any dice or Luck are spent.
+  // Once a week for each holding: refused here, before any dice or Luck are spent. The GM's service
+  // notes each try on the character; a receipt covers a try made before it did.
   const today = BusinessClient.day();
-  if (receiptsOf(actor).results.some((r) => r.type === 'investigate' && r.ok && r.investigation?.ref === ref && today - r.day < days)) {
-    return ui.notifications.warn(L('NCI.Business.Reason.investigate-wait'));
-  }
+  const tried = (unwrap(actor.getFlag?.(MODULE_ID, FLAGS.INVESTIGATED)) ?? {})[ref];
+  const recent = receiptsOf(actor).results.some((r) => r.type === 'investigate' && r.ok && r.investigation?.ref === ref && today - r.day < days);
+  if ((Number.isFinite(tried) && today - tried < days) || recent) return ui.notifications.warn(L('NCI.Business.Reason.investigate-wait'));
   const picked = await foundry.applications.api.DialogV2.prompt({
     window: { title: L('NCI.Ownership.InvestigateTitle', { label }) },
     position: { width: 420 },
