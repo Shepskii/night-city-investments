@@ -144,10 +144,18 @@ export function settleTakeover(b, { day, sellable = null, held = null }, p = BUS
   }
   const offered = asked.reduce((a, r) => a + r.qty, 0);
   const scale = offered > t.shares ? t.shares / offered : 1;
-  const transfers = asked.map(({ x, qty }) => {
-    const n = Math.floor(qty * scale);
-    return { actorId: x.actorId, qty: n, cash: Math.round(n * t.price), npc: !!x.npc && !x.market, market: !!x.market };
-  }).filter((r) => r.qty > 0);
+  const parts = asked.map(({ x, qty }) => ({ x, exact: qty * scale, n: Math.floor(qty * scale) }));
+  // Scaled down, the shares lost to rounding go to the largest remainders, so a full offer buys all it asked for.
+  if (scale < 1) {
+    let left = t.shares - parts.reduce((a, r) => a + r.n, 0);
+    for (const r of [...parts].sort((a, c) => (c.exact - c.n) - (a.exact - a.n))) {
+      if (left <= 0) break;
+      r.n += 1;
+      left -= 1;
+    }
+  }
+  const transfers = parts.map(({ x, n }) => ({ actorId: x.actorId, qty: n, cash: Math.round(n * t.price), npc: !!x.npc && !x.market, market: !!x.market }))
+    .filter((r) => r.qty > 0);
   const acquired = transfers.reduce((a, r) => a + r.qty, 0);
   const spent = transfers.reduce((a, r) => a + r.cash, 0);
 

@@ -95,3 +95,18 @@ test('NPC holders and the float tender by the premium (all at 20%+, half at 10-2
   assert.equal(b.takeover.defence.shift, E.takeover.defence.shift.strong);
   assert.equal(apply(b, { type: 'defenceRoll', businessId: 'b1', use: { kind: 'skill', skill: 'Persuasion', stat: 'cool' } }, FIX, { check: roll('solid'), expect: false }).reason, 'defence-done');
 });
+
+test('scaled down, a takeover still buys exactly the shares it asked for: rounding goes to the largest remainders', async () => {
+  const { settleTakeover } = await import('../scripts/engine/index.js');
+  // The live case: a float of 252 and an NPC's 16 both tender, for an offer of 50.
+  const b = normalizeBusiness({
+    ...company(), listing: { status: 'listed', shares: 1311 },
+    partners: [...company().partners, { actorId: 'npc:tyger', name: 'Tyger', status: 'active', cash: 0, gear: [], units: 16, voting: false, npc: true },
+      { actorId: 'npc:market', name: '', status: 'active', cash: 0, gear: [], units: 252, voting: false, npc: true, market: true }],
+    takeover: { status: 'open', bidderId: 'med', bidderName: 'Medtech', price: 368.76, shares: 50, reference: 295.01, endDay: DAY, escrow: 18438, tenders: {}, defence: null },
+  });
+  const done = settleTakeover(b, { day: DAY + 1, held: { med: 1000 }, sellable: {} });
+  assert.equal(done.acquired, 50);
+  assert.deepEqual(done.transfers.map((r) => [r.actorId, r.qty]).sort(), [['npc:market', 47], ['npc:tyger', 3]].sort());
+  assert.equal(done.refund, 18438 - done.spent);
+});
