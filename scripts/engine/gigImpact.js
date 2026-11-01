@@ -127,6 +127,16 @@ export function parseReward(value) {
 const TAG = /\[\s*(?:nci|invest|stock)\s*[:=]\s*([^\]\s]+)\s*\]/i;
 
 /**
+ * The GM's tags in a gig's notes: `[NCI client: Biotechnica]`, `[NCI target: Militech]` and
+ * `[NCI contract: Charter Test Clinic]`. A client tag stands in for the gig's client field.
+ * @returns {{client: string, target: string, contract: string}} empty strings for tags it does not have
+ */
+export function gigTags(notes) {
+  const read = (word) => new RegExp(`\\[\\s*(?:nci|invest|stock)\\s+${word}\\s*[:=]\\s*([^\\]]+?)\\s*\\]`, 'i').exec(String(notes ?? ''))?.[1] ?? '';
+  return { client: read('client'), target: read('target'), contract: read('contract') };
+}
+
+/**
  * Names a company answers to: its name, ticker and aliases.
  * @param {object[]} companies
  */
@@ -164,9 +174,17 @@ const appearsIn = (text, e) => phrasesOf(e).some((p) => p.length >= 4 && hasPhra
  * @returns {{status: 'matched'|'ignored'|'ambiguous'|'unmatched', companyId?: string, how?: string, needsReview?: boolean, candidates?: string[], clientKey: string}}
  */
 export function resolveClient(gig, companies, mappings = {}) {
-  const clientKey = normalizeName(gig.client);
+  const named = gigTags(gig.notes).client;
+  const clientName = named || gig.client;
+  const clientKey = normalizeName(clientName);
   const byId = new Map(companies.map((c) => [c.id, c]));
   const index = clientIndex(companies);
+
+  // The GM's client tag: a company's ticker, name or alias, trusted as any tag is.
+  if (named) {
+    const tagged = unique(index.filter((e) => e.key === clientKey || e.core === coreName(named)).map((e) => e.companyId));
+    if (tagged.length === 1) return { status: 'matched', companyId: tagged[0], how: 'tag', needsReview: false, clientKey };
+  }
 
   const tag = String(gig.notes ?? '').match(TAG)?.[1];
   if (tag) {
@@ -180,7 +198,7 @@ export function resolveClient(gig, companies, mappings = {}) {
     if (saved?.companyId === 'ignore') return { status: 'ignored', how: 'mapping', clientKey };
     if (saved && byId.has(saved.companyId)) return { status: 'matched', companyId: saved.companyId, how: 'mapping', needsReview: false, clientKey };
 
-    const core = coreName(gig.client);
+    const core = coreName(clientName);
     const exact = unique(index.filter((e) => e.key === clientKey || e.core === core).map((e) => e.companyId));
     if (exact.length === 1) return { status: 'matched', companyId: exact[0], how: 'exact', needsReview: false, clientKey };
     if (exact.length > 1) return { status: 'ambiguous', candidates: exact, clientKey };

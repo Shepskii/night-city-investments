@@ -65,7 +65,7 @@
 
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import { drawEvent, eventUses, settleEvent } from './businessEvents.js';
-import { normalizeName } from './gigImpact.js';
+import { normalizeName, gigTags } from './gigImpact.js';
 import {
   fixerOffer, takeFixerLoan, bankCheck, applyBankRoll, repayLoan, payLoans, investorOffer, inviteInvestor, acceptInvestment,
   angelCheck, findAngel, applyAngelRoll, openLoans, averageProfit,
@@ -1363,12 +1363,13 @@ function enact(b, proposal, day, p, ctx, out) {
  */
 export function matchBusiness(gig, businesses) {
   const open = businesses.filter((b) => b.status === 'open');
-  // The GM's tag names the business by its id, its name or its ticker.
-  const tag = /\[NCI:\s*([^\]]+?)\s*\]/i.exec(String(gig.notes ?? ''))?.[1];
+  // The GM's tag names the business by its id, its name or its ticker: `[NCI contract: ...]`, or the older `[NCI: ...]`.
+  const tags = gigTags(gig.notes);
+  const tag = tags.contract || /\[NCI:\s*([^\]]+?)\s*\]/i.exec(String(gig.notes ?? ''))?.[1];
   const named = tag ? normalizeName(tag) : '';
   const tagged = tag ? open.find((b) => b.id === tag || normalizeName(b.name) === named || (b.company?.ticker && normalizeName(b.company.ticker) === named)) : null;
   if (tagged) return { businessId: tagged.id, how: 'tag' };
-  const client = normalizeName(gig.client);
+  const client = normalizeName(tags.client || gig.client);
   if (!client) return null;
   const exact = open.find((b) => normalizeName(b.name) === client);
   if (exact) return { businessId: exact.id, how: 'exact' };

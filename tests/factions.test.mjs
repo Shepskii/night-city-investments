@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   BUSINESS_DEFAULTS, DISTRICTS, normalizeFaction, standingBand, matchFaction, turfFactions, gigStanding, moveStanding, driftStanding, standingBands, matchBusiness,
-  findTarget, targetShare,
+  findTarget, targetShare, gigTags, resolveClient,
 } from '../scripts/engine/index.js';
 import { starterFactions } from '../scripts/data/starter-factions.js';
 import { STARTER_COMPANIES } from '../scripts/data/starter-companies.js';
@@ -82,4 +82,26 @@ test('a gig\'s target: the GM\'s tag first, then the one faction its text names,
   assert.equal(findTarget({ client: 'Biotechnica', desc: 'A Biotechnica courier run.' }, factions), null, 'its own client, mentioned');
   assert.equal(findTarget({ desc: 'Militech and Maelstrom are fighting.' }, factions), null, 'two named: not sure which');
   assert.deepEqual([targetShare('done'), targetShare('failed')], [S.target.done, S.target.failed]);
+});
+
+test('the GM\'s tags: client, target and contract, with spaces, in any order; a client tag overrides the client field', () => {
+  assert.deepEqual(gigTags('Notes. [NCI target: Night Corp] more [nci contract: Charter Test Clinic] [NCI client: Kiroshi Optical]'), { client: 'Kiroshi Optical', target: 'Night Corp', contract: 'Charter Test Clinic' });
+  assert.deepEqual(gigTags('[NCI: ARA]'), { client: '', target: '', contract: '' }, 'the older tag is not these');
+  assert.deepEqual(gigTags(undefined), { client: '', target: '', contract: '' });
+
+  const companies = [{ id: 'KIR', ticker: 'KIR', name: 'Kiroshi Optical', aliases: ['Kiroshi'] }, { id: 'ARA', ticker: 'ARA', name: 'Arasaka', aliases: [] }];
+  for (const name of ['Kiroshi Optical', 'kiroshi', 'KIR']) {
+    const out = resolveClient({ client: 'Arasaka', notes: `[NCI client: ${name}]` }, companies);
+    assert.deepEqual([out.status, out.companyId, out.how], ['matched', 'KIR', 'tag'], name);
+  }
+  assert.equal(resolveClient({ client: 'Mr Johnson', notes: '[NCI client: Nobody Inc]' }, companies).status, 'unmatched', 'a tag naming nobody');
+  assert.equal(resolveClient({ client: 'Arasaka', notes: '[NCI: KIR]' }, companies).companyId, 'KIR', 'the older tag still works');
+
+  const businesses = [{ id: 'bus_x', name: 'Charter Test Clinic', status: 'open', company: { ticker: 'SCX' } }];
+  assert.deepEqual(matchBusiness({ notes: '[NCI contract: Charter Test Clinic]' }, businesses), { businessId: 'bus_x', how: 'tag' });
+  assert.deepEqual(matchBusiness({ notes: '[NCI contract: SCX]' }, businesses), { businessId: 'bus_x', how: 'tag' });
+  assert.deepEqual(matchBusiness({ client: 'Someone', notes: '[NCI client: Charter Test Clinic]' }, businesses), { businessId: 'bus_x', how: 'exact' }, 'a business as the client: its own gig');
+  assert.equal(matchBusiness({ notes: '[NCI client: Biotechnica]' }, businesses), null);
+  const factions = [{ id: 'bio', name: 'Biotechnica', ticker: 'BIO', aliases: [], districts: [] }];
+  assert.equal(findTarget({ client: 'Mr Johnson', desc: 'A Biotechnica job', notes: '[NCI client: Biotechnica]' }, factions), null, 'the tagged client is not its own target');
 });

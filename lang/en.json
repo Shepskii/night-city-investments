@@ -1211,6 +1211,7 @@
         "target": "The target, {name}: {percent}% on its share price."
       },
       "TargetTagged": "Aimed at {name}, by your tag.",
+      "ContractUnknown": "The contract tag names \"{name}\", but no open player business has that name, so this counts as freelance.",
       "TargetFound": "This gig's text names {name}: it may be the target, or only a mention.",
       "ConfirmTarget": "Yes, this is the target",
       "Weaker": "(weaker: {n} earlier gig(s) for it this month)",
@@ -1747,7 +1748,7 @@
       "RemoveConfirm": "Remove {name}? Standing with it is kept out of sight, and comes back if it is added again with the same id.",
       "None": "No factions yet: import the starter list, or add your own.",
       "StandingTitle": "Standing",
-      "StandingHint": "Each business's true standing, from -100 to 100; its owners see only the band. It fades 2 points a week toward 0, and moves at most 15 in a week, apart from what you set by hand. A gig moves it only when its GM notes name the business, like [NCI: Charter Test Clinic], and its client is a faction.",
+      "StandingHint": "Each business's true standing, from -100 to 100; its owners see only the band. It fades 2 points a week toward 0, and moves at most 15 in a week, apart from what you set by hand. A gig moves it only when its GM notes make it a contract, like [NCI contract: Charter Test Clinic].",
       "NoStanding": "No dealings yet.",
       "SetStanding": "Set standing",
       "WindowTitle": "Standing with factions",

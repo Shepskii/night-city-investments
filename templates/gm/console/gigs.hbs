@@ -43,6 +43,7 @@
     </div>
     <div class="nci-muted">{{client}}{{#if title}} &middot; {{title}}{{/if}} &middot; {{how}}</div>
     {{#if reason}}<div class="nci-muted">{{reason}}</div>{{/if}}
+    {{#if contractNote}}<div class="nci-warn">{{contractNote}}</div>{{/if}}
     {{#if targetNote}}<div class="nci-muted">{{targetNote}}</div>{{/if}}
     {{#each alsos}}<div class="nci-muted">{{text}}</div>{{/each}}
     {{#if confirmTarget}}<label class="nci-inline"><input type="checkbox" name="gigUseTarget"> {{localize "NCI.Gig.ConfirmTarget"}}</label>{{/if}}
@@ -72,6 +73,7 @@
     </div>
     <div class="nci-muted">{{client}}{{#if title}} &middot; {{title}}{{/if}} &middot; {{how}}</div>
     <div>{{effect}}{{#if weaker}} <span class="nci-muted">{{weaker}}</span>{{/if}}</div>
+    {{#if contractNote}}<div class="nci-warn">{{contractNote}}</div>{{/if}}
     {{#if targetNote}}<div class="nci-muted">{{targetNote}}</div>{{/if}}
     {{#each alsos}}<div class="nci-muted">{{text}}</div>{{/each}}
     {{#if confirmTarget}}<label class="nci-inline"><input type="checkbox" name="gigUseTarget"> {{localize "NCI.Gig.ConfirmTarget"}}</label>{{/if}}

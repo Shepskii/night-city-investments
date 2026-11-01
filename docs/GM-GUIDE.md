@@ -124,12 +124,22 @@ The **Factions** tab holds the corporations and gangs businesses can stand well 
 
 Standing runs from -100 to 100 for each business; its owners see only a band (hostile, wary, neutral, friendly, allied). It fades 2 points a week and moves at most 15 a week; you can set it by hand on the same tab.
 
+**Tags in a gig's GM notes** say who it involves, by name, ticker or alias:
+
+| Tag | Means |
+|---|---|
+| `[NCI client: Biotechnica]` | The client. Overrides the gig's client field |
+| `[NCI target: Militech]` | Who it was aimed at |
+| `[NCI contract: Charter Test Clinic]` | Done for this player business, making it a contract |
+
+The older `[NCI: ARA]` (a client's ticker, or a business), `[NCI: ignore]` and `[NCI: skip]` still work. A contract tag naming no open business waits on the Gigs tab with a warning, since it is probably a typo.
+
 **What a gig affects:**
 - **A freelance gig** (the default, including everything Night City Map generates) moves the client's share price and its target's. No player business is touched.
-- **A contract:** name a business in the GM notes, like `[NCI: Charter Test Clinic]` (its name, ticker or id). As well as the client's and target's prices, that business's Reputation and takings move, its own share price if it is listed, and its standing with the client and target. A gig whose client *is* the business counts the same way, without needing the tag.
-- **A target:** gigs don't report one, so add `[NCI target: Militech]` to the notes (a faction or a market company). Failing that, if the title or description names exactly one faction, the approval card asks you to tick that it really is the target. A target moves opposite to the client: half as much on a success, a quarter on a failure.
+- **A contract** (`[NCI contract: ...]`, by the business's name, ticker or id). As well as the client's and target's prices, that business's Reputation and takings move, its own share price if it is listed, and its standing with the client and target. A gig whose client *is* the business counts the same way, without needing the tag.
+- **A target:** gigs don't report one, so tag it (a faction or a market company). Failing that, if the title or description names exactly one faction, the approval card asks you to tick that it really is the target. A target moves opposite to the client: half as much on a success, a quarter on a failure.
 
-Private businesses, gangs and unknown clients have no share price, so only the other effects apply. `[NCI: ignore]` still skips a gig. The approval card lists every party before you approve.
+Private businesses, gangs and unknown clients have no share price, so only the other effects apply. A gang as a freelance gig's client asks for no mapping: only its target's price moves, and with no target the gig is simply recorded. The approval card lists every party before you approve.
 
 ## Regulators
 

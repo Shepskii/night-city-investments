@@ -89,6 +89,7 @@ function build(companyOptions) {
     return {
       alsos: (p.extras ?? []).map((e) => ({ text: L(`NCI.Gig.Also.${e.role}`, { name: e.name, percent: sign(e.percent) }), unsure: textTarget && e.role === 'target' })),
       targetNote: p.target ? L(textTarget ? 'NCI.Gig.TargetFound' : 'NCI.Gig.TargetTagged', { name: p.target.name }) : '',
+      contractNote: p.contractUnknown ? L('NCI.Gig.ContractUnknown', { name: p.contractUnknown }) : '',
       confirmTarget: textTarget,
     };
   };

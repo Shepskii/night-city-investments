@@ -9,7 +9,7 @@
  */
 
 import { BUSINESS_DEFAULTS, DISTRICTS } from './businessConfig.js';
-import { normalizeName } from './gigImpact.js';
+import { normalizeName, gigTags } from './gigImpact.js';
 
 export const FACTION_KINDS = Object.freeze(['corp', 'gang', 'other']);
 
@@ -85,8 +85,6 @@ export function driftStanding(entry, p = BUSINESS_DEFAULTS) {
 /** What a business's record shows for its hidden standings: each met faction's band. */
 export const standingBands = (entries = {}, p = BUSINESS_DEFAULTS) => Object.fromEntries(Object.entries(entries).map(([id, e]) => [id, standingBand(e.value, p)]));
 
-const TARGET_TAG = /\[\s*(?:nci|invest|stock)\s+target\s*[:=]\s*([^\]]+?)\s*\]/i;
-
 const hasWords = (text, name) => {
   const n = normalizeName(name);
   return n.length >= 5 && ` ${text} `.includes(` ${n} `);
@@ -99,8 +97,9 @@ const hasWords = (text, name) => {
  * @returns {{name: string, factionId: string|null, ticker: string, how: 'tag'|'text'}|null}
  */
 export function findTarget({ client, title, desc, notes }, factions, companies = []) {
-  const tag = TARGET_TAG.exec(String(notes ?? ''))?.[1];
-  const own = matchFaction(client, factions);
+  const tags = gigTags(notes);
+  const tag = tags.target;
+  const own = matchFaction(tags.client || client, factions);
   if (tag) {
     const faction = matchFaction(tag, factions);
     if (faction) return faction.id === own?.id ? null : { name: faction.name, factionId: faction.id, ticker: faction.ticker, how: 'tag' };

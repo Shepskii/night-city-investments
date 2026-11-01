@@ -12,7 +12,7 @@ import {
   GIG_OUTCOMES, resolveClient, matchBusiness, parseReward, planGigImpact, gigHeadlineKey, recentGigAbs, isKnownGig,
   addPending, removePending, addHistory, setMapping, removeMapping, sanitizeGigEdits, normalizeName,
   makeImpact, percentToAmount, logEntry, timeOf,
-  matchFaction, findTarget, targetShare,
+  matchFaction, findTarget, targetShare, gigTags,
 } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
 import { log, isActiveGM, L, isCharacter } from '../utils/helpers.js';
@@ -130,12 +130,15 @@ class GigImpactServiceImpl {
     if (isKnownGig(gigs, p.sourceKey)) return { ok: true, status: 'duplicate' };
 
     const pub = MarketStore.getPublic();
+    // The GM's tags: a client tag stands in for the gig's client field.
+    const tags = gigTags(p.notes);
+    const clientName = tags.client || p.client;
     const base = {
       id: newId(),
       sourceKey: p.sourceKey,
       gigId: p.gigId ?? null,
       title: String(p.title ?? '').slice(0, 120),
-      client: String(p.client ?? '').slice(0, 120),
+      client: String(clientName ?? '').slice(0, 120),
       outcome: p.outcome,
       reward: parseReward(p.reward),
       tick: timeOf(pub),
@@ -148,13 +151,15 @@ class GigImpactServiceImpl {
     if (aimed) base.target = aimed;
     // A gig for a player's business, by the GM's tag or because the business is its client (F1a).
     const own = matchBusiness({ client: p.client, notes: p.notes }, BusinessRepository.all());
+    // A contract tag naming no open business: most likely a typo, so the gig waits for the GM to see it.
+    if (tags.contract && !own) base.contractUnknown = tags.contract;
     if (own) {
       // A tagged business is a contractor: its standing with the client moves, and the client's price.
       // A business that is itself the client has nobody else to stand with.
       const contractor = own.how === 'tag';
-      const faction = contractor ? matchFaction(p.client, factions) : null;
+      const faction = contractor ? matchFaction(clientName, factions) : null;
       const res = contractor
-        ? resolveClient({ client: p.client, notes: '', text: [p.title, p.desc].filter(Boolean).join(' ') }, CompanyRepository.all({ includeUnlisted: true }), gigs.mappings)
+        ? resolveClient({ client: clientName, notes: '', text: [p.title, p.desc].filter(Boolean).join(' ') }, CompanyRepository.all({ includeUnlisted: true }), gigs.mappings)
         : null;
       const clientCompany = res?.status === 'matched' ? CompanyRepository.get(res.companyId) : null;
       return this._businessGig(gigs, {
@@ -166,18 +171,36 @@ class GigImpactServiceImpl {
     }
 
     const res = resolveClient(
-      { client: p.client, notes: p.notes, text: [p.title, p.desc, p.notes].filter(Boolean).join(' ') },
+      // The GM's tags are not the gig's text: a name in one is not a mention.
+      { client: p.client, notes: p.notes, text: [p.title, p.desc, String(p.notes ?? '').replace(/\[[^\]]*\]/g, ' ')].filter(Boolean).join(' ') },
       CompanyRepository.all({ includeUnlisted: true }),
       gigs.mappings,
     );
 
     if (res.status === 'ignored') return this._finish(addHistory(gigs, historyEntry(base, 'ignored', { reason: res.how })), 'ignored', base);
 
+    // A client with no shares (a gang): nothing to map or move for it, only its target's price, if it has one.
+    const sure = res.status === 'matched' && !res.needsReview;
+    const clientFaction = sure ? null : matchFaction(clientName, factions);
+    if (clientFaction && !clientFaction.ticker) {
+      const [hit] = this._targetExtra(base, gigs);
+      if (!hit) return this._finish(addHistory(gigs, historyEntry(base, 'ignored', { reason: 'no-shares' })), 'ignored', base);
+      const rec = { ...base, ...hit, how: 'tag' };
+      if (this.approvalRequired() || base.target.how === 'text') {
+        const queued = { ...rec, kind: 'review', reason: 'approval', target: null };
+        await this._commit(addPending(gigs, queued));
+        this._notice('Review', queued);
+        Hooks.callAll(HOOKS.GIG_IMPACT, { status: 'pending', record: queued });
+        return { ok: true, status: 'pending', id: queued.id, companyId: rec.companyId, percent: rec.percent, delayDays: rec.delayDays };
+      }
+      return this._applyAndFinish(gigs, rec);
+    }
+
     if (res.status === 'matched') {
       const company = CompanyRepository.get(res.companyId);
       if (!tradable(company, pub)) return this._finish(addHistory(gigs, historyEntry({ ...base, companyId: res.companyId, how: res.how }, 'ignored', { reason: 'not-tradable' })), 'ignored', base);
       const rec = this._planned({ ...base, companyId: company.id, how: res.how }, gigs, company);
-      if (this.approvalRequired() || res.needsReview || rec.target?.how === 'text') {
+      if (this.approvalRequired() || res.needsReview || rec.target?.how === 'text' || rec.contractUnknown) {
         const queued = { ...rec, kind: 'review', reason: res.needsReview ? res.how : 'approval' };
         await this._commit(addPending(gigs, queued));
         this._notice('Review', queued);
