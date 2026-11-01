@@ -1,10 +1,12 @@
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
+import { installFakeChat } from './helpers/fakeChat.mjs';
 
 const env = installFakeFoundry({ actors: [['Alice', 50000, true], ['Bob', 50000, true], ['Cass', 50000, true]] });
 const [alice, bob, cass] = env.actors;
 env.store.set('directOrderExecution', 'instant');
+const { chats } = installFakeChat();
 
 let S;
 let E;
@@ -358,6 +360,61 @@ test('concealment: a hidden holder over 5% adds Exposure (and heat, when tracked
   env.store.set('heatEnabled', false);
   await S.BusinessRepository.save({ ...business(), masks: {} });
   await S.BusinessService._saveHidden({ business: business(), events: [] });
+});
+
+test('an investigation by ticker: a roll against a hidden total peels one layer at a time, once a week, telling only the investigator', async () => {
+  const { SkillAdapter } = await import('../scripts/services/SkillAdapter.js');
+  const { BusinessClient } = await import('../scripts/services/BusinessClient.js');
+  const { MailService } = await import('../scripts/services/MailService.js');
+  const rollOne = SkillAdapter.rollOne;
+  const fromWire = MailService.fromWire;
+  const sent = [];
+  MailService.fromWire = async (actor, spec) => { sent.push({ actor: actor.id, subject: spec.subject, lines: spec.lines }); return { ok: true }; };
+  const dice = [];
+  SkillAdapter.rollOne = async () => ({ value: dice.shift() ?? 5, roll: null });
+  try {
+    const day = S.BusinessService.day();
+    const b = E.normalizeBusiness(structuredClone(business()));
+    S.BusinessService._syncHolders(b);
+    b.masks = { [bob.id]: [{ kind: 'nominee', name: 'Vex', day, lastFee: day, ref: 'ref_in' }, { kind: 'shell', name: 'Kestrel Holdings', day, lastFee: day, ref: 'ref_out' }] };
+    await S.BusinessRepository.save(b);
+    await S.BusinessService._saveHidden({ business: business(), events: [], layerTotals: [{ holderId: bob.id, index: 0, total: 5 }, { holderId: bob.id, index: 1, total: 6 }] });
+    const library = { kind: 'skill', skill: 'Library Search', stat: 'int' };
+    const dig = async () => {
+      const { messageId } = await SkillAdapter.leverCheck(cass, { dv: null, title: 'Investigating', use: library });
+      const key = await BusinessClient.submit(cass, 'investigate', { ticker: 'PLAY', ref: 'ref_out', use: library, rollId: messageId });
+      await S.BusinessService.processActor(cass);
+      await settle();
+      return (cass.getFlag('night-city-investments', 'businessReceipts') ?? []).flatMap((x) => x.results ?? []).find((r) => r.key === key);
+    };
+
+    dice.push(9);
+    const first = await dig();
+    assert.equal(first.ok, true, first.reason);
+    assert.equal(first.investigation.success, true, `a 9 beats the shell's 6 (${first.investigation.band})`);
+    assert.ok(sent.some((m) => m.actor === cass.id && m.lines.join(' ').includes('Vex')), 'told of the nominee behind it');
+    assert.equal(sent.some((m) => m.actor === bob.id), false, 'bob is not told');
+    assert.equal(/DV \d/.test(chats.at(-1).content), false, 'the card shows no DV');
+
+    dice.push(9);
+    assert.equal((await dig()).reason, 'investigate-wait', 'once a week');
+
+    // A week on: the nominee, at 5 + 2 for the shell above it.
+    const hidden = S.MarketStore.getBusinessesHidden();
+    const known = hidden.bus_play.known;
+    known[cass.id][bob.id].tried = day - 7;
+    await S.MarketStore.setBusinessesHidden({ ...hidden, bus_play: { ...hidden.bus_play, known } });
+    dice.push(9);
+    const second = await dig();
+    assert.equal(second.investigation.success, true);
+    assert.ok(sent.some((m) => m.actor === cass.id && m.lines.join(' ').includes(bob.name)), 'and then who it is');
+    assert.equal(business().masks[bob.id].length, 2, 'an investigation tells the investigator, not the register');
+  } finally {
+    SkillAdapter.rollOne = rollOne;
+    MailService.fromWire = fromWire;
+    await S.BusinessRepository.save({ ...business(), masks: {} });
+    await S.BusinessService._saveHidden({ business: business(), events: [] });
+  }
 });
 
 test('a listed company in administration is restructured: its debts become creditors\' shares, added to the market and kept through the holders\' sync', async () => {

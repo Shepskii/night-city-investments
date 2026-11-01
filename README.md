@@ -57,14 +57,14 @@ Or unzip a release into `Data/modules/night-city-investments`. Then enable **Nig
 - **Grow it.** Projects improve the premises. Loans and investors bring in money. Registration, a charter, then a company with officers and monthly reports.
 - **Employees.** Hire player characters, NPCs or recruits into roles, and pay them weekly. NPC staff have loyalty, hidden traits, training, share grants and their own events.
 - **Go public.** List the company on the market through an IPO. Shares then sit in portfolios, reports move the price, and dividends follow a payout ratio the shareholders vote. A daily liquidity cap and a delisting review keep it honest.
-- **Corporate play** (in progress). Issue new shares, buy shares back, bid for another company with a tender offer, and survive (or not) administration when debts outgrow assets. Hidden ownership follows.
+- **Corporate play.** Issue new shares, buy shares back, bid for another company with a tender offer, survive (or not) administration when debts outgrow assets, and hide behind nominees and shell companies while rivals and regulators dig.
 
 ### For the GM
 - **The GM Console.** Advance time and steer sentiment, regimes and volatility. Queue shocks, glides and corporate actions, preview their effect over simulated futures, and undo a tick.
 - **Approvals.** Gig impacts, penalties, new businesses, charters, listings, syndicates and NPC job offers can each wait for the GM.
 - **Gig outcomes** (with the bridge). A completed or failed gig moves its client's share price a few days later.
 - **Insider-trading heat** (optional). A hidden score watches for trades placed ahead of news. Brokers and NCPD warn, and penalties wait for approval.
-- **Hidden from play.** Fair value, the true regime, heat, a business's Exposure and its staff's traits stay out of players' windows.
+- **Hidden from play.** Fair value, the true regime, heat, a business's Exposure, its staff's traits and the strength of hidden owners' layers stay out of players' windows.
 - **Tools.** A self-check, starter macros, suggested companies from Messenger contacts and gigs, and a log of recent trades.
 
 ### How it runs

@@ -23,7 +23,7 @@ import {
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
   takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
   restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask,
-  concealedHolders, auditConcealment, unmask, createRng,
+  concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter, isItemPile } from '../utils/helpers.js';
@@ -502,6 +502,8 @@ class BusinessServiceImpl {
 
   async _handle(actor, request) {
     if (!this.enabled()) return this._receipt(actor, request, { ok: false, reason: 'disabled' });
+    // Looking behind a hidden holding (B6d) reads only the GM's hidden state and changes no business.
+    if (request.type === 'investigate') return this._receipt(actor, request, await this._investigate(actor, request));
     const as = this._partnerFor(actor, request);
     if (!as.ok) return this._receipt(actor, request, as);
     // A takeover bid names its target by ticker, as the bidder knows it; they cannot read its record (B6b).
@@ -823,6 +825,8 @@ class BusinessServiceImpl {
     // A step up carried at once is registering, chartering or listing, by the stage.
     if (settled?.kind === 'stepUp' && !settled.detail) settled.detail = ['stepUp', 'stepUpCharter', 'stepUpList'][out.business?.stage] ?? 'stepUp';
     if (settled) result.proposal = settled;
+    // An investigation's result (B6d): whether it found anything (what, comes by mail).
+    if (out.investigation) result.investigation = out.investigation;
     await actor.setFlag(MODULE_ID, FLAGS.BUSINESS_RECEIPTS, [{
       processed: [...r.processed, request.key].slice(-PROCESSED_CAP),
       results: [...r.results, result].slice(-RESULTS_CAP),
@@ -1013,7 +1017,11 @@ class BusinessServiceImpl {
         }));
       }
       if (listed) this._syncHolders(b);
+      // Selling into a takeover puts a hidden holder's name on the record (B6d).
+      for (const r of done.transfers.filter((x) => !x.npc && !x.market)) unmask(b, r.actorId);
       await BusinessRepository.save(b);
+      await this._saveHidden({ business: b, events: [] });
+      await this._publishRegister(b);
       const terms = { name: b.name, ticker: ticker ?? '', bidder: t.bidderName, shares: done.acquired.toLocaleString(), price: t.price.toLocaleString(), refund: done.refund.toLocaleString() };
       const key = done.control ? 'Control' : 'Closed';
       await this._mailHolders(b, L('NCI.Takeover.Mail.ClosedSubject', terms), [L(`NCI.Takeover.Mail.${key}`, terms)]);
@@ -1152,6 +1160,48 @@ class BusinessServiceImpl {
   }
 
   /**
+   * An investigation of a hidden holding (B6d): any character, naming the register row's layer (by its
+   * reference) and the company (by ticker, or by id from the Business window). Their roll (Library
+   * Search, Streetwise, Bribery or Interface) is read back against the next layer they have not seen
+   * through: its strength, plus 2 for each layer they have. A win tells them (by mail) the next layer
+   * down, or who is behind it; a fumble tells the holder someone is digging. Once a week each.
+   */
+  async _investigate(actor, request) {
+    const P = BUSINESS_DEFAULTS.ownership.investigate;
+    const ticker = String(request.ticker ?? '').trim().toUpperCase();
+    const stored = request.businessId ? BusinessRepository.get(request.businessId) : BusinessRepository.all().find((x) => x.status === 'open' && x.company?.ticker === ticker);
+    if (!stored) return { ok: false, reason: 'no-target' };
+    const holderId = holderByRef(stored, request.ref);
+    if (!holderId) return { ok: false, reason: 'nothing-hidden' };
+    if (holderId === actor.id) return { ok: false, reason: 'own-holding' };
+    const use = (request.use && P.uses.find((u) => useKey(u) === useKey(request.use))) ?? null;
+    if (!use) return { ok: false, reason: 'bad-use' };
+    const day = this.day();
+    const hidden = MarketStore.getBusinessesHidden();
+    const entry = structuredClone(hidden[stored.id] ?? { exposure: 0 });
+    const mine = entry.known?.[actor.id]?.[holderId] ?? { peeled: 0, tried: -Infinity };
+    if (day - mine.tried < P.days) return { ok: false, reason: 'investigate-wait' };
+    const target = investigationTarget(stored, holderId, entry.layers?.[holderId] ?? [], mine.peeled);
+    if (!target.ok) return target;
+    const check = await SkillAdapter.verifyLevers(actor, request, { dv: target.dv, use });
+    if (!check.ok) return check;
+    const r = check.result;
+    mine.tried = day;
+    const company = stored.name;
+    if (r.success) {
+      mine.peeled += 1;
+      const holder = this._account(holderId);
+      const found = target.reveals ? (target.reveals.kind === 'nominee' ? L('NCI.Ownership.Nominee', { broker: target.reveals.name }) : target.reveals.name) : (holder?.name ?? '?');
+      await this._mailAccount(actor.id, L('NCI.Ownership.Mail.FoundSubject', { name: company }), [L(target.reveals ? 'NCI.Ownership.Mail.FoundLayer' : 'NCI.Ownership.Mail.FoundHolder', { name: company, found })]);
+    } else if (r.band === 'fumble') {
+      await this._mailAccount(holderId, L('NCI.Ownership.Mail.TippedSubject', { name: company }), [L('NCI.Ownership.Mail.Tipped', { name: company })]);
+    }
+    entry.known = { ...(entry.known ?? {}), [actor.id]: { ...(entry.known?.[actor.id] ?? {}), [holderId]: mine } };
+    await MarketStore.setBusinessesHidden({ ...MarketStore.getBusinessesHidden(), [stored.id]: { ...MarketStore.getBusinessesHidden()[stored.id], known: entry.known } });
+    return { ok: true, investigation: { success: r.success, band: r.band }, businessId: stored.id };
+  }
+
+  /**
    * A listed company's public register (B6d), on its market record for every client: each holder by
    * the name a register shows (the outermost layer of a hidden one), with the market's float.
    */
@@ -1164,7 +1214,10 @@ class BusinessServiceImpl {
       .filter((x) => ['active', 'leaving'].includes(x.status) && x.units > 0)
       .map((x) => {
         const mask = outerMask(business, x.actorId);
-        return { label: x.market ? '' : (mask ? mask.name : x.name), kind: x.market ? 'market' : x.creditors ? 'creditors' : mask?.kind ?? (x.npc ? 'npc' : 'holder'), shares: x.units, pct: Math.round((x.units / total) * 1000) / 10 };
+        return {
+          label: x.market ? '' : (mask ? mask.name : x.name), kind: x.market ? 'market' : x.creditors ? 'creditors' : mask?.kind ?? (x.npc ? 'npc' : 'holder'),
+          shares: x.units, pct: Math.round((x.units / total) * 1000) / 10, ...(mask?.ref ? { ref: mask.ref } : {}),
+        };
       })
       .sort((a, c) => c.shares - a.shares);
     if (JSON.stringify(register) === JSON.stringify(company.register ?? [])) return;

@@ -58,7 +58,7 @@ test('layers: the broker\'s nominee first, then named shells, up to three; a fai
 
   const one = apply(b, { type: 'hideRoll', businessId: 'b1', use: BUREAUCRACY }, MED, { check: roll('solid', 19), context: { hide } });
   b = one.business;
-  assert.deepEqual(outerMask(b, 'med'), { kind: 'nominee', name: 'Vex', day: DAY, lastFee: DAY });
+  assert.deepEqual(outerMask(b, 'med'), { kind: 'nominee', name: 'Vex', day: DAY, lastFee: DAY, ref: 'b1' });
   assert.deepEqual(one.layerTotals, [{ holderId: 'med', index: 0, total: 19 }]);
   assert.equal(JSON.stringify(b.masks).includes('19'), false, 'the strength is not on the record');
 
@@ -106,4 +106,16 @@ test('concealment: hiding more than 5% of a listed company; NCPD\'s monthly look
   assert.equal(auditConcealment([17, 21], 0, seq(0.01, 0.5)).unmasked, false, '20 does not beat 23');
   assert.equal(unmask(listed, 'med'), true);
   assert.deepEqual(listed.masks, {});
+});
+
+test('investigations: a register row names a layer by reference; each win peels one layer from the outside, harder by 2 for each already peeled', async () => {
+  const { holderByRef, investigationTarget } = await import('../scripts/engine/index.js');
+  const b = normalizeBusiness({ ...company(), masks: { med: [{ kind: 'nominee', name: 'Vex', day: DAY, lastFee: DAY, ref: 'r1' }, { kind: 'shell', name: 'Kestrel', day: DAY, lastFee: DAY, ref: 'r2' }] } });
+  assert.equal(holderByRef(b, 'r2'), 'med', 'the outer layer names the row');
+  assert.equal(holderByRef(b, 'r1'), null, 'an inner layer is not on the register');
+  const first = investigationTarget(b, 'med', [17, 21], 0);
+  assert.deepEqual([first.index, first.dv, first.reveals.name], [1, 21, 'Vex']);
+  const second = investigationTarget(b, 'med', [17, 21], 1);
+  assert.deepEqual([second.index, second.dv, second.reveals], [0, 19, null], 'the nominee, +2 for the shell above it; behind it, the holder');
+  assert.equal(investigationTarget(b, 'med', [17, 21], 2).reason, 'nothing-hidden');
 });

@@ -61,10 +61,11 @@ export function layerCheck(b, holderId, { name } = {}, p = BUSINESS_DEFAULTS) {
  * failure adds nothing. The fee is paid either way, by the service.
  * @returns {{added: boolean, kind: string, name: string, index: number}}
  */
-export function addLayer(b, holderId, { kind, name, day, result }) {
+export function addLayer(b, holderId, { kind, name, day, result, ref = null }) {
   const n = kind === 'nominee' ? text(name, 60) : text(name, 40);
   if (!bandPassed(result.band)) return { added: false, kind, name: n, index: -1 };
-  b.masks = { ...(b.masks ?? {}), [holderId]: [...masksOf(b, holderId), { kind, name: n, day, lastFee: day }] };
+  // `ref` names the layer to an investigator without saying whose it is.
+  b.masks = { ...(b.masks ?? {}), [holderId]: [...masksOf(b, holderId), { kind, name: n, day, lastFee: day, ...(ref ? { ref } : {}) }] };
   return { added: true, kind, name: n, index: b.masks[holderId].length - 1 };
 }
 
@@ -142,4 +143,24 @@ export function unmask(b, holderId) {
   delete masks[holderId];
   b.masks = masks;
   return true;
+}
+
+// ── Investigations (B6d) ─────────────────────────────────────────────────────
+
+/** The holder whose outer layer has this reference (what a register row names). */
+export function holderByRef(b, ref) {
+  return Object.entries(b.masks ?? {}).find(([, layers]) => layers.at(-1)?.ref === ref)?.[0] ?? null;
+}
+
+/**
+ * What an investigator is up against: the next layer they have not seen through (from the outside in,
+ * `peeled` already done), its strength plus 2 for each layer still above it... that is, each one they
+ * have peeled. Returns the DV, the layer's index, and what a win reveals: the next layer down, or the
+ * holder when it was the last.
+ */
+export function investigationTarget(b, holderId, totals, peeled = 0) {
+  const layers = masksOf(b, holderId);
+  const index = layers.length - 1 - peeled;
+  if (index < 0) return fail('nothing-hidden');
+  return { ok: true, index, dv: (totals[index] ?? 0) + 2 * peeled, reveals: index > 0 ? layers[index - 1] : null };
 }

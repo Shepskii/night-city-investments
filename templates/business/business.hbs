@@ -620,6 +620,7 @@
           <td>{{units}}</td>
           <td>{{share}}</td>
           <td class="nci-rowbtns">{{#if buyout}}<button type="button" data-action="buyout" data-id="{{actorId}}">{{buyout}}</button>{{/if}}
+            {{#if investigateRef}}<button type="button" class="nci-labelled" data-action="investigate" data-ref="{{investigateRef}}" data-label="{{maskName}}"><i class="fas fa-magnifying-glass"></i> {{localize "NCI.Ownership.Investigate"}}</button>{{/if}}
             {{#if canElect}}<button type="button" class="nci-labelled" data-action="proposeElect" data-id="{{actorId}}"><i class="fas fa-user-tie"></i> {{localize "NCI.Company.Elect"}}</button>{{/if}}
             {{#if canDismiss}}<button type="button" class="nci-labelled" data-action="proposeDismiss" data-id="{{actorId}}"><i class="fas fa-user-slash"></i> {{localize "NCI.Company.Dismiss"}}</button>{{/if}}</td>
         </tr>

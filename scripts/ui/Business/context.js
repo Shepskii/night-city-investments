@@ -1270,6 +1270,9 @@ function partnersContext(business, actor) {
       name: p.name,
       // The shares the market holds after a listing (B5b) are shown as the public float.
       who: holderWho(business, p, actor?.id),
+      // A hidden holder another shareholder can investigate (B6d).
+      investigateRef: outerMask(business, p.actorId)?.ref && actor && actor.id !== p.actorId && !game.user.isGM ? outerMask(business, p.actorId).ref : '',
+      maskName: outerMask(business, p.actorId) ? maskLabel(outerMask(business, p.actorId)) : '',
       status: LT(business, `NCI.Business.PartnerStatus.${p.status}`),
       units: business.status === 'forming' ? '' : whole(p.units),
       share: units > 0 && ['active', 'leaving'].includes(p.status) ? `${((p.units / units) * 100).toFixed(1)}%` : '',

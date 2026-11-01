@@ -221,6 +221,17 @@ Any character or syndicate can bid for a chartered player company, private or li
 - **Defence:** the target's officers may make one defence roll (Persuasion or Business). A good result makes NPC holders and the float want a higher premium; a fumble makes them keener.
 - **Control:** a bidder who ends with more than half the shares controls the votes, and can elect and dismiss officers. Holders who did not tender keep their shares.
 
+## Hidden ownership
+
+A shareholder in a chartered or listed company can hide who they are on its register.
+
+- **Layers:** in the **Hidden ownership** block on the Shareholders tab, hide first behind your broker's nominee (you need a broker), then add up to two shell companies you name. Each is a Bureaucracy or Accounting roll at DV 15; its chat card goes only to you and the GM. A pass adds the layer, and the roll's total is how hard it is to see through. The setup fee (1% of your holding's value, at least 500 eb) is paid from your brokerage balance even if the roll fails.
+- **Upkeep:** each layer costs 0.25% of the holding's value every 28 days. If you can't pay, that layer lapses with any outside it. You can remove your outer layer at any time.
+- **What others see:** other shareholders, the votes and a listed company's public register (on its terminal page) show your outermost layer. You still vote through it.
+- **Concealment:** hiding more than 5% of a listed company is concealment. It draws heat each week, and NCPD Financial Crimes may look behind your layers each month. If it sees through, you are named publicly and fined 5% of the holding. Trading your own company's shares around its news draws double insider heat.
+- **Investigating others:** press **Investigate** on a hidden holder's row (on the terminal's Shareholders table, or the Shareholders tab if you hold shares). Choose Library Search, Streetwise, Bribery or Interface. You roll against how well the layer was built, which you can't see. A win shows you, by mail, the next layer down, or who it is behind the last. A fumble tips them off. Once a week for each holding.
+- **Takeovers:** selling into a takeover puts your name on the record.
+
 ## Insolvency
 
 A company (chartered or listed) whose debts (its loans, the wages it owes and any overdraft) are more than its cash and assets at two weekly closes in a row goes into **administration**. A banner on the Business window says so.

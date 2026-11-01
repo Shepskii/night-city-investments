@@ -843,7 +843,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
       const kind = layerCheck(b, actor.id, request, p).kind;
       const r = check.result;
-      const done = addLayer(b, actor.id, { kind, name: kind === 'nominee' ? ctx.hide.broker : request.name, day, result: r });
+      const done = addLayer(b, actor.id, { kind, name: kind === 'nominee' ? ctx.hide.broker : request.name, day, result: r, ref: ctx.newId });
       out.events.push({ type: 'layerRolled', holderId: actor.id, kind, name: done.name, added: done.added, band: r.band, fee: ctx.hide.fee });
       if (done.added) out.layerTotals = [...(out.layerTotals ?? []), { holderId: actor.id, index: done.index, total: r.total }];
       break;

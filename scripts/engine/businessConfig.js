@@ -344,6 +344,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
      * fines the holder `fine` of the holding's value. Insider heat for a concealed holder counts `insider` times.
      */
     disclosure: 0.05, heat: 6, exposure: 1, insider: 2, fine: 0.05,
+    /** Investigating a hidden holding: these skills, once a week per investigator and holding. */
+    investigate: Object.freeze({ uses: Object.freeze([S.librarySearch, S.streetwise, S.bribery, A.interface]), days: 7 }),
     audit: Object.freeze({ chance: 0.1, heatDivisor: 200, maxChance: 0.6, base: 14, days: 28 }),
   }),
   insolvency: Object.freeze({

@@ -492,7 +492,7 @@
     <h3 class="nci-subhead">{{localize "NCI.Ownership.Register"}}</h3>
     <table class="nci-market">
       <thead><tr><th>{{localize "NCI.Business.CapTableCompany"}}</th><th class="num">{{localize "NCI.Business.UnitsCompany"}}</th><th class="num">{{localize "NCI.Business.Share"}}</th></tr></thead>
-      <tbody>{{#each detail.register}}<tr><td>{{label}}</td><td class="num">{{shares}}</td><td class="num">{{pct}}</td></tr>{{/each}}</tbody>
+      <tbody>{{#each detail.register}}<tr><td>{{label}}{{#if ref}} <button type="button" data-action="investigate" data-ref="{{ref}}" data-ticker="{{ticker}}" data-label="{{label}}"><i class="fas fa-magnifying-glass"></i> {{localize "NCI.Ownership.Investigate"}}</button>{{/if}}</td><td class="num">{{shares}}</td><td class="num">{{pct}}</td></tr>{{/each}}</tbody>
     </table>
     {{/if}}
     {{#if detail.lore}}<div class="nci-lore">{{{detail.lore}}}</div>{{/if}}

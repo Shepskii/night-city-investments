@@ -20,6 +20,7 @@ import { EmployeeDialogApp } from './EmployeeDialogApp.js';
 import { CashbookDialogApp } from './CashbookDialogApp.js';
 import { ReportDialogApp } from './ReportDialogApp.js';
 import { L } from '../format.js';
+import { investigate } from '../investigate.js';
 import { pickerContext, startContext, businessContext, usableActors, jobsContext, termKey } from './context.js';
 
 const TABS = ['overview', 'ledger', 'week', 'projects', 'staff', 'partners', 'growth'];
@@ -71,6 +72,7 @@ export class BusinessApp extends BaseApplication {
       issueRoll: BusinessApp._onIssueRoll,
       tender: BusinessApp._onTender,
       hideRoll: BusinessApp._onHideRoll,
+      investigate: BusinessApp._onInvestigate,
       dropLayer: BusinessApp._onDropLayer,
       defenceRoll: BusinessApp._onDefenceRoll,
       buybackRoll: BusinessApp._onBuybackRoll,
@@ -439,6 +441,12 @@ export class BusinessApp extends BaseApplication {
   static _onHideRoll(event, target) {
     const name = value(target, 'shellName').trim();
     this._roll({ type: 'hideRoll', ...(name ? { name } : {}) }, L('NCI.Ownership.RollTitle', { name: this.business?.name ?? '' }));
+  }
+
+  /** Look behind another shareholder's layers (B6d), as the picked character. */
+  static _onInvestigate(event, target) {
+    const actor = this.actor?.isSyndicate ? this.actor.as : this.actor;
+    return investigate(actor, { businessId: this.business?.id, ref: target.dataset.ref, label: target.dataset.label });
   }
 
   /** Take the outermost layer off this holding (B6d). */

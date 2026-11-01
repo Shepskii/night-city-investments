@@ -24,6 +24,7 @@ import { fundRows, fundDetail, accessContext, ipoRows, heatContext } from './con
 import { ipoPrice, shareOf, bookValue } from '../../engine/index.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient } from '../../services/BusinessClient.js';
+import { investigate } from '../investigate.js';
 import { SyndicateClient } from '../../services/SyndicateClient.js';
 import { accountFor, tradingAccounts, ownerOf } from '../accounts.js';
 import { syndicateContext, characterSyndicates } from './syndicateContext.js';
@@ -46,6 +47,7 @@ export class MarketTerminalApp extends BaseApplication {
     position: { width: 1200, height: 640 },
     actions: {
       makeBid: MarketTerminalApp._onMakeBid,
+      investigate: MarketTerminalApp._onInvestigate,
       select: MarketTerminalApp._onSelect,
       openAsset: MarketTerminalApp._onOpenAsset,
       back: MarketTerminalApp._onBack,
@@ -267,6 +269,12 @@ export class MarketTerminalApp extends BaseApplication {
     });
     if (!ok) return undefined;
     return BusinessClient.submit(this.actor, 'bid', { ticker, price, shares });
+  }
+
+  /** Look behind a hidden holder on a listed company's register (B6d), as the picked character. */
+  static _onInvestigate(event, target) {
+    const actor = this.actor?.isSyndicate ? this.actor.as : this.actor;
+    return investigate(actor, { ticker: target.dataset.ticker, ref: target.dataset.ref, label: target.dataset.label });
   }
 
   /** From a private stake on the Portfolio tab: open the Business window on that business. */
@@ -506,6 +514,9 @@ export class MarketTerminalApp extends BaseApplication {
       register: (c.register ?? []).map((r) => ({
         label: r.kind === 'market' ? L('NCI.Business.MarketHolder') : r.kind === 'creditors' ? L('NCI.Business.CreditorsHolder') : r.kind === 'nominee' ? L('NCI.Ownership.Nominee', { broker: r.label }) : r.label,
         shares: whole(r.shares), pct: `${r.pct}%`,
+        // A hidden holder can be investigated by anyone but themselves.
+        ref: r.ref && this.actor ? r.ref : '',
+        ticker: c.ticker,
       })),
       // A player company's officers and shareholders (and the GM) can open its Business window (B5c).
       manageId: this._manageable(c) ? c.businessId : null,

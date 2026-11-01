@@ -239,6 +239,7 @@
       "Success": "Access granted",
       "Failure": "Access denied",
       "Versus": "against",
+      "Hidden": "Against a total you cannot see: the result comes back to you.",
       "Crit": { "success": "critical success", "fumble": "fumble" }
     },
     "Roll": {
@@ -1736,9 +1737,20 @@
       "Nominee": "{broker} (nominee)",
       "As": "(as {mask})",
       "Register": "Shareholders",
+      "Investigate": "Investigate",
+      "InvestigateTitle": "Investigating {label}",
+      "Found": "Your digging turned something up: check your mail.",
+      "NotFound": "Your digging turned up nothing this time.",
+      "InvestigateHint": "Dig into who is behind this holding: Library Search, Streetwise or Bribery, or a Netrunner's Interface. You roll against how well the layer was built, which you cannot see; a win shows you the next layer down (or who it is), a fumble tips them off. Once a week for each holding.",
+      "Skill": "Skill",
       "Mail": {
         "LapsedSubject": "A layer over your holding in {name} has lapsed",
         "Lapsed": "Your brokerage balance could not cover the {fee} eb monthly fee for {layer}, your layer over your holding in {name}, so it has lapsed, with any layers outside it.",
+        "FoundSubject": "What you dug up on {name}'s register",
+        "FoundLayer": "Behind that holding in {name} you found another layer: {found}. Dig again to go deeper.",
+        "FoundHolder": "Behind that holding in {name} you found who it is: {found}.",
+        "TippedSubject": "Someone is digging into your holding in {name}",
+        "Tipped": "Word reaches you that someone has been asking clumsy questions about who is behind your holding in {name}.",
         "UnmaskedSubject": "NCPD Financial Crimes: your holding in {name}",
         "Unmasked": "NCPD Financial Crimes has looked behind the layers over your {pct}% of {name} ({ticker}), above the 5% disclosure threshold. Your holding is now on the register under your own name, and you have been fined {fine} eb from your brokerage balance."
       }
@@ -2668,6 +2680,16 @@
       },
       "Refused": "Your business request was refused: {reason}",
       "Done": {
+        "rightsTake": "New shares taken.",
+        "sellBack": "Shares sold back to the company.",
+        "issueRoll": "Offering roll made.",
+        "buybackRoll": "Buyback timed.",
+        "bid": "Bid made: it waits for the market's approval.",
+        "tender": "Tender recorded.",
+        "defenceRoll": "Defence roll made.",
+        "hideRoll": "Layer roll made.",
+        "dropLayer": "Outer layer removed.",
+        "investigate": "Investigation made.",
         "found": "Business founded. Your partners can now join.",
         "join": "You are a partner now.",
         "decline": "Invitation declined.",
@@ -2894,7 +2916,10 @@
         "name-taken": "that name is already on this company's register",
         "no-layer": "your holding has no layer to remove",
         "no-broker": "you need a broker for their nominee to hold your shares",
-        "no-brokerage": "you need a brokerage account to pay the fees"
+        "no-brokerage": "you need a brokerage account to pay the fees",
+        "nothing-hidden": "there is nothing more to find behind that holding",
+        "own-holding": "that is your own holding",
+        "investigate-wait": "you have looked into that holding this week already"
       }
     },
     "Staff": {

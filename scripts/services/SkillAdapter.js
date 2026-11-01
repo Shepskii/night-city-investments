@@ -100,6 +100,8 @@ export const SkillAdapter = {
    * @returns {Promise<{result: object, roll: object, messageId: string|null}>}
    */
   async leverCheck(actor, { dv, title, use, levers = {}, whisper = false }) {
+    // An opposed roll against a hidden total (an investigation, B6d): the card shows only the total.
+    const hidden = dv == null;
     // A hired professional or an employee cannot use the character's Luck, or their business days.
     const l = normalizeLevers({ ...levers, ...(use.kind === 'staff' ? { luck: 0, extra: 0 } : {}), hire: use.kind === 'hire' ? use.hire : null });
     const base = this.baseFor(actor, use);
@@ -112,10 +114,10 @@ export const SkillAdapter = {
     if (first.value === 10 || first.value === 1) dice.push(await this.rollOne());
     const queue = dice.map((d) => d.value);
     const roll = cprD10(() => queue.shift());
-    const result = resolveRoll({ base: base.base, roll, dv, levers: { ...l, luck } });
+    const result = resolveRoll({ base: base.base, roll, dv: hidden ? 0 : dv, levers: { ...l, luck } });
 
     const messageId = await this._postLevers(actor, {
-      title, base, roll, result, dice: dice.map((d) => d.roll).filter(Boolean), whisper,
+      title, base, roll, result, dice: dice.map((d) => d.roll).filter(Boolean), whisper, hidden,
       flag: {
         actorId: actor.id, skill: base.name, kind: use.kind, dice: dice.map((d) => d.value),
         levers: { approach: l.approach, luck, luckBefore, bonus: l.bonus, extra: l.extra, hire: l.hire },
@@ -247,7 +249,7 @@ export const SkillAdapter = {
     return { ok: true, flag, roll: cprD10(() => queue.shift()) };
   },
 
-  async _postLevers(actor, { title, base, roll, result, dice, flag, whisper = false }) {
+  async _postLevers(actor, { title, base, roll, result, dice, flag, whisper = false, hidden = false }) {
     if (typeof ChatMessage === 'undefined') return null;
     const crit = roll.crit ? ` (${L(`NCI.Check.Crit.${roll.crit}`)})` : '';
     const extras = [
@@ -258,7 +260,9 @@ export const SkillAdapter = {
     const approach = result.approach === 'standard' ? '' : ` (${L(`NCI.Roll.Approach.${result.approach}`)})`;
     const content = `<div class="nci-chat"><strong>${escapeHtml(title)}</strong><br>`
       + `${base.parts}${extras} + d10 [${roll.rolls.join(', ')}]${crit} = <strong>${result.total}</strong>`
-      + ` ${L('NCI.Check.Versus')} DV ${result.dv}${approach}<br><strong>${escapeHtml(L(`NCI.Roll.Band.${result.band}`))}</strong></div>`;
+      + (hidden
+        ? `${approach}<br><em>${escapeHtml(L('NCI.Check.Hidden'))}</em></div>`
+        : ` ${L('NCI.Check.Versus')} DV ${result.dv}${approach}<br><strong>${escapeHtml(L(`NCI.Roll.Band.${result.band}`))}</strong></div>`);
     try {
       const message = await ChatMessage.create({
         speaker: ChatMessage.getSpeaker?.({ actor }),
