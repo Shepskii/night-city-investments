@@ -14,7 +14,7 @@ import {
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
   capitalOf, issueOptions, rightsLeft, tenderRoom, capitalRollCheck, defenceCheck, takeoverPremium, sellableQty, debtsOf, solvency,
-  masksOf, outerMask, layerCheck, layerFees, holdingValue, concealedHolders,
+  masksOf, outerMask, layerCheck, layerFees, holdingValue, concealedHolders, caseAnswerCheck,
 } from '../../engine/index.js';
 import { PortfolioRepository } from '../../data/PortfolioRepository.js';
 import { MarketStore } from '../../data/MarketStore.js';
@@ -206,6 +206,13 @@ export function businessContext(business, actor) {
     onMarket: ['scheduled', 'listed'].includes(business.listing?.status) && !!business.company?.ticker,
     status,
     statusLabel: L(`NCI.Business.Status.${status}`),
+    // A regulator's case (R1): what it is about, and an officer's answer. The Exposure behind it stays hidden.
+    regCase: business.regCase ? {
+      text: business.regCase.status === 'notice'
+        ? L('NCI.Regulator.Notice', { why: L(`NCI.Regulator.Reason.${business.regCase.reason}`), date: dayText(business.regCase.endDay) })
+        : L('NCI.Regulator.Waiting'),
+      canAnswer: !!actor && caseAnswerCheck(business, actor.id).ok,
+    } : null,
     // In administration (B6c): what is stopped, and how cash put in can bring it back.
     administration: business.administration
       ? L('NCI.Insolvency.Banner', { date: dayText(business.administration.since), net: whole(solvency(business)), debts: whole(debtsOf(business).total) })

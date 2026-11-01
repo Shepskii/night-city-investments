@@ -44,6 +44,8 @@ export const BusinessWatcher = {
     else if (settled?.outcome === 'void') ui.notifications.warn(L('NCI.Business.Settled.void', { reason: L(`NCI.Business.Reason.${settled.reason}`) }));
     // An investigation says whether it found anything; what it found comes by mail (B6d).
     else if (result.ok && result.investigation) ui.notifications.info(L(result.investigation.success ? 'NCI.Ownership.Found' : 'NCI.Ownership.NotFound'));
+    // A case answered says how it went (R1).
+    else if (result.ok && result.caseResult) ui.notifications.info(L(result.caseResult.success ? 'NCI.Regulator.WonNotice' : 'NCI.Regulator.LostNotice'));
     else if (result.ok) ui.notifications.info(L(`NCI.Business.Done.${result.type}`));
     else ui.notifications.warn(L('NCI.Business.Refused', { reason: L(`NCI.Business.Reason.${result.reason}`) }));
   },

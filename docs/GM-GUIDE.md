@@ -109,6 +109,7 @@ The **Businesses** tab lists every business with its true state, Exposure includ
 | A player has left the table | Mark the partner as **leaving**, so the others can buy them out or the stake passes to the heir |
 | A character or syndicate bids for a company | **Approve the offer** (the whole offer is held from the bidder's brokerage balance, or the bid lapses if they cannot cover it; it opens for 7 days) or **refuse** it. The tab then shows the offer and what players have tendered |
 | A company is in **administration** (net assets below zero at two closes in a row) | **Restructure** it (its cash pays what it can, keeping four weeks of upkeep; the rest of the debt becomes non-voting shares for its creditors, shown as Receivers, diluting the holders; Reputation and Compliance −10) or **Wind it up** (assets sold at half value; owed wages, then loans, then holders; it closes, and a listed company's shares leave portfolios). The tab shows its net assets, loans, wages owed and overdraft. If its owners put in enough cash, it comes out by itself at a close |
+| A company lost a **regulator's case**, or nobody answered it | **Approve the penalty** (change the proposed fine first if you like) or **Drop the case**. See below |
 | A listed company is under the **delisting review** | **Give it time** (the review clears), or **Delist** it: it buys back the float (borrowing what its cash lacks) and goes private. Delisting cannot be undone |
 
 The rest runs itself: weeks close, events are drawn, wages are paid, reports are published, and takeover offers close and settle when their 7 days are up.
@@ -116,6 +117,12 @@ The rest runs itself: weeks close, events are drawn, wages are paid, reports are
 **NPC staff:** tag an NPC's Night City Messenger contact `staff` or `employee` to make them hireable. An NPC actor (not a player's character) can also join an Exec's team.
 
 **Gigs for a player's business:** a gig whose client is a player business changes its Reputation and takings once approved in the Gigs tab.
+
+## Regulators
+
+Exposure now has consequences. A case opens by chance at a monthly report (low 5%, moderate 15%, high 35%), or at once when a corp plant is fired, a Shortcuts roll is fumbled, or NCPD unmasks a holder of over 25% of a company. You can also press **Open a regulator's case** on any company, or **Drop the case** at any stage.
+
+An officer has 14 days to answer, rolling against 14 + 1d10, plus 2 at moderate Exposure or 4 at high. Players see neither the total nor the band; the Businesses tab shows you the Exposure. A win clears half of it. A loss or silence waits for you with a proposed fine (5% of book value, 10% at high Exposure). Approving it takes the fine and 10 Compliance, and a listed company makes the news. A fumble or high Exposure makes it serious: a listing application stops, or the last three reports are restated at their real figures.
 
 ## Hidden ownership
 

@@ -24,6 +24,7 @@ import {
   takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
   restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask,
   concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget, scandalHit, investigationCost, spendDays,
+  caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter, isItemPile, unwrap } from '../utils/helpers.js';
@@ -504,6 +505,8 @@ class BusinessServiceImpl {
     if (!this.enabled()) return this._receipt(actor, request, { ok: false, reason: 'disabled' });
     // Looking behind a hidden holding (B6d) reads only the GM's hidden state and changes no business.
     if (request.type === 'investigate') return this._receipt(actor, request, await this._investigate(actor, request));
+    // Answering a regulator's case (R1) rolls against a total only the GM's service holds.
+    if (request.type === 'caseRoll') return this._receipt(actor, request, await this._answerCase(actor, request));
     const as = this._partnerFor(actor, request);
     if (!as.ok) return this._receipt(actor, request, as);
     // A takeover bid names its target by ticker, as the bidder knows it; they cannot read its record (B6b).
@@ -633,6 +636,7 @@ class BusinessServiceImpl {
     await this._capitalEvents(out);
     await this._insolvencyEvents(out);
     await this._ownershipEvents(out);
+    await this._regulatorEvents(out);
     await this._publishRegister(out.business);
     await this._afterReports(out);
     for (const event of out.events.filter((e) => e.type === 'periodClosed')) {
@@ -827,6 +831,8 @@ class BusinessServiceImpl {
     if (settled) result.proposal = settled;
     // An investigation's result (B6d): whether it found anything (what, comes by mail).
     if (out.investigation) result.investigation = out.investigation;
+    // A regulator's case answered (R1): won or lost.
+    if (out.caseResult) result.caseResult = out.caseResult;
     await actor.setFlag(MODULE_ID, FLAGS.BUSINESS_RECEIPTS, [{
       processed: [...r.processed, request.key].slice(-PROCESSED_CAP),
       results: [...r.results, result].slice(-RESULTS_CAP),
@@ -859,6 +865,7 @@ class BusinessServiceImpl {
       await this._closeTakeovers();
       await this._layerFees();
       await this._concealment();
+      await this._lapseCases();
       return changed;
     });
   }
@@ -1113,6 +1120,7 @@ class BusinessServiceImpl {
       const entry = structuredClone(hidden[stored.id] ?? { exposure: 0 });
       const timers = entry.concealment ?? {};
       let b = null;
+      let caseOpened = false;
       for (const { holderId, share } of concealed) {
         const t = timers[holderId] ?? { week: day, audit: day };
         if (day - t.week >= 7) {
@@ -1153,6 +1161,8 @@ class BusinessServiceImpl {
               })],
             }));
             await this._mailAccount(holderId, L('NCI.Ownership.Mail.UnmaskedSubject', terms), [L('NCI.Ownership.Mail.Unmasked', terms)]);
+            // A big enough holder found hiding brings the regulators to the company too (R1).
+            if (share > BUSINESS_DEFAULTS.regulator.unmaskShare && openCase(b, { reason: 'unmasked', day }).ok) caseOpened = true;
             continue;
           }
         }
@@ -1163,9 +1173,137 @@ class BusinessServiceImpl {
       if (b) {
         await BusinessRepository.save(b);
         await this._publishRegister(b);
+        if (caseOpened) await this._mailCaseOpened(b);
         Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
       }
     }
+  }
+
+  /**
+   * Regulators may open a case after a change (R1): at once on a trigger in its events (a fired corp
+   * plant, a fumbled Shortcuts roll), or by a chance at each monthly report, rising with Exposure.
+   */
+  async _regulatorEvents(out) {
+    const stored = out.business;
+    if (!stored || stored.stage !== 2 || stored.status !== 'open' || caseOf(stored)) return;
+    const exposure = MarketStore.getBusinessesHidden()[stored.id]?.exposure ?? 0;
+    let reason = caseTrigger(out.events);
+    if (!reason) {
+      const report = out.events.find((e) => e.type === 'reportPublished')?.report;
+      if (!report) return;
+      const rng = createRng(`${this.seed()}:case:${stored.id}:${report.index}`);
+      if (rng.next() >= caseChance(exposure)) return;
+      reason = 'report';
+    }
+    const b = normalizeBusiness(structuredClone(BusinessRepository.get(stored.id) ?? stored));
+    if (!openCase(b, { reason, day: this.day() }).ok) return;
+    await BusinessRepository.save(b);
+    await this._mailCaseOpened(b);
+    Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+  }
+
+  async _mailCaseOpened(b) {
+    const terms = { name: b.name, date: this._dayText(b.regCase.endDay), why: L(`NCI.Regulator.Reason.${b.regCase.reason}`) };
+    await this._mailHolders(b, L('NCI.Regulator.Mail.OpenSubject', terms), [L('NCI.Regulator.Mail.Open', terms)]);
+  }
+
+  /**
+   * An officer answers a case (R1): their roll is read back against the regulator's total, which also
+   * counts the Exposure band players cannot see. A win clears half the Exposure; a loss waits on the GM.
+   */
+  async _answerCase(actor, request) {
+    const stored = BusinessRepository.get(request.businessId);
+    if (!stored) return { ok: false, reason: 'no-business' };
+    const as = this._partnerFor(actor, request);
+    if (!as.ok) return as;
+    const can = caseAnswerCheck(stored, as.partner.id);
+    if (!can.ok) return can;
+    const use = (request.use && BUSINESS_DEFAULTS.regulator.uses.find((u) => useKey(u) === useKey(request.use))) ?? null;
+    if (!use) return { ok: false, reason: 'bad-use' };
+    const bribe = caseBribe(use);
+    if (bribe > stored.till) return { ok: false, reason: 'no-funds' };
+    const hidden = MarketStore.getBusinessesHidden();
+    const exposure = hidden[stored.id]?.exposure ?? 0;
+    const rng = createRng(`${this.seed()}:caseRoll:${stored.id}:${stored.regCase.openedDay}`);
+    const check = await SkillAdapter.verifyLevers(actor, request, { dv: regulatorTotal(exposure, () => rng.next()), use });
+    if (!check.ok) return check;
+    const day = this.day();
+    const b = normalizeBusiness(structuredClone(stored));
+    if (bribe) payCaseBribe(b, bribe, day);
+    const r = check.result;
+    if (r.success) {
+      winCase(b, day);
+      await MarketStore.setBusinessesHidden({ ...hidden, [b.id]: { ...(hidden[b.id] ?? {}), exposure: Math.floor(exposure * (1 - BUSINESS_DEFAULTS.regulator.clearShare)) } });
+    } else {
+      loseCase(b, { day, exposure, fumble: r.band === 'fumble' });
+    }
+    await BusinessRepository.save(b);
+    await this._mailHolders(b, L('NCI.Regulator.Mail.AnsweredSubject', { name: b.name }), [L(r.success ? 'NCI.Regulator.Mail.Won' : 'NCI.Regulator.Mail.Lost', { name: b.name })]);
+    Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+    return { ok: true, business: b, caseResult: { success: r.success, band: r.band } };
+  }
+
+  /** A case nobody answered in time is lost (R1), and waits on the GM like any other. */
+  async _lapseCases() {
+    const day = this.day();
+    const hidden = MarketStore.getBusinessesHidden();
+    for (const stored of BusinessRepository.all().filter((x) => x.status === 'open' && x.regCase?.status === 'notice' && day > x.regCase.endDay)) {
+      const b = normalizeBusiness(structuredClone(stored));
+      loseCase(b, { day, exposure: hidden[b.id]?.exposure ?? 0, silent: true });
+      await BusinessRepository.save(b);
+      await this._mailHolders(b, L('NCI.Regulator.Mail.AnsweredSubject', { name: b.name }), [L('NCI.Regulator.Mail.Silent', { name: b.name })]);
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+    }
+  }
+
+  /** The GM opens a case by hand (R1). */
+  openCaseByHand(id) {
+    if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
+    return this._queue.run(async () => {
+      const stored = BusinessRepository.get(id);
+      if (!stored) return { ok: false, reason: 'no-business' };
+      const b = normalizeBusiness(structuredClone(stored));
+      const done = openCase(b, { reason: 'gm', day: this.day() });
+      if (!done.ok) return done;
+      await BusinessRepository.save(b);
+      await this._mailCaseOpened(b);
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+      return { ok: true, business: b };
+    });
+  }
+
+  /** The GM drops a case at any stage (R1): nothing further happens, and the owners are told. */
+  dropCaseByHand(id) {
+    if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
+    return this._queue.run(async () => {
+      const stored = BusinessRepository.get(id);
+      if (!stored?.regCase) return { ok: false, reason: 'no-case' };
+      const b = normalizeBusiness(structuredClone(stored));
+      dropCase(b, this.day());
+      await BusinessRepository.save(b);
+      await this._mailHolders(b, L('NCI.Regulator.Mail.AnsweredSubject', { name: b.name }), [L('NCI.Regulator.Mail.Dropped', { name: b.name })]);
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+      return { ok: true, business: b };
+    });
+  }
+
+  /** The GM approves a lost case's fine, perhaps changed (R1): the fine, the Compliance hit, and any further penalty. */
+  approveCaseFine(id, fine = null) {
+    if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
+    return this._queue.run(async () => {
+      const stored = BusinessRepository.get(id);
+      if (stored?.regCase?.status !== 'lost') return { ok: false, reason: 'no-case' };
+      const b = normalizeBusiness(structuredClone(stored));
+      const done = applyCaseLoss(b, { day: this.day(), fine });
+      if (!done.ok) return done;
+      await BusinessRepository.save(b);
+      const terms = { name: b.name, ticker: b.company?.ticker ?? '', fine: done.fine.toLocaleString() };
+      const more = done.stopped ? 'Stopped' : done.restated ? 'Restated' : null;
+      await this._mailHolders(b, L('NCI.Regulator.Mail.FinedSubject', terms), [L('NCI.Regulator.Mail.Fined', terms), ...(more ? [L(`NCI.Regulator.Mail.${more}`, terms)] : [])]);
+      if (done.listed) await NewsService.post({ headline: L('NCI.News.CaseLost', terms), tone: 'down', companyIds: [b.company.ticker] });
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+      return { ok: true, business: b, ...done };
+    });
   }
 
   /**

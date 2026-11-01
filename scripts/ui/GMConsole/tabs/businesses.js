@@ -40,6 +40,20 @@ async function onListingReject(event, target) {
   report(await BusinessService.rejectListing(target.dataset.id));
 }
 
+async function onCaseOpen(event, target) {
+  report(await BusinessService.openCaseByHand(target.dataset.id));
+}
+
+async function onCaseDrop(event, target) {
+  report(await BusinessService.dropCaseByHand(target.dataset.id));
+}
+
+async function onCaseFine(event, target) {
+  const input = target.closest('.nci-gig')?.querySelector('[name="caseFine"]');
+  const fine = input ? Number(input.value) : null;
+  report(await BusinessService.approveCaseFine(target.dataset.id, Number.isFinite(fine) ? fine : null));
+}
+
 async function onRestructure(event, target) {
   if (!(await confirm(L('NCI.GMBusiness.Restructure'), L('NCI.GMBusiness.RestructureConfirm')))) return;
   report(await BusinessService.restructureBusiness(target.dataset.id));
@@ -96,6 +110,9 @@ export const actions = {
   businessDelist: onDelist,
   businessTakeoverApprove: onTakeoverApprove,
   businessRestructure: onRestructure,
+  businessCaseOpen: onCaseOpen,
+  businessCaseDrop: onCaseDrop,
+  businessCaseFine: onCaseFine,
   businessWindUp: onWindUp,
   businessTakeoverReject: onTakeoverReject,
   businessGiveTime: onGiveTime,
@@ -142,6 +159,15 @@ export function context() {
           price: b.listing.offer ? b.listing.offer.price.toLocaleString() : '', shares: whole(b.listing.offer?.shares ?? 0),
         }),
       } : null,
+      // A regulator's case (R1), with the Exposure behind it; and opening one by hand.
+      regCase: b.regCase ? {
+        lost: b.regCase.status === 'lost',
+        fine: b.regCase.fine ?? 0,
+        text: b.regCase.status === 'notice'
+          ? L('NCI.GMBusiness.CaseNotice', { why: L(`NCI.Regulator.Reason.${b.regCase.reason}`), date: dayText(b.regCase.endDay), exposure: hidden.exposure ?? 0 })
+          : L('NCI.GMBusiness.CaseLost', { why: L(`NCI.Regulator.Reason.${b.regCase.reason}`), fine: whole(b.regCase.fine ?? 0), how: L(b.regCase.silent ? 'NCI.GMBusiness.CaseSilent' : b.regCase.fumble ? 'NCI.GMBusiness.CaseFumbled' : 'NCI.GMBusiness.CaseRolled'), more: b.regCase.serious ? L('NCI.GMBusiness.CaseSerious') : '' }),
+      } : null,
+      canOpenCase: !b.regCase && b.stage === 2 && b.status === 'open',
       // In administration (B6c): the GM restructures or winds it up.
       administration: b.administration ? L('NCI.GMBusiness.Administration', {
         date: dayText(b.administration.since), net: whole(solvency(b)), loans: whole(debtsOf(b).loans), wages: whole(debtsOf(b).wages), overdraft: whole(debtsOf(b).overdraft),

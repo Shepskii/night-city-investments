@@ -108,6 +108,11 @@
     </div>
   </header>
   {{#if administration}}<div class="nci-warn">{{administration}}</div>{{/if}}
+  {{#with regCase}}
+  <div class="nci-warn">{{text}}
+    {{#if canAnswer}}<button type="button" data-action="answerCase"><i class="fas fa-scale-balanced"></i> {{localize "NCI.Regulator.Answer"}}</button>{{/if}}
+  </div>
+  {{/with}}
 
   {{#if invited}}
   <div class="nci-block nci-form">

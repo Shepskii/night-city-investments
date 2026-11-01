@@ -21,6 +21,7 @@ import { CashbookDialogApp } from './CashbookDialogApp.js';
 import { ReportDialogApp } from './ReportDialogApp.js';
 import { L } from '../format.js';
 import { investigate } from '../investigate.js';
+import { answerCase } from '../answerCase.js';
 import { pickerContext, startContext, businessContext, usableActors, jobsContext, termKey } from './context.js';
 
 const TABS = ['overview', 'ledger', 'week', 'projects', 'staff', 'partners', 'growth'];
@@ -72,6 +73,7 @@ export class BusinessApp extends BaseApplication {
       issueRoll: BusinessApp._onIssueRoll,
       tender: BusinessApp._onTender,
       hideRoll: BusinessApp._onHideRoll,
+      answerCase: BusinessApp._onAnswerCase,
       investigate: BusinessApp._onInvestigate,
       dropLayer: BusinessApp._onDropLayer,
       defenceRoll: BusinessApp._onDefenceRoll,
@@ -441,6 +443,11 @@ export class BusinessApp extends BaseApplication {
   static _onHideRoll(event, target) {
     const name = value(target, 'shellName').trim();
     this._roll({ type: 'hideRoll', ...(name ? { name } : {}) }, L('NCI.Ownership.RollTitle', { name: this.business?.name ?? '' }));
+  }
+
+  /** An officer answers a regulator's case (R1). */
+  static _onAnswerCase() {
+    return this.business ? answerCase(this.actor, this.business) : null;
   }
 
   /** Look behind another shareholder's layers (B6d), as the picked character. */

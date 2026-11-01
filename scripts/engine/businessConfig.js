@@ -330,6 +330,18 @@ export const BUSINESS_DEFAULTS = Object.freeze({
    * Going into administration dents a listed company's price by `hit` (a log-return).
    */
   /**
+   * Regulators (R1, DESIGN §36.7): the chance of a case at each monthly report, by Exposure band; `notice`
+   * days to answer. An officer rolls `uses` (Bribery costs `bribe` eb from the cash) against `base` + 1d10
+   * + `bonus` by band; a win clears `clearShare` of the Exposure. A loss is a fine of `fine` of book value
+   * (`fineHigh` at high Exposure) and `compliance`. Unmasking a holder of over `unmaskShare` opens a case.
+   */
+  regulator: Object.freeze({
+    chance: Object.freeze({ clean: 0, low: 0.05, moderate: 0.15, high: 0.35 }),
+    bonus: Object.freeze({ clean: 0, low: 0, moderate: 2, high: 4 }),
+    base: 14, notice: 14, clearShare: 0.5, fine: 0.05, fineHigh: 0.1, compliance: -10, bribe: 500, unmaskShare: 0.25,
+    uses: Object.freeze([S.bureaucracy, S.accounting, S.bribery]),
+  }),
+  /**
    * Hidden ownership (B6d): at most `maxLayers` layers on a holding (a broker's nominee, then shells),
    * each a roll at DV `dv`; a setup fee of `setupRate` of the holding's value (at least `minSetup`) and a
    * fee of `monthlyRate` (at least `minMonthly`) every `feeDays`.

@@ -144,6 +144,8 @@ Every roll is yours to make, when you press its button. The dialog shows the DV 
 - **Hire a professional:** a hired skill level, paid from the business's cash.
 - **An employee:** call on a staff member's skill, for overtime pay.
 
+A role ability, where a roll offers one, adds its rank + 9.
+
 Results run from fumble, failure, narrow, solid and strong to exceptional, and the dialog says what each does.
 
 ## Money from outside
@@ -220,6 +222,16 @@ Any character or syndicate can bid for a chartered player company, private or li
 - **NPC holders and the market's float** tender all their shares if the premium over the reference price is 20% or more, half at 10–20%, and none below. The reference is the market price, or book value per share for a private company.
 - **Defence:** the target's officers may make one defence roll (Persuasion or Business). A good result makes NPC holders and the float want a higher premium; a fumble makes them keener.
 - **Control:** a bidder who ends with more than half the shares controls the votes, and can elect and dismiss officers. Holders who did not tender keep their shares.
+
+## Regulators
+
+Shortcuts, Bold rolls and corp plants leave a hidden trail called **Exposure**. The more of it a company has, the likelier a regulator comes looking at a monthly report. A fired corp plant, a fumbled Shortcuts roll, or a big hidden holder being unmasked brings one at once.
+
+- A banner on the Business window says a case is open, and shareholders are mailed. An officer has **14 days to answer** with one roll: Bureaucracy, Accounting, or Bribery (500 eb from the company's cash, whatever happens). You roll against a total you can't see, and more Exposure makes it harder.
+- **Win,** and the case closes and much of the trail goes.
+- **Lose, or don't answer,** and the market (your GM) decides a penalty: usually a fine of 5–10% of book value from the company's cash, and lost Compliance. A serious loss also stops a listing application, or restates your recent reports at their real figures.
+
+An internal audit (an officer's roll) tells you how much trail you have, and can cut it.
 
 ## Hidden ownership
 

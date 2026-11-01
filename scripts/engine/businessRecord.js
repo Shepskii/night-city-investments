@@ -177,6 +177,8 @@ export function normalizeBusiness(raw) {
     takeover: b.takeover ?? null,
     // Administration (B6c): since when, and the net assets at the last close; closes below zero in a row.
     administration: b.administration ?? null,
+    // A regulator's case (R1): what it is about and how far along; the Exposure behind it stays hidden.
+    regCase: b.regCase ?? null,
     // Hidden ownership (B6d): each holder's layers, innermost first; their strengths are GM-only.
     masks: b.masks ?? {},
     insolventPeriods: b.insolventPeriods ?? 0,
@@ -280,6 +282,7 @@ export function close(b, day, reason) {
   b.closedDay = day;
   b.closeReason = reason;
   b.proposals = [];
+  b.regCase = null;
 }
 
 /** Add a ledger entry, keeping the last `ledgerCap`. */

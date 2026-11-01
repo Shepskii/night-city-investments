@@ -360,6 +360,9 @@ test('concealment: a hidden holder over 5% adds Exposure (and heat, when tracked
   const dip = S.MarketStore.getControls().impacts.find((i) => i.source === 'unmasked');
   assert.ok(dip && dip.amount < 0 && dip.permanent === 1, 'and a lasting dip in the price');
   assert.ok(!S.CompanyRepository.get('PLAY').register.some((r) => r.label === 'Vex'), 'the register shows her own name now');
+  // Alice holds over a quarter of the company: her unmasking brings a case to it too (R1).
+  assert.equal(business().regCase?.reason, 'unmasked');
+  await S.BusinessRepository.save({ ...business(), regCase: null });
   env.store.set('heatEnabled', false);
   await S.BusinessRepository.save({ ...business(), masks: {} });
   await S.BusinessService._saveHidden({ business: business(), events: [] });
@@ -460,6 +463,91 @@ test('a hidden holder on the cap table: others see the outer layer and what thei
   assert.equal(nameOf(b, bob.id).includes(bob.name), false);
   assert.ok(nameOf(b, bob.id).includes('Kestrel'));
   assert.equal(nameOf(b, alice.id), alice.name, 'an unhidden holder by name');
+});
+
+test('a regulator\'s case: triggers open it; an officer answers against a hidden total; a win clears half the Exposure; a loss or silence waits on the GM', async () => {
+  const { SkillAdapter } = await import('../scripts/services/SkillAdapter.js');
+  const { BusinessClient } = await import('../scripts/services/BusinessClient.js');
+  const { MailService } = await import('../scripts/services/MailService.js');
+  const rollOne = SkillAdapter.rollOne;
+  const fromWire = MailService.fromWire;
+  const sent = [];
+  MailService.fromWire = async (actor, spec) => { sent.push({ actor: actor.id, subject: spec.subject }); return { ok: true }; };
+  const dice = [];
+  SkillAdapter.rollOne = async () => ({ value: dice.shift() ?? 5, roll: null });
+  const day = S.BusinessService.day();
+  const setExposure = async (exposure) => {
+    const hidden = S.MarketStore.getBusinessesHidden();
+    await S.MarketStore.setBusinessesHidden({ ...hidden, bus_play: { ...(hidden.bus_play ?? {}), exposure } });
+  };
+  const accounting = { kind: 'skill', skill: 'Accounting', stat: 'int' };
+  const answer = async (use = accounting) => {
+    const { messageId } = await SkillAdapter.leverCheck(alice, { dv: null, title: 'Answering', use });
+    const key = await BusinessClient.submit(alice, 'caseRoll', { businessId: 'bus_play', use, rollId: messageId });
+    await S.BusinessService.processActor(alice);
+    await settle();
+    return (alice.getFlag('night-city-investments', 'businessReceipts') ?? []).flatMap((x) => x.results ?? []).find((r) => r.key === key);
+  };
+  try {
+    await S.BusinessRepository.save({ ...business(), regCase: null, officers: [alice.id, bob.id] });
+    await setExposure(0);
+
+    // At clean Exposure a report never opens one; a fired corp plant does.
+    await S.BusinessService._regulatorEvents({ business: business(), events: [{ type: 'reportPublished', report: { index: 50 } }] });
+    assert.equal(business().regCase, null, 'clean: no case');
+    await S.BusinessService._regulatorEvents({ business: business(), events: [{ type: 'fired', exposure: 5 }] });
+    assert.deepEqual([business().regCase.status, business().regCase.reason, business().regCase.endDay], ['notice', 'plant', day + E.BUSINESS_DEFAULTS.regulator.notice]);
+    assert.ok(sent.some((m) => m.actor === alice.id && /OpenSubject/.test(m.subject)), 'the holders are told');
+
+    // A win: pick a case date whose seeded regulator total a crit of 20 beats.
+    await setExposure(20);
+    let openedDay = day;
+    for (let d = day; d > day - 200; d--) {
+      const rng = E.createRng(`${S.BusinessService.seed()}:caseRoll:bus_play:${d}`);
+      if (E.regulatorTotal(20, () => rng.next()) <= 20) { openedDay = d; break; }
+    }
+    await S.BusinessRepository.save({ ...business(), regCase: { ...business().regCase, openedDay } });
+    dice.push(10, 10);
+    const won = await answer();
+    assert.equal(won.ok, true, won.reason);
+    assert.equal(won.caseResult.success, true);
+    assert.equal(business().regCase, null);
+    assert.equal(S.MarketStore.getBusinessesHidden().bus_play.exposure, 10, 'half the Exposure cleared');
+
+    // A fumble with Bribery: the bribe is spent, and the loss waits on the GM as serious.
+    await S.BusinessService.openCaseByHand('bus_play');
+    await settle();
+    const tillBefore = business().till;
+    dice.push(1, 10);
+    const lost = await answer({ kind: 'skill', skill: 'Bribery', stat: 'cool' });
+    assert.equal(lost.caseResult.success, false);
+    assert.equal(business().till, tillBefore - E.BUSINESS_DEFAULTS.regulator.bribe, 'the bribe is gone');
+    assert.deepEqual([business().regCase.status, business().regCase.fumble, business().regCase.serious], ['lost', true, true]);
+    assert.equal((await answer()).reason, 'no-case', 'answered once only');
+
+    // The GM's approval: a changed fine, Compliance, and restated reports.
+    const compliance = business().state.compliance;
+    const tillNow = business().till;
+    assert.equal((await S.BusinessService.approveCaseFine('bus_play', 1234)).ok, true);
+    await settle();
+    assert.equal(business().till, tillNow - 1234);
+    assert.equal(business().state.compliance, Math.max(0, compliance + E.BUSINESS_DEFAULTS.regulator.compliance));
+    assert.equal(business().regCase, null);
+    assert.ok(S.MarketStore.getNews().items.some((n) => /CaseLost|fine/i.test(n.headline)), 'a listed company\'s news');
+
+    // Silence counts as lost, with no fumble.
+    await S.BusinessService.openCaseByHand('bus_play');
+    await S.BusinessRepository.save({ ...business(), regCase: { ...business().regCase, endDay: day - 1 } });
+    await S.BusinessService._lapseCases();
+    assert.deepEqual([business().regCase.status, business().regCase.silent], ['lost', true]);
+    assert.equal((await S.BusinessService.dropCaseByHand('bus_play')).ok, true, 'the GM may drop it');
+    assert.equal(business().regCase, null);
+  } finally {
+    SkillAdapter.rollOne = rollOne;
+    MailService.fromWire = fromWire;
+    await setExposure(0);
+    await S.BusinessRepository.save({ ...business(), regCase: null });
+  }
 });
 
 test('a listed company in administration is restructured: its debts become creditors\' shares, added to the market and kept through the holders\' sync', async () => {

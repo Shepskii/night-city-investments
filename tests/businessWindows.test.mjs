@@ -470,3 +470,54 @@ test('a company shows its officers, the information rolls and the report; a shar
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('a company\'s later states render cleanly: a regulator\'s case, administration, a takeover offer, and a hidden holder shown as their layer', async () => {
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const day = b.period.startDay;
+  const rendered = async (state) => {
+    await S.BusinessRepository.save({ ...b, stage: 2, till: 5000, company: { ticker: 'BRC', sector: 'health', charteredDay: day }, officers: [med.id, fix.id], state: { ...b.state, compliance: 50 }, charter: null, proposals: [], ...state });
+    const out = { partners: await renderBusiness(windowFor(med, 'partners')), other: await renderBusiness(windowFor(fix, 'partners')), console: await renderConsole() };
+    for (const [label, html] of Object.entries(out)) assertClean(html, `${label}: ${JSON.stringify(Object.keys(state))}`);
+    return out;
+  };
+  try {
+    const notice = await rendered({ regCase: { status: 'notice', reason: 'plant', openedDay: day, endDay: day + 14 } });
+    assert.match(text(notice.partners), /Regulator\S+s case: a former employee went to the regulators/);
+    assert.match(notice.partners, /data-action="answerCase"/, 'an officer can answer it');
+    assert.match(text(notice.console), /Regulator\S+s case: .* Exposure \d+/, 'the GM sees the Exposure');
+    assert.doesNotMatch(text(notice.partners), /Exposure \d/, 'a player does not');
+    assert.match(notice.console, /data-action="businessCaseDrop"/);
+
+    const lost = await rendered({ regCase: { status: 'lost', reason: 'report', openedDay: day, endDay: day + 14, fine: 250, serious: true, fumble: true } });
+    assert.match(text(lost.partners), /The market is deciding the penalty/);
+    assert.doesNotMatch(lost.partners, /data-action="answerCase"/);
+    assert.match(lost.console, /name="caseFine"[^>]*value="250"/);
+    assert.match(text(lost.console), /Serious:/);
+
+    const clear = await rendered({});
+    assert.match(clear.console, /data-action="businessCaseOpen"/, 'the GM can open one by hand');
+
+    const admin = await rendered({ administration: { since: day, net: -500 } });
+    assert.match(text(admin.partners), /In administration since/);
+    assert.match(admin.console, /data-action="businessRestructure"/);
+
+    const offer = await rendered({ takeover: { status: 'open', bidderId: 'x', bidderName: 'Raider', price: 12, shares: 100, reference: 10, openDay: day, endDay: day + 7, escrow: 1200, tenders: {}, defence: null } });
+    assert.match(text(offer.partners), /Raider offers 12 eb a share/);
+
+    // The Exec's own row against another shareholder's view of it, and the running text.
+    const hidden = await rendered({
+      masks: { [med.id]: [{ kind: 'nominee', name: 'Vex', day, lastFee: day, ref: 'r1' }, { kind: 'shell', name: 'Kestrel Holdings', day, lastFee: day, ref: 'r2' }] },
+      proposals: [{ id: 'p1', kind: 'payout', by: med.id, day, expires: day + 7, votes: {}, terms: { ratio: 0.5 } }],
+    });
+    assert.match(text(hidden.partners), /Hidden ownership/);
+    assert.match(text(hidden.other), /Kestrel Holdings proposes/, 'a proposal under the layer');
+    // (The account picker lists this test user's own characters, and the heir list every character: look past both.)
+    const body = text(hidden.other).slice(text(hidden.other).indexOf('Chartered company')).replace(/My heir .*? Save /, '');
+    assert.doesNotMatch(body, /Medtech/, 'the other shareholder never sees the name');
+    assert.match(text(hidden.console), /Medtech/, 'the GM Console does');
+    assert.match(text(hidden.console), /hidden as Kestrel Holdings/);
+  } finally {
+    await S.BusinessRepository.save(saved);
+  }
+});

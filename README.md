@@ -57,7 +57,7 @@ Or unzip a release into `Data/modules/night-city-investments`. Then enable **Nig
 - **Grow it.** Projects improve the premises. Loans and investors bring in money. Registration, a charter, then a company with officers and monthly reports.
 - **Employees.** Hire player characters, NPCs or recruits into roles, and pay them weekly. NPC staff have loyalty, hidden traits, training, share grants and their own events.
 - **Go public.** List the company on the market through an IPO. Shares then sit in portfolios, reports move the price, and dividends follow a payout ratio the shareholders vote. A daily liquidity cap and a delisting review keep it honest.
-- **Corporate play.** Issue new shares, buy shares back, bid for another company with a tender offer, survive (or not) administration when debts outgrow assets, and hide behind nominees and shell companies while rivals and regulators dig.
+- **Corporate play.** Issue new shares, buy shares back, bid for another company with a tender offer, survive (or not) administration when debts outgrow assets, hide behind nominees and shell companies while rivals dig, and answer to regulators when shortcuts leave a trail.
 
 ### For the GM
 - **The GM Console.** Advance time and steer sentiment, regimes and volatility. Queue shocks, glides and corporate actions, preview their effect over simulated futures, and undo a tick.
