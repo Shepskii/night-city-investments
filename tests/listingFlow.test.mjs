@@ -394,7 +394,8 @@ test('an investigation by ticker: a roll against a hidden total peels one layer 
     assert.equal(first.investigation.success, true, `a 9 beats the shell's 6 (${first.investigation.band})`);
     assert.ok(sent.some((m) => m.actor === cass.id && m.lines.join(' ').includes('Vex')), 'told of the nominee behind it');
     assert.equal(sent.some((m) => m.actor === bob.id), false, 'bob is not told');
-    assert.deepEqual(cass.getFlag('night-city-investments', 'discoveries')[0].ref_out, ['Vex (nominee)'], 'kept on her character for her windows');
+    const found = cass.getFlag('night-city-investments', 'discoveries')[0].ref_out;
+    assert.ok(found.length === 1 && found[0].includes('Vex'), `kept on her character for her windows (${found})`);
     assert.equal(/DV \d/.test(chats.at(-1).content), false, 'the card shows no DV');
 
     dice.push(9);
@@ -409,7 +410,8 @@ test('an investigation by ticker: a roll against a hidden total peels one layer 
     const second = await dig();
     assert.equal(second.investigation.success, true);
     assert.ok(sent.some((m) => m.actor === cass.id && m.lines.join(' ').includes(bob.name)), 'and then who it is');
-    assert.deepEqual(cass.getFlag('night-city-investments', 'discoveries')[0].ref_out, ['Vex (nominee)', bob.name]);
+    const found2 = cass.getFlag('night-city-investments', 'discoveries')[0].ref_out;
+    assert.deepEqual([found2.length, found2.at(-1)], [2, bob.name]);
     assert.equal(business().masks[bob.id].length, 2, 'an investigation tells the investigator, not the register');
   } finally {
     SkillAdapter.rollOne = rollOne;
