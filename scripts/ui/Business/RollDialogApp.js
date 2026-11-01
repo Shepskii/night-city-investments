@@ -1,5 +1,5 @@
 /**
- * Roll dialog: the levers a player picks before a business roll, and what is at stake (DESIGN §26).
+ * Roll dialog: the levers a player picks before a business roll, and what is at stake (DESIGN §27).
  * @file scripts/ui/Business/RollDialogApp.js
  * @description Shows who rolls with what, the approach, Luck and any complementary bonus, and a
  *              preview of the DV and of each outcome band's chance, updated as the choices change.
@@ -115,7 +115,7 @@ export class RollDialogApp extends BaseApplication {
         key: `hire:${tier}`, use: { kind: 'hire', hire: tier }, base, label: L('NCI.Roll.HireOption', { who: L(`NCI.Roll.Hire.${tier}`), base, fee: whole(hireFee(tier, rank)) }),
       }))
       : [];
-    // Employees who can be called in for this roll, each with their best for it and the overtime (DESIGN §33).
+    // Employees who can be called in for this roll, each with their best for it and the overtime (DESIGN §32).
     const staff = activeStaff(this.business).map((s) => {
       const call = rollSpec(this.business, { ...this.request, use: { kind: 'staff', staffId: s.id } }, this.partnerId, { day: BusinessClient.day(), operatorRank: rank });
       if (!call.ok) return null;

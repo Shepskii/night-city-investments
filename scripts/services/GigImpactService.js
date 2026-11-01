@@ -140,7 +140,7 @@ class GigImpactServiceImpl {
       date: MarketClock.dateString(),
       runners: this._runners(p.runners),
     };
-    // A gig for a player's own business changes the business, not a share price (DESIGN §26.5).
+    // A gig for a player's own business changes the business, not a share price (DESIGN §27.5).
     const own = matchBusiness({ client: p.client, notes: p.notes }, BusinessRepository.all());
     if (own) return this._businessGig(gigs, { ...base, businessId: own.businessId, how: own.how });
 

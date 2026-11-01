@@ -55,7 +55,7 @@ export const BusinessRepository = {
 
   /**
    * An owner's stakes in businesses still open, at book value times their share. The owner is a
-   * character or a syndicate (whose stakes count in its value per unit, DESIGN §31).
+   * character or a syndicate (whose stakes count in its value per unit, DESIGN §30).
    */
   stakesOf(ownerId) {
     // A listed company's shares are in portfolios, valued on the market (B5b).

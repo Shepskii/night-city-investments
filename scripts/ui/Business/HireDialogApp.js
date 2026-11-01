@@ -1,5 +1,5 @@
 /**
- * Hire window: filling one post on a business's staff (DESIGN §33).
+ * Hire window: filling one post on a business's staff (DESIGN §32).
  * @file scripts/ui/Business/HireDialogApp.js
  * @description Opened from a post's Hire button on the Staff tab. The partners can propose hiring a
  *              character (a player character, or an NPC tagged staff or employee in Night City

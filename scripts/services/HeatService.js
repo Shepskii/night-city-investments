@@ -36,7 +36,7 @@ import { SerialQueue } from '../utils/queue.js';
 const setting = (key) => game.settings.get(MODULE_ID, key);
 const newId = () => foundry.utils.randomID(8);
 
-/** Accounts with a portfolio: characters, and syndicates (whose heat is collective, DESIGN §31). */
+/** Accounts with a portfolio: characters, and syndicates (whose heat is collective, DESIGN §30). */
 const traders = () => PortfolioRepository.accounts().filter((a) => PortfolioRepository.hasPortfolio(a));
 
 class HeatServiceImpl {

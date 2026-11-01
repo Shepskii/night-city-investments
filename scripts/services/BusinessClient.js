@@ -34,7 +34,7 @@ export function pendingBusinessRequests(actor) {
 
 /** The best Operator rank among a business's partners, for hire fees. */
 export function operatorRankOf(business) {
-  // A syndicate partner counts its officers' Operator, since they act for it (DESIGN §31, B3b).
+  // A syndicate partner counts its officers' Operator, since they act for it (DESIGN §30, B3b).
   const actorsOf = (id) => {
     const actor = game.actors.get(id);
     if (actor) return [actor];
@@ -56,13 +56,13 @@ export function investorActors() {
   const tagged = new Set([BROKER_TAG, INVESTOR_TAG].flatMap((tag) => NcmAdapter.contactsTagged(tag)).map((c) => c?.actorId).filter(Boolean));
   return [
     ...game.actors.filter((a) => isCharacter(a) && (a.hasPlayerOwner || tagged.has(a.id))),
-    // Syndicates invest from their own account (DESIGN §31, B3b).
+    // Syndicates invest from their own account (DESIGN §30, B3b).
     ...SyndicateRepository.all().filter((s) => s.status === 'active').map((s) => ({ id: s.id, name: s.name, isSyndicate: true })),
   ];
 }
 
 /**
- * The characters a business may hire (DESIGN §33): player characters ('pc'), and NPCs linked to NCM
+ * The characters a business may hire (DESIGN §32): player characters ('pc'), and NPCs linked to NCM
  * contacts tagged staff or employee ('npc'), whether the NPC is a character or a Cyberpunk RED mook.
  * Other actors (containers, vehicles, Black ICE) never are.
  * @returns {{id: string, name: string, source: 'pc'|'npc'}[]}
@@ -93,7 +93,7 @@ class BusinessClientImpl {
    * @returns {Promise<string|null>} the request key, or null if the outbox is full
    */
   async submit(actor, type, payload = {}) {
-    // For a syndicate, the officer it is picked as sends the request, naming the syndicate (DESIGN §31, B3b).
+    // For a syndicate, the officer it is picked as sends the request, naming the syndicate (DESIGN §30, B3b).
     if (actor?.isSyndicate) return this.submit(actor.as, type, { ...payload, syndicateId: actor.id });
     if (pendingBusinessRequests(actor).length >= OUTBOX_LIMIT) {
       ui.notifications.warn(L('NCI.Errors.OutboxFull'));

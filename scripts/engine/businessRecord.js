@@ -123,7 +123,7 @@ export function normalizeBusiness(raw) {
     boost: Number(b.boost ?? 0),
     /** The market day it registered (stage 1), since B4. */
     registeredDay: b.registeredDay ?? null,
-    /** A charter under way, refused or formed (DESIGN §32, businessCharter.js). */
+    /** A charter under way, refused or formed (DESIGN §31, businessCharter.js). */
     charter: b.charter ?? null,
     /** Once chartered: `{ ticker, sector, charteredDay }`. */
     company: b.company ?? null,
@@ -135,7 +135,7 @@ export function normalizeBusiness(raw) {
     officers: b.officers ?? [],
     lastAudit: b.lastAudit ?? null,
     intel: b.intel ?? [],
-    /** Employees (DESIGN §33, businessStaff.js), recruits waiting to be hired, and when the partners last recruited. */
+    /** Employees (DESIGN §32, businessStaff.js), recruits waiting to be hired, and when the partners last recruited. */
     staff: (b.staff ?? []).map((x) => ({
       id: String(x.id),
       actorId: x.actorId ?? null,

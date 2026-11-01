@@ -35,7 +35,7 @@ export function assetLabel(assetId) {
 
 /**
  * Send one mail to an account: to the character, or to every active member of a syndicate (DESIGN
- * §31). Money attached to a syndicate's mail would be paid to each member, so none is ever attached.
+ * §30). Money attached to a syndicate's mail would be paid to each member, so none is ever attached.
  * Succeeds if any copy was delivered.
  */
 async function sendTo(actor, mail) {

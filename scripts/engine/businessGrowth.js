@@ -1,7 +1,7 @@
 /**
  * Player businesses: growing
  * @file scripts/engine/businessGrowth.js
- * @description How a business grows in B2 (DESIGN §26.0): business days, expansion projects that
+ * @description How a business grows in B2 (DESIGN §27.0): business days, expansion projects that
  *              raise Capacity, and the step up from side business to registered business, with its
  *              milestone checklist and registration roll. Pure; no Foundry globals.
  */
@@ -149,7 +149,7 @@ export function addProjectDays(b, actorId, projectId, n, { growthRate = 1, day, 
 const weekly = (d) => (d.endDay - d.startDay > 0 ? (d.profit * 7) / (d.endDay - d.startDay) : d.profit);
 
 /**
- * The checklist for the next stage, shown, never rolled (DESIGN §26.0). Only the step to a
+ * The checklist for the next stage, shown, never rolled (DESIGN §27.0). Only the step to a
  * registered business exists until B4 brings the charter.
  * @returns {{to: number|null, items: {id: string, have: number, need: number, met: boolean}[], met: boolean, available: boolean}}
  */

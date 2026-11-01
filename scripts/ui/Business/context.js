@@ -127,7 +127,7 @@ export function archetypeOptions() {
 
 /** The header: which character, and which of their businesses. */
 export function pickerContext(app) {
-  // Characters, and the syndicates they are officers of (DESIGN §31, B3b).
+  // Characters, and the syndicates they are officers of (DESIGN §30, B3b).
   const actors = businessAccounts(usableActors());
   const actor = app.actor;
   const businesses = actor ? BusinessRepository.forActor(actor.id) : [];
@@ -371,7 +371,7 @@ function listingContext(business, actor, canAct, m, pending) {
   };
 }
 
-/** The charter, for a registered business (DESIGN §32): agreeing, the three rolls, the GM, the funding. */
+/** The charter, for a registered business (DESIGN §31): agreeing, the three rolls, the GM, the funding. */
 function charterContext(business, actor, canAct, m, pending) {
   const c = business.charter;
   const day = BusinessClient.day();
@@ -856,7 +856,7 @@ function staffNotes(business, s) {
 const loyaltyText = (s) => (hasLoyalty(s) && s.status === 'active' ? L(`NCI.Staff.Loyalty.${loyaltyBand(s.loyalty ?? 50)}`) : '');
 
 /**
- * The Staff tab (DESIGN §33): the employees, the posts (each with a Hire button that opens the Hire
+ * The Staff tab (DESIGN §32): the employees, the posts (each with a Hire button that opens the Hire
  * window, and a drop target for a character dragged from the Actors directory), and the applicants
  * waiting from an advert.
  */
@@ -1043,7 +1043,7 @@ function grantContext(business, s, canAct, pending) {
 }
 
 /**
- * A player character on the staff, on call (E3, DESIGN §33.11): what is asked of them this week, and
+ * A player character on the staff, on call (E3, DESIGN §32.11): what is asked of them this week, and
  * the rolls the account picked could ask of them now (a free action slot, the event, a help).
  */
 function onCallContext(business, s, account, runs) {
@@ -1073,7 +1073,7 @@ function onCallContext(business, s, account, runs) {
 }
 
 /**
- * Training an employee (E3, DESIGN §33.5): the skill it would raise, what a mentor (the account picked,
+ * Training an employee (E3, DESIGN §32.5): the skill it would raise, what a mentor (the account picked,
  * if their own base is higher) or a course costs, and why it cannot be done now.
  */
 function trainingContext(business, s, account, runs) {
@@ -1227,7 +1227,7 @@ function partnersContext(business, actor) {
         name: nameOf(business, proposal.by),
         ticker: proposal.terms?.ticker ?? business.company?.ticker ?? '',
         float: proposal.terms?.float != null ? Math.round(proposal.terms.float * 100) : '',
-        // Who a hire or a firing is about, and the post (DESIGN §33).
+        // Who a hire or a firing is about, and the post (DESIGN §32).
         who: proposal.terms?.name ?? '',
         post: proposal.terms?.post ? postLabel(proposal.terms.post) : '',
         pct: proposal.terms?.pct != null ? Math.round(proposal.terms.pct * 100) : '',

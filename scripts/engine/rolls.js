@@ -1,7 +1,7 @@
 /**
  * Roll levers
  * @file scripts/engine/rolls.js
- * @description The choices a player makes around a business roll (DESIGN §26): the DV ladder, the
+ * @description The choices a player makes around a business roll (DESIGN §27): the DV ladder, the
  *              approach, Luck, a complementary bonus, a hired professional, and the outcome bands
  *              every check is read through. Pure; no Foundry globals. The dice come from the caller.
  */
@@ -22,7 +22,7 @@ export const HIRE_TIERS = Object.freeze({ cheap: 10, good: 13, best: 16 });
 /** Bands from worst to best. */
 export const BANDS = Object.freeze(['fumble', 'failure', 'narrow', 'solid', 'strong', 'exceptional']);
 
-/** How much of an action's effect each band gives (DESIGN §26). A fumble has its own effect. */
+/** How much of an action's effect each band gives (DESIGN §27). A fumble has its own effect. */
 export const BAND_SCALE = Object.freeze({ fumble: 0, failure: 0, narrow: 0.25, solid: 1, strong: 1.5, exceptional: 2 });
 
 /** The most Luck one roll may take, whatever the pool holds. */

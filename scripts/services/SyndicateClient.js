@@ -1,5 +1,5 @@
 /**
- * Syndicate client: the player's side of a syndicate's requests (DESIGN §31).
+ * Syndicate client: the player's side of a syndicate's requests (DESIGN §30).
  * @file scripts/services/SyndicateClient.js
  * @description A member never writes the syndicate. Their character carries a syndicate outbox that
  *              only its owner writes, and the active GM's SyndicateService handles it and leaves a

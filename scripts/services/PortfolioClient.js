@@ -34,7 +34,7 @@ class PortfolioClientImpl {
    * @returns {Promise<string|null>} the request key, or null if the outbox is full
    */
   async submit(actor, type, payload = {}) {
-    // A syndicate's account is traded through the member it was picked as (DESIGN §31).
+    // A syndicate's account is traded through the member it was picked as (DESIGN §30).
     if (actor?.isSyndicate) return SyndicateClient.trade(actor.as, actor.id, type, payload);
     if (PortfolioRepository.pending(actor).length >= OUTBOX_LIMIT) {
       ui.notifications.warn(game.i18n.localize('NCI.Errors.OutboxFull'));

@@ -1,7 +1,7 @@
 /**
  * Player businesses
  * @file scripts/engine/business.js
- * @description The side-business loop of DESIGN §26.0, as built in B1: founding a business with
+ * @description The side-business loop of DESIGN §27.0, as built in B1: founding a business with
  *              partners, the setup roll, the weekly operating period and its five actions,
  *              complementary checks, the till, capped owner draws, the buy-out rule, and closing.
  *              Pure; no Foundry globals. The GM's service reads the dice from the player's chat card
@@ -29,7 +29,7 @@
  *
  * `use` is how the roll was made: `{kind: 'skill', skill, stat}`, `{kind: 'ability', ability}` or
  * `{kind: 'hire', hire}` (see businessConfig.js), or `{kind: 'staff', staffId}`: an employee called in
- * for overtime (DESIGN §33), who rolls their best for it. Days are whole market days (`marketDay`).
+ * for overtime (DESIGN §32), who rolls their best for it. Days are whole market days (`marketDay`).
  *
  * Employees (businessStaff.js):
  *   { key, type: 'recruitRoll', businessId, post, use, rollId }   look for someone for a post
@@ -149,14 +149,14 @@ export function itemGear(item, actorId, p = BUSINESS_DEFAULTS) {
 export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll', 'staffRoll', 'prospectusRoll', 'issueRoll', 'buybackRoll']);
 
 /**
- * What each kind of proposal needs to pass (DESIGN §26.0): closing and stepping up need every partner
+ * What each kind of proposal needs to pass (DESIGN §27.0): closing and stepping up need every partner
  * with a vote; starting an expansion is a day-to-day choice, a majority of the voting units.
  */
 export const PROPOSAL_RULES = Object.freeze({
   close: 'unanimous', stepUp: 'unanimous', expansion: 'majority', project: 'majority', fixerLoan: 'majority', bankLoan: 'majority', investor: 'unanimous', angel: 'unanimous',
   // A company's officers are elected and dismissed by a majority of the shares (B4c).
   elect: 'majority', dismiss: 'majority',
-  // Taking an employee on, or letting one go (DESIGN §33).
+  // Taking an employee on, or letting one go (DESIGN §32).
   hire: 'majority', fire: 'majority', pay: 'majority',
   // A share grant for an employee (E3, company only).
   grant: 'majority',
@@ -295,7 +295,7 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
   if (request.type === 'reportRoll') {
     const check = reportCheck(b, p);
     if (!check.ok) return check;
-    // A bookkeeper's work on the figures is the complementary +1 (DESIGN §33).
+    // A bookkeeper's work on the figures is the complementary +1 (DESIGN §32).
     const bookkeeper = activeStaff(b).some((s) => s.post === 'bookkeeper');
     return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: bookkeeper, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
@@ -1028,7 +1028,7 @@ export function approveBusiness(business, day, weekday, p = BUSINESS_DEFAULTS, s
   return { ok: true, business: openBusiness(b, day, weekday, p, seed), wealth: {} };
 }
 
-/** GM: approve a charter waiting for it (DESIGN §32): it is formed at once, or its funding window opens. */
+/** GM: approve a charter waiting for it (DESIGN §31): it is formed at once, or its funding window opens. */
 export function approveBusinessCharter(business, day, p = BUSINESS_DEFAULTS) {
   const b = structuredClone(normalizeBusiness(business));
   const done = approveCharter(b, day, p);
@@ -1488,7 +1488,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, params
   }
   // Wages next, as far as the cash goes, then the loans.
   const wages = payWages(b, part, b.period.endDay, p);
-  // A payslip for each player character on the staff (DESIGN §33.2). Their wage is not paid to their
+  // A payslip for each player character on the staff (DESIGN §32.2). Their wage is not paid to their
   // sheet here: the GM's service attaches it to the payslip mail for them to claim (`paid`).
   for (const s of activeStaff(b).filter((x) => x.source === 'pc' && x.actorId)) {
     out.events.push({

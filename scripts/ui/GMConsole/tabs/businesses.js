@@ -60,7 +60,7 @@ async function onRemove(event, target) {
   report(await BusinessService.remove(target.dataset.id));
 }
 
-/** The GM answers a job offer for an NPC (DESIGN §33). */
+/** The GM answers a job offer for an NPC (DESIGN §32). */
 async function onStaffAnswer(event, target) {
   report(await BusinessService.answerOffer(target.dataset.id, target.dataset.staff, target.dataset.yes === 'true'));
 }

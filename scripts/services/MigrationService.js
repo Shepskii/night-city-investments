@@ -27,7 +27,7 @@ export const MigrationService = {
   /** What the migration steps may read and write. */
   context() {
     return {
-      // Characters' portfolios, and every syndicate's account (DESIGN §31).
+      // Characters' portfolios, and every syndicate's account (DESIGN §30).
       portfolios: () => [...game.actors.filter((a) => PortfolioRepository.hasPortfolio(a)), ...this._syndicates()]
         .map((a) => ({ id: a.id, name: a.name, data: PortfolioRepository.raw(a) })),
       savePortfolio: (id, data) => PortfolioRepository.save(PortfolioRepository.accountOf(id), data),

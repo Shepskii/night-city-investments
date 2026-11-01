@@ -1,7 +1,7 @@
 /**
  * Player businesses: employees
  * @file scripts/engine/businessStaff.js
- * @description Employees (DESIGN §33, E1): characters, player or NPC, and recruits found on the street,
+ * @description Employees (DESIGN §32, E1): characters, player or NPC, and recruits found on the street,
  *              working in a business's posts for a wage. Their skills, read from the post they hold,
  *              lift what the business earns each week; a manager works the shop and security answers
  *              trouble when no partner does; a partner can call an employee in to make one of the
@@ -62,7 +62,7 @@ export const loyaltyCap = (staff, p = BUSINESS_DEFAULTS) => (staff.elsewhere ? p
 
 /**
  * Note on each NPC employee the other business they also work for, if any, and the overtime shifts
- * they have worked there this week (E3, DESIGN §33.5); the GM's service does this before every change,
+ * they have worked there this week (E3, DESIGN §32.5); the GM's service does this before every change,
  * from every open business. A recruit only ever works for one business, and a player character's
  * second job is their own affair. Returns whether anything changed.
  * @param {object[]} others - every business (this one is skipped)

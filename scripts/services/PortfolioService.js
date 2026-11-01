@@ -216,7 +216,7 @@ class PortfolioServiceImpl {
     return this._queue.run(fn);
   }
 
-  /** Every account: the characters and the active syndicates (DESIGN §31). */
+  /** Every account: the characters and the active syndicates (DESIGN §30). */
   _accounts() {
     return PortfolioRepository.accounts();
   }

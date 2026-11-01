@@ -1,5 +1,5 @@
 /**
- * Monte-Carlo calibration harness for player businesses (DESIGN §26.0). Runs without Foundry.
+ * Monte-Carlo calibration harness for player businesses (DESIGN §27.0). Runs without Foundry.
  *
  *   node tools/simulate-business.mjs [--seeds 300] [--periods 120] [--growth 1]
  *

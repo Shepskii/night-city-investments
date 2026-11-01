@@ -1,5 +1,5 @@
 /**
- * Syndicate mail: tells members by Night City Messenger what their syndicate has done (DESIGN §31).
+ * Syndicate mail: tells members by Night City Messenger what their syndicate has done (DESIGN §30).
  * @file scripts/services/SyndicateMail.js
  * @description GM client only. Every active member hears about a proposal when it opens, and about
  *              its outcome (passed, turned down, lapsed, vetoed, or passed but impossible), a trade or

@@ -1,5 +1,5 @@
 /**
- * Employee window: managing one employee on a business's staff (DESIGN §33, E2).
+ * Employee window: managing one employee on a business's staff (DESIGN §32, E2).
  * @file scripts/ui/Business/EmployeeDialogApp.js
  * @description Opened from an employee's Manage button on the Staff tab. The partners can propose a
  *              change of pay (agreeing to a raise the employee asked for is one), and propose letting

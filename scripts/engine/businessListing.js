@@ -1,7 +1,7 @@
 /**
  * Player businesses: going public (B5a)
  * @file scripts/engine/businessListing.js
- * @description DESIGN §26.4a: a chartered company's market valuation V, recorded at each monthly
+ * @description DESIGN §27.4a: a chartered company's market valuation V, recorded at each monthly
  *              report; the listing checklist; agreeing to list (every shareholder with a vote, naming
  *              the float), the listing fee and the GM's approval; the two prospectus rolls (the filing,
  *              the offering) and the offer they set: a price per share and the shares floated. The
@@ -21,7 +21,7 @@ const PAID_IN = new Set(['investment', 'contribution', 'charterFund', 'angel']);
 export const sectorMultiple = (b, p = BUSINESS_DEFAULTS) => p.listing.multiples[charterSector(b, p)] ?? p.listing.multiples.other;
 
 /**
- * The market valuation V (§26.4a): net assets, less cash paid in within the lock-in, plus the last three
+ * The market valuation V (§27.4a): net assets, less cash paid in within the lock-in, plus the last three
  * monthly reports' reported profit, annualised (never below zero), times the sector multiple. What the
  * reports showed counts, so aggressive reporting lifts it, as it would in the market.
  */
@@ -34,7 +34,7 @@ export function valuation(b, day, p = BUSINESS_DEFAULTS) {
 }
 
 /**
- * The listing checklist (§26.4a), shown, not rolled: V at the threshold now and on the last three
+ * The listing checklist (§27.4a), shown, not rolled: V at the threshold now and on the last three
  * reports, a track record, Compliance, no unresolved concerns (the GM's service marks hidden Exposure
  * over its cap as `listingConcerns`), and the fee in the cash.
  * @param {{day: number, threshold?: number}} o - `threshold` is the world setting
@@ -158,7 +158,7 @@ export const isListed = (b) => b?.listing?.status === 'listed';
 const isoDay = (day) => new Date(day * 86_400_000).toISOString().slice(0, 10);
 
 /**
- * The market company a ready listing becomes (§26.4a step 5): the company's ticker and sector, priced at
+ * The market company a ready listing becomes (§27.4a step 5): the company's ticker and sector, priced at
  * the offer, unlisted until its IPO in `ipoWindowDays`, with the float as the shares players may
  * subscribe for, its shares outstanding those held now plus the float, and a thin market.
  */
@@ -240,7 +240,7 @@ export function earningsTarget(b, report) {
 }
 
 /**
- * The market impact a report makes (§26.4 monthly report): the log-return that would take the price to
+ * The market impact a report makes (§27.4 monthly report): the log-return that would take the price to
  * the target, within `earningsCap` either way; the market's impact kernel moves fair value there over
  * a few days.
  */
@@ -263,7 +263,7 @@ export function payoutOffer(b, pct, p = BUSINESS_DEFAULTS) {
 }
 
 /**
- * Pay a report's dividend (§26.7): the payout ratio of the month's real profit, but never more than
+ * Pay a report's dividend (§27.7): the payout ratio of the month's real profit, but never more than
  * `monthlyYield` of the valuation, nor the cash there is; each holder's share (by shares held in their
  * portfolio, `holdings`) at most `holderCap`; the market's and NPC holders' shares paid out of the
  * company too. The cash pays it all; the report records it.

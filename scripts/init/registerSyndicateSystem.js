@@ -1,5 +1,5 @@
 /**
- * Syndicate system: wires the syndicate executor, client and watcher into Foundry's hooks (DESIGN §31).
+ * Syndicate system: wires the syndicate executor, client and watcher into Foundry's hooks (DESIGN §30).
  * @file scripts/init/registerSyndicateSystem.js
  * @description Lapsed proposals and due redemptions are settled after each market tick, as a step
  *              of registerTickSequence.js. The syndicate's orders are worked with everyone else's,

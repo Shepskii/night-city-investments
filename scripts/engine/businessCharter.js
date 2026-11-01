@@ -1,7 +1,7 @@
 /**
  * Chartering a business
  * @file scripts/engine/businessCharter.js
- * @description Registered business to chartered company (DESIGN §32, B4a): the milestones, the three
+ * @description Registered business to chartered company (DESIGN §31, B4a): the milestones, the three
  *              charter rolls, the capital quote with the business's net assets credited, the GM's
  *              approval, the funding window, and forming the company (stage 2). Pure; no Foundry
  *              globals. The record's `charter` is null until the partners agree to charter, then:
@@ -24,7 +24,7 @@ export function quoteRange(b, p = BUSINESS_DEFAULTS) {
   return { kmin: Math.round(p.charter.kmin * f), kmax: Math.round(p.charter.kmax * f) };
 }
 
-/** The quote from the capital structure roll's margin (a critical adds 4), rounded to 100 eb (§26.2a). */
+/** The quote from the capital structure roll's margin (a critical adds 4), rounded to 100 eb (§27.2a). */
 export function capitalQuote(b, { margin, crit = false }, p = BUSINESS_DEFAULTS) {
   const { kmin, kmax } = quoteRange(b, p);
   const m = margin + (crit ? 4 : 0);
@@ -214,5 +214,5 @@ export function formCompany(b, day, p = BUSINESS_DEFAULTS) {
   return b;
 }
 
-/** Holders' shares in a company are its units, one for one (DESIGN §32). */
+/** Holders' shares in a company are its units, one for one (DESIGN §31). */
 export const sharesOf = (b, actorId) => (holders(b).find((x) => x.actorId === actorId)?.units ?? 0);

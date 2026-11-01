@@ -1,6 +1,6 @@
 /**
  * Trading accounts for the windows: a user's characters, and the syndicates those characters belong
- * to (DESIGN §31).
+ * to (DESIGN §30).
  * @file scripts/ui/accounts.js
  * @description A syndicate is traded "as" one of its members, so the picker's value for it is
  *              `syn:<syndicateId>:<actorId>`. The account it gives behaves like an actor for reading:
@@ -55,7 +55,7 @@ export function tradingAccounts() {
 
 /**
  * The accounts the Business window offers: the given characters, then each active syndicate one of
- * them belongs to. Only officers act for a syndicate in a business (DESIGN §31, B3b); other members
+ * them belongs to. Only officers act for a syndicate in a business (DESIGN §30, B3b); other members
  * see its businesses read-only.
  */
 export function businessAccounts(characters) {

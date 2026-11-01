@@ -1,7 +1,7 @@
 /**
  * Player businesses: employees as people
  * @file scripts/engine/businessPeople.js
- * @description E2 of DESIGN §33: loyalty and what moves it, quitting, hidden traits and vetting,
+ * @description E2 of DESIGN §32: loyalty and what moves it, quitting, hidden traits and vetting,
  *              bonuses, pay changes and raises asked for, moving an employee to another post, and
  *              the staff events in the weekly event table. Traits are kept in the GM's hidden state,
  *              never on the record; whatever needs one is given `traits` (applicant or employee id to
@@ -383,7 +383,7 @@ export function trainingSkill(b, staff, p = BUSINESS_DEFAULTS) {
 }
 
 /**
- * Whether an employee can be trained now, and what it costs (DESIGN §33.5). Only NPC staff train this
+ * Whether an employee can be trained now, and what it costs (DESIGN §32.5). Only NPC staff train this
  * way; a player character spends their own Improvement Points. With a mentor (`mentorBase`, the
  * asking partner's own base in the skill, must be higher, and `days` their business days left) it
  * costs `perPoint` eb per point of the skill now; a course, with no mentor, `courseFactor` times that.
@@ -453,7 +453,7 @@ export const askOf = (b, askId) => (b.period?.asks ?? []).find((a) => a.id === a
 export const asksFor = (b, staffId) => (b.period?.asks ?? []).filter((a) => a.staffId === staffId);
 
 /**
- * Whether a player character on the staff can be asked for a roll (DESIGN §33.11): a player character,
+ * Whether a player character on the staff can be asked for a roll (DESIGN §32.11): a player character,
  * not already asked, with an overtime shift left this week. An NPC is called in from the roll dialog.
  */
 export function askCheck(b, staffId, roll, p = BUSINESS_DEFAULTS) {
@@ -478,7 +478,7 @@ export function grantedShare(b) {
 }
 
 /**
- * Whether a share grant can be proposed (DESIGN §33.5): at a company, to an employee with none vesting,
+ * Whether a share grant can be proposed (DESIGN §32.5): at a company, to an employee with none vesting,
  * of `share` (a fraction, in `step`s) within what is left of the grants' `max`.
  * @param {number} pct - the share as a percentage (0.5 for half a percent)
  */
@@ -557,7 +557,7 @@ export function teamBases(b, post, base, p = BUSINESS_DEFAULTS) {
 export const teamOf = (b, leaderId) => (b.staff ?? []).filter((s) => s.source === 'team' && s.leader === leaderId);
 
 /**
- * Whether an Exec can add a team member to a role (DESIGN §33.5): a partner who runs the business,
+ * Whether an Exec can add a team member to a role (DESIGN §32.5): a partner who runs the business,
  * with Teamwork (`rank`, read from their sheet), room left in their team, and the role open.
  */
 export function teamCheck(b, actorId, post, rank, p = BUSINESS_DEFAULTS) {

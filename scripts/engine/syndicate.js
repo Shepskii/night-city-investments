@@ -1,7 +1,7 @@
 /**
  * Player syndicates
  * @file scripts/engine/syndicate.js
- * @description A crew's shared brokerage account (DESIGN §31): members buy units with cash from
+ * @description A crew's shared brokerage account (DESIGN §30): members buy units with cash from
  *              their own brokerage balance, officers trade the account up to a limit, bigger
  *              decisions go to a vote by units, and members redeem units at NAV. Pure; no Foundry
  *              globals. The syndicate's portfolio is an ordinary one, so trades go through the

@@ -30,7 +30,7 @@ export function heatContext(actor, portfolio, tick) {
   const on = game.settings.get(MODULE_ID, SETTINGS.HEAT_ENABLED) === true && game.settings.get(MODULE_ID, SETTINGS.HEAT_CONSEQUENCES) !== false;
   const frozen = isFrozen(portfolio, tick);
   const bans = Object.values(portfolio.brokerBans ?? {}).filter((until) => until > tick);
-  // Cover-up actions are a character's own; a syndicate's account never shows them (DESIGN §31).
+  // Cover-up actions are a character's own; a syndicate's account never shows them (DESIGN §30).
   const show = on && portfolio.heatAware === true && !actor?.isSyndicate;
 
   const actions = show ? HEAT_ACTION_IDS.map((id) => {

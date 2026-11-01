@@ -1,7 +1,7 @@
 /**
  * Player businesses: weekly events
  * @file scripts/engine/businessEvents.js
- * @description The week's trouble or windfall (DESIGN §26.0, §26.4). The engine draws an event when
+ * @description The week's trouble or windfall (DESIGN §27.0, §27.4). The engine draws an event when
  *              a week starts, from the world seed, the business and the week, so the same week always
  *              draws the same thing; that draw is not a player's roll. Answering it is: a partner
  *              takes a slot and rolls one of the skills the event names. Unanswered, it has its default

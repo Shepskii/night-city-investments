@@ -1,5 +1,5 @@
 /**
- * Syndicate service: the GM-side executor for syndicates (DESIGN §31).
+ * Syndicate service: the GM-side executor for syndicates (DESIGN §30).
  * @file scripts/services/SyndicateService.js
  * @description Runs only on the active GM client. It reads each character's syndicate outbox, applies
  *              the requests with the pure engine, runs officers' trades through the market's own

@@ -1,5 +1,5 @@
 /**
- * Market Terminal: what the Portfolio tab shows about syndicates (DESIGN §31).
+ * Market Terminal: what the Portfolio tab shows about syndicates (DESIGN §30).
  * @file scripts/ui/MarketTerminal/syndicateContext.js
  */
 

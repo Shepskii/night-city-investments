@@ -1,7 +1,7 @@
 /**
  * A chartered company's week and month
  * @file scripts/engine/businessCompany.js
- * @description Stage 2 (DESIGN §26.4, §32, B4b): what the five company actions do to the week, and the
+ * @description Stage 2 (DESIGN §27.4, §31, B4b): what the five company actions do to the week, and the
  *              monthly report every four weeks, with its preparation roll. Pure; no Foundry globals.
  *              The rest of the weekly close (takings, upkeep, loans, events) is the business's own.
  */
@@ -90,7 +90,7 @@ export function closeReportWeek(b, day, out, p = BUSINESS_DEFAULTS) {
     reported: Math.round(profit + Math.abs(profit) * shift),
     ...(prep ? { prep: { band: prep.band, bold: prep.bold, total: prep.total, by: prep.by } } : {}),
   };
-  // The market valuation at this report, counting it (B5, §26.4a).
+  // The market valuation at this report, counting it (B5, §27.4a).
   report.valuation = valuation({ ...b, reports: [...b.reports, report] }, day, p);
   b.reports = [...b.reports, report].slice(-r.cap);
   b.reportWeeks = 0;

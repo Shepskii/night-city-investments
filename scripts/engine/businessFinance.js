@@ -1,7 +1,7 @@
 /**
  * Player businesses: money from outside
  * @file scripts/engine/businessFinance.js
- * @description Loans and investors for B2 (DESIGN §26.0): a fixer's loan, a bank loan after a roll,
+ * @description Loans and investors for B2 (DESIGN §27.0): a fixer's loan, a bank loan after a roll,
  *              repayments as each week closes, a character buying in at an agreed price, and an NPC
  *              angel won with an opposed roll. Pure; no Foundry globals. The partners' agreement
  *              comes first, through proposals (business.js); what is here is what happens after.

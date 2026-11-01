@@ -1,10 +1,10 @@
 /**
- * Business growth model, for calibration (DESIGN §26.0, §26.2a, §26.4a). A prototype in tools/: the
+ * Business growth model, for calibration (DESIGN §27.0, §27.2a, §27.4a). A prototype in tools/: the
  * B1 phase builds the real engine from it, and its numbers are the starting point for that engine's
  * tuning. Pure; runs without Foundry.
  *
  * One call to `stepPeriod` is one weekly operating period. Every roll goes through the rulebook's
- * d10 (a 10 explodes, a 1 subtracts) and the outcome bands of DESIGN §26.
+ * d10 (a 10 explodes, a 1 subtracts) and the outcome bands of DESIGN §27.
  */
 
 import { createRng } from '../scripts/engine/rng.js';
@@ -47,7 +47,7 @@ export const DEFAULTS = {
   /** An unanswered event costs this share of the week's takings; a failed answer, the smaller share. */
   eventLoss: { unanswered: 0.15, failed: 0.1 },
   registration: { fee: 500, minPeriods: 4, minProfit: 100, minReputation: 50, dv: DV.difficult },
-  // A growing business charters at the Startup tier (DESIGN §26.2a), which its net assets largely cover.
+  // A growing business charters at the Startup tier (DESIGN §27.2a), which its net assets largely cover.
   charter: { fee: 2000, minLedgers: 3, minProfit: 400, dv: DV.difficult, kmin: 5000, kmax: 12000 },
   listing: { threshold: 500000, sustained: 3, minReports: 3, minPeriods: 8, multiple: 10 },
   periodsPerMonth: 4,
@@ -80,7 +80,7 @@ function roll(rng, base, dv, bonus = 0) {
 const avg = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 const traffic = (rep) => 0.6 + (Math.max(0, Math.min(100, rep)) / 100) * 0.8;
 
-/** Valuation V (DESIGN §26.4a): net assets plus annualised profit at the sector multiple, profit floored at zero. */
+/** Valuation V (DESIGN §27.4a): net assets plus annualised profit at the sector multiple, profit floored at zero. */
 export function valuation(b, p = DEFAULTS) {
   const weekly = Math.max(0, avg(b.profits.slice(-12)));
   return b.till + b.assets + weekly * 52 * p.listing.multiple;
@@ -174,7 +174,7 @@ function stepUp(b, crew, rng, p) {
       const accounting = roll(rng, crew.admin, c.dv);
       if (accounting.margin < 0) return;
       const quote = c.kmax - (c.kmax - c.kmin) * Math.max(0, Math.min(1, accounting.margin / 8));
-      const due = Math.max(0, quote - (b.till + b.assets)); // net assets count toward the quote (§26.2a)
+      const due = Math.max(0, quote - (b.till + b.assets)); // net assets count toward the quote (§27.2a)
       if (due > b.owners + crew.outsideMoney) return;
       b.owners -= Math.min(b.owners, due);
       b.till += due;

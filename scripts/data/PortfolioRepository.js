@@ -65,7 +65,7 @@ export const PortfolioRepository = {
   },
 
   /**
-   * Every account the market keeps: the characters, and each active syndicate (DESIGN §31). This is
+   * Every account the market keeps: the characters, and each active syndicate (DESIGN §30). This is
    * the list the GM's services go through after a tick, for dividends, IPOs, heat and the like.
    */
   accounts() {

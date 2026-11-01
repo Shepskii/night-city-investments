@@ -1,7 +1,7 @@
 /**
  * Business tables
  * @file scripts/engine/businessConfig.js
- * @description Archetypes, actions and the numbers the business loop runs on (DESIGN §26.0). The
+ * @description Archetypes, actions and the numbers the business loop runs on (DESIGN §27.0). The
  *              values come from the B0 simulator (tools/business-model.mjs) and are its calibrated
  *              starting point. Pure; no Foundry globals.
  */
@@ -99,7 +99,7 @@ export const districtOf = (id) => DISTRICTS[id] ?? { id: '', traffic: 1, rent: 1
 export const ACTION_IDS = Object.freeze(['work', 'promote', 'source', 'fixUp', 'keepSafe']);
 
 /**
- * The five weekly actions (DESIGN §26.0). `skills` roll the action itself (`work` uses the
+ * The five weekly actions (DESIGN §27.0). `skills` roll the action itself (`work` uses the
  * archetype's trade skills); `help` are the extra skills and abilities a complementary check for it
  * may use, on top of the action's own.
  */
@@ -111,7 +111,7 @@ export const ACTIONS = Object.freeze({
   keepSafe: Object.freeze({ skills: [S.tactics, S.persuasion], abilities: [A.combatAwareness, A.backup], help: [S.streetwise, S.humanPerception] }),
 });
 
-/** A chartered company's five actions (DESIGN §26.4, §32): they replace the shop actions at stage 2. */
+/** A chartered company's five actions (DESIGN §27.4, §31): they replace the shop actions at stage 2. */
 export const COMPANY_ACTION_IDS = Object.freeze(['contracts', 'books', 'relations', 'permits', 'shortcuts']);
 
 /** Each company action's skill, its alternatives at DV +2, the role abilities that fit, and its help. */
@@ -137,7 +137,7 @@ export const actionIdsFor = (stage) => (stage >= 2 ? COMPANY_ACTION_IDS : ACTION
 /** The definition of an action, for this stage. */
 export const actionFor = (stage, id) => (stage >= 2 ? COMPANY_ACTIONS[id] : ACTIONS[id]) ?? null;
 
-/** Employees' posts, in display order (DESIGN §33). */
+/** Employees' posts, in display order (DESIGN §32). */
 export const POST_IDS = Object.freeze(['floor', 'manager', 'security', 'bookkeeper', 'sales', 'publicist', 'compliance']);
 
 /**
@@ -187,7 +187,7 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     storefront: Object.freeze({ cost: Object.freeze([700, 1800, 6000]), days: Object.freeze([2, 4, 6]), reputation: 5, target: 3 }),
     staffRoom: Object.freeze({ cost: Object.freeze([500, 1200, 4000]), days: Object.freeze([2, 3, 5]), headcount: 1, paidCap: 70 }),
   }),
-  /** Side business to registered business (DESIGN §26.0). Bureaucracy, or Local Expert or Persuasion at DV +2. */
+  /** Side business to registered business (DESIGN §27.0). Bureaucracy, or Local Expert or Persuasion at DV +2. */
   registration: Object.freeze({
     // Reputation drifts back toward 50 and events knock it down, so the bar is near that baseline, not on it.
     fee: 500, minWeeks: 4, minProfit: 100, minReputation: 45, dv: 'difficult', delay: 7, fumbleDelay: 14,
@@ -195,7 +195,7 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     /** The registration roll's band sets the Compliance the registered business starts with. */
     compliance: Object.freeze({ narrow: 45, solid: 50, strong: 55, exceptional: 60 }),
   }),
-  /** Registered business to chartered company (DESIGN §32, B4a). */
+  /** Registered business to chartered company (DESIGN §31, B4a). */
   charter: Object.freeze({
     fee: 2000, minWeeks: 12, minProfit: 400, minExpansions: 1,
     /** The three rolls: each part's DV step and skills (alternatives at DV +2). A track record makes the plan easier. */
@@ -206,7 +206,7 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     }),
     /** A failed capital structure roll: game days before the partners may try again. Passed parts are kept this long. */
     refile: 7, fumbleRefile: 14, keepDays: 30,
-    /** The Startup tier's range for the capital quote (§26.2a), times the sector factor. */
+    /** The Startup tier's range for the capital quote (§27.2a), times the sector factor. */
     kmin: 5000, kmax: 12000,
     sectorFactor: Object.freeze({ media: 0.8, consumer: 0.8, security: 1.3, arms: 1.3, biotech: 1.5, energy: 1.5 }),
     /** Each business type's market sector. */
@@ -268,13 +268,13 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     shortcutsFumbleCompliance: 8,
   }),
   /**
-   * The monthly report (DESIGN §26.4): every 4 weeks after the charter the company sums its weeks. In
+   * The monthly report (DESIGN §27.4): every 4 weeks after the charter the company sums its weeks. In
    * the report's last week an officer may prepare it (Accounting, Business at DV +2): the band shifts
    * the profit it reports, Bold (aggressive reporting) doubles the shift and adds Exposure. The total is
-   * kept, for an audit later (§26.6).
+   * kept, for an audit later (§27.6).
    */
   /**
-   * Information rolls (DESIGN §26.4, B4c). An internal audit (Accounting, Business at DV +2) reveals the
+   * Information rolls (DESIGN §27.4, B4c). An internal audit (Accounting, Business at DV +2) reveals the
    * company's own Exposure band and, on a strong or better roll, wipes some of it out; due diligence
    * (Library Search or Business) reveals another business's state bands and a range for its value.
    * Each costs eb from the company's cash and can be done once a week.
@@ -302,7 +302,7 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     cap: 12,
   }),
   /**
-   * Going public (B5, DESIGN §26.4a). V must reach `threshold` (a world setting overrides it) on the
+   * Going public (B5, DESIGN §27.4a). V must reach `threshold` (a world setting overrides it) on the
    * last `sustained` reports, with `minReports` reports and `minDays` since the charter, Compliance at
    * `compliance`, and hidden Exposure under `exposureCap`. Cash paid in counts toward V only after
    * `lockinDays`. Agreeing pays `fee` of V. The prospectus rolls are at DV `dv`; a failure waits
@@ -339,7 +339,7 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     /** After listing (B5c): a report moves fair value toward V per share, at most this far (a log-return) either way, from the day after. */
     earningsCap: 0.5,
     earningsDelayDays: 1,
-    /** Dividends after listing (B5c, §26.7): the payout ratio by default and its steps, at most `monthlyYield` of V a month, at most `holderCap` eb to one holder. */
+    /** Dividends after listing (B5c, §27.7): the payout ratio by default and its steps, at most `monthlyYield` of V a month, at most `holderCap` eb to one holder. */
     dividend: Object.freeze({ payout: 0.3, step: 0.1, monthlyYield: 0.01, holderCap: 5000 }),
     /** The liquidity cap (B5c): each market day the market buys at most this share of the float from players, by the offering's demand, plus `perOperatorRank` for each rank of a Fixer officer's Operator. */
     liquidity: Object.freeze({ daily: byBand([0.1, 0.1, 0.1, 0.15, 0.2, 0.3]), perOperatorRank: 0.02 }),
@@ -354,7 +354,7 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     demand: byBand([0.2, 0.2, 0.2, 0.25, 0.3, 0.4]),
   }),
   /**
-   * Employees (DESIGN §33, E1). An employee's base for a post is their best stat + skill among the
+   * Employees (DESIGN §32, E1). An employee's base for a post is their best stat + skill among the
    * post's skills (a fitting role ability counts as its rank + `abilityBonus`, a skill a level lower
    * takes `lowerBy` off), read as a level. Their wage is a rate per point of that base each week,
    * times the share of the going rate the partners offered. Overtime pays a share of a week's wage.
@@ -395,7 +395,7 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     /** A fired employee is paid this many weeks' wages. */
     severanceWeeks: 1,
     /**
-     * Loyalty (E2, DESIGN §33.4), 0 to 100, for NPCs and recruits (a player character's is the
+     * Loyalty (E2, DESIGN §32.4), 0 to 100, for NPCs and recruits (a player character's is the
      * player's own). It starts at `start`, moved `perTen` for each 10% of the going rate offered above
      * or below it; a paid week adds `paidWeek` up to `paidCap`, a profitable month `profitMonth`, a
      * bonus `bonusPerQuarter` for each quarter of a week's wage. Below `quitBelow` an employee may quit
@@ -460,7 +460,7 @@ export const BUSINESS_DEFAULTS = Object.freeze({
       plantExposure: 1,
       plantFired: 5,
     }),
-    /** Staff events (DESIGN §33.4). */
+    /** Staff events (DESIGN §32.4). */
     events: Object.freeze({
       /** Light fingers: the share of the week's takings that goes missing, unanswered. */
       theft: Object.freeze([0.05, 0.15]),
@@ -507,7 +507,7 @@ export const BUSINESS_DEFAULTS = Object.freeze({
   /** What the gear fetches when a business closes: when it fails, and when the partners choose to. */
   salvage: Object.freeze({ failed: 0.25, closed: 0.5 }),
   /**
-   * Weekly events (DESIGN §26.4): the chance of one each week before the district's risk, less once
+   * Weekly events (DESIGN §27.4): the chance of one each week before the district's risk, less once
    * registered. An event is answered with a slot and a roll before the week closes; unanswered, it
    * costs its share of the week's takings. A good event (a windfall) only pays if answered well.
    */
@@ -520,7 +520,7 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     windfall: byBand([0, 0, 0.05, 0.15, 0.2, 0.3]),
   }),
   /**
-   * Money from outside (DESIGN §26.0). A fixer lends quickly at a steep weekly rate; a bank, to a
+   * Money from outside (DESIGN §27.0). A fixer lends quickly at a steep weekly rate; a bank, to a
    * registered business only, after an Accounting or Business roll whose band sets the limit (in
    * weeks of average profit) and the rate. Repayments come out of the till as each week closes;
    * interest counts against the week's profit, the principal does not.
@@ -549,7 +549,7 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     }),
   }),
   /**
-   * Gigs run for a player's own business (DESIGN §26.5) change its business, not a share price:
+   * Gigs run for a player's own business (DESIGN §27.5) change its business, not a share price:
    * Reputation at once, and next week's takings. The size follows the reward (a reward of `reward`
    * eb is size 1, within `size`), and each gig for the business in the last `windowDays` weakens the
    * next, so a crew cannot farm its own business.
@@ -593,7 +593,7 @@ export const EVENTS = Object.freeze({
   /** Never drawn: it may come the week after a sullen employee is fired. */
   grudge: Object.freeze({ weight: 0, security: true, uses: [S.persuasion, S.streetwise, S.tactics, A.combatAwareness], hit: Object.freeze({ reputation: -2, capacity: -0.05 }) }),
   /**
-   * Staff events (E2, DESIGN §33.4): drawn only when the business has NPC staff, each settled in
+   * Staff events (E2, DESIGN §32.4): drawn only when the business has NPC staff, each settled in
    * businessPeople.js. `staffId` on the event names the employee it is about, where there is one.
    */
   sickDay: Object.freeze({ weight: 2, staff: true, uses: [S.paramedic, A.medicine], hit: Object.freeze({}) }),
@@ -603,7 +603,7 @@ export const EVENTS = Object.freeze({
   accident: Object.freeze({ weight: 2, staff: true, uses: [S.paramedic, A.medicine], hit: Object.freeze({}) }),
   starTurn: Object.freeze({ weight: 2, staff: true, good: true, uses: [S.business, S.persuasion], hit: Object.freeze({}) }),
   /**
-   * Two jobs (E3, DESIGN §33.5): drawn only when an NPC employee also works for another business
+   * Two jobs (E3, DESIGN §32.5): drawn only when an NPC employee also works for another business
    * (`twoJobs`), about one of them; `rival` on the event names the other business.
    */
   doubleBooked: Object.freeze({ weight: 2, staff: true, twoJobs: true, uses: [S.persuasion, S.business], hit: Object.freeze({}) }),

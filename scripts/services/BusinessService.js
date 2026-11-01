@@ -7,7 +7,7 @@
  *              business up to the market's date, closing the weeks that have ended. Everything goes
  *              through one serial queue.
  *
- *              A syndicate can be a partner (DESIGN §31, B3b). An officer's request that names a
+ *              A syndicate can be a partner (DESIGN §30, B3b). An officer's request that names a
  *              `syndicateId` is made for the syndicate: the engine sees the syndicate as the partner,
  *              the roll is the officer's own, the money comes from and goes to the syndicate's
  *              account (SyndicateCash), and it brings no gear. A payment over the officers' trade limit
@@ -84,7 +84,7 @@ class BusinessServiceImpl {
   actors() {
     return Object.fromEntries([
       ...game.actors.filter((a) => isCharacter(a)).map((a) => [a.id, a.name]),
-      // A syndicate can be invited as a partner or an investor too (DESIGN §31, B3b).
+      // A syndicate can be invited as a partner or an investor too (DESIGN §30, B3b).
       ...SyndicateRepository.all().filter((s) => s.status === 'active').map((s) => [s.id, s.name]),
     ]);
   }
@@ -104,7 +104,7 @@ class BusinessServiceImpl {
       operatorRank: business ? operatorRankOf(business) : 0,
       actors: this.actors(),
       investors: investorActors().map((a) => a.id),
-      // Who may be hired, and their bases read from their sheets (DESIGN §33).
+      // Who may be hired, and their bases read from their sheets (DESIGN §32).
       staffActors: Object.fromEntries(staffActors().map((a) => [a.id, a.source])),
       staffNames: Object.fromEntries(staffActors().map((a) => [a.id, a.name])),
       basesOf: (id) => this.basesOf(id),
@@ -382,7 +382,7 @@ class BusinessServiceImpl {
 
   /**
    * An offer ready to list (both prospectus rolls passed) becomes a market company under its ticker,
-   * unlisted, with its IPO window open (B5b, §26.4a step 5): players subscribe on the terminal, and on
+   * unlisted, with its IPO window open (B5b, §27.4a step 5): players subscribe on the terminal, and on
    * the listing day the market's IPO service lists it. Nothing happens if the company exists already.
    */
   async _scheduleListing(business) {
@@ -679,7 +679,7 @@ class BusinessServiceImpl {
   }
 
   /**
-   * A two-jobs event reaching the other business (E3, DESIGN §33.5): something let slip there gives it a
+   * A two-jobs event reaching the other business (E3, DESIGN §32.5): something let slip there gives it a
    * due diligence report on this one, and a note in its next digest; one caught well gives this one a
    * report on the other; an employee gone full time there is noted in its digest.
    */
@@ -745,7 +745,7 @@ class BusinessServiceImpl {
 
   /**
    * Mirror the jobs at a business onto the player characters who hold or are offered them, so they see
-   * their job without seeing the business's books (DESIGN §33); a job that has ended is taken off.
+   * their job without seeing the business's books (DESIGN §32); a job that has ended is taken off.
    */
   async _syncJobs(business) {
     const holding = new Set((business.staff ?? []).filter((s) => s.source === 'pc' && s.actorId).map((s) => s.actorId));
@@ -855,7 +855,7 @@ class BusinessServiceImpl {
     return this._gm(id, (b) => rejectBusiness(b, this.day()));
   }
 
-  /** Approve a charter waiting for the GM (DESIGN §32): formed at once, or its funding window opens. */
+  /** Approve a charter waiting for the GM (DESIGN §31): formed at once, or its funding window opens. */
   approveCharter(id) {
     return this._gm(id, (b) => approveBusinessCharter(b, this.day()));
   }
@@ -927,7 +927,7 @@ class BusinessServiceImpl {
     });
   }
 
-  /** The GM answers a job offer for an NPC (DESIGN §33). */
+  /** The GM answers a job offer for an NPC (DESIGN §32). */
   answerOffer(id, staffId, yes) {
     return this._gm(id, (b) => {
       const copy = normalizeBusiness(structuredClone(b));
@@ -942,7 +942,7 @@ class BusinessServiceImpl {
   }
 
   /**
-   * A gig run for a player's own business (DESIGN §26.5): its outcome changes the business's
+   * A gig run for a player's own business (DESIGN §27.5): its outcome changes the business's
    * Reputation and next week's takings. Called by the gig service, once the GM has approved it or
    * straight away when approval is off.
    * @param {{businessId: string, sourceKey: string, outcome: 'done'|'failed', reward: number}} rec

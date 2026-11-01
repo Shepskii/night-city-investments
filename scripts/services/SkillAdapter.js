@@ -92,7 +92,7 @@ export const SkillAdapter = {
   },
 
   /**
-   * Roll a business check with the levers the player chose (DESIGN §26), on the player's own client.
+   * Roll a business check with the levers the player chose (DESIGN §27), on the player's own client.
    * Luck is spent from the sheet before the dice are rolled, as the rules have it, and the card
    * records the pool beforehand so the GM can see it really went down.
    * @param {Actor} actor

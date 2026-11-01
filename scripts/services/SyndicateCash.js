@@ -1,5 +1,5 @@
 /**
- * Syndicate cash: a syndicate's money going into and coming out of businesses (DESIGN §31, B3b).
+ * Syndicate cash: a syndicate's money going into and coming out of businesses (DESIGN §30, B3b).
  * @file scripts/services/SyndicateCash.js
  * @description The business service pays a character in eddies; a syndicate it pays in its brokerage
  *              account, through here. It runs in step with order processing, since the portfolio

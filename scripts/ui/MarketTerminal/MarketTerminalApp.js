@@ -139,7 +139,7 @@ export class MarketTerminalApp extends BaseApplication {
     });
   }
 
-  /** The picked account: a character, or a syndicate traded as one of its members (DESIGN §31). */
+  /** The picked account: a character, or a syndicate traded as one of its members (DESIGN §30). */
   get actor() {
     return accountFor(this.actorId);
   }
@@ -262,7 +262,7 @@ export class MarketTerminalApp extends BaseApplication {
     await PortfolioClient.heatAction(this.actor, target.dataset.id);
   }
 
-  // ── Syndicates (DESIGN §31) ────────────────────────────────────────────────
+  // ── Syndicates (DESIGN §30) ────────────────────────────────────────────────
 
   /** A form field in the box, row or block around the button. */
   _field(target, name) {
@@ -502,7 +502,7 @@ export class MarketTerminalApp extends BaseApplication {
   }
 
   /**
-   * The character's stakes in private businesses (DESIGN §26.8a): read-only, valued at book value
+   * The character's stakes in private businesses (DESIGN §27.8a): read-only, valued at book value
    * times their share, and not tradable on the market. Only businesses still open count.
    */
   _privateStakes(actor) {
@@ -531,7 +531,7 @@ export class MarketTerminalApp extends BaseApplication {
       ...Object.fromEntries(Object.entries(pub.funds ?? {}).map(([id, s]) => [id, s.nav])),
     };
     const v = valuePortfolio(p, prices);
-    // A syndicate's business stakes count too (DESIGN §31, B3b).
+    // A syndicate's business stakes count too (DESIGN §30, B3b).
     const stakes = this._privateStakes(actor);
     const stakesValue = stakes.reduce((a, s) => a + s.value, 0);
     const tick = timeOf(pub);

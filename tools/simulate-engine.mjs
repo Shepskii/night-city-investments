@@ -1,5 +1,5 @@
 /**
- * Calibration on the real business engine (DESIGN §26.9, "every phase finishes with a simulator
+ * Calibration on the real business engine (DESIGN §27.9, "every phase finishes with a simulator
  * check"). Runs without Foundry.
  *
  *   node tools/simulate-engine.mjs [--seeds 300] [--weeks 80] [--growth 1] [--archetype clinic] [--district ""]

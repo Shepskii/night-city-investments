@@ -1,5 +1,5 @@
 /**
- * Business window: running a player business, apart from the Market Terminal (DESIGN §26.8a).
+ * Business window: running a player business, apart from the Market Terminal (DESIGN §27.8a).
  * @file scripts/ui/Business/BusinessApp.js
  * @description Tabs: Overview, This week, Projects, Ledger, Partners, Staff, Growth. A character with no business sees Start a
  *              business. Everything a player does here is a request for the GM, as in the terminal,
@@ -217,7 +217,7 @@ export class BusinessApp extends BaseApplication {
     return gear;
   }
 
-  /** The picked account: a character, or a syndicate picked as one of its officers (DESIGN §31, B3b). */
+  /** The picked account: a character, or a syndicate picked as one of its officers (DESIGN §30, B3b). */
   get actor() {
     return accountFor(this.actorId);
   }
@@ -390,7 +390,7 @@ export class BusinessApp extends BaseApplication {
     this._roll({ type: 'angelRoll' }, L('NCI.Business.AngelTitle', { name: this.business?.approved?.angel?.name ?? '' }));
   }
 
-  /** Every partner with a vote must agree to charter; the ticker is named now (DESIGN §32). */
+  /** Every partner with a vote must agree to charter; the ticker is named now (DESIGN §31). */
   static async _onProposeCharter(event, target) {
     const ticker = value(target, 'ticker').trim().toUpperCase();
     if (ticker.length < 2) return ui.notifications.warn(L('NCI.Business.Reason.bad-ticker'));
@@ -463,7 +463,7 @@ export class BusinessApp extends BaseApplication {
     return this._send('charterFund', { cash });
   }
 
-  /** Prepare the monthly report (DESIGN §26.4): Accounting; Bold in the dialog is aggressive reporting. */
+  /** Prepare the monthly report (DESIGN §27.4): Accounting; Bold in the dialog is aggressive reporting. */
   static _onReportRoll() {
     this._roll({ type: 'reportRoll' }, L('NCI.Company.PrepareTitle', { name: this.business?.name ?? '' }));
   }
@@ -487,7 +487,7 @@ export class BusinessApp extends BaseApplication {
     return this._send('propose', { kind: 'dismiss', actorId: target.dataset.id });
   }
 
-  /** A post's Hire button (DESIGN §33): the Hire window, to hire a character or advertise the job. */
+  /** A post's Hire button (DESIGN §32): the Hire window, to hire a character or advertise the job. */
   static _onOpenHire(event, target) {
     const business = this.business;
     if (!business || !this.actor) return;
@@ -606,7 +606,7 @@ export class BusinessApp extends BaseApplication {
     for (const t of TABS) context[`is${t[0].toUpperCase()}${t.slice(1)}`] = t === this.tab;
     context.tabs = TABS.map((t) => ({ id: t, label: L(termKey(business, `NCI.Business.Tab.${t}`)), active: t === this.tab }));
     if (!this.actor) return { ...context, noActor: true };
-    // The jobs this character holds or is offered at other people's businesses (DESIGN §33).
+    // The jobs this character holds or is offered at other people's businesses (DESIGN §32).
     context.jobs = jobsContext(this.actor);
     if (!business) return { ...context, start: startContext(this) };
     return { ...context, business: businessContext(business, this.actor) };

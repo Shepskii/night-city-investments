@@ -71,7 +71,7 @@ export class TradeDialogApp extends BaseApplication {
       limit: orderType === 'market' ? null : limit,
       expiry: data.expiry ?? 'day',
     };
-    // A syndicate order over the officers' limit goes to the members as a proposal (DESIGN §31).
+    // A syndicate order over the officers' limit goes to the members as a proposal (DESIGN §30).
     const pub = MarketStore.getPublic();
     const market = { [this.assetId]: { price: pub.companies?.[this.assetId]?.price ?? pub.funds?.[this.assetId]?.nav ?? 0 } };
     if (actor.isSyndicate && orderValue(order, market) > limitLeft(actor.syndicate, actor.as.id, dayIndex(MarketClock.nowMs()))) {

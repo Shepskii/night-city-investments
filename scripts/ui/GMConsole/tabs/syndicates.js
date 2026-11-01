@@ -1,7 +1,7 @@
 /**
  * GM Console syndicates tab: every player syndicate, its members and account, and what needs the GM.
  * @file scripts/ui/GMConsole/tabs/syndicates.js
- * @description Action handlers run with `this` set to the console window (DESIGN §31).
+ * @description Action handlers run with `this` set to the console window (DESIGN §30).
  */
 
 import { navOf, syndicateUnits, isLiquid } from '../../../engine/index.js';
