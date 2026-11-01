@@ -1937,7 +1937,9 @@ Four directions for player businesses once employees (E3), going public (B5) and
 
 | Step | What | Needs |
 |---|---|---|
-| F1 Factions | the faction list and standing; gigs and business actions moving it; standing's effects on costs and events; smear campaigns through the impact pipeline | B6 (hostile bids, coordinated campaigns) |
+| R1 Regulators, R2 Role abilities | Exposure opens cases that players fight; player abilities at rank + 9 (§36.7) | none; before F1 |
+| F1 Factions | the faction list and standing; gigs and business actions moving it; standing's effects on costs and events; smear campaigns through the impact pipeline; Media stories and rumours (§36.7) | B6 (hostile bids, coordinated campaigns), R1 |
+| X1 Player rivalry | private share deals, NET runs, moves against a rival, events as scenes, more for Lawmen, Nomads and Rockerboys (§36.7) | F1, M for shards |
 | U1 Fronts | back rooms, dirty cash, laundering, raids, gang relationships, informants | F1, B6 (investigations, hidden ownership) |
 | P1 Production | workshops, lines, production runs, stock, selling and fencing | E3 (staff time); B7 for the Crew Tools link; U1 for fencing |
 | M | the Messenger options, alongside each step: events as messages and the digest with F1; staff as contacts any time; shards and networks with U1 and B6 | a check of Messenger's API |
@@ -1952,6 +1954,40 @@ Each step ends as the others do: engine tests, flow tests, a simulator check tha
 4. **Production goes to an inventory:** a container actor for each producing business, as its stock sheet (§36.2), with the business record in charge of the money.
 5. **Players see dirty cash as values**; Exposure and standing only as bands.
 6. **Factions first** (F1), then fronts (U1), then production (P1).
+
+### 36.7 After the rules and lore review (2026-11-02)
+
+A review of the module against Cyberpunk RED's rules and setting found the core rolls sound (STAT + Skill + 1d10, the DV ladder, Luck, the districts) and most Roles underused. Done at once, ahead of the steps below: hidden holders no longer named in proposals or the ledger; investigations cost a business day or legwork money, and Bribery a bribe (§35); Danger Gal renamed from "Danger Girl"; Arasaka made thin, volatile and without a dividend; five starter companies redescribed from R. Talsorian's own accounts; and the market framed as a local exchange on a Ziggurat CitiNet (GM guide).
+
+To check against the core rulebook, which the review could not read: Teamwork's team sizes and Loyalty procedure, and Operator's rank table (both behind a paywall online), and whether Night City's Night Corp and Kang Tao belong in 2045 (they are best known from the 2077 era; kept for now, since funds and gig matching use them).
+
+**R1 Regulators: Exposure with teeth (decided by the user; not built).** Today Exposure only blocks a listing and shows in audits.
+- **What opens a case.** At each monthly report a regulator may look, by the Exposure band: clean never, low 5%, moderate 15%, high 35%. A fired corp plant, a fumbled Shortcuts roll, or an NCPD unmasking that goes badly opens one outright. The GM can open or drop a case at any time.
+- **How it plays.** The company gets 14 days' notice. An officer answers with one opposed roll, Bureaucracy or Accounting, or Bribery at a cost, against the regulator's 14 + 1d10 plus a bonus by Exposure band. A win clears some Exposure. A loss brings a fine scaled to book value, a Compliance hit and a news item; a fumble or high Exposure also freezes a listing application or forces its reports to be restated. The GM approves a fine first, as with heat penalties.
+- **Still to decide:** the band bonuses, how much Exposure a win clears, the fine's scale, the bribe's cost, what happens if nobody answers in 14 days, and what "goes badly" means for an unmasking.
+
+**R2 Role abilities (decided by the user; not built).** A player's ability roll is rank + 1d10, usually far below a skill (typically +12 to +14), while NPC employees already get rank + 9. Where a business roll offers a role ability, a player will roll rank + 9 + 1d10, the same as staff: rank 4 is +13, and rank 8 clearly the best choice. One number to tune (`staff.abilityBonus`). Rolls that are the ability itself keep plain rank + 1d10: an investigation's Interface, Credibility's rumours and later NET runs. The business simulator should be run again afterwards, since a high-rank character's rolls improve.
+
+**F1 additions: Media stories (planned with F1, §36.3; design not settled).** Built on Credibility as published (Roll20's rules text):
+- **Rumours.** Passive: at least twice a week, the GM's service rolls Credibility rank + 1d10 against a rumour's Passive DV (vague 7, typical 9, substantial 11, detailed 13) and passes on the highest beaten, drawn from pending gig impacts, unpublished reports and hidden holdings. Active: stat + skill against the Active DV (13, 15, 17, 21).
+- **Publishing.** A Media publishes a story naming a company. They roll 1d10 against Believability by rank (2/10 at rank 1–2, up to 7/10 at rank 10), +1 for one piece of verifiable evidence and +2 more for over four pieces. Luck cannot be spent, and the same topic needs new information to run again.
+- **The market.** A believed story queues an impact through the existing pipeline, its size capped by rank (the rules' reach: neighbourhood at rank 1–2, citywide at 5–6, mid-level corporations can fall at 7–8), with a headline under the Media's name. It can move faction standing, and open an R1 case. Publishing while holding a position in the company draws heat as market manipulation.
+- **Still to decide:** impact sizes, what counts as evidence (investigation finds and stolen ledgers are the obvious ones), and whether non-Medias can plant stories through a Media contact.
+
+**X1 Player rivalry (proposed, after F1).**
+- **Private share deals.** A holder offers shares to a named character at a price; on acceptance they move on the record, or between portfolios for a listed company (off the market, and outside the daily cap). A Fixer's Operator can find a buyer, or take a fee for introducing one. Today shares only change hands on the terminal, by tender, or in a buy-out when someone leaves.
+- **NET runs.** A Netrunner runs against a company's NET to steal its real ledger (a data shard through Night City Messenger), showing the true figures behind a report, or to look behind a hidden holder. These count as evidence for stories and can start a case. To decide: a full Night City Messenger network with ICE, or an abstract opposed Interface roll first.
+- **Moves against a rival.** Deliberate poaching of a rival's staff (an opposed roll against loyalty, where today poaching is only a random event), sabotage, and bribing a broker or syndicate member for what they know about a hidden holder (from §27.6, not built in B6).
+- **Events as scenes.** A big event (a heavy shakedown, a raid, a sabotage) can become a gig on Night City Map or a Messenger hook for the GM, in place of a single roll.
+- **Roles still to serve:** a Lawman launching or quashing a financial investigation and calling Backup in a raid; a Nomad's supply contracts, since Nomads control the transport routes; a Rockerboy's gigs at a venue, for it or against a rival's.
+
+**B7 and character ties (proposed).**
+- **Downtime (B7, §27.8).** Business days spend Crew Tools downtime, so business work competes with Hustles and gig-hunting, as the rules' free days do.
+- **REP and Improvement Points.** Character REP rises at major milestones (a charter, a listing, a takeover) and falls with an unmasking or a lost case; important business scenes award IP. Business Reputation stays separate.
+- **Living costs.** A business can cover a partner's or an Exec's monthly Housing or Lifestyle, at a cost to its cash, as a corporation houses an Exec.
+- **Teamwork in full.** Team members get real Loyalty checks in place of a fixed 75, once the rulebook's procedure and team sizes are checked.
+
+The order: R1 and R2, then F1 with Media stories, then X1, then B7 and character ties. U1 and P1 stay as planned, after F1; X1's NET runs share Messenger work with U1 (§36.4).
 
 ## 37. Roadmap
 
@@ -1976,8 +2012,11 @@ Each step ends as the others do: engine tests, flow tests, a simulator check tha
 | Projects | **Done (v0.12.0), see §33.** Projects beside expansion: refit, security upgrade, storefront, staff room; the Projects tab reworked |
 | B5 | **Done (v0.14.0), see §34.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
 | B6 | **Done (v0.15.0), see §35.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
-| B7 | Downtime bridge (separate module, after B2): company work through Crew Tools downtime, businesses on Night City Map |
-| F1 | **Proposed, see §36.3.** Faction standing with corps and gangs, moved by gigs and business actions; smear campaigns through the impact pipeline; after B6 |
+| R1 | **Next: decided, not built, see §36.7.** Regulators: Exposure opens cases, by a monthly chance and by triggers, that an officer fights with an opposed roll; fines wait for the GM |
+| R2 | **Next: decided, not built, see §36.7.** Role abilities: a player rolls rank + 9 in business rolls, as staff do |
+| F1 | **Proposed, see §36.3 and §36.7.** Faction standing with corps and gangs, moved by gigs and business actions; smear campaigns through the impact pipeline; Media rumours and published stories moving prices; after R1 |
+| X1 | **Proposed, see §36.7.** Player rivalry: private share deals, Netrunner runs on a company's NET, poaching and sabotage, big events as scenes, more for Lawmen, Nomads and Rockerboys; after F1 |
+| B7 | **Proposed, see §27.8 and §36.7.** Downtime bridge (separate module): company work through Crew Tools downtime, businesses on Night City Map. With it, character ties: REP and IP from business milestones, a business covering Housing and Lifestyle, and Teamwork's Loyalty checks; after X1 |
 | U1 | **Proposed, see §36.1.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships; after F1 and B6 |
 | P1 | **Proposed, see §36.2.** Production: workshops, lines, stock, selling and fencing; after E3 |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
