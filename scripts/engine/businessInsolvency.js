@@ -66,25 +66,50 @@ export function checkSolvency(b, day, p = BUSINESS_DEFAULTS) {
   return { entered: false, ended: false };
 }
 
+/** A week's upkeep, from the last few weekly digests. */
+function weeklyUpkeep(b) {
+  const recent = (b.digests ?? []).slice(-4);
+  return recent.length ? recent.reduce((a, d) => a + (d.upkeep ?? 0), 0) / recent.length : 0;
+}
+
 /**
- * The GM restructures a company in administration: its debts (the loans, the owed wages and the
- * overdraft) are written off for new shares at half its book value per share, held by its creditors
- * as one NPC holder without a vote. The old holders are diluted, its standing suffers, and it leaves
- * administration with a clean sheet.
- * @returns {{ok: true, shares: number, price: number, debts: number} | {ok: false, reason: string}}
+ * The GM restructures a company in administration. First its cash pays what it can of its debts (the
+ * wages owed, then the loans), keeping `reserveWeeks` of upkeep as working cash; what is still owed (and
+ * any overdraft) is written off for new shares at half its book value per share after those payments,
+ * held by its creditors as one NPC holder without a vote. The old holders are diluted only by what the
+ * cash could not cover; its standing suffers, and it leaves administration with a clean sheet. A player
+ * character's owed wage is paid into `out.wealth`.
+ * @returns {{ok: true, paid: number, shares: number, price: number, debts: number} | {ok: false, reason: string}}
  */
-export function restructure(b, day, p = BUSINESS_DEFAULTS) {
+export function restructure(b, day, p = BUSINESS_DEFAULTS, out = null) {
   if (!b.administration) return fail('not-administration');
   const r = p.insolvency.restructure;
   const debts = debtsOf(b);
+  let spare = Math.max(0, b.till - Math.round(weeklyUpkeep(b) * r.reserveWeeks));
+  let paid = 0;
+  const pay = (amount) => {
+    const n = Math.min(spare, Math.round(amount));
+    spare -= n;
+    paid += n;
+    b.till -= n;
+    return n;
+  };
+  for (const s of (b.staff ?? []).filter((x) => x.status === 'active' && x.owed > 0)) {
+    const n = pay(s.owed);
+    s.owed -= n;
+    if (n > 0 && s.source === 'pc' && s.actorId && out) out.wealth[s.actorId] = (out.wealth[s.actorId] ?? 0) + n;
+  }
+  for (const l of (b.loans ?? []).filter((x) => x.balance > 0)) l.balance -= pay(l.balance);
+  const rest = debtsOf(b).total;
   const price = Math.max(r.minPrice, cents(unitValue({ ...b, till: Math.max(0, b.till) }) * r.priceShare));
-  const shares = Math.max(1, Math.round(debts.total / price));
+  const shares = rest > 0 ? Math.max(1, Math.round(rest / price)) : 0;
   b.loans = (b.loans ?? []).map((l) => (l.balance > 0 ? { ...l, balance: 0, writtenOff: day } : l));
   for (const s of b.staff ?? []) if (s.owed) s.owed = 0;
   b.till = Math.max(0, b.till);
+  if (paid > 0) addLedger(b, { day, kind: 'debtsPaid', amount: -paid }, p);
   const creditors = b.partners.find((x) => x.actorId === 'npc:creditors');
-  if (creditors) Object.assign(creditors, { status: 'active', units: creditors.units + shares });
-  else b.partners.push({ actorId: 'npc:creditors', name: '', status: 'active', cash: 0, gear: [], units: shares, voting: false, heirId: null, leavingSince: null, npc: true, creditors: true });
+  if (shares > 0 && creditors) Object.assign(creditors, { status: 'active', units: creditors.units + shares });
+  else if (shares > 0) b.partners.push({ actorId: 'npc:creditors', name: '', status: 'active', cash: 0, gear: [], units: shares, voting: false, heirId: null, leavingSince: null, npc: true, creditors: true });
   if (isListed(b)) b.listing.shares = (b.listing.shares ?? 0) + shares;
   b.state.reputation = clamp(b.state.reputation + r.reputation, 0, 100);
   if (b.state.compliance != null) b.state.compliance = clamp(b.state.compliance + r.compliance, 0, 100);
@@ -92,7 +117,7 @@ export function restructure(b, day, p = BUSINESS_DEFAULTS) {
   b.insolventPeriods = 0;
   b.losingPeriods = 0;
   addLedger(b, { day, kind: 'restructured', amount: 0, price: shares }, p);
-  return { ok: true, shares, price, debts: debts.total };
+  return { ok: true, paid, shares, price, debts: debts.total };
 }
 
 /**

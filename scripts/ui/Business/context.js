@@ -1243,7 +1243,8 @@ function partnersContext(business, actor) {
       status: LT(business, `NCI.Business.PartnerStatus.${p.status}`),
       units: business.status === 'forming' ? '' : whole(p.units),
       share: units > 0 && ['active', 'leaving'].includes(p.status) ? `${((p.units / units) * 100).toFixed(1)}%` : '',
-      put: L('NCI.Business.PutIn', { cash: whole(p.cash), gear: whole(gearValue(p)) }),
+      // The float and the receivers put nothing in (B5b, B6c): no line for them.
+      put: p.market || p.creditors ? '' : L('NCI.Business.PutIn', { cash: whole(p.cash), gear: whole(gearValue(p)) }),
       gear: p.gear.map((g) => `${g.name} (${whole(g.value)})`).join(', '),
       voting: p.voting ? '' : L('NCI.Business.NonVoting'),
       heir: p.heirId ? L('NCI.Business.HeirIs', { name: game.actors.get(p.heirId)?.name ?? p.heirId }) : '',

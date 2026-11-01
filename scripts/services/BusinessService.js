@@ -1073,14 +1073,15 @@ class BusinessServiceImpl {
       const b = normalizeBusiness(structuredClone(stored));
       this._syncHolders(b);
       const before = b.listing?.shares ?? 0;
-      const done = restructure(b, this.day());
+      const out = { wealth: {}, events: [] };
+      const done = restructure(b, this.day(), BUSINESS_DEFAULTS, out);
       if (!done.ok) return done;
-      await this._commit({ ok: true, business: b, wealth: {}, events: [{ type: 'restructured', shares: done.shares }] });
+      await this._commit({ ok: true, business: b, wealth: out.wealth, events: [{ type: 'restructured', shares: done.shares }] });
       const ticker = isListed(b) ? b.company.ticker : null;
       if (ticker) {
         const company = CompanyRepository.get(ticker);
         if (company) await CompanyRepository.save({ ...company, sharesOutstanding: b.listing.shares });
-        if (before > 0) {
+        if (before > 0 && done.shares > 0) {
           const key = `restructure:${b.id}:${this.day()}`;
           await TickService.updateControls((controls, { tick }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
             ...controls,
@@ -1092,7 +1093,7 @@ class BusinessServiceImpl {
         }
         await NewsService.post({ headline: L('NCI.News.Restructured', { name: b.name, ticker }), tone: 'neutral', companyIds: [ticker] });
       }
-      const terms = { name: b.name, shares: done.shares.toLocaleString(), debts: done.debts.toLocaleString() };
+      const terms = { name: b.name, shares: done.shares.toLocaleString(), debts: done.debts.toLocaleString(), paid: done.paid.toLocaleString() };
       await this._mailHolders(b, L('NCI.Insolvency.Mail.RestructuredSubject', terms), [L('NCI.Insolvency.Mail.Restructured', terms)]);
       return { ok: true, ...done };
     });

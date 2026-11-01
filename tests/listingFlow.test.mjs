@@ -301,7 +301,7 @@ test('a takeover bid for a listed company, by ticker: approved with the offer he
 test('a listed company in administration is restructured: its debts become creditors\' shares, added to the market and kept through the holders\' sync', async () => {
   const before = { shares: business().listing.shares, outstanding: S.CompanyRepository.get('PLAY').sharesOutstanding };
   await S.BusinessRepository.save({
-    ...business(), administration: { since: S.BusinessService.day(), net: -500 },
+    ...business(), administration: { since: S.BusinessService.day(), net: -500 }, till: 1000,
     loans: [...(business().loans ?? []), { id: 'loan_test', kind: 'bank', principal: 20000, balance: 20000, rate: 0.01, payment: 1000, startedDay: S.BusinessService.day(), missed: 0 }],
   });
   const out = await S.BusinessService.restructureBusiness('bus_play');

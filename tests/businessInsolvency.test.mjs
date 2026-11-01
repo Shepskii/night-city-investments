@@ -105,3 +105,23 @@ test('winding up: the assets sell at half value; owed wages first, then the loan
   assert.equal(b.status, 'closed');
   assert.equal(b.closeReason, 'woundUp');
 });
+
+test('restructuring pays what the cash can first, keeping four weeks of upkeep, and only the rest becomes creditors\' shares', async () => {
+  const { restructure } = await import('../scripts/engine/index.js');
+  const loan = (balance) => [{ id: 'l1', kind: 'bank', principal: balance, balance, rate: 0.01, payment: 100, startedDay: DAY - 50, missed: 0 }];
+  const digests = [1, 2, 3, 4].map((index) => ({ index, startDay: DAY - 35 + index * 7, endDay: DAY - 28 + index * 7, takings: 1500, upkeep: 1000, profit: 500, till: 0 }));
+  // Cash-rich: 30,000 cash, 4,000 kept, a 20,000 loan paid in full: no new shares.
+  const rich = normalizeBusiness({ ...company(), till: 30000, assets: 5000, digests, administration: { since: DAY, net: -1 }, loans: loan(20000) });
+  const total = totalUnits(rich);
+  const a = restructure(rich, DAY + 1);
+  assert.deepEqual([a.paid, a.shares, rich.till], [20000, 0, 10000]);
+  assert.equal(totalUnits(rich), total, 'nobody diluted');
+  assert.equal(rich.partners.some((x) => x.actorId === 'npc:creditors'), false);
+  // Short of cash: 6,000 cash, 4,000 kept, 2,000 paid, the other 18,000 becomes shares.
+  const poor = normalizeBusiness({ ...company(), till: 6000, assets: 5000, digests, administration: { since: DAY, net: -1 }, loans: loan(20000) });
+  const b = restructure(poor, DAY + 1);
+  assert.equal(b.paid, 2000);
+  assert.equal(poor.till, 4000, 'four weeks of upkeep kept');
+  assert.equal(b.shares, Math.round(18000 / b.price));
+  assert.equal(poor.loans[0].balance, 0);
+});

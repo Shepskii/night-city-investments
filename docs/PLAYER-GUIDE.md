@@ -228,7 +228,7 @@ A company (chartered or listed) whose debts (its loans, the wages it owes and an
 - **While in administration** nobody can take actions, draw, vote, issue or buy back shares, or bid and tender. The weeks still close, and the takings, costs and events carry on. A listed company pays no dividend, and its price takes a hit.
 - **Rescue it** by putting cash in from the Ledger tab. If its net assets are above zero at a weekly close, it comes out of administration by itself.
 - **Otherwise the market (your GM) decides:**
-  - **Restructuring** writes the debts off in exchange for new shares, held by the creditors with no vote. Your shares become a smaller part of the company, and its Reputation and Compliance drop.
+  - **Restructuring** pays what it can of the debts from the company's cash (keeping four weeks of upkeep), and swaps the rest for new shares held by the creditors (shown as Receivers) with no vote. Those new shares make yours a smaller part of the company, and its Reputation and Compliance drop.
   - **Winding up** sells the assets at half their value. Owed wages are paid first, then the loans, then whatever is left goes to the holders by shares: in eddies for a private company, or into brokerage balances for a listed one. Then the business closes.
 
 Side and registered businesses don't go into administration: they still close when their cash stays below zero for two losing weeks.

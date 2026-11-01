@@ -613,7 +613,7 @@
         {{#each rows}}
         <tr>
           <td><strong>{{{who}}}</strong> <span class="nci-muted">{{status}}{{#if voting}} &middot; {{voting}}{{/if}}{{#if officer}} &middot; {{officer}}{{/if}}</span>
-            <div class="nci-muted">{{put}}{{#if gear}} &middot; {{gear}}{{/if}}</div>
+            {{#if put}}<div class="nci-muted">{{put}}{{#if gear}} &middot; {{gear}}{{/if}}</div>{{/if}}
             {{#if heir}}<div class="nci-muted">{{heir}}</div>{{/if}}
             {{#if leaving}}<div class="nci-warn">{{leaving}}</div>{{/if}}
           </td>
