@@ -647,7 +647,7 @@
     {{#if mine}}<p class="nci-muted">{{mine}}</p>{{/if}}
     {{#if canTender}}
     <div class="nci-hirerow">
-      <label>{{localize "NCI.Takeover.TenderQty"}} <input type="number" name="tenderQty" min="0" max="{{held}}" step="1" value="{{tendered}}" class="nci-days"></label>
+      <label>{{localize "NCI.Takeover.TenderQty"}} <input type="number" name="tenderQty" min="0" max="{{most}}" step="1" value="{{tendered}}" class="nci-days"></label>
       <span></span>
       <button type="button" data-action="tender"><i class="fas fa-handshake"></i> {{localize "NCI.Takeover.Tender"}}</button>
     </div>

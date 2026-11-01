@@ -13,8 +13,10 @@ import {
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
-  capitalOf, issueOptions, rightsLeft, tenderRoom, capitalRollCheck, defenceCheck, takeoverPremium,
+  capitalOf, issueOptions, rightsLeft, tenderRoom, capitalRollCheck, defenceCheck, takeoverPremium, sellableQty,
 } from '../../engine/index.js';
+import { PortfolioRepository } from '../../data/PortfolioRepository.js';
+import { MarketStore } from '../../data/MarketStore.js';
 import { SkillAdapter } from '../../services/SkillAdapter.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
@@ -1187,16 +1189,23 @@ function takeoverContext(business, actor, canAct) {
   const held = me && ['active', 'leaving'].includes(me.status) ? me.units : 0;
   const pct = (x) => Math.round(x * 100);
   const last = business.lastTakeover;
+  const free = business.listing?.status === 'listed' && held && actor
+    ? sellableQty(PortfolioRepository.get(actor).lots ?? [], business.company?.ticker, MarketStore.getPublic().time)
+    : null;
   return {
     text: !t ? '' : t.status === 'awaiting'
       ? L('NCI.Takeover.Awaiting', { bidder: t.bidderName, price: t.price.toLocaleString(), shares: whole(t.shares) })
       : L('NCI.Takeover.Open', { bidder: t.bidderName, price: t.price.toLocaleString(), shares: whole(t.shares), premium: pct(takeoverPremium(t)), reference: t.reference.toLocaleString(), date: dayText(t.endDay) }),
     defence: t?.defence ? L('NCI.Takeover.Defended', { band: L(`NCI.Roll.Band.${t.defence.band}`), shift: `${t.defence.shift >= 0 ? '+' : ''}${pct(t.defence.shift)}` }) : '',
+    // A listed company's locked-up shares cannot be tendered: say how many are free.
     mine: t?.status === 'open' && held && actor.id !== t.bidderId
-      ? L('NCI.Takeover.Mine', { tendered: whole(t.tenders[actor.id] ?? 0), held: whole(held) })
+      ? (free != null && free < held
+        ? L('NCI.Takeover.MineFree', { tendered: whole(t.tenders[actor.id] ?? 0), held: whole(held), free: whole(free) })
+        : L('NCI.Takeover.Mine', { tendered: whole(t.tenders[actor.id] ?? 0), held: whole(held) }))
       : '',
     canTender: t?.status === 'open' && day <= t.endDay && held > 0 && actor.id !== t.bidderId,
     held,
+    most: free ?? held,
     tendered: t?.tenders?.[actor?.id] ?? 0,
     canDefend: canAct && canRun(business, actor.id) && defenceCheck(business).ok,
     last: !t && last ? L(last.control ? 'NCI.Takeover.LastControl' : 'NCI.Takeover.Last', { bidder: last.bidderName, shares: whole(last.acquired), price: last.price.toLocaleString(), date: dayText(last.closedDay) }) : '',

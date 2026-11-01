@@ -1714,6 +1714,7 @@
       "Open": "{bidder} offers {price} eb a share for up to {shares} shares, a {premium}% premium on {reference} eb, until {date}.",
       "Defended": "The officers' defence: {band}; NPC holders and the float now want {shift} points more premium.",
       "Mine": "You have tendered {tendered} of your {held} shares.",
+      "MineFree": "You have tendered {tendered} of your {held} shares; {free} of them are free to tender (shares still locked up after the listing are not).",
       "TenderQty": "Shares to tender",
       "Tender": "Tender",
       "Defend": "Defend the company",
