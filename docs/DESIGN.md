@@ -1809,6 +1809,8 @@ The user's B6d choices (2026-11-01): any company's register can hide a holder (c
 - **Takeovers unmask:** a hidden holder who sells into a takeover is on the record under their own name afterwards.
 - Also fixed: every B6 request (rights, selling back, the offering and timing rolls, bids, tenders, the defence roll, layers) now has its own "done" notice; before, the notice showed its language key.
 
+**Tested in the test world** (2026-11-01 and 02, on Charter Test Clinic, SCX): layers built by Splice (a fumble that still paid its fee, then a nominee and a shell), the whispered roll cards, the public register and the cap table showing the shell, the holder's own view, the concealment warning; Boar's investigation from the terminal (a hidden DV on the card, a win mailed to him alone, the weekly limit); NCPD's monthly audit seeing through twice, unmasking and fining Splice, with the news. It found and fixed: other shareholders' rows showing a hidden holder's office and money put in; the Investigate button on one's own layer; the investigation dialog too wide; a second try within the week rolling before it was refused (each try is now noted on the investigator, and the button refuses first); the Business window showing a GM the truth while viewing as another character (it now shows that character's view; the GM Console keeps the truth); an investigator's finds not shown to them (kept on their character and added to the register row); an investigator's progress carrying over when the layers were rebuilt. Not tried live: a monthly fee lapsing a layer, a takeover unmasking a seller, and a fumbled investigation tipping off the holder (all covered by tests).
+
 # Part 4. What comes next
 
 ## 36. Proposal: after E3, B5 and B6
