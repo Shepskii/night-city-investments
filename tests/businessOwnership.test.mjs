@@ -119,3 +119,10 @@ test('investigations: a register row names a layer by reference; each win peels 
   assert.deepEqual([second.index, second.dv, second.reveals], [0, 19, null], 'the nominee, +2 for the shell above it; behind it, the holder');
   assert.equal(investigationTarget(b, 'med', [17, 21], 2).reason, 'nothing-hidden');
 });
+
+test('an unmasking is a scandal: a lasting dip of a tenth of the hidden stake, between 2% and 8%', async () => {
+  const { scandalHit } = await import('../scripts/engine/index.js');
+  assert.equal(scandalHit(0.06), -0.02, 'a small stake: the least');
+  assert.ok(Math.abs(scandalHit(0.4) + 0.04) < 1e-9);
+  assert.equal(scandalHit(0.9), -0.08, 'a very big one: the most');
+});

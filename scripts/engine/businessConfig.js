@@ -347,6 +347,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     /** Investigating a hidden holding: these skills, once a week per investigator and holding. */
     investigate: Object.freeze({ uses: Object.freeze([S.librarySearch, S.streetwise, S.bribery, A.interface]), days: 7 }),
     audit: Object.freeze({ chance: 0.1, heatDivisor: 200, maxChance: 0.6, base: 14, days: 28 }),
+    /** An unmasking is a scandal: fair value dips `perShare` of the hidden stake, within `min` and `max`, from the next day. */
+    scandal: Object.freeze({ perShare: 0.1, min: 0.02, max: 0.08, delayDays: 1 }),
   }),
   insolvency: Object.freeze({
     periods: 2, salvage: 0.5, hit: -0.1,

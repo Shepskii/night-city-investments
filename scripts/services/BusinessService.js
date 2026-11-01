@@ -23,7 +23,7 @@ import {
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
   takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
   restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask,
-  concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget,
+  concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget, scandalHit,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter, isItemPile, unwrap } from '../utils/helpers.js';
@@ -1143,6 +1143,15 @@ class BusinessServiceImpl {
             const name = account?.name ?? '';
             const terms = { name: b.name, ticker: b.company.ticker, holder: name, pct: Math.round(share * 1000) / 10, fine: fine.toLocaleString() };
             await NewsService.post({ headline: L('NCI.News.Unmasked', terms), tone: 'down', companyIds: [b.company.ticker] });
+            // The scandal weighs on the stock from the next day, more for a bigger hidden stake.
+            const key = `unmask:${b.id}:${holderId}:${day}`;
+            await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
+              ...controls,
+              impacts: [...controls.impacts, makeImpact({
+                id: `imp_unmask_${b.id}_${day}`, target: { type: 'company', id: b.company.ticker }, amount: scandalHit(share), onsetTick: now + P.scandal.delayDays,
+                permanent: 1, sourceKey: key, source: 'unmasked', meta: { businessId: b.id },
+              })],
+            }));
             await this._mailAccount(holderId, L('NCI.Ownership.Mail.UnmaskedSubject', terms), [L('NCI.Ownership.Mail.Unmasked', terms)]);
             continue;
           }

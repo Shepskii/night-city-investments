@@ -117,7 +117,7 @@ Players can hide their shareholdings behind layers (a broker's nominee, then she
 
 - **The owners table** on the Businesses tab lists each hidden holder with every layer and its strength (the layer roll's total).
 - **Everyone else** sees the outermost layer: on the Shareholders tab, in the votes, and on a listed company's public register on the terminal.
-- **Concealment** (hiding over 5% of a listed company) runs itself: weekly heat and Exposure, and a monthly NCPD audit (14 + 1d10 against the outer layer's strength plus 2 for each beneath). One that sees through unmasks and fines the holder and makes the news.
+- **Concealment** (hiding over 5% of a listed company) runs itself: weekly heat and Exposure, and a monthly NCPD audit (14 + 1d10 against the outer layer's strength plus 2 for each beneath). One that sees through unmasks and fines the holder, makes the news, and dents the price the next day (a tenth of the hidden stake, 2% to 8%).
 - **Investigations** by players roll against a layer's strength plus 2 for each layer they have already peeled. What each investigator has found is kept in the hidden state, and they learn it by mail.
 - Like the rest of the hidden state, the strengths and what investigators know live in the "NCI GM Control" journal.
 

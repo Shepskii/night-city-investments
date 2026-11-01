@@ -164,3 +164,9 @@ export function investigationTarget(b, holderId, totals, peeled = 0) {
   if (index < 0) return fail('nothing-hidden');
   return { ok: true, index, dv: (totals[index] ?? 0) + 2 * peeled, reveals: index > 0 ? layers[index - 1] : null };
 }
+
+/** The lasting dip an unmasking brings, as a log-return: bigger for a bigger hidden stake. */
+export function scandalHit(share, p = BUSINESS_DEFAULTS) {
+  const c = p.ownership.scandal;
+  return -Math.min(c.max, Math.max(c.min, share * c.perShare));
+}

@@ -357,6 +357,8 @@ test('concealment: a hidden holder over 5% adds Exposure (and heat, when tracked
   assert.ok(portfolio(alice).cash < cashBefore, 'fined');
   assert.ok(portfolio(alice).ledger.some((e) => e.kind === 'concealmentFine'));
   assert.ok(S.MarketStore.getNews().items.some((n) => /unmask/i.test(n.headline)), 'in the news');
+  const dip = S.MarketStore.getControls().impacts.find((i) => i.source === 'unmasked');
+  assert.ok(dip && dip.amount < 0 && dip.permanent === 1, 'and a lasting dip in the price');
   assert.ok(!S.CompanyRepository.get('PLAY').register.some((r) => r.label === 'Vex'), 'the register shows her own name now');
   env.store.set('heatEnabled', false);
   await S.BusinessRepository.save({ ...business(), masks: {} });
