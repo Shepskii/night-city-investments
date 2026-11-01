@@ -1959,7 +1959,7 @@ Each step ends as the others do: engine tests, flow tests, a simulator check tha
 
 A review of the module against Cyberpunk RED's rules and setting found the core rolls sound (STAT + Skill + 1d10, the DV ladder, Luck, the districts) and most Roles underused. Done at once, ahead of the steps below: hidden holders no longer named in proposals or the ledger; investigations cost a business day or legwork money, and Bribery a bribe (§35); Danger Gal renamed from "Danger Girl"; Arasaka made thin, volatile and without a dividend; five starter companies redescribed from R. Talsorian's own accounts; and the market framed as a local exchange on a Ziggurat CitiNet (GM guide).
 
-To check against the core rulebook, which the review could not read: Teamwork's team sizes and Loyalty procedure, and Operator's rank table (both behind a paywall online), and whether Night City's Night Corp and Kang Tao belong in 2045 (they are best known from the 2077 era; kept for now, since funds and gig matching use them).
+To check against the core rulebook, which the review could not read: Teamwork's team sizes and Loyalty procedure, and Operator's rank table (both behind a paywall online), and whether Night Corp and Kang Tao belong in 2045 (they are best known from the 2077 era; kept for now, since funds and gig matching use them).
 
 **R1 Regulators: Exposure with teeth (decided by the user; not built).** Today Exposure only blocks a listing and shows in audits.
 - **What opens a case.** At each monthly report a regulator may look, by the Exposure band: clean never, low 5%, moderate 15%, high 35%. A fired corp plant, a fumbled Shortcuts roll, or an NCPD unmasking that goes badly opens one outright. The GM can open or drop a case at any time.
