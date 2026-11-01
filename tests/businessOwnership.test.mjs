@@ -89,3 +89,21 @@ test('monthly fees fall due every 28 days; a lapsed layer takes the ones outside
   assert.equal(pruneMasks(gone), true);
   assert.deepEqual(gone.masks, {});
 });
+
+test('concealment: hiding more than 5% of a listed company; NCPD\'s monthly look rises with heat, and sees through when its roll beats the outer layer plus 2 for each beneath', async () => {
+  const { concealedHolders, layerDefence, auditConcealment, unmask } = await import('../scripts/engine/index.js');
+  const total = totalUnits(company());
+  const listed = normalizeBusiness({ ...company(), listing: { status: 'listed', shares: total }, masks: { med: [{ kind: 'nominee', name: 'Vex', day: DAY, lastFee: DAY }] } });
+  assert.deepEqual(concealedHolders(listed).map((x) => x.holderId), ['med']);
+  assert.deepEqual(concealedHolders(normalizeBusiness({ ...listed, listing: null })), [], 'a private company has no disclosure threshold');
+  assert.equal(layerDefence([17, 21]), 23);
+  assert.equal(layerDefence([]), 0);
+  const seq = (...xs) => () => xs.shift();
+  assert.equal(auditConcealment([20], 0, seq(0.5)).audited, false, '10% at no heat');
+  assert.equal(auditConcealment([20], 100, seq(0.55, 0.9)).audited, true, '60% at 100 heat (the most)');
+  // NCPD rolls 14 + 1d10: 0.95 is a 10, so 24 against 21 + 2 = 23.
+  assert.deepEqual(auditConcealment([17, 21], 0, seq(0.01, 0.95)), { audited: true, total: 24, defence: 23, unmasked: true });
+  assert.equal(auditConcealment([17, 21], 0, seq(0.01, 0.5)).unmasked, false, '20 does not beat 23');
+  assert.equal(unmask(listed, 'med'), true);
+  assert.deepEqual(listed.masks, {});
+});

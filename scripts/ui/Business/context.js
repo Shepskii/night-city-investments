@@ -14,7 +14,7 @@ import {
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
   capitalOf, issueOptions, rightsLeft, tenderRoom, capitalRollCheck, defenceCheck, takeoverPremium, sellableQty, debtsOf, solvency,
-  masksOf, outerMask, layerCheck, layerFees, holdingValue,
+  masksOf, outerMask, layerCheck, layerFees, holdingValue, concealedHolders,
 } from '../../engine/index.js';
 import { PortfolioRepository } from '../../data/PortfolioRepository.js';
 import { MarketStore } from '../../data/MarketStore.js';
@@ -1252,6 +1252,7 @@ function hidingContext(business, actor) {
     canNominee: can.ok && can.kind === 'nominee',
     canShell: can.ok && can.kind === 'shell',
     canDrop: layers.length > 0,
+    concealed: concealedHolders(business).some((x) => x.holderId === actor.id) ? L('NCI.Ownership.Concealed') : '',
   };
 }
 

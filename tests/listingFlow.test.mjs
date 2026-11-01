@@ -328,6 +328,38 @@ test('a hidden holder shows on the public register as their outer layer; strengt
   await S.BusinessService._saveHidden({ business: business(), events: [] });
 });
 
+test('concealment: a hidden holder over 5% adds Exposure (and heat, when tracked) each week; NCPD\'s monthly look unmasks and fines when it sees through', async () => {
+  env.store.set('heatEnabled', true);
+  const { HeatService } = await import('../scripts/services/HeatService.js');
+  const day = S.BusinessService.day();
+  const b = E.normalizeBusiness(structuredClone(business()));
+  S.BusinessService._syncHolders(b);
+  b.masks = { [alice.id]: [{ kind: 'nominee', name: 'Vex', day, lastFee: day }] };
+  await S.BusinessRepository.save(b);
+  const hidden = S.MarketStore.getBusinessesHidden();
+  // A thin layer (strength 5), a week and a month since it was last looked at.
+  await S.MarketStore.setBusinessesHidden({ ...hidden, bus_play: { ...(hidden.bus_play ?? {}), exposure: 0, layers: { [alice.id]: [5] }, concealment: { [alice.id]: { week: day - 7, audit: day - 28 } } } });
+  assert.ok(E.concealedHolders(business()).some((x) => x.holderId === alice.id), `alice holds over 5% (${E.concealedHolders(business()).map((x) => x.share)})`);
+  const heatBefore = HeatService.heatOf(alice.id);
+  const cashBefore = portfolio(alice).cash;
+
+  // NCPD looks (0.01 < 10%) and rolls a 10: 24 against a layer of 5.
+  const numbers = [0.01, 0.95];
+  await S.BusinessService._concealment({ random: () => numbers.shift() ?? 0.5 });
+  await settle();
+  const after = S.MarketStore.getBusinessesHidden().bus_play;
+  assert.equal(after.exposure, E.BUSINESS_DEFAULTS.ownership.exposure, 'a week of Exposure');
+  assert.ok(HeatService.heatOf(alice.id) >= heatBefore + E.BUSINESS_DEFAULTS.ownership.heat - 0.5, 'and of heat');
+  assert.equal(business().masks[alice.id], undefined, 'unmasked');
+  assert.ok(portfolio(alice).cash < cashBefore, 'fined');
+  assert.ok(portfolio(alice).ledger.some((e) => e.kind === 'concealmentFine'));
+  assert.ok(S.MarketStore.getNews().items.some((n) => /unmask/i.test(n.headline)), 'in the news');
+  assert.ok(!S.CompanyRepository.get('PLAY').register.some((r) => r.label === 'Vex'), 'the register shows her own name now');
+  env.store.set('heatEnabled', false);
+  await S.BusinessRepository.save({ ...business(), masks: {} });
+  await S.BusinessService._saveHidden({ business: business(), events: [] });
+});
+
 test('a listed company in administration is restructured: its debts become creditors\' shares, added to the market and kept through the holders\' sync', async () => {
   const before = { shares: business().listing.shares, outstanding: S.CompanyRepository.get('PLAY').sharesOutstanding };
   await S.BusinessRepository.save({

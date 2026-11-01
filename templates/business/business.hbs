@@ -644,6 +644,7 @@
   <div class="nci-block nci-form">
     <h3>{{localize "NCI.Ownership.Title"}}</h3>
     <p>{{text}}</p>
+    {{#if concealed}}<p class="nci-warn">{{concealed}}</p>{{/if}}
     <p class="nci-hint">{{fees}} {{localize "NCI.Ownership.Hint"}}</p>
     {{#if canNominee}}<button type="button" data-action="hideRoll"><i class="fas fa-user-secret"></i> {{localize "NCI.Ownership.AddNominee"}}</button>{{/if}}
     {{#if canShell}}

@@ -23,6 +23,7 @@ import {
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
   takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
   restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask,
+  concealedHolders, auditConcealment, unmask, createRng,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter, isItemPile } from '../utils/helpers.js';
@@ -853,6 +854,7 @@ class BusinessServiceImpl {
       await this._marketCapital();
       await this._closeTakeovers();
       await this._layerFees();
+      await this._concealment();
       return changed;
     });
   }
@@ -1085,6 +1087,67 @@ class BusinessServiceImpl {
       await this._saveHidden({ business: b, events: [] });
       await this._publishRegister(b);
       Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+    }
+  }
+
+  /**
+   * Concealment (B6d): a hidden holder of more than 5% of a listed company. Each week it adds heat to
+   * the holder (with heat tracking on) and Exposure to the company; each month NCPD may look, and seeing
+   * through the layers unmasks the holder publicly, with a fine from their brokerage balance.
+   */
+  async _concealment({ random = null } = {}) {
+    const day = this.day();
+    const P = BUSINESS_DEFAULTS.ownership;
+    for (const stored of BusinessRepository.all().filter((x) => x.status === 'open' && isListed(x) && Object.keys(x.masks ?? {}).length)) {
+      const concealed = concealedHolders(stored);
+      if (!concealed.length) continue;
+      const hidden = MarketStore.getBusinessesHidden();
+      const entry = structuredClone(hidden[stored.id] ?? { exposure: 0 });
+      const timers = entry.concealment ?? {};
+      let b = null;
+      for (const { holderId, share } of concealed) {
+        const t = timers[holderId] ?? { week: day, audit: day };
+        if (day - t.week >= 7) {
+          t.week = day;
+          entry.exposure = (entry.exposure ?? 0) + P.exposure;
+          if (HeatService.enabled() && PortfolioRepository.accountOf(holderId)) await HeatService.setHeat(holderId, HeatService.heatOf(holderId) + P.heat);
+        }
+        if (day - t.audit >= P.audit.days) {
+          t.audit = day;
+          // Seeded by the company, the holder and the day; a test may pass its own numbers.
+          const rng = createRng(`${this.seed()}:audit:${stored.id}:${holderId}:${day}`);
+          const look = auditConcealment(entry.layers?.[holderId] ?? [], HeatService.heatOf(holderId) ?? 0, random ?? (() => rng.next()));
+          if (look.unmasked) {
+            b ??= normalizeBusiness(structuredClone(stored));
+            const price = MarketStore.getPublic().companies?.[b.company.ticker]?.price ?? 0;
+            const fine = Math.round(holdingValue(b, holderId, price) * P.fine);
+            unmask(b, holderId);
+            delete entry.layers?.[holderId];
+            delete timers[holderId];
+            const account = this._account(holderId);
+            if (account && PortfolioRepository.hasPortfolio(account) && fine > 0) {
+              const tick = timeOf(MarketStore.getPublic());
+              await PortfolioService.transformActor(account, (p) => {
+                const paid = Math.min(fine, Math.max(0, p.cash ?? 0));
+                return { portfolio: { ...p, cash: (p.cash ?? 0) - paid, ledger: [...(p.ledger ?? []), { ts: tick, kind: 'concealmentFine', amount: -paid, ref: b.id }] }, changed: true };
+              });
+            }
+            const name = account?.name ?? '';
+            const terms = { name: b.name, ticker: b.company.ticker, holder: name, pct: Math.round(share * 1000) / 10, fine: fine.toLocaleString() };
+            await NewsService.post({ headline: L('NCI.News.Unmasked', terms), tone: 'down', companyIds: [b.company.ticker] });
+            await this._mailAccount(holderId, L('NCI.Ownership.Mail.UnmaskedSubject', terms), [L('NCI.Ownership.Mail.Unmasked', terms)]);
+            continue;
+          }
+        }
+        timers[holderId] = t;
+      }
+      entry.concealment = timers;
+      await MarketStore.setBusinessesHidden({ ...MarketStore.getBusinessesHidden(), [stored.id]: entry });
+      if (b) {
+        await BusinessRepository.save(b);
+        await this._publishRegister(b);
+        Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+      }
     }
   }
 

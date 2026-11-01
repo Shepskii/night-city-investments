@@ -20,6 +20,7 @@
 
 import {
   makeWindow, addWindow, windowReady, auditWindow, applyAudit, currentHeat, heatTier, valuePortfolio, normalizeHeat, HEAT_TUNING,
+  concealedHolders, BUSINESS_DEFAULTS,
   warningsFor, tierRank, planInvestigation, makePenalty, sanitizePenaltyEdits, applyFine, applyFreeze, applyBrokerDrop, PENALTY_TUNING,
   applyHeatEffect, setCharacterHeat, setWarned, upsertPenalty, timeOf,
 } from '../engine/index.js';
@@ -27,6 +28,7 @@ import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
 import { log, isActiveGM, L } from '../utils/helpers.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
+import { BusinessRepository } from '../data/BusinessRepository.js';
 import { BrokerRepository } from '../data/BrokerRepository.js';
 import { MarketClock } from './MarketClockService.js';
 import { MailService } from './MailService.js';
@@ -137,6 +139,12 @@ class HeatServiceImpl {
         ...(actor.isSyndicate ? { aliases: actor.members().map((m) => m.id) } : {}),
       })),
     });
+    // A holder concealing more than the disclosure threshold of this company draws more heat (B6d).
+    const listed = BusinessRepository.all().find((b) => b.company?.ticker === window.companyId && b.listing?.status === 'listed');
+    if (listed) {
+      const concealed = new Set(concealedHolders(listed).map((x) => x.holderId));
+      for (const r of results) if (concealed.has(r.actorId)) r.gain = Math.round(r.gain * BUSINESS_DEFAULTS.ownership.insider * 10) / 10;
+    }
     const next = applyAudit(MarketStore.getHeat(), { window, results, tick, date: MarketClock.dateString() });
     await MarketStore.setHeat(next);
     Hooks.callAll(HOOKS.HEAT_AUDIT, { window, results });

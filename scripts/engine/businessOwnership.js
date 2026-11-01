@@ -101,3 +101,45 @@ export function layerFeesDue(b, day, p = BUSINESS_DEFAULTS) {
   }
   return due;
 }
+
+// ── Concealment (B6d) ────────────────────────────────────────────────────────
+
+/**
+ * Holders hiding more than the disclosure threshold of a listed company: concealment. Returns their
+ * ids and shares of the company.
+ */
+export function concealedHolders(b, p = BUSINESS_DEFAULTS) {
+  if (!isListed(b)) return [];
+  const total = b.listing.shares || 0;
+  if (!total) return [];
+  return Object.keys(b.masks ?? {})
+    .map((holderId) => ({ holderId, share: (partnerOf(b, holderId)?.units ?? 0) / total }))
+    .filter((x) => x.share > p.ownership.disclosure);
+}
+
+/** How strong a hidden holding's layers are against an audit: the outer layer, plus 2 for each one beneath it. */
+export const layerDefence = (totals = []) => (totals.length ? totals.at(-1) + 2 * (totals.length - 1) : 0);
+
+/**
+ * NCPD Financial Crimes' monthly look at a concealed holding: whether it looks (a chance that rises with
+ * the holder's heat) and, if it does, whether it sees through (its total against the layers' defence).
+ * `rng` gives numbers in [0, 1).
+ * @returns {{audited: boolean, total?: number, defence?: number, unmasked: boolean}}
+ */
+export function auditConcealment(totals, heat, rng, p = BUSINESS_DEFAULTS) {
+  const a = p.ownership.audit;
+  const chance = Math.min(a.maxChance, a.chance + Math.max(0, heat) / a.heatDivisor);
+  if (rng() >= chance) return { audited: false, unmasked: false };
+  const total = a.base + 1 + Math.floor(rng() * 10);
+  const defence = layerDefence(totals);
+  return { audited: true, total, defence, unmasked: total > defence };
+}
+
+/** Strip every layer from a holder: they are on the register under their own name. */
+export function unmask(b, holderId) {
+  if (!b.masks?.[holderId]) return false;
+  const masks = { ...b.masks };
+  delete masks[holderId];
+  b.masks = masks;
+  return true;
+}

@@ -337,6 +337,14 @@ export const BUSINESS_DEFAULTS = Object.freeze({
   ownership: Object.freeze({
     maxLayers: 3, dv: 'difficult', setupRate: 0.01, minSetup: 500, monthlyRate: 0.0025, minMonthly: 50, feeDays: 28,
     uses: Object.freeze([S.bureaucracy, S.accounting]),
+    /**
+     * Concealment: hiding more than `disclosure` of a listed company adds `heat` (with heat tracking on)
+     * and `exposure` to the company each week; each month NCPD looks with a chance of `chance` plus heat
+     * over `heatDivisor` (at most `maxChance`), rolling `base` + 1d10 against the layers; seeing through
+     * fines the holder `fine` of the holding's value. Insider heat for a concealed holder counts `insider` times.
+     */
+    disclosure: 0.05, heat: 6, exposure: 1, insider: 2, fine: 0.05,
+    audit: Object.freeze({ chance: 0.1, heatDivisor: 200, maxChance: 0.6, base: 14, days: 28 }),
   }),
   insolvency: Object.freeze({
     periods: 2, salvage: 0.5, hit: -0.1,

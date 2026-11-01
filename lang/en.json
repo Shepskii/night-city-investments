@@ -1048,6 +1048,7 @@
       "ListingReview": "{name} ({ticker}) put under review: its market value is too low to stay listed.",
       "PlayerDelisted": "{name} ({ticker}) delisted: the company buys back its public float at {price} eb and goes private.",
       "Offering": "{name} ({ticker}) offers {shares} new shares at {price} eb.",
+      "Unmasked": "Regulators unmask {holder} as the hidden holder of {pct}% of {name} ({ticker}), and fine them {fine} eb.",
       "Takeover": "{bidder} bids {price} eb a share for {name} ({ticker}), a {premium}% premium.",
       "Administration": "{name} ({ticker}) goes into administration, owing more than it owns.",
       "AdministrationEnded": "{name} ({ticker}) comes out of administration.",
@@ -1724,6 +1725,7 @@
       "NotHidden": "Your holding is on the register under your own name.",
       "Hidden": "Your holding is hidden: {chain}. Other shareholders and the public register see {outer}.",
       "Fees": "One more layer costs {setup} eb now, then {monthly} eb every 28 days, from your brokerage balance.",
+      "Concealed": "You hide more than 5% of a listed company: that is concealment. It draws attention each week, and NCPD Financial Crimes may look behind your layers each month; if it sees through them, you are named and fined.",
       "Hint": "The first layer is your broker's nominee (you need a broker); after it, up to two shell companies you name. Each is a Bureaucracy or Accounting roll at DV 15: the fee is paid even if it fails, and the roll's total is how hard the layer is to see through. A layer whose monthly fee cannot be paid lapses, with every layer outside it. You still vote through your layers.",
       "AddNominee": "Hide behind my broker's nominee",
       "ShellName": "Shell company name",
@@ -1736,7 +1738,9 @@
       "Register": "Shareholders",
       "Mail": {
         "LapsedSubject": "A layer over your holding in {name} has lapsed",
-        "Lapsed": "Your brokerage balance could not cover the {fee} eb monthly fee for {layer}, your layer over your holding in {name}, so it has lapsed, with any layers outside it."
+        "Lapsed": "Your brokerage balance could not cover the {fee} eb monthly fee for {layer}, your layer over your holding in {name}, so it has lapsed, with any layers outside it.",
+        "UnmaskedSubject": "NCPD Financial Crimes: your holding in {name}",
+        "Unmasked": "NCPD Financial Crimes has looked behind the layers over your {pct}% of {name} ({ticker}), above the 5% disclosure threshold. Your holding is now on the register under your own name, and you have been fined {fine} eb from your brokerage balance."
       }
     },
     "Insolvency": {
