@@ -23,7 +23,7 @@ import {
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
   takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
   restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask,
-  concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget, scandalHit,
+  concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget, scandalHit, investigationCost, spendDays,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter, isItemPile, unwrap } from '../utils/helpers.js';
@@ -1202,8 +1202,19 @@ class BusinessServiceImpl {
     }
     const target = investigationTarget(stored, holderId, entry.layers?.[holderId] ?? [], mine.peeled);
     if (!target.ok) return target;
+    const cost = investigationCost(BusinessRepository.all(), actor.id, use);
+    const wealth = WealthAdapter.get(actor);
+    if (cost.fee > wealth) return { ok: false, reason: 'insufficient-funds' };
     const check = await SkillAdapter.verifyLevers(actor, request, { dv: target.dv, use });
     if (!check.ok) return check;
+    // The legwork: a business day from one of their businesses, or money; a bribe on top. Spent whatever it finds.
+    if (cost.fee > 0) await WealthAdapter.set(actor, wealth - cost.fee, L('NCI.Ownership.CostReason', { name: stored.name }));
+    if (cost.businessId) {
+      const own = normalizeBusiness(structuredClone(BusinessRepository.get(cost.businessId)));
+      spendDays(own, actor.id, 1);
+      await BusinessRepository.save(own);
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: own.id });
+    }
     const r = check.result;
     mine.tried = day;
     await noteTried(day);

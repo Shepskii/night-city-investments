@@ -344,8 +344,12 @@ export const BUSINESS_DEFAULTS = Object.freeze({
      * fines the holder `fine` of the holding's value. Insider heat for a concealed holder counts `insider` times.
      */
     disclosure: 0.05, heat: 6, exposure: 1, insider: 2, fine: 0.05,
-    /** Investigating a hidden holding: these skills, once a week per investigator and holding. */
-    investigate: Object.freeze({ uses: Object.freeze([S.librarySearch, S.streetwise, S.bribery, A.interface]), days: 7 }),
+    /**
+     * Investigating a hidden holding: these skills, once a week per investigator and holding. It takes
+     * a business day from one of the investigator's businesses, or `legwork` eb with none free; a roll
+     * of Bribery costs `bribe` eb more, whatever it finds.
+     */
+    investigate: Object.freeze({ uses: Object.freeze([S.librarySearch, S.streetwise, S.bribery, A.interface]), days: 7, legwork: 100, bribe: 200 }),
     audit: Object.freeze({ chance: 0.1, heatDivisor: 200, maxChance: 0.6, base: 14, days: 28 }),
     /** An unmasking is a scandal: fair value dips `perShare` of the hidden stake, within `min` and `max`, from the next day. */
     scandal: Object.freeze({ perShare: 0.1, min: 0.02, max: 0.08, delayDays: 1 }),

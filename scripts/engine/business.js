@@ -105,7 +105,7 @@ import { takeoverOffer, makeTakeover, tenderShares, defenceCheck, applyDefence }
 import { checkSolvency, ADMINISTRATION_REFUSES } from './businessInsolvency.js';
 import { layerCheck, addLayer, dropLayers } from './businessOwnership.js';
 
-export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, projectOffer, PROJECT_KINDS };
+export { daysLeft, spendDays, activeProject, expansionOffer, milestones, stepUpCheck, projectOffer, PROJECT_KINDS };
 export { upgradesOf, protectionFactor, breakInFactor, reputationBaseline } from './businessGrowth.js';
 export { fixerOffer, bankCheck, angelCheck, openLoans, averageProfit };
 

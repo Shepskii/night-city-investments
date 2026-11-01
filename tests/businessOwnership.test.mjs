@@ -126,3 +126,18 @@ test('an unmasking is a scandal: a lasting dip of a tenth of the hidden stake, b
   assert.ok(Math.abs(scandalHit(0.4) + 0.04) < 1e-9);
   assert.equal(scandalHit(0.9), -0.08, 'a very big one: the most');
 });
+
+test('an investigation takes a business day from the business with the most left, or legwork money; a bribe costs more', async () => {
+  const { investigationCost } = await import('../scripts/engine/index.js');
+  const I = E.ownership.investigate;
+  const LIBRARY = { kind: 'skill', skill: 'Library Search', stat: 'int' };
+  const BRIBERY = { kind: 'skill', skill: 'Bribery', stat: 'cool' };
+  const busy = company();
+  busy.period.days = { med: E.businessDays - 1 };
+  const free = normalizeBusiness({ ...company(), id: 'b2', name: 'Other Room' });
+  assert.deepEqual(investigationCost([busy, free], 'med', LIBRARY), { businessId: 'b2', businessName: 'Other Room', fee: 0, bribe: 0 }, 'the one with the most days left');
+  assert.equal(investigationCost([busy], 'med', BRIBERY).fee, I.bribe, 'a day, and the bribe');
+  busy.period.days = { med: E.businessDays };
+  assert.deepEqual(investigationCost([busy], 'med', LIBRARY), { businessId: null, businessName: '', fee: I.legwork, bribe: 0 }, 'no days left: legwork');
+  assert.equal(investigationCost([], 'nobody', BRIBERY).fee, I.legwork + I.bribe, 'no business at all: legwork and the bribe');
+});

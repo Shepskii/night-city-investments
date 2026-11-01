@@ -13,6 +13,7 @@
 import { BUSINESS_DEFAULTS } from './businessConfig.js';
 import { fail, partnerOf, unitValue } from './businessRecord.js';
 import { isListed } from './businessListing.js';
+import { daysLeft } from './businessGrowth.js';
 import { bandPassed, dvOf } from './rolls.js';
 
 const text = (v, max) => String(v ?? '').trim().replace(/\s+/g, ' ').slice(0, max);
@@ -169,4 +170,17 @@ export function investigationTarget(b, holderId, totals, peeled = 0) {
 export function scandalHit(share, p = BUSINESS_DEFAULTS) {
   const c = p.ownership.scandal;
   return -Math.min(c.max, Math.max(c.min, share * c.perShare));
+}
+
+/**
+ * What an investigation costs this character: a business day from the business they have most days
+ * left in, or legwork money with none free; a bribe on top for a roll of Bribery.
+ * @param {object[]} businesses - the businesses to look through
+ * @returns {{businessId: string|null, businessName: string, fee: number, bribe: number}}
+ */
+export function investigationCost(businesses, actorId, use, p = BUSINESS_DEFAULTS) {
+  const c = p.ownership.investigate;
+  const free = businesses.map((b) => ({ b, left: daysLeft(b, actorId, p) })).filter((x) => x.left > 0).sort((a, z) => z.left - a.left)[0]?.b ?? null;
+  const bribe = use?.skill === 'Bribery' ? c.bribe : 0;
+  return { businessId: free?.id ?? null, businessName: free?.name ?? '', fee: (free ? 0 : c.legwork) + bribe, bribe };
 }

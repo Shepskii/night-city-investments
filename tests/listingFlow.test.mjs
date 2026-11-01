@@ -380,6 +380,8 @@ test('an investigation by ticker: a roll against a hidden total peels one layer 
     const b = E.normalizeBusiness(structuredClone(business()));
     S.BusinessService._syncHolders(b);
     b.masks = { [bob.id]: [{ kind: 'nominee', name: 'Vex', day, lastFee: day, ref: 'ref_in' }, { kind: 'shell', name: 'Kestrel Holdings', day, lastFee: day, ref: 'ref_out' }] };
+    // Cass holds shares too: with her business days used up, she pays for the legwork.
+    b.period.days = { ...(b.period.days ?? {}), [cass.id]: E.BUSINESS_DEFAULTS.businessDays };
     await S.BusinessRepository.save(b);
     await S.BusinessService._saveHidden({ business: business(), events: [], layerTotals: [{ holderId: bob.id, index: 0, total: 5 }, { holderId: bob.id, index: 1, total: 6 }] });
     const library = { kind: 'skill', skill: 'Library Search', stat: 'int' };
@@ -392,8 +394,10 @@ test('an investigation by ticker: a roll against a hidden total peels one layer 
     };
 
     dice.push(9);
+    const wealthBefore = cass.system.wealth.value;
     const first = await dig();
     assert.equal(first.ok, true, first.reason);
+    assert.equal(cass.system.wealth.value, wealthBefore - E.BUSINESS_DEFAULTS.ownership.investigate.legwork, 'no business day free: legwork money');
     assert.equal(first.investigation.success, true, `a 9 beats the shell's 6 (${first.investigation.band})`);
     assert.ok(sent.some((m) => m.actor === cass.id && m.lines.join(' ').includes('Vex')), 'told of the nominee behind it');
     assert.equal(sent.some((m) => m.actor === bob.id), false, 'bob is not told');
@@ -403,6 +407,7 @@ test('an investigation by ticker: a roll against a hidden total peels one layer 
 
     dice.push(9);
     assert.equal((await dig()).reason, 'investigate-wait', 'once a week');
+    assert.equal(cass.system.wealth.value, wealthBefore - E.BUSINESS_DEFAULTS.ownership.investigate.legwork, 'a refused try costs nothing');
     assert.equal(cass.getFlag('night-city-investments', 'investigated')[0].ref_out, day, 'the try noted on her character, for her window');
 
     // A week on: the nominee, at 5 + 2 for the shell above it.
@@ -417,6 +422,19 @@ test('an investigation by ticker: a roll against a hidden total peels one layer 
     const found2 = cass.getFlag('night-city-investments', 'discoveries')[0].ref_out;
     assert.deepEqual([found2.length, found2.at(-1)], [2, bob.name]);
     assert.equal(business().masks[bob.id].length, 2, 'an investigation tells the investigator, not the register');
+
+    // A partner spends a business day instead, and keeps their money.
+    const aliceWealth = alice.system.wealth.value;
+    const daysBefore = business().period.days?.[alice.id] ?? 0;
+    dice.push(2);
+    const { messageId } = await SkillAdapter.leverCheck(alice, { dv: null, title: 'Investigating', use: library });
+    const key = await BusinessClient.submit(alice, 'investigate', { ticker: 'PLAY', ref: 'ref_out', use: library, rollId: messageId });
+    await S.BusinessService.processActor(alice);
+    await settle();
+    const asPartner = (alice.getFlag('night-city-investments', 'businessReceipts') ?? []).flatMap((x) => x.results ?? []).find((r) => r.key === key);
+    assert.equal(asPartner.ok, true, asPartner.reason);
+    assert.equal(business().period.days[alice.id], daysBefore + 1);
+    assert.equal(alice.system.wealth.value, aliceWealth);
   } finally {
     SkillAdapter.rollOne = rollOne;
     MailService.fromWire = fromWire;
