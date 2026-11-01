@@ -298,6 +298,36 @@ test('a takeover bid for a listed company, by ticker: approved with the offer he
   assert.equal(settled.amount, Math.round(offer * want) - after.lastTakeover.spent, 'what was not spent came back');
 });
 
+test('a hidden holder shows on the public register as their outer layer; strengths stay in the GM\'s hidden state; monthly fees are charged, and a layer that cannot be paid lapses', async () => {
+  const day = S.BusinessService.day();
+  const b = E.normalizeBusiness(structuredClone(business()));
+  S.BusinessService._syncHolders(b);
+  b.masks = {
+    [alice.id]: [{ kind: 'nominee', name: 'Vex', day: day - 30, lastFee: day - 30 }, { kind: 'shell', name: 'Kestrel Holdings', day: day - 30, lastFee: day - 30 }],
+    [bob.id]: [{ kind: 'nominee', name: 'Vex', day: day - 30, lastFee: day - 30 }],
+  };
+  await S.BusinessRepository.save(b);
+  await S.BusinessService._saveHidden({ business: business(), events: [], layerTotals: [{ holderId: alice.id, index: 0, total: 17 }, { holderId: alice.id, index: 1, total: 21 }, { holderId: bob.id, index: 0, total: 16 }] });
+  await S.BusinessService._publishRegister(business());
+  const register = S.CompanyRepository.get('PLAY').register;
+  assert.ok(register.some((r) => r.label === 'Kestrel Holdings' && r.kind === 'shell'), 'the outer layer, not alice');
+  assert.equal(register.some((r) => r.label === alice.name), false);
+  assert.deepEqual(S.MarketStore.getBusinessesHidden().bus_play.layers[alice.id], [17, 21]);
+
+  // Alice can pay; Bob cannot.
+  await S.PortfolioRepository.save(bob, { ...portfolio(bob), cash: 0 });
+  const aliceCash = portfolio(alice).cash;
+  await S.BusinessService._layerFees();
+  await settle();
+  assert.ok(portfolio(alice).cash < aliceCash, 'alice paid her two layers');
+  assert.equal(portfolio(alice).ledger.filter((e) => e.kind === 'layerFee').length, 2);
+  assert.equal(business().masks[alice.id][0].lastFee, day);
+  assert.equal(business().masks[bob.id], undefined, 'bob\'s nominee lapsed');
+  assert.equal(S.MarketStore.getBusinessesHidden().bus_play.layers[bob.id], undefined, 'and its strength is gone');
+  await S.BusinessRepository.save({ ...business(), masks: {} });
+  await S.BusinessService._saveHidden({ business: business(), events: [] });
+});
+
 test('a listed company in administration is restructured: its debts become creditors\' shares, added to the market and kept through the holders\' sync', async () => {
   const before = { shares: business().listing.shares, outstanding: S.CompanyRepository.get('PLAY').sharesOutstanding };
   await S.BusinessRepository.save({

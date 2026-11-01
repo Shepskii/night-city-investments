@@ -70,6 +70,8 @@ export class BusinessApp extends BaseApplication {
       sellBack: BusinessApp._onSellBack,
       issueRoll: BusinessApp._onIssueRoll,
       tender: BusinessApp._onTender,
+      hideRoll: BusinessApp._onHideRoll,
+      dropLayer: BusinessApp._onDropLayer,
       defenceRoll: BusinessApp._onDefenceRoll,
       buybackRoll: BusinessApp._onBuybackRoll,
       prospectusRoll: BusinessApp._onProspectusRoll,
@@ -431,6 +433,18 @@ export class BusinessApp extends BaseApplication {
     const cost = Math.round(qty * (this.business?.capital?.issue?.price ?? 0));
     if (await this._proposeIfOver('rightsTake', { businessId: this.business?.id, qty }, cost, this.business?.name)) return null;
     return this._send('rightsTake', { qty });
+  }
+
+  /** Add a layer over this holding (B6d): the broker's nominee first, then a named shell company. */
+  static _onHideRoll(event, target) {
+    const name = value(target, 'shellName').trim();
+    this._roll({ type: 'hideRoll', ...(name ? { name } : {}) }, L('NCI.Ownership.RollTitle', { name: this.business?.name ?? '' }));
+  }
+
+  /** Take the outermost layer off this holding (B6d). */
+  static async _onDropLayer() {
+    const ok = await foundry.applications.api.DialogV2.confirm({ window: { title: L('NCI.Ownership.Drop') }, content: `<p>${L('NCI.Ownership.DropConfirm')}</p>`, rejectClose: false });
+    return ok ? this._send('dropLayer', {}) : null;
   }
 
   /** Tender shares to a takeover offer, or change how many (0 withdraws) (B6b). */

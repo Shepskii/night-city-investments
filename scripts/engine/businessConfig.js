@@ -329,6 +329,15 @@ export const BUSINESS_DEFAULTS = Object.freeze({
    * with standing hits; winding up sells its assets at `salvage` of book value.
    * Going into administration dents a listed company's price by `hit` (a log-return).
    */
+  /**
+   * Hidden ownership (B6d): at most `maxLayers` layers on a holding (a broker's nominee, then shells),
+   * each a roll at DV `dv`; a setup fee of `setupRate` of the holding's value (at least `minSetup`) and a
+   * fee of `monthlyRate` (at least `minMonthly`) every `feeDays`.
+   */
+  ownership: Object.freeze({
+    maxLayers: 3, dv: 'difficult', setupRate: 0.01, minSetup: 500, monthlyRate: 0.0025, minMonthly: 50, feeDays: 28,
+    uses: Object.freeze([S.bureaucracy, S.accounting]),
+  }),
   insolvency: Object.freeze({
     periods: 2, salvage: 0.5, hit: -0.1,
     restructure: Object.freeze({ priceShare: 0.5, minPrice: 0.01, reputation: -10, compliance: -10, reserveWeeks: 4 }),

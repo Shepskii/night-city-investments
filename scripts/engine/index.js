@@ -35,6 +35,7 @@ export * from './businessListing.js';
 export * from './businessCapital.js';
 export * from './businessTakeover.js';
 export * from './businessInsolvency.js';
+export * from './businessOwnership.js';
 export * from './funds.js';
 export * from './withdrawals.js';
 export * from './brokerMail.js';

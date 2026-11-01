@@ -99,7 +99,7 @@ export const SkillAdapter = {
    * @param {{dv: number, title: string, use: object, levers?: object}} o
    * @returns {Promise<{result: object, roll: object, messageId: string|null}>}
    */
-  async leverCheck(actor, { dv, title, use, levers = {} }) {
+  async leverCheck(actor, { dv, title, use, levers = {}, whisper = false }) {
     // A hired professional or an employee cannot use the character's Luck, or their business days.
     const l = normalizeLevers({ ...levers, ...(use.kind === 'staff' ? { luck: 0, extra: 0 } : {}), hire: use.kind === 'hire' ? use.hire : null });
     const base = this.baseFor(actor, use);
@@ -115,7 +115,7 @@ export const SkillAdapter = {
     const result = resolveRoll({ base: base.base, roll, dv, levers: { ...l, luck } });
 
     const messageId = await this._postLevers(actor, {
-      title, base, roll, result, dice: dice.map((d) => d.roll).filter(Boolean),
+      title, base, roll, result, dice: dice.map((d) => d.roll).filter(Boolean), whisper,
       flag: {
         actorId: actor.id, skill: base.name, kind: use.kind, dice: dice.map((d) => d.value),
         levers: { approach: l.approach, luck, luckBefore, bonus: l.bonus, extra: l.extra, hire: l.hire },
@@ -247,7 +247,7 @@ export const SkillAdapter = {
     return { ok: true, flag, roll: cprD10(() => queue.shift()) };
   },
 
-  async _postLevers(actor, { title, base, roll, result, dice, flag }) {
+  async _postLevers(actor, { title, base, roll, result, dice, flag, whisper = false }) {
     if (typeof ChatMessage === 'undefined') return null;
     const crit = roll.crit ? ` (${L(`NCI.Check.Crit.${roll.crit}`)})` : '';
     const extras = [
@@ -265,6 +265,8 @@ export const SkillAdapter = {
         content,
         rolls: dice,
         flags: { [MODULE_ID]: { [CHECK_FLAG]: flag } },
+        // A roll others should not see (a layer over a hidden holding, B6d): the roller and the GMs only.
+        ...(whisper ? { whisper: [...new Set([game.user.id, ...(ChatMessage.getWhisperRecipients?.('GM') ?? []).map((u) => u.id)])] } : {}),
       });
       return message?.id ?? null;
     } catch (error) {

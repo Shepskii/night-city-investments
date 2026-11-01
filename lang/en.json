@@ -335,6 +335,14 @@
           "strong": "A persuasive report: 6% more profit (12% if Bold).",
           "exceptional": "A masterpiece: 10% more profit (20% if Bold)."
         },
+        "hideRoll": {
+          "fumble": "The paperwork falls apart: no layer, and the fee is spent.",
+          "failure": "It does not hold up: no layer, and the fee is spent.",
+          "narrow": "A thin layer: it hides you, but not well.",
+          "solid": "A sound layer.",
+          "strong": "A tight layer, hard to see through.",
+          "exceptional": "A seamless layer: very hard to see through."
+        },
         "defenceRoll": {
           "fumble": "A disaster: NPC holders and the float now want 5 points less premium.",
           "failure": "Nobody listens: the bars are unchanged.",
@@ -1711,6 +1719,26 @@
       "IntelFound": "{bands}; worth about {low} to {high} eb",
       "IntelNothing": "nothing useful found"
     },
+    "Ownership": {
+      "Title": "Hidden ownership",
+      "NotHidden": "Your holding is on the register under your own name.",
+      "Hidden": "Your holding is hidden: {chain}. Other shareholders and the public register see {outer}.",
+      "Fees": "One more layer costs {setup} eb now, then {monthly} eb every 28 days, from your brokerage balance.",
+      "Hint": "The first layer is your broker's nominee (you need a broker); after it, up to two shell companies you name. Each is a Bureaucracy or Accounting roll at DV 15: the fee is paid even if it fails, and the roll's total is how hard the layer is to see through. A layer whose monthly fee cannot be paid lapses, with every layer outside it. You still vote through your layers.",
+      "AddNominee": "Hide behind my broker's nominee",
+      "ShellName": "Shell company name",
+      "AddShell": "Add a shell company",
+      "Drop": "Remove the outer layer",
+      "DropConfirm": "Remove your outermost layer? Its fees are not refunded, and the register will show the next layer down (or your own name).",
+      "RollTitle": "Hiding a holding in {name}",
+      "Nominee": "{broker} (nominee)",
+      "As": "(as {mask})",
+      "Register": "Shareholders",
+      "Mail": {
+        "LapsedSubject": "A layer over your holding in {name} has lapsed",
+        "Lapsed": "Your brokerage balance could not cover the {fee} eb monthly fee for {layer}, your layer over your holding in {name}, so it has lapsed, with any layers outside it."
+      }
+    },
     "Insolvency": {
       "Banner": "In administration since {date}: net assets {net} eb against debts of {debts} eb. No actions, draws, votes, new shares or buybacks until it is resolved; the weeks still close. Cash put in from the Ledger tab that lifts net assets above zero at a weekly close brings it out; otherwise the market restructures it or winds it up.",
       "Mail": {
@@ -2042,6 +2070,7 @@
       "DelistConfirm": "Delist this company? It buys the market's shares back at the market price from its cash (borrowing from the bank what it lacks), the shareholders' shares leave their portfolios and become shares on its record again, and it goes back to being a private company. This cannot be undone.",
       "GiveTime": "Give it time",
       "TakeoverApprove": "Approve the offer",
+      "Layer": "hidden as {mask} (strength {total})",
       "Administration": "In administration since {date}: net assets {net} eb (loans {loans} eb, wages owed {wages} eb, overdraft {overdraft} eb). Restructure it or wind it up; cash its owners put in that lifts net assets above zero at a close ends it by itself.",
       "Restructure": "Restructure",
       "RestructureConfirm": "Restructure this company? Its cash pays what it can of the owed wages and loans, keeping four weeks of upkeep; the rest (and any overdraft) is written off for new shares at half its book value per share, held by its creditors without a vote, diluting the old holders. Reputation and Compliance drop by 10. It leaves administration.",
@@ -2856,7 +2885,12 @@
         "defence-done": "the officers have already defended against this offer",
         "no-target": "no open player company has that ticker",
         "administration": "not while the company is in administration",
-        "not-administration": "the company is not in administration"
+        "not-administration": "the company is not in administration",
+        "layers-full": "a holding has at most three layers",
+        "name-taken": "that name is already on this company's register",
+        "no-layer": "your holding has no layer to remove",
+        "no-broker": "you need a broker for their nominee to hold your shares",
+        "no-brokerage": "you need a brokerage account to pay the fees"
       }
     },
     "Staff": {

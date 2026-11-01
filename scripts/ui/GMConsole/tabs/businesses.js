@@ -172,7 +172,9 @@ export function context() {
         status: LT(b, `NCI.Business.PartnerStatus.${p.status}`),
         units: b.status === 'open' || b.status === 'closed' ? whole(p.units ?? 0) : '',
         share: units > 0 && ['active', 'leaving'].includes(p.status) ? `${((p.units / units) * 100).toFixed(1)}%` : '',
-        note: [p.voting === false ? L('NCI.Business.NonVoting') : '', (b.officers ?? []).includes(p.actorId) ? L('NCI.Company.Officer') : ''].filter(Boolean).join(', '),
+        note: [p.voting === false ? L('NCI.Business.NonVoting') : '', (b.officers ?? []).includes(p.actorId) ? L('NCI.Company.Officer') : '',
+          // Hidden ownership (B6d): each layer and its strength, from the hidden state.
+          ...(b.masks?.[p.actorId] ?? []).map((m, i) => L('NCI.GMBusiness.Layer', { mask: m.kind === 'nominee' ? L('NCI.Ownership.Nominee', { broker: m.name }) : m.name, total: hidden.layers?.[p.actorId]?.[i] ?? '?' }))].filter(Boolean).join(', '),
       })),
       leavers: holders(b).filter((p) => p.status === 'active').map((p) => ({ value: p.actorId, label: p.name })),
       money: b.status === 'forming' || b.status === 'pending'

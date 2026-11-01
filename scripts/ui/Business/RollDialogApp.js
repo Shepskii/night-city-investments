@@ -177,7 +177,7 @@ export class RollDialogApp extends BaseApplication {
       : this.request.type === 'action' ? this.request.action
       : this.request.type === 'charterRoll' ? `charter.${this.request.part}`
       : this.request.type === 'prospectusRoll' ? `prospectus.${this.request.part}`
-        : ['auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll', 'issueRoll', 'buybackRoll', 'defenceRoll'].includes(this.request.type) ? this.request.type
+        : ['auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll', 'issueRoll', 'buybackRoll', 'defenceRoll', 'hideRoll'].includes(this.request.type) ? this.request.type
         : good ? 'respondGood' : this.request.type;
 
     return {

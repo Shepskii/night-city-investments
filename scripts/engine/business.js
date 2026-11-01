@@ -103,6 +103,7 @@ import {
 } from './businessCapital.js';
 import { takeoverOffer, makeTakeover, tenderShares, defenceCheck, applyDefence } from './businessTakeover.js';
 import { checkSolvency, ADMINISTRATION_REFUSES } from './businessInsolvency.js';
+import { layerCheck, addLayer, dropLayers } from './businessOwnership.js';
 
 export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, projectOffer, PROJECT_KINDS };
 export { upgradesOf, protectionFactor, breakInFactor, reputationBaseline } from './businessGrowth.js';
@@ -117,7 +118,7 @@ export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
   'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll', 'prospectusRoll',
   'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant', 'askStaff', 'cancelAsk', 'addTeam',
-  'rightsTake', 'sellBack', 'issueRoll', 'buybackRoll', 'bid', 'tender', 'defenceRoll',
+  'rightsTake', 'sellBack', 'issueRoll', 'buybackRoll', 'bid', 'tender', 'defenceRoll', 'hideRoll', 'dropLayer',
 ]);
 
 /** Item types that are not things a business can own. */
@@ -148,7 +149,7 @@ export function itemGear(item, actorId, p = BUSINESS_DEFAULTS) {
 }
 
 /** Requests that carry a roll. */
-export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll', 'staffRoll', 'prospectusRoll', 'issueRoll', 'buybackRoll', 'defenceRoll']);
+export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll', 'staffRoll', 'prospectusRoll', 'issueRoll', 'buybackRoll', 'defenceRoll', 'hideRoll']);
 
 /**
  * What each kind of proposal needs to pass (DESIGN §27.0): closing and stepping up need every partner
@@ -206,6 +207,13 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     const check = stepUpCheck(b, actorId, day, p);
     if (!check.ok) return check;
     return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - p.registration.fee, operatorRank, p, b, traits });
+  }
+
+  if (request.type === 'hideRoll') {
+    // A holder builds a layer over their holding (B6d): Bureaucracy or Accounting, their own skill.
+    const check = layerCheck(b, actorId, request, p);
+    if (!check.ok) return check;
+    return allowed(check.uses, use, { dv: check.dv, allowHire: false, bonusAvailable: false, extraAvailable: false, funds: b.till, operatorRank, p, b, traits });
   }
 
   if (request.type === 'defenceRoll') {
@@ -825,6 +833,25 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (!job) return fail('not-staff');
       quitJob(b, job.id, day, p);
       out.events.push({ type: 'quit', staffId: job.id });
+      break;
+    }
+    case 'hideRoll': {
+      // The service checks the fee and the broker first and passes them in (`ctx.hide`); it is paid either way.
+      if (!ctx.hide?.ok) return fail(ctx.hide?.reason ?? 'no-broker');
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
+      if (!spec.ok) return spec;
+      if (!check?.ok) return fail(check?.reason ?? 'no-roll');
+      const kind = layerCheck(b, actor.id, request, p).kind;
+      const r = check.result;
+      const done = addLayer(b, actor.id, { kind, name: kind === 'nominee' ? ctx.hide.broker : request.name, day, result: r });
+      out.events.push({ type: 'layerRolled', holderId: actor.id, kind, name: done.name, added: done.added, band: r.band, fee: ctx.hide.fee });
+      if (done.added) out.layerTotals = [...(out.layerTotals ?? []), { holderId: actor.id, index: done.index, total: r.total }];
+      break;
+    }
+    case 'dropLayer': {
+      const done = dropLayers(b, actor.id);
+      if (!done.ok) return done;
+      out.events.push({ type: 'layerDropped', holderId: actor.id });
       break;
     }
     case 'bid': {

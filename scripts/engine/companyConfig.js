@@ -94,6 +94,10 @@ export function sanitizeCompany(input) {
       },
       status: COMPANY_STATUSES.includes(input.status) ? input.status : 'active',
       ipo: cleanIpo(input.ipo),
+      // A listed player company's public register (B6d): holders as a register shows them.
+      register: Array.isArray(input.register)
+        ? input.register.slice(0, 40).map((r) => ({ label: String(r.label ?? '').slice(0, 60), kind: String(r.kind ?? 'holder').slice(0, 12), shares: Math.max(0, Math.round(num(r.shares, 0))), pct: round2(num(r.pct, 0)) }))
+        : [],
       // A listed player company's secondary offering (B6a): new shares at a price, open to the end day.
       offering: input.offering?.price > 0 && input.offering?.shares > 0
         ? { price: round2(num(input.offering.price, 0)), shares: Math.round(num(input.offering.shares, 0)), endDay: Math.round(num(input.offering.endDay, 0)) }

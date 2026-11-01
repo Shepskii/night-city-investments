@@ -14,6 +14,7 @@ import {
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
   capitalOf, issueOptions, rightsLeft, tenderRoom, capitalRollCheck, defenceCheck, takeoverPremium, sellableQty, debtsOf, solvency,
+  masksOf, outerMask, layerCheck, layerFees, holdingValue,
 } from '../../engine/index.js';
 import { PortfolioRepository } from '../../data/PortfolioRepository.js';
 import { MarketStore } from '../../data/MarketStore.js';
@@ -107,14 +108,21 @@ function historyContext(business, bands) {
   };
 }
 
+/** A layer as a register shows it: a broker's nominee, or a shell company's name (B6d). */
+export const maskLabel = (m) => (m.kind === 'nominee' ? L('NCI.Ownership.Nominee', { broker: m.name }) : m.name);
+
 /**
  * A holder on the cap table, as HTML: the market's float and a restructured company's creditors (B6c)
- * by what they are, everyone else linked to their character.
+ * by what they are, everyone else linked to their character. A hidden holder (B6d) shows as their
+ * outermost layer, except to themselves and the GM, who see both.
  */
-export function holderWho(business, p) {
+export function holderWho(business, p, viewerId = null) {
   if (p.market) return L('NCI.Business.MarketHolder');
   if (p.creditors || p.actorId === 'npc:creditors') return L('NCI.Business.CreditorsHolder');
-  return actorLink(holderActorId(business, p), p.name);
+  const mask = outerMask(business, p.actorId);
+  if (!mask) return actorLink(holderActorId(business, p), p.name);
+  if (game.user.isGM || (viewerId && viewerId === p.actorId)) return `${actorLink(holderActorId(business, p), p.name)} <span class="nci-muted">${L('NCI.Ownership.As', { mask: maskLabel(mask) })}</span>`;
+  return maskLabel(mask);
 }
 
 const nameOf = (business, actorId) => partnerOf(business, actorId)?.name || (business.staff ?? []).find((s) => s.id === actorId)?.name || game.actors.get(actorId)?.name || '?';
@@ -1226,6 +1234,27 @@ function takeoverContext(business, actor, canAct) {
   };
 }
 
+/**
+ * The viewer's own hidden holding (B6d): the layers over it, what one more costs, and adding or
+ * removing one. The first is their broker's nominee; the next ones shell companies they name.
+ */
+function hidingContext(business, actor) {
+  const layers = masksOf(business, actor.id);
+  const price = MarketStore.getPublic().companies?.[business.company?.ticker]?.price ?? 0;
+  const fees = layerFees(holdingValue(business, actor.id, price));
+  const can = layerCheck(business, actor.id, { name: 'x' });
+  return {
+    layers: layers.map((m, i) => ({ label: maskLabel(m), outer: i === layers.length - 1 })),
+    text: layers.length
+      ? L('NCI.Ownership.Hidden', { chain: layers.map(maskLabel).join(' → '), outer: maskLabel(layers.at(-1)) })
+      : L('NCI.Ownership.NotHidden'),
+    fees: L('NCI.Ownership.Fees', { setup: whole(fees.setup), monthly: whole(fees.monthly) }),
+    canNominee: can.ok && can.kind === 'nominee',
+    canShell: can.ok && can.kind === 'shell',
+    canDrop: layers.length > 0,
+  };
+}
+
 function partnersContext(business, actor) {
   const units = totalUnits(business);
   const value = unitValue(business);
@@ -1239,7 +1268,7 @@ function partnersContext(business, actor) {
       actorId: p.actorId,
       name: p.name,
       // The shares the market holds after a listing (B5b) are shown as the public float.
-      who: holderWho(business, p),
+      who: holderWho(business, p, actor?.id),
       status: LT(business, `NCI.Business.PartnerStatus.${p.status}`),
       units: business.status === 'forming' ? '' : whole(p.units),
       share: units > 0 && ['active', 'leaving'].includes(p.status) ? `${((p.units / units) * 100).toFixed(1)}%` : '',
@@ -1271,6 +1300,7 @@ function partnersContext(business, actor) {
     canPropose: open && canAct && !business.proposals.some((x) => x.kind === 'close'),
     investors: open ? investorsContext(business, actor, canAct) : null,
     capital: open && business.stage >= 2 ? capitalContext(business, actor, canAct) : null,
+    hiding: open && business.stage >= 2 && me && ['active', 'leaving'].includes(me.status) && me.units > 0 ? hidingContext(business, actor) : null,
     takeover: business.stage >= 2 && (business.takeover || business.lastTakeover) ? takeoverContext(business, actor, canAct) : null,
     proposals: business.proposals.map((proposal) => ({
       id: proposal.id,
@@ -1294,7 +1324,7 @@ function partnersContext(business, actor) {
       // Each voter, linked to their character, and how they voted.
       voters: holders(business).filter((p) => p.voting).map((p) => {
         const state = proposal.votes[p.actorId] === true ? 'yes' : proposal.votes[p.actorId] === false ? 'no' : 'none';
-        return { who: actorLink(holderActorId(business, p), p.name), state, label: L(`NCI.Business.Vote.${state}`) };
+        return { who: holderWho(business, p, actor?.id), state, label: L(`NCI.Business.Vote.${state}`) };
       }),
       canVote: !!me?.voting && ['active', 'leaving'].includes(me.status) && proposal.votes[actor.id] === undefined,
     })),

@@ -502,6 +502,11 @@ export class MarketTerminalApp extends BaseApplication {
       companyNews,
       statusLabel: c.status === 'active' ? '' : L(`NCI.Status.${c.status}`),
       unlisted: !c.listed,
+      // A listed player company's public register (B6d): hidden holders by their outermost layer.
+      register: (c.register ?? []).map((r) => ({
+        label: r.kind === 'market' ? L('NCI.Business.MarketHolder') : r.kind === 'creditors' ? L('NCI.Business.CreditorsHolder') : r.kind === 'nominee' ? L('NCI.Ownership.Nominee', { broker: r.label }) : r.label,
+        shares: whole(r.shares), pct: `${r.pct}%`,
+      })),
       // A player company's officers and shareholders (and the GM) can open its Business window (B5c).
       manageId: this._manageable(c) ? c.businessId : null,
       tradable: c.status === 'active' && c.listed && !!this.actor,

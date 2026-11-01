@@ -640,6 +640,22 @@
     <p class="nci-hint">{{@root.business.terms.HeirHint}}</p>
     {{/if}}
   </div>
+  {{#with hiding}}
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Ownership.Title"}}</h3>
+    <p>{{text}}</p>
+    <p class="nci-hint">{{fees}} {{localize "NCI.Ownership.Hint"}}</p>
+    {{#if canNominee}}<button type="button" data-action="hideRoll"><i class="fas fa-user-secret"></i> {{localize "NCI.Ownership.AddNominee"}}</button>{{/if}}
+    {{#if canShell}}
+    <div class="nci-hirerow">
+      <label>{{localize "NCI.Ownership.ShellName"}} <input type="text" name="shellName" maxlength="40"></label>
+      <span></span>
+      <button type="button" data-action="hideRoll"><i class="fas fa-building-shield"></i> {{localize "NCI.Ownership.AddShell"}}</button>
+    </div>
+    {{/if}}
+    {{#if canDrop}}<button type="button" data-action="dropLayer"><i class="fas fa-eye"></i> {{localize "NCI.Ownership.Drop"}}</button>{{/if}}
+  </div>
+  {{/with}}
   {{#with takeover}}
   <div class="nci-block nci-form">
     <h3>{{localize "NCI.Takeover.Title"}}</h3>

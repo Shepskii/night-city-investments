@@ -177,6 +177,8 @@ export function normalizeBusiness(raw) {
     takeover: b.takeover ?? null,
     // Administration (B6c): since when, and the net assets at the last close; closes below zero in a row.
     administration: b.administration ?? null,
+    // Hidden ownership (B6d): each holder's layers, innermost first; their strengths are GM-only.
+    masks: b.masks ?? {},
     insolventPeriods: b.insolventPeriods ?? 0,
     lastTakeover: b.lastTakeover ?? null,
     listingConcerns: !!b.listingConcerns,

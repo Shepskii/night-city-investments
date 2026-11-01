@@ -22,7 +22,7 @@ import {
   reviewListing, clearReview, delistCompany,
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
   takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
-  restructure, windUp,
+  restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter, isItemPile } from '../utils/helpers.js';
@@ -42,6 +42,7 @@ import { PortfolioService } from './PortfolioService.js';
 import { TickService } from './TickService.js';
 import { NewsService } from './NewsService.js';
 import { HeatService } from './HeatService.js';
+import { BrokerRepository } from '../data/BrokerRepository.js';
 
 const RESULTS_CAP = 40;
 /** Requests that may bring gear: the items are looked up here, never taken from the request. */
@@ -531,6 +532,7 @@ class BusinessServiceImpl {
 
     const day = this.day();
     const context = this.context(business);
+    if (request.type === 'hideRoll' && business) context.hide = this._hideTerms(business, as.partner.id, context.marketPrice);
     if (GEAR_REQUESTS.includes(request.type)) {
       const gear = await this.resolveGear(actor, request.gear);
       if (!gear.ok) return this._receipt(actor, request, gear);
@@ -616,6 +618,8 @@ class BusinessServiceImpl {
    */
   async _commit(out, { officerId = null } = {}) {
     await this._pay(out.wealth, out.business, officerId);
+    // A layer hides a holding: a holder who has sold out loses theirs (B6d).
+    pruneMasks(out.business);
     await BusinessRepository.save(out.business);
     await this._moveItems(out);
     await this._saveHidden(out);
@@ -625,6 +629,8 @@ class BusinessServiceImpl {
     await this._scheduleListing(out.business);
     await this._capitalEvents(out);
     await this._insolvencyEvents(out);
+    await this._ownershipEvents(out);
+    await this._publishRegister(out.business);
     await this._afterReports(out);
     for (const event of out.events.filter((e) => e.type === 'periodClosed')) {
       Hooks.callAll(HOOKS.BUSINESS_PERIOD, { businessId: out.business.id, digest: event.digest });
@@ -643,11 +649,18 @@ class BusinessServiceImpl {
     const people = new Set([...(out.business.candidates ?? []).map((c) => c.id), ...(out.business.staff ?? []).map((s) => s.candidateId ?? s.id)]);
     const traits = Object.fromEntries(Object.entries({ ...(entry.traits ?? {}), ...(out.traits ?? {}) }).filter(([id]) => people.has(id)));
     const sameTraits = JSON.stringify(traits) === JSON.stringify(entry.traits ?? {});
-    if (!exposure && sameTraits) return;
+    // Each hidden holding's layer strengths (B6d), trimmed to the layers it still has.
+    const layers = {};
+    for (const [id, list] of Object.entries(out.business.masks ?? {})) layers[id] = (entry.layers?.[id] ?? []).slice(0, list.length);
+    for (const t of out.layerTotals ?? []) (layers[t.holderId] ??= [])[t.index] = t.total;
+    const sameLayers = JSON.stringify(layers) === JSON.stringify(entry.layers ?? {});
+    if (!exposure && sameTraits && sameLayers) return;
     // An internal audit can wipe some Exposure out, but never below none.
     const next = { ...entry, exposure: Math.max(0, (entry.exposure ?? 0) + exposure) };
     if (Object.keys(traits).length) next.traits = traits;
     else delete next.traits;
+    if (Object.keys(layers).length) next.layers = layers;
+    else delete next.layers;
     await MarketStore.setBusinessesHidden({ ...hidden, [out.business.id]: next });
   }
 
@@ -839,6 +852,7 @@ class BusinessServiceImpl {
       }
       await this._marketCapital();
       await this._closeTakeovers();
+      await this._layerFees();
       return changed;
     });
   }
@@ -1005,6 +1019,93 @@ class BusinessServiceImpl {
       if (listed) await NewsService.post({ headline: L(done.control ? 'NCI.News.TakeoverControl' : 'NCI.News.TakeoverClosed', terms), tone: 'neutral', companyIds: [ticker] });
       Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
     }
+  }
+
+  /**
+   * What a layer over this holding costs, and whether it can be paid (B6d): the setup fee from the
+   * holder's brokerage balance; a first layer is their broker's nominee, so they need a broker.
+   */
+  _hideTerms(business, holderId, marketPrice) {
+    const account = this._account(holderId);
+    if (!account || !PortfolioRepository.hasPortfolio(account)) return { ok: false, reason: 'no-brokerage' };
+    const p = PortfolioRepository.get(account);
+    const broker = p.brokerContactId ? BrokerRepository.list().find((x) => x.id === p.brokerContactId) : null;
+    const first = !(business.masks?.[holderId]?.length);
+    if (first && !broker) return { ok: false, reason: 'no-broker' };
+    const fee = layerFees(holdingValue(business, holderId, marketPrice)).setup;
+    if ((p.cash ?? 0) - committedCash(p.orders ?? []) < fee) return { ok: false, reason: 'insufficient-funds' };
+    return { ok: true, fee, broker: broker?.name ?? '' };
+  }
+
+  /** A layer roll was made (B6d): its setup fee is paid from the holder's brokerage balance, pass or fail. */
+  async _ownershipEvents(out) {
+    for (const e of out.events.filter((x) => x.type === 'layerRolled' && x.fee > 0)) {
+      const account = this._account(e.holderId);
+      if (!account) continue;
+      const tick = timeOf(MarketStore.getPublic());
+      await PortfolioService.transformActor(account, (p) => ({
+        portfolio: { ...p, cash: (p.cash ?? 0) - e.fee, ledger: [...(p.ledger ?? []), { ts: tick, kind: 'layerFee', amount: -e.fee, ref: out.business.id }] },
+        changed: true,
+      }));
+    }
+  }
+
+  /**
+   * Each layer's monthly fee (B6d), from its holder's brokerage balance. A fee that cannot be paid ends
+   * that layer and every one outside it; the holder is told.
+   */
+  async _layerFees() {
+    const day = this.day();
+    const pub = MarketStore.getPublic();
+    for (const stored of BusinessRepository.all().filter((x) => x.status === 'open' && Object.keys(x.masks ?? {}).length)) {
+      const due = layerFeesDue(stored, day);
+      if (!due.length) continue;
+      const b = normalizeBusiness(structuredClone(stored));
+      const price = pub.companies?.[b.company?.ticker]?.price ?? 0;
+      const tick = timeOf(pub);
+      for (const holderId of [...new Set(due.map((d) => d.holderId))]) {
+        const account = this._account(holderId);
+        const fee = layerFees(holdingValue(b, holderId, price)).monthly;
+        for (const { index } of due.filter((d) => d.holderId === holderId)) {
+          const p = account && PortfolioRepository.hasPortfolio(account) ? PortfolioRepository.get(account) : null;
+          if (!p || (p.cash ?? 0) - committedCash(p.orders ?? []) < fee) {
+            const lost = b.masks[holderId]?.[index]?.name ?? '';
+            dropLayers(b, holderId, index);
+            await this._mailAccount(holderId, L('NCI.Ownership.Mail.LapsedSubject', { name: b.name }), [L('NCI.Ownership.Mail.Lapsed', { name: b.name, layer: lost, fee: fee.toLocaleString() })]);
+            break;
+          }
+          await PortfolioService.transformActor(account, (q) => ({
+            portfolio: { ...q, cash: (q.cash ?? 0) - fee, ledger: [...(q.ledger ?? []), { ts: tick, kind: 'layerFee', amount: -fee, ref: b.id }] },
+            changed: true,
+          }));
+          b.masks[holderId][index].lastFee = day;
+        }
+      }
+      await BusinessRepository.save(b);
+      await this._saveHidden({ business: b, events: [] });
+      await this._publishRegister(b);
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+    }
+  }
+
+  /**
+   * A listed company's public register (B6d), on its market record for every client: each holder by
+   * the name a register shows (the outermost layer of a hidden one), with the market's float.
+   */
+  async _publishRegister(business) {
+    if (!business || !isListed(business)) return;
+    const company = CompanyRepository.get(business.company?.ticker);
+    if (!company) return;
+    const total = business.listing.shares || 1;
+    const register = business.partners
+      .filter((x) => ['active', 'leaving'].includes(x.status) && x.units > 0)
+      .map((x) => {
+        const mask = outerMask(business, x.actorId);
+        return { label: x.market ? '' : (mask ? mask.name : x.name), kind: x.market ? 'market' : x.creditors ? 'creditors' : mask?.kind ?? (x.npc ? 'npc' : 'holder'), shares: x.units, pct: Math.round((x.units / total) * 1000) / 10 };
+      })
+      .sort((a, c) => c.shares - a.shares);
+    if (JSON.stringify(register) === JSON.stringify(company.register ?? [])) return;
+    await CompanyRepository.save({ ...company, register });
   }
 
   /** A character or a syndicate's account, by id. */

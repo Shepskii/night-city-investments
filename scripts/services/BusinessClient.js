@@ -139,6 +139,8 @@ class BusinessClientImpl {
     // An officer acting for a syndicate rolls with their own skills and Luck.
     const { messageId } = await SkillAdapter.leverCheck(actor?.isSyndicate ? actor.as : actor, {
       dv: spec.dv, title, use, levers: { ...levers, bonus: spec.bonusAvailable ? levers.bonus : 0, extra: spec.extraAvailable ? levers.extra : 0 },
+      // A layer's strength is its roll's total: only the roller and the GMs see the card (B6d).
+      whisper: request.type === 'hideRoll',
     });
     if (!messageId) return null;
     return this.submit(actor, request.type, { ...request, use, rollId: messageId });
