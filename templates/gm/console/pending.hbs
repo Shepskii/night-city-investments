@@ -1,0 +1,20 @@
+<div class="nci-block">
+  <h3>{{localize "NCI.Pending.Title"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Pending.Intro"}}</p>
+  {{#if pendingRows.length}}
+  <table class="nci-market nci-pending">
+    <thead><tr><th>{{localize "NCI.Pending.Where"}}</th><th>{{localize "NCI.Pending.Item"}}</th><th>{{localize "NCI.Pending.Needed"}}</th></tr></thead>
+    <tbody>
+      {{#each pendingRows}}
+      <tr class="nci-row" data-action="switchTab" data-tab="{{tab}}">
+        <td><button type="button" data-action="switchTab" data-tab="{{tab}}">{{where}}</button></td>
+        <td>{{item}}</td>
+        <td class="nci-muted">{{needed}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="nci-muted">{{localize "NCI.Pending.None"}}</p>
+  {{/if}}
+</div>

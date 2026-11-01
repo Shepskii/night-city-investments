@@ -123,12 +123,6 @@ export const actions = {
   businessStaffAnswer: onStaffAnswer,
 };
 
-/** How many businesses are waiting for the GM, for the tab's label. */
-export function waiting() {
-  return BusinessService.snapshot().filter(({ business }) => business.status === 'pending' || business.charter?.status === 'awaiting'
-    || (business.staff ?? []).some((s) => s.status === 'offered' && s.source === 'npc')).length;
-}
-
 /** An employee's true loyalty and hidden trait, for the GM. */
 function staffExtra(s, traits) {
   const trait = traitOf(traits, s);

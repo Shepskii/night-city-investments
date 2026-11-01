@@ -5,11 +5,11 @@
  */
 
 import { MODULE_ID, HOOKS } from '../../utils/constants.js';
-import { GigImpactService } from '../../services/GigImpactService.js';
 import { PreviewService } from '../../services/PreviewService.js';
 import { BaseApplication } from '../BaseApplication.js';
 import { L } from '../format.js';
 import { coneChart } from '../components/chart.js';
+import * as pending from './tabs/pending.js';
 import * as market from './tabs/market.js';
 import * as events from './tabs/events.js';
 import * as actions from './tabs/actions.js';
@@ -24,7 +24,7 @@ import * as factions from './tabs/factions.js';
 import * as tools from './tabs/tools.js';
 
 /** In display order. */
-const TABS = { market, events, actions, companies, funds, brokers, gigs, heat, businesses, syndicates, factions, tools };
+const TABS = { pending, market, events, actions, companies, funds, brokers, gigs, heat, businesses, syndicates, factions, tools };
 const PARTIALS = `modules/${MODULE_ID}/templates/gm/console`;
 
 export class GMConsoleApp extends BaseApplication {
@@ -116,8 +116,7 @@ export class GMConsoleApp extends BaseApplication {
   // ── Context ────────────────────────────────────────────────────────────────
 
   async _prepareContext() {
-    const gigCounts = GigImpactService.counts();
-    const waiting = { gigs: gigCounts.review + gigCounts.mapping, businesses: businesses.waiting(), syndicates: syndicates.waiting() };
+    const waiting = pending.waiting();
     const context = {
       tab: this.tab,
       tabs: Object.keys(TABS).map((t) => ({

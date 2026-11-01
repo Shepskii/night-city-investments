@@ -7,6 +7,7 @@
 
   {{#unless activeGM}}<p class="nci-warn">{{localize "NCI.Errors.NotActiveGM"}}</p>{{/unless}}
 
+  {{#if isPending}}{{> "modules/night-city-investments/templates/gm/console/pending.hbs"}}{{/if}}
   {{#if isMarket}}{{> "modules/night-city-investments/templates/gm/console/market.hbs"}}{{/if}}
   {{#if isEvents}}{{> "modules/night-city-investments/templates/gm/console/events.hbs"}}{{/if}}
   {{#if isActions}}{{> "modules/night-city-investments/templates/gm/console/actions.hbs"}}{{/if}}

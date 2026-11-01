@@ -956,7 +956,7 @@
       "ActionOk": "Done.",
       "ActionFailed": "That did not work. Check the values and that you are the active GM.",
       "Tab": {
-        "market": "Market", "events": "Events", "actions": "Corporate actions", "companies": "Companies",
+        "pending": "Pending", "market": "Market", "events": "Events", "actions": "Corporate actions", "companies": "Companies",
         "funds": "Funds", "brokers": "Brokers", "gigs": "Gigs", "heat": "Heat", "businesses": "Businesses", "factions": "Factions", "syndicates": "Syndicates", "tools": "Tools"
       },
       "FundsHint": "Funds pool several companies into one tradable unit. Their value follows the companies' prices. Players can only trade them through a broker.",
@@ -2104,6 +2104,29 @@
       "WageGap": "Wages still owed, not yet paid from the cash (or, if below zero, back pay paid this week)",
       "Unlisted": "Not itemised in the ledger (a week from before entries were marked with their week, or entries since trimmed)",
       "TillAtClose": "Cash at the close:"
+    },
+    "Pending": {
+      "Title": "Waiting for you",
+      "Intro": "Every decision that needs you. Click a row to go to its tab, where you make the decision.",
+      "None": "Nothing is waiting for you.",
+      "Where": "Tab",
+      "Item": "Who or what",
+      "Needed": "What it needs",
+      "Need": {
+        "mapping": "Choose which company this gig's client is, or ignore it",
+        "review": "Approve or change this gig's effect on the market",
+        "business": "Approve this gig's effect on the business",
+        "penalty": "Approve or dismiss the penalty: {penalty}",
+        "approval": "Approve or reject the new business",
+        "charter": "Approve or reject the charter",
+        "listing": "Approve or turn down the listing",
+        "delisting": "Delisting review: give it time or delist it",
+        "takeover": "Approve or turn down the takeover offer from {bidder}",
+        "administration": "In administration: restructure it or wind it up",
+        "case": "Regulator's case lost: approve the penalty or drop the case",
+        "offer": "Answer for {name}: a job offer as {post}",
+        "syndicate": "Approve or reject the new syndicate"
+      }
     },
     "GMBusiness": {
       "CharterApprove": "Approve the charter",

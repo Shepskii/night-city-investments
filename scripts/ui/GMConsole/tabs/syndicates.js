@@ -48,11 +48,6 @@ export const actions = {
   syndicateClose: onClose,
 };
 
-/** How many syndicates are waiting for the GM, for the tab's label. */
-export function waiting() {
-  return SyndicateRepository.all().filter((s) => s.status === 'pending').length;
-}
-
 export function context() {
   const pub = MarketStore.getPublic();
   const prices = {

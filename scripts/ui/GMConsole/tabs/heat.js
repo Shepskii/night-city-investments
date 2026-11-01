@@ -9,6 +9,9 @@ import { HeatService } from '../../../services/HeatService.js';
 import { companyOptions } from '../shared.js';
 import { actorLink } from '../../actorLink.js';
 
+/** A penalty in words. */
+export const penaltyText = (p) => L(`NCI.Heat.Penalty.${p.kind}`, { amount: Number(p.params.amount ?? 0).toLocaleString(), days: p.params.days ?? p.params.banDays ?? 0 });
+
 async function onHeatApprove(event, target) {
   const card = target.closest('.nci-gig');
   const read = (name) => card?.querySelector(`[name="${name}"]`)?.value;
@@ -53,7 +56,6 @@ function build(companyOptions) {
     if (e.action) return L('NCI.Heat.LastAction', { gain: signed(e.gain), what: L(`NCI.Heat.ActionName.${e.action}`), date: e.date });
     return L('NCI.Heat.LastGain', { gain: signed(e.gain), company: company(e.companyId), date: e.date });
   };
-  const penaltyText = (p) => L(`NCI.Heat.Penalty.${p.kind}`, { amount: Number(p.params.amount ?? 0).toLocaleString(), days: p.params.days ?? p.params.banDays ?? 0 });
   const doneText = (p) => {
     if (p.status !== 'applied' || !p.result) return '';
     if (p.kind === 'fine') return L('NCI.Heat.PenaltyDone.fine', { paid: Number(p.result.paid).toLocaleString(), short: p.result.shortfall > 0 ? L('NCI.Heat.ShortBy', { amount: Number(p.result.shortfall).toLocaleString() }) : '' });

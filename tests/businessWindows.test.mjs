@@ -554,3 +554,51 @@ test('a company\'s later states render cleanly: a regulator\'s case, administrat
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('the Pending tab has a row for each decision waiting, and the tab buttons count the same rows', async () => {
+  const { MarketStore } = await import('../scripts/data/MarketStore.js');
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const gigsBefore = MarketStore.getGigs();
+  const heatBefore = MarketStore.getHeat();
+  const day = b.period.startDay;
+  const button = (html, tab) => text(html.match(new RegExp(`<nav[\\s\\S]*?data-tab="${tab}"[^>]*>([^<]*)<`))[1]);
+  try {
+    await S.BusinessRepository.save({
+      ...b, status: 'open', stage: 2, company: { ticker: 'BRC', sector: 'health', charteredDay: day }, proposals: [],
+      charter: { status: 'awaiting', ticker: 'BRC', agreedDay: day, quote: 1, netAssets: 1, shortfall: 0, rolls: {} },
+      listing: { status: 'awaiting', agreedDay: day, float: 0.25, fee: 1, valuation: 1, rolls: {}, review: { marketCap: 1, since: day } },
+      takeover: { status: 'awaiting', bidderId: 'x', bidderName: 'Rival', price: 5, shares: 10, tenders: {} },
+      administration: { since: day },
+      regCase: { status: 'lost', reason: 'report', openedDay: day, endDay: day + 14, fine: 250 },
+      staff: [{ id: 's_t', actorId: fix.id, name: 'Nix', post: 'floor', wage: 100, status: 'offered', source: 'npc' }],
+    });
+    await MarketStore.setGigs({ ...gigsBefore, pending: ['mapping', 'review', 'business'].map((kind, i) => ({ id: `p${i}`, kind, sourceKey: `gig:p${i}`, client: 'Kiroshi', title: `Job ${kind}`, outcome: 'done', reward: 100, date: '2045-01-01' })) });
+    await MarketStore.setHeat({ ...heatBefore, penalties: [{ id: 'h1', actorId: med.id, name: 'Medtech', kind: 'fine', params: { amount: 500 }, status: 'pending' }, { id: 'h2', actorId: med.id, name: 'Done', kind: 'fine', params: { amount: 1 }, status: 'applied' }] });
+
+    const html = await renderConsole('pending');
+    assertClean(html, 'pending tab');
+    assert.equal(button(html, 'gigs'), 'Gigs (3)', 'business gigs count as well');
+    assert.equal(button(html, 'heat'), 'Heat (1)');
+    assert.equal(button(html, 'businesses'), 'Businesses (7)');
+    assert.equal(button(html, 'pending'), 'Pending (11)');
+    assert.equal(button(html, 'market'), 'Market');
+    assert.equal(html.match(/<tr class="nci-row" data-action="switchTab"/g).length, 11);
+    for (const words of [/Job mapping Choose which company/, /Medtech Approve or dismiss the penalty: Fine of 500 eb/, /Approve or reject the charter/, /Approve or turn down the listing/,
+      /Delisting review/, /takeover offer from Rival/, /In administration/, /Regulator\S+s case lost/, /Answer for Nix/]) assert.match(text(html), words);
+    assert.match(html, /<tr class="nci-row" data-action="switchTab" data-tab="businesses">/);
+
+    await S.BusinessRepository.save({ ...b, status: 'open', charter: null, listing: null, takeover: null, administration: null, regCase: null, staff: [] });
+    await MarketStore.setGigs({ ...gigsBefore, pending: [] });
+    await MarketStore.setHeat({ ...heatBefore, penalties: [] });
+    const quiet = await renderConsole('pending');
+    assertClean(quiet, 'nothing pending');
+    assert.match(text(quiet), /Nothing is waiting for you/);
+    assert.equal(button(quiet, 'pending'), 'Pending');
+    assert.equal(button(quiet, 'businesses'), 'Businesses');
+  } finally {
+    await S.BusinessRepository.save(saved);
+    await MarketStore.setGigs(gigsBefore);
+    await MarketStore.setHeat(heatBefore);
+  }
+});

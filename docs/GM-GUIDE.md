@@ -21,6 +21,7 @@ Open it from the scene controls (sliders icon). Its tabs:
 
 | Tab | For |
 |---|---|
+| Pending | Every decision waiting for you, one row each; click a row to go to its tab |
 | Market | The clock, steering (bias, regime, volatility, halt), undo, reset |
 | Events | Shocks, glides, headlines, setting a price, the action log |
 | Actions | Corporate actions: special dividends, splits, buyouts, delistings, bankruptcies |
@@ -32,6 +33,8 @@ Open it from the scene controls (sliders icon). Its tabs:
 | Syndicates | Approving syndicates; passing or vetoing their proposals |
 | Businesses | Every player business with its true state, and the decisions waiting for you |
 | Tools | Self-check, macros, suggested companies, recent trades |
+
+A tab's button shows how many decisions are waiting on it, like **Gigs (2)**, and the Pending button shows the total. Syndicate proposals are not counted: members' votes settle them, though you can still pass or veto one.
 
 ## Running time
 
