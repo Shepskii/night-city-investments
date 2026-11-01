@@ -125,7 +125,7 @@ test('once everyone has answered, the setup roll is offered, with a preview', as
   const dialog = new Apps.Roll({ actorId: fix.id, businessId: b.id, request: { type: 'setupRoll', businessId: b.id }, rollTitle: 'Setting up' });
   const roll = render('templates/dialogs/roll.hbs', await dialog._prepareContext());
   assertClean(roll, 'setup roll dialog');
-  assert.match(text(roll), /Operator \(rank 4\)/, 'the role ability is offered at its rank');
+  assert.match(text(roll), /Operator \(rank 4: \+13\)/, 'the role ability is offered at its rank and what it adds');
   assert.match(text(roll), /A good hire/, 'a hired professional is offered');
   assert.match(text(roll), /Chance to succeed/);
 });

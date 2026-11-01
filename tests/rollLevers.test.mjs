@@ -109,13 +109,21 @@ test('a bonus counts only when the business has one waiting', async () => {
   assert.equal(withBonus.levers.bonus, 1);
 });
 
-test('a role ability rolls its rank', async () => {
+test('a role ability in a business roll adds its rank plus the bonus staff get; a plain one, or the bare rank, does not', async () => {
   dice = [6];
   const use = { kind: 'ability', ability: 'Operator' };
   const { result, messageId } = await SkillAdapter.leverCheck(fixer, { dv: 13, title: 'Find the space', use });
-  assert.equal(result.total, 10);
+  assert.equal(result.total, 19, 'rank 4 + 9 + 6');
   const out = await SkillAdapter.verifyLevers(fixer, request(messageId), { dv: 13, use });
-  assert.deepEqual([out.ok, out.base, out.result.total], [true, 4, 10]);
+  assert.deepEqual([out.ok, out.base, out.result.total], [true, 13, 19]);
+
+  dice = [6];
+  const plain = { ...use, plain: true };
+  const bare = await SkillAdapter.leverCheck(fixer, { dv: 13, title: 'The ability itself', use: plain });
+  assert.equal(bare.result.total, 10, 'rank 4 + 6');
+
+  assert.equal(SkillAdapter.baseFor(fixer, use).base, 4, 'staff bases and team sizes read the bare rank');
+  assert.equal(SkillAdapter.rollBase(fixer, { kind: 'ability', ability: 'Teamwork' }).base, 0, 'an ability they lack adds nothing');
 });
 
 test('a hired professional replaces stat and skill, takes no Luck, and only where allowed', async () => {

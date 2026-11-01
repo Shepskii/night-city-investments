@@ -7,7 +7,7 @@
  *              dice, so Dice So Nice shows them, and a chat card records the check.
  */
 
-import { cprD10, evaluateCheck, normalizeLevers, resolveRoll, HIRE_TIERS } from '../engine/index.js';
+import { cprD10, evaluateCheck, normalizeLevers, resolveRoll, HIRE_TIERS, BUSINESS_DEFAULTS } from '../engine/index.js';
 import { MODULE_ID } from '../utils/constants.js';
 import { escapeHtml } from '../utils/text.js';
 import { L } from '../utils/helpers.js';
@@ -92,6 +92,18 @@ export const SkillAdapter = {
   },
 
   /**
+   * What a player's business roll adds to the d10. A role ability counts as its rank plus the same bonus
+   * an employee gets (R2, DESIGN §36.7), unless the roll is the ability itself (`plain`: a Netrunner's
+   * Interface, say). `baseFor` stays the bare rank: staff bases and team sizes are built from it.
+   */
+  rollBase(actor, use) {
+    const base = this.baseFor(actor, use);
+    if (use.kind !== 'ability' || use.plain || !(base.base > 0)) return base;
+    const bonus = BUSINESS_DEFAULTS.staff.abilityBonus;
+    return { ...base, base: base.base + bonus, parts: `${base.parts} + ${bonus}` };
+  },
+
+  /**
    * Roll a business check with the levers the player chose (DESIGN §27), on the player's own client.
    * Luck is spent from the sheet before the dice are rolled, as the rules have it, and the card
    * records the pool beforehand so the GM can see it really went down.
@@ -104,7 +116,7 @@ export const SkillAdapter = {
     const hidden = dv == null;
     // A hired professional or an employee cannot use the character's Luck, or their business days.
     const l = normalizeLevers({ ...levers, ...(use.kind === 'staff' ? { luck: 0, extra: 0 } : {}), hire: use.kind === 'hire' ? use.hire : null });
-    const base = this.baseFor(actor, use);
+    const base = this.rollBase(actor, use);
     const luckBefore = this.luck(actor);
     const luck = Math.min(l.luck, luckBefore);
     if (luck > 0) await actor.update({ 'system.stats.luck.value': luckBefore - luck });
@@ -155,7 +167,7 @@ export const SkillAdapter = {
       hire: use.kind === 'hire' ? use.hire : null,
     });
 
-    const { base } = this.baseFor(actor, use);
+    const { base } = this.rollBase(actor, use);
     return { ok: true, base, levers, result: resolveRoll({ base, roll: card.roll, dv, levers }) };
   },
 

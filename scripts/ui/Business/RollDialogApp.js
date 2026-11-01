@@ -100,8 +100,8 @@ export class RollDialogApp extends BaseApplication {
     const actor = this.actor;
     const rank = operatorRankOf(this.business);
     const own = spec.uses.map((use) => {
-      const { base } = SkillAdapter.baseFor(actor, use);
-      const kind = use.kind === 'ability' ? L('NCI.Roll.AbilityRank', { rank: base }) : L('NCI.Roll.SkillBase', { base });
+      const { base } = SkillAdapter.rollBase(actor, use);
+      const kind = use.kind === 'ability' ? L('NCI.Roll.AbilityRank', { rank: SkillAdapter.baseFor(actor, use).base, base }) : L('NCI.Roll.SkillBase', { base });
       const harder = use.dvAdd ? `, ${L('NCI.Roll.DvAdd', { n: use.dvAdd })}` : '';
       return { key: useKey(use), use, base, label: `${useLabel(use)} (${kind}${harder})` };
     })

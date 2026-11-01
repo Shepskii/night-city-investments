@@ -267,7 +267,7 @@
       "Hint": "A 10 adds a second d10 and a 1 takes one away, as usual. Luck is spent from your sheet when you roll, whatever happens. Nothing is rolled until you press Roll.",
       "Roll": "Roll",
       "NothingToRoll": "There is nothing this character can roll for that.",
-      "AbilityRank": "rank {rank}",
+      "AbilityRank": "rank {rank}: +{base}",
       "SkillBase": "base {base}",
       "HireOption": "{who} (base {base}, {fee} eb from the business)",
       "HireNote": "A hired professional's fixed base replaces your stat and skill. Their fee is paid from the business even if the roll fails, and Luck cannot be spent on their roll.",
