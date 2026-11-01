@@ -48,7 +48,7 @@ For using the module, see the [README](../README.md), [Getting started](GETTING-
 - §32 Employees (E1 and E2 in v0.12.0, E3 in v0.13.0)
 - §33 Projects beside expansion (v0.12.0)
 - §34 Phase B5: going public (v0.14.0)
-- §35 Phase B6: corporate play (v0.15, under way)
+- §35 Phase B6: corporate play (v0.15.0)
 
 **Part 4. What comes next**
 
@@ -1136,7 +1136,7 @@ The work is split into phases that each end with something usable at the table. 
 | B3 Syndicates (parallel) | v0.12 | a crew pools money and trades as one account |
 | B4 Chartered companies | v0.12 | the clinic becomes a company with officers and monthly reports |
 | B5 Going public | v0.14 | an IPO other players subscribe to in the terminal |
-| B6 Corporate play | v0.15 | takeovers, buybacks, hidden owners and investigations |
+| B6 Corporate play | v0.15.0 | takeovers, buybacks, hidden owners and investigations |
 | B7 Downtime bridge (separate module) | after B2 | company work spends Crew Tools downtime |
 
 **B0 Groundwork.**
@@ -1198,7 +1198,7 @@ The work is split into phases that each end with something usable at the table. 
 - Earnings impacts on fair value, capped dividends and the liquidity cap (§27.7), insider windows for officers (§27.4), and the delisting review.
 - The links between the Business window and the terminal: Manage company and View on market (§27.8a).
 
-**B6 Corporate play (v0.15).**
+**B6 Corporate play (v0.15.0).**
 - Takeovers, dilution, buybacks and insolvency for companies.
 - Hidden ownership (§27.6): nominees, syndicate chains, the disclosure threshold, opposed investigations, and Netrunner espionage.
 - Coordinated syndicate campaigns.
@@ -1756,7 +1756,7 @@ The plan is §27.4a (listing eligibility), §27.7 (capped payouts) and the B5 en
 
 **Tested in the test world** (v0.14.0, on "Charter Test Clinic", made to meet the checklist): the Growth tab's listing checklist, valuation and float choice, and the IPO proposal; GM approval and the prospectus rolls; the IPO window and the listing day; dividends; the links between the Business window and the terminal; the daily cap on sales; the lock-up refusing a sale; and the delisting review opened (by a console script running the real review over three low reports) and cleared with Give it time; a report moving the price; and insider heat around a report. It found and fixed: the float menu and button out of line, a stray "Propose registering" on a company, the ticker not shown once set (now in the header, the listing text and the Portfolio tab), the proposal worded as registering rather than listing, and player messages naming the GM where the market decides. Not tried live: delisting itself (covered by tests).
 
-## 35. Phase B6: corporate play (v0.15)
+## 35. Phase B6: corporate play (v0.15.0)
 
 The user's choices (2026-10-31):
 - **In four parts,** each tested and committed before the next: B6a, new share issues and buybacks; B6b, takeovers; B6c, insolvency; B6d, hidden ownership and investigations. Coordinated syndicate campaigns move to F1 (§36.3), where standing and campaigns already belong together.
@@ -1975,7 +1975,7 @@ Each step ends as the others do: engine tests, flow tests, a simulator check tha
 | E | **E1 and E2 done (v0.12.0), see §32.9 and §32.10; E3 done (v0.13.0), see §32.11.** Employees: player characters, tagged NPCs and recruits working in posts for wages, overtime rolls, loyalty, staff events, training and share grants; before B5 |
 | Projects | **Done (v0.12.0), see §33.** Projects beside expansion: refit, security upgrade, storefront, staff room; the Projects tab reworked |
 | B5 | **Done (v0.14.0), see §34.** Going public: valuation, listing checklist, prospectus rolls, the IPO, earnings impacts and capped payouts |
-| B6 | **v0.15, built (B6a to B6d), see §35.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
+| B6 | **Done (v0.15.0), see §35.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
 | B7 | Downtime bridge (separate module, after B2): company work through Crew Tools downtime, businesses on Night City Map |
 | F1 | **Proposed, see §36.3.** Faction standing with corps and gangs, moved by gigs and business actions; smear campaigns through the impact pipeline; after B6 |
 | U1 | **Proposed, see §36.1.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships; after F1 and B6 |
