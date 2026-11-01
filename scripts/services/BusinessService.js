@@ -1198,7 +1198,8 @@ class BusinessServiceImpl {
     }
     entry.known = { ...(entry.known ?? {}), [actor.id]: { ...(entry.known?.[actor.id] ?? {}), [holderId]: mine } };
     await MarketStore.setBusinessesHidden({ ...MarketStore.getBusinessesHidden(), [stored.id]: { ...MarketStore.getBusinessesHidden()[stored.id], known: entry.known } });
-    return { ok: true, investigation: { success: r.success, band: r.band }, businessId: stored.id };
+    // The layer looked at goes on the receipt, so the investigator's own window knows the week is used.
+    return { ok: true, investigation: { success: r.success, band: r.band, ref: request.ref }, businessId: stored.id };
   }
 
   /**

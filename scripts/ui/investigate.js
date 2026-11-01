@@ -7,7 +7,7 @@
 
 import { BUSINESS_DEFAULTS } from '../engine/index.js';
 import { SkillAdapter } from '../services/SkillAdapter.js';
-import { BusinessClient } from '../services/BusinessClient.js';
+import { BusinessClient, receiptsOf } from '../services/BusinessClient.js';
 import { L } from './format.js';
 
 const useLabel = (u) => (u.kind === 'ability' ? u.ability : u.skill);
@@ -18,9 +18,15 @@ const useLabel = (u) => (u.kind === 'ability' ? u.ability : u.skill);
  */
 export async function investigate(actor, { ticker = null, businessId = null, ref, label }) {
   if (!actor) return ui.notifications.warn(L('NCI.Errors.NoActor'));
-  const uses = BUSINESS_DEFAULTS.ownership.investigate.uses;
+  const { uses, days } = BUSINESS_DEFAULTS.ownership.investigate;
+  // Once a week for each holding: refused here, before any dice or Luck are spent.
+  const today = BusinessClient.day();
+  if (receiptsOf(actor).results.some((r) => r.type === 'investigate' && r.ok && r.investigation?.ref === ref && today - r.day < days)) {
+    return ui.notifications.warn(L('NCI.Business.Reason.investigate-wait'));
+  }
   const picked = await foundry.applications.api.DialogV2.prompt({
     window: { title: L('NCI.Ownership.InvestigateTitle', { label }) },
+    position: { width: 420 },
     content: `<p>${L('NCI.Ownership.InvestigateHint')}</p>`
       + `<label>${L('NCI.Ownership.Skill')} <select name="use">${uses.map((u, i) => `<option value="${i}">${useLabel(u)}</option>`).join('')}</select></label>`
       + `<label>${L('NCI.Roll.Luck')} <input type="number" name="luck" min="0" step="1" value="0"></label>`,
