@@ -1264,8 +1264,11 @@ function partnersContext(business, actor) {
   const open = business.status === 'open';
   const characters = game.actors.filter((a) => isCharacter(a) && a.id !== actor?.id);
   const sweat = business.agreement.sweat;
+  // A hidden holder's row (B6d) gives nothing away to other shareholders: no money in, heir or office.
+  const maskedFor = (p) => !!outerMask(business, p.actorId) && !game.user.isGM && actor?.id !== p.actorId;
   return {
     rows: business.partners.filter((p) => p.status !== 'declined').map((p) => ({
+      masked: maskedFor(p),
       actorId: p.actorId,
       name: p.name,
       // The shares the market holds after a listing (B5b) are shown as the public float.
@@ -1289,7 +1292,7 @@ function partnersContext(business, actor) {
         && !business.proposals.some((x) => x.kind === 'elect'),
       canDismiss: business.stage >= 2 && canAct && open && officersOf(business).includes(p.actorId) && officersOf(business).length > 1
         && !business.proposals.some((x) => x.kind === 'dismiss'),
-    })),
+    })).map((row) => (row.masked ? { ...row, put: '', gear: '', heir: '', officer: '', leaving: '', canElect: false, canDismiss: false } : row)),
     unitValue: units > 0 ? LT(business, 'NCI.Business.UnitValue', { value: value.toFixed(2) }) : '',
     isCompany: business.stage >= 2,
     agreement: [

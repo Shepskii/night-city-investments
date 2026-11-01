@@ -469,6 +469,9 @@ export class MarketTerminalApp extends BaseApplication {
   }
 
   async _detail(c, pub, history, watched) {
+    // The viewer's own hidden layer on this company, if they can read its record (B6d).
+    const own = c.businessId && this.actor ? BusinessRepository.get(c.businessId)?.masks?.[this.actor.id]?.at(-1)?.ref : null;
+    const ownRefs = new Set(own ? [own] : []);
     const s = pub.companies[c.id];
     const q = quote(s.price, c.liquidity);
     const dayChange = s.prevClose ? (s.price - s.prevClose) / s.prevClose : 0;
@@ -515,7 +518,7 @@ export class MarketTerminalApp extends BaseApplication {
         label: r.kind === 'market' ? L('NCI.Business.MarketHolder') : r.kind === 'creditors' ? L('NCI.Business.CreditorsHolder') : r.kind === 'nominee' ? L('NCI.Ownership.Nominee', { broker: r.label }) : r.label,
         shares: whole(r.shares), pct: `${r.pct}%`,
         // A hidden holder can be investigated by anyone but themselves.
-        ref: r.ref && this.actor ? r.ref : '',
+        ref: r.ref && this.actor && !ownRefs.has(r.ref) ? r.ref : '',
         ticker: c.ticker,
       })),
       // A player company's officers and shareholders (and the GM) can open its Business window (B5c).
