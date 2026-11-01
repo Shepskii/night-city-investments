@@ -317,6 +317,20 @@ export const BUSINESS_DEFAULTS = Object.freeze({
    * (a failure pulls it, and the price takes `failHit`); its subscription window is `windowDays`. A
    * buyback's timing roll (`timing`) sets what it pays over or under the market price.
    */
+  /**
+   * Takeovers (B6b): a tender offer is open `days`. NPC holders and the market's float tender all their
+   * shares at a premium of `accept.all` over the reference price or more, half at `accept.half` or more,
+   * none below; the target's officers' defence roll moves both bars by its `shift`.
+   */
+  takeover: Object.freeze({
+    days: 7,
+    accept: Object.freeze({ all: 0.2, half: 0.1 }),
+    defence: Object.freeze({
+      dv: 'professional',
+      uses: Object.freeze([S.persuasion, S.business]),
+      shift: byBand([-0.05, 0, 0.03, 0.05, 0.08, 0.12]),
+    }),
+  }),
   capital: Object.freeze({
     issue: Object.freeze({ minPct: 0.05, maxPct: 0.3, step: 0.05, windowDays: 14 }),
     buyback: Object.freeze({ minBudget: 500, windowDays: 14 }),

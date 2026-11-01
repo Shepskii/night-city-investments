@@ -101,9 +101,10 @@ The **Businesses** tab lists every business with its true state, Exposure includ
 | A company applies to list | **Approve** the listing (the prospectus rolls open), or **turn it down** (the fee is not refunded; they may try again in 14 days). The tab shows the valuation, float and hidden Exposure |
 | A business offers an NPC a job | **Accept** or **decline** for the NPC |
 | A player has left the table | Mark the partner as **leaving**, so the others can buy them out or the stake passes to the heir |
+| A character or syndicate bids for a company | **Approve the offer** (the whole offer is held from the bidder's brokerage balance, or the bid lapses if they cannot cover it; it opens for 7 days) or **refuse** it. The tab then shows the offer and what players have tendered |
 | A listed company is under the **delisting review** | **Give it time** (the review clears), or **Delist** it: it buys back the float (borrowing what its cash lacks) and goes private. Delisting cannot be undone |
 
-The rest runs itself: weeks close, events are drawn, wages are paid, reports are published.
+The rest runs itself: weeks close, events are drawn, wages are paid, reports are published, and takeover offers close and settle when their 7 days are up.
 
 **NPC staff:** tag an NPC's Night City Messenger contact `staff` or `employee` to make them hireable. An NPC actor (not a player's character) can also join an Exec's team.
 

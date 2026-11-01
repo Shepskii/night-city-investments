@@ -1,6 +1,6 @@
 # Player guide
 
-How to trade on Night City's market, pool money in a syndicate, and found and run your own business. Your GM decides which parts are switched on in your game.
+How to trade on Night City's market, pool money in a syndicate, found and run your own business. Your GM decides which parts are switched on in your game.
 
 Everything you do is sent to the GM's client, which carries it out. If no GM is online, it waits and happens when one connects. Results show in the window and, where it says so, by Night City Messenger mail.
 
@@ -105,19 +105,6 @@ A syndicate can found, join or invest in a player business. Its officers act for
 
 Open the **Business** window from the scene controls (the shop icon). Pick your character (or a syndicate you are an officer of) at the top.
 
-## The roll dialog
-
-Every roll is yours to make, when you press its button. The dialog shows the DV and your chance of each result before you roll, and these levers:
-
-- **Approach:** Careful (safer, smaller effect), Standard, or Bold (bigger swings, and at a company a trail of Exposure).
-- **Luck:** spend Luck points from your sheet, +1 each.
-- **Help:** +1 if a partner made a complementary check this week.
-- **Extra time:** spend a business day for +1.
-- **Hire a professional:** a hired skill level, paid from the business's cash.
-- **An employee:** call on a staff member's skill, for overtime pay.
-
-Results run from fumble, failure, narrow, solid and strong to exceptional, and the dialog says what each does.
-
 ## Founding a business
 
 1. Press **Start a business**. Choose a name, one of ten kinds (ripperdoc clinic, garage or chop shop, bar or club, info shop, boutique or salon, gun shop, courier service, security outfit, screamsheet, food stall) and a district, which sets foot traffic, rent and risk.
@@ -145,6 +132,19 @@ Agreed by a majority of units, paid from the cash, and finished with **business 
 - **Security upgrade:** less protection money and fewer break-ins.
 - **Storefront:** more Reputation.
 - **Staff room:** room for one more employee, and happier staff.
+
+## The roll dialog
+
+Every roll is yours to make, when you press its button. The dialog shows the DV and your chance of each result before you roll, and these levers:
+
+- **Approach:** Careful (safer, smaller effect), Standard, or Bold (bigger swings, and at a company a trail of Exposure).
+- **Luck:** spend Luck points from your sheet, +1 each.
+- **Help:** +1 if a partner made a complementary check this week.
+- **Extra time:** spend a business day for +1.
+- **Hire a professional:** a hired skill level, paid from the business's cash.
+- **An employee:** call on a staff member's skill, for overtime pay.
+
+Results run from fumble, failure, narrow, solid and strong to exceptional, and the dialog says what each does.
 
 ## Money from outside
 
@@ -210,9 +210,20 @@ At a company, the **Capital** block on the Shareholders tab offers two proposals
 - **New shares** (5–30% more). A private company offers them to its holders at book value for 14 days, each in proportion to what they hold; what nobody takes lapses. A listed company sells them on the market: an officer's roll sets the discount, and anyone may subscribe on the terminal for five days.
 - **A buyback** with a budget from the company's cash. A private company buys at book value from any holder who sells in the next 14 days. A listed company's officer times it with a roll, then the company buys from the market each day until the budget runs out. The shares bought are retired, so everyone's share rises.
 
+## Takeovers
+
+Any character or syndicate can bid for a chartered player company, private or listed.
+
+- **Bidding:** on the terminal's Portfolio tab, under **Takeover bid**, give the company's ticker, a price per share and the most shares you want. The market (your GM) approves the bid first. Then the whole offer is held from your brokerage balance while it is open for 7 days.
+- **At the close** you buy what holders tendered, up to the shares you asked for (scaled down if more came in). What you did not spend comes back to your balance.
+- **Holders** see the offer in the **Takeover** block on the Shareholders tab, and choose how many shares to tender (you can change it until the close). Shares still locked up after a listing cannot be tendered. Anything sold is paid into your brokerage balance.
+- **NPC holders and the market's float** tender all their shares if the premium over the reference price is 20% or more, half at 10–20%, and none below. The reference is the market price, or book value per share for a private company.
+- **Defence:** the target's officers may make one defence roll (Persuasion or Business). A good result makes NPC holders and the float want a higher premium; a fumble makes them keener.
+- **Control:** a bidder who ends with more than half the shares controls the votes, and can elect and dismiss officers. Holders who did not tender keep their shares.
+
 ## Employees
 
-A business can take on staff: one at a side business, three registered, eight as a company. Open roles are on the **Staff** tab.
+A business can take on staff: one at a side business, three for registered, eight as a company. Open roles are on the **Staff** tab.
 
 - **Who:** a player character, an NPC your GM has tagged as staff in Messenger, or a recruit found by **advertising** (a recruiting roll brings applicants). **Vetting** shows their real skill and any hidden traits.
 - **Roles:** floor staff lift the takings, a manager works the shop when no partner does, security answers trouble nobody answered, and a bookkeeper helps with the books. A company adds sales, publicist and compliance roles.

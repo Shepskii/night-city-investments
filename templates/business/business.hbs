@@ -639,6 +639,24 @@
     <p class="nci-hint">{{@root.business.terms.HeirHint}}</p>
     {{/if}}
   </div>
+  {{#with takeover}}
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Takeover.Title"}}</h3>
+    {{#if text}}<p><strong>{{text}}</strong></p>{{/if}}
+    {{#if defence}}<p class="nci-muted">{{defence}}</p>{{/if}}
+    {{#if mine}}<p class="nci-muted">{{mine}}</p>{{/if}}
+    {{#if canTender}}
+    <div class="nci-hirerow">
+      <label>{{localize "NCI.Takeover.TenderQty"}} <input type="number" name="tenderQty" min="0" max="{{held}}" step="1" value="{{tendered}}" class="nci-days"></label>
+      <span></span>
+      <button type="button" data-action="tender"><i class="fas fa-handshake"></i> {{localize "NCI.Takeover.Tender"}}</button>
+    </div>
+    {{/if}}
+    {{#if canDefend}}<button type="button" data-action="defenceRoll"><i class="fas fa-shield-halved"></i> {{localize "NCI.Takeover.Defend"}}</button>{{/if}}
+    {{#if last}}<p class="nci-muted">{{last}}</p>{{/if}}
+    <p class="nci-hint">{{localize "NCI.Takeover.Hint"}}</p>
+  </div>
+  {{/with}}
   {{#with capital}}
   <div class="nci-block nci-form">
     <h3>{{localize "NCI.Capital.Title"}}</h3>

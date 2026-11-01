@@ -335,6 +335,14 @@
           "strong": "A persuasive report: 6% more profit (12% if Bold).",
           "exceptional": "A masterpiece: 10% more profit (20% if Bold)."
         },
+        "defenceRoll": {
+          "fumble": "A disaster: NPC holders and the float now want 5 points less premium.",
+          "failure": "Nobody listens: the bars are unchanged.",
+          "narrow": "A fair case: they want 3 points more premium.",
+          "solid": "A good case: they want 5 points more premium.",
+          "strong": "A strong case: they want 8 points more premium.",
+          "exceptional": "A rousing defence: they want 12 points more premium."
+        },
         "issueRoll": {
           "fumble": "Nobody bites: the offering is pulled, and the price dips.",
           "failure": "Too little interest: the offering is pulled, and the price dips.",
@@ -1032,6 +1040,9 @@
       "ListingReview": "{name} ({ticker}) put under review: its market value is too low to stay listed.",
       "PlayerDelisted": "{name} ({ticker}) delisted: the company buys back its public float at {price} eb and goes private.",
       "Offering": "{name} ({ticker}) offers {shares} new shares at {price} eb.",
+      "Takeover": "{bidder} bids {price} eb a share for {name} ({ticker}), a {premium}% premium.",
+      "TakeoverClosed": "{bidder}'s offer for {name} ({ticker}) closes with {shares} shares bought.",
+      "TakeoverControl": "{bidder} takes control of {name} ({ticker}), buying {shares} shares at {price} eb.",
       "OfferingPulled": "{name} ({ticker}) pulls its share offering for lack of interest.",
       "OfferingDone": "{name} ({ticker}) sells {shares} new shares, raising {proceeds} eb.",
       "Buyback": "{name} ({ticker}) starts buying back its shares, up to {budget} eb.",
@@ -1696,6 +1707,44 @@
       "IntelFound": "{bands}; worth about {low} to {high} eb",
       "IntelNothing": "nothing useful found"
     },
+    "Takeover": {
+      "Title": "Takeover offer",
+      "Hint": "A takeover offer buys the shares holders tender at its price, up to the shares it is for. NPC holders and the public float tender all their shares at a premium of 20% or more over the reference price, half at 10% to 20%, none below; the officers' defence roll moves those bars once. Holders who do not tender keep their shares.",
+      "Awaiting": "{bidder} bids {price} eb a share for up to {shares} shares. The offer waits for the market's approval.",
+      "Open": "{bidder} offers {price} eb a share for up to {shares} shares, a {premium}% premium on {reference} eb, until {date}.",
+      "Defended": "The officers' defence: {band}; NPC holders and the float now want {shift} points more premium.",
+      "Mine": "You have tendered {tendered} of your {held} shares.",
+      "TenderQty": "Shares to tender",
+      "Tender": "Tender",
+      "Defend": "Defend the company",
+      "DefendTitle": "Defending {name}",
+      "Last": "The last takeover offer, by {bidder} at {price} eb, closed on {date} with {shares} shares bought.",
+      "LastControl": "The last takeover offer, by {bidder} at {price} eb, closed on {date} with {shares} shares bought, giving them control.",
+      "BidHeading": "Takeover bid",
+      "BidHint": "Bid for a player company by its ticker: a price per share and the most shares you want. The market approves the bid first; then the whole offer is held from this brokerage balance for 7 days, and what is not spent comes back.",
+      "Ticker": "Ticker",
+      "Price": "Price a share",
+      "Shares": "Up to (shares)",
+      "Bid": "Make the bid",
+      "BidTitle": "Takeover bid for {ticker}",
+      "BidConfirm": "Bid {price} eb a share for up to {shares} shares of {ticker}? Once the market approves it, {escrow} eb is held from your brokerage balance until it closes.",
+      "BidIncomplete": "Give a ticker, a price a share and how many shares.",
+      "Mail": {
+        "OpenSubject": "Takeover offer for {name}",
+        "Open": "{bidder} offers {price} eb a share for up to {shares} shares of {name}, a {premium}% premium, until {date}. Tender your shares, or not, from the Shareholders tab of the Business window.",
+        "ApprovedSubject": "Your bid for {name} is open",
+        "Approved": "Your offer of {price} eb a share for up to {shares} shares of {name} is open until {date}. {escrow} eb is held from your brokerage balance.",
+        "UnfundedSubject": "Your bid for {name} lapsed",
+        "Unfunded": "Your brokerage balance could not cover the {escrow} eb your bid for {name} needs, so it has lapsed.",
+        "RejectedSubject": "Your bid for {name} was refused",
+        "Rejected": "The market refused your takeover bid for {name}.",
+        "ClosedSubject": "The takeover offer for {name} has closed",
+        "Closed": "{bidder}'s offer for {name} closed: {shares} shares bought at {price} eb. Anything you tendered has been paid into your brokerage balance.",
+        "Control": "{bidder}'s offer for {name} closed: {shares} shares bought at {price} eb, and {bidder} now controls the company. Anything you tendered has been paid into your brokerage balance.",
+        "BidderClosed": "Your offer for {name} closed: you bought {shares} shares at {price} eb. {refund} eb of the escrow came back to your brokerage balance.",
+        "BidderControl": "Your offer for {name} closed: you bought {shares} shares at {price} eb and now control the company. {refund} eb of the escrow came back to your brokerage balance."
+      }
+    },
     "Capital": {
       "Title": "Capital",
       "Intro": "The shareholders can vote, by a majority of the shares, to issue new shares or to buy shares back. New shares are offered to the holders at book value, each by the shares they hold now, for 14 days; what nobody takes lapses. In a buyback the company spends up to the budget from its cash buying shares at book value from any holder who sells in the next 14 days.",
@@ -1973,6 +2022,12 @@
       "Delist": "Delist",
       "DelistConfirm": "Delist this company? It buys the market's shares back at the market price from its cash (borrowing from the bank what it lacks), the shareholders' shares leave their portfolios and become shares on its record again, and it goes back to being a private company. This cannot be undone.",
       "GiveTime": "Give it time",
+      "TakeoverApprove": "Approve the offer",
+      "TakeoverReject": "Refuse the offer",
+      "Takeover": {
+        "awaiting": "Takeover bid by {bidder}: {price} eb a share for up to {shares} shares ({escrow} eb, held from their brokerage balance when approved).",
+        "open": "Takeover offer by {bidder} open until {date}: {price} eb a share for up to {shares} shares; {tendered} tendered by players so far."
+      },
       "Listing": {
         "awaiting": "Listing as {ticker} waiting for you: valuation {valuation} eb, float {float}%. Hidden Exposure {exposure}.",
         "prospectus": "Listing as {ticker} approved: the prospectus rolls are under way.",
@@ -2335,6 +2390,11 @@
         "buybackOpened": "A buyback began",
         "buybackClosed": "The buyback closed: {price} bought back",
         "soldBack": "{name} sold shares back",
+        "takeoverBid": "{name} made a takeover bid",
+        "takeoverOpen": "{name}'s takeover offer opened",
+        "takeoverDropped": "{name}'s takeover offer was withdrawn",
+        "takeoverDefence": "{name} defended against the takeover offer",
+        "takeoverClosed": "{name}'s takeover offer closed: {price} shares bought",
         "listingReview": "Put under the delisting review",
         "reviewCleared": "The market gave the company time: the review cleared",
         "buyback": "Public float bought back on delisting",
@@ -2756,7 +2816,13 @@
         "no-buyback": "no buyback is under way",
         "over-budget": "that is more than the buyback has left to spend",
         "last-holder": "someone must still hold shares",
-        "no-price": "the company has no market price yet"
+        "no-price": "the company has no market price yet",
+        "takeover-open": "a takeover offer for the company is already under way",
+        "bad-price": "give a price a share above 0",
+        "no-takeover": "no takeover offer is open",
+        "own-offer": "you cannot tender to your own offer",
+        "defence-done": "the officers have already defended against this offer",
+        "no-target": "no open player company has that ticker"
       }
     },
     "Staff": {

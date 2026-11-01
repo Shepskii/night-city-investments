@@ -69,6 +69,8 @@ export class BusinessApp extends BaseApplication {
       takeRights: BusinessApp._onTakeRights,
       sellBack: BusinessApp._onSellBack,
       issueRoll: BusinessApp._onIssueRoll,
+      tender: BusinessApp._onTender,
+      defenceRoll: BusinessApp._onDefenceRoll,
       buybackRoll: BusinessApp._onBuybackRoll,
       prospectusRoll: BusinessApp._onProspectusRoll,
       charterFund: BusinessApp._onCharterFund,
@@ -429,6 +431,16 @@ export class BusinessApp extends BaseApplication {
     const cost = Math.round(qty * (this.business?.capital?.issue?.price ?? 0));
     if (await this._proposeIfOver('rightsTake', { businessId: this.business?.id, qty }, cost, this.business?.name)) return null;
     return this._send('rightsTake', { qty });
+  }
+
+  /** Tender shares to a takeover offer, or change how many (0 withdraws) (B6b). */
+  static _onTender(event, target) {
+    return this._send('tender', { qty: amount(target, 'tenderQty') });
+  }
+
+  /** The officers' defence against a takeover offer (B6b): Persuasion or Business. */
+  static _onDefenceRoll() {
+    this._roll({ type: 'defenceRoll' }, L('NCI.Takeover.DefendTitle', { name: this.business?.name ?? '' }));
   }
 
   /** A listed company's offering roll (B6a): Trading sets the discount. */

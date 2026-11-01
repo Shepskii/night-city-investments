@@ -40,6 +40,14 @@ async function onListingReject(event, target) {
   report(await BusinessService.rejectListing(target.dataset.id));
 }
 
+async function onTakeoverApprove(event, target) {
+  report(await BusinessService.approveTakeover(target.dataset.id));
+}
+
+async function onTakeoverReject(event, target) {
+  report(await BusinessService.rejectTakeover(target.dataset.id));
+}
+
 async function onDelist(event, target) {
   if (!(await confirm(L('NCI.GMBusiness.Delist'), L('NCI.GMBusiness.DelistConfirm')))) return;
   report(await BusinessService.delist(target.dataset.id));
@@ -76,6 +84,8 @@ export const actions = {
   businessListingApprove: onListingApprove,
   businessListingReject: onListingReject,
   businessDelist: onDelist,
+  businessTakeoverApprove: onTakeoverApprove,
+  businessTakeoverReject: onTakeoverReject,
   businessGiveTime: onGiveTime,
   businessReject: onReject,
   businessPartnerLeaves: onPartnerLeaves,
@@ -118,6 +128,14 @@ export function context() {
           value: whole(b.listing.review?.marketCap ?? 0), date: dayText(b.listing.review?.since ?? 0),
           ticker: b.company?.ticker ?? '', valuation: whole(b.listing.valuation ?? 0), float: Math.round((b.listing.float ?? 0) * 100), exposure: hidden.exposure ?? 0,
           price: b.listing.offer ? b.listing.offer.price.toLocaleString() : '', shares: whole(b.listing.offer?.shares ?? 0),
+        }),
+      } : null,
+      // A takeover offer (B6b): waiting for the GM, or open.
+      takeover: b.takeover ? {
+        awaiting: b.takeover.status === 'awaiting',
+        text: L(`NCI.GMBusiness.Takeover.${b.takeover.status}`, {
+          bidder: b.takeover.bidderName, price: b.takeover.price.toLocaleString(), shares: whole(b.takeover.shares), escrow: whole(Math.round(b.takeover.price * b.takeover.shares)),
+          date: dayText(b.takeover.endDay ?? 0), tendered: whole(Object.values(b.takeover.tenders ?? {}).reduce((a, n) => a + n, 0)),
         }),
       } : null,
       charter: b.charter && ['rolling', 'awaiting', 'funding'].includes(b.charter.status) ? {

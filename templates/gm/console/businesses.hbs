@@ -49,6 +49,15 @@
       <button type="button" data-action="businessListingReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.ListingReject"}}</button>
     </div>
     {{/if}}
+    {{#if takeover}}
+    <div class="nci-warn">{{takeover.text}}</div>
+    {{#if takeover.awaiting}}
+    <div class="nci-actions">
+      <button type="button" data-action="businessTakeoverApprove" data-id="{{id}}"><i class="fas fa-check"></i> {{localize "NCI.GMBusiness.TakeoverApprove"}}</button>
+      <button type="button" data-action="businessTakeoverReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.TakeoverReject"}}</button>
+    </div>
+    {{/if}}
+    {{/if}}
     {{#if listing.review}}
     <div class="nci-actions">
       <button type="button" data-action="businessDelist" data-id="{{id}}"><i class="fas fa-ban"></i> {{localize "NCI.GMBusiness.Delist"}}</button>

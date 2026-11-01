@@ -23,6 +23,7 @@ import { L, money, whole, signed, pct, trendClass } from '../format.js';
 import { fundRows, fundDetail, accessContext, ipoRows, heatContext } from './context.js';
 import { ipoPrice, shareOf, bookValue } from '../../engine/index.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
+import { BusinessClient } from '../../services/BusinessClient.js';
 import { SyndicateClient } from '../../services/SyndicateClient.js';
 import { accountFor, tradingAccounts, ownerOf } from '../accounts.js';
 import { syndicateContext, characterSyndicates } from './syndicateContext.js';
@@ -44,6 +45,7 @@ export class MarketTerminalApp extends BaseApplication {
     window: { title: 'NCI.Terminal.Title', icon: 'fas fa-chart-line' },
     position: { width: 1200, height: 640 },
     actions: {
+      makeBid: MarketTerminalApp._onMakeBid,
       select: MarketTerminalApp._onSelect,
       openAsset: MarketTerminalApp._onOpenAsset,
       back: MarketTerminalApp._onBack,
@@ -245,6 +247,26 @@ export class MarketTerminalApp extends BaseApplication {
 
   static async _onRemoveAlert(event, target) {
     if (this.actor) await PortfolioClient.removeAlert(this.actor, target.dataset.id);
+  }
+
+  /**
+   * A takeover bid for a player company (B6b), named by its ticker: a price per share and the most shares
+   * wanted. It waits for the GM; once approved, the whole offer is held from the brokerage balance.
+   */
+  static async _onMakeBid() {
+    if (!this.actor) return ui.notifications.warn(L('NCI.Errors.NoActor'));
+    const field = (name) => this.element.querySelector(`[name="${name}"]`)?.value ?? '';
+    const ticker = String(field('bidTicker')).trim().toUpperCase();
+    const price = Math.round(Number(field('bidPrice')) * 100) / 100;
+    const shares = Math.floor(Number(field('bidShares')));
+    if (!ticker || !(price > 0) || !(shares >= 1)) return ui.notifications.warn(L('NCI.Takeover.BidIncomplete'));
+    const ok = await foundry.applications.api.DialogV2.confirm({
+      window: { title: L('NCI.Takeover.BidTitle', { ticker }) },
+      content: `<p>${L('NCI.Takeover.BidConfirm', { ticker, price: price.toLocaleString(), shares: shares.toLocaleString(), escrow: Math.round(price * shares).toLocaleString() })}</p>`,
+      rejectClose: false,
+    });
+    if (!ok) return undefined;
+    return BusinessClient.submit(this.actor, 'bid', { ticker, price, shares });
   }
 
   /** From a private stake on the Portfolio tab: open the Business window on that business. */
@@ -616,6 +638,8 @@ export class MarketTerminalApp extends BaseApplication {
       holdings: whole(v.holdings),
       total: whole(v.total + stakesValue),
       stakes: stakes.map((s) => ({ ...s, value: whole(s.value) })),
+      // A takeover bid for a player company (B6b), when player businesses are on.
+      canBid: game.settings.get(MODULE_ID, 'businessesEnabled') !== false,
       stakesValue: stakes.length ? whole(stakesValue) : '',
       unrealized: signed(v.unrealized),
       unrealizedCls: trendClass(v.unrealized),

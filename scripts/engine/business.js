@@ -101,6 +101,7 @@ import {
 import {
   issueOffer, startIssue, takeRights, buybackOffer, startBuyback, sellBack, closeCapital, capitalRollCheck, applyOfferingRoll, applyTimingRoll,
 } from './businessCapital.js';
+import { takeoverOffer, makeTakeover, tenderShares, defenceCheck, applyDefence } from './businessTakeover.js';
 
 export { daysLeft, activeProject, expansionOffer, milestones, stepUpCheck, projectOffer, PROJECT_KINDS };
 export { upgradesOf, protectionFactor, breakInFactor, reputationBaseline } from './businessGrowth.js';
@@ -115,7 +116,7 @@ export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
   'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll', 'prospectusRoll',
   'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant', 'askStaff', 'cancelAsk', 'addTeam',
-  'rightsTake', 'sellBack', 'issueRoll', 'buybackRoll',
+  'rightsTake', 'sellBack', 'issueRoll', 'buybackRoll', 'bid', 'tender', 'defenceRoll',
 ]);
 
 /** Item types that are not things a business can own. */
@@ -146,7 +147,7 @@ export function itemGear(item, actorId, p = BUSINESS_DEFAULTS) {
 }
 
 /** Requests that carry a roll. */
-export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll', 'staffRoll', 'prospectusRoll', 'issueRoll', 'buybackRoll']);
+export const ROLL_REQUESTS = Object.freeze(['setupRoll', 'action', 'assist', 'stepUpRoll', 'respond', 'loanRoll', 'angelRoll', 'charterRoll', 'reportRoll', 'auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll', 'staffRoll', 'prospectusRoll', 'issueRoll', 'buybackRoll', 'defenceRoll']);
 
 /**
  * What each kind of proposal needs to pass (DESIGN §27.0): closing and stepping up need every partner
@@ -204,6 +205,14 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     const check = stepUpCheck(b, actorId, day, p);
     if (!check.ok) return check;
     return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till - p.registration.fee, operatorRank, p, b, traits });
+  }
+
+  if (request.type === 'defenceRoll') {
+    // The target's officers defend against a takeover offer (B6b), once; a hired professional may too.
+    if (!canRun(b, actorId)) return fail('not-officer');
+    const check = defenceCheck(b, p);
+    if (!check.ok) return check;
+    return allowed(check.uses, use, { dv: check.dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
 
   if (request.type === 'issueRoll' || request.type === 'buybackRoll') {
@@ -813,6 +822,31 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (!job) return fail('not-staff');
       quitJob(b, job.id, day, p);
       out.events.push({ type: 'quit', staffId: job.id });
+      break;
+    }
+    case 'bid': {
+      // A tender offer for the company (B6b), by anyone; it waits for the GM.
+      const can = takeoverOffer(b, actor.id, request);
+      if (!can.ok) return can;
+      makeTakeover(b, actor, can.terms, day, p);
+      out.events.push({ type: 'takeoverBid', bidderId: actor.id, price: can.terms.price, shares: can.terms.shares });
+      break;
+    }
+    case 'tender': {
+      const done = tenderShares(b, actor.id, request.qty, day);
+      if (!done.ok) return done;
+      out.events.push({ type: 'tendered', qty: done.qty });
+      break;
+    }
+    case 'defenceRoll': {
+      const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
+      if (!spec.ok) return spec;
+      if (!check?.ok) return fail(check?.reason ?? 'no-roll');
+      spendFor('roll');
+      const r = check.result;
+      if (r.extra) spendDays(b, actor.id, 1);
+      applyDefence(b, actor.id, r, day, p);
+      out.events.push({ type: 'roll', action: 'defenceRoll', band: r.band, exposure: r.exposure }, { type: 'takeoverDefended', band: r.band });
       break;
     }
     case 'rightsTake': {

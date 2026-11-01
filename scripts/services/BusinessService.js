@@ -21,6 +21,7 @@ import {
   isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact, payListedDividend,
   reviewListing, clearReview, delistCompany,
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
+  takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter, isItemPile } from '../utils/helpers.js';
@@ -499,6 +500,13 @@ class BusinessServiceImpl {
     if (!this.enabled()) return this._receipt(actor, request, { ok: false, reason: 'disabled' });
     const as = this._partnerFor(actor, request);
     if (!as.ok) return this._receipt(actor, request, as);
+    // A takeover bid names its target by ticker, as the bidder knows it; they cannot read its record (B6b).
+    if (request.type === 'bid' && !request.businessId) {
+      const ticker = String(request.ticker ?? '').trim().toUpperCase();
+      const target = BusinessRepository.all().find((t) => t.status === 'open' && t.stage === 2 && t.company?.ticker === ticker);
+      if (!target) return this._receipt(actor, request, { ok: false, reason: 'no-target' });
+      request = { ...request, businessId: target.id };
+    }
     const stored = request.type === 'found' ? null : BusinessRepository.get(request.businessId);
     if (request.type !== 'found' && !stored) return this._receipt(actor, request, { ok: false, reason: 'no-business' });
     // Where else its NPC staff work, and their shifts there, before anything is checked (E3).
@@ -827,6 +835,7 @@ class BusinessServiceImpl {
         changed++;
       }
       await this._marketCapital();
+      await this._closeTakeovers();
       return changed;
     });
   }
@@ -873,6 +882,150 @@ class BusinessServiceImpl {
   /** Turn a listing down: the fee is not refunded. */
   rejectListing(id) {
     return this._gm(id, (b) => rejectBusinessListing(b, this.day()));
+  }
+
+  /**
+   * Approve a takeover offer (B6b): the whole offer is held from the bidder's brokerage balance, and it
+   * opens for its days, its premium measured against the price now. A bidder who cannot cover it loses
+   * the offer. The holders and the bidder are told; a listed company's offer makes the news.
+   */
+  approveTakeover(id) {
+    if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
+    return this._queue.run(async () => {
+      const stored = BusinessRepository.get(id);
+      if (stored?.takeover?.status !== 'awaiting') return { ok: false, reason: 'no-takeover' };
+      const b = normalizeBusiness(structuredClone(stored));
+      const t = b.takeover;
+      const day = this.day();
+      const account = this._account(t.bidderId);
+      const escrow = Math.round(t.price * t.shares);
+      const held = account && PortfolioRepository.hasPortfolio(account) ? PortfolioRepository.get(account) : null;
+      const cash = held ? (held.cash ?? 0) - committedCash(held.orders ?? []) : 0;
+      if (!account || cash < escrow) {
+        dropTakeover(b, day, 'no-funds');
+        await BusinessRepository.save(b);
+        await this._mailAccount(t.bidderId, L('NCI.Takeover.Mail.UnfundedSubject', { name: b.name }), [L('NCI.Takeover.Mail.Unfunded', { name: b.name, escrow: escrow.toLocaleString() })]);
+        Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+        return { ok: false, reason: 'no-funds' };
+      }
+      const tick = timeOf(MarketStore.getPublic());
+      await PortfolioService.transformActor(account, (p) => ({
+        portfolio: { ...p, cash: (p.cash ?? 0) - escrow, ledger: [...(p.ledger ?? []), { ts: tick, kind: 'takeoverEscrow', amount: -escrow, ref: b.id }] },
+        changed: true,
+      }));
+      const ticker = b.company?.ticker ?? '';
+      openTakeover(b, { day, reference: takeoverReference(b, MarketStore.getPublic().companies?.[ticker]?.price ?? 0) });
+      await BusinessRepository.save(b);
+      const terms = { name: b.name, ticker, bidder: t.bidderName, price: t.price.toLocaleString(), shares: t.shares.toLocaleString(), premium: Math.round(takeoverPremium(b.takeover) * 100), date: this._dayText(b.takeover.endDay) };
+      await this._mailHolders(b, L('NCI.Takeover.Mail.OpenSubject', terms), [L('NCI.Takeover.Mail.Open', terms)]);
+      await this._mailAccount(t.bidderId, L('NCI.Takeover.Mail.ApprovedSubject', terms), [L('NCI.Takeover.Mail.Approved', { ...terms, escrow: escrow.toLocaleString() })]);
+      if (isListed(b)) await NewsService.post({ headline: L('NCI.News.Takeover', terms), tone: 'up', companyIds: [ticker] });
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+      return { ok: true, business: b };
+    });
+  }
+
+  /** Turn a takeover offer down (B6b): nothing was held yet; the bidder is told. */
+  rejectTakeover(id) {
+    if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
+    return this._queue.run(async () => {
+      const stored = BusinessRepository.get(id);
+      if (stored?.takeover?.status !== 'awaiting') return { ok: false, reason: 'no-takeover' };
+      const b = normalizeBusiness(structuredClone(stored));
+      const t = b.takeover;
+      dropTakeover(b, this.day());
+      await BusinessRepository.save(b);
+      await this._mailAccount(t.bidderId, L('NCI.Takeover.Mail.RejectedSubject', { name: b.name }), [L('NCI.Takeover.Mail.Rejected', { name: b.name })]);
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+      return { ok: true, business: b };
+    });
+  }
+
+  /**
+   * Close the takeover offers whose time is up (B6b): the tendered shares are bought at the price (a
+   * listed company's between portfolios, a private one's on the record), the sellers paid into their
+   * brokerage balances, the rest of the escrow returned to the bidder. Everyone involved is told.
+   */
+  async _closeTakeovers() {
+    const day = this.day();
+    for (const stored of BusinessRepository.all().filter((x) => x.takeover?.status === 'open' && day > x.takeover.endDay)) {
+      const b = normalizeBusiness(structuredClone(stored));
+      const listed = isListed(b);
+      const ticker = b.company?.ticker;
+      const tick = timeOf(MarketStore.getPublic());
+      const t = b.takeover;
+      let held = null;
+      let sellable = null;
+      if (listed) {
+        this._syncHolders(b);
+        held = {};
+        sellable = {};
+        for (const account of PortfolioRepository.accounts().filter((a) => PortfolioRepository.hasPortfolio(a))) {
+          const lots = PortfolioRepository.get(account).lots ?? [];
+          held[account.id] = heldQty(lots, ticker);
+          sellable[account.id] = sellableQty(lots, ticker, tick);
+        }
+      }
+      const done = settleTakeover(b, { day, sellable, held });
+      if (!done.ok) continue;
+      for (const r of done.transfers.filter((x) => !x.npc && !x.market)) {
+        const account = this._account(r.actorId);
+        if (!account) continue;
+        await PortfolioService.transformActor(account, (p) => {
+          const lots = listed ? consumeLotsFifo(p.lots ?? [], ticker, r.qty, tick)?.lots ?? p.lots : p.lots;
+          return {
+            portfolio: { ...p, lots, cash: (p.cash ?? 0) + r.cash, ledger: [...(p.ledger ?? []), { ts: tick, kind: 'tendered', assetId: ticker ?? '', qty: -r.qty, amount: r.cash, ref: b.id }] },
+            changed: true,
+          };
+        });
+      }
+      const bidder = this._account(done.bidderId);
+      if (bidder) {
+        await PortfolioService.transformActor(bidder, (p) => ({
+          portfolio: {
+            ...p,
+            cash: (p.cash ?? 0) + done.refund,
+            lots: listed && done.acquired > 0
+              ? [...(p.lots ?? []), { id: `lot_takeover_${b.id}_${day}`, assetType: 'stock', assetId: ticker, qty: done.acquired, unitCost: t.price, acquiredTick: tick, drip: false }]
+              : (p.lots ?? []),
+            ledger: [...(p.ledger ?? []), { ts: tick, kind: 'takeoverSettled', assetId: ticker ?? '', qty: done.acquired, amount: done.refund, ref: b.id }],
+          },
+          changed: true,
+        }));
+      }
+      if (listed) this._syncHolders(b);
+      await BusinessRepository.save(b);
+      const terms = { name: b.name, ticker: ticker ?? '', bidder: t.bidderName, shares: done.acquired.toLocaleString(), price: t.price.toLocaleString(), refund: done.refund.toLocaleString() };
+      const key = done.control ? 'Control' : 'Closed';
+      await this._mailHolders(b, L('NCI.Takeover.Mail.ClosedSubject', terms), [L(`NCI.Takeover.Mail.${key}`, terms)]);
+      await this._mailAccount(done.bidderId, L('NCI.Takeover.Mail.ClosedSubject', terms), [L(`NCI.Takeover.Mail.Bidder${key}`, terms)]);
+      if (listed) await NewsService.post({ headline: L(done.control ? 'NCI.News.TakeoverControl' : 'NCI.News.TakeoverClosed', terms), tone: 'neutral', companyIds: [ticker] });
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+    }
+  }
+
+  /** A character or a syndicate's account, by id. */
+  _account(id) {
+    return game.actors.get(id) ?? SyndicateRepository.account(id) ?? null;
+  }
+
+  /** A mail to an account: a character directly, a syndicate's active members each. */
+  async _mailAccount(id, subject, lines) {
+    const ids = game.actors.get(id) ? [id] : (SyndicateRepository.get(id)?.members ?? []).filter((m) => m.status === 'active').map((m) => m.actorId);
+    for (const actorId of ids) {
+      const actor = game.actors.get(actorId);
+      if (!actor) continue;
+      try {
+        await MailService.fromWire(actor, { subject, lines });
+      } catch (error) {
+        log.warn('Takeover mail failed', error);
+      }
+    }
+  }
+
+  /** A game day as the calendar shows it, for mails. */
+  _dayText(day) {
+    return MarketClock.dateString(day * 86400000);
   }
 
   /** Give a company under the delisting review time (B5c): the review clears and the count starts again. */

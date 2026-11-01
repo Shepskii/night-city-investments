@@ -252,6 +252,52 @@ test('a listed company\'s buyback buys from the float each market day and retire
   await S.BusinessRepository.save({ ...business(), capital: { issue: null, buyback: null } });
 });
 
+test('a takeover bid for a listed company, by ticker: approved with the offer held from the bidder\'s balance; holders tender free shares, the float tenders by the premium; at the close shares move between portfolios', async () => {
+  const { BusinessClient } = await import('../scripts/services/BusinessClient.js');
+  const price = S.MarketStore.getPublic().companies.PLAY.price;
+  const offer = Math.round(price * 1.3 * 100) / 100;
+  await S.PortfolioClient.submit(cass, 'deposit', { amount: 30000 });
+  await settle();
+  const want = Math.floor(20000 / offer);
+  await BusinessClient.submit(cass, 'bid', { ticker: 'play', price: offer, shares: want });
+  await S.BusinessService.processActor(cass);
+  await settle();
+  assert.equal(business().takeover?.status, 'awaiting', 'named by its ticker, waiting for the GM');
+
+  const cashBefore = portfolio(cass).cash;
+  assert.equal((await S.BusinessService.approveTakeover('bus_play')).ok, true);
+  await settle();
+  assert.equal(business().takeover.status, 'open');
+  assert.equal(portfolio(cass).cash, cashBefore - Math.round(offer * want), 'the offer held');
+
+  // Alice tenders some of her free shares (the ones she bought; her listing shares may still be locked).
+  const tick = S.MarketStore.getPublic().time;
+  const free = E.sellableQty(portfolio(alice).lots, 'PLAY', tick);
+  assert.ok(free >= 20, `alice has free shares (${free})`);
+  await BusinessClient.submit(alice, 'tender', { businessId: 'bus_play', qty: 20 });
+  await S.BusinessService.processActor(alice);
+  await settle();
+  assert.equal(business().takeover.tenders[alice.id], 20);
+
+  const before = { alice: held(alice), aliceCash: portfolio(alice).cash, cass: held(cass), shares: business().listing.shares };
+  await S.TickService.advanceDays(E.BUSINESS_DEFAULTS.takeover.days + 1);
+  await settle();
+  const after = business();
+  assert.equal(after.takeover, null, 'closed');
+  const bought = after.lastTakeover.acquired;
+  assert.ok(bought > 20 && bought <= want, `the float tendered at a 30% premium (${bought})`);
+  assert.equal(held(cass), before.cass + bought, 'the bidder\'s portfolio has them');
+  assert.ok(held(alice) <= before.alice - 1 && held(alice) >= before.alice - 20, 'alice sold (pro rata at most 20)');
+  // Paid into her balance (other money, such as a dividend, may land in the same days).
+  const tendered = portfolio(alice).ledger.find((e) => e.kind === 'tendered' && e.ref === 'bus_play');
+  assert.deepEqual([tendered.qty, tendered.amount], [-(before.alice - held(alice)), Math.round((before.alice - held(alice)) * offer)], 'paid into her balance');
+  assert.ok(portfolio(alice).cash >= before.aliceCash + tendered.amount);
+  assert.equal(after.listing.shares, before.shares, 'no shares made or lost');
+  assert.equal(after.partners.find((x) => x.actorId === cass.id)?.units, held(cass), 'a shareholder by her portfolio');
+  const settled = portfolio(cass).ledger.find((e) => e.kind === 'takeoverSettled' && e.ref === 'bus_play');
+  assert.equal(settled.amount, Math.round(offer * want) - after.lastTakeover.spent, 'what was not spent came back');
+});
+
 test('a listed company worth too little for three reports goes under review; the GM delists it: the float bought back, shares out of portfolios and onto the record, the company private again', async () => {
   const { MailService } = await import('../scripts/services/MailService.js');
   const sent = [];

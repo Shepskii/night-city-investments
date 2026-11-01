@@ -13,7 +13,7 @@ import {
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
-  capitalOf, issueOptions, rightsLeft, tenderRoom, capitalRollCheck,
+  capitalOf, issueOptions, rightsLeft, tenderRoom, capitalRollCheck, defenceCheck, takeoverPremium,
 } from '../../engine/index.js';
 import { SkillAdapter } from '../../services/SkillAdapter.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
@@ -1176,6 +1176,33 @@ function capitalContext(business, actor, canAct) {
   };
 }
 
+/**
+ * A takeover offer for the company (B6b): its terms and how long it runs, the holder's own tender, and
+ * the officers' defence roll; or how the last one ended.
+ */
+function takeoverContext(business, actor, canAct) {
+  const t = business.takeover;
+  const day = BusinessClient.day();
+  const me = actor ? partnerOf(business, actor.id) : null;
+  const held = me && ['active', 'leaving'].includes(me.status) ? me.units : 0;
+  const pct = (x) => Math.round(x * 100);
+  const last = business.lastTakeover;
+  return {
+    text: !t ? '' : t.status === 'awaiting'
+      ? L('NCI.Takeover.Awaiting', { bidder: t.bidderName, price: t.price.toLocaleString(), shares: whole(t.shares) })
+      : L('NCI.Takeover.Open', { bidder: t.bidderName, price: t.price.toLocaleString(), shares: whole(t.shares), premium: pct(takeoverPremium(t)), reference: t.reference.toLocaleString(), date: dayText(t.endDay) }),
+    defence: t?.defence ? L('NCI.Takeover.Defended', { band: L(`NCI.Roll.Band.${t.defence.band}`), shift: `${t.defence.shift >= 0 ? '+' : ''}${pct(t.defence.shift)}` }) : '',
+    mine: t?.status === 'open' && held && actor.id !== t.bidderId
+      ? L('NCI.Takeover.Mine', { tendered: whole(t.tenders[actor.id] ?? 0), held: whole(held) })
+      : '',
+    canTender: t?.status === 'open' && day <= t.endDay && held > 0 && actor.id !== t.bidderId,
+    held,
+    tendered: t?.tenders?.[actor?.id] ?? 0,
+    canDefend: canAct && canRun(business, actor.id) && defenceCheck(business).ok,
+    last: !t && last ? L(last.control ? 'NCI.Takeover.LastControl' : 'NCI.Takeover.Last', { bidder: last.bidderName, shares: whole(last.acquired), price: last.price.toLocaleString(), date: dayText(last.closedDay) }) : '',
+  };
+}
+
 function partnersContext(business, actor) {
   const units = totalUnits(business);
   const value = unitValue(business);
@@ -1220,6 +1247,7 @@ function partnersContext(business, actor) {
     canPropose: open && canAct && !business.proposals.some((x) => x.kind === 'close'),
     investors: open ? investorsContext(business, actor, canAct) : null,
     capital: open && business.stage >= 2 ? capitalContext(business, actor, canAct) : null,
+    takeover: business.stage >= 2 && (business.takeover || business.lastTakeover) ? takeoverContext(business, actor, canAct) : null,
     proposals: business.proposals.map((proposal) => ({
       id: proposal.id,
       // Stepping up is registering, chartering or listing, by the stage it is proposed at.

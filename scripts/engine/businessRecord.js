@@ -173,6 +173,9 @@ export function normalizeBusiness(raw) {
     listing: b.listing ?? null,
     // New shares and buybacks under way (B6a).
     capital: b.capital ?? { issue: null, buyback: null },
+    // A takeover offer for the company, and the last one closed (B6b).
+    takeover: b.takeover ?? null,
+    lastTakeover: b.lastTakeover ?? null,
     listingConcerns: !!b.listingConcerns,
     /** Notes from another business's two-jobs events, for this one's next digest (E3). */
     pendingNotes: b.pendingNotes ?? [],
