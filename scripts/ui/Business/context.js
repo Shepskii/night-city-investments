@@ -29,6 +29,8 @@ import { L, whole, signed } from '../format.js';
 import { weeklyBars, balanceLine } from '../components/chart.js';
 import { actorLink } from '../actorLink.js';
 import { isCharacter } from '../../utils/helpers.js';
+import { withDiscoveries } from '../investigate.js';
+import { escapeHtml } from '../../utils/text.js';
 
 const DAY_MS = 86_400_000;
 const LEDGER_ROWS = 15;
@@ -114,15 +116,17 @@ export const maskLabel = (m) => (m.kind === 'nominee' ? L('NCI.Ownership.Nominee
 /**
  * A holder on the cap table, as HTML: the market's float and a restructured company's creditors (B6c)
  * by what they are, everyone else linked to their character. A hidden holder (B6d) shows as their
- * outermost layer, except to themselves and the GM, who see both.
+ * outermost layer, with whatever the viewing character's investigations have found behind it; the
+ * holder sees both, and so does the GM Console (`truth`). The Business window shows the GM what the
+ * picked character would see.
  */
-export function holderWho(business, p, viewerId = null) {
+export function holderWho(business, p, viewerId = null, { truth = false } = {}) {
   if (p.market) return L('NCI.Business.MarketHolder');
   if (p.creditors || p.actorId === 'npc:creditors') return L('NCI.Business.CreditorsHolder');
   const mask = outerMask(business, p.actorId);
   if (!mask) return actorLink(holderActorId(business, p), p.name);
-  if (game.user.isGM || (viewerId && viewerId === p.actorId)) return `${actorLink(holderActorId(business, p), p.name)} <span class="nci-muted">${L('NCI.Ownership.As', { mask: maskLabel(mask) })}</span>`;
-  return maskLabel(mask);
+  if (truth || (viewerId && viewerId === p.actorId)) return `${actorLink(holderActorId(business, p), p.name)} <span class="nci-muted">${L('NCI.Ownership.As', { mask: maskLabel(mask) })}</span>`;
+  return escapeHtml(withDiscoveries(maskLabel(mask), game.actors.get(viewerId), mask.ref));
 }
 
 const nameOf = (business, actorId) => partnerOf(business, actorId)?.name || (business.staff ?? []).find((s) => s.id === actorId)?.name || game.actors.get(actorId)?.name || '?';
@@ -1265,7 +1269,7 @@ function partnersContext(business, actor) {
   const characters = game.actors.filter((a) => isCharacter(a) && a.id !== actor?.id);
   const sweat = business.agreement.sweat;
   // A hidden holder's row (B6d) gives nothing away to other shareholders: no money in, heir or office.
-  const maskedFor = (p) => !!outerMask(business, p.actorId) && !game.user.isGM && actor?.id !== p.actorId;
+  const maskedFor = (p) => !!outerMask(business, p.actorId) && actor?.id !== p.actorId;
   return {
     rows: business.partners.filter((p) => p.status !== 'declined').map((p) => ({
       masked: maskedFor(p),
@@ -1274,7 +1278,7 @@ function partnersContext(business, actor) {
       // The shares the market holds after a listing (B5b) are shown as the public float.
       who: holderWho(business, p, actor?.id),
       // A hidden holder another shareholder can investigate (B6d).
-      investigateRef: outerMask(business, p.actorId)?.ref && actor && actor.id !== p.actorId && !game.user.isGM ? outerMask(business, p.actorId).ref : '',
+      investigateRef: outerMask(business, p.actorId)?.ref && actor && actor.id !== p.actorId ? outerMask(business, p.actorId).ref : '',
       maskName: outerMask(business, p.actorId) ? maskLabel(outerMask(business, p.actorId)) : '',
       status: LT(business, `NCI.Business.PartnerStatus.${p.status}`),
       units: business.status === 'forming' ? '' : whole(p.units),

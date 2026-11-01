@@ -86,6 +86,8 @@ export const FLAGS = Object.freeze({
   BUSINESS_OUTBOX: 'businessOutbox',
   /** On actors. Which business requests the GM has handled, and how. Written only by the GM. */
   BUSINESS_RECEIPTS: 'businessReceipts',
+  /** What a character's investigations have uncovered behind hidden holdings (B6d): layer ref -> names found. */
+  DISCOVERIES: 'discoveries',
   /** On actors. The jobs a character holds or is offered at player businesses (DESIGN §32). Written only by the GM. */
   JOBS: 'jobs',
   /** On a syndicate's journal: its record, which its members can read. Written only by the GM. (Its account is the `portfolio` flag beside it.) */

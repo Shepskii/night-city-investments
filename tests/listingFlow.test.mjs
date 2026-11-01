@@ -394,6 +394,7 @@ test('an investigation by ticker: a roll against a hidden total peels one layer 
     assert.equal(first.investigation.success, true, `a 9 beats the shell's 6 (${first.investigation.band})`);
     assert.ok(sent.some((m) => m.actor === cass.id && m.lines.join(' ').includes('Vex')), 'told of the nominee behind it');
     assert.equal(sent.some((m) => m.actor === bob.id), false, 'bob is not told');
+    assert.deepEqual(cass.getFlag('night-city-investments', 'discoveries')[0].ref_out, ['Vex (nominee)'], 'kept on her character for her windows');
     assert.equal(/DV \d/.test(chats.at(-1).content), false, 'the card shows no DV');
 
     dice.push(9);
@@ -408,6 +409,7 @@ test('an investigation by ticker: a roll against a hidden total peels one layer 
     const second = await dig();
     assert.equal(second.investigation.success, true);
     assert.ok(sent.some((m) => m.actor === cass.id && m.lines.join(' ').includes(bob.name)), 'and then who it is');
+    assert.deepEqual(cass.getFlag('night-city-investments', 'discoveries')[0].ref_out, ['Vex (nominee)', bob.name]);
     assert.equal(business().masks[bob.id].length, 2, 'an investigation tells the investigator, not the register');
   } finally {
     SkillAdapter.rollOne = rollOne;
@@ -415,6 +417,20 @@ test('an investigation by ticker: a roll against a hidden total peels one layer 
     await S.BusinessRepository.save({ ...business(), masks: {} });
     await S.BusinessService._saveHidden({ business: business(), events: [] });
   }
+});
+
+test('a hidden holder on the cap table: others see the outer layer and what their own investigations found; the holder and the GM Console see the truth', async () => {
+  const { holderWho } = await import('../scripts/ui/Business/context.js');
+  const b = E.normalizeBusiness(structuredClone(business()));
+  S.BusinessService._syncHolders(b);
+  b.masks = { [bob.id]: [{ kind: 'nominee', name: 'Vex', day: 0, lastFee: 0, ref: 'ref_a' }, { kind: 'shell', name: 'Kestrel & Co', day: 0, lastFee: 0, ref: 'ref_b' }] };
+  const row = b.partners.find((x) => x.actorId === bob.id);
+  assert.equal(holderWho(b, row, alice.id), 'Kestrel &amp; Co', 'the outer layer only, escaped');
+  await alice.setFlag('night-city-investments', 'discoveries', [{ ref_b: ['Vex (nominee)'] }]);
+  assert.equal(holderWho(b, row, alice.id), 'Kestrel &amp; Co → Vex (nominee)', 'with what she has found');
+  assert.ok(holderWho(b, row, bob.id).includes(bob.name), 'the holder sees themselves');
+  assert.ok(holderWho(b, row, null, { truth: true }).includes(bob.name), 'and the GM Console the truth');
+  await alice.setFlag('night-city-investments', 'discoveries', [{}]);
 });
 
 test('a listed company in administration is restructured: its debts become creditors\' shares, added to the market and kept through the holders\' sync', async () => {

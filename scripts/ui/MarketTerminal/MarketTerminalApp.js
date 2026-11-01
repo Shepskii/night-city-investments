@@ -24,7 +24,7 @@ import { fundRows, fundDetail, accessContext, ipoRows, heatContext } from './con
 import { ipoPrice, shareOf, bookValue } from '../../engine/index.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient } from '../../services/BusinessClient.js';
-import { investigate } from '../investigate.js';
+import { investigate, withDiscoveries } from '../investigate.js';
 import { SyndicateClient } from '../../services/SyndicateClient.js';
 import { accountFor, tradingAccounts, ownerOf } from '../accounts.js';
 import { syndicateContext, characterSyndicates } from './syndicateContext.js';
@@ -515,7 +515,9 @@ export class MarketTerminalApp extends BaseApplication {
       unlisted: !c.listed,
       // A listed player company's public register (B6d): hidden holders by their outermost layer.
       register: (c.register ?? []).map((r) => ({
-        label: r.kind === 'market' ? L('NCI.Business.MarketHolder') : r.kind === 'creditors' ? L('NCI.Business.CreditorsHolder') : r.kind === 'nominee' ? L('NCI.Ownership.Nominee', { broker: r.label }) : r.label,
+        label: r.kind === 'market' ? L('NCI.Business.MarketHolder') : r.kind === 'creditors' ? L('NCI.Business.CreditorsHolder')
+          // A hidden holder, with whatever this character has dug up behind the layer.
+          : withDiscoveries(r.kind === 'nominee' ? L('NCI.Ownership.Nominee', { broker: r.label }) : r.label, this.actor?.isSyndicate ? this.actor.as : this.actor, r.ref),
         shares: whole(r.shares), pct: `${r.pct}%`,
         // A hidden holder can be investigated by anyone but themselves.
         ref: r.ref && this.actor && !ownRefs.has(r.ref) ? r.ref : '',

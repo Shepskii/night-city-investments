@@ -168,7 +168,7 @@ export function context() {
       location: [b.district ? L(`NCI.District.${b.district}`) : '', b.location].filter(Boolean).join(', '),
       // The owners, as a compact table: each name (HTML) links to their character.
       owners: b.partners.filter((p) => p.status !== 'declined').map((p) => ({
-        who: holderWho(b, p),
+        who: holderWho(b, p, null, { truth: true }),
         status: LT(b, `NCI.Business.PartnerStatus.${p.status}`),
         units: b.status === 'open' || b.status === 'closed' ? whole(p.units ?? 0) : '',
         share: units > 0 && ['active', 'leaving'].includes(p.status) ? `${((p.units / units) * 100).toFixed(1)}%` : '',

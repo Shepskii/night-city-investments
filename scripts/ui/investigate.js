@@ -9,6 +9,20 @@ import { BUSINESS_DEFAULTS } from '../engine/index.js';
 import { SkillAdapter } from '../services/SkillAdapter.js';
 import { BusinessClient, receiptsOf } from '../services/BusinessClient.js';
 import { L } from './format.js';
+import { MODULE_ID, FLAGS } from '../utils/constants.js';
+import { unwrap } from '../utils/helpers.js';
+
+/** What this character has found behind a register row's layer (by its ref): the names, outside in. */
+export function discoveredBehind(actor, ref) {
+  if (!actor || !ref) return [];
+  return (unwrap(actor.getFlag?.(MODULE_ID, FLAGS.DISCOVERIES)) ?? {})[ref] ?? [];
+}
+
+/** A register row's name with what the viewer has found behind it: "Kestrel Holdings → Alvarez Financial (nominee) → Splice". */
+export function withDiscoveries(label, actor, ref) {
+  const found = discoveredBehind(actor, ref);
+  return found.length ? [label, ...found].join(' → ') : label;
+}
 
 const useLabel = (u) => (u.kind === 'ability' ? u.ability : u.skill);
 

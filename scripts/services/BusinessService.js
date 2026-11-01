@@ -26,7 +26,7 @@ import {
   concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
-import { L, log, isActiveGM, isCharacter, isItemPile } from '../utils/helpers.js';
+import { L, log, isActiveGM, isCharacter, isItemPile, unwrap } from '../utils/helpers.js';
 import { SerialQueue } from '../utils/queue.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
@@ -1193,6 +1193,9 @@ class BusinessServiceImpl {
       const holder = this._account(holderId);
       const found = target.reveals ? (target.reveals.kind === 'nominee' ? L('NCI.Ownership.Nominee', { broker: target.reveals.name }) : target.reveals.name) : (holder?.name ?? '?');
       await this._mailAccount(actor.id, L('NCI.Ownership.Mail.FoundSubject', { name: company }), [L(target.reveals ? 'NCI.Ownership.Mail.FoundLayer' : 'NCI.Ownership.Mail.FoundHolder', { name: company, found })]);
+      // On the investigator too, keyed by the register row's layer, so their own windows show what they found.
+      const known = unwrap(actor.getFlag(MODULE_ID, FLAGS.DISCOVERIES)) ?? {};
+      await actor.setFlag(MODULE_ID, FLAGS.DISCOVERIES, [{ ...known, [request.ref]: [...(known[request.ref] ?? []), found].slice(0, 4) }]);
     } else if (r.band === 'fumble') {
       await this._mailAccount(holderId, L('NCI.Ownership.Mail.TippedSubject', { name: company }), [L('NCI.Ownership.Mail.Tipped', { name: company })]);
     }
