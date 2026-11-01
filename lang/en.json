@@ -2435,6 +2435,7 @@
       "CapTable": "Partners",
       "CapTableCompany": "Shareholders",
       "MarketHolder": "Public float (the market)",
+      "CreditorsHolder": "Receivers (the creditors' shares)",
       "ViewOnMarket": "View on market",
       "Partner": "Partner",
       "PartnerCompany": "Shareholder",

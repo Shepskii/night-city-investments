@@ -107,6 +107,16 @@ function historyContext(business, bands) {
   };
 }
 
+/**
+ * A holder on the cap table, as HTML: the market's float and a restructured company's creditors (B6c)
+ * by what they are, everyone else linked to their character.
+ */
+export function holderWho(business, p) {
+  if (p.market) return L('NCI.Business.MarketHolder');
+  if (p.creditors || p.actorId === 'npc:creditors') return L('NCI.Business.CreditorsHolder');
+  return actorLink(holderActorId(business, p), p.name);
+}
+
 const nameOf = (business, actorId) => partnerOf(business, actorId)?.name || (business.staff ?? []).find((s) => s.id === actorId)?.name || game.actors.get(actorId)?.name || '?';
 
 /** Characters this user can act as: their own, or for a GM the player-owned ones (every character if none). */
@@ -1229,7 +1239,7 @@ function partnersContext(business, actor) {
       actorId: p.actorId,
       name: p.name,
       // The shares the market holds after a listing (B5b) are shown as the public float.
-      who: p.market ? L('NCI.Business.MarketHolder') : actorLink(holderActorId(business, p), p.name),
+      who: holderWho(business, p),
       status: LT(business, `NCI.Business.PartnerStatus.${p.status}`),
       units: business.status === 'forming' ? '' : whole(p.units),
       share: units > 0 && ['active', 'leaving'].includes(p.status) ? `${((p.units / units) * 100).toFixed(1)}%` : '',
