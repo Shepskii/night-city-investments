@@ -847,6 +847,30 @@ test('a Media story: believed, it waits for the GM and reaches the market; refus
     rolls.push(10);
     assert.equal((await StoryService.publish(alice, { ticker: 'ARA', angle: 'expose' })).story.believed, false);
     assert.equal(StoryService.pending().length, 0, 'not believed: nothing to approve');
+
+    // Rumours: a queued move someone else caused, heard at a level by rank + die, once in each stretch of days.
+    await S.MarketStore.setStories({ pending: [], recent: [] });
+    await S.TickService.updateControls((controls, { tick }) => ({ ...controls, impacts: [...controls.impacts.filter((i) => i.source !== 'story'), E.makeImpact({ id: 'imp_r', target: { type: 'company', id: 'KEN' }, amount: -0.02, onsetTick: tick + 5, permanent: 1, sourceKey: 'gig:rumour', source: 'gig', meta: {} })] }));
+    const { HeatService } = await import('../scripts/services/HeatService.js');
+    await HeatService.openWindow({ sourceKey: 'gig:rumour', companyId: 'KEN', outcome: 'failed', date: '2045-01-01', delayDays: 5 }, {});
+    assert.ok(StoryService.rumourSources('KEN').some((r) => r.sourceKey === 'gig:rumour' && !r.up && r.days >= 1));
+    assert.deepEqual(StoryService.rumourSources('ZZZ'), []);
+    rolls.push(10);
+    await StoryService.onTick();
+    await settle();
+    const heardOn = S.MarketStore.getStories().rumours[alice.id];
+    assert.ok(heardOn.heard != null);
+    assert.equal(heardOn.told['gig:rumour'] ?? Object.values(heardOn.told)[0], 3, 'rank 5 + 10 is the most it says');
+    if (heardOn.told['gig:rumour'] != null) assert.ok(S.MarketStore.getHeat().windows.find((w) => w.sourceKey === 'gig:rumour').tipped.includes(alice.id), 'they count as tipped');
+    rolls.push(10);
+    await StoryService.onTick();
+    assert.deepEqual(S.MarketStore.getStories().rumours[alice.id], heardOn, 'not again so soon');
+    assert.match(StoryService._rumourText({ kind: 'move', name: 'Kendachi', ticker: 'KEN', percent: 2, days: 3, up: false, why: 'gig' }, 3), /NCI\.Rumour\.move\.detailed/);
+    assert.equal((await StoryService.digRumours(bob, { ticker: 'KEN', use: { kind: 'skill', skill: 'Streetwise', stat: 'cool' } })).reason, 'not-media');
+    assert.equal((await StoryService.digRumours(alice, { ticker: 'KEN', use: { kind: 'skill', skill: 'Handgun', stat: 'ref' } })).reason, 'bad-use');
+    rolls.push(10);
+    await StoryService.publish(alice, { ticker: 'CON', angle: 'puff' });
+    assert.deepEqual(S.MarketStore.getStories().rumours[alice.id], heardOn, 'publishing a story keeps what they have heard');
   } finally {
     SkillAdapter.baseFor = baseFor;
     SkillAdapter.rollOne = rollOne;

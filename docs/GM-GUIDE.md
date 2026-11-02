@@ -127,6 +127,8 @@ The rest runs itself: weeks close, events are drawn, wages are paid, reports are
 
 Players can raise a business's standing with a faction: a shop uses **Court a client** or **Pay respects**, and a company aims **Chase contracts** or **Investor relations**. Each costs a gift from the cash. Standing then changes costs: corporations in the business's sector move its running costs by up to 15%, and gangs on its turf move protection money and shakedowns by up to 50%.
 
+**Rumours** run by themselves: a player's Media gets a mail every few days if their roll beats the DV and there is anything to hear. You have nothing to do.
+
 **Media stories** wait on Market > Events (and the Pending tab) once believed, unless you turn off the approval setting: **Let it run** or **Spike it**. Give a character evidence for one on Tools > Audit. A successful investigation or due diligence on a listed company makes evidence by itself.
 
 A hostile faction (standing below -60) may act against the business, up to 15% of weeks: a smear, sabotage, a tipped-off raid or poaching. These run by themselves as the week's event, and the players answer them as usual. A smear that lands dips a listed company's price by up to 2%. Beating a gang's shakedown by force costs 3 standing with that gang.

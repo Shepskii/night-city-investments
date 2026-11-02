@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   BUSINESS_DEFAULTS, DISTRICTS, normalizeFaction, standingBand, matchFaction, turfFactions, gigStanding, moveStanding, driftStanding, standingBands, matchBusiness,
   findTarget, targetShare, gigTags, resolveClient, applyBusinessRequest, advanceBusiness, rollSpec, normalizeBusiness, drawEvent, hostileAct, hostileChance, factionEffects, factionFallout,
-  giftFor, campaignKind, believability, storyPercent, rollStory, storyCheck, ARCHETYPES, SKILLS, ABILITIES,
+  giftFor, campaignKind, believability, storyPercent, rollStory, storyCheck, rumourLevel, freshRumours, STORY_RULES, ARCHETYPES, SKILLS, ABILITIES,
 } from '../scripts/engine/index.js';
 import { resolveRoll } from '../scripts/engine/rolls.js';
 import { starterFactions } from '../scripts/data/starter-factions.js';
@@ -320,4 +320,14 @@ test('who may publish: a Media, once a week, and with new evidence for a company
   assert.equal(storyCheck({ ...base, recent: topic }).reason, 'story-same-topic');
   assert.equal(storyCheck({ ...base, recent: topic, pieces: 1 }).ok, true, 'new evidence');
   assert.equal(storyCheck({ ...base, recent: [{ actorId: 'b', ticker: 'ARA', day: 70 }] }).ok, true, 'long enough ago');
+});
+
+test('how much a rumour says, and what a Media has not heard', () => {
+  const { passive, active } = STORY_RULES.rumour;
+  assert.deepEqual([6, 7, 9, 11, 13, 20].map((t) => rumourLevel(t, passive)), [-1, 0, 1, 2, 3, 3]);
+  assert.deepEqual([12, 13, 15, 17, 21].map((t) => rumourLevel(t, active)), [-1, 0, 1, 2, 3]);
+  const sources = [{ sourceKey: 'a' }, { sourceKey: 'b', by: 'me' }, { sourceKey: 'c' }];
+  assert.deepEqual(freshRumours(sources, {}, 0, 'me').map((s) => s.sourceKey), ['a', 'c'], 'not their own');
+  assert.deepEqual(freshRumours(sources, { a: 1 }, 1, 'me').map((s) => s.sourceKey), ['c'], 'not what they have heard at that level');
+  assert.deepEqual(freshRumours(sources, { a: 1 }, 2, 'me').map((s) => s.sourceKey), ['a', 'c'], 'more of the same is news');
 });

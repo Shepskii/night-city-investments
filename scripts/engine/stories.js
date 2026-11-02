@@ -7,7 +7,12 @@
  *              Pure; the GM's service holds the record and the evidence items.
  */
 
+/** How much a rumour says, least first. */
+export const RUMOUR_LEVELS = Object.freeze(['vague', 'typical', 'substantial', 'detailed']);
+
 export const STORY_RULES = Object.freeze({
+  /** Rumours: the DV for each level, heard passively (Credibility rank + 1d10, every `passiveDays`) or dug for. */
+  rumour: Object.freeze({ passive: Object.freeze([7, 9, 11, 13]), active: Object.freeze([13, 15, 17, 21]), passiveDays: 3, activeDays: 7 }),
   /** Believability out of 10, by rank 0 to 10. */
   believability: Object.freeze([0, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7]),
   /** The most a believed story moves a price, in percent, by rank 0 to 10. */
@@ -69,8 +74,23 @@ export function rollStory({ rank, pieces, die, angle }, r = STORY_RULES) {
   return { target, believed, percent: believed ? storyPercent(rank, target - die, angle, r) : 0 };
 }
 
-/** The record of stories, kept tidy. */
+/** The most a roll's total reaches of these DVs: an index into RUMOUR_LEVELS, or -1. */
+export function rumourLevel(total, dvs) {
+  return dvs.reduce((best, dv, i) => (total >= dv ? i : best), -1);
+}
+
+/**
+ * What a Media might hear, from a queued price move or a hidden holding: the sources one has not heard
+ * at this level or better, those they caused themselves left out.
+ * @param {{sourceKey: string, by?: string}[]} sources
+ * @param {object} told - this Media's record, `{sourceKey: level}`
+ */
+export const freshRumours = (sources, told, level, actorId) => sources.filter((s) => s.by !== actorId && (told?.[s.sourceKey] ?? -1) < level);
+
+/** The record of stories and rumours, kept tidy. */
 export const normalizeStories = (value) => ({
   pending: Array.isArray(value?.pending) ? value.pending : [],
   recent: Array.isArray(value?.recent) ? value.recent.slice(-200) : [],
+  // Each Media's rumours: when they last heard one and dug for one, and what they have been told.
+  rumours: value?.rumours && typeof value.rumours === 'object' ? value.rumours : {},
 });

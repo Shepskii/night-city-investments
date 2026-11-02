@@ -8,7 +8,7 @@
  */
 
 import {
-  ABILITIES, STORY_RULES, percentToAmount, makeImpact, storyCheck, rollStory,
+  ABILITIES, SKILLS, STORY_RULES, RUMOUR_LEVELS, percentToAmount, makeImpact, storyCheck, rollStory, rumourLevel, freshRumours, concealedHolders, useKey,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { MarketStore } from '../data/MarketStore.js';
@@ -18,10 +18,14 @@ import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { L } from '../ui/format.js';
 import { BusinessService } from './BusinessService.js';
 import { HeatService } from './HeatService.js';
+import { MailService } from './MailService.js';
 import { MarketClock } from './MarketClockService.js';
 import { NewsService } from './NewsService.js';
 import { SkillAdapter } from './SkillAdapter.js';
 import { TickService } from './TickService.js';
+
+/** What a Media can dig for rumours with. */
+export const RUMOUR_USES = Object.freeze([SKILLS.conversation, SKILLS.streetwise, SKILLS.librarySearch]);
 
 const flagOf = (item) => item.getFlag?.(MODULE_ID, FLAGS.EVIDENCE) ?? item.flags?.[MODULE_ID]?.[FLAGS.EVIDENCE] ?? null;
 
@@ -76,6 +80,87 @@ export const StoryService = {
     return { ok: true, item };
   },
 
+  /** What there is to hear now, on one company or all: queued price moves not yet showing, and hidden holdings. */
+  rumourSources(ticker = null) {
+    const now = MarketStore.time();
+    const companies = CompanyRepository.all();
+    const nameOf = (id) => companies.find((c) => c.ticker === id || c.id === id);
+    const moves = MarketStore.getControls().impacts
+      .filter((i) => i.target?.type === 'company' && i.onsetTick > now && ['gig', 'report', 'campaign', 'story'].includes(i.source) && nameOf(i.target.id))
+      .map((i) => ({
+        sourceKey: i.sourceKey, kind: 'move', ticker: nameOf(i.target.id).ticker, name: nameOf(i.target.id).name, by: i.meta?.actorId,
+        why: i.source, up: i.amount > 0, percent: Math.abs(Math.round((Math.exp(i.amount) - 1) * 1000) / 10), days: Math.max(1, Math.ceil(i.onsetTick - now)),
+      }));
+    const holdings = BusinessRepository.all().filter((b) => b.status === 'open').flatMap((b) => concealedHolders(b).map((h) => ({
+      sourceKey: `hidden:${b.id}:${h.holderId}`, kind: 'hidden', ticker: b.company.ticker, name: b.name, by: h.holderId, percent: Math.round(h.share * 100), layer: b.masks[h.holderId]?.at(-1)?.name ?? '',
+    })));
+    return [...moves, ...holdings].filter((s) => !ticker || s.ticker === ticker);
+  },
+
+  /** A rumour in words, saying more at each level. */
+  _rumourText(source, level) {
+    const word = RUMOUR_LEVELS[level];
+    return L(`NCI.Rumour.${source.kind}.${word}`, {
+      name: source.name, ticker: source.ticker, percent: source.percent, days: source.days, layer: source.layer,
+      way: source.kind === 'move' ? L(source.up ? 'NCI.Rumour.Up' : 'NCI.Rumour.Down') : '',
+      why: source.kind === 'move' ? L(`NCI.Rumour.Why.${source.why}`) : '',
+    });
+  },
+
+  /** Tell a Media the best they have not heard; returns whether there was anything. */
+  async _tell(actor, sources, level, rumours) {
+    const mine = rumours[actor.id] ?? {};
+    const [source] = freshRumours(sources, mine.told, level, actor.id);
+    if (!source) return false;
+    await MailService.fromWire(actor, { subject: L('NCI.Rumour.Subject', { name: source.name }), lines: [this._rumourText(source, level)] });
+    rumours[actor.id] = { ...mine, told: { ...(mine.told ?? {}), [source.sourceKey]: level } };
+    // They heard it: trading on it now is following a rumour.
+    if (source.kind === 'move') await HeatService.noteTipped(source.sourceKey, actor.id);
+    return true;
+  },
+
+  /** Each Media hears what is going round, every few days: Credibility rank + 1d10 against the passive DVs. */
+  async onTick() {
+    if (game.users.activeGM?.id !== game.user.id) return;
+    const medias = game.actors.filter((a) => a.type === 'character' && a.hasPlayerOwner && this.rankOf(a) > 0);
+    if (!medias.length) return;
+    const day = BusinessService.day();
+    const record = MarketStore.getStories();
+    const rumours = { ...record.rumours };
+    const sources = this.rumourSources();
+    let changed = false;
+    for (const actor of medias) {
+      const last = rumours[actor.id]?.heard;
+      if (last != null && day - last < STORY_RULES.rumour.passiveDays) continue;
+      rumours[actor.id] = { ...rumours[actor.id], heard: day };
+      changed = true;
+      const die = (await SkillAdapter.rollOne()).value;
+      const level = rumourLevel(this.rankOf(actor) + die, STORY_RULES.rumour.passive);
+      if (level >= 0) await this._tell(actor, sources, level, rumours);
+    }
+    if (changed) await MarketStore.setStories({ ...MarketStore.getStories(), rumours });
+  },
+
+  /** A Media digs for what is being said about one company, once a week. Runs in the GM's request queue. */
+  async digRumours(actor, request) {
+    if (this.rankOf(actor) < 1) return { ok: false, reason: 'not-media' };
+    const ticker = String(request.ticker ?? '').trim().toUpperCase();
+    if (!CompanyRepository.all().some((c) => c.ticker === ticker)) return { ok: false, reason: 'no-target' };
+    const use = (request.use && RUMOUR_USES.find((u) => useKey(u) === useKey(request.use))) ?? null;
+    if (!use) return { ok: false, reason: 'bad-use' };
+    const day = BusinessService.day();
+    const record = MarketStore.getStories();
+    const last = record.rumours[actor.id]?.dug;
+    if (last != null && day - last < STORY_RULES.rumour.activeDays) return { ok: false, reason: 'rumour-wait' };
+    const check = await SkillAdapter.verifyLevers(actor, request, { dv: STORY_RULES.rumour.active[0], use });
+    if (!check.ok) return check;
+    const rumours = { ...record.rumours, [actor.id]: { ...record.rumours[actor.id], dug: day } };
+    const level = rumourLevel(check.result.total, STORY_RULES.rumour.active);
+    const found = level >= 0 && await this._tell(actor, this.rumourSources(ticker), level, rumours);
+    await MarketStore.setStories({ ...record, rumours });
+    return { ok: true, rumour: { found } };
+  },
+
   /** Waiting for the GM. */
   pending() {
     return MarketStore.getStories().pending;
@@ -105,7 +190,7 @@ export const StoryService = {
     };
     const recent = [...record.recent, { actorId: actor.id, ticker, day }];
     const wait = believed && game.settings.get(MODULE_ID, SETTINGS.CAMPAIGN_APPROVAL) !== false;
-    await MarketStore.setStories({ pending: wait ? [...record.pending, story] : record.pending, recent });
+    await MarketStore.setStories({ ...record, pending: wait ? [...record.pending, story] : record.pending, recent });
     if (believed && !wait) await this._land(story);
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, {});
     return { ok: true, story: { believed, die, target, waiting: wait } };

@@ -45,6 +45,7 @@ export const BusinessWatcher = {
     // An investigation says whether it found anything; what it found comes by mail (B6d).
     else if (result.ok && result.investigation) ui.notifications.info(L(result.investigation.success ? 'NCI.Ownership.Found' : 'NCI.Ownership.NotFound'));
     // A case answered says how it went (R1).
+    else if (result.ok && result.rumour) ui.notifications.info(L(result.rumour.found ? 'NCI.Rumour.Found' : 'NCI.Rumour.Nothing'));
     else if (result.ok && result.story) ui.notifications.info(L(!result.story.believed ? 'NCI.Story.NotBelieved' : result.story.waiting ? 'NCI.Story.BelievedWaiting' : 'NCI.Story.Believed', { die: result.story.die, target: result.story.target }));
     else if (result.ok && result.caseResult) ui.notifications.info(L(result.caseResult.success ? 'NCI.Regulator.WonNotice' : 'NCI.Regulator.LostNotice'));
     else if (result.ok) ui.notifications.info(L(`NCI.Business.Done.${result.type}`));

@@ -2144,6 +2144,29 @@
       "Unlisted": "Not itemised in the ledger (a week from before entries were marked with their week, or entries since trimmed)",
       "TillAtClose": "Cash at the close:"
     },
+    "Rumour": {
+      "Title": "Asking around about {name}",
+      "Hint": "Spend time with your sources. You won't see how close you came: if there's anything to hear, it comes by mail. You can do this once a week.",
+      "Dig": "Dig for rumours",
+      "Found": "You've turned something up. Check your mail.",
+      "Nothing": "Nobody has anything for you.",
+      "Subject": "Rumour: {name}",
+      "Up": "up",
+      "Down": "down",
+      "Why": { "gig": "a job someone just pulled", "report": "its latest figures", "campaign": "someone paying for bad press", "story": "a story about to break" },
+      "move": {
+        "vague": "People are talking about {name}. Nobody can say why yet.",
+        "typical": "People are talking about {name}. The word is its price is heading {way}.",
+        "substantial": "People are talking about {name}. The word is its price is heading {way}, on account of {why}.",
+        "detailed": "A good source on {name} ({ticker}): its price moves {way} about {percent}% within {days} day(s), on account of {why}."
+      },
+      "hidden": {
+        "vague": "Someone's being very quiet about what they own in {name}.",
+        "typical": "There's a hidden stake in {name}, held behind a front.",
+        "substantial": "There's a hidden stake of over 5% in {name}, held behind a front.",
+        "detailed": "There's a hidden stake of about {percent}% in {name} ({ticker}), held through {layer}."
+      }
+    },
     "Story": {
       "Title": "A story about {name}",
       "Hint": "The public believes it on 1d10 of {base} or under, without Luck. Any evidence adds {bonus}, and more than {many} pieces add {manyBonus}. Your rank moves the price up to {cap}%. You can publish once a week, and another story about the same company within 30 days needs new evidence.",
@@ -2975,6 +2998,7 @@
         "not-media": "that takes the Media role's Credibility",
         "bad-angle": "that is not an angle for a story",
         "story-wait": "you have published a story too recently",
+        "rumour-wait": "you have dug for rumours too recently",
         "story-same-topic": "that company has been in the news: another story needs new evidence",
         "no-story": "that story is no longer waiting",
         "no-evidence-item": "the evidence could not be created",

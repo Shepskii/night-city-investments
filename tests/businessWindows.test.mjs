@@ -737,3 +737,17 @@ test('a story waiting for the GM shows on Market > Events and the Pending tab; t
   assert.match(audit, /data-action="createEvidence"/);
   assert.match(audit, /name="evidenceActor"/);
 });
+
+test('every rumour reads as words, saying more at each level', async () => {
+  const { StoryService } = await import('../scripts/services/StoryService.js');
+  const move = { kind: 'move', name: 'Kendachi', ticker: 'KEN', percent: 2, days: 3, up: false, why: 'gig' };
+  const hidden = { kind: 'hidden', name: 'Back Room', ticker: 'BRC', percent: 12, layer: 'Kestrel Holdings' };
+  const said = [0, 1, 2, 3].flatMap((level) => [StoryService._rumourText(move, level), StoryService._rumourText(hidden, level)]);
+  for (const line of said) assert.doesNotMatch(line, /NCI\.|\{\w+\}/, line);
+  assert.doesNotMatch(said[0], /down/, 'a vague one does not say which way');
+  assert.match(said[2], /heading down/);
+  assert.match(said[4], /a job someone just pulled/);
+  assert.match(said[6], /about 2% within 3 day/);
+  assert.match(said[7], /about 12% in Back Room \(BRC\), held through Kestrel Holdings/);
+  for (const why of ['report', 'campaign', 'story']) assert.doesNotMatch(StoryService._rumourText({ ...move, why }, 2), /NCI\./);
+});

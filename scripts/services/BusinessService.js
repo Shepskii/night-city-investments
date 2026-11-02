@@ -511,6 +511,7 @@ class BusinessServiceImpl {
   async _handle(actor, request) {
     // A Media's story (F1c) has nothing to do with whether player businesses are switched on.
     if (request.type === 'publishStory') return this._receipt(actor, request, await StoryService.publish(actor, request));
+    if (request.type === 'rumourRoll') return this._receipt(actor, request, await StoryService.digRumours(actor, request));
     if (!this.enabled()) return this._receipt(actor, request, { ok: false, reason: 'disabled' });
     // Looking behind a hidden holding (B6d) reads only the GM's hidden state and changes no business.
     if (request.type === 'investigate') return this._receipt(actor, request, await this._investigate(actor, request));
@@ -846,6 +847,7 @@ class BusinessServiceImpl {
     if (out.caseResult) result.caseResult = out.caseResult;
     // A Media's story (F1c): whether it was believed.
     if (out.story) result.story = out.story;
+    if (out.rumour) result.rumour = out.rumour;
     await actor.setFlag(MODULE_ID, FLAGS.BUSINESS_RECEIPTS, [{
       processed: [...r.processed, request.key].slice(-PROCESSED_CAP),
       results: [...r.results, result].slice(-RESULTS_CAP),

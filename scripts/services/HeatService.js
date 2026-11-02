@@ -106,6 +106,17 @@ class HeatServiceImpl {
     });
   }
 
+  /** Someone has heard a rumour about this move (F1c): on its open window, they count as tipped. */
+  noteTipped(sourceKey, actorId) {
+    if (!isActiveGM() || !this.enabled()) return Promise.resolve();
+    return this._queue.run(async () => {
+      const heat = MarketStore.getHeat();
+      const window = heat.windows.find((w) => w.sourceKey === sourceKey && w.status === 'open');
+      if (!window || window.tipped.includes(actorId) || window.runners.includes(actorId)) return;
+      await MarketStore.setHeat({ ...heat, windows: heat.windows.map((w) => (w === window ? { ...w, tipped: [...w.tipped, actorId] } : w)) });
+    });
+  }
+
   /** After a tick: audit every window that has closed, apply players' cover-up results, and let warnings re-arm. */
   onTick() {
     if (!isActiveGM() || !this.enabled()) return Promise.resolve();

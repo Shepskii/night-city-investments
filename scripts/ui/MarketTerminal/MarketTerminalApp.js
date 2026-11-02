@@ -25,7 +25,7 @@ import { ipoPrice, shareOf, bookValue } from '../../engine/index.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient } from '../../services/BusinessClient.js';
 import { investigate, withDiscoveries } from '../investigate.js';
-import { publishStory } from '../publishStory.js';
+import { publishStory, digRumours } from '../publishStory.js';
 import { StoryService } from '../../services/StoryService.js';
 import { SyndicateClient } from '../../services/SyndicateClient.js';
 import { accountFor, tradingAccounts, ownerOf } from '../accounts.js';
@@ -51,6 +51,7 @@ export class MarketTerminalApp extends BaseApplication {
       makeBid: MarketTerminalApp._onMakeBid,
       investigate: MarketTerminalApp._onInvestigate,
       publishStory: MarketTerminalApp._onPublishStory,
+      digRumours: MarketTerminalApp._onDigRumours,
       select: MarketTerminalApp._onSelect,
       openAsset: MarketTerminalApp._onOpenAsset,
       back: MarketTerminalApp._onBack,
@@ -278,6 +279,11 @@ export class MarketTerminalApp extends BaseApplication {
   /** A Media writes about this company (F1c). */
   static _onPublishStory(event, target) {
     return publishStory(this.actor, { ticker: target.dataset.ticker, name: target.dataset.name });
+  }
+
+  /** A Media asks around about this company (F1c). */
+  static _onDigRumours(event, target) {
+    return digRumours(this.actor, { ticker: target.dataset.ticker, name: target.dataset.name });
   }
 
   static _onInvestigate(event, target) {

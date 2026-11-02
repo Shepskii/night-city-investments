@@ -14,6 +14,7 @@ import { CorporateActionService } from '../services/CorporateActionService.js';
 import { DividendService } from '../services/DividendService.js';
 import { FundDistributionService } from '../services/FundDistributionService.js';
 import { GigImpactService } from '../services/GigImpactService.js';
+import { StoryService } from '../services/StoryService.js';
 import { PortfolioService } from '../services/PortfolioService.js';
 import { HeatService } from '../services/HeatService.js';
 import { NotificationService } from '../services/NotificationService.js';
@@ -29,6 +30,7 @@ const STEPS = [
   ['Dividends', () => DividendService.onTick()],
   ['Fund distributions', () => FundDistributionService.onTick()],
   ['Gig headlines', () => GigImpactService.onTick()],
+  ['Media rumours', () => StoryService.onTick()],
   ['Orders, alerts and withdrawals', (data) => PortfolioService.onTick(data)],
   // Syndicates' lapsed votes and due redemptions, against the prices and cash the orders above left.
   ['Syndicates', () => SyndicateService.onTick()],
