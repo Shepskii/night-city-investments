@@ -810,6 +810,13 @@ test('a back room: pending for the GM, then on the Work tab with its dirty cash,
     assertClean(open, 'an open back room');
     for (const words of [/Dirty cash 1,200 eb/, /Exposure low/i, /Work the back room/, /Launder/, /Pay someone off/, /Costs 150 eb of dirty cash/]) assert.match(text(open), words);
     assert.match(open, /data-action="takeDirty"/);
+    // The button reads the amount from its own row: the card is not a form block.
+    assert.match(open, /<div class="nci-actions">\s*<input type="number" name="dirtyAmount"[^>]*><button type="button" data-action="takeDirty"/);
+    const taking = windowFor(med, 'week');
+    const sent = [];
+    taking._send = (type, payload) => sent.push([type, payload]);
+    Apps.Business.DEFAULT_OPTIONS.actions.takeDirty.call(taking, null, { closest: (sel) => (sel === '.nci-actions' ? { querySelector: () => ({ value: '29' }) } : null) });
+    assert.deepEqual(sent, [['takeDirty', { amount: 29 }]]);
     assert.match(open, /data-action="lieLow"/);
     const gm = await renderConsole('businesses');
     assertClean(gm, 'an open back room for the GM');

@@ -3124,6 +3124,7 @@
         "bad-angle": "that is not an angle for a story",
         "story-wait": "you have published a story too recently",
         "no-back-room": "the business has no back room running",
+        "has-back-room": "the business already has one",
         "no-dirty": "there is not enough dirty cash",
         "not-at-company": "not at a chartered company",
         "not-lawman": "that takes the Lawman role's Backup",

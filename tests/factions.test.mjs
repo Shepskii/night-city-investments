@@ -501,7 +501,7 @@ test('opening one: a project a shop can vote for, off the books, that waits for 
   const assets = b.assets;
   assert.equal(projectOffer(b, 'backRoom').ok, true);
   assert.equal(projectOffer({ ...b, stage: 2 }, 'backRoom').reason, 'not-at-company');
-  assert.equal(projectOffer({ ...b, backRoom: { kind: 'ripping' } }, 'backRoom').reason, 'built-here');
+  assert.equal(projectOffer({ ...b, backRoom: { kind: 'ripping' } }, 'backRoom').reason, 'has-back-room');
   const started = structuredClone(b);
   assert.equal(startProject(started, 'backRoom', 'p1', DAY, BUSINESS_DEFAULTS, 'ripping').ok, true);
   assert.equal(started.assets, assets, 'nothing on the books');

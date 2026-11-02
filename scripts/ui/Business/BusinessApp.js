@@ -366,7 +366,8 @@ export class BusinessApp extends BaseApplication {
 
   /** Dirty cash straight into a partner's hand (U1a). */
   static _onTakeDirty(event, target) {
-    return this._send('takeDirty', { amount: amount(target, 'dirtyAmount') });
+    const box = target.closest('.nci-actions')?.querySelector('[name="dirtyAmount"]');
+    return this._send('takeDirty', { amount: Math.floor(Number(box?.value) || 0) });
   }
 
   /** Nothing behind the shop this week (U1a). */
