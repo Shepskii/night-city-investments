@@ -130,6 +130,8 @@ The rest runs itself: weeks close, events are drawn, wages are paid, reports are
 
 Players can raise a business's standing with a faction: a shop uses **Court a client** or **Pay respects**, and a company aims **Chase contracts** or **Investor relations**. Each costs a gift from the cash. Standing then changes costs: corporations in the business's sector move its running costs by up to 15%, and gangs on its turf move protection money and shakedowns by up to 50%.
 
+**A back room at a company** is the officers' secret: other shareholders see only plain ledger lines and a raid as an inspection, and a raid that shuts it there shuts it for good. They would find out through a scandal, if it's listed, or through you.
+
 **Rumours** run by themselves: a player's Media gets a mail every few days if their roll beats the DV and there is anything to hear. You have nothing to do.
 
 **Media stories** wait on Market > Events (and the Pending tab) once believed, unless you turn off the approval setting: **Let it run** or **Spike it**. Give a character evidence for one on Tools > Audit. A successful investigation or due diligence on a listed company makes evidence by itself.

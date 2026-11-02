@@ -24,7 +24,7 @@ import {
   takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
   restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask,
   concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget, scandalHit, investigationCost, spendDays,
-  moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene, ABILITIES, backupWait, quashEffect, exposureBand,
+  moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene, ABILITIES, backupWait, quashEffect, exposureBand, canRun,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
@@ -1478,13 +1478,13 @@ class BusinessServiceImpl {
         if (finder && isListed(target)) await StoryService.grantEvidence(finder, { ticker: target.company.ticker, name: target.name, note: L('NCI.Story.NoteDiligence', { name: target.name }), source: 'diligence' });
       }
       // A raid on a back room (U1b): the owners hear, and it draws attention to each of them if it went badly.
-      if (e.type === 'bustWon') await this._mailHolders(b, L('NCI.BackRoom.RaidSubject', { name: b.name }), [L('NCI.BackRoom.RaidWon', { name: b.name })]);
+      if (e.type === 'bustWon') await this._mailRoom(b, L('NCI.BackRoom.RaidSubject', { name: b.name }), [L('NCI.BackRoom.RaidWon', { name: b.name })]);
       if (e.type === 'bustLost') {
-        await this._mailHolders(b, L('NCI.BackRoom.RaidSubject', { name: b.name }), [L(e.shut ? 'NCI.BackRoom.RaidShut' : 'NCI.BackRoom.RaidLost', { name: b.name, seized: e.seized.toLocaleString(), fine: e.fine.toLocaleString() })]);
+        await this._mailRoom(b, L('NCI.BackRoom.RaidSubject', { name: b.name }), [L(e.shut ? (b.stage >= 2 ? 'NCI.BackRoom.RaidShutForGood' : 'NCI.BackRoom.RaidShut') : 'NCI.BackRoom.RaidLost', { name: b.name, seized: e.seized.toLocaleString(), fine: e.fine.toLocaleString() })]);
         // A listed company's raid is news (U1c).
         await this._scandal(b, e.heat ? BUSINESS_DEFAULTS.crime.scandal.raidLost : BUSINESS_DEFAULTS.crime.scandal.raidFailed, `raid:${this.day()}`);
         if (e.heat && HeatService.enabled()) {
-          for (const p of b.partners.filter((x) => !x.market && x.status === 'active' && game.actors.get(x.actorId))) await HeatService.setHeat(p.actorId, HeatService.heatOf(p.actorId) + e.heat);
+          for (const p of b.partners.filter((x) => !x.market && x.status === 'active' && game.actors.get(x.actorId) && canRun(b, x.actorId))) await HeatService.setHeat(p.actorId, HeatService.heatOf(p.actorId) + e.heat);
         }
       }
       if (e.type === 'campaignLands') await this._landCampaign(b, e.campaign);
@@ -1503,7 +1503,7 @@ class BusinessServiceImpl {
         }
       }
       if (e.type === 'crimeScandal') await this._scandal(b, e.percent, e.key);
-      if (e.type === 'gangDealEnded') await this._mailHolders(b, L('NCI.BackRoom.DealSubject', { name: b.name }), [L('NCI.BackRoom.DealEnded', { gang: e.name, name: b.name })]);
+      if (e.type === 'gangDealEnded') await this._mailRoom(b, L('NCI.BackRoom.DealSubject', { name: b.name }), [L('NCI.BackRoom.DealEnded', { gang: e.name, name: b.name })]);
       if (e.type === 'campaignLands' || e.type === 'campaignCaught') moved = true;
       if (e.type !== 'factionSmear' || !isListed(b)) continue;
       const ticker = b.company.ticker;
@@ -1593,12 +1593,24 @@ class BusinessServiceImpl {
     return { ok: true, quash: { outcome: effect.outcome } };
   }
 
+  /** About a back room: every owner of a smaller business, but only the officers of a company, whose shareholders must not hear. */
+  async _mailRoom(b, subject, lines) {
+    if (b.stage < 2) return this._mailHolders(b, subject, lines);
+    for (const id of b.officers ?? []) await this._mailAccount(id, subject, lines);
+    return undefined;
+  }
+
+  /** A scene's mail: a raid on the back room goes only where the back room is known. */
+  _sceneMail(b, event, subject, lines) {
+    return event?.kind === 'bust' ? this._mailRoom(b, subject, lines) : this._mailHolders(b, subject, lines);
+  }
+
   /** What the GM is told, and the owners, when a big event becomes a scene (X1). */
   async _sceneNotes(b) {
     const { event } = b.scene;
     const hook = sceneHook(b, event);
     await ChatMessage.create({ content: `<p><strong>${escapeHtml(L('NCI.Scene.HookTitle', { name: b.name }))}</strong></p><p>${escapeHtml(hook)}</p>`, whisper: (ChatMessage.getWhisperRecipients?.('GM') ?? []).map((u) => u.id) });
-    await this._mailHolders(b, L('NCI.Scene.MailSubject', { name: b.name }), [L('NCI.Scene.Mail', { name: b.name, event: L(`NCI.Event.${event.kind}.Name`) })]);
+    await this._sceneMail(b, event, L('NCI.Scene.MailSubject', { name: b.name }), [L('NCI.Scene.Mail', { name: b.name, event: L(`NCI.Event.${event.kind}.Name`) })]);
   }
 
   /** The GM plays this week's big event out (X1). */
@@ -1615,12 +1627,13 @@ class BusinessServiceImpl {
   /** The GM says how the scene went (X1); the owners hear of it. */
   async settleScene(id, won) {
     const name = BusinessRepository.get(id)?.name ?? '';
+    const event = BusinessRepository.get(id)?.scene?.event;
     const out = await this._gm(id, (stored) => {
       const b = normalizeBusiness(structuredClone(stored));
       const done = settleScene(b, won, this.day());
       return done.ok ? { ok: true, business: b, events: done.events } : done;
     });
-    if (out.ok) await this._mailHolders(out.business, L('NCI.Scene.MailSubject', { name }), [L(won ? 'NCI.Scene.MailWon' : 'NCI.Scene.MailLost', { name })]);
+    if (out.ok) await this._sceneMail(out.business, event, L('NCI.Scene.MailSubject', { name }), [L(won ? 'NCI.Scene.MailWon' : 'NCI.Scene.MailLost', { name })]);
     return out;
   }
 

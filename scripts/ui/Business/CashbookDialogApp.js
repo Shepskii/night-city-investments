@@ -26,14 +26,15 @@ export class CashbookDialogApp extends BaseApplication {
   };
 
   /** Open the cashbook for one week of one business. */
-  static ask({ businessId, index }) {
+  static ask({ businessId, index, officer = true }) {
     const id = `nci-cashbook-${businessId}-${index}`;
     const existing = foundry.applications.instances?.get?.(id);
     if (existing) {
+      existing.officer = officer;
       existing.render({ force: true });
       return existing;
     }
-    const app = new CashbookDialogApp({ id, businessId, index });
+    const app = new CashbookDialogApp({ id, businessId, index, officer });
     app.render({ force: true });
     return app;
   }
@@ -42,6 +43,8 @@ export class CashbookDialogApp extends BaseApplication {
     super(options);
     this.businessId = options.businessId;
     this.index = options.index;
+    // Whether the viewer may see what a company's crime was (U1).
+    this.officer = options.officer !== false;
     this._refresh = () => this.render();
   }
 
@@ -70,6 +73,6 @@ export class CashbookDialogApp extends BaseApplication {
   async _prepareContext() {
     const business = this.business;
     if (!business) return { gone: L('NCI.Business.Reason.no-business') };
-    return cashbookContext(business, this.index);
+    return cashbookContext(business, this.index, this.officer);
   }
 }

@@ -244,7 +244,7 @@
     {{#with backRoom}}
     <div class="nci-gig">
       <div class="nci-gigtop"><strong>{{localize "NCI.BackRoom.Title"}}: {{name}}</strong></div>
-      {{#if shut}}<div class="nci-warn">{{localize "NCI.BackRoom.Shut"}}</div>{{else}}{{#if pending}}<div class="nci-warn">{{localize "NCI.BackRoom.Pending"}}</div>{{else}}
+      {{#if shut}}<div class="nci-warn">{{shutText}}</div>{{else}}{{#if pending}}<div class="nci-warn">{{localize "NCI.BackRoom.Pending"}}</div>{{else}}
       {{#if informant}}<div class="nci-warn">{{informant}}</div>{{/if}}
       {{#if deal}}<div>{{deal}}</div>{{#if canPropose}}<div class="nci-actions"><button type="button" data-action="endGangDeal">{{localize "NCI.BackRoom.EndDeal"}}</button></div>{{/if}}{{/if}}
       {{#if offer}}<div>{{offer}}</div>{{#if canPropose}}<div class="nci-actions"><button type="button" data-action="gangDeal">{{localize "NCI.BackRoom.TakeDeal"}}</button></div>{{/if}}{{/if}}

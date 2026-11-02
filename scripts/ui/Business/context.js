@@ -9,7 +9,7 @@ import {
   daysLeft, activeProject, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
   projectOffer, PROJECT_KINDS, upgradesOf, protectionFactor, headcountOf,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
-  actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent, supplyCut, actionFor, ROOM_ACTIONS, roomKinds, openRoom, payOffCost, CRIME_ACTIONS, dealCut,
+  actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent, supplyCut, actionFor, ROOM_ACTIONS, roomKinds, openRoom, payOffCost, CRIME_ACTIONS, dealCut, SECRET_ACTIONS, SECRET_LEDGER,
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
@@ -320,7 +320,8 @@ function projectsContext(business, actor, canAct) {
       canAdd: canAct && left > 0,
       max: Math.max(1, Math.min(left, project.daysNeeded - project.days)),
     } : null,
-    kinds: PROJECT_KINDS.filter((kind) => kind !== 'backRoom' || underworldOn(business)).map((kind) => {
+    // A company cannot open one, or build a shut one again.
+    kinds: PROJECT_KINDS.filter((kind) => kind !== 'backRoom' || (underworldOn(business) && business.stage < 2)).map((kind) => {
       const offer = projectOffer(business, kind);
       const def = kind === 'expansion' ? stage?.expansion : BUSINESS_DEFAULTS.projects[kind];
       const cost = offer.cost ?? (kind === 'expansion' ? def?.cost : def?.cost[business.stage]) ?? 0;
@@ -340,7 +341,7 @@ function projectsContext(business, actor, canAct) {
     }),
     running: project ? L('NCI.Project.OneAtATime') : '',
     pending: pending ? L('NCI.Project.Pending') : '',
-    done: business.projects.filter((x) => x.status === 'done').reverse().map((x) => ({
+    done: business.projects.filter((x) => x.status === 'done' && (x.kind !== 'backRoom' || !actor || canRun(business, actor.id))).reverse().map((x) => ({
       name: name(x.kind ?? 'expansion'),
       done: dayText(x.doneDay ?? x.startedDay),
       started: dayText(x.startedDay),
@@ -505,7 +506,8 @@ function weekContext(business, actor, canAct) {
     noSlots: period.slots.length >= slots,
     daysText: canAct ? L('NCI.Business.DaysLeft', { n: daysLeft(business, actor.id) }) : '',
     // A chartered company has the five company actions; a smaller business the shop actions.
-    actions: [...actionIdsFor(business.stage), ...(openRoom(business) ? ROOM_ACTIONS : [])].filter((id) => !(['campaign', 'blackOps', 'dealGang'].includes(id) || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).filter((id) => !CRIME_ACTIONS.includes(id) || underworldOn(business)).filter((id) => id !== 'dealGang' || !business.backRoom?.deal).map((id) => {
+    // Crime is hidden from those not running a company (U1).
+    actions: [...actionIdsFor(business.stage), ...(openRoom(business) ? ROOM_ACTIONS : [])].filter((id) => !(business.stage >= 2 && !runs && SECRET_ACTIONS.includes(id))).filter((id) => !(['campaign', 'blackOps', 'dealGang'].includes(id) || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).filter((id) => !CRIME_ACTIONS.includes(id) || underworldOn(business)).filter((id) => id !== 'dealGang' || !business.backRoom?.deal).map((id) => {
       const slot = taken.get(id);
       const bonus = period.bonuses.some((b) => b.action === id && !b.used);
       return {
@@ -523,10 +525,10 @@ function weekContext(business, actor, canAct) {
       };
     }),
     helped: actor && helped && canAct ? L('NCI.Business.AlreadyHelped') : '',
-    event: eventContext(business, runs, free),
-    backRoom: backRoomContext(business, runs, canAct, free),
+    event: business.period.event?.kind === 'bust' && business.stage >= 2 && !runs ? null : eventContext(business, runs, free),
+    backRoom: business.stage >= 2 && !runs ? null : backRoomContext(business, runs, canAct, free),
     // A big event the GM is playing out with the table (X1).
-    scene: business.scene ? L('NCI.Business.SceneOpen', { event: L(`NCI.Event.${business.scene.event.kind}.Name`) }) : '',
+    scene: business.scene && !(business.scene.event.kind === 'bust' && business.stage >= 2 && !runs) ? L('NCI.Business.SceneOpen', { event: L(`NCI.Event.${business.scene.event.kind}.Name`) }) : '',
     notOfficer: business.stage >= 2 && canAct && !runs ? L('NCI.Company.NotOfficer') : '',
     info: business.stage >= 2 ? infoContext(business, runs) : null,
     unworkedNote: L('NCI.Business.UnworkedNote'),
@@ -545,15 +547,16 @@ function backRoomContext(business, runs, canAct, free) {
     name: L(`NCI.BackRoom.Kind.${room.kind}`),
     pending: room.status === 'pending',
     shut: room.status === 'shut',
+    shutText: L(business.stage >= 2 ? 'NCI.BackRoom.ShutForGood' : 'NCI.BackRoom.Shut'),
     informant: last?.informant ? L('NCI.BackRoom.InformantFound', { name: last.informant }) : '',
     offer: room.offer && !room.deal ? L('NCI.BackRoom.Offer', { gang: room.offer.name, cash: whole(room.offer.cash), cut: Math.round(room.offer.cut * 100), minimum: whole(BUSINESS_DEFAULTS.backRoom.deal.minimum) }) : '',
     deal: room.deal ? L(last?.unpaid ? 'NCI.BackRoom.DealUnpaid' : 'NCI.BackRoom.Deal', { gang: room.deal.name, cut: Math.round(room.deal.cut * 100), cash: whole(room.deal.cash) }) : '',
-    canPropose: canAct && room.status === 'open' && !business.proposals.some((x) => x.kind === 'gangDeal' || x.kind === 'endGangDeal'),
+    canPropose: runs && room.status === 'open' && !business.proposals.some((x) => x.kind === 'gangDeal' || x.kind === 'endGangDeal'),
     dirty: whole(room.dirty ?? 0),
     max: room.dirty ?? 0,
     band: room.band ? L(`NCI.Company.Exposure.${room.band}`) : L('NCI.Company.Exposure.clean'),
     last: last ? L(last.low ? 'NCI.BackRoom.LastLow' : 'NCI.BackRoom.Last', { earned: whole(last.earned), laundered: whole(last.laundered), paid: whole(last.paid) }) : '',
-    canTake: canAct && room.status === 'open' && room.dirty > 0,
+    canTake: runs && room.status === 'open' && room.dirty > 0,
     canLieLow: runs && free && room.status === 'open' && !business.period.slots.some((s) => s.action === 'lieLow' || s.action === 'roomWork'),
     lying: business.period.slots.some((s) => s.action === 'lieLow') ? L('NCI.BackRoom.Lying') : '',
     takeHint: L('NCI.BackRoom.TakeHint', { every: whole(BUSINESS_DEFAULTS.backRoom.takeEvery), exposure: BUSINESS_DEFAULTS.backRoom.takeExposure }),
@@ -651,10 +654,12 @@ function eventContext(business, canAct, free) {
 }
 
 /** One ledger entry in words, with its amount. */
-function ledgerLine(business, e) {
+function ledgerLine(business, e, officer = true) {
+  // A shareholder sees the money, not what it was: the books still add up (U1).
+  const secret = !officer && SECRET_LEDGER.includes(e.kind);
   return {
     date: dayText(e.day),
-    what: L(`NCI.Business.Ledger.${e.kind}${e.gear > 0 ? 'Gear' : ''}`, { name: e.actorId ? nameOf(business, e.actorId) : '', staff: e.staffName ?? '', project: e.project ? L(`NCI.Project.Kind.${e.project}`) : '', seller: e.sellerId ? nameOf(business, e.sellerId) : '', price: whole(e.price ?? 0), salvage: whole(e.salvage ?? 0), gear: whole(e.gear ?? 0) }),
+    what: secret ? L(e.amount > 0 ? 'NCI.Business.Ledger.sundryIn' : 'NCI.Business.Ledger.sundryOut') : L(`NCI.Business.Ledger.${e.kind}${e.gear > 0 ? 'Gear' : ''}`, { name: e.actorId ? nameOf(business, e.actorId) : '', staff: e.staffName ?? '', project: e.project ? L(`NCI.Project.Kind.${e.project}`) : '', seller: e.sellerId ? nameOf(business, e.sellerId) : '', price: whole(e.price ?? 0), salvage: whole(e.salvage ?? 0), gear: whole(e.gear ?? 0) }),
     amount: e.amount ? signed(e.amount) : '',
     cls: e.amount > 0 ? 'nci-up' : e.amount < 0 ? 'nci-down' : '',
   };
@@ -689,15 +694,16 @@ const FORMING = new Set(['founded', 'contribution', 'setupLoss', 'refund']);
  * top-ups and the like), which do not count in the profit. A week closed before the digest kept the
  * upkeep's parts shows the upkeep as one line.
  */
-export function cashbookContext(business, index) {
+export function cashbookContext(business, index, officer = true) {
   const at = business.digests.findLastIndex((x) => x.index === index);
   const d = business.digests[at];
   if (!d) return { business: business.name, week: L('NCI.Business.Week', { n: index }), gone: L('NCI.Cashbook.Gone') };
-  const row = digestRow(business, d, at);
+  const row = digestRow(business, d, at, officer);
   const line = (label, amount, note = '') => ({ label, note, amount: signed(amount), cls: amount > 0 ? 'nci-up' : amount < 0 ? 'nci-down' : '' });
   const change = d.event?.change ?? 0;
   const gross = d.gross ?? d.takings - change;
-  const event = change ? line(L(`NCI.Event.${d.event.kind}.Name`), change, [d.event.faction, L(`NCI.Cashbook.Outcome.${d.event.outcome}`)].filter(Boolean).join(', ')) : null;
+  const eventKind = !officer && d.event?.kind === 'bust' ? 'inspection' : d.event?.kind;
+  const event = change ? line(L(`NCI.Event.${eventKind}.Name`), change, [d.event.faction, L(`NCI.Cashbook.Outcome.${d.event.outcome}`)].filter(Boolean).join(', ')) : null;
   // A windfall is income; what trouble cost is an expense.
   const income = [line(L('NCI.Cashbook.Takings'), gross, d.boost ? row.gig : ''), ...(change > 0 ? [event] : [])];
   const upkeep = d.costs
@@ -731,7 +737,7 @@ export function cashbookContext(business, index) {
     profit: row.profit,
     profitCls: row.cls,
     repaid: d.repaid ? signed(-d.repaid) : '',
-    other: others.map((e) => ledgerLine(business, e)),
+    other: others.filter((e) => officer || e.kind !== 'dirtyTaken').map((e) => ledgerLine(business, e, officer)),
     opening: row.opening,
     unlisted: unlisted ? signed(unlisted) : '',
     // Wages counted in the profit but not yet paid from the cash (+), or back pay paid this week (−).
@@ -788,6 +794,7 @@ export function reportContext(business, index) {
 
 function ledgerContext(business, actor, canAct = false) {
   const last = lastDigest(business);
+  const officer = !actor || canRun(business, actor.id);
   const allowance = actor ? drawAllowance(business, actor.id) : 0;
   return {
     // A company's monthly report: how far into the month it is, and preparing it in the last week (B4b).
@@ -803,9 +810,9 @@ function ledgerContext(business, actor, canAct = false) {
       prepared: business.reportPrep ? L(business.reportPrep.bold ? 'NCI.Company.PreparedBold' : 'NCI.Company.Prepared', { band: L(`NCI.Roll.Band.${business.reportPrep.band}`) }) : '',
       canPrepare: canAct && canRun(business, actor.id) && reportCheck(business).ok,
     } : null,
-    last: last ? digestRow(business, last, business.digests.length - 1) : null,
-    digests: business.digests.map((d, i) => digestRow(business, d, i)).reverse(),
-    entries: [...business.ledger].reverse().slice(0, LEDGER_ROWS).map((e) => ledgerLine(business, e)),
+    last: last ? digestRow(business, last, business.digests.length - 1, officer) : null,
+    digests: business.digests.map((d, i) => digestRow(business, d, i, officer)).reverse(),
+    entries: [...business.ledger].filter((e) => officer || e.kind !== 'dirtyTaken').reverse().slice(0, LEDGER_ROWS).map((e) => ledgerLine(business, e, officer)),
     allowance,
     allowanceText: allowance > 0 ? L('NCI.Business.DrawAllowance', { amount: whole(allowance) }) : LT(business, 'NCI.Business.NoDraw'),
     canDraw: business.status === 'open' && allowance > 0,
@@ -856,8 +863,11 @@ function moneyContext(business, actor) {
 }
 
 /** One weekly digest for the Ledger tab and the cashbook; `i` is where it sits among the digests kept. */
-function digestRow(business, d, i) {
+function digestRow(business, d, i, officer = true) {
   const money = weekMoney(business.digests, i);
+  const actions = officer ? d.actions : d.actions.filter((a) => !SECRET_ACTIONS.includes(a.action));
+  // A raid on the back room reads as an inspection to those who do not know of it.
+  const eventKind = !officer && d.event?.kind === 'bust' ? 'inspection' : d.event?.kind;
   return {
     index: d.index,
     week: L('NCI.Business.Week', { n: d.index }),
@@ -875,10 +885,10 @@ function digestRow(business, d, i) {
     profit: signed(d.profit),
     cls: d.profit > 0 ? 'nci-up' : d.profit < 0 ? 'nci-down' : 'nci-flat',
     till: whole(d.till),
-    actions: d.actions.length
-      ? d.actions.map((a) => L('NCI.Business.DigestAction', { action: L(a.action === 'respond' ? 'NCI.Business.Answer' : `NCI.Business.Action.${a.action}.Name`), name: nameOf(business, a.by), band: L(`NCI.Roll.Band.${a.band}`) })).join('; ')
+    actions: actions.length
+      ? actions.map((a) => L('NCI.Business.DigestAction', { action: L(a.action === 'respond' ? 'NCI.Business.Answer' : `NCI.Business.Action.${a.action}.Name`), name: nameOf(business, a.by), band: L(`NCI.Roll.Band.${a.band}`) })).join('; ')
       : L('NCI.Business.NoActions'),
-    event: d.event ? L(`NCI.Business.EventOutcome.${d.event.outcome}`, { event: L(`NCI.Event.${d.event.kind}.Name`), change: signed(d.event.change) })
+    event: d.event ? L(`NCI.Business.EventOutcome.${d.event.outcome}`, { event: L(`NCI.Event.${eventKind}.Name`), change: signed(d.event.change) })
       + (d.event.cost ? ` ${L('NCI.Staff.DigestMedical', { cost: whole(d.event.cost) })}` : '') : '',
     // What happened to the staff: someone off sick, hurt, poached, caught, quitting, asking for a raise (E2).
     people: (d.staff ?? []).map((n) => L(`NCI.Staff.Note.${n.kind}`, { name: n.name, rival: n.rival ?? '' })).join(' '),

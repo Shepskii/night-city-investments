@@ -17,6 +17,9 @@ import { traitOf } from './businessStaff.js';
 export const ROOM_ACTIONS = Object.freeze(['roomWork', 'launder', 'payOff', 'dealGang']);
 /** A company's crime (U1c), which a world's underworld setting hides. */
 export const CRIME_ACTIONS = Object.freeze(['dumping', 'bribeRegulator', 'blackOps']);
+/** What only those running a company should see of its crime: slots, and ledger lines, which others see in plain words. */
+export const SECRET_ACTIONS = Object.freeze([...ROOM_ACTIONS, ...CRIME_ACTIONS, 'lieLow']);
+export const SECRET_LEDGER = Object.freeze(['laundered', 'dirtyTaken', 'raidFine', 'blackOps', 'regulatorBribe']);
 
 /** The kinds of back room this business's front could hide. */
 export const roomKinds = (b) => Object.keys(BACK_ROOMS[b.archetype] ?? {});

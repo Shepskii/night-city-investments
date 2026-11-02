@@ -235,6 +235,8 @@ You also hear things. Every few days your Credibility may bring a rumour by mail
 
 **Back rooms.** A shop or registered business can open an illegal operation behind the front, as a project on the Projects tab, if your GM allows it. Each week you can **Work the back room** for dirty cash, **Launder** some of it into the business's cash, **Pay someone off**, or **Lie low**. You can also take dirty cash straight as eddies. The higher your Exposure, the likelier a **raid**: failing one costs dirty cash and a fine, and leaving one unanswered or fumbling it shuts the back room and draws heat on the partners, though the shop carries on. Watch your staff, too. A back-room hand can work it for you, but an unhappy employee or a hidden informant can bring the raid to your door. All of it moves your Exposure, shown as a band, and dirty cash is off the books: it isn't in your book value or reports, and it's lost if the business closes.
 
+If your business charters, its back room keeps running as the officers' secret: other shareholders don't see it, and the officers take any gang deal themselves. A raid that shuts it at a company shuts it for good.
+
 **Gang deals.** With a back room running, **Deal with a gang** can bring an offer from a gang on your turf that isn't wary or hostile: money in, for a cut of the takings. Partners vote on it. That gang then charges no protection and sends no shakedowns, but falling behind on the cut costs standing, and ending the deal means paying the money back.
 
 **Corporate crime.** A chartered company has **Dump the waste**, **Bribe a regulator** and **Black ops**, if your GM allows them. They pay well or hit hard, and they add Exposure. Crime at a listed company that comes out is a scandal that dips the share price.

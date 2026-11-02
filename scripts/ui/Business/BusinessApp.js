@@ -6,7 +6,7 @@
  *              and every roll is made only when the player presses Roll.
  */
 
-import { itemGear, partnerOf, limitLeft } from '../../engine/index.js';
+import { itemGear, partnerOf, limitLeft, canRun } from '../../engine/index.js';
 import { MODULE_ID, HOOKS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient } from '../../services/BusinessClient.js';
@@ -368,11 +368,13 @@ export class BusinessApp extends BaseApplication {
 
   /** Put a gang's offer to the partners (U1c). */
   static _onGangDeal() {
+    if (this.business?.stage >= 2) return this._send('gangDealOfficer', {});
     return this._send('propose', { kind: 'gangDeal' });
   }
 
   /** Ask the partners to end the deal (U1c). */
   static _onEndGangDeal() {
+    if (this.business?.stage >= 2) return this._send('gangDealOfficer', { end: true });
     return this._send('propose', { kind: 'endGangDeal' });
   }
 
@@ -577,7 +579,7 @@ export class BusinessApp extends BaseApplication {
   static _onOpenCashbook(event, target) {
     const business = this.business;
     if (!business) return;
-    CashbookDialogApp.ask({ businessId: business.id, index: Number(target.dataset.index) });
+    CashbookDialogApp.ask({ businessId: business.id, index: Number(target.dataset.index), officer: !this.actor || canRun(business, this.actor.id) });
   }
 
   /** A report in the Ledger tab's monthly reports: its real and reported figures, in a window of its own. */

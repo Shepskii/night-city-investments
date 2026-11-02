@@ -904,3 +904,50 @@ test('a gang\'s offer and deal on the Work tab, and a company\'s crime on its ow
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('a back room at a company is hidden from a shareholder who is not an officer, and the books still add up', async () => {
+  const { CompanyRepository } = await import('../scripts/data/CompanyRepository.js');
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const listAll = CompanyRepository.all;
+  CompanyRepository.all = () => [{ id: 'ARA', ticker: 'ARA', name: 'Arasaka' }];
+  try {
+    const day = b.period.startDay;
+    await S.BusinessRepository.save({
+      ...b, status: 'open', stage: 2, company: { ticker: 'BRC', sector: 'health', charteredDay: day }, officers: [med.id], listing: null, charter: null, takeover: null, administration: null, regCase: null, campaign: null, scene: null, proposals: [],
+      backRoom: { kind: 'ripping', status: 'open', dirty: 900, band: 'low', offer: { factionId: 'gang_maelstrom', name: 'Maelstrom', cash: 2000, cut: 0.25, day } },
+      ledger: [...b.ledger, { day, kind: 'laundered', amount: 300 }, { day, kind: 'raidFine', amount: -500 }, { day, kind: 'dirtyTaken', amount: 0, actorId: med.id }],
+      digests: [...b.digests, { index: 99, startDay: day - 7, endDay: day, takings: 500, upkeep: 100, till: 5000, profit: 400, opening: 4600, actions: [{ action: 'roomWork', by: med.id, band: 'solid' }, { action: 'contracts', by: med.id, band: 'solid' }], event: { kind: 'bust', outcome: 'failed', band: null, change: -50 }, bands: b.digests.at(-1)?.bands ?? {} }],
+      period: { ...b.period, slots: [], event: { kind: 'bust' } },
+    });
+    const secret = /Back room:|the back room|Black-market|dirty cash|Launder|Dump the waste|Bribe a regulator|Black ops|A raid on/i;
+    const other = await renderBusiness(windowFor(fix, 'week'));
+    assertClean(other, 'a shareholder\'s Work tab');
+    assert.doesNotMatch(text(other), secret);
+    const otherLedger = await renderBusiness(windowFor(fix, 'ledger'));
+    assertClean(otherLedger, 'a shareholder\'s ledger');
+    assert.doesNotMatch(text(otherLedger), /Laundered|fine from a raid|took some of the dirty|Work the back room|A raid on/);
+    assert.match(text(otherLedger), /Other income/);
+    assert.match(text(otherLedger), /Other costs/);
+    assert.match(text(otherLedger), /An inspection|inspection/i);
+    const { cashbookContext } = await import('../scripts/ui/Business/context.js');
+    const book = JSON.stringify(cashbookContext(S.BusinessRepository.all()[0], 99, false));
+    assert.doesNotMatch(book, /Laundered|from a raid|took some of the dirty|A raid on/, 'nor the cash book');
+    assert.match(JSON.stringify(cashbookContext(S.BusinessRepository.all()[0], 99, true)), /A raid on the back room/);
+    assert.doesNotMatch(text(await renderBusiness(windowFor(fix, 'projects'))), /Back room<|A back room, behind/);
+
+    const officer = await renderBusiness(windowFor(med, 'week'));
+    assertClean(officer, 'an officer\'s Work tab');
+    for (const words of [/Back room: Black-market chrome/, /A raid on the back room/, /Dump the waste/, /Work the back room/, /Maelstrom offers 2,000 eb/]) assert.match(text(officer), words);
+    assert.match(officer, /data-action="takeDirty"/);
+    const officerLedger = await renderBusiness(windowFor(med, 'ledger'));
+    assert.match(text(officerLedger), /Laundered through the takings/);
+    assert.doesNotMatch(await renderBusiness(windowFor(med, 'projects')), /<strong>Back room<\/strong>/, 'a company cannot build one');
+
+    await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], backRoom: { kind: 'ripping', status: 'shut', dirty: 0 }, period: { ...b.period, slots: [], event: null } });
+    assert.match(text(await renderBusiness(windowFor(med, 'week'))), /Shut by a raid, for good/);
+  } finally {
+    CompanyRepository.all = listAll;
+    await S.BusinessRepository.save(saved);
+  }
+});

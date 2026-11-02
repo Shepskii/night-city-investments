@@ -120,7 +120,7 @@ export {
 
 export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
-  'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'takeDirty', 'lieLow', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll', 'prospectusRoll',
+  'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'takeDirty', 'lieLow', 'gangDealOfficer', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll', 'prospectusRoll',
   'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant', 'askStaff', 'cancelAsk', 'addTeam',
   'rightsTake', 'sellBack', 'issueRoll', 'buybackRoll', 'bid', 'tender', 'defenceRoll', 'hideRoll', 'dropLayer',
 ]);
@@ -606,11 +606,21 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
     }
     case 'takeDirty': {
       if (me?.status !== 'active' || !me.voting) return fail('not-partner');
+      // At a company, the back room is the officers' secret.
+      if (!canRun(b, actor.id)) return fail('not-officer');
       const taken = takeDirty(b, request.amount, p);
       if (!taken.ok) return taken;
       pay(actor.id, taken.amount);
       log('dirtyTaken', 0);
       out.events.push({ type: 'dirtyTaken', exposure: taken.exposure });
+      break;
+    }
+    case 'gangDealOfficer': {
+      if (b.stage < 2) return fail('not-company');
+      if (me?.status !== 'active' || !me.voting || !canRun(b, actor.id)) return fail('not-officer');
+      const done = request.end ? endDeal(b) : takeDeal(b, day);
+      if (!done.ok) return done;
+      if (request.end) out.events.push({ type: 'factionMove', factionId: done.factionId, amount: p.backRoom.deal.end });
       break;
     }
     case 'lieLow': {
@@ -1282,9 +1292,12 @@ function canPropose(b, kind, request, ctx, p) {
       const offer = projectOffer(b, request.project, p);
       return offer.ok ? { ok: true, terms: { project: request.project, cost: offer.cost, days: offer.days, ...(request.project === 'backRoom' ? { room: request.room } : {}) } } : fail(offer.reason);
     }
+    // A shareholders' vote would tell them all, so at a company the officers settle it (`gangDealOfficer`).
     case 'gangDeal':
+      if (b.stage >= 2) return fail('officers-decide');
       return b.backRoom?.offer && !b.backRoom.deal ? { ok: true, terms: { name: b.backRoom.offer.name } } : fail('no-offer');
     case 'endGangDeal':
+      if (b.stage >= 2) return fail('officers-decide');
       return b.backRoom?.deal ? { ok: true, terms: { name: b.backRoom.deal.name } } : fail('no-deal');
     case 'elect':
     case 'dismiss':

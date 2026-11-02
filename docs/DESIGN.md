@@ -1853,6 +1853,8 @@ Tested in the test world (2026-11-02): a raid left unanswered, seizing 528 eb, a
 
 Tested in the test world (2026-11-02): a gang's offer at neutral through the Work tab, with a hostile gang left off the list; the partners' vote carried by a majority holder and the money in the dirty cash; the minimum cut at the close, the gang's share off the protection money, and its standing held; failed dumping and bribe rolls, with the bribe still paid; black ops through the GM's approval, with the headline, the -3% impact, -10 standing and the Exposure. Not run live: ending a deal, a deal falling short or a gang walking away, a bribe easing a case, black ops traced back, and any scandal, which the flow tests cover.
 
+**A back room at a company** (the user's decisions, 2026-11-02). A business that charters keeps its back room, and it stays the officers' secret. Only they see its card, its actions and the company's crime actions, take dirty cash, and hear of a raid; only they draw its heat; and they take or end a gang's deal themselves, since a shareholders' vote would tell everyone. To other shareholders the money still adds up: a laundering, a raid's fine, a bribe or black ops read as other income or costs, a raid on the room as an inspection, and a scandal as news. A raid that shuts the room at a company shuts it for good: a company cannot build one. The post of back-room hand can still be seen on the staff list.
+
 **What each front hides** (the archetype decides the operation, its skills, and the trouble it draws):
 
 | Front | Back room | Its skills | Draws |

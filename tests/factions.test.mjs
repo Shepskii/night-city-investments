@@ -817,3 +817,28 @@ test('black ops work as a campaign, at more cost and a bigger move; traced back,
   assert.deepEqual([caught.blackOps, caught.exposure], [true, BUSINESS_DEFAULTS.crime.blackOpsCaught]);
   assert.equal(rollSpec(companyOf({ till: 1000 }), { type: 'action', action: 'blackOps', targetTicker: 'ARA', use }, 'med', { day: DAY }).reason, 'no-gift');
 });
+
+// ── A back room at a company: the officers' secret ──────────────────
+
+test('at a company, only officers take dirty cash and settle a deal, without a vote; a shut room stays shut', () => {
+  const company = (officers, room = {}) => normalizeBusiness({ ...shop(), stage: 2, till: 20000, company: { ticker: 'BRC', sector: 'health', charteredDay: DAY }, officers, backRoom: { kind: 'ripping', status: 'open', dirty: 3000, ...room } });
+  assert.equal(send(company(['other']), { type: 'takeDirty', businessId: 'b1', amount: 100 }).reason, 'not-officer');
+  assert.equal(send(company(['med']), { type: 'takeDirty', businessId: 'b1', amount: 100 }).ok, true);
+  assert.equal(send(withRoom(), { type: 'takeDirty', businessId: 'b1', amount: 100 }).ok, true, 'any partner of a smaller business');
+
+  const offer = { offer: { factionId: 'mael', name: 'Maelstrom', cash: 2000, cut: 0.25, day: DAY } };
+  assert.equal(send(company(['med'], offer), { type: 'propose', businessId: 'b1', kind: 'gangDeal' }).reason, 'officers-decide', 'no shareholders\' vote');
+  assert.equal(send(company(['other'], offer), { type: 'gangDealOfficer', businessId: 'b1' }).reason, 'not-officer');
+  const taken = send(company(['med'], offer), { type: 'gangDealOfficer', businessId: 'b1' });
+  assert.equal(taken.ok, true, taken.reason);
+  assert.deepEqual([taken.business.backRoom.deal.name, taken.business.backRoom.dirty], ['Maelstrom', 5000]);
+  assert.equal(taken.business.proposals.length, 0);
+  const ended = send(taken.business, { type: 'gangDealOfficer', businessId: 'b1', end: true });
+  assert.equal(ended.ok, true, ended.reason);
+  assert.equal(ended.business.backRoom.deal, null);
+  assert.equal(ended.events.find((e) => e.type === 'factionMove').amount, BUSINESS_DEFAULTS.backRoom.deal.end);
+  assert.equal(send(withRoom(offer), { type: 'gangDealOfficer', businessId: 'b1' }).reason, 'not-company', 'a smaller business votes');
+
+  assert.equal(projectOffer(company(['med'], { status: 'shut' }), 'backRoom').reason, 'not-at-company', 'for good');
+  assert.equal(projectOffer(withRoom({ status: 'shut' }), 'backRoom').ok, true, 'a shop can build again');
+});
