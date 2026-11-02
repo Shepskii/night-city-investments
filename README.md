@@ -63,6 +63,15 @@ Or unzip a release into `Data/modules/night-city-investments`. Then enable **Nig
 - **Campaigns.** A business can run a smear or a leak against a listed company, for a small dip in its price.
 - **Media stories.** A Media publishes an exposé or a puff piece, with Believability by Credibility rank as in the rules, backed by evidence shards. Medias also hear rumours by mail, or dig for them.
 
+### Fronts
+- **Back rooms.** A shop or registered business can run something illegal behind the front: dirty cash, laundering, pay-offs, raids and informants, with gang deals on the side. At a chartered company it is the officers' secret, and companies have crime of their own.
+- **Back-room staff.** Hire a hand, a launderer or a fixer to work it when nobody else does, for more pay and more risk. Exposure shows as a bar, in bands, never as a number.
+
+### Windows
+- **Folders and tabs.** The Market Terminal and the Business window are arranged like the GM Console.
+- **Pending lists.** GMs and players each get one list of what is waiting for them, and can act on it there. A click on a row opens the detail.
+- **Colour themes.** With Pneuma's Visual Tools installed, each player can have the windows match its skins and colours.
+
 ### Roles and scenes
 - **Role actions.** A Nomad's supply contract cuts running costs, a Rockerboy's gig lifts takings and Reputation, and a Lawman's Backup answers raids and cases and can call in a favour against their own heat.
 - **Big events as scenes.** The GM can play out a raid, sabotage or a hostile faction's move at the table, with a ready hook, while the weeks carry on.

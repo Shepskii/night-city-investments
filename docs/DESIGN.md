@@ -2071,7 +2071,7 @@ Tested in the test world (2026-11-02): a Supply contract rolled with Moto, offer
 
 The order: R1 and R2, then F1 with Media stories, then X1, then B7 and character ties. U1 and P1 stay as planned, after F1; X1's NET runs share Messenger work with U1 (§36.4).
 
-### 36.8 The windows reworked, and what came with them (2026-11-02 and 03; for v0.19.0)
+### 36.8 The windows reworked, and what came with them (2026-11-02 and 03; v0.19.0)
 
 The user's requests after U1, each built and committed on its own. Colours, layout and wording changes are not all listed; the commits have them.
 
@@ -2113,9 +2113,9 @@ The user's requests after U1, each built and committed on its own. Colours, layo
 | R2 | **Done (v0.16.0), see §36.7.** Role abilities: a player rolls rank + 9 in business rolls, as staff do |
 | F1 | **Done (v0.17.0), see §36.3 and §36.7.** Faction standing with corps and gangs, moved by gigs and business actions; smear campaigns through the impact pipeline; Media rumours and published stories moving prices; after R1 |
 | X1 | **Part done (v0.18.0), see §36.7:** big events as scenes, and more for Lawmen, Nomads and Rockerboys. **Still proposed:** player rivalry: private share deals, Netrunner runs on a company's NET, poaching and sabotage; after F1 |
-| B7 | **Recommended next, after releasing v0.19.0; the user to confirm. Proposed, see §27.8 and §36.7.** Downtime bridge (separate module): company work through Crew Tools downtime, businesses on Night City Map. With it, character ties: REP and IP from business milestones, a business covering Housing and Lifestyle, and Teamwork's Loyalty checks; after X1 |
-| U1 | **Built, see §36.1 and §36.8, for v0.19.0.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships, back-room staff; after F1 and B6 |
-| UI | **Built, see §36.8, for v0.19.0.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
+| B7 | **Recommended next; the user to confirm. Proposed, see §27.8 and §36.7.** Downtime bridge (separate module): company work through Crew Tools downtime, businesses on Night City Map. With it, character ties: REP and IP from business milestones, a business covering Housing and Lifestyle, and Teamwork's Loyalty checks; after X1 |
+| U1 | **Done (v0.19.0), see §36.1 and §36.8.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships, back-room staff; after F1 and B6 |
+| UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
 | P1 | **Proposed, see §36.2.** Production: workshops, lines, stock, selling and fencing; after E3 |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |
