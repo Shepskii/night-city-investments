@@ -562,6 +562,10 @@ test('a pay-off spends dirty cash, and actions need a room and the money; taking
   assert.equal(rollSpec(withRoom({ dirty: 0 }), { type: 'action', action: 'launder', use: SKILLS.accounting }, 'med', { day: DAY }).reason, 'no-dirty');
   assert.equal(rollSpec(withRoom(), { type: 'action', action: 'roomWork', use: SKILLS.cybertech }, 'med', { day: DAY }).ok, true);
   assert.equal(rollSpec(withRoom(), { type: 'action', action: 'roomWork', use: SKILLS.trading }, 'med', { day: DAY }).reason, 'bad-use');
+  const lying = withRoom();
+  lying.stage = 1;
+  lying.period.slots = [{ action: 'lieLow', band: 'solid' }];
+  assert.equal(rollSpec(lying, { type: 'action', action: 'roomWork', use: SKILLS.cybertech }, 'med', { day: DAY }).reason, 'lying-low');
 });
 
 test('taking dirty cash: to the partner, Exposure per thousand, never more than there is', () => {

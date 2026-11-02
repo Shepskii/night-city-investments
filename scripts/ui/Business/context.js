@@ -514,7 +514,8 @@ function weekContext(business, actor, canAct) {
         bonus: bonus ? LT(business, 'NCI.Business.BonusWaiting') : '',
         aimedAt: slot?.factionName ? L('NCI.Business.AimedAt', { name: slot.factionName }) : '',
         aim: aimOf(id),
-        canRoll: runs && free && !slot && !(id === 'campaign' && (business.campaign || campaignWait(business, BusinessClient.day()) > 0)),
+        canRoll: runs && free && !slot && !(id === 'campaign' && (business.campaign || campaignWait(business, BusinessClient.day()) > 0))
+          && !(id === 'roomWork' && period.slots.some((s) => s.action === 'lieLow')),
         canHelp: canAct && !helped && !slot,
         waiting: id === 'campaign' ? campaignNote(business) : id === 'supply' ? supplyNote(business) : id === 'payOff' ? L('NCI.BackRoom.PayOffCost', { cost: whole(payOffCost(business)) }) : '',
       };

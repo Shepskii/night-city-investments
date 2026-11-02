@@ -29,7 +29,11 @@ export function payOffCost(b, p = BUSINESS_DEFAULTS) {
 export function roomCheck(b, action, p = BUSINESS_DEFAULTS) {
   const room = openRoom(b);
   if (!room) return fail('no-back-room');
-  if (action === 'roomWork') return { ok: true, uses: BACK_ROOMS[b.archetype]?.[room.kind] ?? [] };
+  if (action === 'roomWork') {
+    // Lying low means no work behind the shop this week.
+    if (b.period.slots.some((s) => s.action === 'lieLow')) return fail('lying-low');
+    return { ok: true, uses: BACK_ROOMS[b.archetype]?.[room.kind] ?? [] };
+  }
   if (action === 'launder') return room.dirty > 0 ? { ok: true, uses: p.backRoom.launderUses } : fail('no-dirty');
   return room.dirty >= payOffCost(b, p) ? { ok: true, uses: p.backRoom.payOffUses } : fail('no-dirty');
 }
