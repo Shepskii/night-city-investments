@@ -447,6 +447,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     dumping: byBand([0.8, 0.95, 1.2, 1.4, 1.6, 1.8]),
     dumpingExposure: byBand([15, 8, 5, 4, 3, 3]),
     bribeCost: 1000,
+    /** A fixer bribes the regulator on their own only if this much cash would be left. */
+    fixerFloor: 5000,
     bribeExposure: byBand([8, 0, -4, -6, -8, -12]),
     ease: 3,
     easeFrom: Object.freeze(['solid', 'strong', 'exceptional']),

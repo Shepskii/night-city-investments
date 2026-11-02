@@ -478,7 +478,7 @@ export function staffShifts(b, seed = 'nci', p = BUSINESS_DEFAULTS, { idle = nul
     const fixer = staff.find((s) => s.post === 'fixer');
     if (fixer && exposure != null && ['moderate', 'high'].includes(exposureBand(exposure, p))) {
       if (room && !taken('payOff') && room.dirty >= payOffCost(b, p)) shift(fixer, 'fixer', 'payOff');
-      else if (b.stage >= 2 && !taken('bribeRegulator') && b.till >= p.crime.bribeCost) shift(fixer, 'fixer', 'bribeRegulator');
+      else if (b.stage >= 2 && !taken('bribeRegulator') && b.till - p.crime.bribeCost >= p.crime.fixerFloor) shift(fixer, 'fixer', 'bribeRegulator');
     }
   }
   const event = b.period.event;

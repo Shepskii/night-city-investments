@@ -715,7 +715,9 @@ test('a fixer acts only once Exposure has run up: a pay-off, or at a company a b
   assert.ok(bribed.business.ledger.some((e) => e.kind === 'regulatorBribe' && e.amount === -BUSINESS_DEFAULTS.crime.bribeCost), 'from the cash');
   assert.ok(bribed.events.some((e) => e.type === 'regulatorBribed'));
   assert.equal(did(close(firm(), 10), 'bribeRegulator'), false, 'low Exposure');
-  assert.equal(did(close(firm({ till: 100 }), 40), 'bribeRegulator'), false, 'no money for it');
+  const floor = BUSINESS_DEFAULTS.crime.fixerFloor + BUSINESS_DEFAULTS.crime.bribeCost;
+  assert.equal(did(close(firm({ till: floor - 1 }), 40), 'bribeRegulator'), false, 'it would leave too little cash');
+  assert.equal(did(close(firm({ till: floor }), 40), 'bribeRegulator'), true, 'exactly enough left');
   const oneJob = close(firm({ backRoom: { kind: 'ripping', status: 'open', dirty: 5000, day: DAY } }), 40);
   assert.equal(did(oneJob, 'payOff'), true, 'dirty money first');
   assert.equal(did(oneJob, 'bribeRegulator'), false, 'and one job a week');

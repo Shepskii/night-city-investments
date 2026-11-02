@@ -516,6 +516,8 @@ test('a company\'s later states render cleanly: a regulator\'s case, administrat
     assert.match(overview, /Standing with factions/);
     assert.match(overview, /Biotechnica \(friendly\)/);
     assert.match(overview, /Tyger Claws \(your turf\)/);
+    const standingsAt = overview.indexOf('Standing, week by week');
+    assert.ok(standingsAt >= 0 && standingsAt < overview.indexOf('Standing with factions'), 'the factions come last');
     assert.doesNotMatch(overview, /Maelstrom/, 'a faction it has not met, off its turf');
     const tab = await renderConsole('factions');
     assertClean(tab, 'factions tab');

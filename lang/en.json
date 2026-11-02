@@ -3438,7 +3438,7 @@
         "compliance": "Bureaucracy or Local Expert: Compliance up each week, and answers an inspection no partner answers. Companies only.",
         "hand": "The trade's skills: works the back room when no partner does. Paid half as much again, and adds to the risk of a raid. Knows what goes on there, so loyalty matters.",
         "launderer": "Accounting or Business: washes the dirty cash when no partner does. Paid half as much again, and adds to the risk of a raid. Knows what goes on there, so loyalty matters.",
-        "fixer": "Bribery or Streetwise: at moderate Exposure or higher, pays people off from the dirty cash when no partner does; at a company, bribes the regulator from the cash if there is no dirty money to use. Paid half as much again, and adds to the risk of a raid."
+        "fixer": "Bribery or Streetwise: at moderate Exposure or higher, pays people off from the dirty cash when no partner does; at a company, bribes the regulator from the cash if there is no dirty money to use, as long as 5,000 eb would be left. Paid half as much again, and adds to the risk of a raid."
       },
       "Level": {
         "green": "Green",

@@ -227,21 +227,6 @@
     {{#if isOpen}}<p class="nci-hint">{{localize "NCI.Business.OpenedOn" date=opened}}</p>{{/if}}
   </div>
 
-  {{#*inline "factionName"}}<div class="nci-faction-{{band}}"><strong>{{name}}</strong>{{#if label}} ({{label}}){{/if}}{{#if turf}} <span class="nci-muted">{{turf}}</span>{{/if}}</div>{{/inline}}
-  {{#if factions}}
-  <div class="nci-block">
-    <h3>{{localize "NCI.Faction.WindowTitle"}}</h3>
-    <table class="nci-market nci-factions">
-      <thead><tr><th>{{localize "NCI.Faction.Column.negative"}}</th><th>{{localize "NCI.Faction.Column.neutral"}}</th><th>{{localize "NCI.Faction.Column.friendly"}}</th></tr></thead>
-      <tbody><tr>
-        <td>{{#each factions.negative}}{{> factionName}}{{else}}<span class="nci-muted">&mdash;</span>{{/each}}</td>
-        <td>{{#each factions.neutral}}{{> factionName}}{{else}}<span class="nci-muted">&mdash;</span>{{/each}}</td>
-        <td>{{#each factions.friendly}}{{> factionName}}{{else}}<span class="nci-muted">&mdash;</span>{{/each}}</td>
-      </tr></tbody>
-    </table>
-    {{#if factionTerms}}<p class="nci-muted">{{factionTerms}}</p>{{/if}}
-  </div>
-  {{/if}}
   {{#with history}}
   <div class="nci-block nci-history">
     <h3>{{localize "NCI.Business.Standing"}}</h3>
@@ -299,6 +284,22 @@
     {{/if}}
   </div>
   {{/with}}
+
+  {{#*inline "factionName"}}<div class="nci-faction-{{band}}"><strong>{{name}}</strong>{{#if label}} ({{label}}){{/if}}{{#if turf}} <span class="nci-muted">{{turf}}</span>{{/if}}</div>{{/inline}}
+  {{#if factions}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.Faction.WindowTitle"}}</h3>
+    <table class="nci-market nci-factions">
+      <thead><tr><th>{{localize "NCI.Faction.Column.negative"}}</th><th>{{localize "NCI.Faction.Column.neutral"}}</th><th>{{localize "NCI.Faction.Column.friendly"}}</th></tr></thead>
+      <tbody><tr>
+        <td>{{#each factions.negative}}{{> factionName}}{{else}}<span class="nci-muted">&mdash;</span>{{/each}}</td>
+        <td>{{#each factions.neutral}}{{> factionName}}{{else}}<span class="nci-muted">&mdash;</span>{{/each}}</td>
+        <td>{{#each factions.friendly}}{{> factionName}}{{else}}<span class="nci-muted">&mdash;</span>{{/each}}</td>
+      </tr></tbody>
+    </table>
+    {{#if factionTerms}}<p class="nci-muted">{{factionTerms}}</p>{{/if}}
+  </div>
+  {{/if}}
   {{/if}}
 
   {{#if ../isWeek}}
