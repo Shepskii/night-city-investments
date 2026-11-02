@@ -1,5 +1,6 @@
 {{#with factions}}
 <div class="nci-block">
+  <p class="nci-hint">{{localize "NCI.Faction.Hint"}}</p>
   <div class="nci-actions" data-faction-row>
     <label class="nci-inline">{{localize "NCI.Faction.Name"}} <input type="text" name="name" maxlength="60"></label>
     <label class="nci-inline">{{localize "NCI.Faction.KindLabel"}} <select name="kind">{{#each newKinds}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
