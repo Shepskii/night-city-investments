@@ -144,7 +144,7 @@ Each business's entry on the **Businesses** tab shows its true standing with the
 
 Standing runs from -100 to 100 for each business; its owners see only a band (hostile, wary, neutral, friendly, allied). It fades 2 points a week and moves at most 15 a week; you can set it by hand on the same tab.
 
-**Tags in a gig's GM notes** say who it involves, by name, ticker or alias:
+**Tags in a gig's GM notes** say who it involves, by name, ticker or alias (requires the Night City Map and Night City Map - Night City Investments Bridge modules):
 
 | Tag | Means |
 |---|---|
@@ -163,7 +163,7 @@ Private businesses, gangs and unknown clients have no share price, so only the o
 
 ## Regulators
 
-Exposure now has consequences. A case opens by chance at a monthly report (low 5%, moderate 15%, high 35%), or at once when a corp plant is fired, a Shortcuts roll is fumbled, or NCPD unmasks a holder of over 25% of a company. You can also press **Open a regulator's case** on any company, or **Drop the case** at any stage.
+Exposure has consequences. A case opens by chance at a monthly report (low 5%, moderate 15%, high 35%), or at once when a corp plant is fired, a Shortcuts roll is fumbled, or NCPD unmasks a holder of over 25% of a company. You can also press **Open a regulator's case** on any company, or **Drop the case** at any stage.
 
 An officer has 14 days to answer, rolling against 14 + 1d10, plus 2 at moderate Exposure or 4 at high. Players see neither the total nor the band; the Businesses tab shows you the Exposure. A win clears half of it. A loss or silence waits for you with a proposed fine (5% of book value, 10% at high Exposure). Approving it takes the fine and 10 Compliance, and a listed company makes the news. A fumble or high Exposure makes it serious: a listing application stops, or the last three reports are restated at their real figures.
 
