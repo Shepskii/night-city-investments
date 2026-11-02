@@ -1844,6 +1844,8 @@ Tested in the test world (2026-11-02): the GM's approval, working the room on th
 - **The back-room hand.** A new post, offered only while a room is open, using the trade's skills. They work the room when no partner did, unless the business is lying low.
 - **Informants.** A hidden trait: an applicant to a business with a room is one 10% of the time, and an employee with no trait may turn, 2% a week. Each adds 2 Exposure a week, and firing one adds 5, as a corp plant. A passed internal audit, or a strong or better pay-off, names them; vetting shows them, as other traits. The GM sees them on the staff table.
 
+Tested in the test world (2026-11-02): a raid left unanswered, seizing 528 eb, a 1,000 eb fine, the room shut, 15 heat for each character partner and none for a syndicate, the owners' mails, and the shop still open; the hand's post offered; an informant on the GM's staff table and not on the player's. A shut room stops the informant's weekly Exposure. Not run live: a raid won or failed, one run as a scene, a hand working the room, an informant being found or turning.
+
 **What each front hides** (the archetype decides the operation, its skills, and the trouble it draws):
 
 | Front | Back room | Its skills | Draws |
