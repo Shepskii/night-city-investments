@@ -520,6 +520,7 @@ test('a company\'s later states render cleanly: a regulator\'s case, administrat
     const tab = await renderConsole('factions');
     assertClean(tab, 'factions tab');
     assert.match(tab, /data-action="factionImport"/);
+    assert.ok(tab.indexOf('data-action="factionAdd"') < tab.indexOf('<table'), 'adding comes first, as on Companies and Funds');
     assert.doesNotMatch(tab, /SetStanding/, 'standing is on the Businesses tab');
     const running = await renderConsole('businesses');
     assert.match(running, /data-action="businessSetStanding"/);

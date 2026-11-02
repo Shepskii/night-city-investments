@@ -1,10 +1,12 @@
 {{#with factions}}
 <div class="nci-block">
-  <h3>{{localize "NCI.Faction.Title"}}</h3>
-  <p class="nci-hint">{{localize "NCI.Faction.Hint"}}</p>
-  <div class="nci-actions">
-    <button type="button" data-action="factionImport"><i class="fas fa-file-import"></i> {{localize "NCI.Faction.Import"}}</button>
+  <div class="nci-actions" data-faction-row>
+    <label class="nci-inline">{{localize "NCI.Faction.Name"}} <input type="text" name="name" maxlength="60"></label>
+    <label class="nci-inline">{{localize "NCI.Faction.KindLabel"}} <select name="kind">{{#each newKinds}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <button type="button" data-action="factionAdd"><i class="fas fa-plus"></i> {{localize "NCI.Faction.Add"}}</button>
+    <button type="button" data-action="factionImport"><i class="fas fa-download"></i> {{localize "NCI.Faction.Import"}}</button>
   </div>
+
   {{#if rows.length}}
   <table class="nci-market">
     <thead><tr><th>{{localize "NCI.Faction.Name"}}</th><th>{{localize "NCI.Faction.KindLabel"}}</th><th>{{localize "NCI.Faction.Ticker"}}</th><th>{{localize "NCI.Faction.Districts"}}</th><th></th></tr></thead>
@@ -24,11 +26,6 @@
     </tbody>
   </table>
   {{else}}<p class="nci-empty">{{localize "NCI.Faction.None"}}</p>{{/if}}
-  <div class="nci-hirerow" data-faction-row>
-    <label>{{localize "NCI.Faction.Name"}} <input type="text" name="name" maxlength="60"></label>
-    <label>{{localize "NCI.Faction.KindLabel"}} <select name="kind">{{#each newKinds}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <button type="button" data-action="factionAdd"><i class="fas fa-plus"></i> {{localize "NCI.Faction.Add"}}</button>
-  </div>
   <p class="nci-hint">{{localize "NCI.Faction.DistrictHint" ids=districtIds}}</p>
 </div>
 {{/with}}

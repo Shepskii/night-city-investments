@@ -1857,8 +1857,6 @@
       "IntelNothing": "nothing useful found"
     },
     "Faction": {
-      "Title": "Factions",
-      "Hint": "Corporations and gangs a business can stand well or badly with. Link a corporation to its ticker, and give a gang the districts it holds, so the businesses there see it.",
       "Import": "Import starter factions",
       "Terms": { "cost": "Cost base from corporations in your sector: {change}.", "protection": "Protection money from gangs on your turf: {change}." },
       "Name": "Name",
