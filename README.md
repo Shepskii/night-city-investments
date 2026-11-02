@@ -59,13 +59,17 @@ Or unzip a release into `Data/modules/night-city-investments`. Then enable **Nig
 - **Go public.** List the company on the market through an IPO. Shares then sit in portfolios, reports move the price, and dividends follow a payout ratio the shareholders vote. A daily liquidity cap and a delisting review keep it honest.
 - **Corporate play.** Issue new shares, buy shares back, bid for another company with a tender offer, survive (or not) administration when debts outgrow assets, hide behind nominees and shell companies while rivals dig, and answer to regulators when shortcuts leave a trail.
 
+### Moving the market
+- **Campaigns.** A business can run a smear or a leak against a listed company, for a small dip in its price.
+- **Media stories.** A Media publishes an exposé or a puff piece, with Believability by Credibility rank as in the rules, backed by evidence shards. Medias also hear rumours by mail, or dig for them.
+
 ### For the GM
 - **The GM Console.** Advance time and steer sentiment, regimes and volatility. Queue shocks, glides and corporate actions, preview their effect over simulated futures, and undo a tick.
-- **Approvals.** Gig impacts, penalties, new businesses, charters, listings, syndicates and NPC job offers can each wait for the GM.
+- **Approvals.** Gig impacts, penalties, new businesses, charters, listings, syndicates, NPC job offers, campaigns and Media stories can each wait for the GM, all listed on one Pending tab.
 - **Gig outcomes** (with the bridge). A completed or failed gig moves its client's share price a few days later.
 - **Insider-trading heat** (optional). A hidden score watches for trades placed ahead of news. Brokers and NCPD warn, and penalties wait for approval.
 - **Hidden from play.** Fair value, the true regime, heat, a business's Exposure, its staff's traits and the strength of hidden owners' layers stay out of players' windows.
-- **Factions.** Corporations and gangs with a standing for each business, moved by jobs done in its name.
+- **Factions.** Corporations and gangs with a standing for each business. It moves with contracts and gifts, changes running costs and protection money, and hostile factions act against a business.
 - **Tools.** A self-check, starter macros, suggested companies from Messenger contacts and gigs, and a log of recent trades.
 
 ### How it runs

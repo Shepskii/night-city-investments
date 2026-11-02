@@ -2058,7 +2058,7 @@ The order: R1 and R2, then F1 with Media stories, then X1, then B7 and character
 | B6 | **Done (v0.15.0), see §35.** Corporate play: takeovers, buybacks, insolvency, hidden ownership and investigations |
 | R1 | **Done (v0.16.0), see §36.7.** Regulators: Exposure opens cases, by a monthly chance and by triggers, that an officer fights with an opposed roll; fines wait for the GM |
 | R2 | **Done (v0.16.0), see §36.7.** Role abilities: a player rolls rank + 9 in business rolls, as staff do |
-| F1 | **Proposed, see §36.3 and §36.7.** Faction standing with corps and gangs, moved by gigs and business actions; smear campaigns through the impact pipeline; Media rumours and published stories moving prices; after R1 |
+| F1 | **Done (v0.17.0), see §36.3 and §36.7.** Faction standing with corps and gangs, moved by gigs and business actions; smear campaigns through the impact pipeline; Media rumours and published stories moving prices; after R1 |
 | X1 | **Proposed, see §36.7.** Player rivalry: private share deals, Netrunner runs on a company's NET, poaching and sabotage, big events as scenes, more for Lawmen, Nomads and Rockerboys; after F1 |
 | B7 | **Proposed, see §27.8 and §36.7.** Downtime bridge (separate module): company work through Crew Tools downtime, businesses on Night City Map. With it, character ties: REP and IP from business milestones, a business covering Housing and Lifestyle, and Teamwork's Loyalty checks; after X1 |
 | U1 | **Proposed, see §36.1.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships; after F1 and B6 |
