@@ -1264,7 +1264,9 @@ class BusinessServiceImpl {
     const hidden = MarketStore.getBusinessesHidden();
     const exposure = hidden[stored.id]?.exposure ?? 0;
     const rng = createRng(`${this.seed()}:caseRoll:${stored.id}:${stored.regCase.openedDay}`);
-    const check = await SkillAdapter.verifyLevers(actor, request, { dv: regulatorTotal(exposure, () => rng.next()), use });
+    // A regulator already paid makes the case easier to answer (U1c).
+    const eased = stored.regCase.eased ? BUSINESS_DEFAULTS.crime.ease : 0;
+    const check = await SkillAdapter.verifyLevers(actor, request, { dv: regulatorTotal(exposure, () => rng.next()) - eased, use });
     if (!check.ok) return check;
     const day = this.day();
     const b = normalizeBusiness(structuredClone(stored));
@@ -1479,12 +1481,29 @@ class BusinessServiceImpl {
       if (e.type === 'bustWon') await this._mailHolders(b, L('NCI.BackRoom.RaidSubject', { name: b.name }), [L('NCI.BackRoom.RaidWon', { name: b.name })]);
       if (e.type === 'bustLost') {
         await this._mailHolders(b, L('NCI.BackRoom.RaidSubject', { name: b.name }), [L(e.shut ? 'NCI.BackRoom.RaidShut' : 'NCI.BackRoom.RaidLost', { name: b.name, seized: e.seized.toLocaleString(), fine: e.fine.toLocaleString() })]);
+        // A listed company's raid is news (U1c).
+        await this._scandal(b, e.heat ? BUSINESS_DEFAULTS.crime.scandal.raidLost : BUSINESS_DEFAULTS.crime.scandal.raidFailed, `raid:${this.day()}`);
         if (e.heat && HeatService.enabled()) {
           for (const p of b.partners.filter((x) => !x.market && x.status === 'active' && game.actors.get(x.actorId))) await HeatService.setHeat(p.actorId, HeatService.heatOf(p.actorId) + e.heat);
         }
       }
       if (e.type === 'campaignLands') await this._landCampaign(b, e.campaign);
-      if (e.type === 'campaignCaught') await this._campaignStanding(b, e.ticker, BUSINESS_DEFAULTS.campaign.caughtStanding);
+      if (e.type === 'campaignCaught') await this._campaignStanding(b, e.ticker, e.blackOps ? BUSINESS_DEFAULTS.crime.blackOpsCaughtStanding : BUSINESS_DEFAULTS.campaign.caughtStanding);
+      // Black ops traced back: the regulators, and the market if it is listed (U1c).
+      if (e.type === 'campaignCaught' && e.blackOps) {
+        await this._scandal(b, BUSINESS_DEFAULTS.crime.scandal.caught, `caught:${e.ticker}:${this.day()}`);
+        const stored = BusinessRepository.get(b.id);
+        if (stored && !stored.regCase) {
+          const withCase = normalizeBusiness(structuredClone(stored));
+          if (openCase(withCase, { reason: 'blackOps', day: this.day() }).ok) {
+            await BusinessRepository.save(withCase);
+            await this._mailCaseOpened(withCase);
+            b.regCase = withCase.regCase;
+          }
+        }
+      }
+      if (e.type === 'crimeScandal') await this._scandal(b, e.percent, e.key);
+      if (e.type === 'gangDealEnded') await this._mailHolders(b, L('NCI.BackRoom.DealSubject', { name: b.name }), [L('NCI.BackRoom.DealEnded', { gang: e.name, name: b.name })]);
       if (e.type === 'campaignLands' || e.type === 'campaignCaught') moved = true;
       if (e.type !== 'factionSmear' || !isListed(b)) continue;
       const ticker = b.company.ticker;
@@ -1502,6 +1521,27 @@ class BusinessServiceImpl {
     if (moved) b.standings = BusinessRepository.get(b.id)?.standings ?? b.standings;
   }
 
+  /** Crime at a listed company comes out (U1c): the news, a fall in the price, and a watch on those who knew. */
+  async _scandal(b, percent, tag) {
+    if (!isListed(b)) return;
+    const ticker = b.company.ticker;
+    const key = `scandal:${b.id}:${tag}`;
+    const delay = BUSINESS_DEFAULTS.ownership.scandal.delayDays;
+    await NewsService.post({ headline: L('NCI.News.Scandal', { name: b.name, ticker }), tone: 'down', companyIds: [ticker] });
+    await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
+      ...controls,
+      impacts: [...controls.impacts, makeImpact({
+        id: `imp_${key.replace(/[^a-zA-Z0-9_]/g, '_')}`, target: { type: 'company', id: ticker }, amount: percentToAmount(percent), onsetTick: now + delay,
+        permanent: 1, sourceKey: key, source: 'scandal', meta: { businessId: b.id, percent },
+      })],
+    }));
+    const officers = new Set(b.officers ?? []);
+    await HeatService.openWindow(
+      { sourceKey: key, companyId: ticker, outcome: 'failed', date: MarketClock.dateString(), delayDays: delay },
+      { runners: [...officers], tipped: b.partners.filter((p) => !p.market && p.status === 'active' && !officers.has(p.actorId)).map((p) => p.actorId) },
+    );
+  }
+
   /** A campaign's standing with its target, if the target is a faction (F1c). */
   async _campaignStanding(b, ticker, amount) {
     const faction = FactionRepository.list().find((f) => f.ticker === ticker);
@@ -1515,9 +1555,10 @@ class BusinessServiceImpl {
   async _landCampaign(b, campaign) {
     const { ticker, name, kind, percent, actorId, day } = campaign;
     const rules = BUSINESS_DEFAULTS.campaign;
+    const blackOps = kind === 'blackOps';
     const key = `campaign:${b.id}:${day}`;
     const amount = percentToAmount(percent);
-    await NewsService.post({ headline: L(kind === 'leak' ? 'NCI.News.Leaked' : 'NCI.News.Smeared', { name, ticker }), tone: 'down', companyIds: [ticker] });
+    await NewsService.post({ headline: L(blackOps ? 'NCI.News.BlackOps' : kind === 'leak' ? 'NCI.News.Leaked' : 'NCI.News.Smeared', { name, ticker }), tone: 'down', companyIds: [ticker] });
     await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
       ...controls,
       impacts: [...controls.impacts, makeImpact({
@@ -1530,7 +1571,7 @@ class BusinessServiceImpl {
       { sourceKey: key, companyId: ticker, outcome: 'failed', date: MarketClock.dateString(), delayDays: rules.delayDays },
       { runners: [actorId], tipped: owners },
     );
-    await this._campaignStanding(b, ticker, rules.standing);
+    await this._campaignStanding(b, ticker, blackOps ? BUSINESS_DEFAULTS.crime.blackOpsStanding : rules.standing);
   }
 
   /** A Lawman calls in a favour against their own heat (X1): a roll, a cost whatever comes of it, once a month. */
@@ -1646,7 +1687,9 @@ class BusinessServiceImpl {
     const entry = hidden[out.business.id];
     if (!entry?.standing || !Object.keys(entry.standing).length) return;
     let standing = entry.standing;
-    for (let i = 0; i < closes; i++) standing = Object.fromEntries(Object.entries(standing).map(([id, e]) => [id, driftStanding(e)]));
+    // A gang with a deal holds steady (U1c).
+    const held = out.business.backRoom?.deal?.factionId;
+    for (let i = 0; i < closes; i++) standing = Object.fromEntries(Object.entries(standing).map(([id, e]) => [id, id === held ? e : driftStanding(e)]));
     await MarketStore.setBusinessesHidden({ ...hidden, [out.business.id]: { ...entry, standing } });
     await this._saveBands(out.business.id, standing);
   }

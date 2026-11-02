@@ -979,3 +979,42 @@ test('a raid on a back room reaches the owners and their heat, and a tick passes
     await S.MarketStore.setBusinessesHidden(hiddenSaved);
   }
 });
+
+test('crime at a listed company is a scandal; black ops traced back also open a case; a held gang does not fade', async () => {
+  const saved = structuredClone(business());
+  const hiddenSaved = structuredClone(S.MarketStore.getBusinessesHidden());
+  const { FactionRepository } = await import('../scripts/data/FactionRepository.js');
+  await FactionRepository.importStarter();
+  const dips = () => S.MarketStore.getControls().impacts.filter((i) => i.source === 'scandal');
+  const before = dips().length;
+  try {
+    const listed = { ...business(), status: 'open', stage: 2, listing: { ...business().listing, status: 'listed' }, regCase: null, takeover: null, administration: null };
+    await S.BusinessRepository.save(listed);
+    const b = E.normalizeBusiness(structuredClone(business()));
+    await S.BusinessService._factionEvents({ business: b, events: [{ type: 'crimeScandal', percent: -3, key: 'test1' }] });
+    await settle();
+    assert.equal(dips().length, before + 1);
+    assert.equal(dips().at(-1).meta.percent, -3);
+    assert.ok(JSON.stringify(S.MarketStore.getNews()).includes('NCI.News.Scandal'));
+    await S.BusinessService._factionEvents({ business: b, events: [{ type: 'campaignCaught', ticker: 'BIO', blackOps: true, exposure: 15 }] });
+    await settle();
+    assert.equal(dips().length, before + 2);
+    assert.equal(dips().at(-1).meta.percent, E.BUSINESS_DEFAULTS.crime.scandal.caught);
+    assert.equal(business().regCase?.reason, 'blackOps');
+
+    const unlisted = E.normalizeBusiness({ ...structuredClone(business()), listing: null });
+    await S.BusinessService._scandal(unlisted, -3, 'unlisted');
+    assert.equal(dips().length, before + 2, 'an unlisted company has no price to dip');
+
+    const hidden = S.MarketStore.getBusinessesHidden();
+    await S.MarketStore.setBusinessesHidden({ ...hidden, bus_play: { ...hidden.bus_play, standing: { gang_maelstrom: { value: 30 }, corp_bio: { value: 30 } } } });
+    await S.BusinessRepository.save({ ...business(), backRoom: { kind: 'ripping', status: 'open', dirty: 0, deal: { factionId: 'gang_maelstrom', name: 'Maelstrom', cut: 0.25, cash: 1 } } });
+    await S.BusinessService._standingWeek({ business: business(), events: [{ type: 'periodClosed' }] });
+    const standing = S.MarketStore.getBusinessesHidden().bus_play.standing;
+    assert.equal(standing.gang_maelstrom.value, 30, 'the gang holds steady');
+    assert.ok(standing.corp_bio.value < 30, 'others fade');
+  } finally {
+    await S.BusinessRepository.save(saved);
+    await S.MarketStore.setBusinessesHidden(hiddenSaved);
+  }
+});

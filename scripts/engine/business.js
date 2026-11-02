@@ -66,9 +66,9 @@
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from './businessEvents.js';
 import { aimCheck, giftFor } from './factions.js';
-import { campaignCheck, runCampaign } from './businessCampaign.js';
+import { campaignCheck, runCampaign, runBlackOps } from './businessCampaign.js';
 import { supplyCut, runSupply, runVenue, backupWait } from './businessRoles.js';
-import { ROOM_ACTIONS, roomCheck, roomKinds, roomWeek, takeDirty, openRoom, roomBust, bustFallout, turnInformant, informants } from './businessFronts.js';
+import { ROOM_ACTIONS, roomCheck, roomKinds, roomWeek, takeDirty, openRoom, roomBust, bustFallout, turnInformant, informants, dealCut, runDealRoll, takeDeal, endDeal } from './businessFronts.js';
 import { normalizeName, gigTags } from './gigImpact.js';
 import {
   fixerOffer, takeFixerLoan, bankCheck, applyBankRoll, repayLoan, payLoans, investorOffer, inviteInvestor, acceptInvestment,
@@ -171,6 +171,8 @@ export const PROPOSAL_RULES = Object.freeze({
   payout: 'majority',
   // New shares and buybacks for a company (B6a).
   issue: 'majority', buyback: 'majority',
+  // A gang's deal on the back room (U1c).
+  gangDeal: 'majority', endGangDeal: 'majority',
 });
 
 // ── What a roll needs ────────────────────────────────────────────────────────
@@ -307,12 +309,15 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     // An action aimed at a faction (F1b): some must be, and the gift has to be there.
     const aim = p.standing.aims[request.action];
     if (aim?.required && !request.factionId) return fail('no-faction');
-    if (request.factionId && !aim) return fail('bad-faction');
-    if (request.factionId && b.till < giftFor(b, p)) return fail('no-gift');
-    if (request.action === 'campaign') {
-      const campaign = campaignCheck(b, request.targetTicker, day, p);
+    if (request.factionId && !aim && request.action !== 'dealGang') return fail('bad-faction');
+    if (request.factionId && aim && b.till < giftFor(b, p)) return fail('no-gift');
+    if (request.action === 'campaign' || request.action === 'blackOps') {
+      const campaign = campaignCheck(b, request.targetTicker, day, p, request.action === 'blackOps' ? p.crime.blackOpsCost : p.campaign.cost);
       if (!campaign.ok) return campaign;
     }
+    // A gang deals only at neutral or better (U1c).
+    if (request.action === 'dealGang' && (!request.factionId || dealCut(b.standings?.[request.factionId] ?? 'neutral', p) == null)) return fail('gang-refuses');
+    if (request.action === 'bribeRegulator' && b.till < p.crime.bribeCost) return fail('no-funds');
     const bonusAvailable = b.period.bonuses.some((x) => x.action === request.action && !x.used);
     // The back room's actions need it open, and its kind says how it is worked (U1a).
     const room = ROOM_ACTIONS.includes(request.action) ? roomCheck(b, request.action, p) : null;
@@ -543,10 +548,15 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
-      const aim = request.factionId ? aimCheck(b, request.action, request.factionId, ctx.factions ?? [], p) : null;
+      const dealing = request.action === 'dealGang';
+      const aim = request.factionId && !dealing ? aimCheck(b, request.action, request.factionId, ctx.factions ?? [], p) : null;
       if (aim && !aim.ok) return aim;
-      const target = request.action === 'campaign' ? (ctx.companies ?? []).find((c) => c.ticker === request.targetTicker) : null;
-      if (request.action === 'campaign' && !target) return fail('bad-target');
+      const aimsAtCompany = request.action === 'campaign' || request.action === 'blackOps';
+      const target = aimsAtCompany ? (ctx.companies ?? []).find((c) => c.ticker === request.targetTicker) : null;
+      if (aimsAtCompany && !target) return fail('bad-target');
+      // A gang on the turf (U1c).
+      const gang = dealing ? (ctx.factions ?? []).find((f) => f.id === request.factionId && f.kind === 'gang' && f.districts?.includes(b.district)) : null;
+      if (dealing && !gang) return fail('bad-faction');
       spendFor('roll');
       const r = check.result;
       if (r.bonus) {
@@ -558,6 +568,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
         action: request.action, by: rollerId(), use: useKey(request.use), band: r.band, total: r.total, dv: r.dv, approach: r.approach, luck: r.luck, bonus: r.bonus,
         ...(aim ? { factionId: aim.faction.id, factionName: aim.faction.name } : {}),
         ...(target ? { factionName: target.name } : {}),
+        ...(gang ? { factionId: gang.id, factionName: gang.name } : {}),
       });
       out.events.push({ type: 'roll', action: request.action, band: r.band, exposure: r.exposure });
       if (aim) {
@@ -565,9 +576,18 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
         addLedger(b, { day, kind: 'factionGift', amount: -aim.gift }, p);
         out.events.push({ type: 'factionDeal', factionId: aim.faction.id, band: r.band });
       }
+      if (dealing) runDealRoll(b, { faction: gang, band: r.band, day }, p);
+      if (request.action === 'bribeRegulator') {
+        // Paid whatever comes of it; a good roll also helps with a case already open.
+        b.till -= p.crime.bribeCost;
+        addLedger(b, { day, kind: 'regulatorBribe', amount: -p.crime.bribeCost }, p);
+        out.events.push({ type: 'regulatorBribed', exposure: p.crime.bribeExposure[r.band] });
+        if (b.regCase?.status === 'notice' && p.crime.easeFrom.includes(r.band)) b.regCase.eased = true;
+      }
+      if (request.action === 'blackOps') out.events.push(...runBlackOps(b, { ticker: target.ticker, name: target.name, band: r.band, actorId: actor.id, day, approval: ctx.campaignApproval !== false }, p));
       if (request.action === 'supply') runSupply(b, { band: r.band, day }, p);
       if (request.action === 'venue') runVenue(b, { band: r.band }, p);
-      if (target) {
+      if (target && request.action === 'campaign') {
         out.events.push(...runCampaign(b, { ticker: target.ticker, name: target.name, useKey: useKey(request.use), band: r.band, actorId: actor.id, day, approval: ctx.campaignApproval !== false }, p));
       }
       break;
@@ -1262,6 +1282,10 @@ function canPropose(b, kind, request, ctx, p) {
       const offer = projectOffer(b, request.project, p);
       return offer.ok ? { ok: true, terms: { project: request.project, cost: offer.cost, days: offer.days, ...(request.project === 'backRoom' ? { room: request.room } : {}) } } : fail(offer.reason);
     }
+    case 'gangDeal':
+      return b.backRoom?.offer && !b.backRoom.deal ? { ok: true, terms: { name: b.backRoom.offer.name } } : fail('no-offer');
+    case 'endGangDeal':
+      return b.backRoom?.deal ? { ok: true, terms: { name: b.backRoom.deal.name } } : fail('no-deal');
     case 'elect':
     case 'dismiss':
       return officerProposal(b, kind, request.actorId);
@@ -1363,6 +1387,13 @@ function enact(b, proposal, day, p, ctx, out) {
       return startProject(b, 'expansion', proposal.id, day, p);
     case 'project':
       return startProject(b, proposal.terms.project, proposal.id, day, p, proposal.terms.room ?? null);
+    case 'gangDeal':
+      return takeDeal(b, day);
+    case 'endGangDeal': {
+      const ended = endDeal(b);
+      if (ended.ok) out.events.push({ type: 'factionMove', factionId: ended.factionId, amount: p.backRoom.deal.end });
+      return ended;
+    }
     case 'fixerLoan':
       return takeFixerLoan(b, proposal.id, proposal.terms.amount, day, p);
     case 'bankLoan':
@@ -1571,6 +1602,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
     workMult = week.workMult;
     protection = week.protection;
     if (week.exposure) out.events.push({ type: 'shortcuts', exposure: week.exposure });
+    if (week.scandal) out.events.push({ type: 'crimeScandal', percent: p.crime.scandal.dumping, key: `dumping:${b.period.index}` });
   } else {
     work = slot('work');
     workMult = work ? 1 + (fx.work[work.band] - 1) * scale(work) : p.unworked;
@@ -1606,6 +1638,8 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   // What went on behind the shop this week (U1a).
   const room = roomWeek(b, takings, part, p, traits);
   if (room?.exposure) out.events.push({ type: 'backRoomWeek', exposure: room.exposure });
+  if (room?.unpaid) out.events.push({ type: 'factionMove', factionId: room.unpaid, amount: p.backRoom.deal.unpaid });
+  if (room?.dealEnded) out.events.push({ type: 'gangDealEnded', name: room.dealEnded });
   const turned = turnInformant(b, traits, seed, p);
   if (turned) out.traits = { ...out.traits, ...turned };
   // A security upgrade cuts the protection money for good.
@@ -1670,7 +1704,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
     ...(loans.interest || loans.principal || loans.missed.length ? { interest: loans.interest, repaid: loans.principal, missed: loans.missed } : {}),
     ...(wages.wages || wages.owed || wages.paid ? { wages: wages.wages, paid: wages.paid, owed: wages.owed } : {}),
     worked: !!work,
-    ...(room ? { room: { earned: room.earned, laundered: room.laundered, paid: room.paid, low: room.low, ...(room.informant ? { informant: room.informant } : {}) } } : {}),
+    ...(room ? { room: { earned: room.earned, laundered: room.laundered, paid: room.paid, low: room.low, ...(room.cut ? { cut: room.cut } : {}), ...(room.unpaid ? { unpaid: true } : {}), ...(room.informant ? { informant: room.informant } : {}) } } : {}),
     ...(event ? { event: { kind: event.kind, outcome: event.outcome, band: event.band, change: event.change, ...(b.period.event?.factionName ? { faction: b.period.event.factionName } : {}), ...(eventCost ? { cost: eventCost } : {}) } } : {}),
     ...(notes.length ? { staff: notes } : {}),
     ...(boost ? { boost } : {}),

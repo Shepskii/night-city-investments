@@ -9,7 +9,7 @@ import {
   daysLeft, activeProject, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
   projectOffer, PROJECT_KINDS, upgradesOf, protectionFactor, headcountOf,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
-  actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent, supplyCut, actionFor, ROOM_ACTIONS, roomKinds, openRoom, payOffCost,
+  actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent, supplyCut, actionFor, ROOM_ACTIONS, roomKinds, openRoom, payOffCost, CRIME_ACTIONS, dealCut,
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
@@ -489,6 +489,8 @@ function weekContext(business, actor, canAct) {
   const factions = FactionRepository.list();
   const aimOf = (id) => {
     if (id === 'campaign') return campaignAim(business);
+    if (id === 'blackOps') return campaignAim(business, BUSINESS_DEFAULTS.crime.blackOpsCost);
+    if (id === 'dealGang') return dealAim(business, factions);
     const aim = BUSINESS_DEFAULTS.standing.aims[id];
     if (!aim) return null;
     const options = factions.filter((f) => aim.kinds.includes(f.kind)).map((f) => ({ value: f.id, label: f.name }));
@@ -503,7 +505,7 @@ function weekContext(business, actor, canAct) {
     noSlots: period.slots.length >= slots,
     daysText: canAct ? L('NCI.Business.DaysLeft', { n: daysLeft(business, actor.id) }) : '',
     // A chartered company has the five company actions; a smaller business the shop actions.
-    actions: [...actionIdsFor(business.stage), ...(openRoom(business) ? ROOM_ACTIONS : [])].filter((id) => !(id === 'campaign' || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).map((id) => {
+    actions: [...actionIdsFor(business.stage), ...(openRoom(business) ? ROOM_ACTIONS : [])].filter((id) => !(['campaign', 'blackOps', 'dealGang'].includes(id) || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).filter((id) => !CRIME_ACTIONS.includes(id) || underworldOn(business)).filter((id) => id !== 'dealGang' || !business.backRoom?.deal).map((id) => {
       const slot = taken.get(id);
       const bonus = period.bonuses.some((b) => b.action === id && !b.used);
       return {
@@ -514,10 +516,10 @@ function weekContext(business, actor, canAct) {
         bonus: bonus ? LT(business, 'NCI.Business.BonusWaiting') : '',
         aimedAt: slot?.factionName ? L('NCI.Business.AimedAt', { name: slot.factionName }) : '',
         aim: aimOf(id),
-        canRoll: runs && free && !slot && !(id === 'campaign' && (business.campaign || campaignWait(business, BusinessClient.day()) > 0))
+        canRoll: runs && free && !slot && !((id === 'campaign' || id === 'blackOps') && (business.campaign || campaignWait(business, BusinessClient.day()) > 0))
           && !(id === 'roomWork' && period.slots.some((s) => s.action === 'lieLow')),
         canHelp: canAct && !helped && !slot,
-        waiting: id === 'campaign' ? campaignNote(business) : id === 'supply' ? supplyNote(business) : id === 'payOff' ? L('NCI.BackRoom.PayOffCost', { cost: whole(payOffCost(business)) }) : '',
+        waiting: id === 'campaign' || id === 'blackOps' ? campaignNote(business) : id === 'bribeRegulator' ? L('NCI.Business.BribeCost', { cost: whole(BUSINESS_DEFAULTS.crime.bribeCost) }) : id === 'supply' ? supplyNote(business) : id === 'payOff' ? L('NCI.BackRoom.PayOffCost', { cost: whole(payOffCost(business)) }) : '',
       };
     }),
     helped: actor && helped && canAct ? L('NCI.Business.AlreadyHelped') : '',
@@ -544,6 +546,9 @@ function backRoomContext(business, runs, canAct, free) {
     pending: room.status === 'pending',
     shut: room.status === 'shut',
     informant: last?.informant ? L('NCI.BackRoom.InformantFound', { name: last.informant }) : '',
+    offer: room.offer && !room.deal ? L('NCI.BackRoom.Offer', { gang: room.offer.name, cash: whole(room.offer.cash), cut: Math.round(room.offer.cut * 100), minimum: whole(BUSINESS_DEFAULTS.backRoom.deal.minimum) }) : '',
+    deal: room.deal ? L(last?.unpaid ? 'NCI.BackRoom.DealUnpaid' : 'NCI.BackRoom.Deal', { gang: room.deal.name, cut: Math.round(room.deal.cut * 100), cash: whole(room.deal.cash) }) : '',
+    canPropose: canAct && room.status === 'open' && !business.proposals.some((x) => x.kind === 'gangDeal' || x.kind === 'endGangDeal'),
     dirty: whole(room.dirty ?? 0),
     max: room.dirty ?? 0,
     band: room.band ? L(`NCI.Company.Exposure.${room.band}`) : L('NCI.Company.Exposure.clean'),
@@ -572,9 +577,15 @@ function supplyNote(business) {
 }
 
 /** The companies a campaign may be aimed at, and what it costs (F1c). */
-function campaignAim(business) {
+function campaignAim(business, cost = BUSINESS_DEFAULTS.campaign.cost) {
   const options = CompanyRepository.all().filter((c) => c.ticker !== business.company?.ticker).map((c) => ({ value: c.ticker, label: c.name }));
-  return options.length ? { required: true, options, gift: L('NCI.Business.CampaignCost', { cost: whole(BUSINESS_DEFAULTS.campaign.cost) }) } : null;
+  return options.length ? { required: true, options, gift: L('NCI.Business.CampaignCost', { cost: whole(cost) }) } : null;
+}
+
+/** The gangs on the turf that would talk: neutral or better (U1c). */
+function dealAim(business, factions) {
+  const options = turfFactions(factions, business.district).filter((f) => dealCut(business.standings?.[f.id] ?? 'neutral') != null).map((f) => ({ value: f.id, label: f.name }));
+  return options.length ? { required: true, options, gift: L('NCI.BackRoom.DealHint') } : null;
 }
 
 /** Why a campaign cannot run yet, if so. */

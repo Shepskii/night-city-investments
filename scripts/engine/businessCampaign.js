@@ -18,12 +18,30 @@ export function campaignWait(b, day, p = BUSINESS_DEFAULTS) {
 }
 
 /** Whether this business can run a campaign now, before the target itself is known to the engine. */
-export function campaignCheck(b, ticker, day, p = BUSINESS_DEFAULTS) {
+export function campaignCheck(b, ticker, day, p = BUSINESS_DEFAULTS, cost = p.campaign.cost) {
   if (!ticker) return fail('no-target');
   if (ticker === b.company?.ticker) return fail('bad-target');
   if (campaignWait(b, day, p) > 0) return fail('campaign-wait');
   if (b.campaign) return fail('campaign-wait');
-  return b.till < p.campaign.cost ? fail('no-gift') : { ok: true };
+  return b.till < cost ? fail('no-gift') : { ok: true };
+}
+
+/**
+ * A company's black ops against another (U1c): a campaign in all but scale, sharing its month's limit and
+ * the GM's approval, with a case and a scandal if it goes wrong.
+ * @returns {object[]} events for the GM's service
+ */
+export function runBlackOps(b, { ticker, name, band, actorId, day, approval }, p = BUSINESS_DEFAULTS) {
+  const rules = p.crime;
+  b.till -= rules.blackOpsCost;
+  b.lastCampaignDay = day;
+  addLedger(b, { day, kind: 'blackOps', amount: -rules.blackOpsCost }, p);
+  if (band === 'fumble') return [{ type: 'campaignCaught', ticker, blackOps: true, exposure: rules.blackOpsCaught }];
+  if (!bandPassed(band)) return [];
+  const campaign = { ticker, name, kind: 'blackOps', percent: rules.blackOpsSize[band], actorId, day };
+  if (!approval) return [{ type: 'campaignLands', campaign }];
+  b.campaign = { ...campaign, status: 'awaiting' };
+  return [];
 }
 
 /** A smear or a leak, from the skill rolled. Staff called in smear. */

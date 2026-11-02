@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   BUSINESS_DEFAULTS, DISTRICTS, normalizeFaction, standingBand, matchFaction, turfFactions, gigStanding, moveStanding, driftStanding, standingBands, matchBusiness,
   findTarget, targetShare, gigTags, resolveClient, applyBusinessRequest, advanceBusiness, rollSpec, normalizeBusiness, drawEvent, hostileAct, hostileChance, factionEffects, factionFallout,
-  giftFor, campaignKind, believability, storyPercent, rollStory, storyCheck, rumourLevel, freshRumours, STORY_RULES, isBigEvent, sceneCandidate, startScene, sceneToRoll, settleScene, supplyCut, runVenue, backupWait, quashEffect, BACK_ROOMS, roomKinds, roomWeek, payOffCost, bookValue, raidChance, roomBust, bustFallout, informants, turnInformant, ARCHETYPES, SKILLS, ABILITIES,
+  giftFor, campaignKind, believability, storyPercent, rollStory, storyCheck, rumourLevel, freshRumours, STORY_RULES, isBigEvent, sceneCandidate, startScene, sceneToRoll, settleScene, supplyCut, runVenue, backupWait, quashEffect, BACK_ROOMS, roomKinds, roomWeek, payOffCost, bookValue, raidChance, roomBust, bustFallout, informants, turnInformant, dealCut, ARCHETYPES, SKILLS, ABILITIES,
 } from '../scripts/engine/index.js';
 import { resolveRoll } from '../scripts/engine/rolls.js';
 import { projectOffer, startProject } from '../scripts/engine/businessGrowth.js';
@@ -688,4 +688,132 @@ test('an informant adds Exposure and can be named; an employee may turn; only wi
   assert.ok(turned.length > 15 && turned.length < 90, `a small weekly chance: ${turned.length}`);
   assert.deepEqual(Object.values(turned[0]), ['informant']);
   assert.equal(turnInformant({ ...shop(), staff: b.staff }, {}, 'test'), null);
+});
+
+// ── U1c: gang deals and corporate crime ─────────────────────────────
+
+const fumbleOf = () => ({ ok: true, result: resolveRoll({ base: 14, roll: { total: -5, crit: 'fumble' }, dv: 13 }) });
+
+test('asking a gang: neutral or better on the turf; a pass brings an offer by band and standing', () => {
+  const use = SKILLS.streetwise;
+  const b = withRoom();
+  b.standings = { mael: 'friendly', claws: 'wary' };
+  const ask = (x, factionId, check = checkOf(9)) => send(x, { type: 'action', businessId: 'b1', action: 'dealGang', factionId, use }, check);
+  assert.equal(rollSpec(b, { type: 'action', action: 'dealGang', use }, 'med', { day: DAY }).reason, 'gang-refuses', 'no gang named');
+  assert.equal(rollSpec(b, { type: 'action', action: 'dealGang', factionId: 'claws', use }, 'med', { day: DAY }).reason, 'gang-refuses', 'wary');
+  assert.equal(ask(b, 'tti').reason, 'bad-faction', 'not a gang');
+  const offered = ask(b, 'mael');
+  assert.equal(offered.ok, true, offered.reason);
+  const { offer } = offered.business.backRoom;
+  assert.deepEqual([offer.factionId, offer.name, offer.cut], ['mael', 'Maelstrom', 0.25]);
+  assert.ok(offer.cash >= 1000);
+  assert.equal(offered.business.till, b.till, 'asking costs no gift');
+  assert.equal(ask(b, 'mael', checkOf(-5)).business.backRoom.offer, null, 'a failure, no offer');
+  assert.deepEqual([dealCut('allied'), dealCut('friendly'), dealCut('neutral'), dealCut('wary'), dealCut('hostile')], [0.2, 0.25, 0.3, null, null]);
+});
+
+test('taking a deal and ending it go through a vote; the money moves, and ending costs standing', () => {
+  const b = withRoom({ dirty: 100, offer: { factionId: 'mael', name: 'Maelstrom', cash: 2000, cut: 0.25, day: DAY } });
+  const taken = send(b, { type: 'propose', businessId: 'b1', kind: 'gangDeal' });
+  assert.equal(taken.ok, true, taken.reason);
+  const room = taken.business.backRoom;
+  assert.deepEqual([room.deal.name, room.deal.cut, room.dirty, room.offer], ['Maelstrom', 0.25, 2100, null], 'a sole owner\'s vote carries it');
+  assert.equal(send(withRoom(), { type: 'propose', businessId: 'b1', kind: 'gangDeal' }).reason, 'no-offer');
+  const ended = send(taken.business, { type: 'propose', businessId: 'b1', kind: 'endGangDeal' });
+  assert.equal(ended.ok, true, ended.reason);
+  assert.equal(ended.business.backRoom.deal, null);
+  assert.equal(ended.business.backRoom.dirty, 100);
+  assert.deepEqual(ended.events.find((e) => e.type === 'factionMove'), { type: 'factionMove', factionId: 'mael', amount: BUSINESS_DEFAULTS.backRoom.deal.end });
+  assert.equal(send(withRoom(), { type: 'propose', businessId: 'b1', kind: 'endGangDeal' }).reason, 'no-deal');
+});
+
+test('the cut comes out each week; falling short costs standing; a hostile gang walks away', () => {
+  const deal = { factionId: 'mael', name: 'Maelstrom', cut: 0.25, cash: 2000 };
+  const worked = withRoom({ dirty: 0, deal });
+  worked.state.capacity = 1;
+  worked.period.slots = [{ action: 'roomWork', band: 'solid', approach: 'standard' }];
+  const out = roomWeek(worked, 1000);
+  assert.equal(out.cut, Math.max(BUSINESS_DEFAULTS.backRoom.deal.minimum, Math.round(out.earned * 0.25)));
+  assert.equal(worked.backRoom.dirty, out.earned - out.cut);
+  const idle = withRoom({ dirty: 500, deal });
+  idle.period.slots = [];
+  assert.equal(roomWeek(idle, 1000).cut, BUSINESS_DEFAULTS.backRoom.deal.minimum, 'at least the minimum');
+  const broke = withRoom({ dirty: 10, deal });
+  broke.period.slots = [];
+  const short = roomWeek(broke, 1000);
+  assert.deepEqual([short.unpaid, broke.backRoom.dirty], ['mael', 10]);
+  const cross = withRoom({ dirty: 500, deal });
+  cross.standings = { mael: 'hostile' };
+  cross.period.slots = [];
+  assert.equal(roomWeek(cross, 1000).dealEnded, 'Maelstrom');
+  assert.equal(cross.backRoom.deal, null);
+  const closed = advanceBusiness(broke, broke.period.endDay, { weekday: 1, seed: 'test' });
+  assert.deepEqual(closed.events.find((e) => e.type === 'factionMove'), { type: 'factionMove', factionId: 'mael', amount: BUSINESS_DEFAULTS.backRoom.deal.unpaid });
+});
+
+test('a gang with a deal charges no protection and sends no shakedowns; a shut room ends the deal', () => {
+  const list = [{ id: 'mael', name: 'Maelstrom', kind: 'gang', districts: ['ocz'] }, { id: 'claws', name: 'Claws', kind: 'gang', districts: ['ocz'] }];
+  const deal = { factionId: 'mael', name: 'Maelstrom', cut: 0.25, cash: 1 };
+  const room = (standings) => ({ archetype: 'clinic', district: 'ocz', standings, backRoom: { deal } });
+  const two = factionEffects(room({}), list);
+  assert.equal(two.protection, 0.5, 'its share of the money goes');
+  assert.deepEqual(two.gangs.map((g) => g.id), ['claws'], 'and only the others come shaking');
+  const one = factionEffects(room({}), [list[0]]);
+  assert.deepEqual([one.protection, one.shakedown, one.gangs], [0, 0, []]);
+  assert.equal(factionEffects({ archetype: 'clinic', district: 'ocz', standings: {} }, list).protection, 1, 'no deal');
+  const b = withRoom({ dirty: 100, deal });
+  bustFallout(b, { kind: 'bust' }, 'unanswered', DAY);
+  assert.equal(b.backRoom.deal, null);
+});
+
+const companyOf = (extra = {}) => normalizeBusiness({ ...shop(), stage: 2, till: 20000, company: { ticker: 'BRC', sector: 'health', charteredDay: DAY }, officers: ['med'], ...extra });
+
+test('dumping lifts the takings furthest and leaves the most behind, and a fumble is a scandal', () => {
+  const week = (band) => {
+    const b = companyOf();
+    b.period.slots = [{ action: 'dumping', band, approach: 'standard', by: 'med' }];
+    b.state.capacity = 1;
+    return advanceBusiness(b, b.period.endDay, { weekday: 1, seed: 'test' });
+  };
+  const contracts = companyOf();
+  contracts.state.capacity = 1;
+  contracts.period.slots = [{ action: 'contracts', band: 'solid', approach: 'standard', by: 'med' }];
+  const plain = advanceBusiness(contracts, contracts.period.endDay, { weekday: 1, seed: 'test' }).business.digests.at(-1).gross;
+  const dumped = week('solid');
+  assert.ok(dumped.business.digests.at(-1).gross > plain, 'more than contracts');
+  assert.equal(dumped.events.find((e) => e.type === 'shortcuts').exposure, BUSINESS_DEFAULTS.crime.dumpingExposure.solid);
+  assert.ok(!dumped.events.some((e) => e.type === 'crimeScandal'));
+  assert.equal(week('fumble').events.find((e) => e.type === 'crimeScandal').percent, BUSINESS_DEFAULTS.crime.scandal.dumping);
+});
+
+test('a bribed regulator: paid whatever the roll, Exposure by band, and a good roll eases an open case', () => {
+  const use = SKILLS.bribery;
+  const b = companyOf({ regCase: { status: 'notice', reason: 'report', openedDay: DAY, endDay: DAY + 14 } });
+  const paid = send(b, { type: 'action', businessId: 'b1', action: 'bribeRegulator', use }, checkOf(9));
+  assert.equal(paid.ok, true, paid.reason);
+  assert.equal(paid.business.till, b.till - BUSINESS_DEFAULTS.crime.bribeCost);
+  assert.ok(paid.events.find((e) => e.type === 'regulatorBribed').exposure < 0);
+  assert.equal(paid.business.regCase.eased, true);
+  const narrow = send(b, { type: 'action', businessId: 'b1', action: 'bribeRegulator', use }, { ok: true, result: { ...resolveRoll({ base: 14, roll: { total: 1, crit: null }, dv: 13 }), band: 'narrow' } });
+  assert.equal(narrow.business.regCase.eased, undefined, 'a narrow one does not');
+  assert.equal(send(b, { type: 'action', businessId: 'b1', action: 'bribeRegulator', use }, fumbleOf()).events.find((e) => e.type === 'regulatorBribed').exposure, BUSINESS_DEFAULTS.crime.bribeExposure.fumble);
+  assert.equal(rollSpec(companyOf({ till: 10 }), { type: 'action', action: 'bribeRegulator', use }, 'med', { day: DAY }).reason, 'no-funds');
+});
+
+test('black ops work as a campaign, at more cost and a bigger move; traced back, it is worse', () => {
+  const use = SKILLS.tactics;
+  const companies = [{ ticker: 'ARA', name: 'Arasaka' }];
+  const run = (check, context = {}) => send(companyOf(), { type: 'action', businessId: 'b1', action: 'blackOps', targetTicker: 'ARA', use }, check, { companies, ...context });
+  const b = companyOf();
+  const done = run(checkOf(9));
+  assert.equal(done.ok, true, done.reason);
+  assert.equal(done.business.till, b.till - BUSINESS_DEFAULTS.crime.blackOpsCost);
+  assert.deepEqual([done.business.campaign.status, done.business.campaign.kind, done.business.campaign.ticker], ['awaiting', 'blackOps', 'ARA']);
+  assert.ok(done.business.campaign.percent <= -2);
+  assert.equal(done.business.lastCampaignDay, DAY, 'the same month\'s limit');
+  assert.equal(rollSpec({ ...done.business, campaign: null, period: { ...done.business.period, slots: [] } }, { type: 'action', action: 'campaign', targetTicker: 'ARA', use: SKILLS.persuasion }, 'med', { day: DAY + 1 }).reason, 'campaign-wait');
+  assert.equal(run(checkOf(9), { campaignApproval: false }).events.find((e) => e.type === 'campaignLands').campaign.kind, 'blackOps');
+  const caught = run(fumbleOf()).events.find((e) => e.type === 'campaignCaught');
+  assert.deepEqual([caught.blackOps, caught.exposure], [true, BUSINESS_DEFAULTS.crime.blackOpsCaught]);
+  assert.equal(rollSpec(companyOf({ till: 1000 }), { type: 'action', action: 'blackOps', targetTicker: 'ARA', use }, 'med', { day: DAY }).reason, 'no-gift');
 });

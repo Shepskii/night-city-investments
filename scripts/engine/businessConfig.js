@@ -117,10 +117,11 @@ export const ACTIONS = Object.freeze({
   roomWork: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.humanPerception] }),
   launder: Object.freeze({ skills: [], abilities: [], help: [S.business, S.librarySearch] }),
   payOff: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.persuasion] }),
+  dealGang: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.localExpert] }),
 });
 
 /** A chartered company's five actions (DESIGN §27.4, §31): they replace the shop actions at stage 2. */
-export const COMPANY_ACTION_IDS = Object.freeze(['contracts', 'books', 'relations', 'permits', 'shortcuts', 'campaign', 'supply', 'venue']);
+export const COMPANY_ACTION_IDS = Object.freeze(['contracts', 'books', 'relations', 'permits', 'shortcuts', 'campaign', 'supply', 'venue', 'dumping', 'bribeRegulator', 'blackOps']);
 
 /** Each company action's skill, its alternatives at DV +2, the role abilities that fit, and its help. */
 export const COMPANY_ACTIONS = Object.freeze({
@@ -144,6 +145,11 @@ export const COMPANY_ACTIONS = Object.freeze({
   roomWork: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.humanPerception] }),
   launder: Object.freeze({ skills: [], abilities: [], help: [S.business, S.librarySearch] }),
   payOff: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.persuasion] }),
+  dealGang: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.localExpert] }),
+  // Corporate crime (U1c).
+  dumping: Object.freeze({ skills: [S.business, Object.freeze({ ...S.trading, dvAdd: 2 })], abilities: [A.operator], help: [S.accounting, S.bureaucracy] }),
+  bribeRegulator: Object.freeze({ skills: [S.bribery], abilities: [A.operator], help: [S.bureaucracy, S.persuasion] }),
+  blackOps: Object.freeze({ skills: [S.tactics, S.streetwise], abilities: [A.operator, A.interface], help: [S.librarySearch, S.humanPerception] }),
 });
 
 /**
@@ -408,8 +414,40 @@ export const BUSINESS_DEFAULTS = Object.freeze({
       informant: 0.05, sullen: 0.02, sullenBelow: 30, sullenCap: 0.06,
       winClear: 5, failShare: 0.5, fineFail: 500, fineLost: 1000, heat: 15,
     }),
+    /**
+     * A gang as a silent partner (U1c). Asked with `dealUses`, a gang at neutral or better offers `cash` by band for
+     * `cut` of the room's takings by standing, at least `minimum` eb a week. It charges no protection and sends no
+     * shakedowns. A week it cannot be paid costs `unpaid` standing; ending it costs `end` standing and the cash back.
+     */
+    deal: Object.freeze({
+      uses: Object.freeze([S.streetwise, S.persuasion, A.operator]),
+      cash: byBand([0, 0, 1000, 1500, 2000, 2500]),
+      cut: Object.freeze({ neutral: 0.3, friendly: 0.25, allied: 0.2 }),
+      minimum: 100, unpaid: -5, end: -15,
+    }),
     /** An informant (U1b): how often an applicant is one, how often an employee turns in a week, and the Exposure each adds. */
     informant: Object.freeze({ applicant: 0.1, turn: 0.02, exposure: 2 }),
+  }),
+  /**
+   * Corporate crime (U1c). Dumping multiplies the week's takings, with `dumpingExposure`. A regulator's bribe costs
+   * `bribeCost` eb and moves Exposure by `bribeExposure`; from `easeFrom` up it also takes `ease` off a case's total.
+   * Black ops work as a campaign (the same month's limit and the GM's approval), costing `blackOpsCost`, with a bigger
+   * move on the target, and `blackOpsCaught` Exposure and a case on a fumble. `scandal` is the price's fall, in percent,
+   * when crime at a listed company comes out.
+   */
+  crime: Object.freeze({
+    dumping: byBand([0.8, 0.95, 1.2, 1.4, 1.6, 1.8]),
+    dumpingExposure: byBand([15, 8, 5, 4, 3, 3]),
+    bribeCost: 1000,
+    bribeExposure: byBand([8, 0, -4, -6, -8, -12]),
+    ease: 3,
+    easeFrom: Object.freeze(['solid', 'strong', 'exceptional']),
+    blackOpsCost: 2500,
+    blackOpsSize: byBand([0, 0, -2, -3, -4, -4]),
+    blackOpsStanding: -10,
+    blackOpsCaught: 15,
+    blackOpsCaughtStanding: -15,
+    scandal: Object.freeze({ raidFailed: -3, raidLost: -5, dumping: -3, caught: -8 }),
   }),
   /** A big event played out at the table (X1): what winning it does for Reputation. */
   scene: Object.freeze({ wonReputation: 2 }),

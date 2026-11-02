@@ -154,8 +154,12 @@ export function factionEffects(b, factions = [], values = null, p = BUSINESS_DEF
     return Math.max(-table.cap, Math.min(table.cap, total));
   };
   const sector = b.company?.sector ?? p.charter.sectors[b.archetype];
-  const gangs = turfFactions(factions, b.district);
-  const protection = 1 + sum(gangs, p.standing.effects.protection);
+  const turf = turfFactions(factions, b.district);
+  // A gang with a deal on the back room charges no protection and sends no shakedowns (U1c).
+  const dealId = b.backRoom?.deal?.factionId;
+  const gangs = turf.filter((f) => f.id !== dealId);
+  const share = turf.length ? gangs.length / turf.length : 1;
+  const protection = (1 + sum(gangs, p.standing.effects.protection)) * share;
   return {
     cost: 1 + sum(factions.filter((f) => f.kind === 'corp' && f.sector === sector), p.standing.effects.cost),
     protection,

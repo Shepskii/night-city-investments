@@ -14,7 +14,9 @@ import { createRng } from './rng.js';
 import { exposureBand } from './businessCompany.js';
 import { traitOf } from './businessStaff.js';
 
-export const ROOM_ACTIONS = Object.freeze(['roomWork', 'launder', 'payOff']);
+export const ROOM_ACTIONS = Object.freeze(['roomWork', 'launder', 'payOff', 'dealGang']);
+/** A company's crime (U1c), which a world's underworld setting hides. */
+export const CRIME_ACTIONS = Object.freeze(['dumping', 'bribeRegulator', 'blackOps']);
 
 /** The kinds of back room this business's front could hide. */
 export const roomKinds = (b) => Object.keys(BACK_ROOMS[b.archetype] ?? {});
@@ -37,6 +39,7 @@ export function roomCheck(b, action, p = BUSINESS_DEFAULTS) {
     if (b.period.slots.some((s) => s.action === 'lieLow')) return fail('lying-low');
     return { ok: true, uses: BACK_ROOMS[b.archetype]?.[room.kind] ?? [] };
   }
+  if (action === 'dealGang') return room.deal ? fail('has-deal') : { ok: true, uses: p.backRoom.deal.uses };
   if (action === 'launder') return room.dirty > 0 ? { ok: true, uses: p.backRoom.launderUses } : fail('no-dirty');
   return room.dirty >= payOffCost(b, p) ? { ok: true, uses: p.backRoom.payOffUses } : fail('no-dirty');
 }
@@ -63,6 +66,21 @@ export function roomWeek(b, takings, part = 1, p = BUSINESS_DEFAULTS, traits = n
     room.dirty += out.earned;
     out.exposure += rules.workExposure[work.band];
   }
+  // A silent partner takes its cut, whether or not there was much to cut (U1c).
+  if (room.deal) {
+    const due = Math.max(rules.deal.minimum, Math.round(out.earned * room.deal.cut));
+    if (room.dirty >= due) {
+      room.dirty -= due;
+      out.cut = due;
+    } else {
+      out.unpaid = room.deal.factionId;
+    }
+    // A gang that has turned hostile walks away, and keeps what it put in.
+    if (b.standings?.[room.deal.factionId] === 'hostile') {
+      out.dealEnded = room.deal.name;
+      room.deal = null;
+    }
+  }
   const payOff = slot('payOff');
   if (payOff) {
     out.paid = Math.min(room.dirty, payOffCost(b, p));
@@ -82,6 +100,41 @@ export function roomWeek(b, takings, part = 1, p = BUSINESS_DEFAULTS, traits = n
     out.exposure += Math.max(0, rules.launderExposure[launder.band] - clean);
   }
   return out;
+}
+
+/** What a gang at this standing asks of a business, if it will deal at all. */
+export function dealCut(band, p = BUSINESS_DEFAULTS) {
+  return p.backRoom.deal.cut[band] ?? null;
+}
+
+/** The roll to ask a gang for a deal: a pass brings an offer for the partners to vote on. */
+export function runDealRoll(b, { faction, band, day }, p = BUSINESS_DEFAULTS) {
+  const room = b.backRoom;
+  const cash = p.backRoom.deal.cash[band];
+  room.offer = bandPassed(band) && cash > 0
+    ? { factionId: faction.id, name: faction.name, cash, cut: dealCut(b.standings?.[faction.id] ?? 'neutral', p), day }
+    : null;
+}
+
+/** The partners take the gang's offer: its money goes into the dirty cash. */
+export function takeDeal(b, day) {
+  const room = b.backRoom;
+  if (!room?.offer || room.deal) return fail('no-offer');
+  room.deal = { factionId: room.offer.factionId, name: room.offer.name, cut: room.offer.cut, cash: room.offer.cash, since: day };
+  room.dirty += room.offer.cash;
+  room.offer = null;
+  return { ok: true };
+}
+
+/** The partners end the deal: the money goes back, which there must be enough dirty cash for. */
+export function endDeal(b) {
+  const room = b.backRoom;
+  if (!room?.deal) return fail('no-deal');
+  if (room.dirty < room.deal.cash) return fail('no-dirty');
+  room.dirty -= room.deal.cash;
+  const { factionId } = room.deal;
+  room.deal = null;
+  return { ok: true, factionId };
 }
 
 /** The NPC staff who are informants. */
@@ -126,7 +179,11 @@ export function bustFallout(b, event, outcome, day, p = BUSINESS_DEFAULTS) {
   room.dirty -= seized;
   b.till -= fine;
   addLedger(b, { day, kind: 'raidFine', amount: -fine }, p);
-  if (shut) room.status = 'shut';
+  if (shut) {
+    room.status = 'shut';
+    room.deal = null;
+    room.offer = null;
+  }
   return [{ type: 'bustLost', seized, fine, shut, heat: worst ? r.heat : 0 }];
 }
 

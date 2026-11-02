@@ -60,6 +60,8 @@ export class BusinessApp extends BaseApplication {
       vote: BusinessApp._onVote,
       proposeProject: BusinessApp._onProposeProject,
       takeDirty: BusinessApp._onTakeDirty,
+      gangDeal: BusinessApp._onGangDeal,
+      endGangDeal: BusinessApp._onEndGangDeal,
       lieLow: BusinessApp._onLieLow,
       addDays: BusinessApp._onAddDays,
       proposeStepUp: BusinessApp._onProposeStepUp,
@@ -324,7 +326,7 @@ export class BusinessApp extends BaseApplication {
     // Aimed at a faction (F1b): the pick in the action's own row.
     const aimed = target.closest('tr')?.querySelector('[name="aimFaction"]')?.value;
     // A campaign's pick is a company (F1c).
-    const aim = aimed ? { [action === 'campaign' ? 'targetTicker' : 'factionId']: aimed } : {};
+    const aim = aimed ? { [action === 'campaign' || action === 'blackOps' ? 'targetTicker' : 'factionId']: aimed } : {};
     this._roll({ type: 'action', action, ...aim }, `${this.business?.name ?? ''}: ${L(`NCI.Business.Action.${action}.Name`)}`);
   }
 
@@ -362,6 +364,16 @@ export class BusinessApp extends BaseApplication {
     // A back room's kind is picked in its row (U1a).
     const room = target.closest('tr')?.querySelector('[name="roomKind"]')?.value;
     return this._send('propose', { kind: 'project', project: target.dataset.kind, ...(room ? { room } : {}) });
+  }
+
+  /** Put a gang's offer to the partners (U1c). */
+  static _onGangDeal() {
+    return this._send('propose', { kind: 'gangDeal' });
+  }
+
+  /** Ask the partners to end the deal (U1c). */
+  static _onEndGangDeal() {
+    return this._send('propose', { kind: 'endGangDeal' });
   }
 
   /** Dirty cash straight into a partner's hand (U1a). */

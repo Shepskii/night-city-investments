@@ -233,6 +233,7 @@ export function context() {
       // A back room (U1a): the truth, and whether it waits for the GM.
       backRoom: b.backRoom ? L({ pending: 'NCI.GMBusiness.RoomPending', shut: 'NCI.GMBusiness.RoomShut' }[b.backRoom.status] ?? 'NCI.GMBusiness.RoomOpen', { kind: L(`NCI.BackRoom.Kind.${b.backRoom.kind}`), dirty: whole(b.backRoom.dirty ?? 0) }) : '',
       roomPending: b.backRoom?.status === 'pending',
+      roomDeal: b.backRoom?.deal ? L('NCI.GMBusiness.RoomDeal', { gang: b.backRoom.deal.name, cut: Math.round(b.backRoom.deal.cut * 100) }) : '',
       // A big event the GM could play out, or is playing out (X1).
       bigEvent: sceneCandidate(b) ? L('NCI.GMBusiness.BigEvent', { event: L(`NCI.Event.${b.period.event.kind}.Name`), hook: sceneHook(b, b.period.event) }) : '',
       scene: b.scene ? L('NCI.GMBusiness.SceneOpen', { event: L(`NCI.Event.${b.scene.event.kind}.Name`), date: dayText(b.scene.day), hook: sceneHook(b, b.scene.event) }) : '',

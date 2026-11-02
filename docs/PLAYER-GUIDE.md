@@ -1,4 +1,4 @@
-# Player guide
+# Player Guide
 
 How to trade on Night City's market, pool money in a syndicate, found and run your own business. Your GM decides which parts are switched on in your game.
 
@@ -6,7 +6,7 @@ Everything you do is sent to the GM's client, which carries it out. If no GM is 
 
 ---
 
-# Part 1. The market
+# Part 1. The Market
 
 Open the **Market Terminal** from the scene controls (the chart icon in the first group).
 
@@ -101,7 +101,7 @@ A syndicate can found, join or invest in a player business. Its officers act for
 
 ---
 
-# Part 3. Player businesses
+# Part 3. Player Businesses
 
 Open the **Business** window from the scene controls (the shop icon). Pick your character (or a syndicate you are an officer of) at the top.
 
@@ -234,6 +234,10 @@ To raise your business's standing with a faction, use **Court a client** (a corp
 You also hear things. Every few days your Credibility may bring a rumour by mail about a price move on its way or a hidden stake, saying more the better you roll. **Dig for rumours** on a company's page, once a week, does the same for that company. Trading on a rumour still counts for insider heat, though less than trading on something you did yourself.
 
 **Back rooms.** A shop or registered business can open an illegal operation behind the front, as a project on the Projects tab, if your GM allows it. Each week you can **Work the back room** for dirty cash, **Launder** some of it into the business's cash, **Pay someone off**, or **Lie low**. You can also take dirty cash straight as eddies. The higher your Exposure, the likelier a **raid**: failing one costs dirty cash and a fine, and leaving one unanswered or fumbling it shuts the back room and draws heat on the partners, though the shop carries on. Watch your staff, too. A back-room hand can work it for you, but an unhappy employee or a hidden informant can bring the raid to your door. All of it moves your Exposure, shown as a band, and dirty cash is off the books: it isn't in your book value or reports, and it's lost if the business closes.
+
+**Gang deals.** With a back room running, **Deal with a gang** can bring an offer from a gang on your turf that isn't wary or hostile: money in, for a cut of the takings. Partners vote on it. That gang then charges no protection and sends no shakedowns, but falling behind on the cut costs standing, and ending the deal means paying the money back.
+
+**Corporate crime.** A chartered company has **Dump the waste**, **Bribe a regulator** and **Black ops**, if your GM allows them. They pay well or hit hard, and they add Exposure. Crime at a listed company that comes out is a scandal that dips the share price.
 
 Some roles have something extra to offer. A **Nomad** can arrange a **Supply contract** (Moto) that cuts running costs for four weeks. A **Rockerboy** can play a **Gig at the venue** (Charismatic Impact), which lifts the week's takings and Reputation, most of all at a bar or club. A **Lawman** can use Backup to answer a raid or a regulator's case, once a month for each business, and can **Call in a favour** on the market window's heat panel to bring down their own heat.
 

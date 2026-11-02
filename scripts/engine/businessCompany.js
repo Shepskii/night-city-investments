@@ -43,6 +43,15 @@ export function companyWeek(b, { growthRate = 1, params: p = BUSINESS_DEFAULTS }
   if (books) b.state.costFactor = Math.max(p.costFloor, b.state.costFactor - fx.books[books.band] * scale(books));
   const relations = slot('relations');
   if (relations) b.state.reputation += fx.relations[relations.band] * scale(relations) * growthRate;
+  // Dumping (U1c) lifts the takings furthest, and leaves the most behind.
+  const dumping = slot('dumping');
+  let scandal = false;
+  if (dumping) {
+    mult *= 1 + (p.crime.dumping[dumping.band] - 1) * scale(dumping);
+    exposure += p.crime.dumpingExposure[dumping.band];
+    scandal = dumping.band === 'fumble';
+    worked = true;
+  }
   const permits = slot('permits');
   let protection = 1;
   if (permits) {
@@ -51,7 +60,7 @@ export function companyWeek(b, { growthRate = 1, params: p = BUSINESS_DEFAULTS }
   }
   b.state.reputation = clamp(b.state.reputation, 0, 100);
   if (b.state.compliance != null) b.state.compliance = clamp(b.state.compliance, 0, 100);
-  return { workMult: worked ? mult : p.unworked, protection, worked, exposure };
+  return { workMult: worked ? mult : p.unworked, protection, worked, exposure, scandal };
 }
 
 /** Weeks closed since the last report, and the week the next report closes on. */

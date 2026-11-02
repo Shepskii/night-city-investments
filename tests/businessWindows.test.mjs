@@ -859,3 +859,48 @@ test('a raid and a shut back room read as words, and the hand\'s post is offered
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('a gang\'s offer and deal on the Work tab, and a company\'s crime on its own, read as words', async () => {
+  const { FactionRepository } = await import('../scripts/data/FactionRepository.js');
+  await FactionRepository.importStarter();
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  try {
+    const plain = { ...b, status: 'open', stage: 0, company: null, officers: [], listing: null, charter: null, takeover: null, administration: null, regCase: null, campaign: null, scene: null, proposals: [], district: 'ocz', standings: {}, period: { ...b.period, slots: [], event: null } };
+    await S.BusinessRepository.save({ ...plain, backRoom: { kind: 'ripping', status: 'open', dirty: 500, band: 'low', offer: { factionId: 'gang_maelstrom', name: 'Maelstrom', cash: 2000, cut: 0.25, day: 1 } } });
+    const offered = await renderBusiness(windowFor(med, 'week'));
+    assertClean(offered, 'a gang\'s offer');
+    assert.match(text(offered), /Maelstrom offers 2,000 eb for 25%/);
+    assert.match(offered, /data-action="gangDeal"/);
+    assert.match(text(offered), /Deal with a gang/);
+    assert.match(offered, /name="aimFaction"[\s\S]*Maelstrom/);
+
+    await S.BusinessRepository.save({ ...plain, backRoom: { kind: 'ripping', status: 'open', dirty: 500, band: 'low', deal: { factionId: 'gang_maelstrom', name: 'Maelstrom', cash: 2000, cut: 0.25, since: 1 } } });
+    const dealt = await renderBusiness(windowFor(med, 'week'));
+    assertClean(dealt, 'a deal');
+    assert.match(text(dealt), /Maelstrom has a deal: 25% of the takings/);
+    assert.match(dealt, /data-action="endGangDeal"/);
+    assert.doesNotMatch(text(dealt), /Deal with a gang/, 'one is enough');
+    assertClean(await renderConsole('businesses'), 'a deal for the GM');
+    assert.match(text(await renderConsole('businesses')), /A deal with Maelstrom: 25%/);
+    const roll = new Apps.Roll({ actorId: med.id, businessId: b.id, request: { type: 'action', businessId: b.id, action: 'payOff' }, rollTitle: 'Pay' });
+    assertClean(render('templates/dialogs/roll.hbs', await roll._prepareContext()), 'a room roll with a deal');
+
+    await S.BusinessRepository.save({ ...plain, stage: 2, company: { ticker: 'BRC', sector: 'health', charteredDay: b.period.startDay }, officers: [med.id], backRoom: null, till: 20000 });
+    const { CompanyRepository } = await import('../scripts/data/CompanyRepository.js');
+    const listAll = CompanyRepository.all;
+    CompanyRepository.all = () => [{ id: 'ARA', ticker: 'ARA', name: 'Arasaka' }];
+    const company = await renderBusiness(windowFor(med, 'week'));
+    CompanyRepository.all = listAll;
+    assertClean(company, 'a company\'s crime');
+    for (const name of [/Dump the waste/, /Bribe a regulator/, /Black ops/, /Costs 1,000 eb from the cash/, /A campaign costs 2,500 eb/]) assert.match(text(company), name);
+    await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], campaign: { status: 'awaiting', ticker: 'ARA', name: 'Arasaka', kind: 'blackOps', percent: -3, actorId: med.id, day: 1 } });
+    assert.match(text(await renderConsole('businesses')), /A black op against Arasaka \(ARA\)/);
+    for (const action of ['dumping', 'bribeRegulator']) {
+      const dialog = new Apps.Roll({ actorId: med.id, businessId: b.id, request: { type: 'action', businessId: b.id, action }, rollTitle: action });
+      assertClean(render('templates/dialogs/roll.hbs', await dialog._prepareContext()), action);
+    }
+  } finally {
+    await S.BusinessRepository.save(saved);
+  }
+});

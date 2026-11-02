@@ -1846,6 +1846,11 @@ Tested in the test world (2026-11-02): the GM's approval, working the room on th
 
 Tested in the test world (2026-11-02): a raid left unanswered, seizing 528 eb, a 1,000 eb fine, the room shut, 15 heat for each character partner and none for a syndicate, the owners' mails, and the shop still open; the hand's post offered; an informant on the GM's staff table and not on the player's. A shut room stops the informant's weekly Exposure. Not run live: a raid won or failed, one run as a scene, a hand working the room, an informant being found or turning.
 
+**U1c as built** (`businessFronts.js` `runDealRoll`, `takeDeal`, `endDeal`; `businessCampaign.js` `runBlackOps`; `BusinessService._scandal`; the user's choices, 2026-11-02).
+- **A gang as a silent partner.** With a room open, **Deal with a gang** (Streetwise, Persuasion, Operator) picks a gang on the turf at neutral or better. A pass brings an offer of 1,000 to 2,500 eb by band, for 30%, 25% or 20% of the room's takings at neutral, friendly or allied, at least 100 eb a week. Partners vote to take it, and the money goes into the dirty cash. While it runs, that gang charges no share of the protection money, sends no shakedowns, and its standing does not fade. A week the cut cannot be paid costs 5 standing; if the gang turns hostile it walks away, keeping what it put in. Partners can vote to end it: the money goes back, at -15 standing. A shut room ends the deal.
+- **Corporate crime, at a company.** **Dump the waste** multiplies the takings by 0.8 to 1.8 by band, with 15, 8, 5, 4, 3 or 3 Exposure. **Bribe a regulator** costs 1,000 eb from the cash and moves Exposure by +8, 0, -4, -6, -8 or -12, and from solid up takes 3 off an open case's total. **Black ops** cost 2,500 eb and work as a campaign, sharing its monthly limit and the GM's approval, for -2 to -4% on the target and -10 standing; a fumble is 15 Exposure, -15 standing, a regulator's case, and a scandal. The underworld setting hides all three.
+- **Scandal.** A listed company's crime coming out posts a headline, dips its price and opens a heat window: -3% for a failed raid or a fumbled dumping, -5% for a raid left unanswered or fumbled, -8% for black ops traced back.
+
 **What each front hides** (the archetype decides the operation, its skills, and the trouble it draws):
 
 | Front | Back room | Its skills | Draws |
