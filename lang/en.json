@@ -2435,7 +2435,6 @@
       "StaffPost": "Post",
       "StaffWage": "Wage (eb)",
       "StaffLoyalty": "Loyalty",
-      "StaffTrait": "Trait",
       "StandingValue": "Value",
       "StaffElsewhere": "also works for {name}",
       "ListingApprove": "Approve the listing",

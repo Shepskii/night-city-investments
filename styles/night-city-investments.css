@@ -371,6 +371,10 @@
 .nci-app .nci-owners { margin: 4px 0 6px; }
 .nci-app .nci-owners :is(th, td) { padding: 2px 6px; line-height: 24px; }
 .nci-app .nci-owners th:first-child { width: 50%; }
+/* A business's owners and staff, one above the other, share their columns. */
+.nci-app table.nci-peoplecols { table-layout: fixed; }
+.nci-app .nci-peoplecols th:nth-child(2) { width: 20%; }
+.nci-app .nci-peoplecols th:nth-child(3), .nci-app .nci-peoplecols th:nth-child(4) { width: 15%; }
 /* Employees as people (E2): loyalty as a band, and applicants grouped by post. */
 .nci-app .nci-loyal { display: inline-block; padding: 0 6px; border-radius: 3px; font-size: 12px; line-height: 18px; border: 1px solid currentColor; }
 .nci-app .nci-loyal-sullen { color: var(--nci-down); }

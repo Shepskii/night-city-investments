@@ -14,7 +14,7 @@
       <div class="nci-muted">{{archetype}}{{#if location}} &middot; {{location}}{{/if}}</div>
     </div>
     {{#if owners.length}}
-    <table class="nci-market nci-owners">
+    <table class="nci-market nci-owners nci-peoplecols">
       <thead><tr><th>{{localize "NCI.GMBusiness.Owner"}}</th><th>{{localize "NCI.GMBusiness.Status"}}</th><th class="num">{{localize "NCI.GMBusiness.Units"}}</th><th class="num">{{localize "NCI.GMBusiness.Share"}}</th></tr></thead>
       <tbody>{{#each owners}}<tr><td>{{{who}}}{{#if note}} <span class="nci-muted">{{note}}</span>{{/if}}</td><td class="nci-muted">{{status}}</td><td class="num">{{units}}</td><td class="num">{{share}}</td></tr>{{/each}}</tbody>
     </table>
@@ -53,15 +53,15 @@
     {{#if bigEvent}}<div class="nci-warn">{{bigEvent}}</div>{{/if}}
     {{#if scene}}<div class="nci-warn">{{scene}}</div>{{/if}}
     {{#if owners.length}}
-    <table class="nci-market nci-owners">
+    <table class="nci-market nci-owners nci-peoplecols">
       <thead><tr><th>{{localize "NCI.GMBusiness.Owner"}}</th><th>{{localize "NCI.GMBusiness.Status"}}</th><th class="num">{{localize "NCI.GMBusiness.Units"}}</th><th class="num">{{localize "NCI.GMBusiness.Share"}}</th></tr></thead>
       <tbody>{{#each owners}}<tr><td>{{{who}}}{{#if note}} <span class="nci-muted">{{note}}</span>{{/if}}</td><td class="nci-muted">{{status}}</td><td class="num">{{units}}</td><td class="num">{{share}}</td></tr>{{/each}}</tbody>
     </table>
     {{/if}}
     {{#if staff.length}}
-    <table class="nci-market nci-owners">
-      <thead><tr><th>{{localize "NCI.GMBusiness.Staff"}}</th><th>{{localize "NCI.GMBusiness.StaffPost"}}</th><th class="num">{{localize "NCI.GMBusiness.StaffWage"}}</th><th class="num">{{localize "NCI.GMBusiness.StaffLoyalty"}}</th><th>{{localize "NCI.GMBusiness.StaffTrait"}}</th></tr></thead>
-      <tbody>{{#each staff}}<tr><td>{{{who}}}{{#if note}} <span class="nci-muted">{{note}}</span>{{/if}}</td><td class="nci-muted">{{post}}</td><td class="num">{{wage}}</td><td class="num">{{loyalty}}</td><td class="nci-muted">{{trait}}</td></tr>{{/each}}</tbody>
+    <table class="nci-market nci-owners nci-peoplecols">
+      <thead><tr><th>{{localize "NCI.GMBusiness.Staff"}}</th><th>{{localize "NCI.GMBusiness.StaffPost"}}</th><th class="num">{{localize "NCI.GMBusiness.StaffWage"}}</th><th class="num">{{localize "NCI.GMBusiness.StaffLoyalty"}}</th></tr></thead>
+      <tbody>{{#each staff}}<tr><td>{{{who}}}{{#if trait}} <span class="nci-muted">{{trait}}</span>{{/if}}{{#if note}} <span class="nci-muted">{{#if trait}}&middot; {{/if}}{{note}}</span>{{/if}}</td><td class="nci-muted">{{post}}</td><td class="num">{{wage}}</td><td class="num">{{loyalty}}</td></tr>{{/each}}</tbody>
     </table>
     {{/if}}
     {{#if applicants}}<div class="nci-muted">{{applicants}}</div>{{/if}}

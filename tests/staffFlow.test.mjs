@@ -240,7 +240,7 @@ test('the week closes: the wage is paid to Nova, and the ledger and the GM tab s
   assertClean(gm, 'GM tab with staff');
   assert.match(text(gm), /Nova Floor 108/);
   // Owners in a compact table, and the standing in one strip; no week-by-week detail.
-  assert.match(gm, /<table class="nci-market nci-owners">/);
+  assert.match(gm, /<table class="nci-market nci-owners nci-peoplecols">/);
   assert.match(text(gm), /Owner Status Units Share/);
   assert.match(text(gm), /Medtech partner 3,000 66\.7% Fixer partner 1,500 33\.3%/);
   assert.match(text(gm), /Cash \S+ eb Book value \S+ eb Reputation \d+ Capacity \d\.\d\d Exposure \d+/);
@@ -508,7 +508,7 @@ test('the Employee window: a recruit\'s loyalty band, a bonus paid, a raise aske
   gm.tab = 'businesses';
   const console = render('templates/gm/console.hbs', await gm._prepareContext());
   assertClean(console, 'GM tab with loyalty and traits');
-  assert.match(text(console), /Vera Voss Security 109 50 Light fingers/);
+  assert.match(text(console), /Vera Voss Light fingers Security 109 50/);
   assert.equal(business().staff.length, room + 1);
 
   // Training through the GM's service: a course, from the cash; Tactics 12, and the next training in 4 weeks.
