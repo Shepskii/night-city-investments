@@ -557,10 +557,9 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) :is(.nci-app, .nci-tic
   --nci-row-alt: var(--cpr-background-row-even);
   --nci-subtle: var(--cpr-text-hint);
   --nci-faint: var(--cpr-text-hint);
-  --nci-up: var(--cpr-text-chat-success);
-  --nci-down: var(--cpr-text-chat-failure);
   --nci-rule: var(--nci-accent);
-  --nci-active: var(--nci-accent);
+  /* The skin's own pair for a selected tab: Pneuma Hub's is gold on dark, not on its bright accent. */
+  --nci-active: var(--cpr-background-tab-active, var(--nci-accent));
   --nci-on-accent: var(--pvt-custom-on-main, var(--pvt-base-on-accent, #fff));
 
   --nci-accent-bright: color-mix(in srgb, var(--nci-accent) 70%, var(--nci-text));
@@ -586,13 +585,21 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) :is(.nci-app, .nci-tic
   --nci-track-line: color-mix(in srgb, var(--nci-text) 18%, var(--nci-window));
   --nci-bar-line: color-mix(in srgb, var(--nci-text) 30%, var(--nci-window));
   --nci-focus: color-mix(in srgb, var(--nci-accent) 45%, transparent);
-  /* Amber and blue, drawn toward the text colour: lighter on a dark skin, darker on a light one. */
-  --nci-warn: color-mix(in srgb, #d98e04 70%, var(--nci-text));
-  --nci-caution: color-mix(in srgb, #c9971c 70%, var(--nci-text));
+  /*
+   * Gains, losses, amber and blue, drawn toward the text colour: lighter on a dark skin, darker on a light one. The
+   * skins' own success and failure colours are made for chat cards, and some are too faint for small text on these rows.
+   */
+  --nci-up: color-mix(in srgb, var(--cpr-text-chat-success) 55%, var(--nci-text));
+  --nci-down: color-mix(in srgb, var(--cpr-text-chat-failure) 50%, var(--nci-text));
+  --nci-warn: color-mix(in srgb, #d98e04 45%, var(--nci-text));
+  --nci-caution: color-mix(in srgb, #c9971c 45%, var(--nci-text));
   --nci-star: var(--nci-caution);
-  --nci-neutral-text: color-mix(in srgb, #4a8fc7 70%, var(--nci-text));
+  --nci-neutral-text: color-mix(in srgb, #4a8fc7 55%, var(--nci-text));
   --nci-up-soft: color-mix(in srgb, var(--nci-up) 80%, var(--nci-text));
   --nci-cell-low: color-mix(in srgb, var(--nci-down) 60%, var(--nci-window));
   --nci-cell-mid: color-mix(in srgb, var(--nci-caution) 60%, var(--nci-window));
   --nci-cell-good: color-mix(in srgb, var(--nci-up) 60%, var(--nci-window));
 }
+/* Foundry's own dark table header and black text shadows, which only suit a dark window. */
+html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .application.nci-app table thead { background: var(--nci-accent-bg); }
+html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .nci-app :is(h1, h2, h3, h4, th) { text-shadow: none; }

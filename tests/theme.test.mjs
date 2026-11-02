@@ -26,7 +26,7 @@ test('matching a skin sets every token that would otherwise stay dark', () => {
 
 test('matching reads what Visual Tools publishes, and only applies with a skin or colours active', () => {
   assert.match(css, /html\.nci-theme-pvt:is\(\[data-pvt-base\], \.pvt-custom-theme\) :is\(\.nci-app, \.nci-ticker\)/);
-  for (const name of ['--pvt-custom-main', '--pvt-base-accent', '--cpr-background-window', '--cpr-text-normal', '--cpr-text-chat-success', '--cpr-text-chat-failure']) assert.ok(matched.includes(`var(${name}`), name);
+  for (const name of ['--pvt-custom-main', '--pvt-base-accent', '--cpr-background-window', '--cpr-text-normal', '--cpr-text-chat-success', '--cpr-text-chat-failure', '--cpr-background-tab-active']) assert.ok(matched.includes(`var(${name}`), name);
 });
 
 test('the setting: the class follows the choice, and needs the module', async () => {
