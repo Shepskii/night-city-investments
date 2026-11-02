@@ -68,6 +68,7 @@ import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from '.
 import { aimCheck, giftFor } from './factions.js';
 import { campaignCheck, runCampaign } from './businessCampaign.js';
 import { supplyCut, runSupply, runVenue, backupWait } from './businessRoles.js';
+import { ROOM_ACTIONS, roomCheck, roomKinds, roomWeek, takeDirty, openRoom } from './businessFronts.js';
 import { normalizeName, gigTags } from './gigImpact.js';
 import {
   fixerOffer, takeFixerLoan, bankCheck, applyBankRoll, repayLoan, payLoans, investorOffer, inviteInvestor, acceptInvestment,
@@ -119,7 +120,7 @@ export {
 
 export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
-  'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll', 'prospectusRoll',
+  'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'takeDirty', 'lieLow', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll', 'prospectusRoll',
   'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant', 'askStaff', 'cancelAsk', 'addTeam',
   'rightsTake', 'sellBack', 'issueRoll', 'buybackRoll', 'bid', 'tender', 'defenceRoll', 'hideRoll', 'dropLayer',
 ]);
@@ -313,9 +314,12 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
       if (!campaign.ok) return campaign;
     }
     const bonusAvailable = b.period.bonuses.some((x) => x.action === request.action && !x.used);
+    // The back room's actions need it open, and its kind says how it is worked (U1a).
+    const room = ROOM_ACTIONS.includes(request.action) ? roomCheck(b, request.action, p) : null;
+    if (room && !room.ok) return room;
     // A role's own action takes that role: no hired help (X1).
     const allowHire = !actionFor(b.stage, request.action).roleOnly;
-    return allowed(actionUses(request.action, arch, b.stage), use, { dv: stageDv(b.stage, p), allowHire, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p, b, traits });
+    return allowed(room?.uses ?? actionUses(request.action, arch, b.stage), use, { dv: stageDv(b.stage, p), allowHire, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
 
   if (request.type === 'assist') {
@@ -578,6 +582,24 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (r.extra) spendDays(b, actor.id, 1);
       if (r.success) b.period.bonuses.push({ id: request.key, action: request.forAction, by: rollerId(), used: false });
       out.events.push({ type: 'roll', action: 'assist', forAction: request.forAction, band: r.band, exposure: r.exposure });
+      break;
+    }
+    case 'takeDirty': {
+      if (me?.status !== 'active' || !me.voting) return fail('not-partner');
+      const taken = takeDirty(b, request.amount, p);
+      if (!taken.ok) return taken;
+      pay(actor.id, taken.amount);
+      log('dirtyTaken', 0);
+      out.events.push({ type: 'dirtyTaken', exposure: taken.exposure });
+      break;
+    }
+    case 'lieLow': {
+      if (b.status !== 'open') return fail('not-open');
+      if (me?.status !== 'active' || !me.voting || !canRun(b, actor.id)) return fail('not-partner');
+      if (!openRoom(b)) return fail('no-back-room');
+      if (b.period.slots.length >= (p.stages[b.stage]?.slots ?? 1)) return fail('no-slot');
+      if (b.period.slots.some((s) => s.action === 'lieLow' || s.action === 'roomWork')) return fail('action-taken');
+      b.period.slots.push({ action: 'lieLow', by: actor.id, use: 'none', band: 'solid', total: 0, dv: 0, approach: 'standard', luck: 0, bonus: 0 });
       break;
     }
     case 'draw': {
@@ -977,7 +999,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
     case 'addDays': {
       if (b.status !== 'open') return fail('not-open');
       if (me?.status !== 'active' || !me.voting) return fail('not-partner');
-      const added = addProjectDays(b, actor.id, request.projectId, request.days, { growthRate: ctx.growthRate ?? 1, day, params: p });
+      const added = addProjectDays(b, actor.id, request.projectId, request.days, { growthRate: ctx.growthRate ?? 1, day, approval: ctx.approval !== false, params: p });
       if (!added.ok) return added;
       if (added.done) out.events.push({ type: 'projectDone', projectId: request.projectId });
       break;
@@ -1232,8 +1254,10 @@ function canPropose(b, kind, request, ctx, p) {
       return expansionOffer(b, p);
     case 'project': {
       if (!PROJECT_KINDS.includes(request.project)) return fail('bad-project');
+      // A back room is the underworld's, which a world can switch off; its kind must suit the front (U1a).
+      if (request.project === 'backRoom' && (ctx.underworld === false || !roomKinds(b).includes(request.room))) return fail('bad-project');
       const offer = projectOffer(b, request.project, p);
-      return offer.ok ? { ok: true, terms: { project: request.project, cost: offer.cost, days: offer.days } } : fail(offer.reason);
+      return offer.ok ? { ok: true, terms: { project: request.project, cost: offer.cost, days: offer.days, ...(request.project === 'backRoom' ? { room: request.room } : {}) } } : fail(offer.reason);
     }
     case 'elect':
     case 'dismiss':
@@ -1335,7 +1359,7 @@ function enact(b, proposal, day, p, ctx, out) {
     case 'expansion':
       return startProject(b, 'expansion', proposal.id, day, p);
     case 'project':
-      return startProject(b, proposal.terms.project, proposal.id, day, p);
+      return startProject(b, proposal.terms.project, proposal.id, day, p, proposal.terms.room ?? null);
     case 'fixerLoan':
       return takeFixerLoan(b, proposal.id, proposal.terms.amount, day, p);
     case 'bankLoan':
@@ -1574,6 +1598,9 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   const event = settleEvent(b, base, b.period.slots, p, { traits, seed, day: b.period.endDay });
   out.events.push(...factionFallout(b, event, p));
   const takings = Math.max(0, base + (event?.change ?? 0));
+  // What went on behind the shop this week (U1a).
+  const room = roomWeek(b, takings, part, p);
+  if (room?.exposure) out.events.push({ type: 'backRoomWeek', exposure: room.exposure });
   // A security upgrade cuts the protection money for good.
   // So do friendly gangs on the turf, and hostile ones raise it; corporations in its sector move the Cost base (F1b).
   const fixed = (stage.rent + (stage.licence ?? 0)) * district.rent + stage.protection * protection * (relations?.protection ?? 1) * protectionFactor(b, p) * district.risk;
@@ -1636,6 +1663,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
     ...(loans.interest || loans.principal || loans.missed.length ? { interest: loans.interest, repaid: loans.principal, missed: loans.missed } : {}),
     ...(wages.wages || wages.owed || wages.paid ? { wages: wages.wages, paid: wages.paid, owed: wages.owed } : {}),
     worked: !!work,
+    ...(room ? { room: { earned: room.earned, laundered: room.laundered, paid: room.paid, low: room.low } } : {}),
     ...(event ? { event: { kind: event.kind, outcome: event.outcome, band: event.band, change: event.change, ...(b.period.event?.factionName ? { faction: b.period.event.factionName } : {}), ...(eventCost ? { cost: eventCost } : {}) } } : {}),
     ...(notes.length ? { staff: notes } : {}),
     ...(boost ? { boost } : {}),

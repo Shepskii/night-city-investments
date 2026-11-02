@@ -783,3 +783,43 @@ test('a big event: the GM can run it as a scene, the player is told, and every h
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('a back room: pending for the GM, then on the Work tab with its dirty cash, actions and band', async () => {
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  try {
+    const plain = { ...b, status: 'open', stage: 0, company: null, officers: [], listing: null, charter: null, takeover: null, administration: null, regCase: null, campaign: null, proposals: [], period: { ...b.period, slots: [], event: null } };
+    await S.BusinessRepository.save({ ...plain, backRoom: null });
+    const projects = await renderBusiness(windowFor(med, 'projects'));
+    assertClean(projects, 'projects tab');
+    assert.match(text(projects), /Back room/);
+
+    await S.BusinessRepository.save({ ...plain, backRoom: { kind: 'ripping', status: 'pending', dirty: 0, day: 1 } });
+    const asked = await renderConsole('businesses');
+    assertClean(asked, 'pending back room for the GM');
+    assert.match(asked, /data-action="businessRoomApprove"/);
+    assert.match(text(await renderConsole('pending')), /A back room, Black-market chrome: let it open or turn it down/);
+    const waiting = await renderBusiness(windowFor(med, 'week'));
+    assertClean(waiting, 'waiting for the GM');
+    assert.match(text(waiting), /waiting for the GM before it opens/);
+    assert.doesNotMatch(text(waiting), /Work the back room/);
+
+    assert.equal((await S.BusinessService.approveBackRoom(b.id)).ok, true);
+    await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], backRoom: { ...S.BusinessRepository.all()[0].backRoom, dirty: 1200, band: 'low' } });
+    const open = await renderBusiness(windowFor(med, 'week'));
+    assertClean(open, 'an open back room');
+    for (const words of [/Dirty cash 1,200 eb/, /Exposure low/i, /Work the back room/, /Launder/, /Pay someone off/, /Costs 150 eb of dirty cash/]) assert.match(text(open), words);
+    assert.match(open, /data-action="takeDirty"/);
+    assert.match(open, /data-action="lieLow"/);
+    const gm = await renderConsole('businesses');
+    assertClean(gm, 'an open back room for the GM');
+    assert.match(text(gm), /Back room: Black-market chrome, 1,200 eb of dirty cash/);
+    const dialog = new Apps.Roll({ actorId: med.id, businessId: b.id, request: { type: 'action', businessId: b.id, action: 'roomWork' }, rollTitle: 'Work' });
+    const roll = render('templates/dialogs/roll.hbs', await dialog._prepareContext());
+    assertClean(roll, 'the roll dialog');
+    assert.match(text(roll), /Cybertech/);
+    assert.match(text(roll), /A good week\S+s dirty cash/);
+  } finally {
+    await S.BusinessRepository.save(saved);
+  }
+});

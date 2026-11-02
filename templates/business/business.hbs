@@ -241,6 +241,20 @@
     <h3>{{localize "NCI.Business.ThisWeek"}}</h3>
     <p class="nci-hint">{{localize "NCI.Business.WeekRuns" from=from to=to day=closesOn}} {{daysText}}</p>
     {{#if scene}}<div class="nci-warn">{{scene}}</div>{{/if}}
+    {{#with backRoom}}
+    <div class="nci-gig">
+      <div class="nci-gigtop"><strong>{{localize "NCI.BackRoom.Title"}}: {{name}}</strong></div>
+      {{#if pending}}<div class="nci-warn">{{localize "NCI.BackRoom.Pending"}}</div>{{else}}
+      <div class="nci-gmstats"><span><span class="nci-muted">{{localize "NCI.BackRoom.Dirty"}}</span> <strong>{{dirty}} eb</strong></span><span><span class="nci-muted">{{localize "NCI.BackRoom.Exposure"}}</span> <strong>{{band}}</strong></span></div>
+      {{#if last}}<div class="nci-muted">{{last}}</div>{{/if}}
+      {{#if lying}}<div class="nci-muted">{{lying}}</div>{{/if}}
+      <div class="nci-actions">
+        {{#if canTake}}<input type="number" name="dirtyAmount" min="1" max="{{max}}" step="1" value="{{max}}" class="nci-days" title="{{takeHint}}"><button type="button" data-action="takeDirty" title="{{takeHint}}">{{localize "NCI.BackRoom.Take"}}</button>{{/if}}
+        {{#if canLieLow}}<button type="button" data-action="lieLow">{{localize "NCI.BackRoom.LieLow"}}</button>{{/if}}
+      </div>
+      {{/if}}
+    </div>
+    {{/with}}
     {{#with event}}
     <div class="nci-gig">
       <div class="nci-gigtop"><strong>{{name}}</strong>{{#if good}}<span class="nci-up">{{localize "NCI.Business.Opportunity"}}</span>{{else}}<span class="nci-down">{{localize "NCI.Business.Trouble"}}</span>{{/if}}</div>
@@ -336,7 +350,7 @@
         {{#each kinds}}
         <tr>
           <td><strong>{{name}}</strong><div class="nci-muted">{{hint}}</div></td>
-          <td>{{effect}}{{#if blocked}}<div class="nci-warn">{{blocked}}</div>{{/if}}</td>
+          <td>{{effect}}{{#if blocked}}<div class="nci-warn">{{blocked}}</div>{{/if}}{{#if canPropose}}{{#if rooms.length}}<div><select name="roomKind">{{#each rooms}}<option value="{{value}}">{{label}}</option>{{/each}}</select></div>{{/if}}{{/if}}</td>
           <td class="num">{{cost}}</td>
           <td class="num">{{days}}</td>
           <td class="nci-rowbtns nci-endbtns">{{#if canPropose}}<button type="button" data-action="proposeProject" data-kind="{{kind}}"><i class="fas fa-helmet-safety"></i> {{localize "NCI.Project.Propose"}}</button>{{/if}}</td>

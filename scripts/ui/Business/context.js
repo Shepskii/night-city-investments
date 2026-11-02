@@ -9,7 +9,7 @@ import {
   daysLeft, activeProject, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
   projectOffer, PROJECT_KINDS, upgradesOf, protectionFactor, headcountOf,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
-  actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent, supplyCut, actionFor,
+  actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent, supplyCut, actionFor, ROOM_ACTIONS, roomKinds, openRoom, payOffCost,
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
@@ -320,7 +320,7 @@ function projectsContext(business, actor, canAct) {
       canAdd: canAct && left > 0,
       max: Math.max(1, Math.min(left, project.daysNeeded - project.days)),
     } : null,
-    kinds: PROJECT_KINDS.map((kind) => {
+    kinds: PROJECT_KINDS.filter((kind) => kind !== 'backRoom' || underworldOn(business)).map((kind) => {
       const offer = projectOffer(business, kind);
       const def = kind === 'expansion' ? stage?.expansion : BUSINESS_DEFAULTS.projects[kind];
       const cost = offer.cost ?? (kind === 'expansion' ? def?.cost : def?.cost[business.stage]) ?? 0;
@@ -333,6 +333,7 @@ function projectsContext(business, actor, canAct) {
         cost: whole(cost),
         days,
         canPropose: canAct && !pending && offer.ok,
+        rooms: kind === 'backRoom' ? roomKinds(business).map((value) => ({ value, label: L(`NCI.BackRoom.Kind.${value}`) })) : [],
         // Nothing more to say while one is running: the row above says so.
         blocked: offer.ok || offer.reason === 'project-running' ? '' : projectBlock(business, offer),
       };
@@ -502,7 +503,7 @@ function weekContext(business, actor, canAct) {
     noSlots: period.slots.length >= slots,
     daysText: canAct ? L('NCI.Business.DaysLeft', { n: daysLeft(business, actor.id) }) : '',
     // A chartered company has the five company actions; a smaller business the shop actions.
-    actions: actionIdsFor(business.stage).filter((id) => !(id === 'campaign' || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).map((id) => {
+    actions: [...actionIdsFor(business.stage), ...(openRoom(business) ? ROOM_ACTIONS : [])].filter((id) => !(id === 'campaign' || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).map((id) => {
       const slot = taken.get(id);
       const bonus = period.bonuses.some((b) => b.action === id && !b.used);
       return {
@@ -515,16 +516,39 @@ function weekContext(business, actor, canAct) {
         aim: aimOf(id),
         canRoll: runs && free && !slot && !(id === 'campaign' && (business.campaign || campaignWait(business, BusinessClient.day()) > 0)),
         canHelp: canAct && !helped && !slot,
-        waiting: id === 'campaign' ? campaignNote(business) : id === 'supply' ? supplyNote(business) : '',
+        waiting: id === 'campaign' ? campaignNote(business) : id === 'supply' ? supplyNote(business) : id === 'payOff' ? L('NCI.BackRoom.PayOffCost', { cost: whole(payOffCost(business)) }) : '',
       };
     }),
     helped: actor && helped && canAct ? L('NCI.Business.AlreadyHelped') : '',
     event: eventContext(business, runs, free),
+    backRoom: backRoomContext(business, runs, canAct, free),
     // A big event the GM is playing out with the table (X1).
     scene: business.scene ? L('NCI.Business.SceneOpen', { event: L(`NCI.Event.${business.scene.event.kind}.Name`) }) : '',
     notOfficer: business.stage >= 2 && canAct && !runs ? L('NCI.Company.NotOfficer') : '',
     info: business.stage >= 2 ? infoContext(business, runs) : null,
     unworkedNote: L('NCI.Business.UnworkedNote'),
+  };
+}
+
+/** Whether this world has back rooms, or this business has one anyway (U1a). */
+const underworldOn = (business) => !!business.backRoom || game.settings.get(MODULE_ID, SETTINGS.UNDERWORLD) !== false;
+
+/** The back room, for those who run the business (U1a): the dirty cash in eddies, Exposure as a band. */
+function backRoomContext(business, runs, canAct, free) {
+  const room = business.backRoom;
+  if (!room) return null;
+  const last = lastDigest(business)?.room;
+  return {
+    name: L(`NCI.BackRoom.Kind.${room.kind}`),
+    pending: room.status === 'pending',
+    dirty: whole(room.dirty ?? 0),
+    max: room.dirty ?? 0,
+    band: room.band ? L(`NCI.Company.Exposure.${room.band}`) : L('NCI.Company.Exposure.clean'),
+    last: last ? L(last.low ? 'NCI.BackRoom.LastLow' : 'NCI.BackRoom.Last', { earned: whole(last.earned), laundered: whole(last.laundered), paid: whole(last.paid) }) : '',
+    canTake: canAct && room.status === 'open' && room.dirty > 0,
+    canLieLow: runs && free && room.status === 'open' && !business.period.slots.some((s) => s.action === 'lieLow' || s.action === 'roomWork'),
+    lying: business.period.slots.some((s) => s.action === 'lieLow') ? L('NCI.BackRoom.Lying') : '',
+    takeHint: L('NCI.BackRoom.TakeHint', { every: whole(BUSINESS_DEFAULTS.backRoom.takeEvery), exposure: BUSINESS_DEFAULTS.backRoom.takeExposure }),
   };
 }
 

@@ -59,6 +59,8 @@ export class BusinessApp extends BaseApplication {
       proposeClose: BusinessApp._onProposeClose,
       vote: BusinessApp._onVote,
       proposeProject: BusinessApp._onProposeProject,
+      takeDirty: BusinessApp._onTakeDirty,
+      lieLow: BusinessApp._onLieLow,
       addDays: BusinessApp._onAddDays,
       proposeStepUp: BusinessApp._onProposeStepUp,
       stepUpRoll: BusinessApp._onStepUpRoll,
@@ -357,7 +359,19 @@ export class BusinessApp extends BaseApplication {
 
   /** A project's Propose button on the Projects tab: any kind, a majority of the votes. */
   static _onProposeProject(event, target) {
-    return this._send('propose', { kind: 'project', project: target.dataset.kind });
+    // A back room's kind is picked in its row (U1a).
+    const room = target.closest('tr')?.querySelector('[name="roomKind"]')?.value;
+    return this._send('propose', { kind: 'project', project: target.dataset.kind, ...(room ? { room } : {}) });
+  }
+
+  /** Dirty cash straight into a partner's hand (U1a). */
+  static _onTakeDirty(event, target) {
+    return this._send('takeDirty', { amount: amount(target, 'dirtyAmount') });
+  }
+
+  /** Nothing behind the shop this week (U1a). */
+  static _onLieLow() {
+    return this._send('lieLow', {});
   }
 
   static _onAddDays(event, target) {

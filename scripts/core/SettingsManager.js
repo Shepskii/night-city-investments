@@ -319,6 +319,15 @@ export function registerSettings() {
     onChange: notifyBusinessesChanged,
   });
 
+  s.register(MODULE_ID, SETTINGS.UNDERWORLD, {
+    name: 'NCI.Settings.Underworld.Name',
+    hint: 'NCI.Settings.Underworld.Hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
   s.register(MODULE_ID, SETTINGS.CAMPAIGN_APPROVAL, {
     name: 'NCI.Settings.CampaignApproval.Name',
     hint: 'NCI.Settings.CampaignApproval.Hint',

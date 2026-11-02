@@ -114,6 +114,9 @@ export const ACTIONS = Object.freeze({
   supply: Object.freeze({ skills: [], abilities: [A.moto], help: [S.driveLand, S.trading], roleOnly: true }),
   venue: Object.freeze({ skills: [], abilities: [A.charismaticImpact], help: [S.playInstrument, S.persuasion], roleOnly: true }),
   campaign: Object.freeze({ skills: [S.composition, S.persuasion, S.librarySearch], abilities: [A.interface], help: [S.humanPerception, S.streetwise] }),
+  roomWork: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.humanPerception] }),
+  launder: Object.freeze({ skills: [], abilities: [], help: [S.business, S.librarySearch] }),
+  payOff: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.persuasion] }),
 });
 
 /** A chartered company's five actions (DESIGN §27.4, §31): they replace the shop actions at stage 2. */
@@ -138,6 +141,26 @@ export const COMPANY_ACTIONS = Object.freeze({
   supply: Object.freeze({ skills: [], abilities: [A.moto], help: [S.driveLand, S.trading], roleOnly: true }),
   venue: Object.freeze({ skills: [], abilities: [A.charismaticImpact], help: [S.playInstrument, S.persuasion], roleOnly: true }),
   campaign: Object.freeze({ skills: [S.composition, S.persuasion, S.librarySearch], abilities: [A.interface], help: [S.humanPerception, S.streetwise] }),
+  roomWork: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.humanPerception] }),
+  launder: Object.freeze({ skills: [], abilities: [], help: [S.business, S.librarySearch] }),
+  payOff: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.persuasion] }),
+});
+
+/**
+ * What each front can hide (U1a, DESIGN §36.1), and the skills and abilities each is worked with. Where a front
+ * has more than one, the partners choose when they open it.
+ */
+export const BACK_ROOMS = Object.freeze({
+  clinic: Object.freeze({ ripping: [S.cybertech, S.paramedic, A.medicine] }),
+  garage: Object.freeze({ chopShop: [S.basicTech, S.landVehicleTech, A.maker] }),
+  bar: Object.freeze({ gambling: [S.streetwise, S.persuasion, A.charismaticImpact], brothel: [S.persuasion, S.humanPerception, S.wardrobe, A.charismaticImpact] }),
+  infoShop: Object.freeze({ dataFence: [S.librarySearch, A.interface] }),
+  gunShop: Object.freeze({ blackArms: [S.weaponstech, S.trading, A.operator] }),
+  courier: Object.freeze({ smuggling: [S.driveLand, S.localExpert, A.moto] }),
+  boutique: Object.freeze({ launderette: [S.business, S.streetwise] }),
+  foodStall: Object.freeze({ deadDrop: [S.business, S.streetwise] }),
+  media: Object.freeze({ blackmail: [S.composition, S.photography, A.credibility] }),
+  security: Object.freeze({ racket: [S.tactics, S.persuasion, A.combatAwareness] }),
 });
 
 /** The action ids a business at this stage can take. */
@@ -194,6 +217,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     security: Object.freeze({ cost: Object.freeze([800, 2000, 6000]), days: Object.freeze([2, 3, 5]), levels: 2, protection: 0.25, breakIns: 0.5 }),
     storefront: Object.freeze({ cost: Object.freeze([700, 1800, 6000]), days: Object.freeze([2, 4, 6]), reputation: 5, target: 3 }),
     staffRoom: Object.freeze({ cost: Object.freeze([500, 1200, 4000]), days: Object.freeze([2, 3, 5]), headcount: 1, paidCap: 70 }),
+    /** A back room (U1a): off the books, so what it costs is no asset. Not at a company, whose crime is its own (U1c). */
+    backRoom: Object.freeze({ cost: Object.freeze([1500, 4000]), days: Object.freeze([3, 5]) }),
   }),
   /** Side business to registered business (DESIGN §27.0). Bureaucracy, or Local Expert or Persuasion at DV +2. */
   registration: Object.freeze({
@@ -348,6 +373,28 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     venue: Object.freeze({ takings: byBand([-0.05, 0, 0.05, 0.1, 0.15, 0.2]), reputation: byBand([-2, 0, 1, 2, 3, 4]), venues: Object.freeze(['bar']), venueScale: 1.5 }),
     backup: Object.freeze({ days: 28 }),
     quash: Object.freeze({ dv: 17, cost: 1000, days: 28, reduce: 25, fumble: 15 }),
+  }),
+  /**
+   * A back room (U1a). A worked week earns `share` of what the front's Capacity would take, by the week's work
+   * band. `workExposure` is what working it adds, by band; lying low takes `lieLow` off. Laundering moves up to
+   * `launderCap` of the week's legitimate takings, `launderShare` of that by band, adding `launderExposure`, less
+   * `bookkeeper` with one on the staff. A pay-off costs `payOff` eb of dirty cash by stage and moves Exposure by
+   * `payOffExposure`. Taking cash straight adds `takeExposure` for each `takeEvery` eb.
+   */
+  backRoom: Object.freeze({
+    share: 0.6,
+    workExposure: byBand([8, 4, 3, 2, 1, 1]),
+    lieLow: 3,
+    launderCap: 0.3,
+    launderShare: byBand([0, 0, 0.5, 0.75, 1, 1]),
+    launderExposure: byBand([6, 2, 2, 1, 0, 0]),
+    launderUses: Object.freeze([S.accounting, S.business, Object.freeze({ ...S.bribery, dvAdd: 2 })]),
+    bookkeeper: 1,
+    payOff: Object.freeze([150, 300, 600]),
+    payOffExposure: byBand([5, 0, -3, -5, -7, -10]),
+    payOffUses: Object.freeze([S.bribery]),
+    takeEvery: 1000,
+    takeExposure: 2,
   }),
   /** A big event played out at the table (X1): what winning it does for Reputation. */
   scene: Object.freeze({ wonReputation: 2 }),

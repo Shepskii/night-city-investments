@@ -81,6 +81,14 @@ async function onCampaignReject(event, target) {
   report(await BusinessService.rejectCampaign(target.dataset.id));
 }
 
+async function onRoomApprove(event, target) {
+  report(await BusinessService.approveBackRoom(target.dataset.id));
+}
+
+async function onRoomReject(event, target) {
+  report(await BusinessService.rejectBackRoom(target.dataset.id));
+}
+
 async function onSceneRun(event, target) {
   report(await BusinessService.runScene(target.dataset.id));
 }
@@ -158,6 +166,8 @@ export const actions = {
   businessStaffAnswer: onStaffAnswer,
   businessSetStanding: onSetStanding,
   businessCampaignApprove: onCampaignApprove,
+  businessRoomApprove: onRoomApprove,
+  businessRoomReject: onRoomReject,
   businessSceneRun: onSceneRun,
   businessSceneWon: onSceneWon,
   businessSceneLost: onSceneLost,
@@ -220,6 +230,9 @@ export function context() {
           : L('NCI.GMBusiness.CaseLost', { why: L(`NCI.Regulator.Reason.${b.regCase.reason}`), fine: whole(b.regCase.fine ?? 0), how: L(b.regCase.silent ? 'NCI.GMBusiness.CaseSilent' : b.regCase.fumble ? 'NCI.GMBusiness.CaseFumbled' : 'NCI.GMBusiness.CaseRolled'), more: b.regCase.serious ? L('NCI.GMBusiness.CaseSerious') : '' }),
       } : null,
       canOpenCase: !b.regCase && b.stage === 2 && b.status === 'open',
+      // A back room (U1a): the truth, and whether it waits for the GM.
+      backRoom: b.backRoom ? L(b.backRoom.status === 'pending' ? 'NCI.GMBusiness.RoomPending' : 'NCI.GMBusiness.RoomOpen', { kind: L(`NCI.BackRoom.Kind.${b.backRoom.kind}`), dirty: whole(b.backRoom.dirty ?? 0) }) : '',
+      roomPending: b.backRoom?.status === 'pending',
       // A big event the GM could play out, or is playing out (X1).
       bigEvent: sceneCandidate(b) ? L('NCI.GMBusiness.BigEvent', { event: L(`NCI.Event.${b.period.event.kind}.Name`), hook: sceneHook(b, b.period.event) }) : '',
       scene: b.scene ? L('NCI.GMBusiness.SceneOpen', { event: L(`NCI.Event.${b.scene.event.kind}.Name`), date: dayText(b.scene.day), hook: sceneHook(b, b.scene.event) }) : '',

@@ -28,7 +28,7 @@ export function spendDays(b, actorId, n) {
 // ── Projects ─────────────────────────────────────────────────────────────────
 
 /** Every kind of project, in display order: an expansion, and the upgrades of `projects`. */
-export const PROJECT_KINDS = Object.freeze(['expansion', 'refit', 'security', 'storefront', 'staffRoom']);
+export const PROJECT_KINDS = Object.freeze(['expansion', 'refit', 'security', 'storefront', 'staffRoom', 'backRoom']);
 
 export const activeProject = (b) => b.projects.find((x) => x.status === 'active') ?? null;
 
@@ -62,6 +62,8 @@ export function projectOffer(b, kind, p = BUSINESS_DEFAULTS) {
   if (kind === 'refit' && b.state.costFactor <= p.costFloor + 0.005) return fail('at-floor');
   if (kind === 'security' && up.security >= p.projects.security.levels) return fail('top-level');
   if ((kind === 'storefront' || kind === 'staffRoom') && up[kind].includes(b.stage)) return fail('built-here');
+  if (kind === 'backRoom' && b.backRoom) return fail('built-here');
+  if (kind === 'backRoom' && b.stage >= 2) return fail('not-at-company');
   if (b.till < cost) return { ok: false, reason: 'no-funds', cost, days };
   return { ok: true, cost, days, ...extra };
 }
@@ -70,13 +72,14 @@ export function projectOffer(b, kind, p = BUSINESS_DEFAULTS) {
 export const expansionOffer = (b, p = BUSINESS_DEFAULTS) => projectOffer(b, 'expansion', p);
 
 /** Start a project, paid from the cash at once. What it builds is worth what it cost. */
-export function startProject(b, kind, id, day, p = BUSINESS_DEFAULTS) {
+export function startProject(b, kind, id, day, p = BUSINESS_DEFAULTS, room = null) {
   const offer = projectOffer(b, kind, p);
   if (!offer.ok) return offer;
   b.till -= offer.cost;
-  b.assets += offer.cost;
+  // A back room is off the books, so it adds nothing to them.
+  if (kind !== 'backRoom') b.assets += offer.cost;
   b.projects = [...b.projects, {
-    id, kind, stage: b.stage, cost: offer.cost, ...(offer.gain != null ? { gain: offer.gain } : {}), daysNeeded: offer.days, days: 0, startedDay: day, status: 'active', crew: {},
+    id, kind, stage: b.stage, cost: offer.cost, ...(offer.gain != null ? { gain: offer.gain } : {}), ...(room ? { room } : {}), daysNeeded: offer.days, days: 0, startedDay: day, status: 'active', crew: {},
   }];
   addLedger(b, { day, kind: kind === 'expansion' ? 'expansion' : 'project', project: kind, amount: -offer.cost }, p);
   return { ok: true };
@@ -86,7 +89,7 @@ export function startProject(b, kind, id, day, p = BUSINESS_DEFAULTS) {
 export const startExpansion = (b, id, day, p = BUSINESS_DEFAULTS) => startProject(b, 'expansion', id, day, p);
 
 /** What a finished project does. */
-function finishProject(b, project, growthRate, p) {
+function finishProject(b, project, growthRate, p, { approval = true, day = 0 } = {}) {
   const def = p.projects[project.kind];
   const up = upgradesOf(b);
   switch (project.kind) {
@@ -108,6 +111,10 @@ function finishProject(b, project, growthRate, p) {
     case 'staffRoom':
       b.upgrades = { ...up, staffRoom: [...up.staffRoom, project.stage] };
       break;
+    case 'backRoom':
+      // Waits for the GM when new businesses do (U1a).
+      b.backRoom = { kind: project.room, status: approval ? 'pending' : 'open', dirty: 0, day };
+      break;
     default:
   }
 }
@@ -126,7 +133,7 @@ export const reputationBaseline = (b, base = 50, p = BUSINESS_DEFAULTS) => base 
  * expansion's Capacity rises up to the stage's ceiling).
  * @returns {{ok: true, done: boolean} | {ok: false, reason: string}}
  */
-export function addProjectDays(b, actorId, projectId, n, { growthRate = 1, day, params: p = BUSINESS_DEFAULTS } = {}) {
+export function addProjectDays(b, actorId, projectId, n, { growthRate = 1, day, approval = true, params: p = BUSINESS_DEFAULTS } = {}) {
   const project = b.projects.find((x) => x.id === projectId && x.status === 'active');
   if (!project) return fail('no-project');
   const days = Math.floor(Number(n) || 0);
@@ -137,7 +144,7 @@ export function addProjectDays(b, actorId, projectId, n, { growthRate = 1, day, 
   project.days += used;
   project.crew = { ...project.crew, [actorId]: (project.crew?.[actorId] ?? 0) + used };
   if (project.days < project.daysNeeded) return { ok: true, done: false };
-  finishProject(b, project, growthRate, p);
+  finishProject(b, project, growthRate, p, { approval, day });
   project.status = 'done';
   project.doneDay = day;
   return { ok: true, done: true };

@@ -34,6 +34,7 @@ function businessRows() {
       b.administration && need('administration'),
       b.regCase?.status === 'lost' && need('case'),
       b.campaign?.status === 'awaiting' && need('campaign', { name: b.campaign.name }),
+      b.backRoom?.status === 'pending' && need('backRoom', { kind: L(`NCI.BackRoom.Kind.${b.backRoom.kind}`) }),
       sceneCandidate(b) && need('scene', { event: L(`NCI.Event.${b.period.event.kind}.Name`) }),
       b.scene && need('sceneOpen', { event: L(`NCI.Event.${b.scene.event.kind}.Name`) }),
       ...(b.staff ?? []).filter((s) => s.status === 'offered' && s.source === 'npc')

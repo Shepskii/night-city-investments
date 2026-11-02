@@ -179,6 +179,8 @@ export function normalizeBusiness(raw) {
     administration: b.administration ?? null,
     // A regulator's case (R1): what it is about and how far along; the Exposure behind it stays hidden.
     regCase: b.regCase ?? null,
+    // What goes on behind the shop (U1a): its kind, whether it is open, and the dirty cash.
+    backRoom: b.backRoom ?? null,
     // A Nomad's supply contract, and when a Lawman last called Backup for it (X1).
     supply: b.supply ?? null,
     lastBackupDay: b.lastBackupDay ?? null,

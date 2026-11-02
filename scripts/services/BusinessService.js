@@ -24,7 +24,7 @@ import {
   takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
   restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask,
   concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget, scandalHit, investigationCost, spendDays,
-  moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene, ABILITIES, backupWait, quashEffect,
+  moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene, ABILITIES, backupWait, quashEffect, exposureBand,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
@@ -113,6 +113,7 @@ class BusinessServiceImpl {
       operatorRank: business ? operatorRankOf(business) : 0,
       actors: this.actors(),
       factions: FactionRepository.list(),
+      underworld: game.settings.get(MODULE_ID, SETTINGS.UNDERWORLD) !== false,
       // What a campaign may be aimed at (F1c).
       companies: CompanyRepository.all().map((c) => ({ ticker: c.ticker, name: c.name })),
       campaignApproval: game.settings.get(MODULE_ID, SETTINGS.CAMPAIGN_APPROVAL) !== false,
@@ -639,6 +640,11 @@ class BusinessServiceImpl {
     await this._pay(out.wealth, out.business, officerId);
     // A layer hides a holding: a holder who has sold out loses theirs (B6d).
     pruneMasks(out.business);
+    // Those running a back room see its Exposure as a band (U1a).
+    if (out.business.backRoom) {
+      const change = (out.events ?? []).reduce((a, e) => a + (e.exposure ?? 0), 0);
+      out.business.backRoom.band = exposureBand(Math.max(0, (MarketStore.getBusinessesHidden()[out.business.id]?.exposure ?? 0) + change));
+    }
     await BusinessRepository.save(out.business);
     await this._moveItems(out);
     await this._saveHidden(out);
@@ -1574,6 +1580,26 @@ class BusinessServiceImpl {
       const b = normalizeBusiness(structuredClone(stored));
       const done = sceneToRoll(b);
       return done.ok ? { ok: true, business: b } : done;
+    });
+  }
+
+  /** The GM lets a back room open (U1a). */
+  approveBackRoom(id) {
+    return this._gm(id, (stored) => {
+      if (stored.backRoom?.status !== 'pending') return { ok: false, reason: 'no-back-room' };
+      const b = normalizeBusiness(structuredClone(stored));
+      b.backRoom.status = 'open';
+      return { ok: true, business: b };
+    });
+  }
+
+  /** The GM turns a back room down (U1a): what was spent on it stays spent. */
+  rejectBackRoom(id) {
+    return this._gm(id, (stored) => {
+      if (stored.backRoom?.status !== 'pending') return { ok: false, reason: 'no-back-room' };
+      const b = normalizeBusiness(structuredClone(stored));
+      b.backRoom = null;
+      return { ok: true, business: b };
     });
   }
 

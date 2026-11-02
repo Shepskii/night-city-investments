@@ -48,6 +48,7 @@
     {{#if takeover}}<div class="nci-warn">{{takeover.text}}</div>{{/if}}
     {{#if charter}}<div class="nci-warn">{{charter.text}}</div>{{/if}}
     {{#if campaign}}<div class="nci-warn">{{campaign}}</div>{{/if}}
+    {{#if backRoom}}<div class="{{#if roomPending}}nci-warn{{else}}nci-muted{{/if}}">{{backRoom}}</div>{{/if}}
     {{#if bigEvent}}<div class="nci-warn">{{bigEvent}}</div>{{/if}}
     {{#if scene}}<div class="nci-warn">{{scene}}</div>{{/if}}
     {{#if owners.length}}
@@ -108,6 +109,12 @@
       <div class="nci-actions">
         <button type="button" data-action="businessCharterApprove" data-id="{{id}}"><i class="fas fa-file-signature"></i> {{localize "NCI.GMBusiness.CharterApprove"}}</button>
         <button type="button" data-action="businessCharterReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.CharterReject"}}</button>
+      </div>
+      {{/if}}
+      {{#if roomPending}}
+      <div class="nci-actions">
+        <button type="button" data-action="businessRoomApprove" data-id="{{id}}"><i class="fas fa-check"></i> {{localize "NCI.GMBusiness.RoomApprove"}}</button>
+        <button type="button" data-action="businessRoomReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.RoomReject"}}</button>
       </div>
       {{/if}}
       {{#if bigEvent}}

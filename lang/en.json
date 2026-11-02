@@ -508,6 +508,30 @@
           "strong": "A good impression: standing up well.",
           "exceptional": "They want you on their list: standing up a long way."
         },
+        "roomWork": {
+          "fumble": "It goes wrong: nothing earned, and a lot more Exposure.",
+          "failure": "A poor week: less earned, and more Exposure.",
+          "narrow": "A fair week's dirty cash, and some Exposure.",
+          "solid": "A good week's dirty cash, and a little Exposure.",
+          "strong": "A strong week, and little Exposure.",
+          "exceptional": "The best week it can do, and little Exposure."
+        },
+        "launder": {
+          "fumble": "Nothing goes through, and it leaves a clear trail.",
+          "failure": "Nothing goes through, and it leaves traces.",
+          "narrow": "Up to half of what the week's takings can hide, with traces.",
+          "solid": "Three quarters of what the takings can hide, with few traces.",
+          "strong": "All the takings can hide, cleanly.",
+          "exceptional": "All the takings can hide, cleanly."
+        },
+        "payOff": {
+          "fumble": "They take the money and talk. Exposure up.",
+          "failure": "They take the money and do nothing.",
+          "narrow": "Exposure down a little.",
+          "solid": "Exposure down.",
+          "strong": "Exposure down well.",
+          "exceptional": "Exposure down a long way."
+        },
         "supply": {
           "fumble": "The shipment is lost on the road, and the business pays for it.",
           "failure": "Nothing comes of it.",
@@ -1681,6 +1705,10 @@
         "Name": "Player businesses",
         "Hint": "Let players found and run their own businesses, with the Business window. Turning this off stops their weeks closing and refuses new requests; nothing is deleted."
       },
+      "Underworld": {
+        "Name": "Underworld content",
+        "Hint": "Lets a business open an illegal back room. A back room already open keeps running if you turn this off."
+      },
       "CampaignApproval": {
         "Name": "Smears, leaks and stories need GM approval",
         "Hint": "A business's successful campaign against a company, or a Media's believed story, waits on the GM Console's Pending tab until the GM lets it run."
@@ -2061,9 +2089,11 @@
         "refit": "Refit",
         "security": "Security upgrade",
         "storefront": "Storefront",
-        "staffRoom": "Staff room"
+        "staffRoom": "Staff room",
+        "backRoom": "Back room"
       },
       "Hint": {
+        "backRoom": "An illegal operation behind the shop. Off the books, its takings are dirty cash, and it carries risk. Not at a chartered company.",
         "expansion": "A second chair, a bigger bay: more room to do business.",
         "refit": "New kit and better suppliers: cheaper to run.",
         "security": "Locks, cameras, a reinforced door: less protection money, fewer break-ins.",
@@ -2086,7 +2116,8 @@
         "refit": "Cost base cut",
         "security": "Security up a level",
         "storefront": "Reputation up",
-        "staffRoom": "A place more for staff"
+        "staffRoom": "A place more for staff",
+        "backRoom": "A back room, behind the shop"
       },
       "DaysFree": "Business days left {free}/{total}",
       "Capacity": "{now} of {cap}",
@@ -2193,6 +2224,32 @@
         "detailed": "There's a hidden stake of about {percent}% in {name} ({ticker}), held through {layer}."
       }
     },
+    "BackRoom": {
+      "Title": "Back room",
+      "Kind": {
+        "ripping": "Black-market chrome",
+        "chopShop": "Chop shop",
+        "gambling": "Gambling and dealing",
+        "brothel": "Brothel or dollhouse",
+        "dataFence": "Data fencing",
+        "blackArms": "Unregistered arms",
+        "smuggling": "Smuggling",
+        "launderette": "Laundering for others",
+        "deadDrop": "A dead drop",
+        "blackmail": "Blackmail and bootlegs",
+        "racket": "Muscle and rackets"
+      },
+      "Pending": "Finished, and waiting for the GM before it opens.",
+      "Dirty": "Dirty cash",
+      "Exposure": "Exposure",
+      "Take": "Take it as eddies",
+      "TakeHint": "No limit, but every {every} eb taken adds {exposure} Exposure. Dirty cash is lost if the business closes.",
+      "LieLow": "Lie low this week",
+      "Lying": "Lying low this week: no work behind the shop, and Exposure falls.",
+      "Last": "Last week: {earned} eb earned, {laundered} eb laundered, {paid} eb in pay-offs.",
+      "LastLow": "Last week you lay low. {laundered} eb laundered, {paid} eb in pay-offs.",
+      "PayOffCost": "Costs {cost} eb of dirty cash."
+    },
     "Scene": {
       "HookTitle": "A scene for {name}",
       "MailSubject": "{name}: trouble in person",
@@ -2258,6 +2315,7 @@
         "administration": "In administration: restructure it or wind it up",
         "case": "Regulator's case lost: approve the penalty or drop the case",
         "campaign": "A campaign against {name}: let it run or stop it",
+        "backRoom": "A back room, {kind}: let it open or turn it down",
         "scene": "{event}: run it as a scene, or leave it as a roll",
         "sceneOpen": "{event}: say how the scene went",
         "story": "A story about {name}: let it run or spike it",
@@ -2307,6 +2365,10 @@
       "SceneWon": "They won",
       "SceneLost": "They lost",
       "SceneRoll": "Back to a roll",
+      "RoomPending": "A back room is ready to open: {kind}. Let it open or turn it down; what it cost stays spent.",
+      "RoomOpen": "Back room: {kind}, {dirty} eb of dirty cash.",
+      "RoomApprove": "Let the back room open",
+      "RoomReject": "Turn it down",
       "CampaignApprove": "Let the campaign run",
       "CampaignReject": "Stop the campaign",
       "StaffOffer": "{name}, an NPC, is offered a job as {post} at {wage} eb a week. Answer for them.",
@@ -2608,6 +2670,9 @@
         "keepSafe": { "Name": "Keep it safe", "Hint": "Tactics, Persuasion, Combat Awareness or Backup: less protection money this week." },
         "court": { "Name": "Court a client", "Hint": "Business, Persuasion, Trading, Operator, Charismatic Impact or Credibility: raises standing with a corporation." },
         "respects": { "Name": "Pay respects", "Hint": "Streetwise, Persuasion, Operator or Charismatic Impact: raises standing with a gang." },
+        "roomWork": { "Name": "Work the back room", "Hint": "With its own skills: dirty cash, off the books. It always adds some Exposure, and more on a poor roll." },
+        "launder": { "Name": "Launder", "Hint": "Accounting or Business (Bribery at DV +2): moves dirty cash into the business's cash, up to 30% of the week's takings. A poor roll leaves traces, and a bookkeeper helps." },
+        "payOff": { "Name": "Pay someone off", "Hint": "Bribery: cuts Exposure, paid from the dirty cash. A fumble makes it worse." },
         "supply": { "Name": "Supply contract", "Hint": "Moto, and a Nomad's contacts on the roads: running costs down by up to 10% for four weeks. A fumble loses the shipment." },
         "venue": { "Name": "Gig at the venue", "Hint": "Charismatic Impact: this week's takings and Reputation up, most of all at a bar or club." },
         "campaign": { "Name": "Run a campaign", "Hint": "A smear (Composition or Persuasion) or a leak (Library Search or Interface) against a listed company: its share price falls a little. One a month." },
@@ -2745,6 +2810,8 @@
         "medical": "Medical bills",
         "factionGift": "A gift to a faction",
         "shipmentLost": "A shipment lost on the road",
+        "laundered": "Laundered through the takings",
+        "dirtyTaken": "{name} took some of the dirty cash",
         "campaign": "A campaign against a company",
         "sceneWon": "Came out of a scene well",
         "sceneLost": "Came off worse in a scene",
@@ -3056,6 +3123,9 @@
         "not-media": "that takes the Media role's Credibility",
         "bad-angle": "that is not an angle for a story",
         "story-wait": "you have published a story too recently",
+        "no-back-room": "the business has no back room running",
+        "no-dirty": "there is not enough dirty cash",
+        "not-at-company": "not at a chartered company",
         "not-lawman": "that takes the Lawman role's Backup",
         "quash-wait": "you have called in a favour too recently",
         "backup-wait": "Backup has answered for this business too recently",

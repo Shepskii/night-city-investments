@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import {
   BUSINESS_DEFAULTS, DISTRICTS, normalizeFaction, standingBand, matchFaction, turfFactions, gigStanding, moveStanding, driftStanding, standingBands, matchBusiness,
   findTarget, targetShare, gigTags, resolveClient, applyBusinessRequest, advanceBusiness, rollSpec, normalizeBusiness, drawEvent, hostileAct, hostileChance, factionEffects, factionFallout,
-  giftFor, campaignKind, believability, storyPercent, rollStory, storyCheck, rumourLevel, freshRumours, STORY_RULES, isBigEvent, sceneCandidate, startScene, sceneToRoll, settleScene, supplyCut, runVenue, backupWait, quashEffect, ARCHETYPES, SKILLS, ABILITIES,
+  giftFor, campaignKind, believability, storyPercent, rollStory, storyCheck, rumourLevel, freshRumours, STORY_RULES, isBigEvent, sceneCandidate, startScene, sceneToRoll, settleScene, supplyCut, runVenue, backupWait, quashEffect, BACK_ROOMS, roomKinds, roomWeek, payOffCost, bookValue, ARCHETYPES, SKILLS, ABILITIES,
 } from '../scripts/engine/index.js';
 import { resolveRoll } from '../scripts/engine/rolls.js';
+import { projectOffer, startProject } from '../scripts/engine/businessGrowth.js';
 import { starterFactions } from '../scripts/data/starter-factions.js';
 import { STARTER_COMPANIES } from '../scripts/data/starter-companies.js';
 
@@ -478,4 +479,113 @@ test('a Lawman\'s Backup answers a raid once a month for a business, and quashin
   assert.deepEqual(quashEffect('failure'), { outcome: 'failure', reduce: 0, add: 0 });
   assert.deepEqual(quashEffect('fumble'), { outcome: 'fumble', reduce: 0, add: q.fumble });
   assert.ok(BUSINESS_DEFAULTS.regulator.uses.some((u) => u.ability === 'Backup'));
+});
+
+// ── U1a: back rooms and dirty cash ──────────────────────────────────
+
+const withRoom = (extra = {}) => normalizeBusiness({ ...shop(), backRoom: { kind: 'ripping', status: 'open', dirty: 1000, day: DAY, ...extra } });
+
+test('every front has a back room with real skills, and every kind has words', () => {
+  for (const [front, kinds] of Object.entries(BACK_ROOMS)) {
+    assert.ok(ARCHETYPES[front], front);
+    for (const [kind, uses] of Object.entries(kinds)) {
+      assert.ok(uses.length > 0 && uses.every((u) => u?.kind), `${front} ${kind}`);
+    }
+  }
+  assert.deepEqual(Object.keys(ARCHETYPES).filter((a) => !BACK_ROOMS[a]), []);
+  assert.deepEqual(roomKinds({ archetype: 'bar' }), ['gambling', 'brothel']);
+});
+
+test('opening one: a project a shop can vote for, off the books, that waits for the GM', () => {
+  const b = shop();
+  const assets = b.assets;
+  assert.equal(projectOffer(b, 'backRoom').ok, true);
+  assert.equal(projectOffer({ ...b, stage: 2 }, 'backRoom').reason, 'not-at-company');
+  assert.equal(projectOffer({ ...b, backRoom: { kind: 'ripping' } }, 'backRoom').reason, 'built-here');
+  const started = structuredClone(b);
+  assert.equal(startProject(started, 'backRoom', 'p1', DAY, BUSINESS_DEFAULTS, 'ripping').ok, true);
+  assert.equal(started.assets, assets, 'nothing on the books');
+  assert.equal(started.till, b.till - BUSINESS_DEFAULTS.projects.backRoom.cost[0]);
+  assert.equal(started.projects.at(-1).room, 'ripping');
+  const proposed = (room, context) => send(b, { type: 'propose', businessId: 'b1', kind: 'project', project: 'backRoom', room }, null, context);
+  assert.equal(proposed('gambling').reason, 'bad-project', 'not what a clinic hides');
+  assert.equal(proposed('ripping', { underworld: false }).reason, 'bad-project', 'switched off');
+  assert.equal(proposed('ripping').ok, true);
+});
+
+test('working it earns dirty cash and adds Exposure; lying low stops the work and cuts Exposure', () => {
+  const b = withRoom({ dirty: 0 });
+  b.state.capacity = 1;
+  const rules = BUSINESS_DEFAULTS.backRoom;
+  b.period.slots = [{ action: 'roomWork', band: 'solid', approach: 'standard' }];
+  const out = roomWeek(b, 1000);
+  assert.equal(out.earned, Math.round(ARCHETYPES.clinic.takings * rules.share * BUSINESS_DEFAULTS.effects.work.solid));
+  assert.equal(b.backRoom.dirty, out.earned);
+  assert.equal(out.exposure, rules.workExposure.solid);
+  const fumble = withRoom({ dirty: 0 });
+  fumble.period.slots = [{ action: 'roomWork', band: 'fumble', approach: 'standard' }];
+  assert.deepEqual([roomWeek(fumble, 1000).earned, fumble.backRoom.dirty], [0, 0]);
+  const low = withRoom();
+  low.period.slots = [{ action: 'lieLow', band: 'solid' }, { action: 'roomWork', band: 'solid', approach: 'standard' }];
+  const lying = roomWeek(low, 1000);
+  assert.deepEqual([lying.low, lying.earned, lying.exposure], [true, 0, -rules.lieLow]);
+  assert.equal(roomWeek(shop(), 1000), null, 'no back room');
+  assert.equal(roomWeek(withRoom({ status: 'pending' }), 1000), null, 'not yet open');
+});
+
+test('laundering is capped by the week\'s legitimate takings, and a bookkeeper makes it cleaner', () => {
+  const run = (band, dirty = 1000, staff = []) => {
+    const b = withRoom({ dirty });
+    b.staff = staff;
+    b.period.slots = [{ action: 'launder', band }];
+    const till = b.till;
+    const out = roomWeek(b, 1000);
+    return { moved: out.laundered, exposure: out.exposure, cash: b.till - till, left: b.backRoom.dirty };
+  };
+  assert.deepEqual(run('strong'), { moved: 300, exposure: 0, cash: 300, left: 700 }, '30% of the takings');
+  assert.deepEqual(run('narrow'), { moved: 150, exposure: 2, cash: 150, left: 850 });
+  assert.deepEqual(run('failure'), { moved: 0, exposure: 2, cash: 0, left: 1000 });
+  assert.deepEqual(run('strong', 100), { moved: 100, exposure: 0, cash: 100, left: 0 }, 'only what there is');
+  assert.equal(run('narrow', 1000, [{ status: 'active', post: 'bookkeeper' }]).exposure, 1);
+});
+
+test('a pay-off spends dirty cash, and actions need a room and the money; taking it leaves a trail', () => {
+  const b = withRoom();
+  b.period.slots = [{ action: 'payOff', band: 'strong' }];
+  const out = roomWeek(b, 1000);
+  assert.deepEqual([out.paid, out.exposure, b.backRoom.dirty], [150, -7, 850]);
+  assert.equal(payOffCost({ stage: 1 }), 300);
+  const use = SKILLS.bribery;
+  assert.equal(rollSpec(shop(), { type: 'action', action: 'payOff', use }, 'med', { day: DAY }).reason, 'no-back-room');
+  assert.equal(rollSpec(withRoom({ dirty: 100 }), { type: 'action', action: 'payOff', use }, 'med', { day: DAY }).reason, 'no-dirty');
+  assert.equal(rollSpec(withRoom(), { type: 'action', action: 'payOff', use }, 'med', { day: DAY }).ok, true);
+  assert.equal(rollSpec(withRoom({ dirty: 0 }), { type: 'action', action: 'launder', use: SKILLS.accounting }, 'med', { day: DAY }).reason, 'no-dirty');
+  assert.equal(rollSpec(withRoom(), { type: 'action', action: 'roomWork', use: SKILLS.cybertech }, 'med', { day: DAY }).ok, true);
+  assert.equal(rollSpec(withRoom(), { type: 'action', action: 'roomWork', use: SKILLS.trading }, 'med', { day: DAY }).reason, 'bad-use');
+});
+
+test('taking dirty cash: to the partner, Exposure per thousand, never more than there is', () => {
+  const b = withRoom({ dirty: 2500 });
+  const before = b.till;
+  const taken = send(b, { type: 'takeDirty', businessId: 'b1', amount: 2100 });
+  assert.equal(taken.ok, true, taken.reason);
+  assert.equal(taken.business.backRoom.dirty, 400);
+  assert.equal(taken.business.till, before, 'not from the cash');
+  assert.equal(taken.wealth.med, 2100);
+  assert.equal(taken.events.find((e) => e.type === 'dirtyTaken').exposure, 6);
+  assert.equal(send(b, { type: 'takeDirty', businessId: 'b1', amount: 3000 }).reason, 'no-dirty');
+  assert.equal(send(b, { type: 'takeDirty', businessId: 'b1', amount: 0 }).reason, 'bad-amount');
+});
+
+test('dirty cash is off the books, and a week closes with it in the digest', () => {
+  const b = withRoom({ dirty: 500 });
+  b.state.capacity = 1;
+  const book = bookValue(shop());
+  assert.equal(bookValue(b), book, 'not in book value');
+  b.period.slots = [{ action: 'roomWork', band: 'solid', approach: 'standard', by: 'med' }];
+  const closed = advanceBusiness(b, b.period.endDay, { weekday: 1, seed: 'test' });
+  const digest = closed.business.digests.at(-1);
+  assert.ok(digest.room.earned > 0);
+  assert.equal(digest.takings, advanceBusiness(withRoom({ dirty: 0, status: 'pending' }), b.period.endDay, { weekday: 1, seed: 'test' }).business.digests.at(-1).takings, 'the shop\'s takings are its own');
+  assert.ok(closed.events.some((e) => e.type === 'backRoomWeek' && e.exposure > 0));
 });

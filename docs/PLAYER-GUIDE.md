@@ -233,6 +233,8 @@ To raise your business's standing with a faction, use **Court a client** (a corp
 
 You also hear things. Every few days your Credibility may bring a rumour by mail about a price move on its way or a hidden stake, saying more the better you roll. **Dig for rumours** on a company's page, once a week, does the same for that company. Trading on a rumour still counts for insider heat, though less than trading on something you did yourself.
 
+**Back rooms.** A shop or registered business can open an illegal operation behind the front, as a project on the Projects tab, if your GM allows it. Each week you can **Work the back room** for dirty cash, **Launder** some of it into the business's cash, **Pay someone off**, or **Lie low**. You can also take dirty cash straight as eddies. All of it moves your Exposure, shown as a band, and dirty cash is off the books: it isn't in your book value or reports, and it's lost if the business closes.
+
 Some roles have something extra to offer. A **Nomad** can arrange a **Supply contract** (Moto) that cuts running costs for four weeks. A **Rockerboy** can play a **Gig at the venue** (Charismatic Impact), which lifts the week's takings and Reputation, most of all at a bar or club. A **Lawman** can use Backup to answer a raid or a regulator's case, once a month for each business, and can **Call in a favour** on the market window's heat panel to bring down their own heat.
 
 Your GM may decide to play a big event out with you, such as a raid or a hostile faction's move. You'll get a mail and there's nothing to roll: how the scene goes decides it.
