@@ -175,7 +175,7 @@ export const actionIdsFor = (stage) => (stage >= 2 ? COMPANY_ACTION_IDS : ACTION
 export const actionFor = (stage, id) => (stage >= 2 ? COMPANY_ACTIONS[id] : ACTIONS[id]) ?? null;
 
 /** Employees' posts, in display order (DESIGN §32). */
-export const POST_IDS = Object.freeze(['floor', 'manager', 'security', 'bookkeeper', 'sales', 'publicist', 'compliance', 'hand']);
+export const POST_IDS = Object.freeze(['floor', 'manager', 'security', 'bookkeeper', 'sales', 'publicist', 'compliance', 'hand', 'launderer', 'fixer']);
 
 /**
  * What each post needs: the first stage it exists at, the skills and abilities that count for it
@@ -189,8 +189,14 @@ export const POSTS = Object.freeze({
   sales: Object.freeze({ stage: 2, uses: [S.business, S.persuasion, S.trading] }),
   publicist: Object.freeze({ stage: 2, uses: [S.composition, S.wardrobe, S.persuasion, A.credibility, A.charismaticImpact] }),
   compliance: Object.freeze({ stage: 2, uses: [S.bureaucracy, S.localExpert] }),
-  /** Works a back room when no partner does (U1b): shown only while a business has one. */
-  hand: Object.freeze({ stage: 0, uses: [], trade: true }),
+  /**
+   * The back room's own posts (U1b), at `rate` times the going wage, each acting when nobody else did. The hand works
+   * the room and the launderer washes its money, while there is one; the fixer pays people off when Exposure runs up,
+   * and at a company, room or none, bribes the regulator.
+   */
+  hand: Object.freeze({ stage: 0, uses: [], trade: true, backRoom: true, rate: 1.5 }),
+  launderer: Object.freeze({ stage: 0, uses: [S.accounting, S.business], backRoom: true, rate: 1.5 }),
+  fixer: Object.freeze({ stage: 0, uses: [S.bribery, S.streetwise], backRoom: true, rate: 1.5 }),
 });
 
 const byBand = (values) => Object.freeze(Object.fromEntries(['fumble', 'failure', 'narrow', 'solid', 'strong', 'exceptional'].map((b, i) => [b, values[i]])));
@@ -412,6 +418,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     raid: Object.freeze({
       chance: Object.freeze({ clean: 0, low: 0.03, moderate: 0.1, high: 0.25 }),
       informant: 0.05, sullen: 0.02, sullenBelow: 30, sullenCap: 0.06,
+      // Everyone working the room is another who could be seen, and a sullen one of them knows twice as much.
+      crew: 0.01, sullenCrew: 2,
       winClear: 5, failShare: 0.5, fineFail: 500, fineLost: 1000, heat: 15,
     }),
     /**

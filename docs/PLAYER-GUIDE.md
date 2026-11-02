@@ -240,6 +240,8 @@ You also hear things. Every few days your Credibility may bring a rumour by mail
 
 If your business charters, its back room keeps running as the officers' secret: other shareholders don't see it, and the officers take any gang deal themselves. A raid that shuts it at a company shuts it for good.
 
+**Back-room staff.** While a room is open you can hire for three posts on the Staff tab, each acting only when nobody else took that action, and none of them while you are lying low. A **Back-room hand** works the room. A **Launderer** (Accounting or Business) washes dirty cash. A **Fixer** (Bribery or Streetwise) pays people off at moderate Exposure or higher. Any chartered company can hire a Fixer, room or no room, who bribes the regulator for 1,000 eb from the cash when there is no dirty money to pay people off with. They ask half as much again in wages, and each one adds a little to the chance of a raid, more if they turn sullen. At a company, officers hire them without a shareholder vote, and other shareholders see them only as general staff.
+
 **Gang deals.** With a back room running, **Deal with a gang** can bring an offer from a gang on your turf that isn't wary or hostile: money in, for a cut of the takings. Partners vote on it. That gang then charges no protection and sends no shakedowns, but falling behind on the cut costs standing, and ending the deal means paying the money back.
 
 **Corporate crime.** A chartered company has **Dump the waste**, **Bribe a regulator** and **Black ops**, if your GM allows them. They pay well or hit hard, and they add Exposure. Crime at a listed company that comes out is a scandal that dips the share price.

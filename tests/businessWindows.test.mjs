@@ -920,6 +920,8 @@ test('a back room at a company is hidden from a shareholder who is not an office
       ...b, status: 'open', stage: 2, company: { ticker: 'BRC', sector: 'health', charteredDay: day }, officers: [med.id], listing: null, charter: null, takeover: null, administration: null, regCase: null, campaign: null, scene: null, proposals: [],
       backRoom: { kind: 'ripping', status: 'open', dirty: 900, band: 'low', offer: { factionId: 'gang_maelstrom', name: 'Maelstrom', cash: 2000, cut: 0.25, day } },
       ledger: [...b.ledger, { day, kind: 'laundered', amount: 300 }, { day, kind: 'raidFine', amount: -500 }, { day, kind: 'dirtyTaken', amount: 0, actorId: med.id }],
+      staff: [{ id: 'stf_rex', actorId: null, name: 'Quiet Rex', source: 'recruit', post: 'fixer', bases: { 'skill:Bribery': 12 }, pct: 1, wage: 100, hiredDay: day, status: 'active', loyalty: 50 }],
+      candidates: [{ id: 'c_lau', name: 'Soft Sal', post: 'launderer', base: 10, pct: 1, level: 'skilled', expires: day + 7 }],
       digests: [...b.digests, { index: 99, startDay: day - 7, endDay: day, takings: 500, upkeep: 100, till: 5000, profit: 400, opening: 4600, actions: [{ action: 'roomWork', by: med.id, band: 'solid' }, { action: 'contracts', by: med.id, band: 'solid' }], event: { kind: 'bust', outcome: 'failed', band: null, change: -50 }, bands: b.digests.at(-1)?.bands ?? {} }],
       period: { ...b.period, slots: [], event: { kind: 'bust' } },
     });
@@ -942,6 +944,21 @@ test('a back room at a company is hidden from a shareholder who is not an office
     assert.doesNotMatch(book, /Laundered|from a raid|took some of the dirty|A raid on/, 'nor the cash book');
     assert.match(JSON.stringify(cashbookContext(S.BusinessRepository.all()[0], 99, true)), /A raid on the back room/);
     assert.doesNotMatch(text(await renderBusiness(windowFor(fix, 'projects'))), /Back room<|A back room, behind/);
+
+    const otherStaff = await renderBusiness(windowFor(fix, 'staff'));
+    assertClean(otherStaff, 'a shareholder\'s Staff tab');
+    assert.match(text(otherStaff), /Quiet Rex/);
+    assert.match(text(otherStaff), /General staff/, 'on the payroll, under a plain name');
+    // A character here is called Fixer, in the picker, so the post is looked for where a post would show.
+    assert.doesNotMatch(text(otherStaff), /Launderer|Back-room hand|Bribery|Soft Sal/);
+    assert.doesNotMatch(otherStaff, /data-post="(fixer|launderer|hand)"/);
+    assert.doesNotMatch(text(otherStaff), /Quiet Rex[\s\S]{0,120}Fixer/);
+    assert.doesNotMatch(otherStaff, /data-action="openEmployee" data-id="stf_rex"/);
+    const officerStaff = await renderBusiness(windowFor(med, 'staff'));
+    assertClean(officerStaff, 'an officer\'s Staff tab');
+    assert.match(text(officerStaff), /Quiet Rex[\s\S]{0,120}Fixer/);
+    assert.match(text(officerStaff), /Soft Sal/);
+    assert.match(officerStaff, /data-post="launderer"/);
 
     const officer = await renderBusiness(windowFor(med, 'backRoom'));
     assertClean(officer, 'an officer\'s Back Room tab');

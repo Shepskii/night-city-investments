@@ -75,7 +75,7 @@ import {
   angelCheck, findAngel, applyAngelRoll, openLoans, averageProfit,
 } from './businessFinance.js';
 import {
-  ARCHETYPES, ACTIONS, BUSINESS_DEFAULTS, DISTRICTS, EVENTS, districtOf, stageDv, actionUses, helpUses, setupUses, usesInclude, useKey, actionFor, actionIdsFor, COMPANY_ACTION_IDS,
+  POSTS, ARCHETYPES, ACTIONS, BUSINESS_DEFAULTS, DISTRICTS, EVENTS, districtOf, stageDv, actionUses, helpUses, setupUses, usesInclude, useKey, actionFor, actionIdsFor, COMPANY_ACTION_IDS,
 } from './businessConfig.js';
 import {
   BUSINESS_SCHEMA, BUSINESS_STATUS, weekdayOf, nextBoundary, newPeriod, int, clamp, text, normalizeBusiness, archetypeOf, holders, voters,
@@ -578,11 +578,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       }
       if (dealing) runDealRoll(b, { faction: gang, band: r.band, day }, p);
       if (request.action === 'bribeRegulator') {
-        // Paid whatever comes of it; a good roll also helps with a case already open.
-        b.till -= p.crime.bribeCost;
-        addLedger(b, { day, kind: 'regulatorBribe', amount: -p.crime.bribeCost }, p);
-        out.events.push({ type: 'regulatorBribed', exposure: p.crime.bribeExposure[r.band] });
-        if (b.regCase?.status === 'notice' && p.crime.easeFrom.includes(r.band)) b.regCase.eased = true;
+        payRegulator(b, r.band, day, out, p);
       }
       if (request.action === 'blackOps') out.events.push(...runBlackOps(b, { ticker: target.ticker, name: target.name, band: r.band, actorId: actor.id, day, approval: ctx.campaignApproval !== false }, p));
       if (request.action === 'supply') runSupply(b, { band: r.band, day }, p);
@@ -681,6 +677,14 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (b.proposals.some((x) => x.kind === kind)) return fail('proposal-open');
       const can = canPropose(b, kind, request, { ...ctx, day }, p);
       if (!can.ok) return can;
+      // A shareholders' vote would tell them all, so at a company the officers fill the back room's posts.
+      if (kind === 'hire' && b.stage >= 2 && POSTS[can.terms.post]?.backRoom) {
+        if (!canRun(b, actor.id)) return fail('not-officer');
+        const done = enactHire(b, can.terms, day, ctx, p);
+        if (!done.ok) return done;
+        out.events.push({ type: done.staff.status === 'active' ? 'hired' : 'jobOffered', staffId: done.staff.id, actorId: done.staff.actorId });
+        break;
+      }
       b.proposals.push({ id: request.key, kind, by: actor.id, day, expires: day + p.proposalDays, votes: { [actor.id]: true }, ...(can.terms ? { terms: can.terms } : {}) });
       settleProposals(b, day, out, p, ctx);
       break;
@@ -1592,6 +1596,14 @@ function startPeriod(b, index, startDay, weekday, seed, p, traits = null, relati
   }
 }
 
+/** A bribe to the regulator: paid whatever comes of it; a good roll also helps with a case already open. */
+function payRegulator(b, band, day, out, p) {
+  b.till -= p.crime.bribeCost;
+  addLedger(b, { day, kind: 'regulatorBribe', amount: -p.crime.bribeCost }, p);
+  out.events.push({ type: 'regulatorBribed', exposure: p.crime.bribeExposure[band] });
+  if (b.regCase?.status === 'notice' && p.crime.easeFrom.includes(band)) b.regCase.eased = true;
+}
+
 /** Close the current operating period: the week's takings and upkeep, the state, the digest. */
 function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relations = null, params: p }, out) {
   const stage = p.stages[b.stage] ?? p.stages[0];
@@ -1603,7 +1615,9 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   // Who is off this week (sick, hurt, or downing tools), then what the rest did without a partner:
   // a manager working the shop, security answering trouble.
   const idle = idleStaff(b);
-  staffShifts(b, seed, p, { idle, traits });
+  staffShifts(b, seed, p, { idle, traits, exposure: relations?.exposure ?? null });
+  const bribed = slot('bribeRegulator');
+  if (bribed?.staff) payRegulator(b, bribed.band, b.period.endDay, out, p);
 
   // A chartered company takes the five company actions; a smaller business the shop actions.
   let work;

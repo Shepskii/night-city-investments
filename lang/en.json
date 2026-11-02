@@ -3405,7 +3405,10 @@
         "sales": "Sales",
         "publicist": "Publicist",
         "compliance": "Compliance",
-        "hand": "Back-room hand"
+        "hand": "Back-room hand",
+        "launderer": "Launderer",
+        "fixer": "Fixer",
+        "cover": "General staff"
       },
       "PostHint": {
         "floor": "The trade's own skills (role abilities that fit it count higher): lifts the takings, more with a higher base. No more on the floor than the Capacity allows.",
@@ -3415,7 +3418,9 @@
         "sales": "Business, Persuasion or Trading: lifts the takings by half what a floor hand does, and keeps Reputation nearer 55. Companies only.",
         "publicist": "Composition, Wardrobe & Style or Persuasion (Credibility and Charismatic Impact count higher): Reputation up each week. Companies only.",
         "compliance": "Bureaucracy or Local Expert: Compliance up each week, and answers an inspection no partner answers. Companies only.",
-        "hand": "The trade's skills: works the back room when no partner does. Knows what goes on there, so loyalty matters."
+        "hand": "The trade's skills: works the back room when no partner does. Paid half as much again, and adds to the risk of a raid. Knows what goes on there, so loyalty matters.",
+        "launderer": "Accounting or Business: washes the dirty cash when no partner does. Paid half as much again, and adds to the risk of a raid. Knows what goes on there, so loyalty matters.",
+        "fixer": "Bribery or Streetwise: at moderate Exposure or higher, pays people off from the dirty cash when no partner does; at a company, bribes the regulator from the cash if there is no dirty money to use. Paid half as much again, and adds to the risk of a raid."
       },
       "Level": {
         "green": "Green",

@@ -7,7 +7,7 @@
  *              more of a trail. Every step adds to or cuts the business's hidden Exposure. Pure.
  */
 
-import { BUSINESS_DEFAULTS, BACK_ROOMS } from './businessConfig.js';
+import { BUSINESS_DEFAULTS, BACK_ROOMS, POSTS } from './businessConfig.js';
 import { fail, addLedger, archetypeOf } from './businessRecord.js';
 import { approachOf, bandPassed } from './rolls.js';
 import { createRng } from './rng.js';
@@ -146,8 +146,10 @@ export const informants = (b, traits) => (b.staff ?? []).filter((s) => s.status 
 /** The chance of a raid on the back room this week: by Exposure, an informant, and each sullen employee. */
 export function raidChance(b, exposure, traits = null, p = BUSINESS_DEFAULTS) {
   const r = p.backRoom.raid;
-  const sullen = (b.staff ?? []).filter((s) => s.status === 'active' && s.source !== 'pc' && s.loyalty != null && s.loyalty < r.sullenBelow).length;
-  return r.chance[exposureBand(exposure, p)] + (informants(b, traits).length ? r.informant : 0) + Math.min(r.sullenCap, sullen * r.sullen);
+  const staff = (b.staff ?? []).filter((s) => s.status === 'active');
+  const inRoom = (s) => !!POSTS[s.post]?.backRoom;
+  const sullen = staff.filter((s) => s.source !== 'pc' && s.loyalty != null && s.loyalty < r.sullenBelow).reduce((sum, s) => sum + (inRoom(s) ? r.sullenCrew : 1), 0);
+  return r.chance[exposureBand(exposure, p)] + (informants(b, traits).length ? r.informant : 0) + Math.min(r.sullenCap, sullen * r.sullen) + staff.filter(inRoom).length * r.crew;
 }
 
 /** A raid on the back room this week, or none. It comes in place of what the week would have drawn. */

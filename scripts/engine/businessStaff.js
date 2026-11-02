@@ -24,6 +24,8 @@ import { cprD10 } from './checks.js';
 import { bandOf } from './rolls.js';
 import { BUSINESS_DEFAULTS, POSTS, SKILLS, ABILITIES, EVENTS, useKey, stageDv } from './businessConfig.js';
 import { archetypeOf, fail, int, addLedger, partnerOf } from './businessRecord.js';
+import { exposureBand } from './businessCompany.js';
+import { payOffCost } from './businessFronts.js';
 
 /** Every use an employee's sheet is read for: each skill and role ability a business roll names. */
 export const STAFF_USES = Object.freeze([...Object.values(SKILLS), ...Object.values(ABILITIES)]);
@@ -148,11 +150,14 @@ export function goingRate(base, stage, p = BUSINESS_DEFAULTS) {
   return Math.round((base + st.premium * Math.max(0, base - st.premiumFrom)) * (st.rate[stage] ?? st.rate.at(-1)));
 }
 
+/** The going weekly wage for a base in a post: what the back room's posts pay on top. */
+export const postRate = (post, base, stage, p = BUSINESS_DEFAULTS) => Math.round(goingRate(base, stage, p) * (POSTS[post]?.rate ?? 1));
+
 /** What an employee is paid now: the going rate for their post's base, times the share offered. */
 export function wageOf(b, staff, p = BUSINESS_DEFAULTS) {
   // An Exec's team takes no wage (E3).
   if (staff.source === 'team') return 0;
-  return Math.round(goingRate(postBase(staff, staff.post, archetypeOf(b), p), b.stage, p) * (staff.pct ?? 1));
+  return Math.round(postRate(staff.post, postBase(staff, staff.post, archetypeOf(b), p), b.stage, p) * (staff.pct ?? 1));
 }
 
 /** How many employees the business may have: the stage's headcount, and a place more for each staff room. */
@@ -160,6 +165,12 @@ export const headcountOf = (b, p = BUSINESS_DEFAULTS) => (p.staff.headcount[b.st
 
 /** How many floor staff the business has room for: its Capacity, rounded down, and at least one. */
 export const floorRoom = (b) => Math.max(1, Math.floor(b.state.capacity));
+
+/** Whether this business has a use for a post: the back room's need a room, but for a company's fixer. */
+export function postOffered(b, post) {
+  if (!POSTS[post]?.backRoom) return true;
+  return (post === 'fixer' && b.stage >= 2) || b.backRoom?.status === 'open';
+}
 
 /**
  * Whether another employee could take this post (offers waiting count as places taken). With
@@ -169,6 +180,7 @@ export function postOpen(b, post, p = BUSINESS_DEFAULTS, exceptId = null) {
   const def = POSTS[post];
   if (!def) return fail('bad-post');
   if (b.stage < def.stage) return fail('post-later');
+  if (!postOffered(b, post)) return fail('no-back-room');
   const staff = (b.staff ?? []).filter((s) => (s.status === 'active' || s.status === 'offered') && s.id !== exceptId);
   if (!exceptId && staff.length >= headcountOf(b, p)) return fail('no-headcount');
   if (post === 'manager' && staff.some((s) => s.post === 'manager')) return fail('post-taken');
@@ -241,7 +253,7 @@ function drawTrait(rng, band, stage, p = BUSINESS_DEFAULTS) {
 }
 
 /** What an applicant asks a week here: the going rate for their base, times their share. */
-export const askingWage = (b, candidate, p = BUSINESS_DEFAULTS) => Math.round(goingRate(candidate.base, b.stage, p) * (candidate.pct ?? 1));
+export const askingWage = (b, candidate, p = BUSINESS_DEFAULTS) => Math.round(postRate(candidate.post, candidate.base, b.stage, p) * (candidate.pct ?? 1));
 
 // ── Hiring, accepting, firing ────────────────────────────────────────────────
 
@@ -363,7 +375,7 @@ export function enactFire(b, staffId, day, p = BUSINESS_DEFAULTS, { traits = nul
 /** Overtime for one call: a share of the employee's weekly wage. */
 export function overtimePay(b, staff, kind, p = BUSINESS_DEFAULTS) {
   // An Exec's team member is paid overtime as if on the going rate for their skill (E3).
-  const wage = staff.source === 'team' ? goingRate(postBase(staff, staff.post, archetypeOf(b), p), b.stage, p) : wageOf(b, staff, p);
+  const wage = staff.source === 'team' ? postRate(staff.post, postBase(staff, staff.post, archetypeOf(b), p), b.stage, p) : wageOf(b, staff, p);
   return Math.round(wage * (p.staff.overtime[kind] ?? p.staff.overtime.roll));
 }
 
@@ -438,9 +450,12 @@ function workBase(staff, post, arch, traits, p) {
 /**
  * Before a week closes: what the staff did without a partner. A manager works the shop (or chases
  * contracts, at a company) when no partner did; security answers a security event, and a compliance
- * officer an inspection, that nobody answered. Each is a slot of its own, marked `staff`.
+ * officer an inspection, that nobody answered; the back room's posts do its work, unless the business is
+ * lying low. Each is a slot of its own, marked `staff`.
+ * @param {object} [o]
+ * @param {number|null} [o.exposure] - the GM's hidden Exposure: a fixer only acts when it has run up
  */
-export function staffShifts(b, seed = 'nci', p = BUSINESS_DEFAULTS, { idle = null, traits = null } = {}) {
+export function staffShifts(b, seed = 'nci', p = BUSINESS_DEFAULTS, { idle = null, traits = null, exposure = null } = {}) {
   const arch = archetypeOf(b);
   const staff = working(b, idle);
   const slots = b.period.slots;
@@ -451,10 +466,20 @@ export function staffShifts(b, seed = 'nci', p = BUSINESS_DEFAULTS, { idle = nul
     const action = b.stage >= 2 ? 'contracts' : 'work';
     slots.push({ action, by: manager.id, staff: true, approach: 'standard', bonus: 0, ...autoRoll(b, manager, workBase(manager, 'manager', arch, traits, p), dv, seed, action) });
   }
-  // A back-room hand works it when no partner did, unless the business is lying low (U1b).
-  const hand = staff.find((s) => s.post === 'hand');
-  if (hand && b.backRoom?.status === 'open' && !slots.some((s) => s.action === 'roomWork' || s.action === 'lieLow')) {
-    slots.push({ action: 'roomWork', by: hand.id, staff: true, approach: 'standard', bonus: 0, ...autoRoll(b, hand, workBase(hand, 'hand', arch, traits, p), dv, seed, 'roomWork') });
+  // The back room's posts, each doing what nobody else did (U1b).
+  const shift = (who, post, action) => slots.push({ action, by: who.id, staff: true, approach: 'standard', bonus: 0, ...autoRoll(b, who, workBase(who, post, arch, traits, p), dv, seed, action) });
+  const taken = (action) => slots.some((s) => s.action === action);
+  const room = b.backRoom?.status === 'open' ? b.backRoom : null;
+  if (!taken('lieLow')) {
+    const hand = staff.find((s) => s.post === 'hand');
+    if (hand && room && !taken('roomWork')) shift(hand, 'hand', 'roomWork');
+    const launderer = staff.find((s) => s.post === 'launderer');
+    if (launderer && room && !taken('launder') && (room.dirty > 0 || taken('roomWork'))) shift(launderer, 'launderer', 'launder');
+    const fixer = staff.find((s) => s.post === 'fixer');
+    if (fixer && exposure != null && ['moderate', 'high'].includes(exposureBand(exposure, p))) {
+      if (room && !taken('payOff') && room.dirty >= payOffCost(b, p)) shift(fixer, 'fixer', 'payOff');
+      else if (b.stage >= 2 && !taken('bribeRegulator') && b.till >= p.crime.bribeCost) shift(fixer, 'fixer', 'bribeRegulator');
+    }
   }
   const event = b.period.event;
   const def = event ? EVENTS[event.kind] : null;

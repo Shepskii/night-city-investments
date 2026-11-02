@@ -10,7 +10,7 @@ import {
   projectOffer, PROJECT_KINDS, upgradesOf, protectionFactor, headcountOf,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent, supplyCut, actionFor, ROOM_ACTIONS, roomKinds, openRoom, payOffCost, CRIME_ACTIONS, dealCut, SECRET_ACTIONS, SECRET_LEDGER,
-  POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
+  POST_IDS, POSTS, levelOf, postBest, staffBase, postRate, askingWage, postOpen, postOffered, recruitCheck, archetypeOf,
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
   capitalOf, issueOptions, rightsLeft, tenderRoom, capitalRollCheck, defenceCheck, takeoverPremium, sellableQty, debtsOf, solvency,
@@ -963,7 +963,7 @@ const traitText = (revealed) => (revealed ? L(`NCI.Staff.Trait.${revealed}`) : '
  */
 function applicantsOf(business, { canAct, runs, pending }) {
   const day = BusinessClient.day();
-  const waiting = (business.candidates ?? []).filter((c) => c.expires >= day);
+  const waiting = (business.candidates ?? []).filter((c) => c.expires >= day && !(POSTS[c.post]?.backRoom && !seesRoomStaff(business, runs)));
   return [...new Set(waiting.map((c) => c.post))].map((post) => {
     const vet = vetCheck(business, post, day);
     return {
@@ -979,7 +979,7 @@ function applicantsOf(business, { canAct, runs, pending }) {
           level: L(`NCI.Staff.Level.${c.level}`),
           base: full ? c.base : '',
           terms: full
-            ? L('NCI.Staff.ApplicantTerms', { wage: whole(askingWage(business, c)), pct: Math.round((c.pct ?? 1) * 100), rate: whole(goingRate(c.base, business.stage)), date: dayText(c.expires) })
+            ? L('NCI.Staff.ApplicantTerms', { wage: whole(askingWage(business, c)), pct: Math.round((c.pct ?? 1) * 100), rate: whole(postRate(c.post, c.base, business.stage)), date: dayText(c.expires) })
             : L('NCI.Staff.ApplicantAsks', { pct: Math.round((c.pct ?? 1) * 100), date: dayText(c.expires) }),
           vetted: c.vetted === 'failed' ? L('NCI.Staff.VetFailed') : c.revealed ? L('NCI.Staff.VetShows', { trait: traitText(c.revealed) }) : L('NCI.Staff.NotVetted'),
           bad: !!c.revealed && c.revealed !== 'none' && !BUSINESS_DEFAULTS.staff.traits.good.includes(c.revealed),
@@ -1009,6 +1009,13 @@ function staffNotes(business, s) {
 /** Loyalty as the partners see it: a band, or nothing for a player character. */
 const loyaltyText = (s) => (hasLoyalty(s) && s.status === 'active' ? L(`NCI.Staff.Loyalty.${loyaltyBand(s.loyalty ?? 50)}`) : '');
 
+/** Whether this viewer may know of the back room's posts: at a company, its officers' secret (U1). */
+const seesRoomStaff = (business, runs) => business.stage < 2 || runs;
+
+/** The posts this viewer could fill: the back room's only where the world has an underworld and they may know of them. */
+const postsFor = (business, runs) => POST_IDS.filter((id) => POSTS[id].stage <= business.stage && postOffered(business, id)
+  && (!POSTS[id].backRoom || (seesRoomStaff(business, runs) && underworldOn(business))));
+
 /**
  * The Staff tab (DESIGN §32): the employees, the posts (each with a Hire button that opens the Hire
  * window, and a drop target for a character dragged from the Actors directory), and the applicants
@@ -1020,8 +1027,8 @@ function staffContext(business, actor, canAct) {
   const pending = (kind) => business.proposals.some((x) => x.kind === kind);
   const max = headcountOf(business);
   const staff = business.staff ?? [];
-  // A back-room hand only while there is a back room (U1b).
-  const posts = POST_IDS.filter((id) => POSTS[id].stage <= business.stage && (id !== 'hand' || openRoom(business)));
+  const runs = canAct && !!actor && canRun(business, actor.id);
+  const posts = postsFor(business, runs);
   const open = posts.filter((id) => postOpen(business, id).ok);
   const canHire = canAct && !pending('hire');
   return {
@@ -1030,6 +1037,25 @@ function staffContext(business, actor, canAct) {
     noRoles: staff.length >= max,
     rows: staff.map((s) => {
       const { skill, base } = skillOf(s, s.post, arch);
+      // Others see someone on the payroll, as they see the back room's money in plain words (U1).
+      const covered = POSTS[s.post]?.backRoom && !seesRoomStaff(business, runs);
+      if (covered) {
+        return {
+          id: s.id,
+          name: s.name,
+          who: actorLink(s.actorId, s.name),
+          source: L(`NCI.Staff.Source.${s.source}`),
+          post: L('NCI.Staff.Post.cover'),
+          level: '',
+          skill: '—',
+          base: '',
+          wage: whole(s.wage),
+          status: L('NCI.Staff.Since', { date: dayText(s.hiredDay ?? day) }),
+          loyalty: '',
+          loyaltyBand: '',
+          notes: [],
+        };
+      }
       return {
         id: s.id,
         name: s.name,
@@ -1049,7 +1075,7 @@ function staffContext(business, actor, canAct) {
         canFire: canAct && s.status === 'offered' && !pending('fire'),
       };
     }),
-    applicants: applicantsOf(business, { canAct, runs: canAct && !!actor && canRun(business, actor.id), pending: pending('hire') }),
+    applicants: applicantsOf(business, { canAct, runs, pending: pending('hire') }),
     posts: posts.map((id) => ({
       value: id,
       label: postLabel(id),
@@ -1129,11 +1155,11 @@ export function employeeContext(business, account, staffId) {
   const canAct = !!account && BusinessClient.canAct(business, account.id) && !(account.isSyndicate && !account.isOfficer) && s.status === 'active';
   const runs = canAct && canRun(business, account.id);
   const pending = (kind) => business.proposals.some((x) => x.kind === kind);
-  const rate = goingRate(postBase(s, s.post, arch), business.stage);
+  const rate = postRate(s.post, postBase(s, s.post, arch), business.stage);
   const { skill, base } = skillOf(s, s.post, arch);
   const bonus = bonusCheck(business, s.id, 1);
   const given = (business.period.staffBonus ?? {})[s.id];
-  const moves = POST_IDS.filter((id) => id !== s.post && (id !== 'hand' || openRoom(business)) && POSTS[id].stage <= business.stage && postOpen(business, id, undefined, s.id).ok);
+  const moves = postsFor(business, runs).filter((id) => id !== s.post && postOpen(business, id, undefined, s.id).ok);
   const severance = s.caught ? 0 : wageOf(business, s);
   return {
     business: business.name,

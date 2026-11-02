@@ -6,6 +6,7 @@ import {
   giftFor, campaignKind, believability, storyPercent, rollStory, storyCheck, rumourLevel, freshRumours, STORY_RULES, isBigEvent, sceneCandidate, startScene, sceneToRoll, settleScene, supplyCut, runVenue, backupWait, quashEffect, BACK_ROOMS, roomKinds, roomWeek, payOffCost, bookValue, raidChance, roomBust, bustFallout, informants, turnInformant, dealCut, ARCHETYPES, SKILLS, ABILITIES,
 } from '../scripts/engine/index.js';
 import { resolveRoll } from '../scripts/engine/rolls.js';
+import { postOffered, postOpen, wageOf, askingWage } from '../scripts/engine/businessStaff.js';
 import { projectOffer, startProject } from '../scripts/engine/businessGrowth.js';
 import { starterFactions } from '../scripts/data/starter-factions.js';
 import { STARTER_COMPANIES } from '../scripts/data/starter-companies.js';
@@ -670,6 +671,99 @@ test('a hand works the room when no partner did, not when lying low', () => {
   };
   assert.ok(hired().digests.at(-1).actions.some((a) => a.action === 'roomWork' && a.staff), 'on their own');
   assert.ok(!hired([{ action: 'lieLow', by: 'med', band: 'solid', use: 'none', approach: 'standard' }]).digests.at(-1).actions.some((a) => a.action === 'roomWork'), 'lying low');
+});
+
+test('a launderer washes dirty cash when no partner did, and only with a room and something to wash', () => {
+  const week = (room, slots = [], make = withRoom) => {
+    const b = make(room);
+    b.staff = [staffer('l', { post: 'launderer', bases: { 'skill:Accounting': 12 }, hiredDay: DAY })];
+    b.period.slots = slots;
+    return advanceBusiness(b, b.period.endDay, { weekday: 1, seed: 'test' }).business.digests.at(-1).actions.filter((a) => a.action === 'launder');
+  };
+  assert.equal(week({ dirty: 1000 })[0].staff, true);
+  assert.equal(week({ dirty: 0 }).length, 0, 'nothing to wash');
+  assert.equal(week({ status: 'shut', dirty: 1000 }).length, 0, 'a shut room');
+  const lying = [{ action: 'lieLow', by: 'med', band: 'solid', use: 'none', approach: 'standard' }];
+  assert.equal(week({ dirty: 1000 }, lying).length, 0, 'lying low');
+  const partner = [{ action: 'launder', by: 'med', band: 'solid', use: 'none', approach: 'standard' }];
+  assert.equal(week({ dirty: 1000 }, partner)[0].staff, undefined, 'a partner got there first');
+});
+
+test('a fixer acts only once Exposure has run up: a pay-off, or at a company a bribe paid from the cash', () => {
+  const close = (b, exposure) => advanceBusiness(b, b.period.endDay, { weekday: 1, seed: 'test', relations: { exposure } });
+  const fixer = staffer('f', { post: 'fixer', bases: { 'skill:Bribery': 12 }, hiredDay: DAY });
+  const shopWith = (room) => {
+    const b = withRoom(room);
+    b.staff = [{ ...fixer }];
+    return b;
+  };
+  const did = (out, action) => out.business.digests.at(-1).actions.some((a) => a.action === action && a.staff);
+  assert.equal(did(close(shopWith({ dirty: 5000 }), 10), 'payOff'), false, 'low Exposure: no money spent for nothing');
+  assert.equal(did(close(shopWith({ dirty: 5000 }), 15), 'payOff'), true, 'moderate');
+  assert.equal(did(close(shopWith({ dirty: 5000 }), 40), 'payOff'), true, 'high');
+  assert.equal(did(close(shopWith({ dirty: 0 }), 40), 'payOff'), false, 'nothing to pay with');
+  assert.equal(did(close(shopWith({ dirty: 0 }), 40), 'bribeRegulator'), false, 'a shop has no regulator to bribe');
+
+  const firm = (extra = {}) => {
+    const b = companyOf(extra);
+    b.staff = [{ ...fixer }];
+    return b;
+  };
+  const noRoom = firm();
+  const bribed = close(noRoom, 40);
+  assert.equal(did(bribed, 'bribeRegulator'), true, 'a company with no room');
+  assert.ok(bribed.business.ledger.some((e) => e.kind === 'regulatorBribe' && e.amount === -BUSINESS_DEFAULTS.crime.bribeCost), 'from the cash');
+  assert.ok(bribed.events.some((e) => e.type === 'regulatorBribed'));
+  assert.equal(did(close(firm(), 10), 'bribeRegulator'), false, 'low Exposure');
+  assert.equal(did(close(firm({ till: 100 }), 40), 'bribeRegulator'), false, 'no money for it');
+  const oneJob = close(firm({ backRoom: { kind: 'ripping', status: 'open', dirty: 5000, day: DAY } }), 40);
+  assert.equal(did(oneJob, 'payOff'), true, 'dirty money first');
+  assert.equal(did(oneJob, 'bribeRegulator'), false, 'and one job a week');
+  const low = firm();
+  low.period.slots = [{ action: 'lieLow', by: 'med', band: 'solid', use: 'none', approach: 'standard' }];
+  assert.equal(did(close(low, 40), 'bribeRegulator'), false, 'lying low');
+});
+
+test('the back room\'s posts: where they are offered, what they are paid, and what they risk', () => {
+  assert.equal(postOffered(shop(), 'hand'), false);
+  assert.equal(postOffered(shop(), 'fixer'), false);
+  assert.equal(postOpen(shop(), 'launderer').reason, 'no-back-room');
+  for (const post of ['hand', 'launderer', 'fixer']) assert.equal(postOffered(withRoom(), post), true, post);
+  assert.equal(postOffered(withRoom({ status: 'shut' }), 'hand'), false, 'a shut room');
+  assert.equal(postOffered(companyOf(), 'fixer'), true, 'any company has a use for a fixer');
+  assert.equal(postOffered(companyOf(), 'launderer'), false, 'but the rest need a room');
+  assert.equal(postOffered(companyOf(), 'floor'), true);
+
+  const same = { bases: { 'skill:Business': 12, 'skill:Bribery': 12 } };
+  const manager = wageOf(shop(), staffer('a', { post: 'manager', ...same }));
+  const fixer = wageOf(withRoom(), staffer('b', { post: 'fixer', ...same }));
+  assert.ok(Math.abs(fixer - manager * 1.5) <= 1, `half as much again: ${manager} and ${fixer}`);
+  assert.ok(Math.abs(askingWage(withRoom(), { post: 'fixer', base: 12 }) - askingWage(withRoom(), { post: 'floor', base: 12 }) * 1.5) <= 1);
+
+  const r = BUSINESS_DEFAULTS.backRoom.raid;
+  const chance = (staff) => {
+    const b = withRoom();
+    b.staff = staff;
+    return raidChance(b, 10);
+  };
+  const near = (a, e) => assert.ok(Math.abs(a - e) < 1e-9, `${a} and ${e}`);
+  const base = chance([staffer('x')]);
+  near(chance([staffer('x'), staffer('y', { post: 'fixer' })]), base + r.crew);
+  near(chance([staffer('x', { loyalty: 10 })]), base + r.sullen);
+  near(chance([staffer('y', { post: 'fixer', loyalty: 10 })]), base + r.crew + r.sullen * r.sullenCrew, 'a sullen one counts double');
+});
+
+test('at a company, officers hire for the back room without a vote', () => {
+  const company = (officers) => {
+    const b = companyOf({ officers });
+    b.candidates = [{ id: 'c1', name: 'Rex', post: 'fixer', base: 12, pct: 1, level: 'skilled', expires: DAY + 7 }];
+    return b;
+  };
+  assert.equal(send(company(['other']), { type: 'propose', businessId: 'b1', kind: 'hire', candidateId: 'c1' }).reason, 'not-officer');
+  const hired = send(company(['med']), { type: 'propose', businessId: 'b1', kind: 'hire', candidateId: 'c1' });
+  assert.equal(hired.ok, true, hired.reason);
+  assert.deepEqual(hired.business.proposals, [], 'nothing for the shareholders to read');
+  assert.equal(hired.business.staff.at(-1).post, 'fixer');
 });
 
 test('an informant adds Exposure and can be named; an employee may turn; only with a room', () => {
