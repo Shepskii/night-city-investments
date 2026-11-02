@@ -160,6 +160,14 @@
    set the space either side, the same left and right. */
 .nci-app table { width: 100%; border-collapse: collapse; }
 .application.nci-app table { margin-left: 0; margin-right: 0; }
+/* Tables stacked on one page, sharing their columns: the terminal's companies and funds, and a character's syndicates and private businesses. */
+.nci-app table.nci-listcols, .nci-app table.nci-holdcols { table-layout: fixed; }
+.nci-app .nci-listcols th:nth-child(1) { width: 8%; }
+.nci-app .nci-listcols th:nth-child(2) { width: 28%; }
+.nci-app .nci-listcols th:nth-child(3) { width: 14%; }
+.nci-app .nci-listcols th:nth-child(4) { width: 10%; }
+.nci-app .nci-listcols th:nth-child(5), .nci-app .nci-listcols th:nth-child(6), .nci-app .nci-listcols th:nth-child(7) { width: 9%; }
+.nci-app .nci-holdcols th:first-child { width: 40%; }
 .nci-app th { text-align: left; color: var(--nci-label); font-weight: normal; border-bottom: 1px solid var(--nci-accent-dim); padding: 4px 6px; }
 .nci-app td { padding: 4px 6px; border-bottom: 1px solid #1a1415; }
 .nci-app .num { text-align: right; font-variant-numeric: tabular-nums; }
@@ -384,6 +392,7 @@
 .nci-app .nci-rowbtns { white-space: nowrap; text-align: right; }
 .nci-app .nci-rowbtns button { width: 26px; padding: 0; }
 .nci-app .nci-rowbtns button.nci-labelled { width: auto; padding: 0 8px; }
+.nci-app .nci-rowbtns button.nci-tradebtn { width: 44px; }
 
 .nci-app .nci-editor label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--nci-label); }
 .nci-app .nci-editor .nci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-bottom: 8px; align-items: end; }

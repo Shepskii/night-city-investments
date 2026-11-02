@@ -259,8 +259,8 @@
             {{/if}}
           </td>
           <td class="nci-rowbtns">
-            <button type="button" data-action="trade" data-side="buy" data-id="{{id}}">{{localize "NCI.Side.buy"}}</button>
-            <button type="button" data-action="trade" data-side="sell" data-id="{{id}}">{{localize "NCI.Side.sell"}}</button>
+            <button type="button" class="nci-tradebtn" data-action="trade" data-side="buy" data-id="{{id}}">{{localize "NCI.Side.buy"}}</button>
+            <button type="button" class="nci-tradebtn" data-action="trade" data-side="sell" data-id="{{id}}">{{localize "NCI.Side.sell"}}</button>
           </td>
         </tr>
         {{/each}}
@@ -277,7 +277,7 @@
       <button type="button" class="nci-labelled" data-action="synDecline" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.Syndicate.Decline"}}</button></p>
     {{/each}}
     {{#if memberships.length}}
-    <table class="nci-market">
+    <table class="nci-market nci-holdcols">
       <thead><tr>
         <th>{{localize "NCI.Syndicate.Heading"}}</th>
         <th class="num">{{localize "NCI.Syndicate.Nav"}}</th>
@@ -299,7 +299,7 @@
     {{#if portfolio.stakes.length}}
     <h3 class="nci-subhead">{{localize "NCI.Portfolio.PrivateTitle"}}</h3>
     <p class="nci-hint">{{localize "NCI.Portfolio.PrivateHint"}}</p>
-    <table class="nci-market">
+    <table class="nci-market nci-holdcols">
       <thead><tr>
         <th>{{localize "NCI.Portfolio.PrivateTitle"}}</th>
         <th class="num">{{localize "NCI.Business.Till"}}</th>
@@ -541,7 +541,7 @@
 
   {{else if hasListings}}
   {{#if rows.length}}
-  <table class="nci-market">
+  <table class="nci-market nci-listcols">
     <thead>
       <tr>
         <th>{{localize "NCI.Terminal.Ticker"}}</th>
@@ -576,7 +576,7 @@
 
   {{#if fundRows.length}}
   <h3 class="nci-subhead">{{localize "NCI.Fund.Title"}}</h3>
-  <table class="nci-market">
+  <table class="nci-market nci-listcols">
     <thead>
       <tr>
         <th>{{localize "NCI.Terminal.Ticker"}}</th>
@@ -584,6 +584,8 @@
         <th>{{localize "NCI.Fund.Kind"}}</th>
         <th class="num">{{localize "NCI.Fund.Nav"}}</th>
         <th class="num">{{localize "NCI.Terminal.Change"}}</th>
+        <th></th>
+        <th></th>
         <th>{{localize "NCI.Terminal.Trend"}}</th>
       </tr>
     </thead>
@@ -595,6 +597,8 @@
         <td class="nci-muted">{{kind}}</td>
         <td class="num">{{nav}}</td>
         <td class="num {{cls}}">{{change}}</td>
+        <td></td>
+        <td></td>
         <td>{{{spark}}}</td>
       </tr>
       {{/each}}

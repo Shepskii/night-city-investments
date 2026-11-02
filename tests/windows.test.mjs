@@ -149,6 +149,9 @@ test('funds and brokers show in the terminal, and the portfolio has the access p
   app.tab = 'market';
   let html = render('templates/terminal/market.hbs', await app._prepareContext());
   assertClean(html, 'market tab with funds');
+  const lists = [...html.matchAll(/<table class="nci-market nci-listcols">[\s\S]*?<\/thead>/g)];
+  assert.equal(lists.length, 2, 'companies and funds');
+  for (const list of lists) assert.equal(list[0].match(/<th[ >]/g).length, 8, 'sharing their columns');
   assert.ok(html.indexOf('nci-tabs') < html.indexOf('nci-header'), 'the tabs come first, then the index and mood');
   assert.ok(text(html).includes(fund.name), 'fund listed');
 

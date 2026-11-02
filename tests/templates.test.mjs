@@ -144,6 +144,8 @@ test('terminal renders every tab with real data', async () => {
     assertClean(out, `${tab} ${sub}`);
     return out;
   };
+  const investments2 = await page('portfolio', 'investments');
+  assert.match(investments2, /class="nci-tradebtn" data-action="trade" data-side="buy"/);
   const overview = await page('portfolio', 'overview');
   assert.ok(text(overview).includes('Performance'), 'the Overview tab has the chart');
   assert.ok(!overview.includes('data-action="cancelOrder"') && !overview.includes('data-action="drip"'));
@@ -168,6 +170,7 @@ test('terminal renders every tab with real data', async () => {
   assertClean(html, 'news tab');
   assert.ok(text(html).includes('Quiet day in the Corpo Plaza'));
   assert.ok(text(html).includes('special dividend'));
+  assert.match(text(html), /\((MIL)\) announces a special dividend/, 'the ticker follows the name');
 });
 
 test('GM console renders all four tabs, with controls, queued events and the log filled in', async () => {

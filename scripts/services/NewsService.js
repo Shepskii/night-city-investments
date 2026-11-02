@@ -3,7 +3,9 @@
  * @file scripts/services/NewsService.js
  */
 
-import { makeNewsItem, addNews } from '../engine/index.js';
+import { makeNewsItem, addNews, withTickers } from '../engine/index.js';
+import { CompanyRepository } from '../data/CompanyRepository.js';
+import { FundRepository } from '../data/FundRepository.js';
 import { HOOKS } from '../utils/constants.js';
 import { isActiveGM } from '../utils/helpers.js';
 import { MarketStore } from '../data/MarketStore.js';
@@ -26,7 +28,7 @@ class NewsServiceImpl {
         id: foundry.utils.randomID(10),
         tick: MarketStore.time(),
         date: MarketClock.dateString(),
-        headline,
+        headline: withTickers(headline, [...CompanyRepository.all(), ...FundRepository.all()]),
         tone,
         companyIds,
       });
