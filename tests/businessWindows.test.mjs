@@ -614,7 +614,7 @@ test('the Pending tab has a row for each decision waiting, and the tab buttons c
     await MarketStore.setHeat({ ...heatBefore, penalties: [] });
     const quiet = await renderConsole('pending');
     assertClean(quiet, 'nothing pending');
-    assert.match(text(quiet), /Nothing is waiting for you/);
+    assert.match(text(quiet), /No items waiting/);
     assert.equal(group(quiet, 'pending'), 'Pending');
     assert.equal(group(quiet, 'players'), 'Players');
   } finally {

@@ -1245,10 +1245,10 @@
       "Source": "Gig",
       "NeedsMapping": "Needs a company",
       "NeedsMappingHint": "These clients could not be matched to a company. Pick one, or ignore the client. The choice is remembered for later gigs from the same client.",
-      "NoMapping": "Nothing is waiting for a company.",
+      "NoMapping": "No items waiting",
       "Review": "Waiting for approval",
       "ReviewHint": "Change the size, the delay or the headline if you like, then approve. The headline is published when the price starts to move.",
-      "NoReview": "Nothing is waiting for approval.",
+      "NoReview": "No items waiting",
       "Mappings": "Client mappings",
       "MappingsHint": "A saved mapping always wins over name matching. You can also tag a gig's notes with [NCI: ARA] to name its company, or [NCI: ignore] to skip it.",
       "NoMappings": "No saved mappings.",
@@ -1402,7 +1402,7 @@
       "Covered": "Cover for {n} more day(s)",
       "Penalties": "Penalties",
       "PenaltiesHint": "What an investigation found. Change the amount or length if you like, then approve; dismiss to let it go. Approving carries it out at once and tells the player.",
-      "NoPenalties": "Nothing has been proposed.",
+      "NoPenalties": "No items waiting",
       "Approve": "Approve",
       "Dismiss": "Dismiss",
       "FineAmount": "Fine (eb)",
@@ -2094,8 +2094,8 @@
       "Title": "Player syndicates",
       "Intro": "Each syndicate's members, its account and what is waiting. You can pass or veto any proposal, and close a syndicate whose account holds nothing but cash (it is paid out by units).",
       "Disabled": "Player syndicates are switched off in the module settings. Existing syndicates keep their holdings.",
-      "Waiting": "Waiting for approval",
-      "NoneWaiting": "No syndicate is waiting.",
+      "Waiting": "Waiting for GM",
+      "NoneWaiting": "No items waiting",
       "Active": "Trading",
       "NoneActive": "No syndicate is trading yet.",
       "Closed": "Dissolved",
@@ -2112,7 +2112,7 @@
       "Heat": "Heat {heat} ({tier})",
       "WaitingRedemptions": "Redemptions waiting for cash: {n}",
       "Status": {
-        "pending": "waiting for approval",
+        "pending": "Waiting for GM",
         "active": "trading",
         "closed": "dissolved"
       }
@@ -2352,9 +2352,9 @@
       "Created": "{actor} now holds evidence about {name}."
     },
     "Pending": {
-      "Title": "Waiting for you",
+      "Title": "Waiting for GM",
       "Intro": "Every decision that needs you. Click a row to go to its tab, where you make the decision.",
-      "None": "Nothing is waiting for you.",
+      "None": "No items waiting",
       "Where": "Tab",
       "Item": "Who or what",
       "Needed": "What it needs",
@@ -2390,8 +2390,8 @@
       },
       "Title": "Player businesses",
       "Intro": "Every business at every stage, with its true state, Exposure included. Players see their own businesses only, as bands rather than numbers.",
-      "Waiting": "Waiting for you",
-      "NoneWaiting": "No business is waiting for approval.",
+      "Waiting": "Waiting for GM",
+      "NoneWaiting": "No items waiting",
       "Approve": "Let it open",
       "Reject": "Turn it down",
       "RejectConfirm": "Turn this business down? Every partner gets their share of the money back.",
@@ -3007,7 +3007,7 @@
         "majority": "Needs a majority of units; lapses after {date}.",
         "majorityCompany": "Needs a majority of the shares; lapses after {date}."
       },
-      "Status": { "forming": "setting up", "pending": "awaiting approval", "open": "open", "closed": "closed" },
+      "Status": { "forming": "setting up", "pending": "waiting for GM", "open": "open", "closed": "closed" },
       "Stage": { "0": "Side business", "1": "Registered business", "2": "Chartered company", "3": "Listed company" },
       "Closed": {
         "closed": "The partners closed it on {date}.",
