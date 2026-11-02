@@ -53,3 +53,12 @@
   </table>
   {{else}}<p class="nci-empty">{{localize "NCI.Tools.NoTrades"}}</p>{{/if}}
 </div>
+
+{{#if log.length}}
+<div class="nci-block">
+  <h3>{{localize "NCI.Controls.LogTitle"}}</h3>
+  <table class="nci-market"><tbody>
+    {{#each log}}<tr><td class="nci-muted">{{localize "NCI.Terminal.Day"}} {{tick}}</td><td>{{text}}</td></tr>{{/each}}
+  </tbody></table>
+</div>
+{{/if}}

@@ -8,11 +8,21 @@
   <h3>{{localize "NCI.GMSyndicate.Waiting"}}</h3>
   {{#each syndicates.pending}}
   <div class="nci-gig">
-    <div class="nci-gigtop"><strong>{{name}}</strong><span class="nci-muted">{{status}}</span></div>
-    <div class="nci-muted">{{{members}}}</div>
-    <div class="nci-actions">
-      <button type="button" data-action="syndicateApprove" data-id="{{id}}"><i class="fas fa-check"></i> {{localize "NCI.GMSyndicate.Approve"}}</button>
-      <button type="button" data-action="syndicateReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMSyndicate.Reject"}}</button>
+    <div class="nci-bizhead">
+      <div class="nci-bizname">{{name}}</div>
+      <div><strong>{{status}}</strong></div>
+    </div>
+    {{#if members.length}}
+    <table class="nci-market nci-owners">
+      <thead><tr><th>{{localize "NCI.GMSyndicate.Member"}}</th><th>{{localize "NCI.GMSyndicate.Role"}}</th><th class="num">{{localize "NCI.GMBusiness.Units"}}</th><th class="num">{{localize "NCI.GMBusiness.Share"}}</th></tr></thead>
+      <tbody>{{#each members}}<tr><td>{{{who}}}</td><td class="nci-muted">{{role}}</td><td class="num">{{units}}</td><td class="num">{{share}}</td></tr>{{/each}}</tbody>
+    </table>
+    {{/if}}
+    <div class="nci-gmbuttons">
+      <div class="nci-actions">
+        <button type="button" data-action="syndicateApprove" data-id="{{id}}"><i class="fas fa-check"></i> {{localize "NCI.GMSyndicate.Approve"}}</button>
+        <button type="button" data-action="syndicateReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMSyndicate.Reject"}}</button>
+      </div>
     </div>
   </div>
   {{else}}<p class="nci-empty">{{localize "NCI.GMSyndicate.NoneWaiting"}}</p>{{/each}}
@@ -22,22 +32,32 @@
   <h3>{{localize "NCI.GMSyndicate.Active"}}</h3>
   {{#each syndicates.active}}
   <div class="nci-gig">
-    <div class="nci-gigtop"><strong>{{name}}</strong><span>{{status}}</span></div>
-    <div class="nci-muted">{{{members}}}</div>
+    <div class="nci-bizhead">
+      <div class="nci-bizname">{{name}}</div>
+      <div><strong>{{status}}</strong></div>
+    </div>
     <div>{{money}}</div>
     <div class="nci-muted">{{holdings}}</div>
     {{#if heat}}<div class="nci-muted">{{heat}}</div>{{/if}}
     {{#if waitingRedemptions}}<div class="nci-warn">{{localize "NCI.GMSyndicate.WaitingRedemptions" n=waitingRedemptions}}</div>{{/if}}
-    {{#each proposals}}
-    <div class="nci-actions">
-      <span>{{text}}</span>
-      <button type="button" class="nci-labelled" data-action="syndicatePass" data-id="{{../id}}" data-proposal="{{id}}"><i class="fas fa-check"></i> {{localize "NCI.GMSyndicate.Pass"}}</button>
-      <button type="button" class="nci-labelled" data-action="syndicateVeto" data-id="{{../id}}" data-proposal="{{id}}"><i class="fas fa-ban"></i> {{localize "NCI.GMSyndicate.Veto"}}</button>
-    </div>
-    {{/each}}
-    <div class="nci-actions">
-      {{#if liquid}}<button type="button" data-action="syndicateClose" data-id="{{id}}"><i class="fas fa-box-archive"></i> {{localize "NCI.GMSyndicate.Close"}}</button>
-      {{else}}<span class="nci-hint">{{localize "NCI.GMSyndicate.CloseLater"}}</span>{{/if}}
+    {{#if members.length}}
+    <table class="nci-market nci-owners">
+      <thead><tr><th>{{localize "NCI.GMSyndicate.Member"}}</th><th>{{localize "NCI.GMSyndicate.Role"}}</th><th class="num">{{localize "NCI.GMBusiness.Units"}}</th><th class="num">{{localize "NCI.GMBusiness.Share"}}</th></tr></thead>
+      <tbody>{{#each members}}<tr><td>{{{who}}}</td><td class="nci-muted">{{role}}</td><td class="num">{{units}}</td><td class="num">{{share}}</td></tr>{{/each}}</tbody>
+    </table>
+    {{/if}}
+    <div class="nci-gmbuttons">
+      {{#each proposals}}
+      <div class="nci-actions">
+        <span>{{text}}</span>
+        <button type="button" class="nci-labelled" data-action="syndicatePass" data-id="{{../id}}" data-proposal="{{id}}"><i class="fas fa-check"></i> {{localize "NCI.GMSyndicate.Pass"}}</button>
+        <button type="button" class="nci-labelled" data-action="syndicateVeto" data-id="{{../id}}" data-proposal="{{id}}"><i class="fas fa-ban"></i> {{localize "NCI.GMSyndicate.Veto"}}</button>
+      </div>
+      {{/each}}
+      <div class="nci-actions">
+        {{#if liquid}}<button type="button" data-action="syndicateClose" data-id="{{id}}"><i class="fas fa-box-archive"></i> {{localize "NCI.GMSyndicate.Close"}}</button>
+        {{else}}<span class="nci-hint">{{localize "NCI.GMSyndicate.CloseLater"}}</span>{{/if}}
+      </div>
     </div>
   </div>
   {{else}}<p class="nci-empty">{{localize "NCI.GMSyndicate.NoneActive"}}</p>{{/each}}

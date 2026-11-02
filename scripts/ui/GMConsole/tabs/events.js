@@ -1,10 +1,10 @@
 /**
- * GM Console events tab: shocks, glides, news, price changes and the GM action log.
+ * GM Console events tab: shocks, glides, news and price changes.
  * @file scripts/ui/GMConsole/tabs/events.js
  * @description Action handlers run with `this` set to the console window.
  */
 
-import { parseTarget, SHOCK_PERSISTENCE, GLIDE_NOISE } from '../../../engine/index.js';
+import { SHOCK_PERSISTENCE, GLIDE_NOISE } from '../../../engine/index.js';
 import { L, money, daysLeft } from '../../format.js';
 import { MarketStore } from '../../../data/MarketStore.js';
 import { MarketControlService } from '../../../services/MarketControlService.js';
@@ -102,15 +102,6 @@ export function context(app) {
       label: `${targetLabel(i.target, byId)}: ${i.meta?.percent > 0 ? '+' : ''}${i.meta?.percent ?? '?'}%`,
       persistence: i.source === 'gig' ? L('NCI.Gig.Source') : i.meta?.persistence ? L(`NCI.Controls.Persistence.${i.meta.persistence}`) : '',
       starts: i.onsetTick > time + 1e-6 ? L('NCI.Controls.StartsIn', { n: daysLeft(i.onsetTick, time) }) : L('NCI.Controls.Active'),
-    })),
-    log: controls.log.slice(-10).reverse().map((e) => ({
-      tick: Math.floor(e.tick + 1e-6),
-      text: L(`NCI.Log.${e.kind}`, {
-        target: e.target ? (parseTarget(e.target) ? targetLabel(parseTarget(e.target), byId) : e.target) : '',
-        company: byId.get(e.companyId)?.ticker ?? e.companyId ?? '',
-        value: e.value ?? '', days: e.days ?? '', percent: e.percent ?? '', regime: e.regime ?? '',
-        from: e.from ?? '', to: e.to ?? '', halted: e.halted ? L('NCI.Controls.Halted') : L('NCI.Controls.Resumed'),
-      }),
     })),
     glides: controls.glides.map((g) => ({
       id: g.id,

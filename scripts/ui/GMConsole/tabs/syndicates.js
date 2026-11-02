@@ -16,7 +16,6 @@ import { describeProposal } from '../../../services/SyndicateMail.js';
 import { L, money, whole } from '../../format.js';
 import { confirm, report } from '../shared.js';
 import { actorLink } from '../../actorLink.js';
-import { escapeHtml } from '../../../utils/text.js';
 
 async function onApprove(event, target) {
   report(await SyndicateService.approve(target.dataset.id));
@@ -69,11 +68,17 @@ export function context() {
       isPending: s.status === 'pending',
       isActive: s.status === 'active',
       isClosed: s.status === 'closed',
+      // Each member's name (HTML) links to their character; someone invited holds nothing yet.
       members: s.members.filter((m) => ['active', 'invited'].includes(m.status)).map((m) => {
-        const share = m.status === 'active' && units > 0 ? `, ${((m.units / units) * 100).toFixed(0)}%` : '';
-        // HTML: each member's name links to their character.
-        return `${actorLink(m.actorId, m.name)} (${escapeHtml(m.status === 'invited' ? L('NCI.Syndicate.Invited') : L(`NCI.Syndicate.Role.${m.role}`))}${share})`;
-      }).join(', '),
+        const active = m.status === 'active';
+        const role = active ? L(`NCI.Syndicate.Role.${m.role}`) : L('NCI.Syndicate.Invited');
+        return {
+          who: actorLink(m.actorId, m.name),
+          role: role.charAt(0).toUpperCase() + role.slice(1),
+          units: active ? whole(m.units ?? 0) : '',
+          share: active && units > 0 ? `${((m.units / units) * 100).toFixed(1)}%` : '',
+        };
+      }),
       money: L('NCI.GMSyndicate.Money', { cash: whole(portfolio.cash), total: whole(total), nav: money(nav), limit: whole(s.rules.tradeLimit) }),
       holdings: Object.keys(held).length ? Object.entries(held).map(([id, qty]) => `${tickerOf(id)} ${qty}`).join(', ') : L('NCI.GMSyndicate.NoHoldings'),
       heat: s.status === 'active' && HeatService.enabled() ? L('NCI.GMSyndicate.Heat', { heat: HeatService.heatOf(s.id).toFixed(1), tier: L(`NCI.Heat.Tier.${HeatService.tierOf(s.id)}`) }) : '',

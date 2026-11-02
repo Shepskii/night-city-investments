@@ -284,7 +284,7 @@ test('the Tools tab shows the self-check, macros, suggestions and the trade log'
     assert.ok(html.includes(`data-action="${action}"`), `${action} button`);
     assert.equal(typeof Apps.GMConsole.DEFAULT_OPTIONS.actions[action], 'function', `${action} has a handler`);
   }
-  assert.equal((await app._prepareContext()).tabs.find((x) => x.id === 'tools').label, 'Tools');
+  assert.equal((await app._prepareContext()).tabs.find((x) => x.id === 'tools').label, 'Audit');
 
   app.render = () => {};
   Apps.GMConsole.DEFAULT_OPTIONS.actions.runCheck.call(app);

@@ -153,7 +153,7 @@ test('GM console renders all four tabs, with controls, queued events and the log
 
   const app = new GMConsole();
   const labels = {};
-  for (const tab of ['market', 'events', 'actions', 'companies']) {
+  for (const tab of ['market', 'events', 'actions', 'companies', 'tools']) {
     app.tab = tab;
     const html = render('templates/gm/console.hbs', await app._prepareContext());
     assertClean(html, `GM ${tab} tab`);
@@ -164,8 +164,9 @@ test('GM console renders all four tabs, with controls, queued events and the log
   assert.ok(labels.market.includes('Bear forced for'));
   assert.ok(labels.market.includes('Resume market'), 'halt button reflects state');
   assert.ok(labels.events.includes('-6%'), 'queued shock listed');
-  assert.ok(labels.events.includes('Recent GM actions'));
-  assert.ok(labels.events.includes('price set from'));
+  assert.ok(!labels.events.includes('Recent GM actions'), 'the log has moved');
+  assert.ok(labels.tools.includes('Recent GM actions'));
+  assert.ok(labels.tools.includes('price set from'));
   assert.ok(labels.actions.includes('Stock split'));
   assert.ok(labels.companies.includes('Arasaka'));
 });

@@ -971,10 +971,10 @@
       "NoCompanies": "No companies yet.",
       "ActionOk": "Done.",
       "ActionFailed": "That did not work. Check the values and that you are the active GM.",
-      "Group": { "pending": "Pending", "market": "Market", "players": "Players", "tools": "Tools / Maintenance" },
+      "Group": { "pending": "Pending", "market": "Market", "players": "Players", "tools": "Tools" },
       "Tab": {
         "pending": "Pending", "market": "Market", "events": "Events", "actions": "Corp actions", "companies": "Companies",
-        "funds": "Funds", "brokers": "Brokers", "gigs": "Gigs", "heat": "Heat", "businesses": "Businesses", "factions": "Factions", "syndicates": "Syndicates", "tools": "Tools"
+        "funds": "Funds", "brokers": "Brokers", "gigs": "Gigs", "heat": "Heat", "businesses": "Businesses", "factions": "Factions", "syndicates": "Syndicates", "tools": "Audit"
       },
       "FundsHint": "Funds pool several companies into one tradable unit. Their value follows the companies' prices. Players can only trade them through a broker.",
       "NewFund": "New fund",
@@ -1426,8 +1426,8 @@
       },
       "Level": { "ok": "OK", "info": "Note", "warn": "Warning", "fail": "Problem" },
       "SummaryOk": "Self-check passed.",
-      "SummaryWarn": "Self-check found {warn} warning(s). See the Tools tab or the console.",
-      "SummaryFail": "Self-check found {fail} problem(s) and {warn} warning(s). See the Tools tab or the console."
+      "SummaryWarn": "Self-check found {warn} warning(s). See the Audit tab or the console.",
+      "SummaryFail": "Self-check found {fail} problem(s) and {warn} warning(s). See the Audit tab or the console."
     },
     "Clock": {
       "RolledBack": "The calendar went back, so the market went back with it, to tick {tick}. Ticking resumes as the date moves forward again.",
@@ -1982,6 +1982,8 @@
     },
 
     "GMSyndicate": {
+      "Member": "Member",
+      "Role": "Role",
       "Title": "Player syndicates",
       "Intro": "Each syndicate's members, its account and what is waiting. You can pass or veto any proposal, and close a syndicate whose account holds nothing but cash (it is paid out by units).",
       "Disabled": "Player syndicates are switched off in the module settings. Existing syndicates keep their holdings.",

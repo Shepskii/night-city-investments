@@ -585,7 +585,7 @@ test('the Pending tab has a row for each decision waiting, and the tab buttons c
     assertClean(html, 'pending tab');
     assert.equal(group(html, 'pending'), 'Pending 11');
     assert.equal(group(html, 'players'), 'Players 8', 'each group shows its tabs\' total');
-    assert.equal(group(html, 'tools'), 'Tools / Maintenance 3', 'business gigs count as well');
+    assert.equal(group(html, 'tools'), 'Tools 3', 'business gigs count as well');
     assert.match(html, /<span class="nci-count">11<\/span>/, 'as a count of its own');
     assert.equal(group(html, 'market'), 'Market');
     assert.doesNotMatch(html.match(/<\/nav>[\s\S]*/)[0], /<nav/, 'the Pending group has no second row');

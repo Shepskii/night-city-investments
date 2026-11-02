@@ -23,17 +23,17 @@ Open it from the scene controls (sliders icon). The top row of buttons picks a g
 |---|---|---|
 | **Pending** | | Every decision waiting for you, one row each; click a row to go to its tab |
 | **Market** | Market | The clock, steering (bias, regime, volatility, halt), undo, reset |
-| | Events | Shocks, glides, headlines, setting a price, the action log |
+| | Events | Shocks, glides, headlines, setting a price |
 | | Corp actions | Special dividends, splits, buyouts, delistings, bankruptcies |
 | | Brokers | Brokers and terminal grants |
 | **Players** | Businesses | Every player business: its true state, owners, staff and faction standing, with your buttons at the foot of each entry |
-| | Syndicates | Approving syndicates; passing or vetoing their proposals |
+| | Syndicates | Each syndicate's account and members, with your buttons at the foot: approving it, passing or vetoing its proposals |
 | | Heat | Insider-trading heat, penalties, watch windows and audits |
-| **Tools / Maintenance** | Gigs | Gig impacts from Night City Map: approval and client mapping |
+| **Tools** | Gigs | Gig impacts from Night City Map: approval and client mapping |
 | | Companies | Creating, editing, importing and launching companies (IPOs) |
 | | Funds | Creating, editing, importing and closing funds |
 | | Factions | The list of corporations and gangs |
-| | Tools | Self-check, macros, suggested companies, recent trades |
+| | Audit | Self-check, macros, suggested companies, recent trades, your recent actions |
 
 A tab shows how many decisions are waiting on it as a small number beside its name, a group shows the total for its tabs, and Pending the total of all. Syndicate proposals are not counted: members' votes settle them, though you can still pass or veto one.
 
@@ -172,9 +172,9 @@ Players can hide their shareholdings behind layers (a broker's nominee, then she
 - **The Business window, opened from the Businesses tab,** shows a business as its owners see it. Each weekly digest on the Ledger tab opens a cashbook of that week's income and expenses. Each monthly report opens to show the **real figures beside the reported ones** (an aggressive report inflates the reported profit).
 - **Exposure** (the hidden trail from Shortcuts, Bold rolls and the rest) is on the Businesses tab. An internal audit by the officers can find and cut it, and it counts against a listing.
 - **Staff traits** (light fingers, loose lips, a corp plant, a moonlighter, dedicated, connected) are in the hidden state. Vetting shows them to players.
-- **Recent trades** (Tools tab) lists the latest fills across every portfolio.
-- **The self-check** (Tools tab, or `game.nightcity.investments.verify()`) looks over companies, funds, the market, portfolios and the Messenger link, and lists anything broken or odd. It changes nothing.
-- **Companies to consider** (Tools tab) lists organisations on Messenger contacts and gigs that are not on the market, ready to create in one click.
+- **Recent trades** (Audit tab) lists the latest fills across every portfolio.
+- **The self-check** (Audit tab, or `game.nightcity.investments.verify()`) looks over companies, funds, the market, portfolios and the Messenger link, and lists anything broken or odd. It changes nothing.
+- **Companies to consider** (Audit tab) lists organisations on Messenger contacts and gigs that are not on the market, ready to create in one click.
 
 ## Console scripts
 

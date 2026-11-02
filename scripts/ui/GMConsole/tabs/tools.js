@@ -1,15 +1,18 @@
 /**
- * GM Console tools tab: the self-check, macros, company suggestions and the trade log.
+ * GM Console audit tab (the Tools group): the self-check, macros, company suggestions, the trade log and the GM's actions.
  * @file scripts/ui/GMConsole/tabs/tools.js
  * @description Action handlers run with `this` set to the console window.
  */
 
+import { parseTarget } from '../../../engine/index.js';
 import { L, money, whole } from '../../format.js';
+import { MarketStore } from '../../../data/MarketStore.js';
 import { GigImpactService } from '../../../services/GigImpactService.js';
 import { DiagnosticsService } from '../../../services/DiagnosticsService.js';
 import { MacroService } from '../../../services/MacroService.js';
 import { MigrationService } from '../../../services/MigrationService.js';
 import { CompanyEditorApp } from '../../CompanyEditor/CompanyEditorApp.js';
+import { targetLabel, companiesById } from '../shared.js';
 
 function onRunCheck() {
   this.checkReport = DiagnosticsService.verify({ silent: true });
@@ -38,7 +41,21 @@ export const actions = {
 };
 
 export function context(app) {
-  return { tools: build(app.checkReport) };
+  return { tools: build(app.checkReport), log: recentActions() };
+}
+
+/** The GM's latest actions on the market, newest first. */
+function recentActions() {
+  const byId = companiesById();
+  return MarketStore.getControls().log.slice(-10).reverse().map((e) => ({
+    tick: Math.floor(e.tick + 1e-6),
+    text: L(`NCI.Log.${e.kind}`, {
+      target: e.target ? (parseTarget(e.target) ? targetLabel(parseTarget(e.target), byId) : e.target) : '',
+      company: byId.get(e.companyId)?.ticker ?? e.companyId ?? '',
+      value: e.value ?? '', days: e.days ?? '', percent: e.percent ?? '', regime: e.regime ?? '',
+      from: e.from ?? '', to: e.to ?? '', halted: e.halted ? L('NCI.Controls.Halted') : L('NCI.Controls.Resumed'),
+    }),
+  }));
 }
 
 function build(report) {

@@ -23,7 +23,7 @@ In the scene controls, the **Token Controls** group (the first one) gains:
 - **Business** (shop icon), for everyone: player businesses (hidden when player businesses are turned off).
 - **Market GM Console** (sliders icon), for GMs only.
 
-Each window can also be given a key in Configure Controls, and the GM Console's Tools tab makes macros for them.
+Each window can also be given a key in Configure Controls, and the GM Console's Audit tab (under Tools) makes macros for them.
 
 ## First-time setup (about five minutes)
 
@@ -32,7 +32,7 @@ Each window can also be given a key in Configure Controls, and the GM Console's 
 3. **Funds tab: Import starter funds.** This adds six pooled funds: two indexes, two sector funds, a managed fund and a themed one.
 4. **Brokers tab: add at least one broker.** Make a character a broker, or tag a Night City Messenger contact. A broker's Accounting skill sets how fast and how cheap they are, and a character with a Personality on their sheet writes in that voice.
 5. **Check the settings** below, especially the market clock and the business week.
-6. **Tools tab: run the self-check**, and press Create macros if you want them. A clean self-check means the companies, funds, prices and portfolios agree.
+6. **Tools > Audit: run the self-check**, and press Create macros if you want them. A clean self-check means the companies, funds, prices and portfolios agree.
 7. **Market tab: Advance 1 tick.** The market opens.
 
 **One rule for the GM:** do not give players access to the journal named **"NCI GM Control"**. It holds the hidden state: fair values, the true market regime, insider-trading heat, businesses' Exposure and staff traits. (It is hidden from play, not secret: a player at the browser's developer console could still read it.)
@@ -109,7 +109,7 @@ The **market date** is the calendar date plus any days the GM has advanced the m
 
 ## Keeping it healthy
 
-- **Self-check** (Tools tab, the "NCI: Self-check" macro, or `game.nightcity.investments.verify()` in the console) lists problems such as a fund holding a deleted company or a negative balance. It changes nothing.
-- **Updates** bring stored data up to date by themselves the first time the GM loads in; the Tools tab shows the data version.
+- **Self-check** (Audit tab, the "NCI: Self-check" macro, or `game.nightcity.investments.verify()` in the console) lists problems such as a fund holding a deleted company or a negative balance. It changes nothing.
+- **Updates** bring stored data up to date by themselves the first time the GM loads in; the Audit tab shows the data version.
 - **Resetting the market** (Market tab) restarts prices and history from each company's initial price. Portfolios are kept.
 - If something a player did seems ignored after an update, check that the GM's client has reloaded.

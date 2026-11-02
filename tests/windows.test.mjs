@@ -148,6 +148,7 @@ test('funds and brokers show in the terminal, and the portfolio has the access p
   app.tab = 'market';
   let html = render('templates/terminal/market.hbs', await app._prepareContext());
   assertClean(html, 'market tab with funds');
+  assert.ok(html.indexOf('nci-tabs') < html.indexOf('nci-header'), 'the tabs come first, then the index and mood');
   assert.ok(text(html).includes(fund.name), 'fund listed');
 
   app.selectedId = fund.id;
@@ -161,6 +162,7 @@ test('funds and brokers show in the terminal, and the portfolio has the access p
   app.tab = 'portfolio';
   html = render('templates/terminal/market.hbs', await app._prepareContext());
   assertClean(html, 'portfolio tab');
+  assert.ok(!html.includes('nci-header'), 'the index and mood are on the Market tab only');
   const t = text(html);
   assert.ok(t.includes('Your broker') && t.includes('Fixer'), 'the broker is shown');
   assert.ok(t.includes('Seasoned (12)'), 'skill read from the sheet');
@@ -477,7 +479,9 @@ test('the GM console Gigs tab shows what needs mapping, what awaits approval, ma
   app.tab = 'events';
   ctx = await app._prepareContext();
   assert.ok(ctx.impacts.some((i) => i.persistence === 'Gig' && i.label.includes('+3%')), 'the events queue labels it as a gig impact');
-  assert.ok(ctx.log.some((l) => l.text.includes('Gig outcome on ARA')), 'and the log records it');
+  app.tab = 'tools';
+  ctx = await app._prepareContext();
+  assert.ok(ctx.log.some((l) => l.text.includes('Gig outcome on ARA')), 'and the log on the Audit tab records it');
 
   for (const p of (await import('../scripts/data/MarketStore.js')).MarketStore.getGigs().pending) await GigImpactService.discard(p.id);
   await settle();
