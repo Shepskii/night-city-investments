@@ -178,8 +178,10 @@ test('after a week closes, the ledger shows the digest and the draw', async () =
   await S.BusinessService.onTick();
   const html = await renderBusiness(windowFor(fix, 'ledger'));
   assertClean(html, 'ledger with a week');
-  assert.match(text(html), /Week 1/);
   assert.match(text(html), /You may draw up to/);
+  const reports = await renderBusiness(windowFor(fix, 'reports'));
+  assertClean(reports, 'reports with a week');
+  assert.match(text(reports), /Week 1/);
 
   const gm = await renderConsole();
   assertClean(gm, 'GM tab with an open business');
@@ -225,8 +227,8 @@ test('the overview charts the weeks the business keeps: bars, cash and each stan
     assert.match(html, /<title>Week 1 \(to [^)]+\): takings 180 eb, costs 300 eb, profit -120 eb<\/title>/);
     assert.match(html, /<title>Week 3 \(to [^)]+\): takings 560 eb, costs 340 eb, profit \+220 eb<\/title>/, 'the costs bar holds everything the profit takes off');
     assert.match(html, /Week 3 \(to [^)]+\): cash 1,160 eb \(from 980 eb: takings 560, upkeep −300, wages −50, other -30\)/, 'the cash line accounts for every eddie');
-    const ledger = await renderBusiness(windowFor(med, 'ledger'));
-    assertClean(ledger, 'ledger with weeks');
+    const ledger = await renderBusiness(windowFor(med, 'reports'));
+    assertClean(ledger, 'reports with weeks');
     assert.match(text(ledger), /Takings\s+Upkeep\s+Wages\s+Other\s+Profit\s+Cash/);
     assert.match(text(ledger), /\+560\s+-300\s+-50\s+-30\s+\+220\s+1,160/, 'cash at the start + takings - upkeep - wages + other = cash at the close');
     const reputation = html.match(/Reputation<\/span>\s*<span class="nci-cells">(.*?)<\/span>\s*<strong/s)[1];
@@ -369,9 +371,9 @@ test('a company shows its officers, the information rolls and the report; a shar
     assert.match(officer, /data-action="auditRoll"/);
     assert.match(text(officer), /found Exposure low; the auditors cleaned some of it up, leaving it clean/);
     assert.match(officer, /name="targetName"/);
-    assert.doesNotMatch(text(officer), /toward this month/, 'the monthly report is on the Ledger tab');
-    const ledger = await renderBusiness(windowFor(med, 'ledger'));
-    assertClean(ledger, 'company ledger');
+    assert.doesNotMatch(text(officer), /toward this month/, 'the monthly report is on the Reports tab');
+    const ledger = await renderBusiness(windowFor(med, 'reports'));
+    assertClean(ledger, 'company reports');
     assert.match(text(ledger), /Week 2 of 4 toward this month/);
     assert.doesNotMatch(ledger, /data-action="reportRoll"/, 'only in the last week');
     // A share grant (E3), at a company only: half-percent steps up to 5%, from the Employee window.
@@ -784,7 +786,7 @@ test('a big event: the GM can run it as a scene, the player is told, and every h
   }
 });
 
-test('a back room: pending for the GM, then on the Work tab with its dirty cash, actions and band', async () => {
+test('a back room: pending for the GM, then on the Back Room tab with its dirty cash, actions and band', async () => {
   const b = S.BusinessRepository.all()[0];
   const saved = structuredClone(b);
   try {
@@ -799,14 +801,14 @@ test('a back room: pending for the GM, then on the Work tab with its dirty cash,
     assertClean(asked, 'pending back room for the GM');
     assert.match(asked, /data-action="businessRoomApprove"/);
     assert.match(text(await renderConsole('pending')), /A back room, Black-market chrome: let it open or turn it down/);
-    const waiting = await renderBusiness(windowFor(med, 'week'));
+    const waiting = await renderBusiness(windowFor(med, 'backRoom'));
     assertClean(waiting, 'waiting for the GM');
     assert.match(text(waiting), /waiting for the GM before it opens/);
     assert.doesNotMatch(text(waiting), /Work the back room/);
 
     assert.equal((await S.BusinessService.approveBackRoom(b.id)).ok, true);
     await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], backRoom: { ...S.BusinessRepository.all()[0].backRoom, dirty: 1200, band: 'low' } });
-    const open = await renderBusiness(windowFor(med, 'week'));
+    const open = await renderBusiness(windowFor(med, 'backRoom'));
     assertClean(open, 'an open back room');
     for (const words of [/Dirty cash 1,200 eb/, /Exposure low/i, /Work the back room/, /Launder/, /Pay someone off/, /Costs 150 eb of dirty cash/]) assert.match(text(open), words);
     assert.match(open, /data-action="takeDirty"/);
@@ -843,12 +845,13 @@ test('a raid and a shut back room read as words, and the hand\'s post is offered
     assert.match(text(raided), /A raid on the back room/);
     assert.match(text(raided), /Unanswered, they seize all the dirty cash/);
     assert.match(text(raided), /Your GM may choose to play this one out/);
+    assert.match(text(await renderBusiness(windowFor(med, 'backRoom'))), /A raid on the back room/, 'and where the room is worked');
     assert.match(await renderBusiness(windowFor(med, 'staff')), /Back-room hand/);
     assert.doesNotMatch(sceneHook({ name: 'Back Room', location: 'upstairs', backRoom: { kind: 'ripping' } }, { kind: 'bust' }), /NCI\.|\{\w+\}/);
     assert.match(text(await renderConsole('businesses')), /A raid on the back room/);
 
     await S.BusinessRepository.save({ ...plain, backRoom: { kind: 'ripping', status: 'shut', dirty: 0 }, period: { ...b.period, slots: [], event: null } });
-    const shut = await renderBusiness(windowFor(med, 'week'));
+    const shut = await renderBusiness(windowFor(med, 'backRoom'));
     assertClean(shut, 'a shut back room');
     assert.match(text(shut), /Shut by a raid/);
     assert.doesNotMatch(shut, /data-action="takeDirty"/);
@@ -860,7 +863,7 @@ test('a raid and a shut back room read as words, and the hand\'s post is offered
   }
 });
 
-test('a gang\'s offer and deal on the Work tab, and a company\'s crime on its own, read as words', async () => {
+test('a gang\'s offer and deal on the Back Room tab, and a company\'s crime on its own, read as words', async () => {
   const { FactionRepository } = await import('../scripts/data/FactionRepository.js');
   await FactionRepository.importStarter();
   const b = S.BusinessRepository.all()[0];
@@ -868,7 +871,7 @@ test('a gang\'s offer and deal on the Work tab, and a company\'s crime on its ow
   try {
     const plain = { ...b, status: 'open', stage: 0, company: null, officers: [], listing: null, charter: null, takeover: null, administration: null, regCase: null, campaign: null, scene: null, proposals: [], district: 'ocz', standings: {}, period: { ...b.period, slots: [], event: null } };
     await S.BusinessRepository.save({ ...plain, backRoom: { kind: 'ripping', status: 'open', dirty: 500, band: 'low', offer: { factionId: 'gang_maelstrom', name: 'Maelstrom', cash: 2000, cut: 0.25, day: 1 } } });
-    const offered = await renderBusiness(windowFor(med, 'week'));
+    const offered = await renderBusiness(windowFor(med, 'backRoom'));
     assertClean(offered, 'a gang\'s offer');
     assert.match(text(offered), /Maelstrom offers 2,000 eb for 25%/);
     assert.match(offered, /data-action="gangDeal"/);
@@ -876,7 +879,7 @@ test('a gang\'s offer and deal on the Work tab, and a company\'s crime on its ow
     assert.match(offered, /name="aimFaction"[\s\S]*Maelstrom/);
 
     await S.BusinessRepository.save({ ...plain, backRoom: { kind: 'ripping', status: 'open', dirty: 500, band: 'low', deal: { factionId: 'gang_maelstrom', name: 'Maelstrom', cash: 2000, cut: 0.25, since: 1 } } });
-    const dealt = await renderBusiness(windowFor(med, 'week'));
+    const dealt = await renderBusiness(windowFor(med, 'backRoom'));
     assertClean(dealt, 'a deal');
     assert.match(text(dealt), /Maelstrom has a deal: 25% of the takings/);
     assert.match(dealt, /data-action="endGangDeal"/);
@@ -890,7 +893,7 @@ test('a gang\'s offer and deal on the Work tab, and a company\'s crime on its ow
     const { CompanyRepository } = await import('../scripts/data/CompanyRepository.js');
     const listAll = CompanyRepository.all;
     CompanyRepository.all = () => [{ id: 'ARA', ticker: 'ARA', name: 'Arasaka' }];
-    const company = await renderBusiness(windowFor(med, 'week'));
+    const company = await renderBusiness(windowFor(med, 'backRoom'));
     CompanyRepository.all = listAll;
     assertClean(company, 'a company\'s crime');
     for (const name of [/Dump the waste/, /Bribe a regulator/, /Black ops/, /Costs 1,000 eb from the cash/, /A campaign costs 2,500 eb/]) assert.match(text(company), name);
@@ -924,7 +927,11 @@ test('a back room at a company is hidden from a shareholder who is not an office
     const other = await renderBusiness(windowFor(fix, 'week'));
     assertClean(other, 'a shareholder\'s Work tab');
     assert.doesNotMatch(text(other), secret);
-    const otherLedger = await renderBusiness(windowFor(fix, 'ledger'));
+    assert.doesNotMatch(other, /data-tab="backRoom"/, 'a shareholder has no Back Room tab');
+    const sneaking = windowFor(fix, 'backRoom');
+    assert.doesNotMatch(text(await renderBusiness(sneaking)), secret);
+    assert.equal(sneaking.tab, 'week', 'nor can one be left open on it');
+    const otherLedger = await renderBusiness(windowFor(fix, 'ledger')) + await renderBusiness(windowFor(fix, 'reports'));
     assertClean(otherLedger, 'a shareholder\'s ledger');
     assert.doesNotMatch(text(otherLedger), /Laundered|fine from a raid|took some of the dirty|Work the back room|A raid on/);
     assert.match(text(otherLedger), /Other income/);
@@ -936,16 +943,64 @@ test('a back room at a company is hidden from a shareholder who is not an office
     assert.match(JSON.stringify(cashbookContext(S.BusinessRepository.all()[0], 99, true)), /A raid on the back room/);
     assert.doesNotMatch(text(await renderBusiness(windowFor(fix, 'projects'))), /Back room<|A back room, behind/);
 
-    const officer = await renderBusiness(windowFor(med, 'week'));
-    assertClean(officer, 'an officer\'s Work tab');
+    const officer = await renderBusiness(windowFor(med, 'backRoom'));
+    assertClean(officer, 'an officer\'s Back Room tab');
     for (const words of [/Back room: Black-market chrome/, /A raid on the back room/, /Dump the waste/, /Work the back room/, /Maelstrom offers 2,000 eb/]) assert.match(text(officer), words);
     assert.match(officer, /data-action="takeDirty"/);
-    const officerLedger = await renderBusiness(windowFor(med, 'ledger'));
+    const officerLedger = await renderBusiness(windowFor(med, 'ledger')) + await renderBusiness(windowFor(med, 'reports'));
     assert.match(text(officerLedger), /Laundered through the takings/);
     assert.doesNotMatch(await renderBusiness(windowFor(med, 'projects')), /<strong>Back room<\/strong>/, 'a company cannot build one');
 
     await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], backRoom: { kind: 'ripping', status: 'shut', dirty: 0 }, period: { ...b.period, slots: [], event: null } });
-    assert.match(text(await renderBusiness(windowFor(med, 'week'))), /Shut by a raid, for good/);
+    assert.match(text(await renderBusiness(windowFor(med, 'backRoom'))), /Shut by a raid, for good/);
+  } finally {
+    CompanyRepository.all = listAll;
+    await S.BusinessRepository.save(saved);
+  }
+});
+
+test('the Business window has four folders, each with its tabs, and each tab holds its own', async () => {
+  const { CompanyRepository } = await import('../scripts/data/CompanyRepository.js');
+  const listAll = CompanyRepository.all;
+  CompanyRepository.all = () => [{ id: 'ARA', ticker: 'ARA', name: 'Arasaka' }];
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  try {
+    await S.BusinessRepository.save({ ...b, status: 'open', stage: 0, company: null, officers: [], listing: null, charter: null, takeover: null, administration: null, regCase: null, backRoom: { kind: 'ripping', status: 'open', dirty: 100, band: 'low' } });
+    const tabsOn = (html) => [...html.matchAll(/data-tab="(\w+)"/g)].map((m) => m[1]);
+    const foldersOn = (html) => [...html.matchAll(/data-group="(\w+)"/g)].map((m) => m[1]);
+    const overview = await renderBusiness(windowFor(med, 'overview'));
+    assert.deepEqual(foldersOn(overview), ['overview', 'financial', 'operations', 'ownership']);
+    assert.deepEqual(tabsOn(overview), [], 'Overview has no tabs under it');
+    assert.match(overview, /<div class="nci-bizname">Back Room<\/div>/, 'the name stands out');
+    const pages = {};
+    for (const tab of ['ledger', 'reports', 'week', 'staff', 'projects', 'backRoom', 'partners', 'growth']) {
+      pages[tab] = await renderBusiness(windowFor(med, tab));
+      assertClean(pages[tab], tab);
+    }
+    assert.deepEqual(tabsOn(pages.reports), ['ledger', 'reports']);
+    assert.deepEqual(tabsOn(pages.staff), ['week', 'staff', 'projects', 'backRoom']);
+    assert.deepEqual(tabsOn(pages.growth), ['partners', 'growth']);
+    assert.match(text(pages.ledger), /You may draw up to|Draw/);
+    assert.match(pages.ledger, /nci-block[^>]*>\s*<h3>Loans/);
+    assert.doesNotMatch(text(pages.ledger), /Weekly|Week \d/, 'digests are on Reports');
+    assert.doesNotMatch(text(pages.reports), /Loans/, 'loans are on the Ledger');
+    assert.match(pages.backRoom, /data-id="roomWork"/);
+    assert.match(pages.backRoom, /data-id="campaign"/);
+    assert.doesNotMatch(pages.week, /data-action="takeDirty"|id="roomWork"|data-id="campaign"/, 'Work is the honest work');
+    assert.match(pages.week, /data-id="work"/);
+
+    // A folder opens on the tab last open in it.
+    const app = windowFor(med, 'overview');
+    app.render = () => {};
+    const { switchTab } = Apps.Business.DEFAULT_OPTIONS.actions;
+    switchTab.call(app, null, { dataset: { group: 'operations' } });
+    assert.equal(app.tab, 'week');
+    switchTab.call(app, null, { dataset: { tab: 'projects' } });
+    switchTab.call(app, null, { dataset: { group: 'financial' } });
+    assert.equal(app.tab, 'ledger');
+    switchTab.call(app, null, { dataset: { group: 'operations' } });
+    assert.equal(app.tab, 'projects');
   } finally {
     CompanyRepository.all = listAll;
     await S.BusinessRepository.save(saved);

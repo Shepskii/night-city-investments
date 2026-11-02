@@ -1,7 +1,7 @@
 /**
  * Cashbook window: one closed week of a business, in detail.
  * @file scripts/ui/Business/CashbookDialogApp.js
- * @description Opened by clicking a week in the Ledger tab's weekly digests. Shows the income and
+ * @description Opened by clicking a week in the Reports tab's weekly digests. Shows the income and
  *              expenses that make up the week's profit, the loan repaid, every other payment in or out
  *              of the cash that week, and the cash at the close. Read-only.
  */

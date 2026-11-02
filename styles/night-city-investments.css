@@ -275,6 +275,8 @@
 .nci-app .nci-tabs.nci-groups button:hover { background: var(--nci-row-hover) !important; }
 .nci-app .nci-tabs.nci-groups button.active { background: var(--nci-accent-dim) !important; color: #fff !important; }
 .nci-app .nci-tabs.nci-subtabs button { padding: 7px 13px; font-size: 13px; }
+/* Starting a new business is not a folder. */
+.nci-app .nci-tabs.nci-groups button.nci-tab-new { background: none !important; clip-path: none; font-size: 13px; }
 .nci-app .nci-actor { margin-left: auto; max-width: 220px; }
 /* The Business window's pickers, kept together at the right of the tab bar as the market window's is. */
 .nci-app .nci-tabs .nci-pickers { display: flex; gap: 6px; margin-left: auto; flex: 0 0 auto; }

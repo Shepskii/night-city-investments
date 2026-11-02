@@ -1,8 +1,37 @@
 <section class="nci-terminal nci-business{{#if readOnly}} nci-readonly{{/if}}">
-  <nav class="nci-tabs">
+  {{#*inline "weekEvent"}}
+    <div class="nci-gig">
+      <div class="nci-gigtop"><strong>{{name}}</strong>{{#if good}}<span class="nci-up">{{localize "NCI.Business.Opportunity"}}</span>{{else}}<span class="nci-down">{{localize "NCI.Business.Trouble"}}</span>{{/if}}</div>
+      <div>{{hint}}</div>
+      {{#if from}}<div class="nci-muted">{{from}}</div>{{/if}}
+      {{#if maybeScene}}<div class="nci-muted">{{maybeScene}}</div>{{/if}}
+      <div class="nci-muted">{{uses}} {{security}}</div>
+      {{#if answered}}<div><strong>{{answered}}</strong></div>{{else}}<div class="nci-muted">{{ifNot}}</div>{{/if}}
+      {{#if canAnswer}}<div class="nci-actions"><button type="button" data-action="respond"><i class="fas fa-dice-d10"></i> {{localize "NCI.Business.Answer"}}</button></div>{{/if}}
+    </div>
+  {{/inline}}
+  {{#*inline "weekActions"}}
+    <table class="nci-market">
+      <thead><tr><th>{{localize "NCI.Business.ActionLabel"}}</th><th></th><th class="nci-slots{{#if noSlots}} nci-slots-none{{/if}}">{{slotsFree}}</th></tr></thead>
+      <tbody>
+        {{#each rows}}
+        <tr>
+          <td><strong>{{name}}</strong><div class="nci-muted">{{hint}}</div>{{#if canRoll}}{{#if aim}}<div class="nci-muted">{{aim.gift}}</div>{{/if}}{{/if}}</td>
+          <td>{{#if taken}}{{taken}}{{/if}}{{#if aimedAt}}<div class="nci-muted">{{aimedAt}}</div>{{/if}}{{#if waiting}}<div class="nci-muted">{{waiting}}</div>{{/if}}{{#if bonus}}<div class="nci-up">{{bonus}}</div>{{/if}}</td>
+          <td class="nci-rowbtns nci-endbtns">
+            {{#if canRoll}}{{#if aim}}<select name="aimFaction">{{#unless aim.required}}<option value="">{{localize "NCI.Business.AimNone"}}</option>{{/unless}}{{#each aim.options}}<option value="{{value}}">{{label}}</option>{{/each}}</select>{{/if}}{{/if}}
+            {{#if canRoll}}<button type="button" data-action="actionRoll" data-id="{{id}}"><i class="fas fa-dice-d10"></i> {{localize "NCI.Business.TakeSlot"}}</button>{{/if}}
+            {{#if canHelp}}<button type="button" data-action="helpRoll" data-id="{{id}}" title="{{@root.business.terms.HelpHint}}"><i class="fas fa-hands-helping"></i> {{localize "NCI.Business.Help"}}</button>{{/if}}
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  {{/inline}}
+  <nav class="nci-tabs nci-groups">
     {{#if business}}
     {{#unless business.invited}}
-    {{#each tabs}}<button type="button" data-action="switchTab" data-tab="{{id}}" class="{{#if active}}active{{/if}}">{{label}}</button>{{/each}}
+    {{#each folders}}<button type="button" data-action="switchTab" data-group="{{id}}" class="{{#if active}}active{{/if}}">{{label}}</button>{{/each}}
     {{/unless}}
     <button type="button" class="nci-tab-new" data-action="startNew" title="{{localize 'NCI.Business.StartHint'}}">+ {{localize "NCI.Business.Start"}}</button>
     {{/if}}
@@ -19,6 +48,11 @@
       {{/if}}
     </div>
   </nav>
+  {{#if business}}{{#unless business.invited}}{{#if subTabs.length}}
+  <nav class="nci-tabs nci-subtabs">
+    {{#each subTabs}}<button type="button" data-action="switchTab" data-tab="{{id}}" class="{{#if active}}active{{/if}}">{{label}}</button>{{/each}}
+  </nav>
+  {{/if}}{{/unless}}{{/if}}
 
   {{#unless picker.enabled}}<p class="nci-warn">{{localize "NCI.Business.Disabled"}}</p>{{/unless}}
   {{#if readOnly}}<p class="nci-warn">{{localize "NCI.Business.ReadOnly"}}</p>{{/if}}
@@ -101,9 +135,9 @@
   {{/if}}
 
   {{#with business}}
-  <header class="nci-header">
-    <div><strong>{{name}}</strong> <span class="nci-muted">{{archetype}}{{#if location}} &middot; {{location}}{{/if}}</span></div>
-    <div>{{stage}}{{#if ticker}} ({{ticker}}){{/if}} &middot; <strong>{{statusLabel}}</strong>
+  <header class="nci-bizhead">
+    <div class="nci-bizname">{{name}}</div>
+    <div><strong>{{statusLabel}}</strong> <span class="nci-muted">&middot; {{stage}}{{#if ticker}} ({{ticker}}){{/if}} &middot; {{archetype}}{{#if location}} &middot; {{location}}{{/if}}</span>
       {{#if onMarket}}<button type="button" data-action="viewOnMarket" data-id="{{ticker}}"><i class="fas fa-chart-line"></i> {{localize "NCI.Business.ViewOnMarket"}}</button>{{/if}}
     </div>
   </header>
@@ -241,50 +275,8 @@
     <h3>{{localize "NCI.Business.ThisWeek"}}</h3>
     <p class="nci-hint">{{localize "NCI.Business.WeekRuns" from=from to=to day=closesOn}} {{daysText}}</p>
     {{#if scene}}<div class="nci-warn">{{scene}}</div>{{/if}}
-    {{#with backRoom}}
-    <div class="nci-gig">
-      <div class="nci-gigtop"><strong>{{localize "NCI.BackRoom.Title"}}: {{name}}</strong></div>
-      {{#if shut}}<div class="nci-warn">{{shutText}}</div>{{else}}{{#if pending}}<div class="nci-warn">{{localize "NCI.BackRoom.Pending"}}</div>{{else}}
-      {{#if informant}}<div class="nci-warn">{{informant}}</div>{{/if}}
-      {{#if deal}}<div>{{deal}}</div>{{#if canPropose}}<div class="nci-actions"><button type="button" data-action="endGangDeal">{{localize "NCI.BackRoom.EndDeal"}}</button></div>{{/if}}{{/if}}
-      {{#if offer}}<div>{{offer}}</div>{{#if canPropose}}<div class="nci-actions"><button type="button" data-action="gangDeal">{{localize "NCI.BackRoom.TakeDeal"}}</button></div>{{/if}}{{/if}}
-      <div class="nci-gmstats"><span><span class="nci-muted">{{localize "NCI.BackRoom.Dirty"}}</span> <strong>{{dirty}} eb</strong></span><span><span class="nci-muted">{{localize "NCI.BackRoom.Exposure"}}</span> <strong>{{band}}</strong></span></div>
-      {{#if last}}<div class="nci-muted">{{last}}</div>{{/if}}
-      {{#if lying}}<div class="nci-muted">{{lying}}</div>{{/if}}
-      <div class="nci-actions">
-        {{#if canTake}}<input type="number" name="dirtyAmount" min="1" max="{{max}}" step="1" value="{{max}}" class="nci-days" title="{{takeHint}}"><button type="button" data-action="takeDirty" title="{{takeHint}}">{{localize "NCI.BackRoom.Take"}}</button>{{/if}}
-        {{#if canLieLow}}<button type="button" data-action="lieLow">{{localize "NCI.BackRoom.LieLow"}}</button>{{/if}}
-      </div>
-      {{/if}}{{/if}}
-    </div>
-    {{/with}}
-    {{#with event}}
-    <div class="nci-gig">
-      <div class="nci-gigtop"><strong>{{name}}</strong>{{#if good}}<span class="nci-up">{{localize "NCI.Business.Opportunity"}}</span>{{else}}<span class="nci-down">{{localize "NCI.Business.Trouble"}}</span>{{/if}}</div>
-      <div>{{hint}}</div>
-      {{#if from}}<div class="nci-muted">{{from}}</div>{{/if}}
-      {{#if maybeScene}}<div class="nci-muted">{{maybeScene}}</div>{{/if}}
-      <div class="nci-muted">{{uses}} {{security}}</div>
-      {{#if answered}}<div><strong>{{answered}}</strong></div>{{else}}<div class="nci-muted">{{ifNot}}</div>{{/if}}
-      {{#if canAnswer}}<div class="nci-actions"><button type="button" data-action="respond"><i class="fas fa-dice-d10"></i> {{localize "NCI.Business.Answer"}}</button></div>{{/if}}
-    </div>
-    {{/with}}
-    <table class="nci-market">
-      <thead><tr><th>{{localize "NCI.Business.ActionLabel"}}</th><th></th><th class="nci-slots{{#if noSlots}} nci-slots-none{{/if}}">{{slotsFree}}</th></tr></thead>
-      <tbody>
-        {{#each actions}}
-        <tr>
-          <td><strong>{{name}}</strong><div class="nci-muted">{{hint}}</div>{{#if canRoll}}{{#if aim}}<div class="nci-muted">{{aim.gift}}</div>{{/if}}{{/if}}</td>
-          <td>{{#if taken}}{{taken}}{{/if}}{{#if aimedAt}}<div class="nci-muted">{{aimedAt}}</div>{{/if}}{{#if waiting}}<div class="nci-muted">{{waiting}}</div>{{/if}}{{#if bonus}}<div class="nci-up">{{bonus}}</div>{{/if}}</td>
-          <td class="nci-rowbtns nci-endbtns">
-            {{#if canRoll}}{{#if aim}}<select name="aimFaction">{{#unless aim.required}}<option value="">{{localize "NCI.Business.AimNone"}}</option>{{/unless}}{{#each aim.options}}<option value="{{value}}">{{label}}</option>{{/each}}</select>{{/if}}{{/if}}
-            {{#if canRoll}}<button type="button" data-action="actionRoll" data-id="{{id}}"><i class="fas fa-dice-d10"></i> {{localize "NCI.Business.TakeSlot"}}</button>{{/if}}
-            {{#if canHelp}}<button type="button" data-action="helpRoll" data-id="{{id}}" title="{{@root.business.terms.HelpHint}}"><i class="fas fa-hands-helping"></i> {{localize "NCI.Business.Help"}}</button>{{/if}}
-          </td>
-        </tr>
-        {{/each}}
-      </tbody>
-    </table>
+    {{#with event}}{{> weekEvent}}{{/with}}
+    {{> weekActions rows=actions}}
     {{#if helped}}<p class="nci-muted">{{helped}}</p>{{/if}}
     <p class="nci-hint">{{unworkedNote}}</p>
   </div>
@@ -309,6 +301,39 @@
     {{/if}}
   </div>
   {{/with}}
+  {{else}}
+  <p class="nci-empty">{{localize "NCI.Business.NotOpenYet"}}</p>
+  {{/with}}
+  {{/if}}
+
+  {{#if ../isBackRoom}}
+  {{#with week}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.Business.Tab.backRoom"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Business.WeekRuns" from=from to=to day=closesOn}} {{daysText}}</p>
+    {{#if roomScene}}<div class="nci-warn">{{roomScene}}</div>{{/if}}
+    {{#with backRoom}}
+    <div class="nci-gig">
+      <div class="nci-gigtop"><strong>{{localize "NCI.BackRoom.Title"}}: {{name}}</strong></div>
+      {{#if shut}}<div class="nci-warn">{{shutText}}</div>{{else}}{{#if pending}}<div class="nci-warn">{{localize "NCI.BackRoom.Pending"}}</div>{{else}}
+      {{#if informant}}<div class="nci-warn">{{informant}}</div>{{/if}}
+      {{#if deal}}<div>{{deal}}</div>{{#if canPropose}}<div class="nci-actions"><button type="button" data-action="endGangDeal">{{localize "NCI.BackRoom.EndDeal"}}</button></div>{{/if}}{{/if}}
+      {{#if offer}}<div>{{offer}}</div>{{#if canPropose}}<div class="nci-actions"><button type="button" data-action="gangDeal">{{localize "NCI.BackRoom.TakeDeal"}}</button></div>{{/if}}{{/if}}
+      <div class="nci-gmstats"><span><span class="nci-muted">{{localize "NCI.BackRoom.Dirty"}}</span> <strong>{{dirty}} eb</strong></span><span><span class="nci-muted">{{localize "NCI.BackRoom.Exposure"}}</span> <strong>{{band}}</strong></span></div>
+      {{#if last}}<div class="nci-muted">{{last}}</div>{{/if}}
+      {{#if lying}}<div class="nci-muted">{{lying}}</div>{{/if}}
+      <div class="nci-actions">
+        {{#if canTake}}<input type="number" name="dirtyAmount" min="1" max="{{max}}" step="1" value="{{max}}" class="nci-days" title="{{takeHint}}"><button type="button" data-action="takeDirty" title="{{takeHint}}">{{localize "NCI.BackRoom.Take"}}</button>{{/if}}
+        {{#if canLieLow}}<button type="button" data-action="lieLow">{{localize "NCI.BackRoom.LieLow"}}</button>{{/if}}
+      </div>
+      {{/if}}{{/if}}
+    </div>
+    {{/with}}
+    {{#if noRoom}}<p class="nci-hint">{{localize "NCI.BackRoom.NoneYet"}}</p>{{/if}}
+    {{#with roomEvent}}{{> weekEvent}}{{/with}}
+    {{#if shadyActions.length}}{{> weekActions rows=shadyActions}}{{/if}}
+    {{#if helped}}<p class="nci-muted">{{helped}}</p>{{/if}}
+  </div>
   {{else}}
   <p class="nci-empty">{{localize "NCI.Business.NotOpenYet"}}</p>
   {{/with}}
@@ -598,6 +623,19 @@
     {{/if}}
   </div>
   {{/with}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.Business.LedgerTitle"}}</h3>
+    {{#if entries.length}}
+    <table class="nci-market"><tbody>
+      {{#each entries}}<tr><td class="nci-muted">{{date}}</td><td>{{what}}</td><td class="{{cls}}">{{amount}}</td></tr>{{/each}}
+    </tbody></table>
+    {{else}}<p class="nci-empty">{{localize "NCI.Business.NoLedger"}}</p>{{/if}}
+  </div>
+  {{/with}}
+  {{/if}}
+
+  {{#if ../isReports}}
+  {{#with ledger}}
   {{#with report}}
   <div class="nci-block">
     <h3>{{localize "NCI.Company.Report"}}</h3>
@@ -632,14 +670,6 @@
       </tbody>
     </table>
     {{else}}<p class="nci-empty">{{localize "NCI.Business.NoWeeks"}}</p>{{/if}}
-  </div>
-  <div class="nci-block">
-    <h3>{{localize "NCI.Business.LedgerTitle"}}</h3>
-    {{#if entries.length}}
-    <table class="nci-market"><tbody>
-      {{#each entries}}<tr><td class="nci-muted">{{date}}</td><td>{{what}}</td><td class="{{cls}}">{{amount}}</td></tr>{{/each}}
-    </tbody></table>
-    {{else}}<p class="nci-empty">{{localize "NCI.Business.NoLedger"}}</p>{{/if}}
   </div>
   {{/with}}
   {{/if}}

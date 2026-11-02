@@ -2263,6 +2263,7 @@
     },
     "BackRoom": {
       "Title": "Back room",
+      "NoneYet": "This business has no back room. Opening one is a project: see the Projects tab.",
       "Kind": {
         "ripping": "Black-market chrome",
         "chopShop": "Chop shop",
@@ -2929,7 +2930,8 @@
       "LeaveConfirmCompany": "Offer your shares to the other shareholders? They have the buy-out window to buy them at book value; after that they go to your heir.",
       "DecisionsHint": "Closing needs every partner with a vote; one refusal ends the proposal.",
       "DecisionsHintCompany": "Closing needs every shareholder with a vote; one refusal ends the proposal.",
-      "Tab": { "overview": "Overview", "week": "Work", "projects": "Projects", "ledger": "Ledger", "partners": "Partners", "partnersCompany": "Shareholders", "growth": "Growth", "staff": "Staff" },
+      "Folder": { "overview": "Overview", "financial": "Financial", "operations": "Operations", "ownership": "Ownership" },
+      "Tab": { "overview": "Overview", "week": "Work", "projects": "Projects", "ledger": "Ledger", "reports": "Reports", "backRoom": "Back Room", "partners": "Partners", "partnersCompany": "Shareholders", "growth": "Growth", "staff": "Staff" },
       "DaysLeft": "You have {n} business day(s) left this week.",
       "AimGift": "Aiming at a faction costs a {gift} eb gift from the cash, spent whatever the roll.",
       "AimNone": "No faction",

@@ -115,12 +115,14 @@ Open the **Business** window from the scene controls (the shop icon). Pick your 
 
 ## The week
 
+The Business window has four folders. **Overview:** where the business stands. **Financial:** the **Ledger** (drawing money, adding funds, loans, dividends and every entry) and **Reports** (monthly reports and weekly digests). **Operations:** **Work** (the week's ordinary actions), **Staff**, **Projects** and **Back Room** (the back room and anything illegal or likely to draw attention, including campaigns and Shortcuts; at a company, only officers see this tab). **Ownership:** **Partners** or **Shareholders** (the owners, votes and capital) and **Growth**.
+
 A business week closes on the weekday your GM chose.
 
 - **Actions:** a side business has one action slot a week, a registered business two, and a company three. A side business can Work the shop, Promote, Source supplies, Fix the place up, or Keep it safe. A partner takes the slot and rolls.
 - **Help:** partners who do not take a slot can make a complementary check for +1 on it.
 - **Events:** a week may bring an event (a shakedown, a breakdown, a rival, an inspection, a big order, a staff problem). A partner answers it with a slot and a roll, or lets it cost the week.
-- **The close:** takings go into the business's **cash**, and upkeep, wages and loan payments come out. The **Ledger** tab keeps a digest of each week; click one for its cashbook.
+- **The close:** takings go into the business's **cash**, and upkeep, wages and loan payments come out. The **Reports** tab keeps a digest of each week; click one for its cashbook.
 - **Draws:** each partner may draw their share of last week's profit.
 - **Standing:** Reputation, Capacity, Cost base and (once registered) Compliance move with your results, and the Overview tab charts them.
 
@@ -184,7 +186,7 @@ The GM approves, then the partners pay any shortfall within a funding window. Th
 - **Permits and compliance:** Compliance.
 - **Shortcuts:** more takings now, and a trail of hidden Exposure.
 
-**Officers** run a company, elected and dismissed by a majority of the shares; only officers take its actions. Every four weeks it publishes a **monthly report**, which an officer may prepare (Accounting; Bold dresses it up, at a risk). Each report on the Ledger tab opens to show the real figures beside the reported ones. Officers can **audit** the company's hidden Exposure and run **due diligence** on a rival business.
+**Officers** run a company, elected and dismissed by a majority of the shares; only officers take its actions. Every four weeks it publishes a **monthly report**, which an officer may prepare (Accounting; Bold dresses it up, at a risk). Each report on the Reports tab opens to show the real figures beside the reported ones. Officers can **audit** the company's hidden Exposure and run **due diligence** on a rival business.
 
 ## Going public
 
@@ -234,7 +236,7 @@ To raise your business's standing with a faction, use **Court a client** (a corp
 
 You also hear things. Every few days your Credibility may bring a rumour by mail about a price move on its way or a hidden stake, saying more the better you roll. **Dig for rumours** on a company's page, once a week, does the same for that company. Trading on a rumour still counts for insider heat, though less than trading on something you did yourself.
 
-**Back rooms.** A shop or registered business can open an illegal operation behind the front, as a project on the Projects tab, if your GM allows it. Each week you can **Work the back room** for dirty cash, **Launder** some of it into the business's cash, **Pay someone off**, or **Lie low**. You can also take dirty cash straight as eddies. The higher your Exposure, the likelier a **raid**: failing one costs dirty cash and a fine, and leaving one unanswered or fumbling it shuts the back room and draws heat on the partners, though the shop carries on. Watch your staff, too. A back-room hand can work it for you, but an unhappy employee or a hidden informant can bring the raid to your door. All of it moves your Exposure, shown as a band, and dirty cash is off the books: it isn't in your book value or reports, and it's lost if the business closes.
+**Back rooms.** A shop or registered business can open an illegal operation behind the front, as a project on the Projects tab, then works it from the **Back Room** tab, if your GM allows it. Each week you can **Work the back room** for dirty cash, **Launder** some of it into the business's cash, **Pay someone off**, or **Lie low**. You can also take dirty cash straight as eddies. The higher your Exposure, the likelier a **raid**: failing one costs dirty cash and a fine, and leaving one unanswered or fumbling it shuts the back room and draws heat on the partners, though the shop carries on. Watch your staff, too. A back-room hand can work it for you, but an unhappy employee or a hidden informant can bring the raid to your door. All of it moves your Exposure, shown as a band, and dirty cash is off the books: it isn't in your book value or reports, and it's lost if the business closes.
 
 If your business charters, its back room keeps running as the officers' secret: other shareholders don't see it, and the officers take any gang deal themselves. A raid that shuts it at a company shuts it for good.
 

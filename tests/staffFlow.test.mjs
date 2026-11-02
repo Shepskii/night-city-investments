@@ -209,12 +209,12 @@ test('the week closes: the wage is paid to Nova, and the ledger and the GM tab s
   }
   assert.equal(S.WealthAdapter.get(nova), wealth + 100);
 
-  const ledger = await renderBusiness(windowFor(med, 'ledger'));
+  const ledger = await renderBusiness(windowFor(med, 'reports')) + await renderBusiness(windowFor(med, 'ledger'));
   assertClean(ledger, 'ledger with wages');
   // The week's wages in their own column, and the overtime paid during the week under Other.
-  assert.match(text(ledger), /Solid success \+\d+ -\d+ -\d+ -54 [+-]\d+ [\d,]+ Ledger/);
+  assert.match(text(ledger), /Solid success \+\d+ -\d+ -\d+ -54 [+-]\d+ [\d,]+/);
   assert.match(text(ledger), /Overtime for Nova, called in by Medtech/);
-  assert.match(ledger, /data-tab="week" class="">Work</, 'the week tab is called Work');
+  assert.match(await renderBusiness(windowFor(med, 'week')), /data-tab="week" class="active">Work</, 'the week tab is called Work');
 
   // Each weekly digest opens the week's cashbook.
   assert.match(ledger, new RegExp(`class="nci-row" data-action="openCashbook" data-index="${week.index}"`));

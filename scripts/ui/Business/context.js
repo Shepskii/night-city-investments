@@ -208,6 +208,7 @@ export function businessContext(business, actor) {
     onMarket: ['scheduled', 'listed'].includes(business.listing?.status) && !!business.company?.ticker,
     status,
     statusLabel: L(`NCI.Business.Status.${status}`),
+    seesBackRoom: business.stage < 2 || (canAct && canRun(business, actor.id)),
     // Standing with factions (F1a): those it has dealt with, and the gangs on its turf; bands only.
     factions: factionsContext(business),
     factionTerms: factionTerms(business),
@@ -478,6 +479,9 @@ function formingContext(business, actor) {
   };
 }
 
+/** The actions listed on the Back Room tab rather than Work: the illegal ones, and those that risk Exposure or being caught. */
+const BACK_ROOM_TAB = Object.freeze([...SECRET_ACTIONS, 'shortcuts', 'campaign']);
+
 function weekContext(business, actor, canAct) {
   const period = business.period;
   const slots = BUSINESS_DEFAULTS.stages[business.stage]?.slots ?? 1;
@@ -497,7 +501,7 @@ function weekContext(business, actor, canAct) {
     const options = factions.filter((f) => aim.kinds.includes(f.kind)).map((f) => ({ value: f.id, label: f.name }));
     return options.length ? { required: !!aim.required, options, gift: L('NCI.Business.AimGift', { gift: whole(giftFor(business)) }) } : null;
   };
-  return {
+  const week = {
     from: dayText(period.startDay),
     to: dayText(period.endDay),
     closesOn: MarketClock.weekdayName(period.endDay),
@@ -532,6 +536,17 @@ function weekContext(business, actor, canAct) {
     notOfficer: business.stage >= 2 && canAct && !runs ? L('NCI.Company.NotOfficer') : '',
     info: business.stage >= 2 ? infoContext(business, runs) : null,
     unworkedNote: L('NCI.Business.UnworkedNote'),
+  };
+  const raided = (kind) => kind === 'bust';
+  return {
+    ...week,
+    actions: week.actions.filter((a) => !BACK_ROOM_TAB.includes(a.id)),
+    shadyActions: week.actions.filter((a) => BACK_ROOM_TAB.includes(a.id)),
+    // A raid on the back room shows there as well as on Work.
+    roomEvent: raided(period.event?.kind) ? week.event : null,
+    roomScene: raided(business.scene?.event.kind) ? week.scene : '',
+    // Opening one is a project, offered up to a company.
+    noRoom: !business.backRoom && business.stage < 2 && underworldOn(business),
   };
 }
 
@@ -862,7 +877,7 @@ function moneyContext(business, actor) {
   };
 }
 
-/** One weekly digest for the Ledger tab and the cashbook; `i` is where it sits among the digests kept. */
+/** One weekly digest for the Reports tab and the cashbook; `i` is where it sits among the digests kept. */
 function digestRow(business, d, i, officer = true) {
   const money = weekMoney(business.digests, i);
   const actions = officer ? d.actions : d.actions.filter((a) => !SECRET_ACTIONS.includes(a.action));

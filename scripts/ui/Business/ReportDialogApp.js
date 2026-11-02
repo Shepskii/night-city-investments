@@ -1,7 +1,7 @@
 /**
  * Monthly report window: one of a company's published reports, in detail.
  * @file scripts/ui/Business/ReportDialogApp.js
- * @description Opened by clicking a report in the Ledger tab's monthly reports. Shows the weeks it
+ * @description Opened by clicking a report in the Reports tab's monthly reports. Shows the weeks it
  *              sums, the real figures beside the reported ones, and how it was prepared. Read-only.
  */
 

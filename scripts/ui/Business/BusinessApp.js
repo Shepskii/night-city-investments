@@ -24,7 +24,15 @@ import { investigate } from '../investigate.js';
 import { answerCase } from '../answerCase.js';
 import { pickerContext, startContext, businessContext, usableActors, jobsContext, termKey } from './context.js';
 
-const TABS = ['overview', 'ledger', 'week', 'projects', 'staff', 'partners', 'growth'];
+/** The folders along the top, and the tabs in each. */
+const FOLDERS = Object.freeze({
+  overview: ['overview'],
+  financial: ['ledger', 'reports'],
+  operations: ['week', 'staff', 'projects', 'backRoom'],
+  ownership: ['partners', 'growth'],
+});
+const TABS = Object.values(FOLDERS).flat();
+const folderOf = (tab) => Object.keys(FOLDERS).find((id) => FOLDERS[id].includes(tab));
 
 /** Read a named input from the form block around the clicked button. */
 const field = (target, name) => target.closest('.nci-form')?.querySelector(`[name="${name}"]`);
@@ -143,6 +151,8 @@ export class BusinessApp extends BaseApplication {
   }
 
   tab = 'overview';
+  /** The tab last open in each folder, to go back to when the folder is chosen again. */
+  lastInFolder = {};
   actorId = (usableActors().find((a) => a.id === game.user.character?.id) ?? usableActors()[0])?.id ?? null;
   businessId = null;
   /** Showing the Start a business form instead of a business. */
@@ -256,7 +266,12 @@ export class BusinessApp extends BaseApplication {
   // ── Actions ────────────────────────────────────────────────────────────────
 
   static _onTab(event, target) {
-    if (TABS.includes(target.dataset.tab)) this.tab = target.dataset.tab;
+    const { tab, group } = target.dataset;
+    const chosen = group ? this.lastInFolder[group] ?? FOLDERS[group]?.[0] : tab;
+    if (TABS.includes(chosen)) {
+      this.tab = chosen;
+      this.lastInFolder[folderOf(chosen)] = chosen;
+    }
     this.render();
   }
 
@@ -575,14 +590,14 @@ export class BusinessApp extends BaseApplication {
     EmployeeDialogApp.ask({ actorId: this.actorId, businessId: business.id, staffId: target.dataset.id });
   }
 
-  /** A week in the Ledger tab's digests: its cashbook, in a window of its own. */
+  /** A week in the Reports tab's digests: its cashbook, in a window of its own. */
   static _onOpenCashbook(event, target) {
     const business = this.business;
     if (!business) return;
     CashbookDialogApp.ask({ businessId: business.id, index: Number(target.dataset.index), officer: !this.actor || canRun(business, this.actor.id) });
   }
 
-  /** A report in the Ledger tab's monthly reports: its real and reported figures, in a window of its own. */
+  /** A report in the Reports tab's monthly reports: its real and reported figures, in a window of its own. */
   static _onOpenReport(event, target) {
     const business = this.business;
     if (!business) return;
@@ -677,12 +692,20 @@ export class BusinessApp extends BaseApplication {
       readOnly: !!this.actor?.isSyndicate && !this.actor.isOfficer,
       gearDrafts: Object.fromEntries(GEAR_FORMS.map((f) => [f, this.gearDrafts[f].map((g) => ({ ...g, value: g.value.toLocaleString() }))])),
     };
+    const shown = this.actor && business ? businessContext(business, this.actor) : null;
+    // A company's back room is its officers' secret, so the tab is not there for anyone else (U1).
+    const hasTab = (t) => t !== 'backRoom' || !!shown?.seesBackRoom;
+    if (shown && !hasTab(this.tab)) this.tab = 'week';
+    context.tab = this.tab;
     for (const t of TABS) context[`is${t[0].toUpperCase()}${t.slice(1)}`] = t === this.tab;
-    context.tabs = TABS.map((t) => ({ id: t, label: L(termKey(business, `NCI.Business.Tab.${t}`)), active: t === this.tab }));
+    const tabLabel = (t) => ({ id: t, label: L(termKey(business, `NCI.Business.Tab.${t}`)), active: t === this.tab });
+    const folder = folderOf(this.tab);
+    context.folders = Object.keys(FOLDERS).map((id) => ({ id, label: L(`NCI.Business.Folder.${id}`), active: id === folder }));
+    context.subTabs = FOLDERS[folder].length > 1 ? FOLDERS[folder].filter(hasTab).map(tabLabel) : [];
     if (!this.actor) return { ...context, noActor: true };
     // The jobs this character holds or is offered at other people's businesses (DESIGN §32).
     context.jobs = jobsContext(this.actor);
     if (!business) return { ...context, start: startContext(this) };
-    return { ...context, business: businessContext(business, this.actor) };
+    return { ...context, business: shown };
   }
 }

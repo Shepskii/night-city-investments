@@ -179,7 +179,7 @@ Players can hide their shareholdings behind layers (a broker's nominee, then she
 
 ## Checking outcomes
 
-- **The Business window, opened from the Businesses tab,** shows a business as its owners see it. Each weekly digest on the Ledger tab opens a cashbook of that week's income and expenses. Each monthly report opens to show the **real figures beside the reported ones** (an aggressive report inflates the reported profit).
+- **The Business window, opened from the Businesses tab,** shows a business as its owners see it. Each weekly digest on the Reports tab opens a cashbook of that week's income and expenses. Each monthly report opens to show the **real figures beside the reported ones** (an aggressive report inflates the reported profit).
 - **Exposure** (the hidden trail from Shortcuts, Bold rolls and the rest) is on the Businesses tab. An internal audit by the officers can find and cut it, and it counts against a listing.
 - **Staff traits** (light fingers, loose lips, a corp plant, a moonlighter, dedicated, connected) are in the hidden state. Vetting shows them to players.
 - **Recent trades** (Audit tab) lists the latest fills across every portfolio.
