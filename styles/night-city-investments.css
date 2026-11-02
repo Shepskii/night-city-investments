@@ -289,6 +289,11 @@
 /* The Business window's pickers, kept together at the right of the tab bar as the market window's is. */
 .nci-app .nci-tabs .nci-pickers { display: flex; gap: 6px; margin-left: auto; flex: 0 0 auto; }
 .nci-app .nci-tabs .nci-pickers select { width: auto; max-width: 220px; margin-left: 0; }
+/* The folders and pickers stay on one row: the pickers give way when the row is full. */
+.nci-app .nci-business > .nci-tabs.nci-groups { flex-wrap: nowrap; }
+.nci-app .nci-business > .nci-tabs.nci-groups button { flex: 0 0 auto; }
+.nci-app .nci-business > .nci-tabs.nci-groups .nci-pickers { flex: 0 1 auto; min-width: 0; }
+.nci-app .nci-business > .nci-tabs.nci-groups .nci-pickers select { flex: 0 1 auto; min-width: 90px; }
 
 .nci-app .nci-summary { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 6px 0 10px; }
 .nci-app .nci-summary div { display: flex; flex-direction: column; }
@@ -487,6 +492,9 @@
 .nci-app .nci-pending button { width: auto; padding: 0 8px; }
 .nci-app .nci-pending .nci-rowactions { cursor: default; width: 44%; }
 .nci-app .nci-pending .nci-actions { margin: 2px 0; }
+/* The fields on a Pending row, label and input side by side, as they are on the GM's. */
+.nci-app .nci-pending .nci-form label.nci-inline { flex-direction: row; align-items: center; gap: 8px; margin: 0; }
+.nci-app .nci-pending .nci-form label.nci-inline input { width: 90px !important; }
 
 /* A business's entry on the GM Console: its name first, and the GM's buttons at the foot. */
 .nci-app .nci-bizhead { border-bottom: 1px solid var(--nci-accent-dim); padding-bottom: 6px; margin-bottom: 6px; }
