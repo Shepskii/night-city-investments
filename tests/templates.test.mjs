@@ -6,6 +6,7 @@ import { join, dirname } from 'node:path';
 import Handlebars from 'handlebars';
 import { registerPartials, withPartials } from './helpers/partials.mjs';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
+import { accountPages } from './helpers/terminalPages.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 registerPartials(Handlebars, root);
@@ -129,15 +130,41 @@ test('terminal renders every tab with real data', async () => {
 
   app.tab = 'portfolio';
   app.selectedId = null;
-  html = render('templates/terminal/market.hbs', await app._prepareContext());
+  html = await accountPages(app, render);
   assertClean(html, 'portfolio tab');
   assert.ok(html.includes('data-action="drip"'), 'reinvest toggle shown for dividend payers');
   assert.ok(text(html).includes('Reinvest dividends'));
   assert.ok(text(html).includes('Open orders'));
   assert.ok(html.includes('data-action="cancelOrder"'), 'the limit order is open and cancellable');
 
+  const page = async (tab, sub) => {
+    app.tab = tab;
+    app.sub = sub;
+    const out = render('templates/terminal/market.hbs', await app._prepareContext());
+    assertClean(out, `${tab} ${sub}`);
+    return out;
+  };
+  const overview = await page('portfolio', 'overview');
+  assert.ok(text(overview).includes('Performance'), 'the Overview tab has the chart');
+  assert.ok(!overview.includes('data-action="cancelOrder"') && !overview.includes('data-action="drip"'));
+  for (const id of ['overview', 'brokerage', 'investments', 'ledger']) assert.ok(overview.includes(`data-sub="${id}"`), `the ${id} tab is there`);
+  const brokerage = await page('portfolio', 'brokerage');
+  assert.ok(text(brokerage).includes('Your broker'), 'trading access is under Brokerage');
+  assert.ok(!text(brokerage).includes('Performance'));
+  const investments = await page('portfolio', 'investments');
+  assert.ok(investments.includes('data-action="drip"'), 'positions are under Investments');
+  assert.ok(!text(investments).includes('Your broker'));
+  const ledger = await page('portfolio', 'ledger');
+  assert.ok(ledger.includes('data-action="cancelOrder"'), 'orders are under Ledger');
+  assert.ok(!ledger.includes('data-action="drip"'));
+  const settings = await page('settings', 'overview');
+  assert.ok(settings.includes('nci-notify') && text(settings).includes('Price alerts'), 'alerts and notifications are under Settings');
+  assert.ok(!settings.includes('data-sub="overview"'), 'Settings has no Portfolio tabs');
+  assert.ok(!settings.includes('data-action="cancelOrder"'));
+
   app.tab = 'news';
   html = render('templates/terminal/market.hbs', await app._prepareContext());
+  assert.ok(!html.includes('data-sub='), 'News has no Portfolio tabs');
   assertClean(html, 'news tab');
   assert.ok(text(html).includes('Quiet day in the Corpo Plaza'));
   assert.ok(text(html).includes('special dividend'));

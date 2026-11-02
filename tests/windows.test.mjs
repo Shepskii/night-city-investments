@@ -7,6 +7,7 @@ import Handlebars from 'handlebars';
 import { registerPartials, withPartials } from './helpers/partials.mjs';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
 import { marketDateIn } from './helpers/marketDate.mjs';
+import { accountPages } from './helpers/terminalPages.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 registerPartials(Handlebars, root);
@@ -160,7 +161,7 @@ test('funds and brokers show in the terminal, and the portfolio has the access p
 
   app.selectedId = null;
   app.tab = 'portfolio';
-  html = render('templates/terminal/market.hbs', await app._prepareContext());
+  html = await accountPages(app, render);
   assertClean(html, 'portfolio tab');
   assert.ok(!html.includes('nci-header'), 'the index and mood are on the Market tab only');
   const t = text(html);
@@ -333,7 +334,7 @@ test('IPO fields in the company editor, the GM list and the player terminal', as
   await settle();
   assert.equal(S.PortfolioRepository.get(alice).results.find((r) => r.key === key).ok, true);
   terminal.tab = 'portfolio';
-  const pf = text(render('templates/terminal/market.hbs', await terminal._prepareContext()));
+  const pf = text(await accountPages(terminal, render));
   assert.ok(pf.includes('Subscribe 10 NEWC at 50.00 eb (IPO)') && pf.includes('Waiting for the listing'), 'the subscription shows in open orders');
   terminal.tab = 'market';
   assert.ok(!render('templates/terminal/market.hbs', await terminal._prepareContext()).includes('data-action="subscribeIpo"'), 'one subscription each');
@@ -349,7 +350,7 @@ test('alerts, statements and fund rebalancing show in the terminal and the fund 
   await settle();
   assert.ok(k && k2);
 
-  let html = render('templates/terminal/market.hbs', await app._prepareContext());
+  let html = await accountPages(app, render);
   assertClean(html, 'portfolio with alerts');
   let t = text(html);
   assert.ok(t.includes('Price alerts') && t.includes('Add alert'));
@@ -396,7 +397,7 @@ test('settling sales, fund income and redemption, the editor fields and the move
   const app = new Apps.Terminal();
   app.actorId = alice.id;
   app.tab = 'portfolio';
-  let html = render('templates/terminal/market.hbs', await app._prepareContext());
+  let html = await accountPages(app, render);
   assertClean(html, 'portfolio with a settling sale');
   let t = text(html);
   assert.ok(t.includes('Settling'), 'summary row');
@@ -555,7 +556,7 @@ test('the terminal shows the cover-your-tracks panel only to a warned player, wi
   app.actorId = alice.id;
   app.tab = 'portfolio';
   const view = async () => {
-    const html = render('templates/terminal/market.hbs', await app._prepareContext());
+    const html = await accountPages(app, render);
     assertClean(html, 'terminal portfolio');
     return html;
   };

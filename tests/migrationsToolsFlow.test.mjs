@@ -6,6 +6,7 @@ import { join, dirname } from 'node:path';
 import Handlebars from 'handlebars';
 import { registerPartials } from './helpers/partials.mjs';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
+import { accountPages } from './helpers/terminalPages.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 registerPartials(Handlebars, root);
@@ -335,7 +336,7 @@ test('a holding on the portfolio opens its market page, and Back returns to the 
   app.render = () => {};
   app.actorId = alice.id;
   app.tab = 'portfolio';
-  let html = render('templates/terminal/market.hbs', await app._prepareContext());
+  let html = await accountPages(app, render);
   for (const bad of BAD) assert.equal(html.includes(bad), false, `portfolio contains "${bad}"`);
   assert.ok(html.includes('<tr data-action="openAsset" data-id="ARA"'), 'a listed holding opens its page');
   assert.equal(html.includes('data-id="GONE"'), true, 'a holding whose company is gone still shows');

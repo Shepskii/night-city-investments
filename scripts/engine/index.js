@@ -16,6 +16,7 @@ export * from './fundNav.js';
 export * from './orderParser.js';
 export * from './companyConfig.js';
 export * from './history.js';
+export * from './portfolioHistory.js';
 export * from './clock.js';
 export * from './stateSplit.js';
 export * from './portfolioModel.js';

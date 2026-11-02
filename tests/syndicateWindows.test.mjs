@@ -6,6 +6,7 @@ import { join, dirname } from 'node:path';
 import Handlebars from 'handlebars';
 import { registerPartials } from './helpers/partials.mjs';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
+import { accountPages } from './helpers/terminalPages.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 registerPartials(Handlebars, root);
@@ -89,7 +90,7 @@ const portfolioTab = async (actorId) => {
   const app = new Apps.Terminal();
   app.actorId = actorId;
   app.tab = 'portfolio';
-  return render('templates/terminal/market.hbs', await app._prepareContext());
+  return await accountPages(app, render);
 };
 const syndicate = () => S.SyndicateRepository.all()[0];
 const key = (actor) => `syn:${syndicate().id}:${actor.id}`;
@@ -101,10 +102,23 @@ test('a character\'s Portfolio tab offers to start a syndicate and invite the ot
   assert.match(html, /name="synInvite" value="a_Fixer"/);
   assert.match(html, /data-action="synFound"/);
   assert.match(html, /data-action="deposit"/, 'a character still has the wallet box');
-  const at = (needle) => html.indexOf(needle);
-  const order = [at('>Brokerage balance<'), at('data-action="deposit"'), at('Trading access'), at('>Syndicates<'), at('>Start a syndicate<'), at('>Positions<'), at('>Open orders<')];
+  const on = async (sub) => {
+    const app = new Apps.Terminal();
+    app.actorId = med.id;
+    app.tab = 'portfolio';
+    app.sub = sub;
+    return render('templates/terminal/market.hbs', await app._prepareContext());
+  };
+  const overview = await on('overview');
+  assert.ok(overview.includes('>Brokerage balance<') && !overview.includes('data-action="deposit"'), 'the figures come first, on their own');
+  const brokerage = await on('brokerage');
+  const at = (needle) => brokerage.indexOf(needle);
+  const order = [at('data-action="deposit"'), at('Trading access'), at('>Start a syndicate<')];
   assert.ok(order.every((x) => x >= 0), `every section is there: ${order}`);
-  assert.deepEqual([...order].sort((a, b) => a - b), order, 'the balances, then money in and out, trading access, syndicates, positions and orders');
+  assert.deepEqual([...order].sort((a, b) => a - b), order, 'money in and out, trading access, then starting a syndicate');
+  const investments = await on('investments');
+  assert.ok(investments.includes('>Positions<') && investments.includes('>Syndicates<'), 'what the character holds');
+  assert.ok((await on('ledger')).includes('>Open orders<'));
 });
 
 test('the invited character sees the invitation; once a member, the syndicate joins the account picker', async () => {

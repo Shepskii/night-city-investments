@@ -21,7 +21,7 @@ import { BusinessApp } from '../Business/BusinessApp.js';
 import { sparkline, lineChart } from '../components/chart.js';
 import { L, money, whole, signed, pct, trendClass } from '../format.js';
 import { fundRows, fundDetail, accessContext, ipoRows, heatContext } from './context.js';
-import { ipoPrice, shareOf, bookValue } from '../../engine/index.js';
+import { ipoPrice, shareOf, bookValue, portfolioPnl, dayOf } from '../../engine/index.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient } from '../../services/BusinessClient.js';
 import { investigate, withDiscoveries } from '../investigate.js';
@@ -43,6 +43,10 @@ function dividendText(d) {
   return L('NCI.Terminal.DividendYield', { pct: (d.yield * 100).toFixed(2), freq });
 }
 
+/** The folders along the top, and the Portfolio folder's tabs. */
+const FOLDERS = ['market', 'news', 'portfolio', 'settings'];
+const PORTFOLIO_TABS = ['overview', 'brokerage', 'investments', 'ledger'];
+
 export class MarketTerminalApp extends BaseApplication {
   static DEFAULT_OPTIONS = {
     id: 'nci-market-terminal',
@@ -58,6 +62,7 @@ export class MarketTerminalApp extends BaseApplication {
       back: MarketTerminalApp._onBack,
       range: MarketTerminalApp._onRange,
       switchTab: MarketTerminalApp._onTab,
+      switchSub: MarketTerminalApp._onSub,
       trade: MarketTerminalApp._onTrade,
       deposit: MarketTerminalApp._onDeposit,
       withdraw: MarketTerminalApp._onWithdraw,
@@ -102,6 +107,8 @@ export class MarketTerminalApp extends BaseApplication {
   }
 
   tab = 'market';
+  /** The Portfolio folder's open tab: it stays where it was when another folder is opened. */
+  sub = 'overview';
   selectedId = null;
   /** The tab a company page was opened from, so "Back" returns there. */
   cameFrom = null;
@@ -184,6 +191,11 @@ export class MarketTerminalApp extends BaseApplication {
   static _onTab(event, target) {
     this.tab = target.dataset.tab;
     this.cameFrom = null;
+    this.render();
+  }
+
+  static _onSub(event, target) {
+    if (PORTFOLIO_TABS.includes(target.dataset.sub)) this.sub = target.dataset.sub;
     this.render();
   }
 
@@ -466,6 +478,9 @@ export class MarketTerminalApp extends BaseApplication {
       isMarket: this.tab === 'market',
       isPortfolio: this.tab === 'portfolio',
       isNews: this.tab === 'news',
+      isSettings: this.tab === 'settings',
+      folders: FOLDERS.map((id) => ({ id, label: L(`NCI.Terminal.Folder.${id}`), active: id === this.tab })),
+      portfolioTabs: this.tab === 'portfolio' && this.actor ? PORTFOLIO_TABS.map((id) => ({ id, label: L(`NCI.Terminal.Portfolio.${id}`), active: id === this.sub })) : [],
       news: newsRows(latestNews(feed, { limit: 40 })),
       hasData,
       hasCompanies: companies.length > 0,
@@ -481,7 +496,7 @@ export class MarketTerminalApp extends BaseApplication {
       backLabel: L(this.cameFrom === 'portfolio' ? 'NCI.Terminal.BackPortfolio' : 'NCI.Terminal.Back'),
       actors: actors.map((a) => ({ id: a.id, name: a.name, selected: a.id === this.actorId })),
       hasActor: !!this.actor,
-      portfolio: this.actor && this.tab === 'portfolio' ? this._portfolio(pub, companies, funds) : null,
+      portfolio: this.actor && ['portfolio', 'settings'].includes(this.tab) ? this._portfolio(pub, companies, funds) : null,
     };
   }
 
@@ -583,6 +598,15 @@ export class MarketTerminalApp extends BaseApplication {
       }));
   }
 
+  /** The account's profit and loss over time, for the Overview tab. */
+  _pnl(p, pub, prices, v) {
+    const days = 90;
+    const series = portfolioPnl(p, MarketStore.getHistory(), { day: dayOf(timeOf(pub)), days, prices, unsettled: v.unsettled });
+    if (series.length < 2) return null;
+    const total = series.at(-1);
+    return { chart: lineChart(series), total: `${signed(total)} eb`, cls: trendClass(total), days: series.length };
+  }
+
   _portfolio(pub, companies, funds = []) {
     const actor = this.actor;
     const p = PortfolioRepository.get(actor);
@@ -675,6 +699,11 @@ export class MarketTerminalApp extends BaseApplication {
       unsettled: whole(v.unsettled),
       settling,
       holdings: whole(v.holdings),
+      isOverview: this.sub === 'overview',
+      isBrokerage: this.sub === 'brokerage',
+      isInvestments: this.sub === 'investments',
+      isLedger: this.sub === 'ledger',
+      pnl: this.tab === 'portfolio' && this.sub === 'overview' ? this._pnl(p, pub, prices, v) : null,
       total: whole(v.total + stakesValue),
       stakes: stakes.map((s) => ({ ...s, value: whole(s.value) })),
       // A takeover bid for a player company (B6b), when player businesses are on.

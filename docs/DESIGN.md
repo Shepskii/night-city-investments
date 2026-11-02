@@ -165,6 +165,8 @@ Splitting keeps world-setting write payloads small. At about 40 companies × 365
 
 ### 4.3 Portfolio = actor flags (`flags.night-city-investments.portfolio`)
 
+The performance chart on the terminal is not stored: `portfolioPnl` (`scripts/engine/portfolioHistory.js`) rebuilds it from the ledger and the daily closes, so it reaches back only as far as the ledger keeps (200 entries) and leaves out private stakes, which have no daily price.
+
 ```jsonc
 {
   "schema": 1,

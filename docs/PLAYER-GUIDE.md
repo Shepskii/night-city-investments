@@ -13,12 +13,13 @@ Open the **Market Terminal** from the scene controls (the chart icon in the firs
 ## The terminal
 
 - **Market tab:** every company and fund, with its price, the day's move and a trend line. Click a row for the company page: a chart, the 52-week range, dividend terms, the description, the latest news, a watchlist star, and Buy and Sell buttons. Upcoming IPOs and open share offerings are listed below the table.
-- **Portfolio tab:** pick your character at the top, then see your balances, holdings with average cost and profit or loss, open and recent orders, the account ledger, your syndicates and your stakes in private businesses. Click a holding to open its market page.
+- **Portfolio folder:** pick your character at the top. It has four tabs. **Overview:** your balances, holdings, private stakes, total value and a chart of your profit and loss. **Brokerage:** paying in and taking out, your broker and direct trading, founding a syndicate and takeover bids. **Investments:** your positions, syndicates and private stakes. **Ledger:** open and recent orders, your account ledger and requesting a statement.
+- **Settings folder:** your price alerts and how you are notified.
 - **News tab:** market headlines, corporate actions and anything the GM posts.
 
 ## Your brokerage balance
 
-Displayed on the Portfolio tab of your termina, trading uses a **brokerage balance**, separate from the eddies on your character sheet.
+Shown in the Portfolio folder of your terminal, on the Overview and Brokerage tabs, trading uses a **brokerage balance**, separate from the eddies on your character sheet.
 
 - **Deposit** moves eddies from your sheet into the balance (your GM may charge a small fee).
 - **Withdraw** moves them back. With a broker, the withdrawal takes the broker's delay and arrives as claimable eddies in a Messenger mail. With no broker it is immediate.
@@ -29,7 +30,7 @@ Displayed on the Portfolio tab of your termina, trading uses a **brokerage balan
 
 Choose in the Trade window's "Trade through".
 
-**Through a broker** (cheaper, slower). Pick a broker on the Portfolio tab. A broker's skill sets how many market days an order takes (1 to 5) and their fee, which is always less than trading directly. You can also mail your broker in Night City Messenger:
+**Through a broker** (cheaper, slower). Pick a broker on the Brokerage tab. A broker's skill sets how many market days an order takes (1 to 5) and their fee, which is always less than trading directly. You can also mail your broker in Night City Messenger:
 
 | Mail | Does |
 |---|---|
@@ -53,7 +54,7 @@ Brokers reply and confirm fills in character, in their own voice.
 - **Market:** fill at the current price. Buys fill at the ask, sells at the bid.
 - **Limit:** buy at or below, or sell at or above, a price you set.
 - **Stop:** sell (or buy) once the price crosses a level.
-- **Good for the day** or **until cancelled**. Open orders are listed on the Portfolio tab, where you can cancel them.
+- **Good for the day** or **until cancelled**. Open orders are listed on the Ledger tab, where you can cancel them.
 
 A limit or stop that the price reached during a run of ticks fills even if the price has moved away again.
 
@@ -65,16 +66,16 @@ A limit or stop that the price reached during a run of ticks fills even if the p
 
 ## Alerts, statements and notifications
 
-- **Price alerts** (Portfolio tab): be told when a stock or fund rises above or falls below a price, or moves by a set percentage in a day. Once or repeating.
+- **Price alerts** (Settings folder): be told when a stock or fund rises above or falls below a price, or moves by a set percentage in a day. Once or repeating.
 - **Statements:** press **Send me a statement**, or mail `STATEMENT` to your broker. Monthly statements are opt-in.
-- **Notifications** (Portfolio tab): choose, per category, mail, chat or off: order results, dividends, price alerts, the monthly statement, big movers, rumours, market headlines and a daily digest.
+- **Notifications** (Settings folder): choose, per category, mail, chat or off: order results, dividends, price alerts, the monthly statement, big movers, rumours, market headlines and a daily digest.
 - **Ticker strip:** a per-user setting that shows a price strip at the top of your screen.
 
 ## Insider trading
 
 If your GM tracks it, trading a company in the gap between learning news (a gig you ran, a rumour, your own company's report) and the price moving on it draws **heat**. You never see the number, but you may hear from your broker, then from NCPD Financial Crimes. A watched character's broker orders become slower and dearer, and the worst cases bring a fine, a frozen account or a broker who drops you.
 
-Once warned, you can try to **cover your tracks** from the Portfolio tab. Each attempt is a skill roll (Trading, Accounting, Business or Bribery) that costs eddies whether it works or not.
+Once warned, you can try to **cover your tracks** from the Brokerage tab. Each attempt is a skill roll (Trading, Accounting, Business or Bribery) that costs eddies whether it works or not.
 
 ---
 
@@ -84,7 +85,7 @@ A syndicate is a crew's shared brokerage account.
 
 ## Founding and joining
 
-- On the Portfolio tab, **Found a syndicate**, name it and invite other characters. Your GM may need to approve it before anyone pays in.
+- On the Brokerage tab, **Found a syndicate**, name it and invite other characters. Your GM may need to approve it before anyone pays in.
 - Members **pay in** from their own brokerage balance and receive **units** at the syndicate's value per unit.
 - To leave, **redeem** units for their value, paid after the settlement delay.
 
@@ -216,7 +217,7 @@ At a company, the **Capital** block on the Shareholders tab offers two proposals
 
 Any character or syndicate can bid for a chartered player company, private or listed.
 
-- **Bidding:** on the terminal's Portfolio tab, under **Takeover bid**, give the company's ticker, a price per share and the most shares you want. The market (your GM) approves the bid first. Then the whole offer is held from your brokerage balance while it is open for 7 days.
+- **Bidding:** on the terminal's Brokerage tab, under **Takeover bid**, give the company's ticker, a price per share and the most shares you want. The market (your GM) approves the bid first. Then the whole offer is held from your brokerage balance while it is open for 7 days.
 - **At the close** you buy what holders tendered, up to the shares you asked for (scaled down if more came in). What you did not spend comes back to your balance.
 - **Holders** see the offer in the **Takeover** block on the Shareholders tab, and choose how many shares to tender (you can change it until the close). Shares still locked up after a listing cannot be tendered. Anything sold is paid into your brokerage balance.
 - **NPC holders and the market's float** tender all their shares if the premium over the reference price is 20% or more, half at 10–20%, and none below. The reference is the market price, or book value per share for a private company.

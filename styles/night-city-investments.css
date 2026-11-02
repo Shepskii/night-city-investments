@@ -261,9 +261,9 @@
 .nci-app .nci-count { padding: 2px 5px; border-radius: 2px; background: var(--nci-count-bg); color: var(--nci-count-text); font: 11px/1 'Share Tech Mono', monospace; letter-spacing: 0; }
 
 /* The GM Console's groups: folder tabs, the open one running into its strip of tabs. */
-.nci-app .nci-console > .nci-groups { gap: 3px; padding: 0; background: none; border-bottom: 2px solid var(--nci-accent-dim); }
-.nci-app .nci-console > .nci-groups:has(+ .nci-subtabs) { margin-bottom: 0; }
-.nci-app .nci-console > .nci-groups button {
+.nci-app .nci-tabs.nci-groups { gap: 3px; padding: 0; background: none; border-bottom: 2px solid var(--nci-accent-dim); }
+.nci-app .nci-tabs.nci-groups:has(+ .nci-subtabs) { margin-bottom: 0; }
+.nci-app .nci-tabs.nci-groups button {
   margin-bottom: 0;
   padding: 8px 20px 8px 14px;
   background: var(--nci-row) !important;
@@ -272,9 +272,9 @@
   font: 700 15px/1.2 'Rajdhani', 'Segoe UI', sans-serif;
   letter-spacing: 0.06em;
 }
-.nci-app .nci-console > .nci-groups button:hover { background: var(--nci-row-hover) !important; }
-.nci-app .nci-console > .nci-groups button.active { background: var(--nci-accent-dim) !important; color: #fff !important; }
-.nci-app .nci-console > .nci-subtabs button { padding: 7px 13px; font-size: 13px; }
+.nci-app .nci-tabs.nci-groups button:hover { background: var(--nci-row-hover) !important; }
+.nci-app .nci-tabs.nci-groups button.active { background: var(--nci-accent-dim) !important; color: #fff !important; }
+.nci-app .nci-tabs.nci-subtabs button { padding: 7px 13px; font-size: 13px; }
 .nci-app .nci-actor { margin-left: auto; max-width: 220px; }
 /* The Business window's pickers, kept together at the right of the tab bar as the market window's is. */
 .nci-app .nci-tabs .nci-pickers { display: flex; gap: 6px; margin-left: auto; flex: 0 0 auto; }

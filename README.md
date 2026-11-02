@@ -42,7 +42,7 @@ Or unzip a release into `Data/modules/night-city-investments`. Then enable **Nig
 - **News.** A public feed carries market headlines, corporate actions and anything the GM posts.
 
 ### Trading
-- **The Market Terminal.** It has a price table, company pages with charts, a watchlist, and a Portfolio tab with holdings, profit and loss, orders and the account ledger.
+- **The Market Terminal.** It has a price table, company pages with charts, a watchlist, and a Portfolio folder with holdings, profit and loss, orders and the account ledger.
 - **A brokerage balance.** Characters move eddies from their sheet into a trading account and back, and every move is logged.
 - **Brokers or a CorpNet terminal.** A broker is a character or a Messenger contact. Their Accounting skill sets how quickly and how cheaply they trade, and they answer mailed orders (`BUY 10 ARA`) in their own voice. Direct trading is instant and dearer, and it needs a CorpNet connection and an Accounting check.
 - **Orders, funds, alerts and statements.** Place market, limit and stop orders. Funds are pooled and traded through brokers. Price alerts, monthly statements and opt-in notifications are delivered by mail or chat.
