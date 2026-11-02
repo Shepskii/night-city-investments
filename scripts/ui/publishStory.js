@@ -7,7 +7,7 @@
  */
 
 import { MAX_LUCK_PER_ROLL, STORY_ANGLES, STORY_RULES, believability } from '../engine/index.js';
-import { BusinessClient } from '../services/BusinessClient.js';
+import { BusinessClient, receiptsOf } from '../services/BusinessClient.js';
 import { SkillAdapter } from '../services/SkillAdapter.js';
 import { RUMOUR_USES, StoryService } from '../services/StoryService.js';
 import { escapeHtml } from '../utils/text.js';
@@ -51,6 +51,10 @@ export async function publishStory(actor, { ticker, name }) {
  */
 export async function digRumours(actor, { ticker, name }) {
   if (!StoryService.rankOf(actor)) return ui.notifications.warn(L('NCI.Business.Reason.not-media'));
+  // Once a week: refused here, before any dice or Luck are spent.
+  const today = BusinessClient.day();
+  const dug = receiptsOf(actor).results.some((r) => r.type === 'rumourRoll' && r.ok && today - r.day < STORY_RULES.rumour.activeDays);
+  if (dug) return ui.notifications.warn(L('NCI.Business.Reason.rumour-wait'));
   const luckMax = Math.min(MAX_LUCK_PER_ROLL, SkillAdapter.luck(actor));
   const picked = await foundry.applications.api.DialogV2.prompt({
     window: { title: L('NCI.Rumour.Title', { name }) },
