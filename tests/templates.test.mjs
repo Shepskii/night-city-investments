@@ -211,7 +211,8 @@ test('every data-action in a template is a real action of its window, and none i
     ['templates/dialogs/trade.hbs', Trade],
   ];
   for (const [file, App] of pairs) {
-    const used = [...withPartials(root, file).matchAll(/data-action="([^"]+)"/g)].map((m) => m[1]);
+    // A Pending row's actions are filled in when it is drawn: the Pending tab's test checks those it draws.
+    const used = [...withPartials(root, file).matchAll(/data-action="([^"{]+)"/g)].map((m) => m[1]);
     assert.ok(used.length > 0, `${file} has actions`);
     const defined = Object.keys(App.DEFAULT_OPTIONS.actions ?? {});
     for (const action of used) {

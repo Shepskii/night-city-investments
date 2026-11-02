@@ -15,7 +15,7 @@ export function field(target, name) {
 
 /** Read a named input from the nearest enclosing gig card. */
 export function gigField(target, name) {
-  return target.closest('.nci-gig')?.querySelector(`[name="${name}"]`);
+  return target.closest('.nci-gig, tr')?.querySelector(`[name="${name}"]`);
 }
 
 export async function confirm(title, content) {

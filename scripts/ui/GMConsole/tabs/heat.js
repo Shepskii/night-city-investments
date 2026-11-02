@@ -13,7 +13,7 @@ import { actorLink } from '../../actorLink.js';
 export const penaltyText = (p) => L(`NCI.Heat.Penalty.${p.kind}`, { amount: Number(p.params.amount ?? 0).toLocaleString(), days: p.params.days ?? p.params.banDays ?? 0 });
 
 async function onHeatApprove(event, target) {
-  const card = target.closest('.nci-gig');
+  const card = target.closest('.nci-gig, tr');
   const read = (name) => card?.querySelector(`[name="${name}"]`)?.value;
   const out = await HeatService.approvePenalty(target.dataset.id, { amount: read('penaltyAmount'), days: read('penaltyDays') });
   ui.notifications[out?.ok ? 'info' : 'warn'](L(`NCI.Heat.Result.${out?.ok ? 'ok' : (out?.status ?? 'invalid')}`));

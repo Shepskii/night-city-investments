@@ -485,6 +485,8 @@
 /* The Pending tab: a row goes to its tab; the row's button does the same from the keyboard. */
 .nci-app .nci-pending tbody tr { cursor: pointer; }
 .nci-app .nci-pending button { width: auto; padding: 0 8px; }
+.nci-app .nci-pending .nci-rowactions { cursor: default; width: 44%; }
+.nci-app .nci-pending .nci-actions { margin: 2px 0; }
 
 /* A business's entry on the GM Console: its name first, and the GM's buttons at the foot. */
 .nci-app .nci-bizhead { border-bottom: 1px solid var(--nci-accent-dim); padding-bottom: 6px; margin-bottom: 6px; }

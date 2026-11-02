@@ -605,6 +605,33 @@ test('the Pending tab has a row for each decision waiting, and the tab buttons c
     assert.match(entry, /A smear against Arasaka \(ARA\)/);
     assert.match(entry, /data-action="businessCampaignApprove"/);
     assert.equal(html.match(/<tr class="nci-row" data-action="switchTab"/g).length, 12);
+
+    // Each decision can be made on the row, with its home tab's own actions and fields.
+    const consoleActions = Apps.GMConsole.DEFAULT_OPTIONS.actions;
+    for (const [, action] of html.matchAll(/data-action="([^"]+)"/g)) assert.ok(action in consoleActions, `no handler for ${action}`);
+    for (const action of ['gigMap', 'gigApprove', 'gigApproveBusiness', 'gigDiscard', 'heatApprove', 'heatDismiss', 'businessCharterApprove', 'businessCharterReject',
+      'businessListingApprove', 'businessDelist', 'businessGiveTime', 'businessTakeoverApprove', 'businessRestructure', 'businessWindUp', 'businessCaseFine', 'businessCaseDrop',
+      'businessCampaignApprove', 'businessCampaignReject', 'businessStaffAnswer']) assert.match(html, new RegExp(`data-action="${action}"`), action);
+    for (const name of ['gigCompany', 'gigRemember', 'gigPercent', 'gigDelay', 'gigHeadline', 'caseFine']) assert.match(html, new RegExp(`name="${name}"`), name);
+    assert.match(html, /name="penaltyAmount" value="500" min="0"/, 'starting from what is proposed, and a minimum of 0 is kept');
+    assert.match(html, /data-action="businessStaffAnswer" data-id="[^"]+" data-staff="[^"]+" data-yes="true"/);
+    // A click on the row opens its tab; a click among its fields does not.
+    const pendingApp = new Apps.GMConsole();
+    pendingApp.tab = 'pending';
+    pendingApp.render = () => {};
+    const rowClick = (inFields) => consoleActions.switchTab.call(pendingApp, { target: { closest: () => inFields } }, { dataset: { tab: 'businesses' } });
+    rowClick(true);
+    assert.equal(pendingApp.tab, 'pending', 'clicking a field stays here');
+    rowClick(null);
+    assert.equal(pendingApp.tab, 'businesses', 'clicking the row goes there');
+    // A handler finds its field in the row as it does in a home tab's card.
+    const approveFine = S.BusinessService.approveCaseFine;
+    let fined = null;
+    S.BusinessService.approveCaseFine = async (id, fine) => { fined = fine; return { ok: true }; };
+    await consoleActions.businessCaseFine.call(pendingApp, null, { dataset: { id: b.id }, closest: (sel) => (sel.split(', ').includes('tr') ? { querySelector: () => ({ value: '750' }) } : null) });
+    S.BusinessService.approveCaseFine = approveFine;
+    assert.equal(fined, 750);
+
     for (const words of [/Job mapping Choose which company/, /Medtech Approve or dismiss the penalty: Fine of 500 eb/, /Approve or reject the charter/, /Approve or turn down the listing/,
       /Delisting review/, /takeover offer from Rival/, /In administration/, /Regulator\S+s case lost/, /A campaign against Arasaka/, /Answer for Nix/]) assert.match(text(html), words);
     assert.match(html, /<tr class="nci-row" data-action="switchTab" data-tab="businesses">/);

@@ -642,7 +642,8 @@ test('every data-action in the new templates has a handler and none is reserved'
     ['templates/dialogs/trade.hbs', Apps.Trade],
   ];
   for (const [file, App] of pairs) {
-    const used = [...withPartials(root, file).matchAll(/data-action="([^"]+)"/g)].map((m) => m[1]);
+    // A Pending row's actions are filled in when it is drawn: the Pending tab's test checks those it draws.
+    const used = [...withPartials(root, file).matchAll(/data-action="([^"{]+)"/g)].map((m) => m[1]);
     const defined = Object.keys(App.DEFAULT_OPTIONS.actions ?? {});
     for (const action of used) {
       assert.equal(RESERVED.includes(action), false, `${file}: "${action}" is reserved`);

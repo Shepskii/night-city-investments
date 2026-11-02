@@ -50,7 +50,7 @@ async function onCaseDrop(event, target) {
 }
 
 async function onCaseFine(event, target) {
-  const input = target.closest('.nci-gig')?.querySelector('[name="caseFine"]');
+  const input = target.closest('.nci-gig, tr')?.querySelector('[name="caseFine"]');
   const fine = input ? Number(input.value) : null;
   report(await BusinessService.approveCaseFine(target.dataset.id, Number.isFinite(fine) ? fine : null));
 }

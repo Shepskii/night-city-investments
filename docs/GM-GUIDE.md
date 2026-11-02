@@ -21,7 +21,7 @@ Open it from the scene controls (sliders icon). The top row of buttons picks a g
 
 | Group | Tab | For |
 |---|---|---|
-| **Pending** | | Every decision waiting for you, one row each; click a row to go to its tab |
+| **Pending** | | Every decision waiting for you, one row each. Act on it there, or click the row to open its tab for more detail |
 | **Market** | Market | The clock, steering (bias, regime, volatility, halt), undo, reset |
 | | Events | Shocks, glides, headlines, setting a price |
 | | Corp actions | Special dividends, splits, buyouts, delistings, bankruptcies |

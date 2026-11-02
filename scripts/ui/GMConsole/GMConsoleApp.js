@@ -82,6 +82,8 @@ export class GMConsoleApp extends BaseApplication {
 
   /** A tab's own button, or a group's: that group's last tab, or else its first. */
   static _onTab(event, target) {
+    // A Pending row opens its tab, but not for a click on the fields and buttons it holds.
+    if (event?.target?.closest?.('.nci-rowactions')) return;
     const { tab, group } = target.dataset;
     const chosen = group ? this.lastInGroup[group] ?? GROUPS[group]?.[0] : tab;
     if (chosen in TABS) {
