@@ -254,7 +254,7 @@
   white-space: nowrap;
 }
 .nci-app .nci-tabs button:hover { color: #fff !important; border-color: transparent; border-bottom-color: var(--nci-accent-dim); }
-.nci-app .nci-tabs button.active { background: none !important; color: var(--nci-tab-on) !important; border-color: transparent; border-bottom-color: var(--nci-accent-bright); }
+.nci-app .nci-tabs button.active { background: none !important; color: var(--nci-tab-on) !important; border-color: transparent; border-bottom-color: var(--nci-accent-bright); outline: none; }
 .nci-app .nci-tabs button:focus-visible { outline: 1px solid var(--nci-accent-bright); outline-offset: -2px; }
 .nci-app .nci-tabs button.nci-tab-new { color: var(--nci-up) !important; }
 .nci-app .nci-tabs select { align-self: center; }
