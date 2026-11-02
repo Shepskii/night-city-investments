@@ -1,4 +1,11 @@
 <section class="nci-terminal nci-business{{#if readOnly}} nci-readonly{{/if}}">
+  {{#*inline "exposureBar"}}
+    <div class="nci-standing nci-capacity nci-exposure">
+      <span class="nci-standing-label">{{localize "NCI.BackRoom.Exposure"}}</span>
+      <span class="nci-capbar" title="{{text}}"><span class="nci-exposure-{{band}}" style="width: {{pct}}%"></span></span>
+      <strong class="nci-exposure-text-{{band}}">{{text}}</strong>
+    </div>
+  {{/inline}}
   {{#*inline "weekEvent"}}
     <div class="nci-gig">
       <div class="nci-gigtop"><strong>{{name}}</strong>{{#if good}}<span class="nci-up">{{localize "NCI.Business.Opportunity"}}</span>{{else}}<span class="nci-down">{{localize "NCI.Business.Trouble"}}</span>{{/if}}</div>
@@ -222,6 +229,7 @@
         <strong class="nci-lvl-text nci-lvl{{level}}">{{now}}</strong>
       </div>
       {{/each}}
+      {{#with @root.business.exposure}}{{> exposureBar}}{{/with}}
     </div>
     {{#if weeks}}
     <h3>{{title}}</h3>
@@ -311,6 +319,7 @@
   <div class="nci-block">
     <h3>{{localize "NCI.Business.Tab.backRoom"}}</h3>
     <p class="nci-hint">{{localize "NCI.Business.WeekRuns" from=from to=to day=closesOn}} {{daysText}}</p>
+    {{#with @root.business.exposure}}{{> exposureBar}}{{/with}}
     {{#if roomScene}}<div class="nci-warn">{{roomScene}}</div>{{/if}}
     {{#with backRoom}}
     <div class="nci-gig">
@@ -319,7 +328,7 @@
       {{#if informant}}<div class="nci-warn">{{informant}}</div>{{/if}}
       {{#if deal}}<div>{{deal}}</div>{{#if canPropose}}<div class="nci-actions"><button type="button" data-action="endGangDeal">{{localize "NCI.BackRoom.EndDeal"}}</button></div>{{/if}}{{/if}}
       {{#if offer}}<div>{{offer}}</div>{{#if canPropose}}<div class="nci-actions"><button type="button" data-action="gangDeal">{{localize "NCI.BackRoom.TakeDeal"}}</button></div>{{/if}}{{/if}}
-      <div class="nci-gmstats"><span><span class="nci-muted">{{localize "NCI.BackRoom.Dirty"}}</span> <strong>{{dirty}} eb</strong></span><span><span class="nci-muted">{{localize "NCI.BackRoom.Exposure"}}</span> <strong>{{band}}</strong></span></div>
+      <div class="nci-gmstats"><span><span class="nci-muted">{{localize "NCI.BackRoom.Dirty"}}</span> <strong>{{dirty}} eb</strong></span></div>
       {{#if last}}<div class="nci-muted">{{last}}</div>{{/if}}
       {{#if lying}}<div class="nci-muted">{{lying}}</div>{{/if}}
       <div class="nci-actions">

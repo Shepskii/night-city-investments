@@ -342,6 +342,15 @@
 .nci-app .nci-standing.nci-capacity { grid-template-columns: 110px minmax(200px, 360px) 1fr; }
 .nci-app .nci-capbar { display: flex; height: 14px; background: #2a2023; border: 1px solid #4a3a3e; overflow: hidden; }
 .nci-app .nci-capnow { background: #4f9bd9; }
+/* Exposure, by band: the colours of the standings' levels. */
+.nci-app .nci-exposure-clean { background: #3ddc84; }
+.nci-app .nci-exposure-low { background: #6fcf97; }
+.nci-app .nci-exposure-moderate { background: #e0b44a; }
+.nci-app .nci-exposure-high { background: #ff6a4d; }
+.nci-app .nci-exposure-text-clean { color: #3ddc84; }
+.nci-app .nci-exposure-text-low { color: #6fcf97; }
+.nci-app .nci-exposure-text-moderate { color: #e0b44a; }
+.nci-app .nci-exposure-text-high { color: #ff6a4d; }
 .nci-app .nci-capnext { background: repeating-linear-gradient(45deg, #4f9bd9 0 3px, #2a2023 3px 7px); }
 .nci-app .nci-progress { height: 10px; margin: 6px 0; background: #1c1517; border: 1px solid #2a2023; overflow: hidden; }
 .nci-app .nci-progress > span { display: block; height: 100%; background: var(--nci-up); }

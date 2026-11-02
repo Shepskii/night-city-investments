@@ -954,6 +954,8 @@ test('a back room at a company is hidden from a shareholder who is not an office
     assert.doesNotMatch(otherStaff, /data-post="(fixer|launderer|hand)"/);
     assert.doesNotMatch(text(otherStaff), /Quiet Rex[\s\S]{0,120}Fixer/);
     assert.doesNotMatch(otherStaff, /data-action="openEmployee" data-id="stf_rex"/);
+    assert.doesNotMatch(await renderBusiness(windowFor(fix, 'overview')), /nci-exposure/, 'nor their Exposure');
+    assert.match(await renderBusiness(windowFor(med, 'overview')), /nci-exposure-low/, 'an officer sees it in the standings');
     const officerStaff = await renderBusiness(windowFor(med, 'staff'));
     assertClean(officerStaff, 'an officer\'s Staff tab');
     assert.match(text(officerStaff), /Quiet Rex[\s\S]{0,120}Fixer/);
@@ -1018,6 +1020,26 @@ test('the Business window has four folders, each with its tabs, and each tab hol
     assert.equal(app.tab, 'ledger');
     switchTab.call(app, null, { dataset: { group: 'operations' } });
     assert.equal(app.tab, 'projects');
+
+    // Exposure as a bar: top of the Back Room tab, and in the Overview's standings, in bands with no number.
+    const bar = /<div class="nci-standing nci-capacity nci-exposure">([\s\S]*?)<\/div>/;
+    const fill = (html) => html.match(bar)?.[1] ?? '';
+    await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], backRoom: { kind: 'ripping', status: 'open', dirty: 100, band: 'moderate' } });
+    const room = await renderBusiness(windowFor(med, 'backRoom'));
+    assert.match(fill(room), /nci-exposure-moderate" style="width: 65%"/);
+    assert.match(text(fill(room)), /^\s*Exposure\s+moderate\s*$/, 'the band, and no figure');
+    assert.ok(room.indexOf('nci-exposure') > room.indexOf('operating week'), 'below the note on the week');
+    assert.ok(room.indexOf('nci-exposure') < room.indexOf('Dirty cash'), 'above the panel');
+    assert.equal((room.match(/Exposure<\/span>/g) ?? []).length, 1, 'shown once');
+    const standings = await renderBusiness(windowFor(med, 'overview'));
+    assert.ok(standings.indexOf('nci-exposure') > standings.indexOf('nci-standings'), 'in the standings');
+    await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], backRoom: { kind: 'ripping', status: 'open', dirty: 100 } });
+    assert.match(fill(await renderBusiness(windowFor(med, 'backRoom'))), /nci-exposure-clean/, 'clean until a close says otherwise');
+    for (const shut of [{ kind: 'ripping', status: 'shut', dirty: 0, band: 'high' }, { kind: 'ripping', status: 'pending', dirty: 0 }, null]) {
+      await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], backRoom: shut });
+      assert.doesNotMatch(await renderBusiness(windowFor(med, 'overview')), /nci-exposure/, 'only for a room running');
+      assert.doesNotMatch(await renderBusiness(windowFor(med, 'backRoom')), /nci-exposure/);
+    }
   } finally {
     CompanyRepository.all = listAll;
     await S.BusinessRepository.save(saved);

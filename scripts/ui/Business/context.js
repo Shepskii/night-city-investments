@@ -209,6 +209,7 @@ export function businessContext(business, actor) {
     status,
     statusLabel: L(`NCI.Business.Status.${status}`),
     seesBackRoom: business.stage < 2 || (canAct && canRun(business, actor.id)),
+    exposure: exposureContext(business, actor, canAct),
     // Standing with factions (F1a): those it has dealt with, and the gangs on its turf; bands only.
     factions: factionsContext(business),
     factionTerms: factionTerms(business),
@@ -553,6 +554,16 @@ function weekContext(business, actor, canAct) {
 /** Whether this world has back rooms, or this business has one anyway (U1a). */
 const underworldOn = (business) => !!business.backRoom || game.settings.get(MODULE_ID, SETTINGS.UNDERWORLD) !== false;
 
+/** How far along the bar each Exposure band sits: bands only, never the number behind them. */
+const EXPOSURE_FILL = Object.freeze({ clean: 10, low: 35, moderate: 65, high: 100 });
+
+/** Exposure as a bar, for those who may know of an open back room (U1a). Without a room it stays hidden, for an audit to find. */
+function exposureContext(business, actor, canAct) {
+  if (!openRoom(business) || !(business.stage < 2 || (canAct && canRun(business, actor.id)))) return null;
+  const band = business.backRoom.band ?? 'clean';
+  return { band, pct: EXPOSURE_FILL[band], text: L(`NCI.Company.Exposure.${band}`) };
+}
+
 /** The back room, for those who run the business (U1a): the dirty cash in eddies, Exposure as a band. */
 function backRoomContext(business, runs, canAct, free) {
   const room = business.backRoom;
@@ -569,7 +580,6 @@ function backRoomContext(business, runs, canAct, free) {
     canPropose: runs && room.status === 'open' && !business.proposals.some((x) => x.kind === 'gangDeal' || x.kind === 'endGangDeal'),
     dirty: whole(room.dirty ?? 0),
     max: room.dirty ?? 0,
-    band: room.band ? L(`NCI.Company.Exposure.${room.band}`) : L('NCI.Company.Exposure.clean'),
     last: last ? L(last.low ? 'NCI.BackRoom.LastLow' : 'NCI.BackRoom.Last', { earned: whole(last.earned), laundered: whole(last.laundered), paid: whole(last.paid) }) : '',
     canTake: runs && room.status === 'open' && room.dirty > 0,
     canLieLow: runs && free && room.status === 'open' && !business.period.slots.some((s) => s.action === 'lieLow' || s.action === 'roomWork'),
