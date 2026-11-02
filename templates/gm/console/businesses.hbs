@@ -2,6 +2,7 @@
   <h3>{{localize "NCI.GMBusiness.Title"}}</h3>
   <p class="nci-hint">{{localize "NCI.GMBusiness.Intro"}}</p>
   {{#unless businesses.enabled}}<p class="nci-warn">{{localize "NCI.Business.Disabled"}}</p>{{/unless}}
+  <p class="nci-hint">{{localize "NCI.Faction.StandingHint"}}</p>
 </div>
 
 <div class="nci-block">
@@ -34,82 +35,95 @@
     <div class="nci-gigtop"><strong>{{name}}</strong><span>{{status}}</span><span class="nci-muted">{{archetype}}{{#if location}} &middot; {{location}}{{/if}}</span></div>
     {{#if stats.length}}<div class="nci-gmstats">{{#each stats}}<span><span class="nci-muted">{{label}}</span> <strong>{{value}}</strong></span>{{/each}}</div>{{/if}}
     {{#if money}}<div>{{money}}</div>{{/if}}
+    {{#if setup}}<div class="nci-muted">{{setup}}</div>{{/if}}
+    {{#if listing}}<div class="nci-warn">{{listing.text}}</div>{{/if}}
+    {{#if regCase}}<div class="nci-warn">{{regCase.text}}</div>{{/if}}
+    {{#if administration}}<div class="nci-warn">{{administration}}</div>{{/if}}
+    {{#if takeover}}<div class="nci-warn">{{takeover.text}}</div>{{/if}}
+    {{#if charter}}<div class="nci-warn">{{charter.text}}</div>{{/if}}
     {{#if owners.length}}
     <table class="nci-market nci-owners">
       <thead><tr><th>{{localize "NCI.GMBusiness.Owner"}}</th><th>{{localize "NCI.GMBusiness.Status"}}</th><th class="num">{{localize "NCI.GMBusiness.Units"}}</th><th class="num">{{localize "NCI.GMBusiness.Share"}}</th></tr></thead>
       <tbody>{{#each owners}}<tr><td>{{{who}}}{{#if note}} <span class="nci-muted">{{note}}</span>{{/if}}</td><td class="nci-muted">{{status}}</td><td class="num">{{units}}</td><td class="num">{{share}}</td></tr>{{/each}}</tbody>
     </table>
     {{/if}}
-    {{#if setup}}<div class="nci-muted">{{setup}}</div>{{/if}}
-    {{#if listing}}
-    <div class="nci-warn">{{listing.text}}</div>
-    {{#if listing.awaiting}}
-    <div class="nci-actions">
-      <button type="button" data-action="businessListingApprove" data-id="{{id}}"><i class="fas fa-chart-line"></i> {{localize "NCI.GMBusiness.ListingApprove"}}</button>
-      <button type="button" data-action="businessListingReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.ListingReject"}}</button>
-    </div>
+    {{#if staff.length}}
+    <table class="nci-market nci-owners">
+      <thead><tr><th>{{localize "NCI.GMBusiness.Staff"}}</th><th>{{localize "NCI.GMBusiness.StaffPost"}}</th><th class="num">{{localize "NCI.GMBusiness.StaffWage"}}</th><th class="num">{{localize "NCI.GMBusiness.StaffLoyalty"}}</th><th>{{localize "NCI.GMBusiness.StaffTrait"}}</th></tr></thead>
+      <tbody>{{#each staff}}<tr><td>{{{who}}}{{#if note}} <span class="nci-muted">{{note}}</span>{{/if}}</td><td class="nci-muted">{{post}}</td><td class="num">{{wage}}</td><td class="num">{{loyalty}}</td><td class="nci-muted">{{trait}}</td></tr>{{/each}}</tbody>
+    </table>
     {{/if}}
-    {{#if listing.review}}
-    <div class="nci-actions">
-      <button type="button" data-action="businessDelist" data-id="{{id}}"><i class="fas fa-ban"></i> {{localize "NCI.GMBusiness.Delist"}}</button>
-      <button type="button" data-action="businessGiveTime" data-id="{{id}}"><i class="fas fa-hourglass-half"></i> {{localize "NCI.GMBusiness.GiveTime"}}</button>
-    </div>
-    {{/if}}
-    {{/if}}
-    {{#if regCase}}
-    <div class="nci-warn">{{regCase.text}}</div>
-    <div class="nci-actions">
-      {{#if regCase.lost}}
-      <label class="nci-inline">{{localize "NCI.GMBusiness.CaseFine"}} <input type="number" name="caseFine" min="0" step="100" value="{{regCase.fine}}"></label>
-      <button type="button" data-action="businessCaseFine" data-id="{{id}}"><i class="fas fa-gavel"></i> {{localize "NCI.GMBusiness.CaseApprove"}}</button>
-      {{/if}}
-      <button type="button" data-action="businessCaseDrop" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.CaseDrop"}}</button>
-    </div>
-    {{/if}}
-    {{#if canOpenCase}}
-    <div class="nci-actions"><button type="button" data-action="businessCaseOpen" data-id="{{id}}"><i class="fas fa-scale-balanced"></i> {{localize "NCI.GMBusiness.CaseOpen"}}</button></div>
-    {{/if}}
-    {{#if administration}}
-    <div class="nci-warn">{{administration}}</div>
-    <div class="nci-actions">
-      <button type="button" data-action="businessRestructure" data-id="{{id}}"><i class="fas fa-scale-balanced"></i> {{localize "NCI.GMBusiness.Restructure"}}</button>
-      <button type="button" data-action="businessWindUp" data-id="{{id}}"><i class="fas fa-skull"></i> {{localize "NCI.GMBusiness.WindUp"}}</button>
-    </div>
-    {{/if}}
-    {{#if takeover}}
-    <div class="nci-warn">{{takeover.text}}</div>
-    {{#if takeover.awaiting}}
-    <div class="nci-actions">
-      <button type="button" data-action="businessTakeoverApprove" data-id="{{id}}"><i class="fas fa-check"></i> {{localize "NCI.GMBusiness.TakeoverApprove"}}</button>
-      <button type="button" data-action="businessTakeoverReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.TakeoverReject"}}</button>
-    </div>
-    {{/if}}
-    {{/if}}
-    {{#if charter}}
-    <div class="nci-warn">{{charter.text}}</div>
-    {{#if charter.awaiting}}
-    <div class="nci-actions">
-      <button type="button" data-action="businessCharterApprove" data-id="{{id}}"><i class="fas fa-file-signature"></i> {{localize "NCI.GMBusiness.CharterApprove"}}</button>
-      <button type="button" data-action="businessCharterReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.CharterReject"}}</button>
-    </div>
-    {{/if}}
-    {{/if}}
-    {{#if staff}}<div class="nci-muted">{{localize "NCI.GMBusiness.Staff"}}: {{{staff}}}</div>{{/if}}
     {{#if applicants}}<div class="nci-muted">{{applicants}}</div>{{/if}}
-    {{#each offers}}
-    <div class="nci-warn">{{{text}}}</div>
-    <div class="nci-actions">
-      <button type="button" data-action="businessStaffAnswer" data-id="{{../id}}" data-staff="{{id}}" data-yes="true"><i class="fas fa-handshake"></i> {{localize "NCI.GMBusiness.StaffAccept"}}</button>
-      <button type="button" data-action="businessStaffAnswer" data-id="{{../id}}" data-staff="{{id}}" data-yes="false"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.StaffDecline"}}</button>
-    </div>
-    {{/each}}
-    <div class="nci-actions">
-      <button type="button" data-action="businessOpen" data-id="{{id}}"><i class="fas fa-store"></i> {{localize "NCI.GMBusiness.Open"}}</button>
-      {{#if isOpen}}{{#if leavers.length}}
-      <select name="leaver">{{#each leavers}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
-      <button type="button" data-action="businessPartnerLeaves" data-id="{{id}}" title="{{localize 'NCI.GMBusiness.LeavesHint'}}"><i class="fas fa-person-walking-arrow-right"></i> {{localize "NCI.GMBusiness.Leaves"}}</button>
-      {{/if}}{{/if}}
-      {{#if isForming}}<button type="button" data-action="businessReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.Cancel"}}</button>{{/if}}
+    {{#if standing.length}}
+    <table class="nci-market nci-owners">
+      <thead><tr><th>{{localize "NCI.Faction.StandingTitle"}}</th><th>{{localize "NCI.GMBusiness.Status"}}</th><th class="num">{{localize "NCI.GMBusiness.StandingValue"}}</th></tr></thead>
+      <tbody>{{#each standing}}<tr><td>{{name}}{{#if turf}} <span class="nci-muted">{{turf}}</span>{{/if}}</td><td class="nci-faction-{{band}}">{{label}}</td><td class="num">{{value}}</td></tr>{{/each}}</tbody>
+    </table>
+    {{/if}}
+    {{#if factionTerms}}<div class="nci-muted">{{factionTerms}}</div>{{/if}}
+    <div class="nci-gmbuttons">
+      {{#if listing.awaiting}}
+      <div class="nci-actions">
+        <button type="button" data-action="businessListingApprove" data-id="{{id}}"><i class="fas fa-chart-line"></i> {{localize "NCI.GMBusiness.ListingApprove"}}</button>
+        <button type="button" data-action="businessListingReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.ListingReject"}}</button>
+      </div>
+      {{/if}}
+      {{#if listing.review}}
+      <div class="nci-actions">
+        <button type="button" data-action="businessDelist" data-id="{{id}}"><i class="fas fa-ban"></i> {{localize "NCI.GMBusiness.Delist"}}</button>
+        <button type="button" data-action="businessGiveTime" data-id="{{id}}"><i class="fas fa-hourglass-half"></i> {{localize "NCI.GMBusiness.GiveTime"}}</button>
+      </div>
+      {{/if}}
+      {{#if regCase}}
+      <div class="nci-actions">
+        {{#if regCase.lost}}
+        <label class="nci-inline">{{localize "NCI.GMBusiness.CaseFine"}} <input type="number" name="caseFine" min="0" step="100" value="{{regCase.fine}}"></label>
+        <button type="button" data-action="businessCaseFine" data-id="{{id}}"><i class="fas fa-gavel"></i> {{localize "NCI.GMBusiness.CaseApprove"}}</button>
+        {{/if}}
+        <button type="button" data-action="businessCaseDrop" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.CaseDrop"}}</button>
+      </div>
+      {{/if}}
+      {{#if administration}}
+      <div class="nci-actions">
+        <button type="button" data-action="businessRestructure" data-id="{{id}}"><i class="fas fa-scale-balanced"></i> {{localize "NCI.GMBusiness.Restructure"}}</button>
+        <button type="button" data-action="businessWindUp" data-id="{{id}}"><i class="fas fa-skull"></i> {{localize "NCI.GMBusiness.WindUp"}}</button>
+      </div>
+      {{/if}}
+      {{#if takeover.awaiting}}
+      <div class="nci-actions">
+        <button type="button" data-action="businessTakeoverApprove" data-id="{{id}}"><i class="fas fa-check"></i> {{localize "NCI.GMBusiness.TakeoverApprove"}}</button>
+        <button type="button" data-action="businessTakeoverReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.TakeoverReject"}}</button>
+      </div>
+      {{/if}}
+      {{#if charter.awaiting}}
+      <div class="nci-actions">
+        <button type="button" data-action="businessCharterApprove" data-id="{{id}}"><i class="fas fa-file-signature"></i> {{localize "NCI.GMBusiness.CharterApprove"}}</button>
+        <button type="button" data-action="businessCharterReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.CharterReject"}}</button>
+      </div>
+      {{/if}}
+      {{#each offers}}
+      <div class="nci-warn">{{{text}}}</div>
+      <div class="nci-actions">
+        <button type="button" data-action="businessStaffAnswer" data-id="{{../id}}" data-staff="{{id}}" data-yes="true"><i class="fas fa-handshake"></i> {{localize "NCI.GMBusiness.StaffAccept"}}</button>
+        <button type="button" data-action="businessStaffAnswer" data-id="{{../id}}" data-staff="{{id}}" data-yes="false"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.StaffDecline"}}</button>
+      </div>
+      {{/each}}
+      {{#if factionOptions.length}}
+      <div class="nci-actions">
+        <select name="standingFaction">{{#each factionOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+        <input type="number" name="standingValue" min="-100" max="100" step="1" value="0" class="nci-days">
+        <button type="button" data-action="businessSetStanding" data-id="{{id}}"><i class="fas fa-handshake"></i> {{localize "NCI.Faction.SetStanding"}}</button>
+      </div>
+      {{/if}}
+      <div class="nci-actions">
+        <button type="button" data-action="businessOpen" data-id="{{id}}"><i class="fas fa-store"></i> {{localize "NCI.GMBusiness.Open"}}</button>
+        {{#if canOpenCase}}<button type="button" data-action="businessCaseOpen" data-id="{{id}}"><i class="fas fa-scale-balanced"></i> {{localize "NCI.GMBusiness.CaseOpen"}}</button>{{/if}}
+        {{#if isOpen}}{{#if leavers.length}}
+        <select name="leaver">{{#each leavers}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+        <button type="button" data-action="businessPartnerLeaves" data-id="{{id}}" title="{{localize 'NCI.GMBusiness.LeavesHint'}}"><i class="fas fa-person-walking-arrow-right"></i> {{localize "NCI.GMBusiness.Leaves"}}</button>
+        {{/if}}{{/if}}
+        {{#if isForming}}<button type="button" data-action="businessReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.Cancel"}}</button>{{/if}}
+      </div>
     </div>
   </div>
   {{else}}<p class="nci-empty">{{localize "NCI.GMBusiness.NoneRunning"}}</p>{{/each}}

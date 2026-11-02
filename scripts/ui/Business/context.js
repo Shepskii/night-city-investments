@@ -1280,7 +1280,7 @@ function factionsContext(business) {
 }
 
 /** What standing does to the business's costs, in words (F1b); nothing while it does nothing. */
-function factionTerms(business) {
+export function factionTerms(business) {
   const fx = factionEffects(business, FactionRepository.withSectors());
   const say = (key, factor) => {
     const pct = Math.round((factor - 1) * 100);

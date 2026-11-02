@@ -17,24 +17,25 @@ Re-importing does not overwrite companies a world already has.
 
 ## The GM Console
 
-Open it from the scene controls (sliders icon). Its tabs:
+Open it from the scene controls (sliders icon). The top row of buttons picks a group, and the second row a tab in it:
 
-| Tab | For |
-|---|---|
-| Pending | Every decision waiting for you, one row each; click a row to go to its tab |
-| Market | The clock, steering (bias, regime, volatility, halt), undo, reset |
-| Events | Shocks, glides, headlines, setting a price, the action log |
-| Actions | Corporate actions: special dividends, splits, buyouts, delistings, bankruptcies |
-| Companies | Creating, editing, importing and launching companies (IPOs) |
-| Funds | Creating, editing, importing and closing funds |
-| Brokers | Brokers and terminal grants |
-| Gigs | Gig impacts from Night City Map: approval and client mapping |
-| Heat | Insider-trading heat, penalties, watch windows and audits |
-| Syndicates | Approving syndicates; passing or vetoing their proposals |
-| Businesses | Every player business with its true state, and the decisions waiting for you |
-| Tools | Self-check, macros, suggested companies, recent trades |
+| Group | Tab | For |
+|---|---|---|
+| **Pending** | | Every decision waiting for you, one row each; click a row to go to its tab |
+| **Market** | Market | The clock, steering (bias, regime, volatility, halt), undo, reset |
+| | Events | Shocks, glides, headlines, setting a price, the action log |
+| | Corp actions | Special dividends, splits, buyouts, delistings, bankruptcies |
+| | Brokers | Brokers and terminal grants |
+| **Players** | Businesses | Every player business: its true state, owners, staff and faction standing, with your buttons at the foot of each entry |
+| | Syndicates | Approving syndicates; passing or vetoing their proposals |
+| | Heat | Insider-trading heat, penalties, watch windows and audits |
+| **Tools / Maintenance** | Gigs | Gig impacts from Night City Map: approval and client mapping |
+| | Companies | Creating, editing, importing and launching companies (IPOs) |
+| | Funds | Creating, editing, importing and closing funds |
+| | Factions | The list of corporations and gangs |
+| | Tools | Self-check, macros, suggested companies, recent trades |
 
-A tab's button shows how many decisions are waiting on it, like **Gigs (2)**, and the Pending button shows the total. Syndicate proposals are not counted: members' votes settle them, though you can still pass or veto one.
+A tab's button shows how many decisions are waiting on it, like **Gigs (2)**, a group's button the total for its tabs, and the Pending button the total of all. Syndicate proposals are not counted: members' votes settle them, though you can still pass or veto one.
 
 ## Running time
 
@@ -128,6 +129,8 @@ Players can raise a business's standing with a faction: a shop uses **Court a cl
 A hostile faction (standing below -60) may act against the business, up to 15% of weeks: a smear, sabotage, a tipped-off raid or poaching. These run by themselves as the week's event, and the players answer them as usual. A smear that lands dips a listed company's price by up to 2%. Beating a gang's shakedown by force costs 3 standing with that gang.
 
 The **Factions** tab holds the corporations and gangs businesses can stand well or badly with. Press **Import starter factions** to add the market's corporations and Night City's gangs by district, then edit, add or remove as you like. Link a corporation to its ticker, and give a gang its districts, so businesses there see it.
+
+Each business's entry on the **Businesses** tab shows its true standing with the factions it knows, and has a control to set one by hand. Its owners only see the band.
 
 Standing runs from -100 to 100 for each business; its owners see only a band (hostile, wary, neutral, friendly, allied). It fades 2 points a week and moves at most 15 a week; you can set it by hand on the same tab.
 

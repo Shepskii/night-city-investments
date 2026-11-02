@@ -518,8 +518,11 @@ test('a company\'s later states render cleanly: a regulator\'s case, administrat
     const tab = await renderConsole('factions');
     assertClean(tab, 'factions tab');
     assert.match(tab, /data-action="factionImport"/);
-    assert.match(tab, /data-action="factionSetStanding"/);
-    assert.match(text(tab), /Biotechnica: 35/, 'the GM sees the number');
+    assert.doesNotMatch(tab, /SetStanding/, 'standing is on the Businesses tab');
+    const running = await renderConsole('businesses');
+    assert.match(running, /data-action="businessSetStanding"/);
+    assert.match(text(running), /Biotechnica friendly 35/, 'the GM sees the number');
+    assert.match(text(running), /Tyger Claws \(your turf\) neutral 0/, 'and a gang on the turf, with no dealings yet');
 
     // A contract on the Gigs tab: every party it moves, and a tick for a target only found in the text.
     const extras = ['client', 'contractor', 'target'].map((role) => ({ role, name: `Co ${role}`, percent: role === 'target' ? -1.5 : 3, companyId: 'X', amount: 0.03 }));
@@ -562,7 +565,9 @@ test('the Pending tab has a row for each decision waiting, and the tab buttons c
   const gigsBefore = MarketStore.getGigs();
   const heatBefore = MarketStore.getHeat();
   const day = b.period.startDay;
-  const button = (html, tab) => text(html.match(new RegExp(`<nav[\\s\\S]*?data-tab="${tab}"[^>]*>([^<]*)<`))[1]);
+  const button = (html, attr, id) => text(html.match(new RegExp(`<nav[\\s\\S]*?data-${attr}="${id}"[^>]*>([^<]*)<`))[1]);
+  const group = (html, id) => button(html, 'group', id);
+  const tabButton = (html, id) => button(html, 'tab', id);
   try {
     await S.BusinessRepository.save({
       ...b, status: 'open', stage: 2, company: { ticker: 'BRC', sector: 'health', charteredDay: day }, proposals: [],
@@ -573,16 +578,25 @@ test('the Pending tab has a row for each decision waiting, and the tab buttons c
       regCase: { status: 'lost', reason: 'report', openedDay: day, endDay: day + 14, fine: 250 },
       staff: [{ id: 's_t', actorId: fix.id, name: 'Nix', post: 'floor', wage: 100, status: 'offered', source: 'npc' }],
     });
-    await MarketStore.setGigs({ ...gigsBefore, pending: ['mapping', 'review', 'business'].map((kind, i) => ({ id: `p${i}`, kind, sourceKey: `gig:p${i}`, client: 'Kiroshi', title: `Job ${kind}`, outcome: 'done', reward: 100, date: '2045-01-01' })) });
+    await MarketStore.setGigs({ ...gigsBefore, pending: ['mapping', 'review', 'business'].map((kind, i) => ({ id: `p${i}`, kind, sourceKey: `gig:p${i}`, client: 'Kiroshi', title: `Job ${kind}`, outcome: 'done', reward: 100, date: '2045-01-01', how: 'tag' })) });
     await MarketStore.setHeat({ ...heatBefore, penalties: [{ id: 'h1', actorId: med.id, name: 'Medtech', kind: 'fine', params: { amount: 500 }, status: 'pending' }, { id: 'h2', actorId: med.id, name: 'Done', kind: 'fine', params: { amount: 1 }, status: 'applied' }] });
 
     const html = await renderConsole('pending');
     assertClean(html, 'pending tab');
-    assert.equal(button(html, 'gigs'), 'Gigs (3)', 'business gigs count as well');
-    assert.equal(button(html, 'heat'), 'Heat (1)');
-    assert.equal(button(html, 'businesses'), 'Businesses (7)');
-    assert.equal(button(html, 'pending'), 'Pending (11)');
-    assert.equal(button(html, 'market'), 'Market');
+    assert.equal(group(html, 'pending'), 'Pending (11)');
+    assert.equal(group(html, 'players'), 'Players (8)', 'each group shows its tabs\' total');
+    assert.equal(group(html, 'tools'), 'Tools / Maintenance (3)', 'business gigs count as well');
+    assert.equal(group(html, 'market'), 'Market');
+    assert.doesNotMatch(html.match(/<\/nav>[\s\S]*/)[0], /<nav/, 'the Pending group has no second row');
+    const players = await renderConsole('businesses');
+    assertClean(players, 'every decision on the Businesses tab');
+    assert.equal(tabButton(players, 'businesses'), 'Businesses (7)');
+    assert.equal(tabButton(players, 'heat'), 'Heat (1)');
+    assert.equal(tabButton(await renderConsole('gigs'), 'gigs'), 'Gigs (3)');
+    // Every GM button on an entry comes after its tables, and an offer's words are with its buttons.
+    const entry = players.split('<div class="nci-gig">').find((x) => x.includes('businessRestructure'));
+    assert.ok(entry.lastIndexOf('</table>') < entry.indexOf('data-action='), 'the buttons are at the foot');
+    assert.ok(entry.indexOf('Nix') > entry.indexOf('nci-gmbuttons'));
     assert.equal(html.match(/<tr class="nci-row" data-action="switchTab"/g).length, 11);
     for (const words of [/Job mapping Choose which company/, /Medtech Approve or dismiss the penalty: Fine of 500 eb/, /Approve or reject the charter/, /Approve or turn down the listing/,
       /Delisting review/, /takeover offer from Rival/, /In administration/, /Regulator\S+s case lost/, /Answer for Nix/]) assert.match(text(html), words);
@@ -594,8 +608,8 @@ test('the Pending tab has a row for each decision waiting, and the tab buttons c
     const quiet = await renderConsole('pending');
     assertClean(quiet, 'nothing pending');
     assert.match(text(quiet), /Nothing is waiting for you/);
-    assert.equal(button(quiet, 'pending'), 'Pending');
-    assert.equal(button(quiet, 'businesses'), 'Businesses');
+    assert.equal(group(quiet, 'pending'), 'Pending');
+    assert.equal(group(quiet, 'players'), 'Players');
   } finally {
     await S.BusinessRepository.save(saved);
     await MarketStore.setGigs(gigsBefore);
@@ -665,4 +679,33 @@ test('aiming at a faction: the Work tab offers the pick and the gift, the action
     await S.BusinessRepository.save(saved);
     await MarketStore.setBusinessesHidden(hiddenBefore);
   }
+});
+
+test('the console\'s tabs are in groups: a group goes to its last open tab, and every tab renders under one', async () => {
+  const app = new Apps.GMConsole();
+  app.render = () => {};
+  const { switchTab } = Apps.GMConsole.DEFAULT_OPTIONS.actions;
+  const go = (dataset) => switchTab.call(app, null, { dataset });
+  go({ group: 'players' });
+  assert.equal(app.tab, 'businesses', 'a group\'s first tab');
+  go({ tab: 'heat' });
+  go({ group: 'tools' });
+  assert.equal(app.tab, 'gigs');
+  go({ group: 'players' });
+  assert.equal(app.tab, 'heat', 'back to the last one open in that group');
+  go({ tab: 'nonsense' });
+  assert.equal(app.tab, 'heat');
+
+  const seen = new Set();
+  for (const { id } of (await app._prepareContext()).tabs) {
+    const html = await renderConsole(id);
+    assertClean(html, `the ${id} tab`);
+    const context = (() => { const a = new Apps.GMConsole(); a.tab = id; return a._prepareContext(); })();
+    const { groups, subTabs } = await context;
+    assert.equal(groups.filter((g) => g.active).length, 1, id);
+    assert.ok(id === 'pending' ? subTabs.length === 0 : subTabs.some((t) => t.id === id && t.active), `${id} is in its group's row`);
+    seen.add(id);
+  }
+  assert.equal(seen.size, 13);
+  assert.match(await renderConsole('actions'), />\s*Corp actions\s*</);
 });

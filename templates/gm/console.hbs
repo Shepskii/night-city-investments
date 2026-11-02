@@ -1,9 +1,16 @@
 <section class="nci-console">
-  <nav class="nci-tabs">
-    {{#each tabs}}
+  <nav class="nci-tabs nci-groups">
+    {{#each groups}}
+    <button type="button" data-action="switchTab" data-group="{{id}}" class="{{#if active}}active{{/if}}">{{label}}</button>
+    {{/each}}
+  </nav>
+  {{#if subTabs.length}}
+  <nav class="nci-tabs nci-subtabs">
+    {{#each subTabs}}
     <button type="button" data-action="switchTab" data-tab="{{id}}" class="{{#if active}}active{{/if}}">{{label}}</button>
     {{/each}}
   </nav>
+  {{/if}}
 
   {{#unless activeGM}}<p class="nci-warn">{{localize "NCI.Errors.NotActiveGM"}}</p>{{/unless}}
 

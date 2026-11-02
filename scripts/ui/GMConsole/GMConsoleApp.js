@@ -23,8 +23,15 @@ import * as syndicates from './tabs/syndicates.js';
 import * as factions from './tabs/factions.js';
 import * as tools from './tabs/tools.js';
 
-/** In display order. */
-const TABS = { pending, market, events, actions, companies, funds, brokers, gigs, heat, businesses, syndicates, factions, tools };
+const TABS = { pending, market, events, actions, brokers, businesses, syndicates, heat, gigs, companies, funds, factions, tools };
+/** The two rows of buttons: each group, and its tabs in display order. */
+const GROUPS = {
+  pending: ['pending'],
+  market: ['market', 'events', 'actions', 'brokers'],
+  players: ['businesses', 'syndicates', 'heat'],
+  tools: ['gigs', 'companies', 'funds', 'factions', 'tools'],
+};
+const groupOf = (tab) => Object.keys(GROUPS).find((g) => GROUPS[g].includes(tab));
 const PARTIALS = `modules/${MODULE_ID}/templates/gm/console`;
 
 export class GMConsoleApp extends BaseApplication {
@@ -46,6 +53,8 @@ export class GMConsoleApp extends BaseApplication {
   };
 
   tab = 'market';
+  /** The tab last open in each group, to go back to when the group is chosen again. */
+  lastInGroup = {};
   preview = null;
   /** The last self-check, kept so it stays on screen while the GM works. */
   checkReport = null;
@@ -71,8 +80,14 @@ export class GMConsoleApp extends BaseApplication {
     super._onClose?.(options);
   }
 
+  /** A tab's own button, or a group's: that group's last tab, or else its first. */
   static _onTab(event, target) {
-    if (target.dataset.tab in TABS) this.tab = target.dataset.tab;
+    const { tab, group } = target.dataset;
+    const chosen = group ? this.lastInGroup[group] ?? GROUPS[group]?.[0] : tab;
+    if (chosen in TABS) {
+      this.tab = chosen;
+      this.lastInGroup[groupOf(chosen)] = chosen;
+    }
     this.render();
   }
 
@@ -117,13 +132,19 @@ export class GMConsoleApp extends BaseApplication {
 
   async _prepareContext() {
     const waiting = pending.waiting();
+    const counted = (label, n) => (n ? `${label} (${n})` : label);
+    const tabs = Object.keys(TABS).map((t) => ({ id: t, label: counted(L(`NCI.GMConsole.Tab.${t}`), waiting[t]), active: t === this.tab }));
+    const group = groupOf(this.tab);
     const context = {
       tab: this.tab,
-      tabs: Object.keys(TABS).map((t) => ({
-        id: t,
-        label: waiting[t] ? `${L(`NCI.GMConsole.Tab.${t}`)} (${waiting[t]})` : L(`NCI.GMConsole.Tab.${t}`),
-        active: t === this.tab,
+      tabs,
+      groups: Object.keys(GROUPS).map((g) => ({
+        id: g,
+        label: counted(L(`NCI.GMConsole.Group.${g}`), GROUPS[g].reduce((a, t) => a + (waiting[t] ?? 0), 0)),
+        active: g === group,
       })),
+      // A group of one has no second row.
+      subTabs: GROUPS[group].length > 1 ? GROUPS[group].map((t) => tabs.find((x) => x.id === t)) : [],
       activeGM: game.user.id === game.users.activeGM?.id,
     };
     for (const t of Object.keys(TABS)) context[`is${t[0].toUpperCase()}${t.slice(1)}`] = t === this.tab;

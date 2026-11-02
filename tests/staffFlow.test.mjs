@@ -238,7 +238,7 @@ test('the week closes: the wage is paid to Nova, and the ledger and the GM tab s
   app.tab = 'businesses';
   const gm = render('templates/gm/console.hbs', await app._prepareContext());
   assertClean(gm, 'GM tab with staff');
-  assert.match(text(gm), /Staff: Nova \(Floor, 108 eb\)/);
+  assert.match(text(gm), /Nova Floor 108/);
   // Owners in a compact table, and the standing in one strip; no week-by-week detail.
   assert.match(gm, /<table class="nci-market nci-owners">/);
   assert.match(text(gm), /Owner Status Units Share/);
@@ -508,7 +508,7 @@ test('the Employee window: a recruit\'s loyalty band, a bonus paid, a raise aske
   gm.tab = 'businesses';
   const console = render('templates/gm/console.hbs', await gm._prepareContext());
   assertClean(console, 'GM tab with loyalty and traits');
-  assert.match(text(console), /Vera Voss \(Security, 109 eb, loyalty 50, trait: Light fingers\)/);
+  assert.match(text(console), /Vera Voss Security 109 50 Light fingers/);
   assert.equal(business().staff.length, room + 1);
 
   // Training through the GM's service: a course, from the cash; Tactics 12, and the next training in 4 weeks.

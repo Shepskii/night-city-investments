@@ -4,10 +4,11 @@
  * @description Action handlers run with `this` set to the console window.
  */
 
-import { holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty, debtsOf, solvency } from '../../../engine/index.js';
+import { holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty, debtsOf, solvency, standingBand, turfFactions } from '../../../engine/index.js';
 import { BusinessService } from '../../../services/BusinessService.js';
+import { FactionRepository } from '../../../data/FactionRepository.js';
 import { BusinessApp } from '../../Business/BusinessApp.js';
-import { dayText, LT, holderWho } from '../../Business/context.js';
+import { dayText, LT, holderWho, factionTerms } from '../../Business/context.js';
 import { L, whole } from '../../format.js';
 import { confirm, report } from '../shared.js';
 import { actorLink } from '../../actorLink.js';
@@ -101,6 +102,16 @@ function onOpen(event, target) {
   BusinessApp.open({ businessId: target.dataset.id });
 }
 
+/** The GM sets a business's standing with a faction by hand (F1a). */
+async function onSetStanding(event, target) {
+  const box = target.closest('.nci-gig');
+  const factionId = box?.querySelector('[name="standingFaction"]')?.value;
+  const value = Number(box?.querySelector('[name="standingValue"]')?.value);
+  if (!factionId || !Number.isFinite(value)) return;
+  report(await BusinessService.setStanding(target.dataset.id, factionId, value));
+  this.render();
+}
+
 export const actions = {
   businessApprove: onApprove,
   businessCharterApprove: onCharterApprove,
@@ -121,19 +132,36 @@ export const actions = {
   businessRemove: onRemove,
   businessOpen: onOpen,
   businessStaffAnswer: onStaffAnswer,
+  businessSetStanding: onSetStanding,
 };
 
-/** An employee's true loyalty and hidden trait, for the GM. */
-function staffExtra(s, traits) {
+/** An employee as a row of the staff table: their true loyalty and hidden trait, for the GM. */
+function staffRow(s, traits) {
   const trait = traitOf(traits, s);
-  return [
-    hasLoyalty(s) ? L('NCI.GMBusiness.StaffLoyalty', { loyalty: s.loyalty ?? 50 }) : '',
-    trait ? L('NCI.GMBusiness.StaffTrait', { trait: L(`NCI.Staff.Trait.${trait}`) }) : '',
-    s.elsewhere ? L('NCI.GMBusiness.StaffElsewhere', { name: s.elsewhere.name }) : '',
-  ].filter(Boolean).map((x) => `, ${x}`).join('');
+  return {
+    who: actorLink(s.actorId, s.name),
+    post: L(`NCI.Staff.Post.${s.post}`),
+    wage: whole(s.wage),
+    loyalty: hasLoyalty(s) ? s.loyalty ?? 50 : '',
+    trait: trait ? L(`NCI.Staff.Trait.${trait}`) : '',
+    note: s.elsewhere ? L('NCI.GMBusiness.StaffElsewhere', { name: s.elsewhere.name }) : '',
+  };
+}
+
+/** A business's true standing with each faction it has met or whose turf it is on, the friendliest first. */
+function standingRows(b, hidden, factions) {
+  const values = hidden.standing ?? {};
+  const turf = new Set(turfFactions(factions, b.district).map((f) => f.id));
+  return factions.filter((f) => values[f.id] || turf.has(f.id)).map((f) => {
+    const value = values[f.id]?.value ?? 0;
+    const band = standingBand(value);
+    return { name: f.name, value, band, label: L(`NCI.Faction.Band.${band}`), turf: turf.has(f.id) ? L('NCI.Faction.Turf') : '' };
+  }).sort((x, y) => y.value - x.value);
 }
 
 export function context() {
+  const factions = FactionRepository.list();
+  const factionOptions = factions.map((f) => ({ value: f.id, label: f.name }));
   const rows = BusinessService.snapshot().map(({ business: b, hidden }) => {
     const units = totalUnits(b);
     return {
@@ -211,9 +239,12 @@ export function context() {
       setup: b.setup && b.status !== 'open' ? L(b.setup.passed ? 'NCI.GMBusiness.SetupPassed' : 'NCI.GMBusiness.SetupFailed', {
         band: L(`NCI.Roll.Band.${b.setup.band}`), cost: whole(b.setup.cost ?? 0), range: ARCHETYPES[b.archetype].setup.map(whole).join('–'),
       }) : '',
-      // HTML, as the partners. The GM sees true loyalty and hidden traits (E2).
-      staff: (b.staff ?? []).filter((s) => s.status === 'active')
-        .map((s) => escapeHtml(L('NCI.GMBusiness.StaffOne', { name: '\u0000', post: L(`NCI.Staff.Post.${s.post}`), wage: whole(s.wage), extra: staffExtra(s, hidden.traits) })).replace('\u0000', actorLink(s.actorId, s.name))).join(', '),
+      // The GM sees true loyalty and hidden traits (E2).
+      staff: (b.staff ?? []).filter((s) => s.status === 'active').map((s) => staffRow(s, hidden.traits)),
+      // Standing (F1a): the numbers, which players only see as bands, and setting one by hand.
+      standing: b.status === 'open' ? standingRows(b, hidden, factions) : [],
+      factionOptions: b.status === 'open' ? factionOptions : [],
+      factionTerms: b.status === 'open' ? factionTerms(b) : '',
       applicants: (b.candidates ?? []).length ? L('NCI.GMBusiness.Applicants', {
         list: b.candidates.map((c) => L('NCI.GMBusiness.ApplicantOne', {
           name: c.name, post: L(`NCI.Staff.Post.${c.post}`), base: c.base, trait: hidden.traits?.[c.id] ? `, ${L(`NCI.Staff.Trait.${hidden.traits[c.id]}`)}` : '',

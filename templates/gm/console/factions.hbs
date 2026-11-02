@@ -31,21 +31,4 @@
   </div>
   <p class="nci-hint">{{localize "NCI.Faction.DistrictHint" ids=districtIds}}</p>
 </div>
-<div class="nci-block">
-  <h3>{{localize "NCI.Faction.StandingTitle"}}</h3>
-  <p class="nci-hint">{{localize "NCI.Faction.StandingHint"}}</p>
-  {{#each businesses}}
-  <div class="nci-gig" data-standing-row>
-    <div class="nci-gigtop"><strong>{{name}}</strong></div>
-    {{#if standings.length}}
-    <p>{{#each standings}}{{name}}: {{value}} <span class="nci-muted">({{band}})</span>{{#unless @last}} &middot; {{/unless}}{{/each}}</p>
-    {{else}}<p class="nci-muted">{{localize "NCI.Faction.NoStanding"}}</p>{{/if}}
-    <div class="nci-actions">
-      <select name="standingFaction">{{#each ../options}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
-      <input type="number" name="standingValue" min="-100" max="100" step="1" value="0" class="nci-days">
-      <button type="button" data-action="factionSetStanding" data-id="{{id}}"><i class="fas fa-handshake"></i> {{localize "NCI.Faction.SetStanding"}}</button>
-    </div>
-  </div>
-  {{else}}<p class="nci-empty">{{localize "NCI.GMBusiness.NoneRunning"}}</p>{{/each}}
-</div>
 {{/with}}

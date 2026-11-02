@@ -1,14 +1,11 @@
 /**
- * GM Console factions tab: the list of factions, and each business's true standing with them
+ * GM Console factions tab: the list of factions. Each business's standing is on the Businesses tab.
  * @file scripts/ui/GMConsole/tabs/factions.js
  * @description Action handlers run with `this` set to the console window (F1a, DESIGN §36.3).
  */
 
-import { DISTRICTS, FACTION_KINDS, standingBand } from '../../../engine/index.js';
+import { DISTRICTS, FACTION_KINDS } from '../../../engine/index.js';
 import { FactionRepository } from '../../../data/FactionRepository.js';
-import { BusinessRepository } from '../../../data/BusinessRepository.js';
-import { MarketStore } from '../../../data/MarketStore.js';
-import { BusinessService } from '../../../services/BusinessService.js';
 import { L } from '../../format.js';
 import { confirm, report } from '../shared.js';
 
@@ -45,42 +42,21 @@ async function onRemove(event, target) {
   this.render();
 }
 
-async function onSetStanding(event, target) {
-  const box = target.closest('[data-standing-row]');
-  const factionId = box?.querySelector('[name="standingFaction"]')?.value;
-  const value = Number(box?.querySelector('[name="standingValue"]')?.value);
-  if (!factionId || !Number.isFinite(value)) return;
-  report(await BusinessService.setStanding(target.dataset.id, factionId, value));
-  this.render();
-}
-
 export const actions = {
   factionImport: onImport,
   factionAdd: onAdd,
   factionSave: onSave,
   factionRemove: onRemove,
-  factionSetStanding: onSetStanding,
 };
 
 export function context() {
   const factions = FactionRepository.list();
-  const hidden = MarketStore.getBusinessesHidden();
   const kinds = (kind) => FACTION_KINDS.map((k) => ({ value: k, label: L(`NCI.Faction.Kind.${k}`), selected: k === kind }));
   return {
     factions: {
       rows: factions.map((f) => ({ ...f, districtText: f.districts.join(', '), kinds: kinds(f.kind) })),
       newKinds: kinds('gang'),
       districtIds: Object.keys(DISTRICTS).join(', '),
-      options: factions.map((f) => ({ value: f.id, label: f.name })),
-      // Every open business's true standing; what its players see is only the band.
-      businesses: BusinessRepository.all().filter((b) => b.status === 'open').map((b) => ({
-        id: b.id,
-        name: b.name,
-        standings: Object.entries(hidden[b.id]?.standing ?? {}).flatMap(([id, e]) => {
-          const faction = factions.find((f) => f.id === id);
-          return faction ? [{ name: faction.name, value: e.value, band: L(`NCI.Faction.Band.${standingBand(e.value)}`) }] : [];
-        }),
-      })),
     },
   };
 }

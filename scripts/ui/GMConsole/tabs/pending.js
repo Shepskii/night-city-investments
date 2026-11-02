@@ -39,7 +39,7 @@ function businessRows() {
 
 const syndicateRows = () => SyndicateRepository.all().filter((s) => s.status === 'pending').map((s) => row('syndicates', s.name, 'syndicate'));
 
-const rows = () => [...gigRows(), ...heatRows(), ...businessRows(), ...syndicateRows()];
+const rows = () => [...businessRows(), ...syndicateRows(), ...heatRows(), ...gigRows()];
 
 /** How many decisions wait on each tab, and in all under `pending`. */
 export function waiting() {
