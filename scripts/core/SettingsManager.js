@@ -4,6 +4,7 @@
  */
 
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
+import { THEMES, applyTheme, visualToolsActive } from './theme.js';
 
 const notifyMarketUpdated = () => Hooks.callAll(HOOKS.MARKET_UPDATED);
 const notifyBusinessesChanged = () => Hooks.callAll(HOOKS.BUSINESSES_CHANGED);
@@ -318,6 +319,22 @@ export function registerSettings() {
     default: true,
     onChange: notifyBusinessesChanged,
   });
+
+  // Each player's own, as their skin in that module is; offered only with that module there.
+  s.register(MODULE_ID, SETTINGS.THEME, {
+    name: 'NCI.Settings.Theme.Name',
+    hint: 'NCI.Settings.Theme.Hint',
+    scope: 'client',
+    config: visualToolsActive(),
+    type: String,
+    default: THEMES.nightCity,
+    choices: {
+      [THEMES.nightCity]: 'NCI.Settings.Theme.NightCity',
+      [THEMES.visualTools]: 'NCI.Settings.Theme.VisualTools',
+    },
+    onChange: applyTheme,
+  });
+  applyTheme();
 
   s.register(MODULE_ID, SETTINGS.UNDERWORLD, {
     name: 'NCI.Settings.Underworld.Name',

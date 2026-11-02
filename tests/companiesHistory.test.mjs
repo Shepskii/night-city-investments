@@ -138,5 +138,5 @@ test('charts return svg and colour by trend', () => {
   assert.notEqual(trendColor(1), trendColor(-1));
   assert.ok(!sparkline([1]).includes('polyline'));
   assert.ok(lineChart([5, 6, 7, 6]).includes('<polygon'));
-  assert.equal(trendColor(0), '#888888');
+  assert.equal(trendColor(0), 'var(--nci-subtle, #888888)');
 });

@@ -4,9 +4,9 @@
  * @description Small inline SVG charts returned as strings. Pure; no Foundry globals.
  */
 
-const UP = '#3ddc84';
-const DOWN = '#ff6a4d';
-const FLAT = '#888888';
+const UP = 'var(--nci-up, #3ddc84)';
+const DOWN = 'var(--nci-down, #ff6a4d)';
+const FLAT = 'var(--nci-subtle, #888888)';
 
 /** Colour for a move: green up, red down, grey flat. */
 export const trendColor = (change) => (change > 0 ? UP : change < 0 ? DOWN : FLAT);
@@ -51,8 +51,8 @@ export function coneChart(baseline, scenario, { width = 560, height = 200 } = {}
     + `<polygon points="${band(scenario)}" fill="${UP}" fill-opacity="0.2"/>`
     + `<polyline fill="none" stroke="${FLAT}" stroke-width="1.5" stroke-dasharray="4 3" points="${line(baseline.p50)}"/>`
     + `<polyline fill="none" stroke="${UP}" stroke-width="2" points="${line(scenario.p50)}"/>`
-    + `<text x="${width - pad}" y="12" text-anchor="end" fill="#888" font-size="10">${max.toFixed(2)}</text>`
-    + `<text x="${width - pad}" y="${height - 4}" text-anchor="end" fill="#888" font-size="10">${min.toFixed(2)}</text>`
+    + `<text x="${width - pad}" y="12" text-anchor="end" fill="var(--nci-subtle, #888)" font-size="10">${max.toFixed(2)}</text>`
+    + `<text x="${width - pad}" y="${height - 4}" text-anchor="end" fill="var(--nci-subtle, #888)" font-size="10">${min.toFixed(2)}</text>`
     + `</svg>`;
 }
 
@@ -71,8 +71,8 @@ export function lineChart(values, { width = 560, height = 180 } = {}) {
   return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" class="nci-chart">`
     + `<polygon points="${area}" fill="${color}" fill-opacity="0.12"/>`
     + `<polyline fill="none" stroke="${color}" stroke-width="2" points="${line}"/>`
-    + `<text x="${width - pad}" y="12" text-anchor="end" fill="#888" font-size="10">${max.toFixed(2)}</text>`
-    + `<text x="${width - pad}" y="${height - 4}" text-anchor="end" fill="#888" font-size="10">${min.toFixed(2)}</text>`
+    + `<text x="${width - pad}" y="12" text-anchor="end" fill="var(--nci-subtle, #888)" font-size="10">${max.toFixed(2)}</text>`
+    + `<text x="${width - pad}" y="${height - 4}" text-anchor="end" fill="var(--nci-subtle, #888)" font-size="10">${min.toFixed(2)}</text>`
     + `</svg>`;
 }
 
@@ -99,7 +99,7 @@ export function weeklyBars(weeks, { width = 1040, height = 190, format = String,
   const slot = (width - gutter - padX) / n;
   const bar = Math.min(22, slot * 0.3);
   const centre = (i) => gutter + slot * (i + 0.5);
-  const scaleText = (v) => `<text x="${gutter - 8}" y="${y(v) + 3}" text-anchor="end" fill="#888" font-size="10">${escapeXml(format(v))}</text>`;
+  const scaleText = (v) => `<text x="${gutter - 8}" y="${y(v) + 3}" text-anchor="end" fill="var(--nci-subtle, #888)" font-size="10">${escapeXml(format(v))}</text>`;
   const column = (x, v, color) => `<rect x="${round1(x)}" y="${Math.min(y(v), y(0))}" width="${round1(bar)}" height="${Math.max(round1(Math.abs(y(v) - y(0))), 0.5)}" fill="${color}" fill-opacity="0.75"/>`;
   const groups = weeks.map((w, i) => {
     const c = centre(i);
@@ -110,18 +110,18 @@ export function weeklyBars(weeks, { width = 1040, height = 190, format = String,
       + `</g>`;
   }).join('');
   const profit = weeks.map((w, i) => `${round1(centre(i))},${y(w.profit)}`).join(' ');
-  const dots = weeks.map((w, i) => `<circle cx="${round1(centre(i))}" cy="${y(w.profit)}" r="2.5" fill="${w.profit < 0 ? DOWN : '#f2f2f2'}"><title>${escapeXml(w.tip ?? '')}</title></circle>`).join('');
+  const dots = weeks.map((w, i) => `<circle cx="${round1(centre(i))}" cy="${y(w.profit)}" r="2.5" fill="${w.profit < 0 ? DOWN : 'var(--nci-profit, #f2f2f2)'}"><title>${escapeXml(w.tip ?? '')}</title></circle>`).join('');
   return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" class="nci-chart">`
-    + `<line x1="${gutter}" x2="${width - padX}" y1="${y(0)}" y2="${y(0)}" stroke="#555" stroke-width="1"/>`
+    + `<line x1="${gutter}" x2="${width - padX}" y1="${y(0)}" y2="${y(0)}" stroke="var(--nci-chart-zero, #555)" stroke-width="1"/>`
     + groups
-    + (n > 1 ? `<polyline fill="none" stroke="#f2f2f2" stroke-opacity="0.6" stroke-width="1.5" points="${profit}"/>` : '')
+    + (n > 1 ? `<polyline fill="none" stroke="var(--nci-profit, #f2f2f2)" stroke-opacity="0.6" stroke-width="1.5" points="${profit}"/>` : '')
     + dots
     // The zero mark always shows; the top and bottom only when they are clear of it.
     + (max > 0 && y(0) - y(max) >= 12 ? scaleText(max) : '')
     + scaleText(0)
     + (min < 0 && y(min) - y(0) >= 12 ? scaleText(min) : '')
-    + `<text x="${gutter}" y="${height - 3}" fill="#888" font-size="10">${escapeXml(labels[0] ?? '')}</text>`
-    + (n > 1 ? `<text x="${width - padX}" y="${height - 3}" text-anchor="end" fill="#888" font-size="10">${escapeXml(labels[1] ?? '')}</text>` : '')
+    + `<text x="${gutter}" y="${height - 3}" fill="var(--nci-subtle, #888)" font-size="10">${escapeXml(labels[0] ?? '')}</text>`
+    + (n > 1 ? `<text x="${width - padX}" y="${height - 3}" text-anchor="end" fill="var(--nci-subtle, #888)" font-size="10">${escapeXml(labels[1] ?? '')}</text>` : '')
     + `</svg>`;
 }
 
@@ -141,11 +141,11 @@ export function balanceLine(values, { width = 1040, height = 120, format = Strin
   const area = `${x(0)},${base} ${line} ${x(values.length - 1)},${base}`;
   const dots = values.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="2.5" fill="${v < 0 ? DOWN : color}"><title>${escapeXml(tips[i] ?? format(v))}</title></circle>`).join('');
   return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" class="nci-chart">`
-    + (min < 0 && max > 0 ? `<line x1="${gutter}" x2="${width - pad}" y1="${y(0)}" y2="${y(0)}" stroke="#555" stroke-width="1"/>` : '')
+    + (min < 0 && max > 0 ? `<line x1="${gutter}" x2="${width - pad}" y1="${y(0)}" y2="${y(0)}" stroke="var(--nci-chart-zero, #555)" stroke-width="1"/>` : '')
     + `<polygon points="${area}" fill="${color}" fill-opacity="0.12"/>`
     + `<polyline fill="none" stroke="${color}" stroke-width="2" points="${line}"/>`
     + dots
-    + `<text x="${gutter - 8}" y="${y(max) + 3}" text-anchor="end" fill="#888" font-size="10">${escapeXml(format(max))}</text>`
-    + `<text x="${gutter - 8}" y="${y(min) + 3}" text-anchor="end" fill="#888" font-size="10">${escapeXml(format(min))}</text>`
+    + `<text x="${gutter - 8}" y="${y(max) + 3}" text-anchor="end" fill="var(--nci-subtle, #888)" font-size="10">${escapeXml(format(max))}</text>`
+    + `<text x="${gutter - 8}" y="${y(min) + 3}" text-anchor="end" fill="var(--nci-subtle, #888)" font-size="10">${escapeXml(format(min))}</text>`
     + `</svg>`;
 }

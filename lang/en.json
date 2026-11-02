@@ -1741,6 +1741,12 @@
         "Name": "Player businesses",
         "Hint": "Let players found and run their own businesses, with the Business window. Turning this off stops their weeks closing and refuses new requests; nothing is deleted."
       },
+      "Theme": {
+        "Name": "Colour theme",
+        "Hint": "Your own choice, for this module's windows and ticker. Matching uses whichever skin and colours you have set in Pneuma's Visual Tools, and stays red if you have none active.",
+        "NightCity": "Night City red",
+        "VisualTools": "Match Pneuma's Visual Tools"
+      },
       "Underworld": {
         "Name": "Underworld content",
         "Hint": "Lets a business open an illegal back room. A back room already open keeps running if you turn this off."

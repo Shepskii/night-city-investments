@@ -54,7 +54,8 @@ export const MarketTicker = {
     if (!el) {
       el = document.createElement('div');
       el.id = ELEMENT_ID;
-      el.className = 'nci-ticker';
+      // That class is how Pneuma's Visual Tools reaches something that is not a window (scripts/core/theme.js).
+      el.className = 'nci-ticker pneuma-theme-technical';
       el.title = game.i18n.localize('NCI.Ticker.Open');
       el.addEventListener('click', () => MarketTerminalApp.open());
       document.body.appendChild(el);

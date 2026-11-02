@@ -73,6 +73,36 @@
   --nci-tab-on: #ff8a96;
   --nci-count-bg: rgba(255, 42, 68, 0.22);
   --nci-count-text: #ffb3bc;
+
+  /* Everything else with a colour of its own, so a theme can change it. */
+  --nci-window: #0b0809;
+  --nci-glass: rgba(11, 8, 9, 0.88);
+  --nci-input: #120e0f;
+  --nci-text: #d8d8d8;
+  --nci-strong: #fff;
+  --nci-soft: #bbb;
+  --nci-subtle: #888;
+  --nci-faint: #777;
+  --nci-person: #e8e2e3;
+  --nci-line: #1a1415;
+  --nci-sunken: #0e0a0b;
+  --nci-chart: #0e0b0c;
+  --nci-chart-line: #231a1c;
+  --nci-chart-zero: #555;
+  --nci-profit: #f2f2f2;
+  --nci-track: #1c1517;
+  --nci-track-line: #2a2023;
+  --nci-bar-line: #4a3a3e;
+  --nci-focus: rgba(255, 42, 68, 0.45);
+  --nci-star: #ffcc33;
+  --nci-active: var(--nci-accent-dim);
+  --nci-on-accent: #fff;
+  --nci-up-soft: #6fcf97;
+  --nci-caution: #e0b44a;
+  --nci-neutral-text: #7fb6e3;
+  --nci-cell-low: #7a2430;
+  --nci-cell-mid: #8a6d2a;
+  --nci-cell-good: #2f7a4c;
 }
 
 .nci-app {
@@ -93,11 +123,11 @@
   overflow: hidden;
   white-space: nowrap;
   padding: 3px 12px;
-  background: rgba(11, 8, 9, 0.88);
+  background: var(--nci-glass);
   border: 1px solid var(--nci-accent-dim);
   border-bottom: 2px solid var(--nci-accent);
   border-radius: 3px;
-  color: #d8d8d8;
+  color: var(--nci-text);
   font-family: monospace;
   font-size: 12px;
   cursor: pointer;
@@ -105,13 +135,13 @@
 .nci-ticker:hover { border-color: var(--nci-accent-bright); }
 .nci-ticker .nci-up { color: var(--nci-up); }
 .nci-ticker .nci-down { color: var(--nci-down); }
-.nci-ticker .nci-flat { color: #888; }
-.nci-ticker .nci-tk-index { color: #fff; font-weight: bold; }
+.nci-ticker .nci-flat { color: var(--nci-subtle); }
+.nci-ticker .nci-tk-index { color: var(--nci-strong); font-weight: bold; }
 .nci-ticker .nci-tk-watched::before { content: "\2605\00a0"; color: var(--nci-accent-bright); }
 
 .nci-app .window-content {
-  background: #0b0809;
-  color: #d8d8d8;
+  background: var(--nci-window);
+  color: var(--nci-text);
   font-family: monospace;
   min-height: 0;
   padding: 10px 16px 14px;
@@ -119,7 +149,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: var(--nci-accent-dim) #0b0809;
+  scrollbar-color: var(--nci-accent-dim) var(--nci-window);
 }
 
 /* Content keeps its natural height, so the window scrolls instead of squashing it. */
@@ -137,13 +167,13 @@
 }
 
 .nci-app .nci-muted {
-  color: #777;
+  color: var(--nci-faint);
   font-size: 11px;
 }
 
 .nci-up { color: var(--nci-up); }
 .nci-down { color: var(--nci-down); }
-.nci-flat { color: #888; }
+.nci-flat { color: var(--nci-subtle); }
 
 .nci-app .nci-header {
   display: flex;
@@ -169,7 +199,7 @@
 .nci-app .nci-listcols th:nth-child(5), .nci-app .nci-listcols th:nth-child(6), .nci-app .nci-listcols th:nth-child(7) { width: 9%; }
 .nci-app .nci-holdcols th:first-child { width: 40%; }
 .nci-app th { text-align: left; color: var(--nci-label); font-weight: normal; border-bottom: 1px solid var(--nci-accent-dim); padding: 4px 6px; }
-.nci-app td { padding: 4px 6px; border-bottom: 1px solid #1a1415; }
+.nci-app td { padding: 4px 6px; border-bottom: 1px solid var(--nci-line); }
 .nci-app .num { text-align: right; font-variant-numeric: tabular-nums; }
 .nci-app tr.nci-row { cursor: pointer; background: var(--nci-row); }
 .nci-app tr.nci-row:nth-child(even) { background: var(--nci-row-alt); }
@@ -189,12 +219,12 @@
   margin-left: 4px;
 }
 
-.nci-app .nci-empty { padding: 24px; color: #888; text-align: center; }
+.nci-app .nci-empty { padding: 24px; color: var(--nci-subtle); text-align: center; }
 .nci-app .nci-warn { color: var(--nci-warn); }
 
 .nci-app button {
   background: var(--nci-accent-bg) !important;
-  color: #d8d8d8 !important;
+  color: var(--nci-text) !important;
   border: 1px solid var(--nci-accent-dim);
   cursor: pointer;
   width: auto;
@@ -202,10 +232,10 @@
   line-height: 1.4;
   padding: 2px 10px;
 }
-.nci-app button:hover { border-color: var(--nci-accent-bright); color: #fff !important; }
-.nci-app button.active { border-color: var(--nci-accent-bright); background: var(--nci-accent-dim) !important; color: #fff !important; }
+.nci-app button:hover { border-color: var(--nci-accent-bright); color: var(--nci-strong) !important; }
+.nci-app button.active { border-color: var(--nci-accent-bright); background: var(--nci-active) !important; color: var(--nci-on-accent) !important; }
 .nci-app button.nci-danger { border-color: var(--nci-accent); }
-.nci-app button.nci-danger:hover { background: var(--nci-accent) !important; border-color: var(--nci-accent-bright); color: #fff !important; }
+.nci-app button.nci-danger:hover { background: var(--nci-accent) !important; border-color: var(--nci-accent-bright); color: var(--nci-on-accent) !important; }
 .nci-app button.nci-dim { opacity: 0.55; }
 
 /* Other UI themes stretch inputs and enlarge headings; keep the layout compact. */
@@ -216,29 +246,29 @@
 .nci-app input[type="number"], .nci-app input[type="text"], .nci-app select, .nci-app textarea {
   height: auto;
   min-height: 24px;
-  background: #120e0f !important;
-  color: #d8d8d8 !important;
+  background: var(--nci-input) !important;
+  color: var(--nci-text) !important;
   border: 1px solid var(--nci-accent-dim);
 }
 .nci-app input:focus, .nci-app select:focus, .nci-app textarea:focus {
   outline: none;
   border-color: var(--nci-accent-bright);
-  box-shadow: 0 0 4px rgba(255, 42, 68, 0.45);
+  box-shadow: 0 0 4px var(--nci-focus);
 }
 .nci-app .nci-actions input, .nci-app .nci-actions select, .nci-app .nci-cashbox input { width: auto !important; flex: 0 0 auto; max-width: 240px; }
 .nci-app .nci-actions input.nci-days { width: 72px !important; }
 .nci-app .nci-tabs select.nci-actor { width: auto; flex: 0 0 auto; }
 
 .nci-app .nci-quote { display: flex; align-items: baseline; gap: 14px; margin: 6px 0; }
-.nci-app .nci-price { font-size: 24px; color: #fff; }
+.nci-app .nci-price { font-size: 24px; color: var(--nci-strong); }
 .nci-app .nci-ranges { display: flex; align-items: center; gap: 6px; margin: 8px 0; }
 .nci-app .nci-ranges button { width: auto; padding: 0 10px; }
-.nci-app .nci-chartbox { background: #0e0b0c; border: 1px solid #231a1c; padding: 4px; margin-bottom: 8px; }
+.nci-app .nci-chartbox { background: var(--nci-chart); border: 1px solid var(--nci-chart-line); padding: 4px; margin-bottom: 8px; }
 .nci-app .nci-chartbox svg { width: 100%; height: auto; display: block; }
 .nci-app .nci-stats th { width: 18%; }
-.nci-app .nci-lore { margin-top: 10px; padding: 8px 10px; border-left: 2px solid var(--nci-accent); color: #bbb; }
+.nci-app .nci-lore { margin-top: 10px; padding: 8px 10px; border-left: 2px solid var(--nci-accent); color: var(--nci-soft); }
 
-.nci-app .nci-star { color: #ffcc33; font-size: 10px; }
+.nci-app .nci-star { color: var(--nci-star); font-size: 10px; }
 
 /* The tabs: a flat strip with an underline on the open one (after Night City Messenger's). */
 .nci-app .nci-tabs { display: flex; flex-wrap: wrap; align-items: stretch; padding: 0 8px; margin-bottom: 8px; background: var(--nci-accent-bg); border-bottom: 1px solid var(--nci-accent-dim); }
@@ -261,7 +291,7 @@
   letter-spacing: 0.05em;
   white-space: nowrap;
 }
-.nci-app .nci-tabs button:hover { color: #fff !important; border-color: transparent; border-bottom-color: var(--nci-accent-dim); }
+.nci-app .nci-tabs button:hover { color: var(--nci-strong) !important; border-color: transparent; border-bottom-color: var(--nci-accent-dim); }
 .nci-app .nci-tabs button.active { background: none !important; color: var(--nci-tab-on) !important; border-color: transparent; border-bottom-color: var(--nci-accent-bright); outline: none; }
 .nci-app .nci-tabs button:focus-visible { outline: 1px solid var(--nci-accent-bright); outline-offset: -2px; }
 .nci-app .nci-tabs button.nci-tab-new { color: var(--nci-up) !important; }
@@ -281,7 +311,7 @@
   letter-spacing: 0.06em;
 }
 .nci-app .nci-tabs.nci-groups button:hover { background: var(--nci-row-hover) !important; }
-.nci-app .nci-tabs.nci-groups button.active { background: var(--nci-accent-dim) !important; color: #fff !important; }
+.nci-app .nci-tabs.nci-groups button.active { background: var(--nci-active) !important; color: var(--nci-on-accent) !important; }
 .nci-app .nci-tabs.nci-subtabs button { padding: 7px 13px; font-size: 13px; }
 /* Starting a new business is not a folder. */
 .nci-app .nci-tabs.nci-groups button.nci-tab-new { background: none !important; clip-path: none; font-size: 13px; }
@@ -312,17 +342,17 @@
 .nci-app .nci-estimate { color: var(--nci-accent-bright); min-height: 1.4em; }
 
 .nci-app .nci-news { list-style: none; margin: 4px 0; padding: 0; }
-.nci-app .nci-news li { padding: 4px 2px; border-bottom: 1px solid #1a1415; }
+.nci-app .nci-news li { padding: 4px 2px; border-bottom: 1px solid var(--nci-line); }
 .nci-app .nci-subhead { margin: 14px 0 6px; }
 .nci-app .nci-console h3 { margin: 8px 0 6px; }
-.nci-app .nci-console .nci-hint { color: #777; font-size: 11px; margin: 0 0 6px; }
+.nci-app .nci-console .nci-hint { color: var(--nci-faint); font-size: 11px; margin: 0 0 6px; }
 .nci-app .nci-console .nci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-bottom: 8px; }
 .nci-app .nci-console label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--nci-label); }
 .nci-app .nci-console label.wide { grid-column: 1 / -1; }
 .nci-app .nci-console label.nci-check { flex-direction: row; align-items: center; gap: 6px; }
 
 .nci-app .nci-block { margin-bottom: 16px; }
-.nci-app .nci-heatbar { display: inline-block; width: 90px; height: 8px; background: #1a1415; border: 1px solid var(--nci-accent-dim); vertical-align: middle; }
+.nci-app .nci-heatbar { display: inline-block; width: 90px; height: 8px; background: var(--nci-line); border: 1px solid var(--nci-accent-dim); vertical-align: middle; }
 .nci-app .nci-heatfill { display: block; height: 100%; background: var(--nci-up); }
 .nci-app .nci-heatfill.nci-heat-noticed { background: var(--nci-warn, #ffb347); }
 .nci-app .nci-heatfill.nci-heat-flagged { background: var(--nci-down); }
@@ -355,19 +385,19 @@
 .nci-app .nci-standing.nci-capacity { grid-template-columns: 110px minmax(200px, 360px) 1fr; }
 /* Exposure lines up with the standings' weeks: twelve cells of 22px, with 3px between them. */
 .nci-app .nci-standing.nci-exposure { grid-template-columns: 110px calc(12 * 22px + 11 * 3px) 1fr; }
-.nci-app .nci-capbar { display: flex; height: 14px; background: #2a2023; border: 1px solid #4a3a3e; overflow: hidden; }
+.nci-app .nci-capbar { display: flex; height: 14px; background: var(--nci-track-line); border: 1px solid var(--nci-bar-line); overflow: hidden; }
 .nci-app .nci-capnow { background: #4f9bd9; }
 /* Exposure, by band: the colours of the standings' levels. */
-.nci-app .nci-exposure-clean { background: #3ddc84; }
-.nci-app .nci-exposure-low { background: #6fcf97; }
-.nci-app .nci-exposure-moderate { background: #e0b44a; }
-.nci-app .nci-exposure-high { background: #ff6a4d; }
-.nci-app .nci-exposure-text-clean { color: #3ddc84; }
-.nci-app .nci-exposure-text-low { color: #6fcf97; }
-.nci-app .nci-exposure-text-moderate { color: #e0b44a; }
-.nci-app .nci-exposure-text-high { color: #ff6a4d; }
-.nci-app .nci-capnext { background: repeating-linear-gradient(45deg, #4f9bd9 0 3px, #2a2023 3px 7px); }
-.nci-app .nci-progress { height: 10px; margin: 6px 0; background: #1c1517; border: 1px solid #2a2023; overflow: hidden; }
+.nci-app .nci-exposure-clean { background: var(--nci-up); }
+.nci-app .nci-exposure-low { background: var(--nci-up-soft); }
+.nci-app .nci-exposure-moderate { background: var(--nci-caution); }
+.nci-app .nci-exposure-high { background: var(--nci-down); }
+.nci-app .nci-exposure-text-clean { color: var(--nci-up); }
+.nci-app .nci-exposure-text-low { color: var(--nci-up-soft); }
+.nci-app .nci-exposure-text-moderate { color: var(--nci-caution); }
+.nci-app .nci-exposure-text-high { color: var(--nci-down); }
+.nci-app .nci-capnext { background: repeating-linear-gradient(45deg, #4f9bd9 0 3px, var(--nci-track-line) 3px 7px); }
+.nci-app .nci-progress { height: 10px; margin: 6px 0; background: var(--nci-track); border: 1px solid var(--nci-track-line); overflow: hidden; }
 .nci-app .nci-progress > span { display: block; height: 100%; background: var(--nci-up); }
 /* The cashbook: totals stand out from the lines above them. */
 .nci-app .nci-cashbook tr.nci-total td { font-weight: bold; border-top: 1px solid var(--nci-accent-dim); }
@@ -395,7 +425,7 @@
 .nci-app .nci-vote { display: inline-flex; align-items: center; gap: 6px; }
 .nci-app .nci-vote-yes { color: var(--nci-up); }
 .nci-app .nci-vote-no { color: var(--nci-down); }
-.nci-app .nci-vote-none { color: var(--color-text-dark-inactive, #888); font-style: italic; }
+.nci-app .nci-vote-none { color: var(--color-text-dark-inactive, var(--nci-subtle)); font-style: italic; }
 .nci-app .nci-proposal .nci-actions { margin: 8px 0 2px; }
 .nci-app .nci-days { width: 64px; }
 .nci-app .nci-rowbtns { white-space: nowrap; text-align: right; }
@@ -410,15 +440,15 @@
 .nci-app .nci-editor .nci-check { flex-direction: row; align-items: center; gap: 6px; }
 .nci-app .nci-editor fieldset { border: 1px solid var(--nci-accent-dim); margin-bottom: 8px; }
 .nci-app .nci-editor legend { color: var(--nci-accent-bright); }
-.nci-app .nci-editor .nci-hint { color: #777; font-size: 10px; }
+.nci-app .nci-editor .nci-hint { color: var(--nci-faint); font-size: 10px; }
 .nci-app .nci-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 .nci-app .nci-footer button { width: auto; padding: 0 14px; }
 
 /* Trading access cards on the Portfolio tab. */
 .nci-app .nci-access { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
-.nci-app .nci-access-card { border: 1px solid var(--nci-accent-dim); border-left: 3px solid var(--nci-accent); padding: 8px 10px; background: #0e0a0b; }
+.nci-app .nci-access-card { border: 1px solid var(--nci-accent-dim); border-left: 3px solid var(--nci-accent); padding: 8px 10px; background: var(--nci-sunken); }
 .nci-app .nci-terms { margin: 6px 0; padding-left: 16px; }
-.nci-app .nci-hint { color: #777; font-size: 11px; }
+.nci-app .nci-hint { color: var(--nci-faint); font-size: 11px; }
 .nci-app .nci-notify { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
 .nci-app .nci-notify label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--nci-label); }
 
@@ -428,25 +458,25 @@
 .nci-app .nci-standing { display: grid; grid-template-columns: 110px auto 1fr; align-items: center; gap: 10px; }
 .nci-app .nci-standing-label { color: var(--nci-label); }
 .nci-app .nci-cells { display: flex; gap: 3px; }
-.nci-app .nci-cell { flex: 0 0 22px; height: 14px; background: #1c1517; border: 1px solid #2a2023; }
-.nci-app .nci-cell.nci-lvl0 { background: #7a2430; }
-.nci-app .nci-cell.nci-lvl1 { background: #8a6d2a; }
-.nci-app .nci-cell.nci-lvl2 { background: #2f7a4c; }
-.nci-app .nci-cell.nci-lvl3 { background: #3ddc84; }
-.nci-app .nci-lvl-text.nci-lvl0 { color: #ff6a4d; }
-.nci-app .nci-lvl-text.nci-lvl1 { color: #e0b44a; }
-.nci-app .nci-lvl-text.nci-lvl2 { color: #6fcf97; }
-.nci-app .nci-lvl-text.nci-lvl3 { color: #3ddc84; }
+.nci-app .nci-cell { flex: 0 0 22px; height: 14px; background: var(--nci-track); border: 1px solid var(--nci-track-line); }
+.nci-app .nci-cell.nci-lvl0 { background: var(--nci-cell-low); }
+.nci-app .nci-cell.nci-lvl1 { background: var(--nci-cell-mid); }
+.nci-app .nci-cell.nci-lvl2 { background: var(--nci-cell-good); }
+.nci-app .nci-cell.nci-lvl3 { background: var(--nci-up); }
+.nci-app .nci-lvl-text.nci-lvl0 { color: var(--nci-down); }
+.nci-app .nci-lvl-text.nci-lvl1 { color: var(--nci-caution); }
+.nci-app .nci-lvl-text.nci-lvl2 { color: var(--nci-up-soft); }
+.nci-app .nci-lvl-text.nci-lvl3 { color: var(--nci-up); }
 .nci-app .nci-neutral .nci-cell.nci-lvl0 { background: #1f3346; }
 .nci-app .nci-neutral .nci-cell.nci-lvl1 { background: #2a4d6e; }
 .nci-app .nci-neutral .nci-cell.nci-lvl2 { background: #3a6f9c; }
 .nci-app .nci-neutral .nci-cell.nci-lvl3 { background: #5a9fd6; }
-.nci-app .nci-neutral .nci-lvl-text { color: #7fb6e3; }
+.nci-app .nci-neutral .nci-lvl-text { color: var(--nci-neutral-text); }
 .nci-app .nci-legend { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--nci-label); margin: -4px 0 8px; }
 .nci-app .nci-key { display: inline-block; width: 10px; height: 10px; margin-left: 8px; }
-.nci-app .nci-key-takings { background: #3ddc84; }
-.nci-app .nci-key-upkeep { background: #ff6a4d; }
-.nci-app .nci-key-profit { background: #f2f2f2; border-radius: 50%; }
+.nci-app .nci-key-takings { background: var(--nci-up); }
+.nci-app .nci-key-upkeep { background: var(--nci-down); }
+.nci-app .nci-key-profit { background: var(--nci-profit); border-radius: 50%; }
 /* Read-only: a syndicate member who is not an officer sees everything but the controls. */
 .nci-app .nci-readonly [data-action]:not([data-action="switchTab"]),
 .nci-app .nci-readonly .nci-form input,
@@ -465,14 +495,14 @@
   display: inline-flex; align-items: center; gap: 5px; box-sizing: border-box;
   height: 24px; padding: 0 8px 0 1px; margin: 1px 0; vertical-align: middle;
   background: var(--nci-accent-bg) !important; border: 1px solid var(--nci-accent-dim); border-radius: 12px;
-  color: #e8e2e3; font-size: 13px; font-weight: 600; font-style: normal; line-height: 22px; text-shadow: none; white-space: nowrap;
+  color: var(--nci-person); font-size: 13px; font-weight: 600; font-style: normal; line-height: 22px; text-shadow: none; white-space: nowrap;
 }
-.nci-app a.content-link.nci-who:hover { --cpr-background-content-link: var(--nci-row-hover); background: var(--nci-row-hover) !important; border-color: var(--nci-accent-bright); color: #fff; }
+.nci-app a.content-link.nci-who:hover { --cpr-background-content-link: var(--nci-row-hover); background: var(--nci-row-hover) !important; border-color: var(--nci-accent-bright); color: var(--nci-strong); }
 .nci-app a.content-link.nci-who::before { content: none; }
 .nci-app a.content-link.nci-who .nci-avatar { width: 20px; height: 20px; flex: none; margin: 0; border: 1px solid var(--nci-accent-dim); border-radius: 50%; object-fit: cover; object-position: top; }
 /* A name with no actor behind it (a syndicate, a recruit): the same pill, dashed and without a portrait. */
 .nci-app span.nci-who { display: inline-flex; align-items: center; box-sizing: border-box; height: 24px; padding: 0 8px; margin: 1px 0; vertical-align: middle;
-  border: 1px dashed var(--nci-accent-dim); border-radius: 12px; color: #e8e2e3; font-size: 13px; font-weight: 600; font-style: normal; line-height: 22px; white-space: nowrap; }
+  border: 1px dashed var(--nci-accent-dim); border-radius: 12px; color: var(--nci-person); font-size: 13px; font-weight: 600; font-style: normal; line-height: 22px; white-space: nowrap; }
 .nci-app .nci-pick { display: inline-flex; align-items: center; gap: 4px; margin-right: 10px; }
 /* A post on the Staff tab that a character can be dragged onto. */
 .nci-app .nci-business .nci-gearrow { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
@@ -498,7 +528,7 @@
 
 /* A business's entry on the GM Console: its name first, and the GM's buttons at the foot. */
 .nci-app .nci-bizhead { border-bottom: 1px solid var(--nci-accent-dim); padding-bottom: 6px; margin-bottom: 6px; }
-.nci-app .nci-bizname { font-size: 1.45em; font-weight: bold; line-height: 1.25; color: #fff; }
+.nci-app .nci-bizname { font-size: 1.45em; font-weight: bold; line-height: 1.25; color: var(--nci-strong); }
 /* Each business on the GM Console's Businesses tab: well apart, with a heavy edge along the top. */
 .nci-app .nci-gig.nci-bizentry { margin: 26px 0; padding: 10px 12px; border-top: 3px solid var(--nci-accent); }
 .nci-app .nci-gig.nci-bizentry:first-of-type { margin-top: 8px; }
@@ -512,3 +542,57 @@
 .nci-app .nci-factions :is(th, td) { width: 33.33%; vertical-align: top; }
 .nci-app .nci-faction-hostile, .nci-app .nci-faction-wary { color: var(--nci-down); }
 .nci-app .nci-faction-friendly, .nci-app .nci-faction-allied { color: var(--nci-up); }
+
+/*
+ * Matching Pneuma's Visual Tools (a client setting; scripts/core/theme.js). It publishes the skin a player has chosen,
+ * any of its five or Colorize on its own, as these variables, on windows like these. With no skin active, nothing here
+ * applies. Shades it has no name for are mixed from those it does, so they work on its light skins as on its dark ones.
+ */
+html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) :is(.nci-app, .nci-ticker) {
+  --nci-accent: var(--pvt-custom-main, var(--pvt-base-accent, var(--cpr-background-border)));
+  --nci-window: var(--cpr-background-window);
+  --nci-text: var(--cpr-text-normal);
+  --nci-input: var(--cpr-background-foundry-input);
+  --nci-row: var(--cpr-background-row-odd);
+  --nci-row-alt: var(--cpr-background-row-even);
+  --nci-subtle: var(--cpr-text-hint);
+  --nci-faint: var(--cpr-text-hint);
+  --nci-up: var(--cpr-text-chat-success);
+  --nci-down: var(--cpr-text-chat-failure);
+  --nci-rule: var(--nci-accent);
+  --nci-active: var(--nci-accent);
+  --nci-on-accent: var(--pvt-custom-on-main, var(--pvt-base-on-accent, #fff));
+
+  --nci-accent-bright: color-mix(in srgb, var(--nci-accent) 70%, var(--nci-text));
+  --nci-accent-dim: color-mix(in srgb, var(--nci-accent) 45%, var(--nci-window));
+  --nci-accent-bg: color-mix(in srgb, var(--nci-accent) 10%, var(--nci-window));
+  --nci-label: color-mix(in srgb, var(--nci-accent) 60%, var(--nci-text));
+  --nci-row-hover: color-mix(in srgb, var(--nci-accent) 25%, var(--nci-row));
+  --nci-tab-text: var(--nci-text);
+  --nci-tab-on: var(--nci-label);
+  --nci-count-bg: color-mix(in srgb, var(--nci-accent) 22%, transparent);
+  --nci-count-text: var(--nci-label);
+  --nci-glass: color-mix(in srgb, var(--nci-window) 88%, transparent);
+  --nci-strong: var(--nci-text);
+  --nci-soft: color-mix(in srgb, var(--nci-text) 80%, var(--nci-window));
+  --nci-person: var(--nci-text);
+  --nci-line: color-mix(in srgb, var(--nci-text) 12%, var(--nci-window));
+  --nci-sunken: color-mix(in srgb, var(--nci-text) 4%, var(--nci-window));
+  --nci-chart: color-mix(in srgb, var(--nci-text) 4%, var(--nci-window));
+  --nci-chart-line: color-mix(in srgb, var(--nci-text) 15%, var(--nci-window));
+  --nci-chart-zero: color-mix(in srgb, var(--nci-text) 40%, var(--nci-window));
+  --nci-profit: var(--nci-text);
+  --nci-track: color-mix(in srgb, var(--nci-text) 8%, var(--nci-window));
+  --nci-track-line: color-mix(in srgb, var(--nci-text) 18%, var(--nci-window));
+  --nci-bar-line: color-mix(in srgb, var(--nci-text) 30%, var(--nci-window));
+  --nci-focus: color-mix(in srgb, var(--nci-accent) 45%, transparent);
+  /* Amber and blue, drawn toward the text colour: lighter on a dark skin, darker on a light one. */
+  --nci-warn: color-mix(in srgb, #d98e04 70%, var(--nci-text));
+  --nci-caution: color-mix(in srgb, #c9971c 70%, var(--nci-text));
+  --nci-star: var(--nci-caution);
+  --nci-neutral-text: color-mix(in srgb, #4a8fc7 70%, var(--nci-text));
+  --nci-up-soft: color-mix(in srgb, var(--nci-up) 80%, var(--nci-text));
+  --nci-cell-low: color-mix(in srgb, var(--nci-down) 60%, var(--nci-window));
+  --nci-cell-mid: color-mix(in srgb, var(--nci-caution) 60%, var(--nci-window));
+  --nci-cell-good: color-mix(in srgb, var(--nci-up) 60%, var(--nci-window));
+}
