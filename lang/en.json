@@ -1076,6 +1076,9 @@
       "Offering": "{name} ({ticker}) offers {shares} new shares at {price} eb.",
       "CaseLost": "Regulators fine {name} ({ticker}) {fine} eb.",
       "Smeared": "Damaging stories about {name} ({ticker}) are doing the rounds.",
+      "StoryBy": "{media}: {headline}",
+      "StoryExpose": "{media} exposes {name} ({ticker}).",
+      "StoryPuff": "{media} writes glowingly of {name} ({ticker}).",
       "Leaked": "Leaked documents raise questions at {name} ({ticker}).",
       "Unmasked": "Regulators unmask {holder} as the hidden holder of {pct}% of {name} ({ticker}), and fine them {fine} eb.",
       "Takeover": "{bidder} bids {price} eb a share for {name} ({ticker}), a {premium}% premium.",
@@ -1653,8 +1656,8 @@
         "Hint": "Let players found and run their own businesses, with the Business window. Turning this off stops their weeks closing and refuses new requests; nothing is deleted."
       },
       "CampaignApproval": {
-        "Name": "Smears and leaks need GM approval",
-        "Hint": "A business's successful campaign against a company waits in the GM Console's Businesses tab until the GM lets it run."
+        "Name": "Smears, leaks and stories need GM approval",
+        "Hint": "A business's successful campaign against a company, or a Media's believed story, waits on the GM Console's Pending tab until the GM lets it run."
       },
       "BusinessApproval": {
         "Name": "New businesses need GM approval",
@@ -1792,6 +1795,7 @@
       "Reason": {
         "report": "a regulator has been going through its monthly reports",
         "plant": "a former employee went to the regulators",
+        "story": "a published story has drawn the regulators' attention",
         "shortcuts": "a shortcut went wrong, and someone noticed",
         "unmasked": "a large hidden holder was uncovered",
         "gm": "a regulator has opened a file on it"
@@ -2140,6 +2144,35 @@
       "Unlisted": "Not itemised in the ledger (a week from before entries were marked with their week, or entries since trimmed)",
       "TillAtClose": "Cash at the close:"
     },
+    "Story": {
+      "Title": "A story about {name}",
+      "Hint": "The public believes it on 1d10 of {base} or under, without Luck. Any evidence adds {bonus}, and more than {many} pieces add {manyBonus}. Your rank moves the price up to {cap}%. You can publish once a week, and another story about the same company within 30 days needs new evidence.",
+      "Angle": "Angle",
+      "AngleName": { "expose": "Exposé (price down)", "puff": "Puff piece (price up)" },
+      "Headline": "Headline (optional)",
+      "Evidence": "Evidence",
+      "NoEvidence": "You hold no unused evidence about this company.",
+      "Publish": "Publish a story",
+      "ShardName": "Evidence: {name}",
+      "ShardFrom": "Unknown source",
+      "NoteInvestigation": "What an investigation found at {name}: {found}.",
+      "NoteDiligence": "Due diligence notes on {name}.",
+      "NoteGM": "Something that could embarrass {name}.",
+      "Believed": "The public buys your story (rolled {die}, needed {target} or under).",
+      "BelievedWaiting": "The public would buy your story (rolled {die}, needed {target} or under). It waits for the GM.",
+      "NotBelieved": "Nobody buys your story (rolled {die}, needed {target} or under).",
+      "Waiting": "{media}: {angle} on {name} ({ticker}), {percent}% on its share price.",
+      "WaitingTitle": "Stories waiting for you",
+      "Approve": "Let it run",
+      "Reject": "Spike it",
+      "SpikedSubject": "Your story on {name} was spiked",
+      "Spiked": "Your story on {name} did not run. Any evidence you used is spent.",
+      "EvidenceTitle": "Evidence",
+      "EvidenceHint": "Put a piece of evidence about a company in a character's inventory, for a Media's story. A successful investigation or due diligence makes one by itself.",
+      "NotePlaceholder": "What it shows",
+      "Create": "Create evidence",
+      "Created": "{actor} now holds evidence about {name}."
+    },
     "Pending": {
       "Title": "Waiting for you",
       "Intro": "Every decision that needs you. Click a row to go to its tab, where you make the decision.",
@@ -2160,6 +2193,7 @@
         "administration": "In administration: restructure it or wind it up",
         "case": "Regulator's case lost: approve the penalty or drop the case",
         "campaign": "A campaign against {name}: let it run or stop it",
+        "story": "A story about {name}: let it run or spike it",
         "offer": "Answer for {name}: a job offer as {post}",
         "syndicate": "Approve or reject the new syndicate"
       }
@@ -2938,6 +2972,12 @@
         "no-slot": "this week's action slots are all taken",
         "no-faction": "that action needs a faction to aim at",
         "no-target": "that action needs a company to aim at",
+        "not-media": "that takes the Media role's Credibility",
+        "bad-angle": "that is not an angle for a story",
+        "story-wait": "you have published a story too recently",
+        "story-same-topic": "that company has been in the news: another story needs new evidence",
+        "no-story": "that story is no longer waiting",
+        "no-evidence-item": "the evidence could not be created",
         "campaign-wait": "the business has run a campaign too recently",
         "no-campaign": "no campaign is waiting",
         "bad-faction": "that action cannot be aimed at that faction",

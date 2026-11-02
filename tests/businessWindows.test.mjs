@@ -713,3 +713,27 @@ test('the console\'s tabs are in groups: a group goes to its last open tab, and 
   assert.equal(seen.size, 13);
   assert.match(await renderConsole('actions'), />\s*Corp actions\s*</);
 });
+
+test('a story waiting for the GM shows on Market > Events and the Pending tab; the Audit tab can make evidence', async () => {
+  const { MarketStore } = await import('../scripts/data/MarketStore.js');
+  const saved = MarketStore.getStories();
+  try {
+    await MarketStore.setStories({ pending: [{ id: 's1', actorId: med.id, media: 'Medtech', ticker: 'ARA', name: 'Arasaka', angle: 'expose', percent: -4.2, day: 1, rank: 5, headline: 'Arasaka hides a crash' }], recent: [] });
+    const events = await renderConsole('events');
+    assertClean(events, 'events tab with a story');
+    assert.match(text(events), /Medtech: Exposé \(price down\) on Arasaka \(ARA\), -4\.2% on its share price/);
+    assert.match(text(events), /Arasaka hides a crash/);
+    assert.match(events, /data-action="storyApprove"/);
+    assert.match(events, /data-action="storyReject"/);
+    const pending = await renderConsole('pending');
+    assertClean(pending, 'pending tab with a story');
+    assert.match(text(pending), /A story about Arasaka: let it run or spike it/);
+    assert.match(pending, /<tr class="nci-row" data-action="switchTab" data-tab="events">/);
+  } finally {
+    await MarketStore.setStories(saved);
+  }
+  const audit = await renderConsole('tools');
+  assertClean(audit, 'audit tab');
+  assert.match(audit, /data-action="createEvidence"/);
+  assert.match(audit, /name="evidenceActor"/);
+});

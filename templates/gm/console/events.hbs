@@ -1,3 +1,19 @@
+{{#if stories.length}}
+<div class="nci-block">
+  <h3>{{localize "NCI.Story.WaitingTitle"}}</h3>
+  {{#each stories}}
+  <div class="nci-gig">
+    <div>{{text}}</div>
+    {{#if headline}}<div class="nci-muted">{{headline}}</div>{{/if}}
+    <div class="nci-actions">
+      <button type="button" data-action="storyApprove" data-id="{{id}}"><i class="fas fa-check"></i> {{localize "NCI.Story.Approve"}}</button>
+      <button type="button" data-action="storyReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.Story.Reject"}}</button>
+    </div>
+  </div>
+  {{/each}}
+</div>
+{{/if}}
+
 <div class="nci-block nci-form">
   <h3>{{localize "NCI.Controls.ShockTitle"}}</h3>
   <p class="nci-hint">{{localize "NCI.Controls.ShockHint"}}</p>

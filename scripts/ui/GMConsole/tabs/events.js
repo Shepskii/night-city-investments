@@ -10,6 +10,7 @@ import { MarketStore } from '../../../data/MarketStore.js';
 import { MarketControlService } from '../../../services/MarketControlService.js';
 import { CorporateActionService } from '../../../services/CorporateActionService.js';
 import { NewsService } from '../../../services/NewsService.js';
+import { StoryService } from '../../../services/StoryService.js';
 import { field, report, targetLabel, companyOptions, companiesById } from '../shared.js';
 
 async function onAddShock(event, target) {
@@ -79,7 +80,17 @@ async function onRemoveGlide(event, target) {
   await MarketControlService.removeGlide(target.dataset.id);
 }
 
+async function onStoryApprove(event, target) {
+  report(await StoryService.approve(target.dataset.id));
+}
+
+async function onStoryReject(event, target) {
+  report(await StoryService.reject(target.dataset.id));
+}
+
 export const actions = {
+  storyApprove: onStoryApprove,
+  storyReject: onStoryReject,
   addShock: onAddShock,
   removeImpact: onRemoveImpact,
   postNews: onPostNews,
@@ -95,6 +106,12 @@ export function context(app) {
   const byId = companiesById();
   const time = MarketStore.time();
   return {
+    // A Media's believed stories, waiting for the GM (F1c).
+    stories: StoryService.pending().map((s) => ({
+      id: s.id,
+      text: L('NCI.Story.Waiting', { media: s.media, angle: L(`NCI.Story.AngleName.${s.angle}`), name: s.name, ticker: s.ticker, percent: `${s.percent > 0 ? '+' : ''}${s.percent}` }),
+      headline: s.headline,
+    })),
     previewShock: app.preview?.kind === 'shock' ? app.preview : null,
     previewGlide: app.preview?.kind === 'glide' ? app.preview : null,
     impacts: controls.impacts.map((i) => ({

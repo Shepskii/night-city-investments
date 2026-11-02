@@ -33,6 +33,7 @@ import { SerialQueue } from '../utils/queue.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
 import { FactionRepository } from '../data/FactionRepository.js';
+import { StoryService } from './StoryService.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
 import { SkillAdapter } from './SkillAdapter.js';
@@ -508,6 +509,8 @@ class BusinessServiceImpl {
   }
 
   async _handle(actor, request) {
+    // A Media's story (F1c) has nothing to do with whether player businesses are switched on.
+    if (request.type === 'publishStory') return this._receipt(actor, request, await StoryService.publish(actor, request));
     if (!this.enabled()) return this._receipt(actor, request, { ok: false, reason: 'disabled' });
     // Looking behind a hidden holding (B6d) reads only the GM's hidden state and changes no business.
     if (request.type === 'investigate') return this._receipt(actor, request, await this._investigate(actor, request));
@@ -841,6 +844,8 @@ class BusinessServiceImpl {
     if (out.investigation) result.investigation = out.investigation;
     // A regulator's case answered (R1): won or lost.
     if (out.caseResult) result.caseResult = out.caseResult;
+    // A Media's story (F1c): whether it was believed.
+    if (out.story) result.story = out.story;
     await actor.setFlag(MODULE_ID, FLAGS.BUSINESS_RECEIPTS, [{
       processed: [...r.processed, request.key].slice(-PROCESSED_CAP),
       results: [...r.results, result].slice(-RESULTS_CAP),
@@ -1212,6 +1217,15 @@ class BusinessServiceImpl {
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
   }
 
+  /** A believed exposé at a high enough rank opens a case on a player's company (F1c). It runs in the queue already. */
+  async openCaseForStory(id) {
+    const b = normalizeBusiness(structuredClone(BusinessRepository.get(id)));
+    if (b.stage !== 2 || !openCase(b, { reason: 'story', day: this.day() }).ok) return;
+    await BusinessRepository.save(b);
+    await this._mailCaseOpened(b);
+    Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+  }
+
   async _mailCaseOpened(b) {
     const terms = { name: b.name, date: this._dayText(b.regCase.endDay), why: L(`NCI.Regulator.Reason.${b.regCase.reason}`) };
     await this._mailHolders(b, L('NCI.Regulator.Mail.OpenSubject', terms), [L('NCI.Regulator.Mail.Open', terms)]);
@@ -1375,6 +1389,8 @@ class BusinessServiceImpl {
       // On the investigator too, keyed by the register row's layer, so their own windows show what they found.
       const known = unwrap(actor.getFlag(MODULE_ID, FLAGS.DISCOVERIES)) ?? {};
       await actor.setFlag(MODULE_ID, FLAGS.DISCOVERIES, [{ ...known, [request.ref]: [...(known[request.ref] ?? []), found].slice(0, 4) }]);
+      // Something a Media could publish (F1c).
+      if (isListed(stored)) await StoryService.grantEvidence(actor, { ticker: stored.company.ticker, name: stored.name, note: L('NCI.Story.NoteInvestigation', { name: stored.name, found }), source: 'investigation' });
     } else if (r.band === 'fumble') {
       await this._mailAccount(holderId, L('NCI.Ownership.Mail.TippedSubject', { name: company }), [L('NCI.Ownership.Mail.Tipped', { name: company })]);
     }
@@ -1437,6 +1453,11 @@ class BusinessServiceImpl {
       if (amount) {
         await this._moveStanding(b.id, e.factionId, amount);
         moved = true;
+      }
+      if (e.type === 'evidenceFound') {
+        const target = BusinessRepository.get(e.targetId);
+        const finder = game.actors.get(e.actorId);
+        if (finder && isListed(target)) await StoryService.grantEvidence(finder, { ticker: target.company.ticker, name: target.name, note: L('NCI.Story.NoteDiligence', { name: target.name }), source: 'diligence' });
       }
       if (e.type === 'campaignLands') await this._landCampaign(b, e.campaign);
       if (e.type === 'campaignCaught') await this._campaignStanding(b, e.ticker, BUSINESS_DEFAULTS.campaign.caughtStanding);

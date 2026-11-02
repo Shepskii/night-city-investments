@@ -707,6 +707,8 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
         out.events.push({ type: 'roll', action: 'audit', band: r.band, exposure: (r.exposure ?? 0) + done.exposure });
       } else {
         applyDiligence(b, { result: r, day, targetId: request.targetId, target: ctx.targets?.[request.targetId] ?? null, by: actor.id }, p);
+        // What it found can back a Media's story, if the target is on the market (F1c).
+        if (b.intel?.at(-1)?.bands) out.events.push({ type: 'evidenceFound', targetId: request.targetId, actorId: actor.id });
         out.events.push({ type: 'roll', action: 'diligence', band: r.band, exposure: r.exposure ?? 0 });
       }
       break;

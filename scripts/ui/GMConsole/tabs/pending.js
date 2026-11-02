@@ -12,6 +12,7 @@ import { SyndicateRepository } from '../../../data/SyndicateRepository.js';
 import { BusinessService } from '../../../services/BusinessService.js';
 import { HeatService } from '../../../services/HeatService.js';
 import { penaltyText } from './heat.js';
+import { StoryService } from '../../../services/StoryService.js';
 
 const row = (tab, item, need, params) => ({ tab, item, needed: L(`NCI.Pending.Need.${need}`, params) });
 
@@ -40,7 +41,9 @@ function businessRows() {
 
 const syndicateRows = () => SyndicateRepository.all().filter((s) => s.status === 'pending').map((s) => row('syndicates', s.name, 'syndicate'));
 
-const rows = () => [...businessRows(), ...syndicateRows(), ...heatRows(), ...gigRows()];
+const storyRows = () => StoryService.pending().map((s) => row('events', s.media, 'story', { name: s.name }));
+
+const rows = () => [...storyRows(), ...businessRows(), ...syndicateRows(), ...heatRows(), ...gigRows()];
 
 /** How many decisions wait on each tab, and in all under `pending`. */
 export function waiting() {

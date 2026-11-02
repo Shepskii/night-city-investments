@@ -10,7 +10,7 @@
  *   journal. The module does not try to hide it from them (see DESIGN.md §3, principle 6).
  */
 
-import { emptyHistory, emptyNews, emptyGigs, emptyHeat, normalizeControls, normalizeGigs, normalizeHeat, timeOf } from '../engine/index.js';
+import { normalizeStories, emptyHistory, emptyNews, emptyGigs, emptyHeat, normalizeControls, normalizeGigs, normalizeHeat, timeOf } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, FLAGS, CONTROL_JOURNAL_NAME } from '../utils/constants.js';
 import { unwrap } from '../utils/helpers.js';
 
@@ -135,6 +135,15 @@ export const MarketStore = {
   },
 
   /** Gig outcomes: the approval queue, the history and the client mappings. GM only. */
+  /** Media stories (F1c): those waiting for the GM, and the record of who wrote about what. GM only. */
+  getStories() {
+    return normalizeStories(this.readRecord(FLAGS.STORIES));
+  },
+
+  setStories(value) {
+    return this._writeRecord(FLAGS.STORIES, value);
+  },
+
   getGigs() {
     return normalizeGigs(this.readRecord(FLAGS.GIGS));
   },

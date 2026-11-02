@@ -497,6 +497,7 @@
       <tbody>{{#each detail.register}}<tr><td>{{label}}{{#if ref}} <button type="button" data-action="investigate" data-ref="{{ref}}" data-ticker="{{ticker}}" data-label="{{label}}"><i class="fas fa-magnifying-glass"></i> {{localize "NCI.Ownership.Investigate"}}</button>{{/if}}</td><td class="num">{{shares}}</td><td class="num">{{pct}}</td></tr>{{/each}}</tbody>
     </table>
     {{/if}}
+    {{#if detail.canPublish}}<div class="nci-actions"><button type="button" data-action="publishStory" data-ticker="{{detail.ticker}}" data-name="{{detail.name}}">{{localize "NCI.Story.Publish"}}</button></div>{{/if}}
     {{#if detail.lore}}<div class="nci-lore">{{{detail.lore}}}</div>{{/if}}
 
     {{#if detail.companyNews.length}}

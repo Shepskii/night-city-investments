@@ -791,3 +791,66 @@ test('a campaign waits for the GM on the Pending tab, then reaches the market: n
     await S.MarketStore.setBusinessesHidden(hiddenSaved);
   }
 });
+
+test('a Media story: believed, it waits for the GM and reaches the market; refused too soon; evidence helps once', async () => {
+  const { StoryService } = await import('../scripts/services/StoryService.js');
+  const { SkillAdapter } = await import('../scripts/services/SkillAdapter.js');
+  const { waiting } = await import('../scripts/ui/GMConsole/tabs/pending.js');
+  const { installFakeItems } = await import('./helpers/fakeItems.mjs');
+  installFakeItems().prepare(alice);
+  const baseFor = SkillAdapter.baseFor;
+  const rollOne = SkillAdapter.rollOne;
+  const rolls = [];
+  SkillAdapter.baseFor = (actor, use) => (use.ability === 'Credibility' && actor.id === alice.id ? 5 : baseFor.call(SkillAdapter, actor, use));
+  SkillAdapter.rollOne = async () => ({ value: rolls.shift() ?? 10, roll: null });
+  const storiesSaved = S.MarketStore.getStories();
+  env.store.set('heatEnabled', true);
+  try {
+    await S.MarketStore.setStories({ pending: [], recent: [] });
+    assert.equal(StoryService.rankOf(alice), 5);
+    assert.equal((await StoryService.publish(bob, { ticker: 'ORB', angle: 'expose' })).reason, 'not-media');
+
+    rolls.push(1);
+    const out = await StoryService.publish(alice, { ticker: 'ORB', angle: 'expose', headline: 'Orbital hides a crash' });
+    assert.deepEqual(out, { ok: true, story: { believed: true, die: 1, target: 4, waiting: true } });
+    const [story] = StoryService.pending();
+    assert.equal(story.percent, -7, 'the whole of rank 5\'s limit at a margin of 3');
+    assert.ok(waiting().events >= 1, 'it shows as waiting');
+    assert.equal(S.MarketStore.getControls().impacts.filter((i) => i.source === 'story').length, 0, 'not yet');
+    assert.equal((await StoryService.approve(story.id)).ok, true);
+    assert.equal(StoryService.pending().length, 0);
+    await settle();
+    const impact = S.MarketStore.getControls().impacts.find((i) => i.source === 'story');
+    assert.deepEqual([impact.target.id, impact.meta.percent], ['ORB', -7]);
+    assert.ok(JSON.stringify(S.MarketStore.getNews()).includes('NCI.News.StoryBy'), 'a headline under the Media\'s name');
+    assert.ok(S.MarketStore.getHeat().windows.some((w) => w.sourceKey === impact.sourceKey && w.runners.includes(alice.id)));
+    assert.equal((await StoryService.approve(story.id)).reason, 'no-story');
+
+    assert.equal((await StoryService.publish(alice, { ticker: 'BIO', angle: 'puff' })).reason, 'story-wait', 'once a week');
+
+    const granted = await StoryService.grantEvidence(alice, { ticker: 'BIO', name: 'Biotechnica', note: 'Lab notes' });
+    assert.equal(granted.ok, true);
+    assert.equal(StoryService.evidenceOf(alice, 'BIO').length, 1);
+    assert.equal(StoryService.evidenceOf(alice, 'ARA').length, 0, 'about that company only');
+    await S.MarketStore.setStories({ pending: [], recent: [{ actorId: bob.id, ticker: 'BIO', day: S.BusinessService.day() }] });
+    assert.equal((await StoryService.publish(alice, { ticker: 'BIO', angle: 'puff' })).reason, 'story-same-topic');
+    rolls.push(5);
+    const backed = await StoryService.publish(alice, { ticker: 'BIO', angle: 'puff', evidence: [granted.item.id] });
+    assert.deepEqual([backed.story.target, backed.story.believed], [5, true], 'the evidence raised it to 5');
+    assert.equal(StoryService.pending()[0].percent, 4.2);
+    assert.equal(StoryService.evidenceOf(alice, 'BIO').length, 0, 'used, and still in the inventory');
+    assert.ok([...alice.items].some((i) => i.id === granted.item.id));
+    assert.equal((await StoryService.reject(StoryService.pending()[0].id)).ok, true);
+    assert.equal(StoryService.pending().length, 0);
+
+    await S.MarketStore.setStories({ pending: [], recent: [] });
+    rolls.push(10);
+    assert.equal((await StoryService.publish(alice, { ticker: 'ARA', angle: 'expose' })).story.believed, false);
+    assert.equal(StoryService.pending().length, 0, 'not believed: nothing to approve');
+  } finally {
+    SkillAdapter.baseFor = baseFor;
+    SkillAdapter.rollOne = rollOne;
+    env.store.set('heatEnabled', false);
+    await S.MarketStore.setStories(storiesSaved);
+  }
+});

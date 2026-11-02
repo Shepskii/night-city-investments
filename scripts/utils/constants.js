@@ -70,6 +70,8 @@ export const FLAGS = Object.freeze({
   GIGS: 'gigs',
   /** On the GM-only control journal: each character's insider-trading heat, the watch windows and the audits. */
   HEAT: 'heat',
+  STORIES: 'stories',
+  EVIDENCE: 'evidence',
   /** On world macros this module created: which starter macro it is, so it is not made twice. */
   MACRO: 'macro',
   /** On actors. Written only by the GM executor. */

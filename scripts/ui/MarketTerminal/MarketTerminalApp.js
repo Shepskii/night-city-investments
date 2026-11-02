@@ -25,6 +25,8 @@ import { ipoPrice, shareOf, bookValue } from '../../engine/index.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient } from '../../services/BusinessClient.js';
 import { investigate, withDiscoveries } from '../investigate.js';
+import { publishStory } from '../publishStory.js';
+import { StoryService } from '../../services/StoryService.js';
 import { SyndicateClient } from '../../services/SyndicateClient.js';
 import { accountFor, tradingAccounts, ownerOf } from '../accounts.js';
 import { syndicateContext, characterSyndicates } from './syndicateContext.js';
@@ -48,6 +50,7 @@ export class MarketTerminalApp extends BaseApplication {
     actions: {
       makeBid: MarketTerminalApp._onMakeBid,
       investigate: MarketTerminalApp._onInvestigate,
+      publishStory: MarketTerminalApp._onPublishStory,
       select: MarketTerminalApp._onSelect,
       openAsset: MarketTerminalApp._onOpenAsset,
       back: MarketTerminalApp._onBack,
@@ -272,6 +275,11 @@ export class MarketTerminalApp extends BaseApplication {
   }
 
   /** Look behind a hidden holder on a listed company's register (B6d), as the picked character. */
+  /** A Media writes about this company (F1c). */
+  static _onPublishStory(event, target) {
+    return publishStory(this.actor, { ticker: target.dataset.ticker, name: target.dataset.name });
+  }
+
   static _onInvestigate(event, target) {
     const actor = this.actor?.isSyndicate ? this.actor.as : this.actor;
     return investigate(actor, { ticker: target.dataset.ticker, ref: target.dataset.ref, label: target.dataset.label });
@@ -526,6 +534,7 @@ export class MarketTerminalApp extends BaseApplication {
       // A player company's officers and shareholders (and the GM) can open its Business window (B5c).
       manageId: this._manageable(c) ? c.businessId : null,
       tradable: c.status === 'active' && c.listed && !!this.actor,
+      canPublish: StoryService.rankOf(this.actor) > 0,
       watched: watched.has(c.id),
       chart: lineChart(series),
       ranges: RANGES.map((r) => ({ value: r, label: L('NCI.Terminal.Days', { n: r }), active: r === this.range })),

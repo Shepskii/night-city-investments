@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   BUSINESS_DEFAULTS, DISTRICTS, normalizeFaction, standingBand, matchFaction, turfFactions, gigStanding, moveStanding, driftStanding, standingBands, matchBusiness,
   findTarget, targetShare, gigTags, resolveClient, applyBusinessRequest, advanceBusiness, rollSpec, normalizeBusiness, drawEvent, hostileAct, hostileChance, factionEffects, factionFallout,
-  giftFor, campaignKind, ARCHETYPES, SKILLS, ABILITIES,
+  giftFor, campaignKind, believability, storyPercent, rollStory, storyCheck, ARCHETYPES, SKILLS, ABILITIES,
 } from '../scripts/engine/index.js';
 import { resolveRoll } from '../scripts/engine/rolls.js';
 import { starterFactions } from '../scripts/data/starter-factions.js';
@@ -294,4 +294,30 @@ test('a campaign needs a target, the cash and a month since the last one; the co
   const caught = send(b, { type: 'action', businessId: 'b1', action: 'campaign', targetTicker: 'ARA', use }, { ok: true, result: resolveRoll({ base: 14, roll: { total: -5, crit: 'fumble' }, dv: 13 }) }, { companies });
   const event = caught.events.find((e) => e.type === 'campaignCaught');
   assert.deepEqual([event.ticker, event.exposure], ['ARA', BUSINESS_DEFAULTS.campaign.caughtExposure]);
+});
+
+// ── F1c: Media stories ──────────────────────────────────────────────
+
+test('Believability by rank, evidence as the rules have it, and a price move within the rank\'s limit, either way', () => {
+  assert.deepEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rank) => believability(rank)), [2, 2, 3, 3, 4, 4, 5, 5, 6, 7]);
+  assert.deepEqual([0, 1, 4, 5].map((n) => believability(5, n)), [4, 5, 5, 7]);
+  assert.equal(believability(10, 5), 10, 'never past 10');
+  assert.deepEqual([1, 3, 5, 7, 9].map((rank) => storyPercent(rank, 3, 'puff')), [2, 4, 7, 10, 12]);
+  assert.deepEqual([1, 3, 5, 7, 9].map((rank) => storyPercent(rank, 0, 'expose')), [-1.2, -2.4, -4.2, -6, -7.2]);
+  assert.deepEqual(rollStory({ rank: 5, pieces: 1, die: 5, angle: 'expose' }), { target: 5, believed: true, percent: -4.2 });
+  assert.deepEqual(rollStory({ rank: 5, pieces: 0, die: 5, angle: 'expose' }), { target: 4, believed: false, percent: 0 });
+});
+
+test('who may publish: a Media, once a week, and with new evidence for a company just in the news', () => {
+  const base = { rank: 4, angle: 'expose', ticker: 'ARA', day: 100, actorId: 'a', pieces: 0, recent: [] };
+  assert.equal(storyCheck(base).ok, true);
+  assert.equal(storyCheck({ ...base, rank: 0 }).reason, 'not-media');
+  assert.equal(storyCheck({ ...base, angle: 'rant' }).reason, 'bad-angle');
+  assert.equal(storyCheck({ ...base, ticker: '' }).reason, 'no-target');
+  assert.equal(storyCheck({ ...base, recent: [{ actorId: 'a', ticker: 'BIO', day: 94 }] }).reason, 'story-wait');
+  assert.equal(storyCheck({ ...base, recent: [{ actorId: 'a', ticker: 'BIO', day: 93 }] }).ok, true);
+  const topic = [{ actorId: 'b', ticker: 'ARA', day: 80 }];
+  assert.equal(storyCheck({ ...base, recent: topic }).reason, 'story-same-topic');
+  assert.equal(storyCheck({ ...base, recent: topic, pieces: 1 }).ok, true, 'new evidence');
+  assert.equal(storyCheck({ ...base, recent: [{ actorId: 'b', ticker: 'ARA', day: 70 }] }).ok, true, 'long enough ago');
 });
