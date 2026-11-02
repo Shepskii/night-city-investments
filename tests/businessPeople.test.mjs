@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   applyBusinessRequest, advanceBusiness, normalizeBusiness, rollSpec, BUSINESS_DEFAULTS, goingRate, wageOf, staffOf,
-  loyaltyBand, moonlighting, staffEventWeight, idleStaff, drawEvent, applyDiligence, postBase, archetypeOf, refreshStaffBases, markElsewhere, moveLoyalty, grantedShare, holderActorId, refreshTeams, overtimePay,
+  loyaltyBand, moonlighting, staffEventWeight, idleStaff, drawEvent, applyDiligence, postBase, archetypeOf, refreshStaffBases, markElsewhere, moveLoyalty, grantedShare, holderActorId, refreshTeams, overtimePay, teamSize, onTimeOff, teamRefuses, staffRoll,
 } from '../scripts/engine/index.js';
 import { resolveRoll } from '../scripts/engine/rolls.js';
 
@@ -278,7 +278,7 @@ test("an NPC's vested grant keeps their character, so windows link to it; a recr
   assert.equal(holderActorId(after, after.partners.find((x) => x.actorId === 'med')), 'med', 'a character holds in their own name');
 });
 
-test("an Exec's team (E3): Teamwork 5 brings two members at Skilled, unpaid, loyal, leaving with the Exec", () => {
+test("an Exec's team (E3): Teamwork 5 brings two members at Skilled, unpaid, leaving with the Exec", () => {
   const exec = (rank) => ({ basesOf: (id) => (id === 'med' ? { 'ability:Teamwork': rank } : null) });
   const add = (b0, post, name, rank = 5, expect = true) => apply(b0, { type: 'addTeam', businessId: 'b1', post, name }, MED, { context: exec(rank), expect });
   let b = withStaff(clinic({ stage: 2, capacity: 4 }));
@@ -300,7 +300,7 @@ test("an Exec's team (E3): Teamwork 5 brings two members at Skilled, unpaid, loy
   assert.equal(refreshTeams(up, exec(7).basesOf).changed, true);
   assert.equal(staffOf(up, ruth.id).teamBase, 14);
   const down = structuredClone(b);
-  const shrunk = refreshTeams(down, exec(2).basesOf);
+  const shrunk = refreshTeams(down, exec(3).basesOf);
   assert.deepEqual(down.staff.map((s) => s.name), ['Ruth Kane']);
   assert.equal(shrunk.notes[0].kind, 'teamLeft');
   // A team member already made (an NPC actor): named after it; their skill follows the rank, not their sheet.
@@ -315,6 +315,87 @@ test("an Exec's team (E3): Teamwork 5 brings two members at Skilled, unpaid, loy
   gone.partners.find((x) => x.actorId === 'med').status = 'left';
   refreshTeams(gone, exec(5).basesOf);
   assert.equal(gone.staff.length, 0);
+});
+
+test('Teamwork against the rulebook (B7a): a member each at ranks 3, 5 and 9, and three at most', () => {
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 8, 9, 10].map((rank) => teamSize(rank)), [0, 0, 0, 1, 1, 2, 2, 3, 3]);
+});
+
+test('team Loyalty (B7a): drawn at 1d6 + 1, kept apart from the staff\'s, and moved by the Exec, once a week each', () => {
+  const exec = { context: { basesOf: () => ({ 'ability:Teamwork': 5 }) } };
+  let b = apply(withStaff(clinic({ stage: 2, capacity: 4 })), { type: 'addTeam', businessId: 'b1', post: 'floor', name: 'Ruth' }, MED, exec).business;
+  const ruth = () => b.staff.find((s) => s.name === 'Ruth');
+  assert.ok(ruth().care >= 2 && ruth().care <= 7, `1d6 + 1: ${ruth().care}`);
+  assert.equal(ruth().loyalty, BUSINESS_DEFAULTS.staff.team.loyalty, 'the staff scale stands aside');
+  const care = (how, opts) => apply(b, { type: 'teamCare', businessId: 'b1', staffId: ruth().id, how }, MED, opts);
+  const start = ruth().care;
+  b = care('compliment').business;
+  assert.equal(ruth().care, start + 1);
+  assert.equal(care('compliment', { expect: false }).reason, 'team-care-done');
+  const till = b.till;
+  b = care('perk').business;
+  assert.equal(ruth().care, start + 5);
+  assert.equal(b.till, till - BUSINESS_DEFAULTS.staff.team.care.perkCost);
+  b = care('timeOff').business;
+  assert.equal(ruth().care, start + 11, 'past the cap, within the week');
+  assert.ok(onTimeOff(b, ruth()));
+  assert.ok(idleStaff(b).has(ruth().id), 'a week off is a week off');
+  assert.equal(apply(b, { type: 'teamCare', businessId: 'b1', staffId: ruth().id, how: 'compliment' }, { id: 'other', name: 'Other', wealth: 0 }, { expect: false }).ok, false, 'only for a partner\'s own');
+  assert.equal(apply(b, { type: 'bonus', businessId: 'b1', staffId: ruth().id, quarters: 1 }, MED, { expect: false }).reason, 'team-unpaid');
+  // The week closes: back to the cap.
+  const closed = advanceBusiness(b, b.period.endDay, { weekday: MONDAY, seed: 'test' }).business;
+  assert.equal(closed.staff.find((s) => s.name === 'Ruth').care, BUSINESS_DEFAULTS.staff.team.care.cap);
+});
+
+test('the Loyalty save (B7a): 1d6 under it, drawn for the week, refusing work and any call before dice roll', () => {
+  const member = (care) => ({ id: 'r', name: 'Ruth', source: 'team', leader: 'med', status: 'active', post: 'floor', care, bases: { 'skill:Paramedic': 11 }, wage: 0, pct: 1 });
+  const b = withStaff(clinic({ stage: 2, capacity: 4 }), member(7));
+  assert.equal(teamRefuses(b, member(7)), false, 'a 6 is still under 7');
+  assert.equal(teamRefuses(b, member(1)), true, 'nothing is under 1');
+  assert.equal(teamRefuses(b, { ...member(1), source: 'npc' }), false, 'only a team');
+  const refusals = Array.from({ length: 600 }, (_, i) => teamRefuses({ ...b, period: { ...b.period, index: i } }, member(4))).filter(Boolean).length;
+  assert.ok(refusals > 240 && refusals < 360, `half the weeks at Loyalty 4: ${refusals}`);
+  const low = withStaff(clinic({ stage: 2, capacity: 4 }), member(1));
+  assert.ok(idleStaff(low).has('r'));
+  assert.equal(staffRoll(low, { staffId: 'r' }, [{ kind: 'skill', skill: 'Paramedic' }], 'roll', 10000).reason, 'team-refused');
+});
+
+test('team Loyalty at a close (B7a): neglect costs 1; at 0 they betray the Exec, and the next starts at 1 with a fee', () => {
+  const rules = BUSINESS_DEFAULTS.staff.team.care;
+  const member = (care) => ({ id: 'r', name: 'Ruth', source: 'team', leader: 'med', status: 'active', post: 'floor', care, bases: { 'skill:Paramedic': 11 }, wage: 0, pct: 1, loyalty: 75, hiredDay: DAY });
+  const close = (b) => advanceBusiness(b, b.period.endDay, { weekday: MONDAY, seed: 'test' });
+  const neglected = close(withStaff(clinic({ stage: 2, capacity: 4 }), member(5))).business;
+  assert.equal(neglected.staff.find((s) => s.id === 'r').care, 4);
+
+  const out = close(withStaff(clinic({ stage: 2, capacity: 4 }), member(1)));
+  assert.equal(out.business.staff.some((s) => s.id === 'r'), false, 'gone');
+  assert.equal(out.business.teamLost.med, 1);
+  assert.ok(out.events.some((e) => e.type === 'plant' && e.exposure >= rules.betrayExposure), 'and it leaves a trail');
+  assert.ok(out.business.ledger.some((e) => e.kind === 'teamBetrayed'));
+  assert.ok(JSON.stringify(out.business.digests.at(-1)).includes('teamBetrayed'), 'and the digest says so');
+
+  const exec = { context: { basesOf: () => ({ 'ability:Teamwork': 5 }) } };
+  const back = normalizeBusiness({ ...out.business, till: 5000 });
+  const replaced = apply(back, { type: 'addTeam', businessId: 'b1', post: 'floor', name: 'Next' }, MED, exec).business;
+  assert.equal(replaced.staff.find((s) => s.name === 'Next').care, rules.replacement);
+  assert.equal(replaced.till, 5000 - rules.fee);
+  assert.equal(replaced.teamLost.med, 0, 'once');
+  assert.equal(apply(normalizeBusiness({ ...out.business, till: 10 }), { type: 'addTeam', businessId: 'b1', post: 'floor', name: 'Next' }, MED, { ...exec, expect: false }).reason, 'no-funds');
+});
+
+test('teams from before B7a keep those over the new limit, and draw a Loyalty', () => {
+  const old = (id, hiredDay) => ({ id, name: id, source: 'team', leader: 'med', status: 'active', post: 'floor', teamBase: 8, bases: {}, wage: 0, pct: 1, loyalty: 75, hiredDay });
+  const b = withStaff(clinic({ stage: 2, capacity: 4 }), old('a', 1), old('b', 2));
+  const basesOf = () => ({ 'ability:Teamwork': 3 });
+  assert.equal(refreshTeams(b, basesOf).changed, true);
+  const team = b.staff.filter((s) => s.source === 'team');
+  assert.equal(team.length, 2, 'nobody is let go');
+  assert.ok(team.every((s) => s.care >= 2 && s.care <= 7));
+  assert.deepEqual(team.map((s) => !!s.overLimit), [false, true]);
+  refreshTeams(b, basesOf);
+  assert.equal(b.staff.filter((s) => s.source === 'team').length, 2, 'and they stay on later refreshes');
+  const exec = { context: { basesOf } };
+  assert.equal(apply(b, { type: 'addTeam', businessId: 'b1', post: 'floor', name: 'More' }, MED, { ...exec, expect: false }).reason, 'team-full');
 });
 
 test('a bonus: quarters of a week\'s wage from the cash, loyalty up 5 for each, once a week', () => {

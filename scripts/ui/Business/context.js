@@ -11,7 +11,7 @@ import {
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent, supplyCut, actionFor, ROOM_ACTIONS, roomKinds, openRoom, payOffCost, CRIME_ACTIONS, dealCut, SECRET_ACTIONS, SECRET_LEDGER,
   POST_IDS, POSTS, levelOf, postBest, staffBase, postRate, askingWage, postOpen, postOffered, recruitCheck, archetypeOf,
-  hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
+  hasLoyalty, loyaltyBand, teamRefuses, onTimeOff, teamCareCheck, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
   capitalOf, issueOptions, rightsLeft, tenderRoom, capitalRollCheck, defenceCheck, takeoverPremium, sellableQty, debtsOf, solvency,
   masksOf, outerMask, layerCheck, layerFees, holdingValue, concealedHolders, caseAnswerCheck, turfFactions,
@@ -1008,6 +1008,7 @@ function staffNotes(business, s) {
     s.caught ? L('NCI.Staff.Caught') : '',
     s.outUntil != null && s.outUntil >= business.period.index ? L('NCI.Staff.Hurt') : '',
     s.ask ? L('NCI.Staff.Asks', { pct: Math.round(s.ask.pct * 100) }) : '',
+    onTimeOff(business, s) ? L('NCI.Staff.TeamOff') : teamRefuses(business, s) ? L('NCI.Staff.TeamRefuses') : '',
     // Once the business has run into it (a two-jobs event), it knows they work for another business too (E3).
     s.knownElsewhere && s.elsewhere ? L('NCI.Staff.AlsoWorks', { name: s.elsewhere.name }) : '',
     // Shares granted (E3).
@@ -1017,7 +1018,12 @@ function staffNotes(business, s) {
 }
 
 /** Loyalty as the partners see it: a band, or nothing for a player character. */
-const loyaltyText = (s) => (hasLoyalty(s) && s.status === 'active' ? L(`NCI.Staff.Loyalty.${loyaltyBand(s.loyalty ?? 50)}`) : '');
+const loyaltyText = (s) => (s.source === 'team'
+  ? L('NCI.Staff.TeamLoyalty', { n: s.care ?? 0, cap: BUSINESS_DEFAULTS.staff.team.care.cap })
+  : hasLoyalty(s) && s.status === 'active' ? L(`NCI.Staff.Loyalty.${loyaltyBand(s.loyalty ?? 50)}`) : '');
+
+/** Which colour a loyalty shows in: a team member's 0 to 10 reads on the same bands as the staff's 0 to 100. */
+const loyaltyColour = (s) => (s.source === 'team' ? loyaltyBand((s.care ?? 0) * 10) : hasLoyalty(s) ? loyaltyBand(s.loyalty ?? 50) : '');
 
 /** Whether this viewer may know of the back room's posts: at a company, its officers' secret (U1). */
 const seesRoomStaff = (business, runs) => business.stage < 2 || runs;
@@ -1079,7 +1085,7 @@ function staffContext(business, actor, canAct) {
         status: s.status === 'offered' ? L(s.source === 'npc' ? 'NCI.Staff.OfferedNpc' : 'NCI.Staff.Offered') : L('NCI.Staff.Since', { date: dayText(s.hiredDay ?? day) }),
         owed: s.owed ? L('NCI.Staff.Owed', { amount: whole(s.owed) }) : '',
         loyalty: loyaltyText(s),
-        loyaltyBand: hasLoyalty(s) ? loyaltyBand(s.loyalty ?? 50) : '',
+        loyaltyBand: loyaltyColour(s),
         notes: staffNotes(business, s),
         canManage: canAct && s.status === 'active',
         canFire: canAct && s.status === 'offered' && !pending('fire'),
@@ -1152,6 +1158,15 @@ function teamContext(business, account, post, runs) {
   };
 }
 
+/** What the Exec can do for one of their own team, on the Employee window (B7a). */
+function teamCareContext(business, s, account) {
+  const rules = BUSINESS_DEFAULTS.staff.team.care;
+  const offer = (how, gain) => ({ how, label: L(`NCI.Staff.TeamCare.${how}`, { gain, cost: whole(rules.perkCost) }), can: !!account && teamCareCheck(business, s, account.id, how).ok });
+  return {
+    care: account?.id === s.leader ? [offer('compliment', rules.compliment), offer('perk', rules.perk), offer('timeOff', rules.timeOff)] : [],
+  };
+}
+
 /**
  * The Employee window for one employee (E2): their pay and any raise they asked for, a bonus, moving
  * them to another post, and letting them go. Changing pay and firing are proposals; a bonus, a move
@@ -1181,8 +1196,9 @@ export function employeeContext(business, account, staffId) {
     skill,
     base,
     loyalty: loyaltyText(s),
-    loyaltyBand: hasLoyalty(s) ? loyaltyBand(s.loyalty ?? 50) : '',
-    loyaltyHint: hasLoyalty(s) ? L('NCI.Staff.LoyaltyHint') : L('NCI.Staff.LoyaltyPc'),
+    loyaltyBand: loyaltyColour(s),
+    loyaltyHint: s.source === 'team' ? L('NCI.Staff.TeamLoyaltyHint') : hasLoyalty(s) ? L('NCI.Staff.LoyaltyHint') : L('NCI.Staff.LoyaltyPc'),
+    team: s.source === 'team' ? teamCareContext(business, s, account) : null,
     notes: staffNotes(business, s),
     payText: s.source === 'team'
       ? L('NCI.Staff.TeamPay', { name: nameOf(business, s.leader) })

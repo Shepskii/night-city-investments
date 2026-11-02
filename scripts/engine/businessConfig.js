@@ -662,10 +662,18 @@ export const BUSINESS_DEFAULTS = Object.freeze({
      */
     grants: Object.freeze({ max: 0.05, step: 0.005, vestDays: 84, loyalty: 20, floor: 50 }),
     /**
-     * An Exec's team (E3): one member for each `per` ranks of Teamwork, rounded up; their base in their
-     * role's skills by the Exec's rank (`bases`: up to and including each rank); `loyalty` to start.
+     * An Exec's team (E3, B7a): a member at each of `ranks` of Teamwork (the rulebook's); their base in their role's
+     * skills by the Exec's rank (`bases`: up to and including each rank). `loyalty` only keeps them out of the staff
+     * loyalty rules, which do not apply to them. What counts is `care`, the rulebook's Loyalty: 1d6 + 1 to start, or
+     * `replacement` and `fee` after losing one; at most `cap` between weeks; what the Exec can do about it each week;
+     * `neglect` in a week with no gain; and what a betrayal leaves behind.
      */
-    team: Object.freeze({ per: 3, bases: Object.freeze([[3, 8], [6, 11], [9, 14], [Infinity, 16]]), loyalty: 75 }),
+    team: Object.freeze({
+      ranks: Object.freeze([3, 5, 9]),
+      bases: Object.freeze([[3, 8], [6, 11], [9, 14], [Infinity, 16]]),
+      loyalty: 75,
+      care: Object.freeze({ cap: 10, replacement: 1, fee: 200, compliment: 1, perk: 4, perkCost: 200, timeOff: 6, neglect: -1, betrayExposure: 15 }),
+    }),
     training: Object.freeze({
       every: 28, perPoint: 50, courseFactor: 2, mentorDays: 2, max: 4, cap: 18,
       /** A mentor's roll (the user's choice): Education, or Persuasion a step harder, at the stage's DV. */

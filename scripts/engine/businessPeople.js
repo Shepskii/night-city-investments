@@ -14,7 +14,7 @@ import { BUSINESS_DEFAULTS, EVENTS, POSTS, useKey } from './businessConfig.js';
 import { archetypeOf, fail, addLedger, clamp, totalUnits } from './businessRecord.js';
 import { daysLeft, spendDays } from './businessGrowth.js';
 import {
-  activeStaff, staffOf, hasLoyalty, traitOf, moveLoyalty, postOpen, postBase, wageOf, postUses, staffBase, shiftsOf,
+  teamRefuses, activeStaff, staffOf, hasLoyalty, traitOf, moveLoyalty, postOpen, postBase, wageOf, postUses, staffBase, shiftsOf,
 } from './businessStaff.js';
 
 /** Staff with loyalty and a life of their own: NPCs and recruits who have started. */
@@ -74,7 +74,7 @@ const allBonused = (b) => npcStaff(b).every((s) => (b.period.staffBonus ?? {})[s
  * @returns {Set<string>}
  */
 export function idleStaff(b) {
-  const idle = new Set(activeStaff(b).filter((s) => s.outUntil != null && s.outUntil >= b.period.index).map((s) => s.id));
+  const idle = new Set(activeStaff(b).filter((s) => (s.outUntil != null && s.outUntil >= b.period.index) || teamRefuses(b, s) || onTimeOff(b, s)).map((s) => s.id));
   const event = b.period.event;
   const slots = b.period.slots;
   if (event?.kind === 'sickDay' && event.staffId && !passed(slots)) idle.add(event.staffId);
@@ -212,6 +212,7 @@ export function loyaltyWeek(b, { monthEnd = false, monthProfit = 0, unanswered =
   const paidCap = b.upgrades?.staffRoom?.length ? p.projects.staffRoom.paidCap : L.paidCap;
   const notes = [];
   let exposure = 0;
+  exposure += teamWeek(b, notes, day, p);
   for (const s of npcStaff(b)) {
     if (traitOf(traits, s) === 'corpPlant') exposure += p.staff.traits.plantExposure;
     if (s.owed > 0) {
@@ -295,6 +296,7 @@ export function rejectApplicant(b, candidateId, day, by, p = BUSINESS_DEFAULTS) 
 export function bonusCheck(b, staffId, quarters, p = BUSINESS_DEFAULTS) {
   const staff = staffOf(b, staffId);
   if (staff?.status !== 'active') return fail('not-staff');
+  if (staff.source === 'team') return fail('team-unpaid');
   const q = Math.round(Number(quarters));
   if (!(q >= 1 && q <= p.staff.bonusQuarters)) return fail('bad-amount');
   if ((b.period.staffBonus ?? {})[staff.id]) return fail('bonus-given');
@@ -542,8 +544,59 @@ export function vestGrants(b, day, p = BUSINESS_DEFAULTS) {
 
 // ── An Exec's team (E3) ──────────────────────────────────────────────────────
 
-/** How many team members an Exec's Teamwork rank brings: one for each 3 ranks, rounded up. */
-export const teamSize = (rank, p = BUSINESS_DEFAULTS) => (rank > 0 ? Math.ceil(rank / p.staff.team.per) : 0);
+/** How many team members an Exec's Teamwork rank brings: the rulebook's one each at ranks 3, 5 and 9. */
+export const teamSize = (rank, p = BUSINESS_DEFAULTS) => p.staff.team.ranks.filter((r) => rank >= r).length;
+
+const careDone = (b, staff) => (staff.careWeek?.week === b.period?.index ? staff.careWeek.done : []);
+
+/** Whether the Exec gave this team member the week off. */
+export const onTimeOff = (b, staff) => staff.source === 'team' && careDone(b, staff).includes('timeOff');
+
+/** What an Exec can do for one of their team this week, each once: a word of thanks, a perk from the cash, a paid week off. */
+export function teamCareCheck(b, staff, actorId, how, p = BUSINESS_DEFAULTS) {
+  if (staff?.status !== 'active' || staff.source !== 'team') return fail('not-staff');
+  if (staff.leader !== actorId) return fail('not-your-team');
+  if (!['compliment', 'perk', 'timeOff'].includes(how)) return fail('bad-request');
+  if (careDone(b, staff).includes(how)) return fail('team-care-done');
+  if (how === 'perk' && b.till < p.staff.team.care.perkCost) return fail('no-funds');
+  return { ok: true };
+}
+
+/** An Exec looks after a team member: their Loyalty rises, past the cap until the week closes, as the rulebook has it. */
+export function teamCare(b, staffId, actorId, how, day, p = BUSINESS_DEFAULTS) {
+  const staff = staffOf(b, staffId);
+  const can = teamCareCheck(b, staff, actorId, how, p);
+  if (!can.ok) return can;
+  const rules = p.staff.team.care;
+  if (how === 'perk') {
+    b.till -= rules.perkCost;
+    addLedger(b, { day, kind: 'teamPerk', amount: -rules.perkCost, actorId, staffName: staff.name }, p);
+  }
+  staff.care = (staff.care ?? 0) + rules[how];
+  staff.careWeek = { week: b.period.index, done: [...careDone(b, staff), how] };
+  return { ok: true };
+}
+
+/**
+ * The close, for each Exec's team: a week with nothing done for them costs Loyalty, and it falls back to the cap. One at
+ * 0 or below betrays the Exec and goes: the rulebook has them sell the Exec out, so it leaves Exposure behind.
+ * @returns {number} the Exposure left
+ */
+function teamWeek(b, notes, day, p) {
+  const rules = p.staff.team.care;
+  let exposure = 0;
+  for (const s of activeStaff(b).filter((x) => x.source === 'team')) {
+    if (!careDone(b, s).length) s.care = (s.care ?? 0) + rules.neglect;
+    s.care = Math.min(rules.cap, s.care ?? 0);
+    if (s.care > 0) continue;
+    b.staff = b.staff.filter((x) => x !== s);
+    b.teamLost = { ...(b.teamLost ?? {}), [s.leader]: (b.teamLost?.[s.leader] ?? 0) + 1 };
+    addLedger(b, { day, kind: 'teamBetrayed', amount: 0, staffName: s.name }, p);
+    notes.push({ kind: 'teamBetrayed', staffId: s.id, name: s.name });
+    exposure += rules.betrayExposure;
+  }
+  return exposure;
+}
 
 /** A team member's base in their role's skills, by the Exec's Teamwork rank: Green to Master. */
 export const teamBase = (rank, p = BUSINESS_DEFAULTS) => p.staff.team.bases.find(([upTo]) => rank <= upTo)[1];
@@ -565,12 +618,18 @@ export function teamCheck(b, actorId, post, rank, p = BUSINESS_DEFAULTS) {
   if (teamOf(b, actorId).length >= teamSize(rank, p)) return fail('team-full');
   const open = postOpen(b, post, p);
   if (!open.ok) return open;
-  return { ok: true, base: teamBase(rank, p), size: teamSize(rank, p) };
+  // HR takes a cut for replacing one who was lost, and word has got round.
+  const replacing = (b.teamLost?.[actorId] ?? 0) > 0;
+  if (replacing && b.till < p.staff.team.care.fee) return fail('no-funds');
+  return { ok: true, base: teamBase(rank, p), size: teamSize(rank, p), replacing };
 }
 
+/** A new team member's Loyalty: the rulebook's 1d6 + 1. */
+const startingCare = (b, key) => createRng('nci', 'teamStart', b.id, key).int(1, 6) + 1;
+
 /**
- * Add a member of the Exec's team to a role: no wage, their level by the Exec's rank, loyal from the
- * start. A member may be an NPC actor already made (`memberId`, one the GM's service lists in
+ * Add a member of the Exec's team to a role: no wage, their level by the Exec's rank, and Loyalty of their
+ * own to look after. A member may be an NPC actor already made (`memberId`, one the GM's service lists in
  * `teamActors`: not a player's character, not a partner, not on the staff), named after it.
  */
 export function addTeamMember(b, { actorId, post, name, rank, day, key, memberId = null, teamActors = {} }, p = BUSINESS_DEFAULTS) {
@@ -586,7 +645,13 @@ export function addTeamMember(b, { actorId, post, name, rank, day, key, memberId
   const staff = {
     id: `stf_team_${key}`, actorId: memberId, name: label, source: 'team', leader: actorId, teamBase: can.base, post,
     bases: teamBases(b, post, can.base, p), pct: 1, wage: 0, hiredDay: day, status: 'active', owed: 0, loyalty: p.staff.team.loyalty,
+    care: can.replacing ? p.staff.team.care.replacement : startingCare(b, key),
   };
+  if (can.replacing) {
+    b.till -= p.staff.team.care.fee;
+    b.teamLost = { ...b.teamLost, [actorId]: b.teamLost[actorId] - 1 };
+    addLedger(b, { day, kind: 'teamFee', amount: -p.staff.team.care.fee, actorId, staffName: label }, p);
+  }
   b.staff = [...(b.staff ?? []), staff];
   addLedger(b, { day, kind: 'teamJoined', amount: 0, actorId, staffName: label }, p);
   return { ok: true, staff };
@@ -606,8 +671,15 @@ export function refreshTeams(b, basesOf, day = 0, p = BUSINESS_DEFAULTS) {
   for (const leader of leaders) {
     const partner = b.partners.find((x) => x.actorId === leader);
     const rank = Number(basesOf?.(leader)?.['ability:Teamwork'] ?? 0);
-    const keep = partner && ['active'].includes(partner.status) ? teamSize(rank, p) : 0;
     const team = teamOf(b, leader).sort((x, y) => (x.hiredDay ?? 0) - (y.hiredDay ?? 0));
+    // Teams from before B7a, when more were allowed, keep those they have; the Loyalty they had is the staff's, so they draw one.
+    team.forEach((s, i) => {
+      if (s.care != null) return;
+      s.care = startingCare(b, s.id);
+      if (i >= teamSize(rank, p)) s.overLimit = true;
+      changed = true;
+    });
+    const keep = partner && ['active'].includes(partner.status) ? teamSize(rank, p) + team.filter((s) => s.overLimit).length : 0;
     for (const gone of team.slice(keep)) {
       b.staff = b.staff.filter((s) => s !== gone);
       addLedger(b, { day, kind: 'teamLeft', amount: 0, staffName: gone.name }, p);

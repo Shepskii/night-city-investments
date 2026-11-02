@@ -2086,6 +2086,20 @@ The user's requests after U1, each built and committed on its own. Colours, layo
 
 **Tested in the test world** (2026-11-02 and 03): the folders and tabs of both windows; a Launderer and a Fixer at a weekly close; votes refused and agreed from the player's Pending, as a character and as a syndicate, with a row opening its tab; all five skins and Colorize by screenshot and measured contrast. **Not yet tried live:** the GM Console's Pending actions, spacing and aligned tables and the Factions layout, on any skin (the user's login); on a player's Pending, job offers, invitations, takeovers and roll rows, for want of any open; the cash floor at a close.
 
+### 36.9 B7: downtime, the map and character ties (the user's choices, 2026-11-03)
+
+- **Downtime** replaces the weekly business days when Crew Tools is active, for the same uses (projects, extra time); weekly actions still cost none. It is built in, used if present, reversing §27.8's "bridge only": Crew Tools has nothing to attach a bridge to, and this module would need the checks anyway.
+- **The map:** each open business gets a pin in its district, which the GM can move and the bridge keeps; extending the existing bridge module.
+- **REP:** a milestone suggests a level on the GM's Pending tab; applied only if higher, as the rulebook has it. **IP:** the GM awards it at big scenes and milestones from Pending; routine rolls give none.
+- **Living costs:** partners vote to cover a character's sheet costs, paid monthly from the cash as claimable eddies on a payslip, so it works with Crew Tools' rent or without.
+- **The order:** the Teamwork fix (B7a), then downtime (B7b), REP and IP (B7c), living costs (B7d), the map (B7e).
+
+**B7a Teamwork as built** (`businessPeople.js` `teamSize`, `teamCare`, `teamWeek`; `businessStaff.js` `teamRefuses`). Checked against the core rulebook, which the build before this got wrong: one member each at ranks 3, 5 and 9, not one per 3 ranks from rank 1.
+- **Loyalty** is `care` on the employee, the rulebook's: 1d6 + 1 to start, at most 10 between weeks and uncapped within one. It is apart from the staff's 0 to 100, which stays at a fixed value so that raid risk, quitting and raises leave them alone. Existing members draw a value; any over the new limit stay (`overLimit`) until they go.
+- **The save** is 1d6 under it, drawn from the business and the week, so a refusal is known before any dice roll, and raising Loyalty can still bring them round. One who fails is not offered for rolls and does not do their post's work that week.
+- **Moves.** The business week stands in for the rulebook's session. A week with nothing done costs 1. Their Exec can, once a week each, thank them (+1), give a 200 eb perk (+4) or a paid week off (+6, no work). The rulebook's other gains and losses are for the table: the GM sets the number on the Businesses tab.
+- **At 0 or below** at a close they betray the Exec and go, leaving 15 Exposure. The rulebook has them try to sell the Exec out at 0 and leave below 0 at a session's end; one close does both. The Exec's next member, likewise after letting one go, starts at Loyalty 1 and costs 200 eb.
+
 ## 37. Roadmap
 
 | Phase | Deliverable |
@@ -2113,7 +2127,7 @@ The user's requests after U1, each built and committed on its own. Colours, layo
 | R2 | **Done (v0.16.0), see §36.7.** Role abilities: a player rolls rank + 9 in business rolls, as staff do |
 | F1 | **Done (v0.17.0), see §36.3 and §36.7.** Faction standing with corps and gangs, moved by gigs and business actions; smear campaigns through the impact pipeline; Media rumours and published stories moving prices; after R1 |
 | X1 | **Part done (v0.18.0), see §36.7:** big events as scenes, and more for Lawmen, Nomads and Rockerboys. **Still proposed:** player rivalry: private share deals, Netrunner runs on a company's NET, poaching and sabotage; after F1 |
-| B7 | **Recommended next; the user to confirm. Proposed, see §27.8 and §36.7.** Downtime bridge (separate module): company work through Crew Tools downtime, businesses on Night City Map. With it, character ties: REP and IP from business milestones, a business covering Housing and Lifestyle, and Teamwork's Loyalty checks; after X1 |
+| B7 | **In progress, see §36.9.** B7a Teamwork against the rulebook is built. Still to come: Crew Tools downtime, REP and IP from business milestones, a business covering Housing and Lifestyle, and businesses on Night City Map |
 | U1 | **Done (v0.19.0), see §36.1 and §36.8.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships, back-room staff; after F1 and B6 |
 | UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
 | P1 | **Proposed, see §36.2.** Production: workshops, lines, stock, selling and fencing; after E3 |

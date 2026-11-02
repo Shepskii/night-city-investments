@@ -586,7 +586,7 @@ test('an NPC holding granted shares is listed on the Shareholders tab as a link 
 
 test("an Exec's team (E3): the Hire window offers the Exec their team; a member joins through the GM's service, unpaid", async () => {
   const { HireDialogApp } = await import('../scripts/ui/Business/HireDialogApp.js');
-  const role = { type: 'role', name: 'Exec', system: { rank: 4, mainRoleAbility: 'Teamwork' } };
+  const role = { type: 'role', name: 'Exec', system: { rank: 5, mainRoleAbility: 'Teamwork' } };
   med.items.push(role);
   const saved = structuredClone(business());
   try {
@@ -596,7 +596,7 @@ test("an Exec's team (E3): the Hire window offers the Exec their team; a member 
     const html = render('templates/dialogs/hire.hbs', await hire._prepareContext());
     assertClean(html, 'hire window with a team');
     assert.match(text(html), /Your team/);
-    assert.match(text(html), /you have Teamwork 4, so up to 2 member\(s\)/);
+    assert.match(text(html), /Teamwork 5 gives you up to 2/);
     assert.match(text(html), /A team member in this role would be Skilled \(11\)/);
     assert.match(html, /name="teamName" maxlength="40" value="[^"]+"/);
     await send(med, 'addTeam', { businessId: business().id, post: 'security', name: 'Ruth Kane' });

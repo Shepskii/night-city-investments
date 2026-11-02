@@ -100,7 +100,7 @@ import {
   staffWeek, payWages, staffOf, shiftsOf, overtimePay,
 } from './businessStaff.js';
 import {
-  idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost, rejectApplicant, applyTraining, mentorCheck, askOf, askCheck, grantOffer, enactGrant, vestGrants, addTeamMember,
+  teamCare, idleStaff, loyaltyWeek, vetCheck, applyVet, payBonus, payOffer, enactPay, refuseRaise, movePost, rejectApplicant, applyTraining, mentorCheck, askOf, askCheck, grantOffer, enactGrant, vestGrants, addTeamMember,
 } from './businessPeople.js';
 import {
   issueOffer, startIssue, takeRights, buybackOffer, startBuyback, sellBack, closeCapital, capitalRollCheck, applyOfferingRoll, applyTimingRoll,
@@ -121,7 +121,7 @@ export {
 export const BUSINESS_REQUESTS = Object.freeze([
   'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
   'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'takeDirty', 'lieLow', 'gangDealOfficer', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll', 'prospectusRoll',
-  'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant', 'askStaff', 'cancelAsk', 'addTeam',
+  'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant', 'askStaff', 'cancelAsk', 'addTeam', 'teamCare',
   'rightsTake', 'sellBack', 'issueRoll', 'buybackRoll', 'bid', 'tender', 'defenceRoll', 'hideRoll', 'dropLayer',
 ]);
 
@@ -828,6 +828,12 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       const done = addTeamMember(b, { actorId: actor.id, post: request.post, name: request.name, rank, day, key: request.key, memberId: request.actorId ?? null, teamActors: ctx.teamActors ?? {} }, p);
       if (!done.ok) return done;
       out.events.push({ type: 'teamJoined', staffId: done.staff.id });
+      break;
+    }
+    case 'teamCare': {
+      if (b.status !== 'open') return fail('not-open');
+      const done = teamCare(b, request.staffId, actor.id, request.how, day, p);
+      if (!done.ok) return done;
       break;
     }
     case 'cancelAsk': {

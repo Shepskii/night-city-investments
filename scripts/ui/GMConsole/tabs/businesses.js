@@ -125,6 +125,11 @@ async function onRemove(event, target) {
   report(await BusinessService.remove(target.dataset.id));
 }
 
+/** A team member's Loyalty, by hand, for what happened at the table (B7a). */
+async function onTeamLoyalty(event, target) {
+  report(await BusinessService.setTeamLoyalty(target.dataset.id, target.dataset.staff, target.closest('tr')?.querySelector('[name="teamLoyalty"]')?.value));
+}
+
 /** The GM answers a job offer for an NPC (DESIGN §32). */
 async function onStaffAnswer(event, target) {
   report(await BusinessService.answerOffer(target.dataset.id, target.dataset.staff, target.dataset.yes === 'true'));
@@ -164,6 +169,7 @@ export const actions = {
   businessRemove: onRemove,
   businessOpen: onOpen,
   businessStaffAnswer: onStaffAnswer,
+  businessTeamLoyalty: onTeamLoyalty,
   businessSetStanding: onSetStanding,
   businessCampaignApprove: onCampaignApprove,
   businessRoomApprove: onRoomApprove,
@@ -182,7 +188,9 @@ function staffRow(s, traits) {
     who: actorLink(s.actorId, s.name),
     post: L(`NCI.Staff.Post.${s.post}`),
     wage: whole(s.wage),
-    loyalty: hasLoyalty(s) ? s.loyalty ?? 50 : '',
+    loyalty: s.source === 'team' ? '' : hasLoyalty(s) ? s.loyalty ?? 50 : '',
+    teamId: s.source === 'team' ? s.id : '',
+    care: s.care ?? 0,
     trait: trait ? L(`NCI.Staff.Trait.${trait}`) : '',
     note: s.elsewhere ? L('NCI.GMBusiness.StaffElsewhere', { name: s.elsewhere.name }) : '',
   };

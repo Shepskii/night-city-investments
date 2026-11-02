@@ -167,7 +167,14 @@ export function normalizeBusiness(raw) {
       ...(x.grant ? { grant: { share: Number(x.grant.share), grantedDay: int(x.grant.grantedDay), vestDay: int(x.grant.vestDay) } } : {}),
       ...(x.vested ? { vested: Number(x.vested) } : {}),
       // E3: a member of an Exec's team: the Exec, and their level by the Exec's Teamwork rank.
-      ...(x.source === 'team' ? { leader: String(x.leader ?? ''), teamBase: int(x.teamBase) } : {}),
+      // B7a: their Loyalty as the rulebook has it, what the Exec did for them this week, and any over the limit since B7a.
+      ...(x.source === 'team' ? {
+        leader: String(x.leader ?? ''),
+        teamBase: int(x.teamBase),
+        ...(x.care != null ? { care: int(x.care) } : {}),
+        ...(x.careWeek ? { careWeek: { week: int(x.careWeek.week), done: [...(x.careWeek.done ?? [])] } } : {}),
+        ...(x.overLimit ? { overLimit: true } : {}),
+      } : {}),
     })),
     /** Going public (B5a): the listing under way, and whether hidden Exposure is over its cap (the GM's service marks it). */
     listing: b.listing ?? null,
@@ -189,6 +196,8 @@ export function normalizeBusiness(raw) {
     // A campaign waiting for the GM, and when the last one ran (F1c).
     campaign: b.campaign ?? null,
     lastCampaignDay: b.lastCampaignDay ?? null,
+    /** How many of each Exec's team members were lost: the next hire of theirs starts low and costs a fee (B7a). */
+    teamLost: b.teamLost ?? {},
     // Standing with factions (F1a): the band for each faction met. The number is in the GM's hidden state.
     standings: b.standings ?? {},
     // Hidden ownership (B6d): each holder's layers, innermost first; their strengths are GM-only.

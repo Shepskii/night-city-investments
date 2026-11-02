@@ -61,7 +61,7 @@
     {{#if staff.length}}
     <table class="nci-market nci-owners nci-peoplecols">
       <thead><tr><th>{{localize "NCI.GMBusiness.Staff"}}</th><th>{{localize "NCI.GMBusiness.StaffPost"}}</th><th class="num">{{localize "NCI.GMBusiness.StaffWage"}}</th><th class="num">{{localize "NCI.GMBusiness.StaffLoyalty"}}</th></tr></thead>
-      <tbody>{{#each staff}}<tr><td>{{{who}}}{{#if trait}} <span class="nci-muted">{{trait}}</span>{{/if}}{{#if note}} <span class="nci-muted">{{#if trait}}&middot; {{/if}}{{note}}</span>{{/if}}</td><td class="nci-muted">{{post}}</td><td class="num">{{wage}}</td><td class="num">{{loyalty}}</td></tr>{{/each}}</tbody>
+      <tbody>{{#each staff}}<tr><td>{{{who}}}{{#if trait}} <span class="nci-muted">{{trait}}</span>{{/if}}{{#if note}} <span class="nci-muted">{{#if trait}}&middot; {{/if}}{{note}}</span>{{/if}}</td><td class="nci-muted">{{post}}</td><td class="num">{{wage}}</td><td class="num">{{#if teamId}}<input type="number" name="teamLoyalty" value="{{care}}" step="1" class="nci-days"> <button type="button" data-action="businessTeamLoyalty" data-id="{{../id}}" data-staff="{{teamId}}" title="{{localize 'NCI.GMBusiness.TeamLoyaltyHint'}}"><i class="fas fa-save"></i></button>{{else}}{{loyalty}}{{/if}}</td></tr>{{/each}}</tbody>
     </table>
     {{/if}}
     {{#if applicants}}<div class="nci-muted">{{applicants}}</div>{{/if}}

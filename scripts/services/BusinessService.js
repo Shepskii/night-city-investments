@@ -1708,6 +1708,19 @@ class BusinessServiceImpl {
   }
 
   /** The GM sets a business's standing with a faction by hand (F1a), past the weekly limit. */
+  /** The GM sets a team member's Loyalty, for what happens at the table: the rulebook's other gains and losses (B7a). */
+  setTeamLoyalty(businessId, staffId, value) {
+    if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
+    return this._queue.run(async () => {
+      const business = BusinessRepository.get(businessId);
+      const staff = business?.staff?.find((s) => s.id === staffId && s.source === 'team');
+      if (!staff) return { ok: false, reason: 'not-staff' };
+      if (!Number.isFinite(Number(value))) return { ok: false, reason: 'bad-amount' };
+      await BusinessRepository.save(normalizeBusiness({ ...business, staff: business.staff.map((s) => (s === staff ? { ...s, care: Math.round(Number(value)) } : s)) }));
+      return { ok: true };
+    });
+  }
+
   setStanding(businessId, factionId, value) {
     if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
     return this._queue.run(async () => {

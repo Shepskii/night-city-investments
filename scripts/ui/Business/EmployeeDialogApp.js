@@ -26,6 +26,7 @@ export class EmployeeDialogApp extends BaseApplication {
       agreeRaise: EmployeeDialogApp._onAgreeRaise,
       refuseRaise: EmployeeDialogApp._onRefuseRaise,
       payBonus: EmployeeDialogApp._onPayBonus,
+      teamCare: EmployeeDialogApp._onTeamCare,
       movePost: EmployeeDialogApp._onMovePost,
       trainStaff: EmployeeDialogApp._onTrain,
       askStaff: EmployeeDialogApp._onAsk,
@@ -111,6 +112,10 @@ export class EmployeeDialogApp extends BaseApplication {
 
   static _onPayBonus() {
     return this._send('bonus', { quarters: Number(this._value('bonusQuarters')) || 1 });
+  }
+
+  static _onTeamCare(event, target) {
+    return this._send('teamCare', { how: target.dataset.how });
   }
 
   static _onMovePost() {

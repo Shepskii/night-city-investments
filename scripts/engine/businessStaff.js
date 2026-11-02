@@ -53,7 +53,8 @@ export function loyaltyBand(loyalty, p = BUSINESS_DEFAULTS) {
 
 /** Move an employee's loyalty, within 0 to 100 (a dedicated employee never below their floor). */
 export function moveLoyalty(staff, by, traits = null, p = BUSINESS_DEFAULTS) {
-  if (!hasLoyalty(staff) || !by) return;
+  // An Exec's team answer to their own Loyalty (`care`, businessPeople.js) instead.
+  if (!hasLoyalty(staff) || !by || staff.source === 'team') return;
   // Dedicated staff stay at 40 or above; shares vesting keep anyone at 50 or above (E3).
   const floor = Math.max(traitOf(traits, staff) === 'dedicated' ? p.staff.loyalty.dedicatedFloor : 0, staff.grant ? p.staff.grants.floor : 0);
   staff.loyalty = Math.max(floor, Math.min(loyaltyCap(staff, p), Math.round((staff.loyalty ?? p.staff.loyalty.start) + by)));
@@ -97,6 +98,16 @@ export function markElsewhere(b, others, p = BUSINESS_DEFAULTS) {
 export const startLoyalty = (pct, p = BUSINESS_DEFAULTS) => Math.round(p.staff.loyalty.start + ((pct - 1) / 0.1) * p.staff.loyalty.perTen);
 
 export const devoted = (staff, p = BUSINESS_DEFAULTS) => hasLoyalty(staff) && (staff.loyalty ?? 0) >= p.staff.loyalty.devoted;
+
+/**
+ * Whether a member of an Exec's team fails their Loyalty save this week: 1d6 under their Loyalty, the rulebook's save.
+ * Drawn from the business and the week, as a moonlighter's week is, so both clients agree and a better Loyalty can
+ * still bring them round. Those who fail neither take a task nor do their post's work.
+ */
+export function teamRefuses(b, staff) {
+  if (staff.source !== 'team') return false;
+  return createRng('nci', 'teamSave', b.id, b.period?.index ?? 0, staff.id).int(1, 6) >= (staff.care ?? 0);
+}
 
 /** Whether a moonlighter has other work this week, drawn from the business and the week. */
 export function moonlighting(b, staff, traits, p = BUSINESS_DEFAULTS) {
@@ -363,6 +374,7 @@ export function enactFire(b, staffId, day, p = BUSINESS_DEFAULTS, { traits = nul
   const paid = Math.max(0, Math.min(due, b.till));
   b.till -= paid;
   b.staff = b.staff.filter((s) => s !== staff);
+  if (staff.source === 'team') b.teamLost = { ...(b.teamLost ?? {}), [staff.leader]: (b.teamLost?.[staff.leader] ?? 0) + 1 };
   addLedger(b, { day, kind: 'fired', amount: -paid, staffName: staff.name }, p);
   if (staff.status === 'active' && hasLoyalty(staff) && staff.loyalty < p.staff.loyalty.quitBelow
     && createRng(seed, 'grudge', b.id, staff.id, day).chance(p.staff.events.grudge)) b.grudge = true;
@@ -394,6 +406,8 @@ export function staffRoll(b, use, uses, kind, funds, p = BUSINESS_DEFAULTS, trai
   // Two jobs: a person's shifts are shared across every employer (E3).
   if (shiftsOf(b, staff.id) + (staff.elsewhere?.shifts ?? 0) >= p.staff.maxShifts) return fail('shifts-elsewhere');
   if (moonlighting(b, staff, traits, p)) return fail('moonlighting');
+  // A team member's save is drawn for the week, so a refusal is known before any dice roll (B7a).
+  if (teamRefuses(b, staff)) return fail('team-refused');
   const cost = overtimePay(b, staff, kind, p);
   if (funds < cost) return fail('no-funds');
   const best = uses

@@ -27,6 +27,17 @@
     {{/if}}
   </div>
 
+  {{#if team.care.length}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.Staff.TeamCareTitle"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Staff.TeamCareHint"}}</p>
+    <div class="nci-actions">
+      {{#each team.care}}{{#if can}}<button type="button" data-action="teamCare" data-how="{{how}}">{{label}}</button>{{else}}<button type="button" disabled>{{label}}</button>{{/if}}{{/each}}
+    </div>
+  </div>
+  {{/if}}
+
+  {{#unless team}}
   <div class="nci-block nci-form">
     <h3>{{localize "NCI.Staff.Bonus"}}</h3>
     <p class="nci-hint">{{localize "NCI.Staff.BonusHint"}}</p>
@@ -39,6 +50,7 @@
     </div>
     {{/if}}
   </div>
+  {{/unless}}
 
   <div class="nci-block nci-form">
     <h3>{{localize "NCI.Staff.Move"}}</h3>
