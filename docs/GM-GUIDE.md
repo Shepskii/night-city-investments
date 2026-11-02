@@ -123,6 +123,10 @@ The rest runs itself: weeks close, events are drawn, wages are paid, reports are
 
 ## Factions
 
+Players can raise a business's standing with a faction: a shop uses **Court a client** or **Pay respects**, and a company aims **Chase contracts** or **Investor relations**. Each costs a gift from the cash. Standing then changes costs: corporations in the business's sector move its running costs by up to 15%, and gangs on its turf move protection money and shakedowns by up to 50%.
+
+A hostile faction (standing below -60) may act against the business, up to 15% of weeks: a smear, sabotage, a tipped-off raid or poaching. These run by themselves as the week's event, and the players answer them as usual. A smear that lands dips a listed company's price by up to 2%. Beating a gang's shakedown by force costs 3 standing with that gang.
+
 The **Factions** tab holds the corporations and gangs businesses can stand well or badly with. Press **Import starter factions** to add the market's corporations and Night City's gangs by district, then edit, add or remove as you like. Link a corporation to its ticker, and give a gang its districts, so businesses there see it.
 
 Standing runs from -100 to 100 for each business; its owners see only a band (hostile, wary, neutral, friendly, allied). It fades 2 points a week and moves at most 15 a week; you can set it by hand on the same tab.

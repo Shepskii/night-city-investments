@@ -500,6 +500,22 @@
           "strong": "Registered with clean books: Compliance starts at 55.",
           "exceptional": "Registered without a single query: Compliance starts at 60."
         },
+        "court": {
+          "fumble": "You give offence: standing with them falls.",
+          "failure": "Polite, and no further: standing stays where it is.",
+          "narrow": "They take the meeting: standing up a little.",
+          "solid": "They like what they hear: standing up.",
+          "strong": "A good impression: standing up well.",
+          "exceptional": "They want you on their list: standing up a long way."
+        },
+        "respects": {
+          "fumble": "They take it as an insult: standing with them falls.",
+          "failure": "They take the gift and say nothing: standing stays where it is.",
+          "narrow": "They nod at you in the street: standing up a little.",
+          "solid": "They remember your name: standing up.",
+          "strong": "They put the word out: standing up well.",
+          "exceptional": "You're under their protection now: standing up a long way."
+        },
         "keepSafe": {
           "fumble": "It goes badly: half as much protection money again this week.",
           "failure": "The usual protection money.",
@@ -1050,6 +1066,7 @@
       "PlayerDelisted": "{name} ({ticker}) delisted: the company buys back its public float at {price} eb and goes private.",
       "Offering": "{name} ({ticker}) offers {shares} new shares at {price} eb.",
       "CaseLost": "Regulators fine {name} ({ticker}) {fine} eb.",
+      "Smeared": "Damaging stories about {name} ({ticker}) are doing the rounds.",
       "Unmasked": "Regulators unmask {holder} as the hidden holder of {pct}% of {name} ({ticker}), and fine them {fine} eb.",
       "Takeover": "{bidder} bids {price} eb a share for {name} ({ticker}), a {premium}% premium.",
       "Administration": "{name} ({ticker}) goes into administration, owing more than it owns.",
@@ -1736,6 +1753,7 @@
       "Title": "Factions",
       "Hint": "Corporations and gangs a business can stand well or badly with. Link a corporation to its ticker, and give a gang the districts it holds, so the businesses there see it.",
       "Import": "Import starter factions",
+      "Terms": { "cost": "Cost base from corporations in your sector: {change}.", "protection": "Protection money from gangs on your turf: {change}." },
       "Name": "Name",
       "KindLabel": "Kind",
       "Kind": { "corp": "Corporation", "gang": "Gang", "other": "Other" },
@@ -2216,6 +2234,11 @@
       "pacifica": "Pacifica Playground", "morro": "Morro Rock", "oldcorp": "Old Corp Center", "oldcc": "Hot Zone · Old City Center"
     },
     "Event": {
+      "From": "This is {faction}'s doing.",
+      "FromGang": "It's {faction}. Beating them with force (Combat Awareness, Backup or security staff) works, but they won't forget it.",
+      "sabotage": { "Name": "Sabotage", "Hint": "Someone has been at the equipment overnight, and it wasn't an accident." },
+      "smear": { "Name": "A smear campaign", "Hint": "Ugly stories about the business are doing the rounds, and someone is paying for them." },
+      "raid": { "Name": "A tipped-off raid", "Hint": "Inspectors are on the way, and they seem to know exactly where to look." },
       "shakedown": { "Name": "A shakedown", "Hint": "A gang wants protection money on top of what you already pay." },
       "theft": { "Name": "A break-in", "Hint": "Someone has been through the stock overnight, and they will be back." },
       "breakdown": { "Name": "Something breaks", "Hint": "The kit the business runs on has given out." },
@@ -2453,6 +2476,8 @@
         "source": { "Name": "Source supplies", "Hint": "Trading, Streetwise or Operator: the Cost base down." },
         "fixUp": { "Name": "Fix the place up", "Hint": "Basic Tech or Maker: Capacity up, so more takings are possible." },
         "keepSafe": { "Name": "Keep it safe", "Hint": "Tactics, Persuasion, Combat Awareness or Backup: less protection money this week." },
+        "court": { "Name": "Court a client", "Hint": "Business, Persuasion, Trading, Operator, Charismatic Impact or Credibility: raises standing with a corporation." },
+        "respects": { "Name": "Pay respects", "Hint": "Streetwise, Persuasion, Operator or Charismatic Impact: raises standing with a gang." },
         "contracts": { "Name": "Chase contracts", "Hint": "Business (Persuasion or Trading at DV +2), Teamwork, Operator or Maker: sets the week's takings, and Reputation up a little." },
         "books": { "Name": "Tighten the books", "Hint": "Accounting (Business at DV +2) or Moto: the Cost base down." },
         "relations": { "Name": "Investor relations", "Hint": "Trading (Persuasion or Wardrobe & Style at DV +2), Credibility or Charismatic Impact: Reputation up." },
@@ -2585,6 +2610,7 @@
         "teamLeft": "{staff} left with their Exec's team",
         "vested": "{staff}'s granted shares vested",
         "medical": "Medical bills",
+        "factionGift": "A gift to a faction",
         "wages": "Wages"
       },
       "CapTable": "Partners",
@@ -2633,6 +2659,9 @@
       "DecisionsHintCompany": "Closing needs every shareholder with a vote; one refusal ends the proposal.",
       "Tab": { "overview": "Overview", "week": "Work", "projects": "Projects", "ledger": "Ledger", "partners": "Partners", "partnersCompany": "Shareholders", "growth": "Growth", "staff": "Staff" },
       "DaysLeft": "You have {n} business day(s) left this week.",
+      "AimGift": "Aiming at a faction costs a {gift} eb gift from the cash, spent whatever the roll.",
+      "AimNone": "No faction",
+      "AimedAt": "Aimed at {name}",
       "WaitingVote": "{n} proposal(s) waiting for votes on the Partners tab.",
       "WaitingVoteCompany": "{n} proposal(s) waiting for votes on the Shareholders tab.",
       "Projects": "Projects",
@@ -2878,6 +2907,9 @@
         "not-open": "the business is not open",
         "bad-action": "there is no such action",
         "no-slot": "this week's action slots are all taken",
+        "no-faction": "that action needs a faction to aim at",
+        "bad-faction": "that action cannot be aimed at that faction",
+        "no-gift": "the business does not have the cash for the gift",
         "action-taken": "that action has already been taken this week",
         "helped": "this character has already helped this week",
         "hire-not-allowed": "a hired professional cannot do that",

@@ -9,11 +9,12 @@
  */
 
 import { createRng } from './rng.js';
-import { EVENTS, BUSINESS_DEFAULTS, districtOf } from './businessConfig.js';
+import { EVENTS, ABILITIES, BUSINESS_DEFAULTS, districtOf } from './businessConfig.js';
 import { archetypeOf, clamp } from './businessRecord.js';
 import { bandPassed } from './rolls.js';
 import { staffEventWeight, staffEventTarget, settleStaffEvent } from './businessPeople.js';
 import { breakInFactor } from './businessGrowth.js';
+import { hostileChance } from './factions.js';
 
 /** How likely an event is this week: the base chance, the district's risk, and less once registered. */
 export function eventChance(b, p = BUSINESS_DEFAULTS) {
@@ -22,19 +23,59 @@ export function eventChance(b, p = BUSINESS_DEFAULTS) {
 
 /**
  * Draw this week's event, or none. Staff events join the table when there are NPC staff (E2); one
- * about an employee names them (`staffId`).
+ * about an employee names them (`staffId`). Gangs on the turf make shakedowns likelier or rarer, and
+ * one of them is named (F1b).
  */
-export function drawEvent(b, seed = 'nci', p = BUSINESS_DEFAULTS, traits = null) {
+export function drawEvent(b, seed = 'nci', p = BUSINESS_DEFAULTS, traits = null, relations = null) {
   const rng = createRng(seed, 'business-event', b.id, b.period.index);
   if (!rng.chance(eventChance(b, p))) return null;
   const weights = Object.fromEntries(Object.entries(EVENTS).filter(([, e]) => (e.stage ?? 0) <= b.stage)
     // A security upgrade keeps break-ins away.
-    .map(([k, e]) => [k, e.staff ? staffEventWeight(b, k, traits, p) : k === 'theft' ? e.weight * breakInFactor(b, p) : e.weight]).filter(([, w]) => w > 0));
+    .map(([k, e]) => [k, e.staff ? staffEventWeight(b, k, traits, p) : k === 'theft' ? e.weight * breakInFactor(b, p) : k === 'shakedown' ? e.weight * (relations?.shakedown ?? 1) : e.weight]).filter(([, w]) => w > 0));
   const kind = rng.weighted(weights);
   const staffId = EVENTS[kind].staff ? staffEventTarget(b, kind, rng, p) : null;
   // A two-jobs event names the other business, as it stood when it was drawn (E3).
   const rival = EVENTS[kind].twoJobs ? (b.staff ?? []).find((s) => s.id === staffId)?.elsewhere : null;
-  return { kind, ...(staffId ? { staffId } : {}), ...(rival ? { rival: { businessId: rival.businessId, name: rival.name } } : {}) };
+  // Its own stream, so naming a gang leaves the draws of other weeks and businesses as they were.
+  const gangs = kind === 'shakedown' ? relations?.gangs ?? [] : [];
+  const gang = gangs.length ? gangs[createRng(seed, 'business-gang', b.id, b.period.index).int(0, gangs.length - 1)] : null;
+  return { kind, ...(staffId ? { staffId } : {}), ...(rival ? { rival: { businessId: rival.businessId, name: rival.name } } : {}), ...(gang ? { factionId: gang.id, factionName: gang.name } : {}) };
+}
+
+/**
+ * A hostile faction's act this week, or none (F1b): the worst one may act, in place of whatever the
+ * week would have drawn. A corporation smears, a gang sabotages; either can tip off a raid or poach.
+ */
+export function hostileAct(b, seed = 'nci', p = BUSINESS_DEFAULTS, relations = null) {
+  const worst = relations?.hostile?.[0];
+  if (!worst) return null;
+  const rng = createRng(seed, 'business-hostile', b.id, b.period.index);
+  if (!rng.chance(hostileChance(worst.value, p))) return null;
+  const staffId = staffEventTarget(b, 'poaching', rng, p);
+  const kinds = [worst.kind === 'gang' ? 'sabotage' : 'smear', 'raid', ...(staffId ? ['poaching'] : [])];
+  const kind = kinds[rng.int(0, kinds.length - 1)];
+  return { kind, factionId: worst.id, factionName: worst.name, ...(kind === 'poaching' ? { staffId } : {}) };
+}
+
+/** What a faction's event leaves behind when the week closes, for the GM's service: standing, Exposure, the price. */
+export function factionFallout(b, settled, p = BUSINESS_DEFAULTS) {
+  const event = b.period.event;
+  if (!settled || !event?.factionId) return [];
+  const rules = p.standing.hostile;
+  const lost = ['unanswered', 'failed', 'fumbled'].includes(settled.outcome);
+  const scale = settled.outcome === 'failed' ? 0.5 : 1;
+  if (event.kind === 'shakedown' && settled.outcome === 'answered' && byForce(b)) return [{ type: 'factionMove', factionId: event.factionId, amount: rules.force }];
+  if (event.kind === 'raid' && lost) return [{ type: 'factionRaid', factionId: event.factionId, exposure: Math.ceil(rules.raidExposure * scale) }];
+  if (event.kind === 'smear' && lost) return [{ type: 'factionSmear', factionId: event.factionId, amount: rules.smear * scale, period: b.period.index }];
+  return [];
+}
+
+const FORCE = [ABILITIES.combatAwareness, ABILITIES.backup].map((a) => `ability:${a.ability}`);
+
+/** Whether this week's answer was by force: a fighting ability, or security staff. */
+function byForce(b) {
+  const answer = b.period.slots.find((s) => s.action === 'respond');
+  return !!answer && (FORCE.includes(answer.use) || (b.staff ?? []).find((s) => s.id === answer.by)?.post === 'security');
 }
 
 /** The ways an event may be answered: its own skills and abilities, and the trade's skills where it says so. */

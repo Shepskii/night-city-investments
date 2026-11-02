@@ -2,8 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   BUSINESS_DEFAULTS, DISTRICTS, normalizeFaction, standingBand, matchFaction, turfFactions, gigStanding, moveStanding, driftStanding, standingBands, matchBusiness,
-  findTarget, targetShare, gigTags, resolveClient,
+  findTarget, targetShare, gigTags, resolveClient, applyBusinessRequest, advanceBusiness, rollSpec, normalizeBusiness, drawEvent, hostileAct, hostileChance, factionEffects, factionFallout,
+  giftFor, ARCHETYPES, SKILLS, ABILITIES,
 } from '../scripts/engine/index.js';
+import { resolveRoll } from '../scripts/engine/rolls.js';
 import { starterFactions } from '../scripts/data/starter-factions.js';
 import { STARTER_COMPANIES } from '../scripts/data/starter-companies.js';
 
@@ -104,4 +106,135 @@ test('the GM\'s tags: client, target and contract, with spaces, in any order; a 
   assert.equal(matchBusiness({ notes: '[NCI client: Biotechnica]' }, businesses), null);
   const factions = [{ id: 'bio', name: 'Biotechnica', ticker: 'BIO', aliases: [], districts: [] }];
   assert.equal(findTarget({ client: 'Mr Johnson', desc: 'A Biotechnica job', notes: '[NCI client: Biotechnica]' }, factions), null, 'the tagged client is not its own target');
+});
+
+// ── F1b: actions aimed at a faction, and what standing does ─────────
+
+const MED = { id: 'med', name: 'Medtech', wealth: 50000 };
+const DAY = 20003;
+const checkOf = (die) => ({ ok: true, result: resolveRoll({ base: 14, roll: { total: die, crit: null }, dv: 13 }) });
+const LIST = [
+  { id: 'tti', name: 'Trauma Team', kind: 'corp', ticker: 'TTI', sector: 'health', districts: [] },
+  { id: 'bio', name: 'Biotechnica', kind: 'corp', ticker: 'BIO', sector: 'biotech', districts: [] },
+  { id: 'mael', name: 'Maelstrom', kind: 'gang', districts: ['ocz'] },
+  { id: 'claws', name: 'Tyger Claws', kind: 'gang', districts: ['ocz'] },
+];
+const send = (business, request, check, context = {}) => applyBusinessRequest({
+  business, request: { key: `k${Math.random()}`, ...request }, actor: MED, day: DAY, check,
+  context: { approval: false, weekday: 1, actors: {}, newId: 'b1', seed: 'test', factions: LIST, ...context },
+});
+function shop({ till = 3000 } = {}) {
+  let b = send(null, { type: 'found', name: 'Back Room', archetype: 'clinic', district: 'ocz', cash: 4000 }).business;
+  b = send(b, { type: 'setupRoll', businessId: 'b1', use: ARCHETYPES.clinic.trade[0] }, checkOf(9)).business;
+  const out = normalizeBusiness({ ...b, till });
+  out.state.capacity = 1;
+  delete out.period.event;
+  return out;
+}
+
+test('an aimed action needs a faction of the right kind and the gift; the gift goes whatever the roll', () => {
+  const b = shop();
+  const use = SKILLS.persuasion;
+  assert.equal(rollSpec(b, { type: 'action', action: 'court', use }, 'med', { day: DAY }).reason, 'no-faction');
+  assert.equal(rollSpec(b, { type: 'action', action: 'work', factionId: 'tti', use: ARCHETYPES.clinic.trade[0] }, 'med', { day: DAY }).reason, 'bad-faction');
+  assert.equal(rollSpec(shop({ till: 50 }), { type: 'action', action: 'court', factionId: 'tti', use }, 'med', { day: DAY }).reason, 'no-gift');
+  assert.equal(send(b, { type: 'action', businessId: 'b1', action: 'court', factionId: 'mael', use }, checkOf(9)).reason, 'bad-faction', 'a gang is not courted');
+  assert.equal(send(b, { type: 'action', businessId: 'b1', action: 'respects', factionId: 'tti', use }, checkOf(9)).reason, 'bad-faction', 'nor does a corporation take respects');
+
+  const failed = send(b, { type: 'action', businessId: 'b1', action: 'court', factionId: 'tti', use }, checkOf(-5));
+  assert.equal(failed.ok, true, failed.reason);
+  assert.equal(failed.business.till, b.till - giftFor(b));
+  assert.equal(failed.business.ledger.at(-1).kind, 'factionGift');
+  const deal = failed.events.find((e) => e.type === 'factionDeal');
+  assert.deepEqual([deal.factionId, deal.band], ['tti', 'failure']);
+  assert.equal(BUSINESS_DEFAULTS.standing.deal.failure, 0);
+  assert.equal(failed.business.period.slots.at(-1).factionName, 'Trauma Team');
+});
+
+test('the gift rises with the stage, and a company may aim Contracts and Relations or not at all', () => {
+  assert.deepEqual([0, 1, 2, 3].map((stage) => giftFor({ stage })), [100, 300, 1000, 1000]);
+  const b = normalizeBusiness({ ...shop(), stage: 2, company: { ticker: 'BRC', sector: 'health', charteredDay: DAY }, officers: ['med'] });
+  assert.equal(rollSpec(b, { type: 'action', action: 'contracts', use: SKILLS.business }, 'med', { day: DAY }).ok, true, 'no aim is fine');
+  const aimed = send(b, { type: 'action', businessId: 'b1', action: 'contracts', factionId: 'tti', use: SKILLS.business }, checkOf(9));
+  assert.equal(aimed.ok, true, aimed.reason);
+  assert.equal(aimed.business.till, b.till - 1000);
+  assert.equal(send(b, { type: 'action', businessId: 'b1', action: 'contracts', factionId: 'mael', use: SKILLS.business }, checkOf(9)).reason, 'bad-faction');
+  const unaimed = send(b, { type: 'action', businessId: 'b1', action: 'contracts', use: SKILLS.business }, checkOf(9));
+  assert.equal(unaimed.business.till, b.till, 'no aim, no gift');
+  assert.ok(!unaimed.events.some((e) => e.type === 'factionDeal'));
+});
+
+test('standing moves running costs and protection money, each within its cap; the business\'s sector is what counts', () => {
+  const with_ = (standings, archetype = 'clinic') => factionEffects({ archetype, district: 'ocz', standings }, LIST);
+  assert.deepEqual(['allied', 'friendly', 'neutral', 'wary', 'hostile'].map((band) => with_({ tti: band }).cost.toFixed(2)), ['0.90', '0.95', '1.00', '1.05', '1.10']);
+  assert.equal(with_({ bio: 'allied' }).cost, 1, 'another sector\'s corporation does nothing');
+  assert.equal(factionEffects({ archetype: 'bar', company: { sector: 'health' }, standings: { tti: 'allied' } }, LIST).cost.toFixed(2), '0.90', 'a company goes by its own sector');
+  assert.deepEqual(['allied', 'friendly', 'wary', 'hostile'].map((band) => with_({ mael: band }).protection), [0.5, 0.75, 1.25, 1.5]);
+  assert.equal(with_({ mael: 'allied', claws: 'allied' }).protection, 0.5, 'capped');
+  assert.equal(with_({ mael: 'allied', claws: 'hostile' }).protection, 1, 'a friend and an enemy cancel out');
+  assert.equal(with_({ mael: 'friendly' }).shakedown, 0.75);
+
+  const corps = [{ id: 'a', kind: 'corp', sector: 'health' }, { id: 'b', kind: 'corp', sector: 'health' }];
+  assert.equal(factionEffects({ archetype: 'clinic', standings: { a: 'hostile', b: 'hostile' } }, corps).cost, 1.15, 'costs are capped at 15%');
+});
+
+test('at the close, friendly terms lower the upkeep and hostile ones raise it, without changing the stored Cost base', () => {
+  const b = shop();
+  const close = (relations) => advanceBusiness(b, b.period.endDay, { weekday: 1, seed: 'test', relations }).business;
+  const none = close(null);
+  const good = close({ cost: 0.9, protection: 0.5, shakedown: 0.5, gangs: [], hostile: [] });
+  const bad = close({ cost: 1.1, protection: 1.5, shakedown: 1.5, gangs: [], hostile: [] });
+  const upkeep = (x) => x.digests.at(-1).upkeep;
+  assert.ok(upkeep(good) < upkeep(none) && upkeep(none) < upkeep(bad), `${upkeep(good)} ${upkeep(none)} ${upkeep(bad)}`);
+  assert.equal(good.state.costFactor, none.state.costFactor);
+  const costs = good.digests.at(-1).costs;
+  assert.equal(costs.running + costs.rent + costs.licence + costs.protection, upkeep(good), 'the cashbook still adds up');
+});
+
+test('a hostile faction may act, at most 15% of weeks, and names itself; no hostile faction leaves the draws as they were', () => {
+  assert.deepEqual([-60, -80, -100].map((v) => hostileChance(v).toFixed(2)), ['0.05', '0.10', '0.15']);
+  const b = shop();
+  const week = (i) => ({ ...b, period: { ...b.period, index: i } });
+  assert.equal(hostileAct(b, 'test', BUSINESS_DEFAULTS, null), null);
+  assert.equal(hostileAct(b, 'test', BUSINESS_DEFAULTS, { hostile: [] }), null);
+
+  const acts = (faction) => Array.from({ length: 2000 }, (_, i) => hostileAct(week(i), 'test', BUSINESS_DEFAULTS, { hostile: [faction] })).filter(Boolean);
+  const corp = acts({ id: 'tti', name: 'Trauma Team', kind: 'corp', value: -100 });
+  assert.ok(corp.length > 220 && corp.length < 380, `about 15%: ${corp.length}`);
+  assert.deepEqual([...new Set(corp.map((a) => a.kind))].sort(), ['raid', 'smear'], 'no staff to poach');
+  assert.equal(corp[0].factionName, 'Trauma Team');
+  const gang = acts({ id: 'mael', name: 'Maelstrom', kind: 'gang', value: -100 });
+  assert.deepEqual([...new Set(gang.map((a) => a.kind))].sort(), ['raid', 'sabotage']);
+
+  const plain = Array.from({ length: 200 }, (_, i) => drawEvent(week(i), 'test')?.kind ?? null);
+  const quiet = { cost: 1, protection: 1, shakedown: 1, gangs: [], hostile: [] };
+  assert.deepEqual(Array.from({ length: 200 }, (_, i) => drawEvent(week(i), 'test', BUSINESS_DEFAULTS, null, quiet)?.kind ?? null), plain);
+});
+
+test('friendly gangs bring fewer shakedowns and hostile ones more, and a shakedown names a gang on the turf', () => {
+  const b = shop();
+  const count = (factor) => Array.from({ length: 3000 }, (_, i) => drawEvent({ ...b, period: { ...b.period, index: i } }, 'test', BUSINESS_DEFAULTS, null, { shakedown: factor, gangs: [{ id: 'mael', name: 'Maelstrom' }, { id: 'claws', name: 'Tyger Claws' }] })).filter((e) => e?.kind === 'shakedown');
+  const [few, usual, many] = [0.5, 1, 1.5].map(count);
+  assert.ok(few.length < usual.length && usual.length < many.length, `${few.length} ${usual.length} ${many.length}`);
+  assert.deepEqual([...new Set(usual.map((e) => e.factionName))].sort(), ['Maelstrom', 'Tyger Claws']);
+  const none = drawEvent({ ...b, period: { ...b.period, index: 1 } }, 'test');
+  assert.equal(none?.factionId, undefined);
+});
+
+test('what a faction\'s event leaves behind: force costs standing, a raid Exposure, a smear the price, each only when it counts', () => {
+  const withEvent = (kind, slots = [], staff = []) => ({ staff, period: { index: 7, event: { kind, factionId: 'mael', factionName: 'Maelstrom' }, slots } });
+  const combat = `ability:${ABILITIES.combatAwareness.ability}`;
+  const answered = { outcome: 'answered' };
+  const by = (use, who = 'med') => [{ action: 'respond', use, by: who }];
+  assert.deepEqual(factionFallout(withEvent('shakedown', by(combat)), answered), [{ type: 'factionMove', factionId: 'mael', amount: -3 }]);
+  assert.deepEqual(factionFallout(withEvent('shakedown', by('skill:Persuasion')), answered), [], 'talking costs nothing');
+  assert.deepEqual(factionFallout(withEvent('shakedown', by(undefined, 's1'), [{ id: 's1', post: 'security' }]), answered).map((e) => e.amount), [-3], 'security staff count as force');
+  assert.deepEqual(factionFallout(withEvent('shakedown', by(combat)), { outcome: 'failed' }), [], 'losing the fight is not beating them');
+  assert.deepEqual(factionFallout(withEvent('raid'), { outcome: 'unanswered' }).map((e) => e.exposure), [5]);
+  assert.deepEqual(factionFallout(withEvent('raid'), { outcome: 'failed' }).map((e) => e.exposure), [3]);
+  assert.deepEqual(factionFallout(withEvent('raid'), answered), []);
+  assert.deepEqual(factionFallout(withEvent('smear'), { outcome: 'fumbled' }).map((e) => [e.amount, e.period]), [[-0.02, 7]]);
+  assert.deepEqual(factionFallout(withEvent('smear'), { outcome: 'failed' }).map((e) => e.amount), [-0.01]);
+  assert.deepEqual(factionFallout({ staff: [], period: { event: { kind: 'shakedown' }, slots: by(combat) } }, answered), [], 'no gang, no standing');
+  assert.deepEqual(factionFallout(withEvent('smear'), null), []);
 });

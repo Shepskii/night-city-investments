@@ -24,7 +24,7 @@ import {
   takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
   restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask,
   concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget, scandalHit, investigationCost, spendDays,
-  moveStanding, driftStanding, standingBands, gigStanding, targetShare,
+  moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
@@ -32,6 +32,7 @@ import { L, log, isActiveGM, isCharacter, isItemPile, unwrap } from '../utils/he
 import { SerialQueue } from '../utils/queue.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
+import { FactionRepository } from '../data/FactionRepository.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
 import { SkillAdapter } from './SkillAdapter.js';
@@ -109,6 +110,7 @@ class BusinessServiceImpl {
       seed: this.seed(),
       operatorRank: business ? operatorRankOf(business) : 0,
       actors: this.actors(),
+      factions: FactionRepository.list(),
       investors: investorActors().map((a) => a.id),
       // Who may be hired, and their bases read from their sheets (DESIGN §32).
       staffActors: Object.fromEntries(staffActors().map((a) => [a.id, a.source])),
@@ -638,6 +640,7 @@ class BusinessServiceImpl {
     await this._insolvencyEvents(out);
     await this._ownershipEvents(out);
     await this._standingWeek(out);
+    await this._factionEvents(out);
     await this._regulatorEvents(out);
     await this._publishRegister(out.business);
     await this._afterReports(out);
@@ -850,6 +853,7 @@ class BusinessServiceImpl {
     return this._queue.run(async () => {
       const day = this.day();
       const opts = { weekday: this.weekday(), growthRate: this.growthRate(), actors: this.actors(), seed: this.seed() };
+      const factions = FactionRepository.withSectors();
       let changed = 0;
       for (const stored of BusinessRepository.all().filter((b) => b.status === 'open')) {
         // Employees' skills are read again from their sheets before the week is counted.
@@ -858,7 +862,8 @@ class BusinessServiceImpl {
         const marked = markElsewhere(business, BusinessRepository.all()) | this._markConcerns(business) | this._syncHolders(business);
         const team = refreshTeams(business, (id) => this.basesOf(id), day);
         if (team.notes.length) business.pendingNotes = [...(business.pendingNotes ?? []), ...team.notes];
-        const out = advanceBusiness(business, day, { ...opts, traits: this.traitsOf(business.id) });
+        const relations = factionEffects(business, factions, MarketStore.getBusinessesHidden()[business.id]?.standing ?? {});
+        const out = advanceBusiness(business, day, { ...opts, traits: this.traitsOf(business.id), relations });
         if (!out.changed && !reread && !marked && !team.changed) continue;
         await this._commit({ ...out, ok: true });
         changed++;
@@ -1418,6 +1423,32 @@ class BusinessServiceImpl {
     if (JSON.stringify(bands) === JSON.stringify(stored.standings ?? {})) return;
     await BusinessRepository.save({ ...normalizeBusiness(structuredClone(stored)), standings: bands });
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId });
+  }
+
+  /** What the week's dealings moved (F1b): an aimed action, a shakedown beaten by force, a smear reaching the market. */
+  async _factionEvents(out) {
+    const b = out.business;
+    let moved = false;
+    for (const e of out.events) {
+      const amount = e.type === 'factionDeal' ? BUSINESS_DEFAULTS.standing.deal[e.band] : e.type === 'factionMove' ? e.amount : 0;
+      if (amount) {
+        await this._moveStanding(b.id, e.factionId, amount);
+        moved = true;
+      }
+      if (e.type !== 'factionSmear' || !isListed(b)) continue;
+      const ticker = b.company.ticker;
+      const key = `smear:${b.id}:${e.period}`;
+      await NewsService.post({ headline: L('NCI.News.Smeared', { name: b.name, ticker }), tone: 'down', companyIds: [ticker] });
+      await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
+        ...controls,
+        impacts: [...controls.impacts, makeImpact({
+          id: `imp_smear_${b.id}_${e.period}`, target: { type: 'company', id: ticker }, amount: e.amount, onsetTick: now + BUSINESS_DEFAULTS.ownership.scandal.delayDays,
+          permanent: 1, sourceKey: key, source: 'smear', meta: { businessId: b.id },
+        })],
+      }));
+    }
+    // The steps after this one save this copy of the record, so it needs the new bands too.
+    if (moved) b.standings = BusinessRepository.get(b.id)?.standings ?? b.standings;
   }
 
   /** As a business's week closes, its standing with each faction fades a little toward 0 (F1a). */

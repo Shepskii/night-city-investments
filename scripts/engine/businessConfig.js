@@ -96,10 +96,10 @@ export const DISTRICTS = Object.freeze(Object.fromEntries([
 export const districtOf = (id) => DISTRICTS[id] ?? { id: '', traffic: 1, rent: 1, risk: 1 };
 
 /** In display order. */
-export const ACTION_IDS = Object.freeze(['work', 'promote', 'source', 'fixUp', 'keepSafe']);
+export const ACTION_IDS = Object.freeze(['work', 'promote', 'source', 'fixUp', 'keepSafe', 'court', 'respects']);
 
 /**
- * The five weekly actions (DESIGN §27.0). `skills` roll the action itself (`work` uses the
+ * The weekly actions (DESIGN §27.0; `court` and `respects`, F1b). `skills` roll the action itself (`work` uses the
  * archetype's trade skills); `help` are the extra skills and abilities a complementary check for it
  * may use, on top of the action's own.
  */
@@ -109,6 +109,8 @@ export const ACTIONS = Object.freeze({
   source: Object.freeze({ skills: [S.trading, S.streetwise], abilities: [A.operator, A.moto], help: [S.business, S.localExpert] }),
   fixUp: Object.freeze({ skills: [S.basicTech], abilities: [A.maker], help: [S.electronics, S.landVehicleTech] }),
   keepSafe: Object.freeze({ skills: [S.tactics, S.persuasion], abilities: [A.combatAwareness, A.backup], help: [S.streetwise, S.humanPerception] }),
+  court: Object.freeze({ skills: [S.business, S.persuasion, S.trading], abilities: [A.operator, A.charismaticImpact, A.credibility], help: [S.humanPerception, S.librarySearch] }),
+  respects: Object.freeze({ skills: [S.streetwise, S.persuasion], abilities: [A.operator, A.charismaticImpact], help: [S.localExpert, S.humanPerception] }),
 });
 
 /** A chartered company's five actions (DESIGN §27.4, §31): they replace the shop actions at stage 2. */
@@ -340,6 +342,32 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     gig: Object.freeze({ done: 6, failed: -8, reward: 1000, size: Object.freeze([0.5, 3]), windowDays: 28 }),
     /** A gig's target moves the other way from its client, by this share of the client's move: price and standing alike. */
     target: Object.freeze({ done: -0.5, failed: -0.25 }),
+    /**
+     * Working on a faction (F1b): which actions may be aimed, at which kinds, and which must be. An aimed
+     * action costs a `gift` from the cash, by stage, whatever the roll; `deal` is how far each band moves standing.
+     */
+    aims: Object.freeze({
+      court: Object.freeze({ kinds: Object.freeze(['corp', 'other']), required: true }),
+      respects: Object.freeze({ kinds: Object.freeze(['gang']), required: true }),
+      contracts: Object.freeze({ kinds: Object.freeze(['corp', 'other']) }),
+      relations: Object.freeze({ kinds: Object.freeze(['corp', 'gang', 'other']) }),
+    }),
+    gift: Object.freeze([100, 300, 1000]),
+    deal: byBand([-4, 0, 3, 5, 7, 10]),
+    /**
+     * What standing does (F1b). Each corporation in the business's sector moves the Cost base, and each gang
+     * on its turf the protection money and how often it comes shaking the business down; each total has a `cap`.
+     */
+    effects: Object.freeze({
+      cost: Object.freeze({ hostile: 0.1, wary: 0.05, friendly: -0.05, allied: -0.1, cap: 0.15 }),
+      protection: Object.freeze({ hostile: 0.5, wary: 0.25, friendly: -0.25, allied: -0.5, cap: 0.5 }),
+    }),
+    /**
+     * A hostile faction's acts (F1b): the worst one's weekly chance, from `chance[0]` as it turns hostile to
+     * `chance[1]` at -100. A smear not stopped moves a listed company's price by `smear` (a log-return), a raid
+     * adds `raidExposure`; half of each when answered badly. Beating a gang's shakedown by force costs `force`.
+     */
+    hostile: Object.freeze({ chance: Object.freeze([0.05, 0.15]), smear: -0.02, raidExposure: 5, force: -3 }),
   }),
   /**
    * Regulators (R1, DESIGN §36.7): the chance of a case at each monthly report, by Exposure band; `notice`
@@ -662,6 +690,10 @@ export const EVENTS = Object.freeze({
   trouble: Object.freeze({ weight: 2, trade: true, uses: [S.humanPerception, S.persuasion, S.conversation], hit: Object.freeze({ reputation: -1 }) }),
   inspection: Object.freeze({ weight: 2, stage: 1, uses: [S.bureaucracy, Object.freeze({ ...S.localExpert, dvAdd: 2 }), Object.freeze({ ...S.bribery, dvAdd: 2 }), A.backup], hit: Object.freeze({ compliance: -8 }) }),
   windfall: Object.freeze({ weight: 2, good: true, trade: true, uses: [S.business, S.trading, A.operator], hit: Object.freeze({}) }),
+  /** Never drawn at random: a hostile faction's acts (F1b), which name the faction. */
+  sabotage: Object.freeze({ weight: 0, security: true, uses: [S.basicTech, S.tactics, A.combatAwareness, A.maker], hit: Object.freeze({ capacity: -0.05 }) }),
+  smear: Object.freeze({ weight: 0, uses: [S.persuasion, S.composition, A.credibility, A.charismaticImpact], hit: Object.freeze({ reputation: -3 }) }),
+  raid: Object.freeze({ weight: 0, uses: [S.bureaucracy, S.persuasion, S.tactics, A.backup], hit: Object.freeze({ compliance: -8 }) }),
   /** Never drawn: it comes the week after a missed fixer-loan payment. */
   collectors: Object.freeze({ weight: 0, security: true, uses: [S.persuasion, S.streetwise, S.trading, A.combatAwareness, A.operator], hit: Object.freeze({ reputation: -3 }) }),
   /** Never drawn: it may come the week after a sullen employee is fired. */

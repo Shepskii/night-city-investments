@@ -713,3 +713,47 @@ test('a private company in administration is wound up: the holders are paid what
   assert.ok(out.perShare > 0 && out.left === 5000 + 1000, 'cash plus half the assets, no debts');
   assert.ok(alice.system.wealth.value > wealthBefore, 'paid in eddies');
 });
+
+test('at the week\'s close, a faction\'s event lands: a smear on the price, a raid in the Exposure, force on the standing, and standing on the costs', async () => {
+  const { FactionRepository } = await import('../scripts/data/FactionRepository.js');
+  await FactionRepository.importStarter();
+  const saved = structuredClone(business());
+  const hiddenSaved = structuredClone(S.MarketStore.getBusinessesHidden());
+  const gang = E.turfFactions(FactionRepository.list(), 'ocz')[0];
+  // Close one week with this event and these slots.
+  const close = async (event, slots = [], extra = {}) => {
+    const now = business();
+    await S.BusinessRepository.save({
+      ...now, status: 'open', stage: 2, district: 'ocz', takeover: null, administration: null, regCase: null, listing: { ...now.listing, status: 'listed', review: null }, till: 500000,
+      period: { ...now.period, startDay: S.BusinessService.day() - 7, endDay: S.BusinessService.day(), slots, bonuses: [], helpers: [], event }, ...extra,
+    });
+    await S.BusinessService.onTick();
+    return business().digests.at(-1);
+  };
+  try {
+    const smear = await close({ kind: 'smear', factionId: 'corp_bio', factionName: 'Biotechnica' });
+    assert.equal(smear.event.faction, 'Biotechnica');
+    const dips = S.MarketStore.getControls().impacts.filter((i) => i.source === 'smear');
+    assert.equal(dips.length, 1, 'an unanswered smear dips the price');
+    assert.equal(dips[0].amount, E.BUSINESS_DEFAULTS.standing.hostile.smear);
+
+    const exposure = () => S.MarketStore.getBusinessesHidden().bus_play?.exposure ?? 0;
+    const before = exposure();
+    await close({ kind: 'raid', factionId: 'corp_bio', factionName: 'Biotechnica' });
+    assert.equal(exposure(), before + E.BUSINESS_DEFAULTS.standing.hostile.raidExposure, 'a raid not stopped');
+
+    const hidden = S.MarketStore.getBusinessesHidden();
+    await S.MarketStore.setBusinessesHidden({ ...hidden, bus_play: { ...hidden.bus_play, standing: {} } });
+    const force = { action: 'respond', event: 'shakedown', by: 'x', use: 'ability:Combat Awareness', band: 'solid', total: 20, dv: 15, approach: 'standard', luck: 0, bonus: 0 };
+    await close({ kind: 'shakedown', factionId: gang.id, factionName: gang.name }, [force]);
+    const standing = S.MarketStore.getBusinessesHidden().bus_play.standing[gang.id];
+    assert.equal(standing.value, E.BUSINESS_DEFAULTS.standing.hostile.force, 'force costs standing');
+
+    const allied = await close(null, [], { standings: { [gang.id]: 'allied' } });
+    const hostile = await close(null, [], { standings: { [gang.id]: 'hostile' } });
+    assert.ok(allied.costs.protection < hostile.costs.protection, `${allied.costs.protection} ${hostile.costs.protection}`);
+  } finally {
+    await S.BusinessRepository.save(saved);
+    await S.MarketStore.setBusinessesHidden(hiddenSaved);
+  }
+});

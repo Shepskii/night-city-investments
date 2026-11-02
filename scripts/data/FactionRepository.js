@@ -8,6 +8,7 @@
 import { normalizeFaction } from '../engine/index.js';
 import { MODULE_ID, SETTINGS } from '../utils/constants.js';
 import { starterFactions } from './starter-factions.js';
+import { CompanyRepository } from './CompanyRepository.js';
 
 const read = () => game.settings.get(MODULE_ID, SETTINGS.FACTION_DEFS) ?? {};
 
@@ -16,6 +17,12 @@ export const FactionRepository = {
   list() {
     const order = { corp: 0, gang: 1, other: 2 };
     return Object.values(read()).map(normalizeFaction).sort((a, b) => (order[a.kind] - order[b.kind]) || a.name.localeCompare(b.name));
+  },
+
+  /** The list, each corporation with its company's sector, for what standing does (F1b). */
+  withSectors() {
+    const companies = CompanyRepository.all();
+    return this.list().map((f) => ({ ...f, sector: companies.find((c) => c.ticker === f.ticker)?.sector ?? null }));
   },
 
   get(id) {

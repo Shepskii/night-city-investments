@@ -64,7 +64,8 @@
  */
 
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
-import { drawEvent, eventUses, settleEvent } from './businessEvents.js';
+import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from './businessEvents.js';
+import { aimCheck, giftFor } from './factions.js';
 import { normalizeName, gigTags } from './gigImpact.js';
 import {
   fixerOffer, takeFixerLoan, bankCheck, applyBankRoll, repayLoan, payLoans, investorOffer, inviteInvestor, acceptInvestment,
@@ -298,6 +299,11 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     const slots = p.stages[b.stage]?.slots ?? 1;
     if (b.period.slots.length >= slots) return fail('no-slot');
     if (b.period.slots.some((s) => s.action === request.action)) return fail('action-taken');
+    // An action aimed at a faction (F1b): some must be, and the gift has to be there.
+    const aim = p.standing.aims[request.action];
+    if (aim?.required && !request.factionId) return fail('no-faction');
+    if (request.factionId && !aim) return fail('bad-faction');
+    if (request.factionId && b.till < giftFor(b, p)) return fail('no-gift');
     const bonusAvailable = b.period.bonuses.some((x) => x.action === request.action && !x.used);
     return allowed(actionUses(request.action, arch, b.stage), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
@@ -523,6 +529,8 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       const spec = rollSpec(b, request, actor.id, { day, operatorRank: ctx.operatorRank, params: p, traits: ctx.traits });
       if (!spec.ok) return spec;
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
+      const aim = request.factionId ? aimCheck(b, request.action, request.factionId, ctx.factions ?? [], p) : null;
+      if (aim && !aim.ok) return aim;
       spendFor('roll');
       const r = check.result;
       if (r.bonus) {
@@ -532,8 +540,14 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (r.extra) spendDays(b, actor.id, 1);
       b.period.slots.push({
         action: request.action, by: rollerId(), use: useKey(request.use), band: r.band, total: r.total, dv: r.dv, approach: r.approach, luck: r.luck, bonus: r.bonus,
+        ...(aim ? { factionId: aim.faction.id, factionName: aim.faction.name } : {}),
       });
       out.events.push({ type: 'roll', action: request.action, band: r.band, exposure: r.exposure });
+      if (aim) {
+        b.till -= aim.gift;
+        addLedger(b, { day, kind: 'factionGift', amount: -aim.gift }, p);
+        out.events.push({ type: 'factionDeal', factionId: aim.faction.id, band: r.band });
+      }
       break;
     }
     case 'assist': {
@@ -1410,7 +1424,7 @@ export function applyBusinessGig(business, { key, outcome, reward, day }, p = BU
  * @param {{weekday?: number, growthRate?: number, actors?: object, params?: object}} [o]
  * @returns {{business: object, wealth: object, events: object[], changed: boolean}}
  */
-export function advanceBusiness(business, day, { weekday = 1, growthRate = 1, actors = {}, seed = 'nci', traits = {}, params: p = BUSINESS_DEFAULTS } = {}) {
+export function advanceBusiness(business, day, { weekday = 1, growthRate = 1, actors = {}, seed = 'nci', traits = {}, relations = null, params: p = BUSINESS_DEFAULTS } = {}) {
   const b = structuredClone(normalizeBusiness(business));
   const out = { wealth: {}, events: [] };
   if (b.status !== 'open' || !b.period) return { business: b, ...out, changed: false };
@@ -1432,13 +1446,13 @@ export function advanceBusiness(business, day, { weekday = 1, growthRate = 1, ac
 
   let closes = 0;
   while (b.status === 'open' && b.period.endDay <= day && closes < p.catchUpPeriods) {
-    closePeriod(b, { growthRate, weekday, seed, traits, params: p }, out);
+    closePeriod(b, { growthRate, weekday, seed, traits, relations, params: p }, out);
     closes++;
     changed = true;
   }
   // A longer jump than the catch-up allows: the weeks beyond it are skipped, not simulated.
   if (b.status === 'open' && b.period.endDay <= day) {
-    startPeriod(b, b.period.index + 1, day, weekday, seed, p, traits);
+    startPeriod(b, b.period.index + 1, day, weekday, seed, p, traits, relations);
     out.events.push({ type: 'periodsSkipped' });
   }
   return { business: b, ...out, changed };
@@ -1466,11 +1480,12 @@ function settleLeavers(b, day, actors, out) {
 const traffic = (rep) => 0.6 + (clamp(rep, 0, 100) / 100) * 0.8;
 
 /** Start an operating period, and draw its event. */
-function startPeriod(b, index, startDay, weekday, seed, p, traits = null) {
+function startPeriod(b, index, startDay, weekday, seed, p, traits = null, relations = null) {
   b.period = newPeriod(index, startDay, weekday);
   // The cash the week starts with, so its digest can account for every eddie in and out.
   b.period.opening = b.till;
-  const event = drawEvent(b, seed, p, traits);
+  // A hostile faction's act comes in place of what the week would have drawn (F1b).
+  const event = hostileAct(b, seed, p, relations) ?? drawEvent(b, seed, p, traits, relations);
   if (b.collectors) {
     // A missed payment to a fixer: the collectors come in place of whatever else the week held.
     b.period.event = { kind: 'collectors' };
@@ -1485,7 +1500,7 @@ function startPeriod(b, index, startDay, weekday, seed, p, traits = null) {
 }
 
 /** Close the current operating period: the week's takings and upkeep, the state, the digest. */
-function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, params: p }, out) {
+function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relations = null, params: p }, out) {
   const stage = p.stages[b.stage] ?? p.stages[0];
   const arch = archetypeOf(b);
   const fx = p.effects;
@@ -1536,12 +1551,15 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, params
   const boost = b.boost;
   b.boost = 0;
   const event = settleEvent(b, base, b.period.slots, p, { traits, seed, day: b.period.endDay });
+  out.events.push(...factionFallout(b, event, p));
   const takings = Math.max(0, base + (event?.change ?? 0));
   // A security upgrade cuts the protection money for good.
-  const fixed = (stage.rent + (stage.licence ?? 0)) * district.rent + stage.protection * protection * protectionFactor(b, p) * district.risk;
-  const upkeep = Math.round((arch.costs * b.state.capacity ** 0.85 * b.state.costFactor + fixed) * part);
+  // So do friendly gangs on the turf, and hostile ones raise it; corporations in its sector move the Cost base (F1b).
+  const fixed = (stage.rent + (stage.licence ?? 0)) * district.rent + stage.protection * protection * (relations?.protection ?? 1) * protectionFactor(b, p) * district.risk;
+  const costBase = b.state.costFactor * (relations?.cost ?? 1);
+  const upkeep = Math.round((arch.costs * b.state.capacity ** 0.85 * costBase + fixed) * part);
   // What the upkeep is made of, for the week's cashbook; protection money takes the rounding.
-  const running = Math.round(arch.costs * b.state.capacity ** 0.85 * b.state.costFactor * part);
+  const running = Math.round(arch.costs * b.state.capacity ** 0.85 * costBase * part);
   const rent = Math.round(stage.rent * district.rent * part);
   const licence = Math.round((stage.licence ?? 0) * district.rent * part);
   const costs = { running, rent, licence, protection: upkeep - running - rent - licence };
@@ -1596,7 +1614,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, params
     ...(loans.interest || loans.principal || loans.missed.length ? { interest: loans.interest, repaid: loans.principal, missed: loans.missed } : {}),
     ...(wages.wages || wages.owed || wages.paid ? { wages: wages.wages, paid: wages.paid, owed: wages.owed } : {}),
     worked: !!work,
-    ...(event ? { event: { kind: event.kind, outcome: event.outcome, band: event.band, change: event.change, ...(eventCost ? { cost: eventCost } : {}) } } : {}),
+    ...(event ? { event: { kind: event.kind, outcome: event.outcome, band: event.band, change: event.change, ...(b.period.event?.factionName ? { faction: b.period.event.factionName } : {}), ...(eventCost ? { cost: eventCost } : {}) } } : {}),
     ...(notes.length ? { staff: notes } : {}),
     ...(boost ? { boost } : {}),
     actions: b.period.slots.map((s) => ({ action: s.action, by: s.by, band: s.band, ...(s.staff ? { staff: true } : {}) })),

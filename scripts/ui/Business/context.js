@@ -9,7 +9,7 @@ import {
   daysLeft, activeProject, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
   projectOffer, PROJECT_KINDS, upgradesOf, protectionFactor, headcountOf,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
-  actionIdsFor, reportCheck, canRun, officersOf, infoCheck,
+  actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects,
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
@@ -209,6 +209,7 @@ export function businessContext(business, actor) {
     statusLabel: L(`NCI.Business.Status.${status}`),
     // Standing with factions (F1a): those it has dealt with, and the gangs on its turf; bands only.
     factions: factionsContext(business),
+    factionTerms: factionTerms(business),
     // A regulator's case (R1): what it is about, and an officer's answer. The Exposure behind it stays hidden.
     regCase: business.regCase ? {
       text: business.regCase.status === 'notice'
@@ -482,6 +483,14 @@ function weekContext(business, actor, canAct) {
   const free = period.slots.length < slots;
   // A company is run by its officers; any holder may still help.
   const runs = canAct && canRun(business, actor.id);
+  // The factions an action may be aimed at (F1b). One that must be aimed is not offered with nobody to aim it at.
+  const factions = FactionRepository.list();
+  const aimOf = (id) => {
+    const aim = BUSINESS_DEFAULTS.standing.aims[id];
+    if (!aim) return null;
+    const options = factions.filter((f) => aim.kinds.includes(f.kind)).map((f) => ({ value: f.id, label: f.name }));
+    return options.length ? { required: !!aim.required, options, gift: L('NCI.Business.AimGift', { gift: whole(giftFor(business)) }) } : null;
+  };
   return {
     from: dayText(period.startDay),
     to: dayText(period.endDay),
@@ -491,7 +500,7 @@ function weekContext(business, actor, canAct) {
     noSlots: period.slots.length >= slots,
     daysText: canAct ? L('NCI.Business.DaysLeft', { n: daysLeft(business, actor.id) }) : '',
     // A chartered company has the five company actions; a smaller business the shop actions.
-    actions: actionIdsFor(business.stage).map((id) => {
+    actions: actionIdsFor(business.stage).filter((id) => !BUSINESS_DEFAULTS.standing.aims[id]?.required || aimOf(id)).map((id) => {
       const slot = taken.get(id);
       const bonus = period.bonuses.some((b) => b.action === id && !b.used);
       return {
@@ -500,6 +509,8 @@ function weekContext(business, actor, canAct) {
         hint: L(`NCI.Business.Action.${id}.Hint`),
         taken: slot ? L('NCI.Business.TakenBy', { name: nameOf(business, slot.by), band: L(`NCI.Roll.Band.${slot.band}`) }) : '',
         bonus: bonus ? LT(business, 'NCI.Business.BonusWaiting') : '',
+        aimedAt: slot?.factionName ? L('NCI.Business.AimedAt', { name: slot.factionName }) : '',
+        aim: aimOf(id),
         canRoll: runs && free && !slot,
         canHelp: canAct && !helped && !slot,
       };
@@ -554,6 +565,8 @@ function eventContext(business, canAct, free) {
     name: L(`NCI.Event.${event.kind}.Name`),
     // A staff event names the employee it is about (E2).
     hint: L(`NCI.Event.${event.kind}.Hint`, { name: event.staffId ? staffOf(business, event.staffId)?.name ?? '' : '' }),
+    // A faction's event says whose it is; force beats a gang's shakedown, at a price (F1b).
+    from: event.factionName ? L(event.kind === 'shakedown' ? 'NCI.Event.FromGang' : 'NCI.Event.From', { faction: event.factionName }) : '',
     good: !!def.good,
     uses: L('NCI.Business.AnswerWith', { skills: uses.join(', ') }),
     answered: answer ? L('NCI.Business.TakenBy', { name: nameOf(business, answer.by), band: L(`NCI.Roll.Band.${answer.band}`) }) : '',
@@ -610,7 +623,7 @@ export function cashbookContext(business, index) {
   const line = (label, amount, note = '') => ({ label, note, amount: signed(amount), cls: amount > 0 ? 'nci-up' : amount < 0 ? 'nci-down' : '' });
   const change = d.event?.change ?? 0;
   const gross = d.gross ?? d.takings - change;
-  const event = change ? line(L(`NCI.Event.${d.event.kind}.Name`), change, L(`NCI.Cashbook.Outcome.${d.event.outcome}`)) : null;
+  const event = change ? line(L(`NCI.Event.${d.event.kind}.Name`), change, [d.event.faction, L(`NCI.Cashbook.Outcome.${d.event.outcome}`)].filter(Boolean).join(', ')) : null;
   // A windfall is income; what trouble cost is an expense.
   const income = [line(L('NCI.Cashbook.Takings'), gross, d.boost ? row.gig : ''), ...(change > 0 ? [event] : [])];
   const upkeep = d.costs
@@ -1261,6 +1274,16 @@ function factionsContext(business) {
     const band = business.standings?.[f.id] ?? 'neutral';
     return { name: f.name, band, label: L(`NCI.Faction.Band.${band}`), turf: turf.has(f.id) ? L('NCI.Faction.Turf') : '' };
   });
+}
+
+/** What standing does to the business's costs, in words (F1b); nothing while it does nothing. */
+function factionTerms(business) {
+  const fx = factionEffects(business, FactionRepository.withSectors());
+  const say = (key, factor) => {
+    const pct = Math.round((factor - 1) * 100);
+    return pct ? L(`NCI.Faction.Terms.${key}`, { change: `${pct > 0 ? '+' : ''}${pct}%` }) : '';
+  };
+  return [say('cost', fx.cost), say('protection', fx.protection)].filter(Boolean).join(' ');
 }
 
 /**

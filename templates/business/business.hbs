@@ -168,6 +168,7 @@
     <div class="nci-factions">
       {{#each factions}}<span class="nci-faction nci-faction-{{band}}"><strong>{{name}}</strong> {{label}}{{#if turf}} <span class="nci-muted">{{turf}}</span>{{/if}}</span>{{/each}}
     </div>
+    {{#if factionTerms}}<p class="nci-muted">{{factionTerms}}</p>{{/if}}
   </div>
   {{/if}}
   {{#with history}}
@@ -237,6 +238,7 @@
     <div class="nci-gig">
       <div class="nci-gigtop"><strong>{{name}}</strong>{{#if good}}<span class="nci-up">{{localize "NCI.Business.Opportunity"}}</span>{{else}}<span class="nci-down">{{localize "NCI.Business.Trouble"}}</span>{{/if}}</div>
       <div>{{hint}}</div>
+      {{#if from}}<div class="nci-muted">{{from}}</div>{{/if}}
       <div class="nci-muted">{{uses}} {{security}}</div>
       {{#if answered}}<div><strong>{{answered}}</strong></div>{{else}}<div class="nci-muted">{{ifNot}}</div>{{/if}}
       {{#if canAnswer}}<div class="nci-actions"><button type="button" data-action="respond"><i class="fas fa-dice-d10"></i> {{localize "NCI.Business.Answer"}}</button></div>{{/if}}
@@ -247,9 +249,10 @@
       <tbody>
         {{#each actions}}
         <tr>
-          <td><strong>{{name}}</strong><div class="nci-muted">{{hint}}</div></td>
-          <td>{{#if taken}}{{taken}}{{/if}}{{#if bonus}}<div class="nci-up">{{bonus}}</div>{{/if}}</td>
+          <td><strong>{{name}}</strong><div class="nci-muted">{{hint}}</div>{{#if canRoll}}{{#if aim}}<div class="nci-muted">{{aim.gift}}</div>{{/if}}{{/if}}</td>
+          <td>{{#if taken}}{{taken}}{{/if}}{{#if aimedAt}}<div class="nci-muted">{{aimedAt}}</div>{{/if}}{{#if bonus}}<div class="nci-up">{{bonus}}</div>{{/if}}</td>
           <td class="nci-rowbtns nci-endbtns">
+            {{#if canRoll}}{{#if aim}}<select name="aimFaction">{{#unless aim.required}}<option value="">{{localize "NCI.Business.AimNone"}}</option>{{/unless}}{{#each aim.options}}<option value="{{value}}">{{label}}</option>{{/each}}</select>{{/if}}{{/if}}
             {{#if canRoll}}<button type="button" data-action="actionRoll" data-id="{{id}}"><i class="fas fa-dice-d10"></i> {{localize "NCI.Business.TakeSlot"}}</button>{{/if}}
             {{#if canHelp}}<button type="button" data-action="helpRoll" data-id="{{id}}" title="{{@root.business.terms.HelpHint}}"><i class="fas fa-hands-helping"></i> {{localize "NCI.Business.Help"}}</button>{{/if}}
           </td>

@@ -227,6 +227,8 @@ Any character or syndicate can bid for a chartered player company, private or li
 
 Your business has its own standing with Night City's corporations and gangs, shown on the Overview tab as hostile, wary, neutral, friendly or allied. You'll see the gangs on your turf from the start, and other factions once you've dealt with them. Standing fades slowly if you don't keep it up.
 
+To raise your business's standing with a faction, use **Court a client** (a corporation) or **Pay respects** (a gang) as one of the week's actions. A company aims **Chase contracts** or **Investor relations** at a faction instead. Each costs a gift from the cash, whatever the roll. Good standing with corporations in your sector cuts running costs, and with gangs on your turf cuts protection money and shakedowns. Bad standing does the opposite, and a hostile faction may come after you. Beating a gang's shakedown by force works, but it won't help your standing with them.
+
 A job your GM tags as done for the business counts as a contract: its Reputation, its share price if it is listed, and its standing with the client and any target all move. Ordinary crew gigs are freelance: they can move the client's and target's share prices, but don't touch your business.
 
 ## Regulators

@@ -602,3 +602,62 @@ test('the Pending tab has a row for each decision waiting, and the tab buttons c
     await MarketStore.setHeat(heatBefore);
   }
 });
+
+test('aiming at a faction: the Work tab offers the pick and the gift, the action moves standing, and hostile acts show whose they are', async () => {
+  const { MarketStore } = await import('../scripts/data/MarketStore.js');
+  const { FactionRepository } = await import('../scripts/data/FactionRepository.js');
+  await FactionRepository.importStarter();
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const hiddenBefore = MarketStore.getBusinessesHidden();
+  try {
+    await S.BusinessRepository.save({ ...b, status: 'open', stage: 0, company: null, charter: null, listing: null, takeover: null, administration: null, regCase: null, officers: [], district: 'ocz', till: 5000, standings: {}, proposals: [], period: { ...b.period, slots: [], bonuses: [], helpers: [], event: null } });
+    const shop = await renderBusiness(windowFor(med, 'week'));
+    assertClean(shop, 'shop week');
+    assert.match(text(shop), /Court a client/);
+    assert.match(text(shop), /Pay respects/);
+    assert.match(text(shop), /100 eb gift/);
+    assert.match(shop, /name="aimFaction"[\s\S]*Maelstrom/);
+
+    dice = [10];
+    const current = S.BusinessRepository.all()[0];
+    const aimed = { type: 'action', businessId: current.id, action: 'respects', factionId: 'gang_maelstrom' };
+    const dialog = new Apps.Roll({ actorId: med.id, businessId: current.id, request: aimed, rollTitle: 'Pay respects' });
+    const roll = render('templates/dialogs/roll.hbs', await dialog._prepareContext());
+    assertClean(roll, 'aimed roll dialog');
+    assert.match(text(roll), /standing up/);
+    await S.BusinessClient.roll(med, current, { ...aimed, use: { kind: 'skill', skill: 'Persuasion', stat: 'cool' } }, { title: 'Pay respects' });
+    await S.BusinessService.processActor(med);
+    const after = S.BusinessRepository.all()[0];
+    assert.equal(after.period.slots.at(-1)?.factionId, 'gang_maelstrom', JSON.stringify(after.period.slots));
+    assert.equal(after.till, 4900, 'the gift');
+    assert.ok(MarketStore.getBusinessesHidden()[after.id].standing.gang_maelstrom.value > 0, 'standing rose');
+    assert.equal(after.standings.gang_maelstrom !== undefined, true, 'the band is on the record');
+    const done = await renderBusiness(windowFor(med, 'week'));
+    assertClean(done, 'aimed and taken');
+    assert.match(text(done), /Aimed at Maelstrom/);
+
+    // Good terms on the Overview tab, and the week's event saying whose it is.
+    await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], standings: { gang_maelstrom: 'allied' }, period: { ...S.BusinessRepository.all()[0].period, event: { kind: 'smear', factionId: 'corp_bio', factionName: 'Biotechnica' } } });
+    const over = await renderBusiness(windowFor(med, 'overview'));
+    assertClean(over, 'overview terms');
+    assert.match(text(over), /Protection money from gangs on your turf: -50%/);
+    const hit = await renderBusiness(windowFor(med, 'week'));
+    assertClean(hit, 'a hostile act');
+    assert.match(text(hit), /A smear campaign/);
+    assert.match(text(hit), /This is Biotechnica/);
+    await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], period: { ...S.BusinessRepository.all()[0].period, event: { kind: 'shakedown', factionId: 'gang_maelstrom', factionName: 'Maelstrom' } } });
+    assert.match(text(await renderBusiness(windowFor(med, 'week'))), /It\S+s Maelstrom\. Beating them with force/);
+
+    // A company aims its own actions, and has no shop actions to take.
+    await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], stage: 2, company: { ticker: 'BRC', sector: 'health', charteredDay: b.period.startDay }, officers: [med.id], period: { ...S.BusinessRepository.all()[0].period, slots: [], event: null } });
+    const company = await renderBusiness(windowFor(med, 'week'));
+    assertClean(company, 'company week');
+    assert.doesNotMatch(text(company), /Court a client/);
+    assert.match(company, /<option value="">No faction<\/option>/);
+    assert.match(text(company), /1,000 eb gift/);
+  } finally {
+    await S.BusinessRepository.save(saved);
+    await MarketStore.setBusinessesHidden(hiddenBefore);
+  }
+});

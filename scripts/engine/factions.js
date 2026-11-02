@@ -5,11 +5,12 @@
  *              to 100, belongs to each business, drifts back toward 0 a little each week, and moves at
  *              most so far in a week; repeated favours count for less. The number stays in the GM's
  *              hidden state: a business's record keeps only the band, and only for factions it has met.
- *              Pure.
+ *              Actions aimed at a faction, and what standing does to costs and trouble, are F1b. Pure.
  */
 
 import { BUSINESS_DEFAULTS, DISTRICTS } from './businessConfig.js';
 import { normalizeName, gigTags } from './gigImpact.js';
+import { fail } from './businessRecord.js';
 
 export const FACTION_KINDS = Object.freeze(['corp', 'gang', 'other']);
 
@@ -115,3 +116,54 @@ export function findTarget({ client, title, desc, notes }, factions, companies =
 
 /** How much of a client's move its target moves the other way, by the gig's outcome. */
 export const targetShare = (outcome, p = BUSINESS_DEFAULTS) => p.standing.target[outcome === 'failed' ? 'failed' : 'done'];
+
+/** The gift an aimed action costs a business at its stage (F1b). */
+export function giftFor(b, p = BUSINESS_DEFAULTS) {
+  const gifts = p.standing.gift;
+  return gifts[Math.min(b.stage ?? 0, gifts.length - 1)];
+}
+
+/** Whether this action may be aimed at this faction now, and the gift it costs. */
+export function aimCheck(b, action, factionId, factions, p = BUSINESS_DEFAULTS) {
+  const aim = p.standing.aims[action];
+  const faction = factions.find((f) => f.id === factionId);
+  if (!aim || !faction || !aim.kinds.includes(faction.kind)) return fail('bad-faction');
+  const gift = giftFor(b, p);
+  return b.till < gift ? fail('no-gift') : { ok: true, faction, gift };
+}
+
+/** A hostile faction's chance of acting this week, from its standing. */
+export function hostileChance(value, p = BUSINESS_DEFAULTS) {
+  const [low, high] = p.standing.hostile.chance;
+  const edge = Math.abs(p.standing.bands[0][0]);
+  return low + (high - low) * Math.max(0, Math.min(1, (Math.abs(Number(value) || 0) - edge) / (100 - edge)));
+}
+
+/**
+ * What a business's standing does to it. Costs come from the bands on its record, so a player's window can
+ * show them; the factions that may act against it come from the hidden numbers, which only the GM has.
+ * @param {object} b - the business
+ * @param {object[]} factions - the list, a corporation with its company's `sector`
+ * @param {object|null} values - the hidden standing, `{factionId: {value}}`
+ * @returns {{cost: number, protection: number, shakedown: number, gangs: object[], hostile: object[]}} multipliers,
+ *          the gangs on its turf, and the hostile factions, the worst first
+ */
+export function factionEffects(b, factions = [], values = null, p = BUSINESS_DEFAULTS) {
+  const sum = (list, table) => {
+    const total = list.reduce((a, f) => a + (table[b.standings?.[f.id] ?? 'neutral'] ?? 0), 0);
+    return Math.max(-table.cap, Math.min(table.cap, total));
+  };
+  const sector = b.company?.sector ?? p.charter.sectors[b.archetype];
+  const gangs = turfFactions(factions, b.district);
+  const protection = 1 + sum(gangs, p.standing.effects.protection);
+  return {
+    cost: 1 + sum(factions.filter((f) => f.kind === 'corp' && f.sector === sector), p.standing.effects.cost),
+    protection,
+    shakedown: protection,
+    gangs: gangs.map((f) => ({ id: f.id, name: f.name })),
+    hostile: values
+      ? factions.filter((f) => standingBand(values[f.id]?.value, p) === 'hostile')
+        .map((f) => ({ id: f.id, name: f.name, kind: f.kind, value: values[f.id].value })).sort((x, y) => x.value - y.value)
+      : [],
+  };
+}

@@ -319,7 +319,9 @@ export class BusinessApp extends BaseApplication {
 
   static _onActionRoll(event, target) {
     const action = target.dataset.id;
-    this._roll({ type: 'action', action }, `${this.business?.name ?? ''}: ${L(`NCI.Business.Action.${action}.Name`)}`);
+    // Aimed at a faction (F1b): the pick in the action's own row.
+    const factionId = target.closest('tr')?.querySelector('[name="aimFaction"]')?.value;
+    this._roll({ type: 'action', action, ...(factionId ? { factionId } : {}) }, `${this.business?.name ?? ''}: ${L(`NCI.Business.Action.${action}.Name`)}`);
   }
 
   static _onHelpRoll(event, target) {
