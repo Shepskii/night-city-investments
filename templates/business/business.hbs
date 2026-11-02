@@ -244,7 +244,8 @@
     {{#with backRoom}}
     <div class="nci-gig">
       <div class="nci-gigtop"><strong>{{localize "NCI.BackRoom.Title"}}: {{name}}</strong></div>
-      {{#if pending}}<div class="nci-warn">{{localize "NCI.BackRoom.Pending"}}</div>{{else}}
+      {{#if shut}}<div class="nci-warn">{{localize "NCI.BackRoom.Shut"}}</div>{{else}}{{#if pending}}<div class="nci-warn">{{localize "NCI.BackRoom.Pending"}}</div>{{else}}
+      {{#if informant}}<div class="nci-warn">{{informant}}</div>{{/if}}
       <div class="nci-gmstats"><span><span class="nci-muted">{{localize "NCI.BackRoom.Dirty"}}</span> <strong>{{dirty}} eb</strong></span><span><span class="nci-muted">{{localize "NCI.BackRoom.Exposure"}}</span> <strong>{{band}}</strong></span></div>
       {{#if last}}<div class="nci-muted">{{last}}</div>{{/if}}
       {{#if lying}}<div class="nci-muted">{{lying}}</div>{{/if}}
@@ -252,7 +253,7 @@
         {{#if canTake}}<input type="number" name="dirtyAmount" min="1" max="{{max}}" step="1" value="{{max}}" class="nci-days" title="{{takeHint}}"><button type="button" data-action="takeDirty" title="{{takeHint}}">{{localize "NCI.BackRoom.Take"}}</button>{{/if}}
         {{#if canLieLow}}<button type="button" data-action="lieLow">{{localize "NCI.BackRoom.LieLow"}}</button>{{/if}}
       </div>
-      {{/if}}
+      {{/if}}{{/if}}
     </div>
     {{/with}}
     {{#with event}}

@@ -62,7 +62,7 @@ export function projectOffer(b, kind, p = BUSINESS_DEFAULTS) {
   if (kind === 'refit' && b.state.costFactor <= p.costFloor + 0.005) return fail('at-floor');
   if (kind === 'security' && up.security >= p.projects.security.levels) return fail('top-level');
   if ((kind === 'storefront' || kind === 'staffRoom') && up[kind].includes(b.stage)) return fail('built-here');
-  if (kind === 'backRoom' && b.backRoom) return fail('has-back-room');
+  if (kind === 'backRoom' && b.backRoom && b.backRoom.status !== 'shut') return fail('has-back-room');
   if (kind === 'backRoom' && b.stage >= 2) return fail('not-at-company');
   if (b.till < cost) return { ok: false, reason: 'no-funds', cost, days };
   return { ok: true, cost, days, ...extra };

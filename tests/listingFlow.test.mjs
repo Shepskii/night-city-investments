@@ -957,3 +957,25 @@ test('a Lawman calls in a favour: heat down and penalties dropped; a miss still 
     await S.MarketStore.setHeat(heatSaved);
   }
 });
+
+test('a raid on a back room reaches the owners and their heat, and a tick passes the hidden Exposure on', async () => {
+  const { HeatService } = await import('../scripts/services/HeatService.js');
+  const saved = structuredClone(business());
+  const hiddenSaved = structuredClone(S.MarketStore.getBusinessesHidden());
+  env.store.set('heatEnabled', true);
+  try {
+    const day = S.BusinessService.day();
+    const before = HeatService.heatOf(alice.id);
+    await S.BusinessRepository.save({ ...business(), status: 'open', stage: 1, listing: null, company: null, officers: [], backRoom: { kind: 'ripping', status: 'open', dirty: 800 }, till: 500000, takeover: null, administration: null, regCase: null, period: { ...business().period, startDay: day - 7, endDay: day, slots: [], bonuses: [], helpers: [], event: { kind: 'bust' } } });
+    await S.BusinessService.onTick();
+    await settle();
+    assert.equal(business().backRoom.status, 'shut');
+    assert.equal(business().backRoom.dirty, 0);
+    assert.ok(HeatService.heatOf(alice.id) > before, 'heat for the partners');
+    assert.equal(business().status, 'open');
+  } finally {
+    env.store.set('heatEnabled', false);
+    await S.BusinessRepository.save(saved);
+    await S.MarketStore.setBusinessesHidden(hiddenSaved);
+  }
+});

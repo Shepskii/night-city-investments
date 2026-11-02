@@ -882,7 +882,8 @@ class BusinessServiceImpl {
         const marked = markElsewhere(business, BusinessRepository.all()) | this._markConcerns(business) | this._syncHolders(business);
         const team = refreshTeams(business, (id) => this.basesOf(id), day);
         if (team.notes.length) business.pendingNotes = [...(business.pendingNotes ?? []), ...team.notes];
-        const relations = factionEffects(business, factions, MarketStore.getBusinessesHidden()[business.id]?.standing ?? {});
+        const hiddenEntry = MarketStore.getBusinessesHidden()[business.id];
+        const relations = { ...factionEffects(business, factions, hiddenEntry?.standing ?? {}), exposure: hiddenEntry?.exposure ?? 0 };
         const out = advanceBusiness(business, day, { ...opts, traits: this.traitsOf(business.id), relations });
         if (!out.changed && !reread && !marked && !team.changed) continue;
         await this._commit({ ...out, ok: true });
@@ -1474,6 +1475,14 @@ class BusinessServiceImpl {
         const finder = game.actors.get(e.actorId);
         if (finder && isListed(target)) await StoryService.grantEvidence(finder, { ticker: target.company.ticker, name: target.name, note: L('NCI.Story.NoteDiligence', { name: target.name }), source: 'diligence' });
       }
+      // A raid on a back room (U1b): the owners hear, and it draws attention to each of them if it went badly.
+      if (e.type === 'bustWon') await this._mailHolders(b, L('NCI.BackRoom.RaidSubject', { name: b.name }), [L('NCI.BackRoom.RaidWon', { name: b.name })]);
+      if (e.type === 'bustLost') {
+        await this._mailHolders(b, L('NCI.BackRoom.RaidSubject', { name: b.name }), [L(e.shut ? 'NCI.BackRoom.RaidShut' : 'NCI.BackRoom.RaidLost', { name: b.name, seized: e.seized.toLocaleString(), fine: e.fine.toLocaleString() })]);
+        if (e.heat && HeatService.enabled()) {
+          for (const p of b.partners.filter((x) => !x.market && x.status === 'active' && game.actors.get(x.actorId))) await HeatService.setHeat(p.actorId, HeatService.heatOf(p.actorId) + e.heat);
+        }
+      }
       if (e.type === 'campaignLands') await this._landCampaign(b, e.campaign);
       if (e.type === 'campaignCaught') await this._campaignStanding(b, e.ticker, BUSINESS_DEFAULTS.campaign.caughtStanding);
       if (e.type === 'campaignLands' || e.type === 'campaignCaught') moved = true;
@@ -1917,7 +1926,7 @@ class BusinessServiceImpl {
 /** A big event as a hook for the GM to play out (X1). */
 export function sceneHook(b, event) {
   return L(`NCI.Scene.Hook.${event.kind}`, {
-    name: b.name, faction: event.factionName ?? '', place: b.location || b.name,
+    name: b.name, faction: event.factionName ?? '', place: b.location || b.name, room: b.backRoom ? L(`NCI.BackRoom.Kind.${b.backRoom.kind}`) : '',
     staff: (b.staff ?? []).find((s) => s.id === event.staffId)?.name ?? '',
   });
 }

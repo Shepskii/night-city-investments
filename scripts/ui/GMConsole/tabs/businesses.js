@@ -231,7 +231,7 @@ export function context() {
       } : null,
       canOpenCase: !b.regCase && b.stage === 2 && b.status === 'open',
       // A back room (U1a): the truth, and whether it waits for the GM.
-      backRoom: b.backRoom ? L(b.backRoom.status === 'pending' ? 'NCI.GMBusiness.RoomPending' : 'NCI.GMBusiness.RoomOpen', { kind: L(`NCI.BackRoom.Kind.${b.backRoom.kind}`), dirty: whole(b.backRoom.dirty ?? 0) }) : '',
+      backRoom: b.backRoom ? L({ pending: 'NCI.GMBusiness.RoomPending', shut: 'NCI.GMBusiness.RoomShut' }[b.backRoom.status] ?? 'NCI.GMBusiness.RoomOpen', { kind: L(`NCI.BackRoom.Kind.${b.backRoom.kind}`), dirty: whole(b.backRoom.dirty ?? 0) }) : '',
       roomPending: b.backRoom?.status === 'pending',
       // A big event the GM could play out, or is playing out (X1).
       bigEvent: sceneCandidate(b) ? L('NCI.GMBusiness.BigEvent', { event: L(`NCI.Event.${b.period.event.kind}.Name`), hook: sceneHook(b, b.period.event) }) : '',

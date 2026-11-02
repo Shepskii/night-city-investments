@@ -9,7 +9,10 @@
 
 import { BUSINESS_DEFAULTS, BACK_ROOMS } from './businessConfig.js';
 import { fail, addLedger, archetypeOf } from './businessRecord.js';
-import { approachOf } from './rolls.js';
+import { approachOf, bandPassed } from './rolls.js';
+import { createRng } from './rng.js';
+import { exposureBand } from './businessCompany.js';
+import { traitOf } from './businessStaff.js';
 
 export const ROOM_ACTIONS = Object.freeze(['roomWork', 'launder', 'payOff']);
 
@@ -39,13 +42,16 @@ export function roomCheck(b, action, p = BUSINESS_DEFAULTS) {
 }
 
 /** What the week's slots do in the back room, at the close. `takings` are the legitimate week's, which cap the laundering. */
-export function roomWeek(b, takings, part = 1, p = BUSINESS_DEFAULTS) {
+export function roomWeek(b, takings, part = 1, p = BUSINESS_DEFAULTS, traits = null) {
   const room = openRoom(b);
   if (!room) return null;
   const rules = p.backRoom;
   const slot = (action) => b.period.slots.find((s) => s.action === action);
   const day = b.period.endDay;
   const out = { earned: 0, laundered: 0, paid: 0, low: false, exposure: 0 };
+  // An informant reports in, whether the room is worked or not (U1b).
+  const moles = informants(b, traits);
+  out.exposure += moles.length * rules.informant.exposure;
 
   if (slot('lieLow')) {
     out.low = true;
@@ -62,6 +68,8 @@ export function roomWeek(b, takings, part = 1, p = BUSINESS_DEFAULTS) {
     out.paid = Math.min(room.dirty, payOffCost(b, p));
     room.dirty -= out.paid;
     out.exposure += rules.payOffExposure[payOff.band];
+    // Money well placed also says who has been talking.
+    if (moles.length && ['strong', 'exceptional'].includes(payOff.band)) out.informant = moles[0].name;
   }
   const launder = slot('launder');
   if (launder) {
@@ -74,6 +82,52 @@ export function roomWeek(b, takings, part = 1, p = BUSINESS_DEFAULTS) {
     out.exposure += Math.max(0, rules.launderExposure[launder.band] - clean);
   }
   return out;
+}
+
+/** The NPC staff who are informants. */
+export const informants = (b, traits) => (b.staff ?? []).filter((s) => s.status === 'active' && traitOf(traits, s) === 'informant');
+
+/** The chance of a raid on the back room this week: by Exposure, an informant, and each sullen employee. */
+export function raidChance(b, exposure, traits = null, p = BUSINESS_DEFAULTS) {
+  const r = p.backRoom.raid;
+  const sullen = (b.staff ?? []).filter((s) => s.status === 'active' && s.source !== 'pc' && s.loyalty != null && s.loyalty < r.sullenBelow).length;
+  return r.chance[exposureBand(exposure, p)] + (informants(b, traits).length ? r.informant : 0) + Math.min(r.sullenCap, sullen * r.sullen);
+}
+
+/** A raid on the back room this week, or none. It comes in place of what the week would have drawn. */
+export function roomBust(b, seed = 'nci', p = BUSINESS_DEFAULTS, relations = null, traits = null) {
+  if (!openRoom(b) || relations?.exposure == null) return null;
+  return createRng(seed, 'business-bust', b.id, b.period.index).chance(raidChance(b, relations.exposure, traits, p)) ? { kind: 'bust' } : null;
+}
+
+/** An employee with no trait may turn informant in a week with a back room running. */
+export function turnInformant(b, traits, seed = 'nci', p = BUSINESS_DEFAULTS) {
+  if (!openRoom(b)) return null;
+  const rng = createRng(seed, 'business-turned', b.id, b.period.index);
+  const candidate = (b.staff ?? []).find((s) => s.status === 'active' && s.source !== 'pc' && !traitOf(traits, s) && rng.chance(p.backRoom.informant.turn));
+  return candidate ? { [candidate.candidateId ?? candidate.id]: 'informant' } : null;
+}
+
+/**
+ * What a raid leaves behind, once it is settled. A win clears some Exposure. A failure seizes half the dirty cash
+ * and fines the business; left unanswered or fumbled, all of it, a bigger fine, heat for the partners, and the room
+ * shut until it is built again. High Exposure shuts it on a failure too. The legitimate business carries on.
+ * @returns {object[]} events for the GM's service
+ */
+export function bustFallout(b, event, outcome, day, p = BUSINESS_DEFAULTS) {
+  const room = b.backRoom;
+  if (event?.kind !== 'bust' || !room || !outcome) return [];
+  const r = p.backRoom.raid;
+  if (outcome === 'answered' || outcome === 'covered') return [{ type: 'bustWon', exposure: -r.winClear }];
+  const worst = outcome !== 'failed';
+  const seized = worst ? room.dirty : Math.floor(room.dirty * r.failShare);
+  const fine = worst ? r.fineLost : r.fineFail;
+  const shut = worst || room.band === 'high';
+  room.dirty -= seized;
+  b.till -= fine;
+  addLedger(b, { day, kind: 'raidFine', amount: -fine }, p);
+  if (shut) room.status = 'shut';
+  return [{ type: 'bustLost', seized, fine, shut, heat: worst ? r.heat : 0 }];
 }
 
 /** A partner takes dirty cash straight, as eddies. No cap, but it leaves a trail: Exposure for each `takeEvery` eb. */

@@ -169,7 +169,7 @@ export const actionIdsFor = (stage) => (stage >= 2 ? COMPANY_ACTION_IDS : ACTION
 export const actionFor = (stage, id) => (stage >= 2 ? COMPANY_ACTIONS[id] : ACTIONS[id]) ?? null;
 
 /** Employees' posts, in display order (DESIGN §32). */
-export const POST_IDS = Object.freeze(['floor', 'manager', 'security', 'bookkeeper', 'sales', 'publicist', 'compliance']);
+export const POST_IDS = Object.freeze(['floor', 'manager', 'security', 'bookkeeper', 'sales', 'publicist', 'compliance', 'hand']);
 
 /**
  * What each post needs: the first stage it exists at, the skills and abilities that count for it
@@ -183,6 +183,8 @@ export const POSTS = Object.freeze({
   sales: Object.freeze({ stage: 2, uses: [S.business, S.persuasion, S.trading] }),
   publicist: Object.freeze({ stage: 2, uses: [S.composition, S.wardrobe, S.persuasion, A.credibility, A.charismaticImpact] }),
   compliance: Object.freeze({ stage: 2, uses: [S.bureaucracy, S.localExpert] }),
+  /** Works a back room when no partner does (U1b): shown only while a business has one. */
+  hand: Object.freeze({ stage: 0, uses: [], trade: true }),
 });
 
 const byBand = (values) => Object.freeze(Object.fromEntries(['fumble', 'failure', 'narrow', 'solid', 'strong', 'exceptional'].map((b, i) => [b, values[i]])));
@@ -395,6 +397,19 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     payOffUses: Object.freeze([S.bribery]),
     takeEvery: 1000,
     takeExposure: 2,
+    /**
+     * Raids on it (U1b). The weekly `chance` by Exposure band, more with an informant on the staff and with
+     * each sullen employee (loyalty below `sullenBelow`, within `sullenCap`). A win clears `winClear` Exposure.
+     * Failing seizes `failShare` of the dirty cash, with a fine of `fineFail`; left unanswered or fumbled, all of
+     * it, `fineLost`, `heat` for each partner, and the room shut; high Exposure shuts it on a failure too.
+     */
+    raid: Object.freeze({
+      chance: Object.freeze({ clean: 0, low: 0.03, moderate: 0.1, high: 0.25 }),
+      informant: 0.05, sullen: 0.02, sullenBelow: 30, sullenCap: 0.06,
+      winClear: 5, failShare: 0.5, fineFail: 500, fineLost: 1000, heat: 15,
+    }),
+    /** An informant (U1b): how often an applicant is one, how often an employee turns in a week, and the Exposure each adds. */
+    informant: Object.freeze({ applicant: 0.1, turn: 0.02, exposure: 2 }),
   }),
   /** A big event played out at the table (X1): what winning it does for Reputation. */
   scene: Object.freeze({ wonReputation: 2 }),
@@ -767,6 +782,8 @@ export const EVENTS = Object.freeze({
   sabotage: Object.freeze({ weight: 0, security: true, uses: [S.basicTech, S.tactics, A.combatAwareness, A.maker], hit: Object.freeze({ capacity: -0.05 }) }),
   smear: Object.freeze({ weight: 0, uses: [S.persuasion, S.composition, A.credibility, A.charismaticImpact], hit: Object.freeze({ reputation: -3 }) }),
   raid: Object.freeze({ weight: 0, uses: [S.bureaucracy, S.persuasion, S.tactics, A.backup], hit: Object.freeze({ compliance: -8 }) }),
+  /** Never drawn at random: a raid on a back room, by its Exposure (U1b). */
+  bust: Object.freeze({ weight: 0, uses: [S.bureaucracy, S.persuasion, S.tactics, S.bribery, A.backup], hit: Object.freeze({ compliance: -8, reputation: -3 }) }),
   /** Never drawn: it comes the week after a missed fixer-loan payment. */
   collectors: Object.freeze({ weight: 0, security: true, uses: [S.persuasion, S.streetwise, S.trading, A.combatAwareness, A.operator], hit: Object.freeze({ reputation: -3 }) }),
   /** Never drawn: it may come the week after a sullen employee is fired. */

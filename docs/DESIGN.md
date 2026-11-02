@@ -1838,6 +1838,12 @@ Four directions for player businesses once employees (E3), going public (B5) and
 
 Tested in the test world (2026-11-02): the GM's approval, working the room on the Work tab, its dirty cash and Exposure at the close, a failed pay-off and a solid launder together, taking cash straight, and lying low. Found while testing: the take button could not read its amount, and the work could still be rolled while lying low. Opening one through a real vote and the 30% cap are tested in the engine tests only.
 
+**U1b as built** (`businessFronts.js` `raidChance`, `roomBust`, `bustFallout`, `informants`, `turnInformant`; the `bust` event; the `hand` post; the user's choices, 2026-11-02).
+- **Raids.** With a room open, the week's chance of a raid is 0, 3, 10 or 25% by Exposure band, +5% with an informant on the staff, and +2% for each employee with loyalty below 30, within 6%. It comes in place of what the week would have drawn, is answered with Bureaucracy, Persuasion, Tactics, Bribery or Backup (once a month), and is a big event the GM can run as a scene.
+- **What it does.** A win clears 5 Exposure. A failure seizes half the dirty cash and fines 500 eb, with the usual share of takings and -8 Compliance, -3 Reputation at half strength. Left unanswered or fumbled, all the dirty cash, 1,000 eb, the full hits, 15 heat for each partner, and the room shut until it is built again as a project; high Exposure shuts it on a failure too. The shop carries on. The owners get a mail.
+- **The back-room hand.** A new post, offered only while a room is open, using the trade's skills. They work the room when no partner did, unless the business is lying low.
+- **Informants.** A hidden trait: an applicant to a business with a room is one 10% of the time, and an employee with no trait may turn, 2% a week. Each adds 2 Exposure a week, and firing one adds 5, as a corp plant. A passed internal audit, or a strong or better pay-off, names them; vetting shows them, as other traits. The GM sees them on the staff table.
+
 **What each front hides** (the archetype decides the operation, its skills, and the trouble it draws):
 
 | Front | Back room | Its skills | Draws |

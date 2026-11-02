@@ -225,7 +225,8 @@ export function applyRecruit(b, { result, day, post, key, seed = 'nci', by }, p 
   b.candidates = [...b.candidates, ...applicants];
   const traits = {};
   for (const a of applicants) {
-    const trait = drawTrait(rng, result.band, b.stage, p);
+    // Someone may answer the advert to get a look at the back room (U1b).
+    const trait = b.backRoom?.status === 'open' && rng.chance(p.backRoom.informant.applicant) ? 'informant' : drawTrait(rng, result.band, b.stage, p);
     if (trait) traits[a.id] = trait;
   }
   return { applicants, traits };
@@ -353,7 +354,7 @@ export function enactFire(b, staffId, day, p = BUSINESS_DEFAULTS, { traits = nul
   addLedger(b, { day, kind: 'fired', amount: -paid, staffName: staff.name }, p);
   if (staff.status === 'active' && hasLoyalty(staff) && staff.loyalty < p.staff.loyalty.quitBelow
     && createRng(seed, 'grudge', b.id, staff.id, day).chance(p.staff.events.grudge)) b.grudge = true;
-  const exposure = traitOf(traits, staff) === 'corpPlant' ? p.staff.traits.plantFired : 0;
+  const exposure = ['corpPlant', 'informant'].includes(traitOf(traits, staff)) ? p.staff.traits.plantFired : 0;
   return { ok: true, paid, actorId: staff.source === 'pc' ? staff.actorId : null, exposure };
 }
 
@@ -449,6 +450,11 @@ export function staffShifts(b, seed = 'nci', p = BUSINESS_DEFAULTS, { idle = nul
   if (manager && !worked) {
     const action = b.stage >= 2 ? 'contracts' : 'work';
     slots.push({ action, by: manager.id, staff: true, approach: 'standard', bonus: 0, ...autoRoll(b, manager, workBase(manager, 'manager', arch, traits, p), dv, seed, action) });
+  }
+  // A back-room hand works it when no partner did, unless the business is lying low (U1b).
+  const hand = staff.find((s) => s.post === 'hand');
+  if (hand && b.backRoom?.status === 'open' && !slots.some((s) => s.action === 'roomWork' || s.action === 'lieLow')) {
+    slots.push({ action: 'roomWork', by: hand.id, staff: true, approach: 'standard', bonus: 0, ...autoRoll(b, hand, workBase(hand, 'hand', arch, traits, p), dv, seed, 'roomWork') });
   }
   const event = b.period.event;
   const def = event ? EVENTS[event.kind] : null;

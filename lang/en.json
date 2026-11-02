@@ -2248,7 +2248,14 @@
       "Lying": "Lying low this week: no work behind the shop, and Exposure falls.",
       "Last": "Last week: {earned} eb earned, {laundered} eb laundered, {paid} eb in pay-offs.",
       "LastLow": "Last week you lay low. {laundered} eb laundered, {paid} eb in pay-offs.",
-      "PayOffCost": "Costs {cost} eb of dirty cash."
+      "PayOffCost": "Costs {cost} eb of dirty cash.",
+      "Shut": "Shut by a raid. It can be built again as a project.",
+      "InformantFound": "Your money found out who has been talking: {name}.",
+      "AuditInformant": "Last internal audit ({date}): someone on the staff has been talking: {name}.",
+      "RaidSubject": "{name}: a raid",
+      "RaidWon": "The raid on {name} found nothing it could use. Some of the heat is off.",
+      "RaidLost": "The raid on {name} found the back room's money: {seized} eb seized and a {fine} eb fine. The room is still running.",
+      "RaidShut": "The raid on {name} shut the back room: {seized} eb seized and a {fine} eb fine. The shop carries on."
     },
     "Scene": {
       "HookTitle": "A scene for {name}",
@@ -2259,6 +2266,7 @@
       "Hook": {
         "sabotage": "{faction} wants {name} out of action. Someone is in {place} tonight, after hours, with tools and bad intentions. Catch them, follow them, or cut a deal.",
         "smear": "{faction} is paying for dirt on {name}. A journalist with a story and a deadline turns up at {place} asking for a comment, and someone has fed them. Who, and what do they have?",
+        "bust": "A raid hits {place}, looking for the {room} behind {name}. Someone has been talking. Hide it, bribe it, fight it or run.",
         "raid": "Inspectors are on their way to {place}, tipped off by {faction}, and they know where to look. The crew has an hour to clean up, bluff it out or lean on someone.",
         "poaching": "{faction} wants {staff} away from {name}, and has made an offer with a threat behind it. Meet {staff}, meet their handler, or make a better case.",
         "shakedown": "{faction} has had enough of {name}. A crew arrives at {place}, armed and in no mood to talk, for more than the usual cut.",
@@ -2367,6 +2375,7 @@
       "SceneRoll": "Back to a roll",
       "RoomPending": "A back room is ready to open: {kind}. Let it open or turn it down; what it cost stays spent.",
       "RoomOpen": "Back room: {kind}, {dirty} eb of dirty cash.",
+      "RoomShut": "Back room: {kind}, shut by a raid.",
       "RoomApprove": "Let the back room open",
       "RoomReject": "Turn it down",
       "CampaignApprove": "Let the campaign run",
@@ -2429,6 +2438,7 @@
       "From": "This is {faction}'s doing.",
       "FromGang": "It's {faction}. Beating them with force (Combat Awareness, Backup or security staff) works, but they won't forget it.",
       "sabotage": { "Name": "Sabotage", "Hint": "Someone has been at the equipment overnight, and it wasn't an accident." },
+      "bust": { "Name": "A raid on the back room", "Hint": "They've come for what's behind the shop, and they aren't leaving without a look." },
       "smear": { "Name": "A smear campaign", "Hint": "Ugly stories about the business are doing the rounds, and someone is paying for them." },
       "raid": { "Name": "A tipped-off raid", "Hint": "Inspectors are on the way, and they seem to know exactly where to look." },
       "shakedown": { "Name": "A shakedown", "Hint": "A gang wants protection money on top of what you already pay." },
@@ -2810,6 +2820,7 @@
         "medical": "Medical bills",
         "factionGift": "A gift to a faction",
         "shipmentLost": "A shipment lost on the road",
+        "raidFine": "A fine from a raid",
         "laundered": "Laundered through the takings",
         "dirtyTaken": "{name} took some of the dirty cash",
         "campaign": "A campaign against a company",
@@ -3324,7 +3335,8 @@
         "bookkeeper": "Bookkeeper",
         "sales": "Sales",
         "publicist": "Publicist",
-        "compliance": "Compliance"
+        "compliance": "Compliance",
+        "hand": "Back-room hand"
       },
       "PostHint": {
         "floor": "The trade's own skills (role abilities that fit it count higher): lifts the takings, more with a higher base. No more on the floor than the Capacity allows.",
@@ -3333,7 +3345,8 @@
         "bookkeeper": "Accounting, or Business a level lower: trims the Cost base each week, and gives a company's monthly report its +1. From registration.",
         "sales": "Business, Persuasion or Trading: lifts the takings by half what a floor hand does, and keeps Reputation nearer 55. Companies only.",
         "publicist": "Composition, Wardrobe & Style or Persuasion (Credibility and Charismatic Impact count higher): Reputation up each week. Companies only.",
-        "compliance": "Bureaucracy or Local Expert: Compliance up each week, and answers an inspection no partner answers. Companies only."
+        "compliance": "Bureaucracy or Local Expert: Compliance up each week, and answers an inspection no partner answers. Companies only.",
+        "hand": "The trade's skills: works the back room when no partner does. Knows what goes on there, so loyalty matters."
       },
       "Level": {
         "green": "Green",
@@ -3402,6 +3415,7 @@
         "lightFingers": "Light fingers",
         "looseLips": "Loose lips",
         "corpPlant": "Corp plant",
+        "informant": "Informant",
         "moonlighter": "Moonlighter",
         "dedicated": "Dedicated",
         "connected": "Connected"

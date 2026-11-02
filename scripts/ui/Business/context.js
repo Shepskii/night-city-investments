@@ -542,6 +542,8 @@ function backRoomContext(business, runs, canAct, free) {
   return {
     name: L(`NCI.BackRoom.Kind.${room.kind}`),
     pending: room.status === 'pending',
+    shut: room.status === 'shut',
+    informant: last?.informant ? L('NCI.BackRoom.InformantFound', { name: last.informant }) : '',
     dirty: whole(room.dirty ?? 0),
     max: room.dirty ?? 0,
     band: room.band ? L(`NCI.Company.Exposure.${room.band}`) : L('NCI.Company.Exposure.clean'),
@@ -588,7 +590,7 @@ function infoContext(business, runs) {
   const audit = business.lastAudit;
   const cost = BUSINESS_DEFAULTS.info;
   return {
-    audit: audit
+    audit: audit?.informant ? L('NCI.BackRoom.AuditInformant', { date: dayText(audit.day), name: audit.informant }) : audit
       ? (audit.exposure
         // A strong audit says what it found as well as what it left, after clearing some of it up.
         ? L(audit.found ? 'NCI.Company.AuditCleared' : 'NCI.Company.AuditResult', {
@@ -982,7 +984,8 @@ function staffContext(business, actor, canAct) {
   const pending = (kind) => business.proposals.some((x) => x.kind === kind);
   const max = headcountOf(business);
   const staff = business.staff ?? [];
-  const posts = POST_IDS.filter((id) => POSTS[id].stage <= business.stage);
+  // A back-room hand only while there is a back room (U1b).
+  const posts = POST_IDS.filter((id) => POSTS[id].stage <= business.stage && (id !== 'hand' || openRoom(business)));
   const open = posts.filter((id) => postOpen(business, id).ok);
   const canHire = canAct && !pending('hire');
   return {
@@ -1094,7 +1097,7 @@ export function employeeContext(business, account, staffId) {
   const { skill, base } = skillOf(s, s.post, arch);
   const bonus = bonusCheck(business, s.id, 1);
   const given = (business.period.staffBonus ?? {})[s.id];
-  const moves = POST_IDS.filter((id) => id !== s.post && POSTS[id].stage <= business.stage && postOpen(business, id, undefined, s.id).ok);
+  const moves = POST_IDS.filter((id) => id !== s.post && (id !== 'hand' || openRoom(business)) && POSTS[id].stage <= business.stage && postOpen(business, id, undefined, s.id).ok);
   const severance = s.caught ? 0 : wageOf(business, s);
   return {
     business: business.name,

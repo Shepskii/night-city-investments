@@ -68,7 +68,7 @@ import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from '.
 import { aimCheck, giftFor } from './factions.js';
 import { campaignCheck, runCampaign } from './businessCampaign.js';
 import { supplyCut, runSupply, runVenue, backupWait } from './businessRoles.js';
-import { ROOM_ACTIONS, roomCheck, roomKinds, roomWeek, takeDirty, openRoom } from './businessFronts.js';
+import { ROOM_ACTIONS, roomCheck, roomKinds, roomWeek, takeDirty, openRoom, roomBust, bustFallout, turnInformant, informants } from './businessFronts.js';
 import { normalizeName, gigTags } from './gigImpact.js';
 import {
   fixerOffer, takeFixerLoan, bankCheck, applyBankRoll, repayLoan, payLoans, investorOffer, inviteInvestor, acceptInvestment,
@@ -295,7 +295,7 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     // A staff event's own employee (the one off sick, caught stealing, being poached...) cannot answer it.
     if (use?.kind === 'staff' && event.staffId && use.staffId === event.staffId) return fail('staff-involved');
     // A Lawman's Backup answers a raid once a month (X1).
-    const uses = eventUses(b, event.kind).filter((u) => !(event.kind === 'raid' && u.ability === 'Backup' && backupWait(b, day, p) > 0));
+    const uses = eventUses(b, event.kind).filter((u) => !(['raid', 'bust'].includes(event.kind) && u.ability === 'Backup' && backupWait(b, day, p) > 0));
     return allowed(uses, use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
 
@@ -733,6 +733,9 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (r.extra) spendDays(b, actor.id, 1);
       if (request.type === 'auditRoll') {
         const done = applyInternalAudit(b, { result: r, day, exposure: ctx.exposure ?? 0, by: actor.id }, p);
+        // A passed audit turns up who has been talking (U1b).
+        const mole = r.success ? informants(b, ctx.traits)[0] : null;
+        if (mole) b.lastAudit.informant = mole.name;
         out.events.push({ type: 'roll', action: 'audit', band: r.band, exposure: (r.exposure ?? 0) + done.exposure });
       } else {
         applyDiligence(b, { result: r, day, targetId: request.targetId, target: ctx.targets?.[request.targetId] ?? null, by: actor.id }, p);
@@ -969,7 +972,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
         action: 'respond', event: b.period.event.kind, by: rollerId(), use: useKey(request.use), band: r.band, total: r.total, dv: r.dv, approach: r.approach, luck: r.luck, bonus: 0,
       });
       out.events.push({ type: 'roll', action: 'respond', band: r.band, exposure: r.exposure });
-      if (b.period.event.kind === 'raid' && request.use?.ability === 'Backup') b.lastBackupDay = day;
+      if (['raid', 'bust'].includes(b.period.event.kind) && request.use?.ability === 'Backup') b.lastBackupDay = day;
       break;
     }
     case 'loanRoll':
@@ -1530,7 +1533,8 @@ function startPeriod(b, index, startDay, weekday, seed, p, traits = null, relati
   // The cash the week starts with, so its digest can account for every eddie in and out.
   b.period.opening = b.till;
   // A hostile faction's act comes in place of what the week would have drawn (F1b).
-  const event = hostileAct(b, seed, p, relations) ?? drawEvent(b, seed, p, traits, relations);
+  // So does a raid on a back room (U1b).
+  const event = roomBust(b, seed, p, relations, traits) ?? hostileAct(b, seed, p, relations) ?? drawEvent(b, seed, p, traits, relations);
   if (b.collectors) {
     // A missed payment to a fixer: the collectors come in place of whatever else the week held.
     b.period.event = { kind: 'collectors' };
@@ -1597,10 +1601,13 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   b.boost = 0;
   const event = settleEvent(b, base, b.period.slots, p, { traits, seed, day: b.period.endDay });
   out.events.push(...factionFallout(b, event, p));
+  out.events.push(...bustFallout(b, b.period.event, event?.outcome, b.period.endDay, p));
   const takings = Math.max(0, base + (event?.change ?? 0));
   // What went on behind the shop this week (U1a).
-  const room = roomWeek(b, takings, part, p);
+  const room = roomWeek(b, takings, part, p, traits);
   if (room?.exposure) out.events.push({ type: 'backRoomWeek', exposure: room.exposure });
+  const turned = turnInformant(b, traits, seed, p);
+  if (turned) out.traits = { ...out.traits, ...turned };
   // A security upgrade cuts the protection money for good.
   // So do friendly gangs on the turf, and hostile ones raise it; corporations in its sector move the Cost base (F1b).
   const fixed = (stage.rent + (stage.licence ?? 0)) * district.rent + stage.protection * protection * (relations?.protection ?? 1) * protectionFactor(b, p) * district.risk;
@@ -1663,7 +1670,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
     ...(loans.interest || loans.principal || loans.missed.length ? { interest: loans.interest, repaid: loans.principal, missed: loans.missed } : {}),
     ...(wages.wages || wages.owed || wages.paid ? { wages: wages.wages, paid: wages.paid, owed: wages.owed } : {}),
     worked: !!work,
-    ...(room ? { room: { earned: room.earned, laundered: room.laundered, paid: room.paid, low: room.low } } : {}),
+    ...(room ? { room: { earned: room.earned, laundered: room.laundered, paid: room.paid, low: room.low, ...(room.informant ? { informant: room.informant } : {}) } } : {}),
     ...(event ? { event: { kind: event.kind, outcome: event.outcome, band: event.band, change: event.change, ...(b.period.event?.factionName ? { faction: b.period.event.factionName } : {}), ...(eventCost ? { cost: eventCost } : {}) } } : {}),
     ...(notes.length ? { staff: notes } : {}),
     ...(boost ? { boost } : {}),

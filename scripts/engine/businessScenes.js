@@ -10,8 +10,9 @@
 import { BUSINESS_DEFAULTS, EVENTS } from './businessConfig.js';
 import { fail, addLedger, lastDigest, clamp } from './businessRecord.js';
 import { applyHit, factionFallout } from './businessEvents.js';
+import { bustFallout } from './businessFronts.js';
 
-const BIG = Object.freeze(['sabotage', 'raid', 'smear', 'collectors', 'grudge']);
+const BIG = Object.freeze(['sabotage', 'raid', 'smear', 'collectors', 'grudge', 'bust']);
 
 /** Whether this event is big enough to play out: a hostile faction's move, a heavy shakedown, or a debt come due. */
 export function isBigEvent(event) {
@@ -56,7 +57,7 @@ export function settleScene(b, won, day, p = BUSINESS_DEFAULTS) {
   if (won) {
     b.state.reputation = clamp(b.state.reputation + p.scene.wonReputation, 0, 100);
     addLedger(b, { day, kind: 'sceneWon', amount: 0 }, p);
-    return { ok: true, events: [] };
+    return { ok: true, events: bustFallout(b, event, 'answered', day, p) };
   }
   const loss = Math.round((lastDigest(b)?.takings ?? 0) * p.events.loss.unanswered);
   b.till -= loss;
@@ -70,5 +71,5 @@ export function settleScene(b, won, day, p = BUSINESS_DEFAULTS) {
     }
   }
   // Exposure from a raid, a smear's dip in the price: as the event would have left behind.
-  return { ok: true, events: factionFallout({ ...b, period: { ...b.period, event } }, { outcome: 'unanswered' }, p) };
+  return { ok: true, events: [...factionFallout({ ...b, period: { ...b.period, event } }, { outcome: 'unanswered' }, p), ...bustFallout(b, event, 'unanswered', day, p)] };
 }

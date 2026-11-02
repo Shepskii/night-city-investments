@@ -830,3 +830,31 @@ test('a back room: pending for the GM, then on the Work tab with its dirty cash,
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('a raid and a shut back room read as words, and the hand\'s post is offered only with a room', async () => {
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const { sceneHook } = await import('../scripts/services/BusinessService.js');
+  try {
+    const plain = { ...b, status: 'open', stage: 0, company: null, officers: [], listing: null, charter: null, takeover: null, administration: null, regCase: null, campaign: null, scene: null, proposals: [] };
+    await S.BusinessRepository.save({ ...plain, backRoom: { kind: 'ripping', status: 'open', dirty: 100, band: 'moderate' }, period: { ...b.period, slots: [], event: { kind: 'bust' } } });
+    const raided = await renderBusiness(windowFor(med, 'week'));
+    assertClean(raided, 'a raid on the Work tab');
+    assert.match(text(raided), /A raid on the back room/);
+    assert.match(text(raided), /Your GM may choose to play this one out/);
+    assert.match(await renderBusiness(windowFor(med, 'staff')), /Back-room hand/);
+    assert.doesNotMatch(sceneHook({ name: 'Back Room', location: 'upstairs', backRoom: { kind: 'ripping' } }, { kind: 'bust' }), /NCI\.|\{\w+\}/);
+    assert.match(text(await renderConsole('businesses')), /A raid on the back room/);
+
+    await S.BusinessRepository.save({ ...plain, backRoom: { kind: 'ripping', status: 'shut', dirty: 0 }, period: { ...b.period, slots: [], event: null } });
+    const shut = await renderBusiness(windowFor(med, 'week'));
+    assertClean(shut, 'a shut back room');
+    assert.match(text(shut), /Shut by a raid/);
+    assert.doesNotMatch(shut, /data-action="takeDirty"/);
+    assert.doesNotMatch(text(shut), /Work the back room/);
+    assert.doesNotMatch(await renderBusiness(windowFor(med, 'staff')), /Back-room hand/);
+    assertClean(await renderConsole('businesses'), 'a shut back room for the GM');
+  } finally {
+    await S.BusinessRepository.save(saved);
+  }
+});

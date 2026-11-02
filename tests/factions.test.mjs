@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   BUSINESS_DEFAULTS, DISTRICTS, normalizeFaction, standingBand, matchFaction, turfFactions, gigStanding, moveStanding, driftStanding, standingBands, matchBusiness,
   findTarget, targetShare, gigTags, resolveClient, applyBusinessRequest, advanceBusiness, rollSpec, normalizeBusiness, drawEvent, hostileAct, hostileChance, factionEffects, factionFallout,
-  giftFor, campaignKind, believability, storyPercent, rollStory, storyCheck, rumourLevel, freshRumours, STORY_RULES, isBigEvent, sceneCandidate, startScene, sceneToRoll, settleScene, supplyCut, runVenue, backupWait, quashEffect, BACK_ROOMS, roomKinds, roomWeek, payOffCost, bookValue, ARCHETYPES, SKILLS, ABILITIES,
+  giftFor, campaignKind, believability, storyPercent, rollStory, storyCheck, rumourLevel, freshRumours, STORY_RULES, isBigEvent, sceneCandidate, startScene, sceneToRoll, settleScene, supplyCut, runVenue, backupWait, quashEffect, BACK_ROOMS, roomKinds, roomWeek, payOffCost, bookValue, raidChance, roomBust, bustFallout, informants, turnInformant, ARCHETYPES, SKILLS, ABILITIES,
 } from '../scripts/engine/index.js';
 import { resolveRoll } from '../scripts/engine/rolls.js';
 import { projectOffer, startProject } from '../scripts/engine/businessGrowth.js';
@@ -592,4 +592,100 @@ test('dirty cash is off the books, and a week closes with it in the digest', () 
   assert.ok(digest.room.earned > 0);
   assert.equal(digest.takings, advanceBusiness(withRoom({ dirty: 0, status: 'pending' }), b.period.endDay, { weekday: 1, seed: 'test' }).business.digests.at(-1).takings, 'the shop\'s takings are its own');
   assert.ok(closed.events.some((e) => e.type === 'backRoomWeek' && e.exposure > 0));
+});
+
+// ── U1b: raids and informants ───────────────────────────────────────
+
+const staffer = (id, extra = {}) => ({ id, name: id, status: 'active', source: 'npc', post: 'floor', wage: 100, loyalty: 50, ...extra });
+
+test('the odds of a raid: by Exposure, an informant and sullen staff; none without an open room or a known Exposure', () => {
+  const b = withRoom();
+  assert.deepEqual([0, 5, 15, 30].map((e) => raidChance(b, e)), [0, 0.03, 0.1, 0.25]);
+  const staffed = { ...b, staff: [staffer('a'), staffer('b', { loyalty: 10 }), staffer('c', { loyalty: 20 }), staffer('d', { loyalty: 25 }), staffer('e', { loyalty: 5 }), staffer('f', { loyalty: 10, source: 'pc' })] };
+  assert.equal(raidChance(staffed, 0), 0.06, 'each sullen one, within the cap, player characters aside');
+  assert.equal(Math.round(raidChance({ ...b, staff: [staffer('a')] }, 5, { a: 'informant' }) * 100), 8);
+  assert.equal(roomBust(shop(), 'test', BUSINESS_DEFAULTS, { exposure: 30 }), null, 'no room');
+  assert.equal(roomBust(b, 'test', BUSINESS_DEFAULTS, null), null, 'no hidden state known');
+  const week = (i) => ({ ...b, period: { ...b.period, index: i } });
+  const raids = Array.from({ length: 2000 }, (_, i) => roomBust(week(i), 'test', BUSINESS_DEFAULTS, { exposure: 30 })).filter(Boolean);
+  assert.ok(raids.length > 420 && raids.length < 580, `about 25%: ${raids.length}`);
+  assert.equal(raids[0].kind, 'bust');
+  assert.equal(Array.from({ length: 500 }, (_, i) => roomBust(week(i), 'test', BUSINESS_DEFAULTS, { exposure: 0 })).filter(Boolean).length, 0, 'clean means none');
+});
+
+test('what a raid leaves behind: a win, a failure, the worst, and high Exposure', () => {
+  const r = BUSINESS_DEFAULTS.backRoom.raid;
+  const run = (outcome, room = {}) => {
+    const b = withRoom({ dirty: 1000, ...room });
+    const till = b.till;
+    const events = bustFallout(b, { kind: 'bust' }, outcome, DAY);
+    return { events, dirty: b.backRoom.dirty, status: b.backRoom.status, fine: till - b.till };
+  };
+  assert.deepEqual(run('answered'), { events: [{ type: 'bustWon', exposure: -r.winClear }], dirty: 1000, status: 'open', fine: 0 });
+  assert.deepEqual(run('failed'), { events: [{ type: 'bustLost', seized: 500, fine: r.fineFail, shut: false, heat: 0 }], dirty: 500, status: 'open', fine: r.fineFail });
+  assert.deepEqual(run('unanswered'), { events: [{ type: 'bustLost', seized: 1000, fine: r.fineLost, shut: true, heat: r.heat }], dirty: 0, status: 'shut', fine: r.fineLost });
+  assert.equal(run('fumbled').status, 'shut');
+  assert.equal(run('failed', { band: 'high' }).status, 'shut', 'high Exposure shuts it on a failure too');
+  assert.deepEqual(bustFallout(withRoom(), { kind: 'raid' }, 'unanswered', DAY), [], 'a tipped-off raid is another thing');
+  assert.deepEqual(bustFallout(withRoom(), null, undefined, DAY), []);
+});
+
+test('a raid closes through the week; a shut room can be built again, and the shop carries on', () => {
+  const b = withRoom({ dirty: 1000 });
+  b.period.event = { kind: 'bust' };
+  const out = advanceBusiness(b, b.period.endDay, { weekday: 1, seed: 'test' });
+  assert.equal(out.business.backRoom.status, 'shut');
+  assert.equal(out.business.backRoom.dirty, 0);
+  assert.equal(out.business.status, 'open', 'the business stands');
+  assert.equal(out.business.digests.at(-1).event.kind, 'bust');
+  assert.ok(out.events.some((e) => e.type === 'bustLost'));
+  assert.equal(projectOffer(out.business, 'backRoom').ok, true, 'it can be built again');
+  assert.equal(rollSpec(out.business, { type: 'action', action: 'roomWork', use: SKILLS.cybertech }, 'med', { day: DAY }).reason, 'no-back-room');
+});
+
+test('a raid can be run as a scene: won clears Exposure, lost shuts the room', () => {
+  assert.equal(isBigEvent({ kind: 'bust' }), true);
+  const scene = () => {
+    const b = withRoom({ dirty: 800 });
+    b.scene = { event: { kind: 'bust' }, day: DAY };
+    return b;
+  };
+  const won = scene();
+  assert.deepEqual(settleScene(won, true, DAY).events, [{ type: 'bustWon', exposure: -BUSINESS_DEFAULTS.backRoom.raid.winClear }]);
+  assert.equal(won.backRoom.dirty, 800);
+  const lost = scene();
+  const till = lost.till;
+  assert.equal(settleScene(lost, false, DAY).events.find((e) => e.type === 'bustLost').seized, 800);
+  assert.equal(lost.backRoom.status, 'shut');
+  assert.equal(lost.till, till - BUSINESS_DEFAULTS.backRoom.raid.fineLost, 'the fine comes out of the real cash');
+});
+
+test('a hand works the room when no partner did, not when lying low', () => {
+  const hired = (slots = []) => {
+    const b = withRoom({ dirty: 0 });
+    b.staff = [staffer('h', { post: 'hand', bases: { 'skill:Cybertech': 12 }, hiredDay: DAY })];
+    b.period.slots = slots;
+    b.state.capacity = 1;
+    return advanceBusiness(b, b.period.endDay, { weekday: 1, seed: 'test' }).business;
+  };
+  assert.ok(hired().digests.at(-1).actions.some((a) => a.action === 'roomWork' && a.staff), 'on their own');
+  assert.ok(!hired([{ action: 'lieLow', by: 'med', band: 'solid', use: 'none', approach: 'standard' }]).digests.at(-1).actions.some((a) => a.action === 'roomWork'), 'lying low');
+});
+
+test('an informant adds Exposure and can be named; an employee may turn; only with a room', () => {
+  const rules = BUSINESS_DEFAULTS.backRoom.informant;
+  const b = withRoom();
+  b.staff = [staffer('a', { name: 'Rat' }), staffer('b')];
+  const traits = { a: 'informant' };
+  assert.deepEqual(informants(b, traits).map((s) => s.name), ['Rat']);
+  b.period.slots = [];
+  assert.equal(roomWeek(b, 1000, 1, BUSINESS_DEFAULTS, traits).exposure, rules.exposure);
+  b.period.slots = [{ action: 'payOff', band: 'strong' }];
+  assert.equal(roomWeek(b, 1000, 1, BUSINESS_DEFAULTS, traits).informant, 'Rat', 'a strong pay-off names them');
+  b.period.slots = [{ action: 'payOff', band: 'narrow' }];
+  assert.equal(roomWeek(b, 1000, 1, BUSINESS_DEFAULTS, traits).informant, undefined);
+  const turned = Array.from({ length: 1000 }, (_, i) => turnInformant({ ...b, period: { ...b.period, index: i } }, {}, 'test')).filter(Boolean);
+  assert.ok(turned.length > 15 && turned.length < 90, `a small weekly chance: ${turned.length}`);
+  assert.deepEqual(Object.values(turned[0]), ['informant']);
+  assert.equal(turnInformant({ ...shop(), staff: b.staff }, {}, 'test'), null);
 });
