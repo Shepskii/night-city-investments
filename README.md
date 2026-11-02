@@ -63,6 +63,10 @@ Or unzip a release into `Data/modules/night-city-investments`. Then enable **Nig
 - **Campaigns.** A business can run a smear or a leak against a listed company, for a small dip in its price.
 - **Media stories.** A Media publishes an exposé or a puff piece, with Believability by Credibility rank as in the rules, backed by evidence shards. Medias also hear rumours by mail, or dig for them.
 
+### Roles and scenes
+- **Role actions.** A Nomad's supply contract cuts running costs, a Rockerboy's gig lifts takings and Reputation, and a Lawman's Backup answers raids and cases and can call in a favour against their own heat.
+- **Big events as scenes.** The GM can play out a raid, sabotage or a hostile faction's move at the table, with a ready hook, while the weeks carry on.
+
 ### For the GM
 - **The GM Console.** Advance time and steer sentiment, regimes and volatility. Queue shocks, glides and corporate actions, preview their effect over simulated futures, and undo a tick.
 - **Approvals.** Gig impacts, penalties, new businesses, charters, listings, syndicates, NPC job offers, campaigns and Media stories can each wait for the GM, all listed on one Pending tab.
