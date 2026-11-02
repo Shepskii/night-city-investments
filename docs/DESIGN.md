@@ -1851,6 +1851,8 @@ Tested in the test world (2026-11-02): a raid left unanswered, seizing 528 eb, a
 - **Corporate crime, at a company.** **Dump the waste** multiplies the takings by 0.8 to 1.8 by band, with 15, 8, 5, 4, 3 or 3 Exposure. **Bribe a regulator** costs 1,000 eb from the cash and moves Exposure by +8, 0, -4, -6, -8 or -12, and from solid up takes 3 off an open case's total. **Black ops** cost 2,500 eb and work as a campaign, sharing its monthly limit and the GM's approval, for -2 to -4% on the target and -10 standing; a fumble is 15 Exposure, -15 standing, a regulator's case, and a scandal. The underworld setting hides all three.
 - **Scandal.** A listed company's crime coming out posts a headline, dips its price and opens a heat window: -3% for a failed raid or a fumbled dumping, -5% for a raid left unanswered or fumbled, -8% for black ops traced back.
 
+Tested in the test world (2026-11-02): a gang's offer at neutral through the Work tab, with a hostile gang left off the list; the partners' vote carried by a majority holder and the money in the dirty cash; the minimum cut at the close, the gang's share off the protection money, and its standing held; failed dumping and bribe rolls, with the bribe still paid; black ops through the GM's approval, with the headline, the -3% impact, -10 standing and the Exposure. Not run live: ending a deal, a deal falling short or a gang walking away, a bribe easing a case, black ops traced back, and any scandal, which the flow tests cover.
+
 **What each front hides** (the archetype decides the operation, its skills, and the trouble it draws):
 
 | Front | Back room | Its skills | Draws |
@@ -2091,7 +2093,7 @@ The order: R1 and R2, then F1 with Media stories, then X1, then B7 and character
 | F1 | **Done (v0.17.0), see §36.3 and §36.7.** Faction standing with corps and gangs, moved by gigs and business actions; smear campaigns through the impact pipeline; Media rumours and published stories moving prices; after R1 |
 | X1 | **Part done (v0.18.0), see §36.7:** big events as scenes, and more for Lawmen, Nomads and Rockerboys. **Still proposed:** player rivalry: private share deals, Netrunner runs on a company's NET, poaching and sabotage; after F1 |
 | B7 | **Proposed, see §27.8 and §36.7.** Downtime bridge (separate module): company work through Crew Tools downtime, businesses on Night City Map. With it, character ties: REP and IP from business milestones, a business covering Housing and Lifestyle, and Teamwork's Loyalty checks; after X1 |
-| U1 | **Proposed, see §36.1.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships; after F1 and B6 |
+| U1 | **Built, see §36.1, for the next release.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships; after F1 and B6 |
 | P1 | **Proposed, see §36.2.** Production: workshops, lines, stock, selling and fencing; after E3 |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |
