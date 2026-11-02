@@ -1636,5 +1636,5 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
     liquidate(b, b.period.endDay, 'failed', out, p);
     return;
   }
-  startPeriod(b, b.period.index + 1, b.period.endDay, weekday, seed, p, traits);
+  startPeriod(b, b.period.index + 1, b.period.endDay, weekday, seed, p, traits, relations);
 }

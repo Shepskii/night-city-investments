@@ -238,3 +238,24 @@ test('what a faction\'s event leaves behind: force costs standing, a raid Exposu
   assert.deepEqual(factionFallout({ staff: [], period: { event: { kind: 'shakedown' }, slots: by(combat) } }, answered), [], 'no gang, no standing');
   assert.deepEqual(factionFallout(withEvent('smear'), null), []);
 });
+
+test('closing real weeks brings a hostile faction\'s acts and names the gang in a shakedown, and without them leaves the weeks as they were', () => {
+  const weeks = (relations, n = 80) => {
+    let b = shop();
+    const events = [];
+    for (let i = 0; i < n; i++) {
+      b = advanceBusiness({ ...b, till: 50000 }, b.period.endDay, { weekday: 1, seed: 'test', relations }).business;
+      events.push(b.period.event ?? null);
+    }
+    return events;
+  };
+  const quiet = { cost: 1, protection: 1, shakedown: 1, gangs: [], hostile: [] };
+  const hostile = weeks({ ...quiet, hostile: [{ id: 'mael', name: 'Maelstrom', kind: 'gang', value: -100 }] });
+  const acts = hostile.filter((e) => e?.factionId === 'mael');
+  assert.ok(acts.length > 3, `a hostile faction acts in real weeks: ${acts.length}`);
+  assert.ok(acts.every((e) => ['sabotage', 'raid', 'poaching', 'shakedown'].includes(e.kind) && e.factionName === 'Maelstrom'));
+
+  const turf = weeks({ ...quiet, gangs: [{ id: 'claws', name: 'Tyger Claws' }] }).filter((e) => e?.kind === 'shakedown');
+  assert.ok(turf.length > 0 && turf.every((e) => e.factionName === 'Tyger Claws'), 'a shakedown names the gang');
+  assert.deepEqual(weeks(quiet).map((e) => e?.kind ?? null), weeks(null).map((e) => e?.kind ?? null), 'nothing changes with no factions involved');
+});
