@@ -73,6 +73,14 @@ async function onTakeoverReject(event, target) {
   report(await BusinessService.rejectTakeover(target.dataset.id));
 }
 
+async function onCampaignApprove(event, target) {
+  report(await BusinessService.approveCampaign(target.dataset.id));
+}
+
+async function onCampaignReject(event, target) {
+  report(await BusinessService.rejectCampaign(target.dataset.id));
+}
+
 async function onDelist(event, target) {
   if (!(await confirm(L('NCI.GMBusiness.Delist'), L('NCI.GMBusiness.DelistConfirm')))) return;
   report(await BusinessService.delist(target.dataset.id));
@@ -133,6 +141,8 @@ export const actions = {
   businessOpen: onOpen,
   businessStaffAnswer: onStaffAnswer,
   businessSetStanding: onSetStanding,
+  businessCampaignApprove: onCampaignApprove,
+  businessCampaignReject: onCampaignReject,
 };
 
 /** An employee as a row of the staff table: their true loyalty and hidden trait, for the GM. */
@@ -190,6 +200,10 @@ export function context() {
           : L('NCI.GMBusiness.CaseLost', { why: L(`NCI.Regulator.Reason.${b.regCase.reason}`), fine: whole(b.regCase.fine ?? 0), how: L(b.regCase.silent ? 'NCI.GMBusiness.CaseSilent' : b.regCase.fumble ? 'NCI.GMBusiness.CaseFumbled' : 'NCI.GMBusiness.CaseRolled'), more: b.regCase.serious ? L('NCI.GMBusiness.CaseSerious') : '' }),
       } : null,
       canOpenCase: !b.regCase && b.stage === 2 && b.status === 'open',
+      // A campaign waiting for the GM (F1c).
+      campaign: b.campaign?.status === 'awaiting' ? L('NCI.GMBusiness.CampaignWaiting', {
+        kind: L(`NCI.Business.Campaign.${b.campaign.kind}`), name: b.campaign.name, ticker: b.campaign.ticker, percent: b.campaign.percent, date: dayText(b.campaign.day),
+      }) : '',
       // In administration (B6c): the GM restructures or winds it up.
       administration: b.administration ? L('NCI.GMBusiness.Administration', {
         date: dayText(b.administration.since), net: whole(solvency(b)), loans: whole(debtsOf(b).loans), wages: whole(debtsOf(b).wages), overdraft: whole(debtsOf(b).overdraft),

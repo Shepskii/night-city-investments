@@ -24,7 +24,7 @@ import {
   takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
   restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask,
   concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget, scandalHit, investigationCost, spendDays,
-  moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects,
+  moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
@@ -111,6 +111,9 @@ class BusinessServiceImpl {
       operatorRank: business ? operatorRankOf(business) : 0,
       actors: this.actors(),
       factions: FactionRepository.list(),
+      // What a campaign may be aimed at (F1c).
+      companies: CompanyRepository.all().map((c) => ({ ticker: c.ticker, name: c.name })),
+      campaignApproval: game.settings.get(MODULE_ID, SETTINGS.CAMPAIGN_APPROVAL) !== false,
       investors: investorActors().map((a) => a.id),
       // Who may be hired, and their bases read from their sheets (DESIGN §32).
       staffActors: Object.fromEntries(staffActors().map((a) => [a.id, a.source])),
@@ -1435,6 +1438,9 @@ class BusinessServiceImpl {
         await this._moveStanding(b.id, e.factionId, amount);
         moved = true;
       }
+      if (e.type === 'campaignLands') await this._landCampaign(b, e.campaign);
+      if (e.type === 'campaignCaught') await this._campaignStanding(b, e.ticker, BUSINESS_DEFAULTS.campaign.caughtStanding);
+      if (e.type === 'campaignLands' || e.type === 'campaignCaught') moved = true;
       if (e.type !== 'factionSmear' || !isListed(b)) continue;
       const ticker = b.company.ticker;
       const key = `smear:${b.id}:${e.period}`;
@@ -1449,6 +1455,63 @@ class BusinessServiceImpl {
     }
     // The steps after this one save this copy of the record, so it needs the new bands too.
     if (moved) b.standings = BusinessRepository.get(b.id)?.standings ?? b.standings;
+  }
+
+  /** A campaign's standing with its target, if the target is a faction (F1c). */
+  async _campaignStanding(b, ticker, amount) {
+    const faction = FactionRepository.list().find((f) => f.ticker === ticker);
+    if (faction) await this._moveStanding(b.id, faction.id, amount);
+  }
+
+  /**
+   * A campaign reaches the market (F1c): a generic headline, the price from a couple of days on, and a
+   * watch on anyone who traded the target knowing it was coming: whoever ran it, and the other owners.
+   */
+  async _landCampaign(b, campaign) {
+    const { ticker, name, kind, percent, actorId, day } = campaign;
+    const rules = BUSINESS_DEFAULTS.campaign;
+    const key = `campaign:${b.id}:${day}`;
+    const amount = percentToAmount(percent);
+    await NewsService.post({ headline: L(kind === 'leak' ? 'NCI.News.Leaked' : 'NCI.News.Smeared', { name, ticker }), tone: 'down', companyIds: [ticker] });
+    await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
+      ...controls,
+      impacts: [...controls.impacts, makeImpact({
+        id: `imp_campaign_${b.id}_${day}`, target: { type: 'company', id: ticker }, amount, onsetTick: now + rules.delayDays,
+        permanent: 1, sourceKey: key, source: 'campaign', meta: { businessId: b.id, percent },
+      })],
+    }));
+    const owners = b.partners.filter((p) => !p.market && p.status === 'active').map((p) => p.actorId).filter((id) => id !== actorId);
+    await HeatService.openWindow(
+      { sourceKey: key, companyId: ticker, outcome: 'failed', date: MarketClock.dateString(), delayDays: rules.delayDays },
+      { runners: [actorId], tipped: owners },
+    );
+    await this._campaignStanding(b, ticker, rules.standing);
+  }
+
+  /** The GM lets a campaign run (F1c). */
+  approveCampaign(id) {
+    if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
+    return this._queue.run(async () => {
+      const stored = BusinessRepository.get(id);
+      if (stored?.campaign?.status !== 'awaiting') return { ok: false, reason: 'no-campaign' };
+      const b = normalizeBusiness(structuredClone(stored));
+      await this._landCampaign(b, b.campaign);
+      const after = normalizeBusiness(structuredClone(BusinessRepository.get(id)));
+      after.campaign = null;
+      await BusinessRepository.save(after);
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: id, events: [] });
+      return { ok: true };
+    });
+  }
+
+  /** The GM stops a campaign (F1c): what it cost stays spent. */
+  rejectCampaign(id) {
+    return this._gm(id, (stored) => {
+      if (stored.campaign?.status !== 'awaiting') return { ok: false, reason: 'no-campaign' };
+      const b = normalizeBusiness(structuredClone(stored));
+      b.campaign = null;
+      return { ok: true, business: b };
+    });
   }
 
   /** As a business's week closes, its standing with each faction fades a little toward 0 (F1a). */

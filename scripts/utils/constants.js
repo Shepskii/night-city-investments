@@ -47,6 +47,7 @@ export const SETTINGS = Object.freeze({
   DEBUG_MODE: 'debugMode',
   BUSINESSES_ENABLED: 'businessesEnabled',
   BUSINESS_APPROVAL: 'businessApproval',
+  CAMPAIGN_APPROVAL: 'campaignApproval',
   BUSINESS_WEEKDAY: 'businessWeekday',
   BUSINESS_GROWTH_RATE: 'businessGrowthRate',
   SYNDICATES_ENABLED: 'syndicatesEnabled',

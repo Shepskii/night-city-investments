@@ -9,7 +9,7 @@ import {
   daysLeft, activeProject, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
   projectOffer, PROJECT_KINDS, upgradesOf, protectionFactor, headcountOf,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
-  actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects,
+  actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait,
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
@@ -22,6 +22,7 @@ import { SkillAdapter } from '../../services/SkillAdapter.js';
 import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { FactionRepository } from '../../data/FactionRepository.js';
+import { CompanyRepository } from '../../data/CompanyRepository.js';
 import { BusinessClient, operatorRankOf, pendingBusinessRequests, investorActors, staffActors, jobsOf } from '../../services/BusinessClient.js';
 import { SyndicateRepository } from '../../data/SyndicateRepository.js';
 import { businessAccounts } from '../accounts.js';
@@ -486,6 +487,7 @@ function weekContext(business, actor, canAct) {
   // The factions an action may be aimed at (F1b). One that must be aimed is not offered with nobody to aim it at.
   const factions = FactionRepository.list();
   const aimOf = (id) => {
+    if (id === 'campaign') return campaignAim(business);
     const aim = BUSINESS_DEFAULTS.standing.aims[id];
     if (!aim) return null;
     const options = factions.filter((f) => aim.kinds.includes(f.kind)).map((f) => ({ value: f.id, label: f.name }));
@@ -500,7 +502,7 @@ function weekContext(business, actor, canAct) {
     noSlots: period.slots.length >= slots,
     daysText: canAct ? L('NCI.Business.DaysLeft', { n: daysLeft(business, actor.id) }) : '',
     // A chartered company has the five company actions; a smaller business the shop actions.
-    actions: actionIdsFor(business.stage).filter((id) => !BUSINESS_DEFAULTS.standing.aims[id]?.required || aimOf(id)).map((id) => {
+    actions: actionIdsFor(business.stage).filter((id) => !(id === 'campaign' || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).map((id) => {
       const slot = taken.get(id);
       const bonus = period.bonuses.some((b) => b.action === id && !b.used);
       return {
@@ -511,8 +513,9 @@ function weekContext(business, actor, canAct) {
         bonus: bonus ? LT(business, 'NCI.Business.BonusWaiting') : '',
         aimedAt: slot?.factionName ? L('NCI.Business.AimedAt', { name: slot.factionName }) : '',
         aim: aimOf(id),
-        canRoll: runs && free && !slot,
+        canRoll: runs && free && !slot && !(id === 'campaign' && (business.campaign || campaignWait(business, BusinessClient.day()) > 0)),
         canHelp: canAct && !helped && !slot,
+        waiting: id === 'campaign' ? campaignNote(business) : '',
       };
     }),
     helped: actor && helped && canAct ? L('NCI.Business.AlreadyHelped') : '',
@@ -521,6 +524,19 @@ function weekContext(business, actor, canAct) {
     info: business.stage >= 2 ? infoContext(business, runs) : null,
     unworkedNote: L('NCI.Business.UnworkedNote'),
   };
+}
+
+/** The companies a campaign may be aimed at, and what it costs (F1c). */
+function campaignAim(business) {
+  const options = CompanyRepository.all().filter((c) => c.ticker !== business.company?.ticker).map((c) => ({ value: c.ticker, label: c.name }));
+  return options.length ? { required: true, options, gift: L('NCI.Business.CampaignCost', { cost: whole(BUSINESS_DEFAULTS.campaign.cost) }) } : null;
+}
+
+/** Why a campaign cannot run yet, if so. */
+function campaignNote(business) {
+  if (business.campaign) return L('NCI.Business.CampaignAwaiting', { name: business.campaign.name });
+  const days = campaignWait(business, BusinessClient.day());
+  return days > 0 ? L('NCI.Business.CampaignWait', { n: days }) : '';
 }
 
 /** A company's information rolls: the last internal audit, and what due diligence has found (B4c). */

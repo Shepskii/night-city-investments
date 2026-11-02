@@ -66,6 +66,7 @@
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from './businessEvents.js';
 import { aimCheck, giftFor } from './factions.js';
+import { campaignCheck, runCampaign } from './businessCampaign.js';
 import { normalizeName, gigTags } from './gigImpact.js';
 import {
   fixerOffer, takeFixerLoan, bankCheck, applyBankRoll, repayLoan, payLoans, investorOffer, inviteInvestor, acceptInvestment,
@@ -304,6 +305,10 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     if (aim?.required && !request.factionId) return fail('no-faction');
     if (request.factionId && !aim) return fail('bad-faction');
     if (request.factionId && b.till < giftFor(b, p)) return fail('no-gift');
+    if (request.action === 'campaign') {
+      const campaign = campaignCheck(b, request.targetTicker, day, p);
+      if (!campaign.ok) return campaign;
+    }
     const bonusAvailable = b.period.bonuses.some((x) => x.action === request.action && !x.used);
     return allowed(actionUses(request.action, arch, b.stage), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
@@ -531,6 +536,8 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (!check?.ok) return fail(check?.reason ?? 'no-roll');
       const aim = request.factionId ? aimCheck(b, request.action, request.factionId, ctx.factions ?? [], p) : null;
       if (aim && !aim.ok) return aim;
+      const target = request.action === 'campaign' ? (ctx.companies ?? []).find((c) => c.ticker === request.targetTicker) : null;
+      if (request.action === 'campaign' && !target) return fail('bad-target');
       spendFor('roll');
       const r = check.result;
       if (r.bonus) {
@@ -541,12 +548,16 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       b.period.slots.push({
         action: request.action, by: rollerId(), use: useKey(request.use), band: r.band, total: r.total, dv: r.dv, approach: r.approach, luck: r.luck, bonus: r.bonus,
         ...(aim ? { factionId: aim.faction.id, factionName: aim.faction.name } : {}),
+        ...(target ? { factionName: target.name } : {}),
       });
       out.events.push({ type: 'roll', action: request.action, band: r.band, exposure: r.exposure });
       if (aim) {
         b.till -= aim.gift;
         addLedger(b, { day, kind: 'factionGift', amount: -aim.gift }, p);
         out.events.push({ type: 'factionDeal', factionId: aim.faction.id, band: r.band });
+      }
+      if (target) {
+        out.events.push(...runCampaign(b, { ticker: target.ticker, name: target.name, useKey: useKey(request.use), band: r.band, actorId: actor.id, day, approval: ctx.campaignApproval !== false }, p));
       }
       break;
     }

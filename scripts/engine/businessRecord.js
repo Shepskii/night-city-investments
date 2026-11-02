@@ -179,6 +179,9 @@ export function normalizeBusiness(raw) {
     administration: b.administration ?? null,
     // A regulator's case (R1): what it is about and how far along; the Exposure behind it stays hidden.
     regCase: b.regCase ?? null,
+    // A campaign waiting for the GM, and when the last one ran (F1c).
+    campaign: b.campaign ?? null,
+    lastCampaignDay: b.lastCampaignDay ?? null,
     // Standing with factions (F1a): the band for each faction met. The number is in the GM's hidden state.
     standings: b.standings ?? {},
     // Hidden ownership (B6d): each holder's layers, innermost first; their strengths are GM-only.

@@ -229,6 +229,8 @@ Your business has its own standing with Night City's corporations and gangs, sho
 
 To raise your business's standing with a faction, use **Court a client** (a corporation) or **Pay respects** (a gang) as one of the week's actions. A company aims **Chase contracts** or **Investor relations** at a faction instead. Each costs a gift from the cash, whatever the roll. Good standing with corporations in your sector cuts running costs, and with gangs on your turf cuts protection money and shakedowns. Bad standing does the opposite, and a hostile faction may come after you. Beating a gang's shakedown by force works, but it won't help your standing with them.
 
+A business can also **Run a campaign** against a listed company: a smear or a leak that pushes its share price down a little. It costs 1,000 eb whatever the roll, you can run one a month, and your GM may need to approve it. Trading that company before the news lands draws insider heat, and a fumble gets you caught.
+
 A job your GM tags as done for the business counts as a contract: its Reputation, its share price if it is listed, and its standing with the client and any target all move. Ordinary crew gigs are freelance: they can move the client's and target's share prices, but don't touch your business.
 
 ## Regulators

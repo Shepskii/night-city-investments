@@ -256,7 +256,7 @@
         {{#each actions}}
         <tr>
           <td><strong>{{name}}</strong><div class="nci-muted">{{hint}}</div>{{#if canRoll}}{{#if aim}}<div class="nci-muted">{{aim.gift}}</div>{{/if}}{{/if}}</td>
-          <td>{{#if taken}}{{taken}}{{/if}}{{#if aimedAt}}<div class="nci-muted">{{aimedAt}}</div>{{/if}}{{#if bonus}}<div class="nci-up">{{bonus}}</div>{{/if}}</td>
+          <td>{{#if taken}}{{taken}}{{/if}}{{#if aimedAt}}<div class="nci-muted">{{aimedAt}}</div>{{/if}}{{#if waiting}}<div class="nci-muted">{{waiting}}</div>{{/if}}{{#if bonus}}<div class="nci-up">{{bonus}}</div>{{/if}}</td>
           <td class="nci-rowbtns nci-endbtns">
             {{#if canRoll}}{{#if aim}}<select name="aimFaction">{{#unless aim.required}}<option value="">{{localize "NCI.Business.AimNone"}}</option>{{/unless}}{{#each aim.options}}<option value="{{value}}">{{label}}</option>{{/each}}</select>{{/if}}{{/if}}
             {{#if canRoll}}<button type="button" data-action="actionRoll" data-id="{{id}}"><i class="fas fa-dice-d10"></i> {{localize "NCI.Business.TakeSlot"}}</button>{{/if}}

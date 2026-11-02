@@ -47,6 +47,7 @@
     {{#if administration}}<div class="nci-warn">{{administration}}</div>{{/if}}
     {{#if takeover}}<div class="nci-warn">{{takeover.text}}</div>{{/if}}
     {{#if charter}}<div class="nci-warn">{{charter.text}}</div>{{/if}}
+    {{#if campaign}}<div class="nci-warn">{{campaign}}</div>{{/if}}
     {{#if owners.length}}
     <table class="nci-market nci-owners">
       <thead><tr><th>{{localize "NCI.GMBusiness.Owner"}}</th><th>{{localize "NCI.GMBusiness.Status"}}</th><th class="num">{{localize "NCI.GMBusiness.Units"}}</th><th class="num">{{localize "NCI.GMBusiness.Share"}}</th></tr></thead>
@@ -105,6 +106,12 @@
       <div class="nci-actions">
         <button type="button" data-action="businessCharterApprove" data-id="{{id}}"><i class="fas fa-file-signature"></i> {{localize "NCI.GMBusiness.CharterApprove"}}</button>
         <button type="button" data-action="businessCharterReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.CharterReject"}}</button>
+      </div>
+      {{/if}}
+      {{#if campaign}}
+      <div class="nci-actions">
+        <button type="button" data-action="businessCampaignApprove" data-id="{{id}}"><i class="fas fa-check"></i> {{localize "NCI.GMBusiness.CampaignApprove"}}</button>
+        <button type="button" data-action="businessCampaignReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.CampaignReject"}}</button>
       </div>
       {{/if}}
       {{#each offers}}

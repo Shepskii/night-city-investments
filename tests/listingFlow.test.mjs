@@ -757,3 +757,37 @@ test('at the week\'s close, a faction\'s event lands: a smear on the price, a ra
     await S.MarketStore.setBusinessesHidden(hiddenSaved);
   }
 });
+
+test('a campaign waits for the GM on the Pending tab, then reaches the market: news, one impact, heat and standing; stopping it leaves the money spent', async () => {
+  const { FactionRepository } = await import('../scripts/data/FactionRepository.js');
+  await FactionRepository.importStarter();
+  const { waiting } = await import('../scripts/ui/GMConsole/tabs/pending.js');
+  const saved = structuredClone(business());
+  const hiddenSaved = structuredClone(S.MarketStore.getBusinessesHidden());
+  const day = S.BusinessService.day();
+  const campaign = { status: 'awaiting', ticker: 'BIO', name: 'Biotechnica', kind: 'leak', percent: -2, actorId: alice.id, day };
+  try {
+    env.store.set('heatEnabled', true);
+    await S.MarketStore.setBusinessesHidden({ ...hiddenSaved, bus_play: { ...hiddenSaved.bus_play, standing: {} } });
+    await S.BusinessRepository.save({ ...business(), status: 'open', campaign });
+    assert.ok(waiting().businesses >= 1, 'it shows as waiting');
+    assert.equal((await S.BusinessService.rejectCampaign('bus_play')).ok, true);
+    assert.equal(business().campaign, null);
+    assert.equal((await S.BusinessService.approveCampaign('bus_play')).reason, 'no-campaign');
+
+    await S.BusinessRepository.save({ ...business(), campaign });
+    assert.equal((await S.BusinessService.approveCampaign('bus_play')).ok, true);
+    assert.equal(business().campaign, null);
+    const impacts = S.MarketStore.getControls().impacts.filter((i) => i.source === 'campaign');
+    assert.equal(impacts.length, 1);
+    assert.deepEqual([impacts[0].target.id, impacts[0].meta.percent], ['BIO', -2]);
+    await settle();
+    assert.ok(JSON.stringify(S.MarketStore.getNews()).includes('NCI.News.Leaked'), 'a generic headline');
+    assert.ok(S.MarketStore.getHeat().windows.some((w) => w.sourceKey === impacts[0].sourceKey), 'a heat window');
+    assert.equal(S.MarketStore.getBusinessesHidden().bus_play.standing.corp_bio.value, E.BUSINESS_DEFAULTS.campaign.standing, 'standing with a target that is a faction');
+  } finally {
+    env.store.set('heatEnabled', false);
+    await S.BusinessRepository.save(saved);
+    await S.MarketStore.setBusinessesHidden(hiddenSaved);
+  }
+});

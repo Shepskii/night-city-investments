@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   BUSINESS_DEFAULTS, DISTRICTS, normalizeFaction, standingBand, matchFaction, turfFactions, gigStanding, moveStanding, driftStanding, standingBands, matchBusiness,
   findTarget, targetShare, gigTags, resolveClient, applyBusinessRequest, advanceBusiness, rollSpec, normalizeBusiness, drawEvent, hostileAct, hostileChance, factionEffects, factionFallout,
-  giftFor, ARCHETYPES, SKILLS, ABILITIES,
+  giftFor, campaignKind, ARCHETYPES, SKILLS, ABILITIES,
 } from '../scripts/engine/index.js';
 import { resolveRoll } from '../scripts/engine/rolls.js';
 import { starterFactions } from '../scripts/data/starter-factions.js';
@@ -258,4 +258,40 @@ test('closing real weeks brings a hostile faction\'s acts and names the gang in 
   const turf = weeks({ ...quiet, gangs: [{ id: 'claws', name: 'Tyger Claws' }] }).filter((e) => e?.kind === 'shakedown');
   assert.ok(turf.length > 0 && turf.every((e) => e.factionName === 'Tyger Claws'), 'a shakedown names the gang');
   assert.deepEqual(weeks(quiet).map((e) => e?.kind ?? null), weeks(null).map((e) => e?.kind ?? null), 'nothing changes with no factions involved');
+});
+
+// ── F1c: smear and leak campaigns ───────────────────────────────────
+
+test('a campaign needs a target, the cash and a month since the last one; the cost goes whatever the roll', () => {
+  const b = shop();
+  const use = SKILLS.persuasion;
+  const companies = [{ ticker: 'ARA', name: 'Arasaka' }, { ticker: 'SCX', name: 'Own Co' }];
+  const run = (business, die, ticker = 'ARA', context = {}) => send(business, { type: 'action', businessId: 'b1', action: 'campaign', targetTicker: ticker, use }, checkOf(die), { companies, ...context });
+  assert.equal(rollSpec(b, { type: 'action', action: 'campaign', use }, 'med', { day: DAY }).reason, 'no-target');
+  assert.equal(rollSpec(shop({ till: 500 }), { type: 'action', action: 'campaign', targetTicker: 'ARA', use }, 'med', { day: DAY }).reason, 'no-gift');
+  assert.equal(rollSpec({ ...b, company: { ticker: 'ARA' } }, { type: 'action', action: 'campaign', targetTicker: 'ARA', use }, 'med', { day: DAY }).reason, 'bad-target', 'not its own');
+  assert.equal(run(b, 9, 'NOPE').reason, 'bad-target');
+
+  const missed = run(b, -5);
+  assert.equal(missed.ok, true, missed.reason);
+  assert.equal(missed.business.till, b.till - BUSINESS_DEFAULTS.campaign.cost);
+  assert.equal(missed.business.campaign, null, 'a failure reaches nobody');
+  assert.equal(missed.business.ledger.at(-1).kind, 'campaign');
+  assert.equal(rollSpec({ ...missed.business, period: { ...missed.business.period, slots: [] } }, { type: 'action', action: 'campaign', targetTicker: 'ARA', use }, 'med', { day: DAY + 27 }).reason, 'campaign-wait');
+  assert.equal(rollSpec({ ...missed.business, period: { ...missed.business.period, slots: [] } }, { type: 'action', action: 'campaign', targetTicker: 'ARA', use }, 'med', { day: DAY + 28 }).ok, true);
+
+  const waits = run(b, 9).business.campaign;
+  assert.deepEqual([waits.status, waits.ticker, waits.name, waits.kind, waits.actorId], ['awaiting', 'ARA', 'Arasaka', 'smear', 'med']);
+  assert.ok(waits.percent < 0 && waits.percent >= -2);
+  const straight = run(b, 9, 'ARA', { campaignApproval: false });
+  assert.equal(straight.business.campaign, null);
+  assert.equal(straight.events.find((e) => e.type === 'campaignLands').campaign.ticker, 'ARA', 'with approval off it lands at once');
+  assert.equal(campaignKind('skill:Library Search'), 'leak');
+  assert.equal(campaignKind('ability:Interface'), 'leak');
+  assert.equal(campaignKind('skill:Persuasion'), 'smear');
+  assert.equal(campaignKind('staff:s1'), 'smear');
+
+  const caught = send(b, { type: 'action', businessId: 'b1', action: 'campaign', targetTicker: 'ARA', use }, { ok: true, result: resolveRoll({ base: 14, roll: { total: -5, crit: 'fumble' }, dv: 13 }) }, { companies });
+  const event = caught.events.find((e) => e.type === 'campaignCaught');
+  assert.deepEqual([event.ticker, event.exposure], ['ARA', BUSINESS_DEFAULTS.campaign.caughtExposure]);
 });

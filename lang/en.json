@@ -508,6 +508,14 @@
           "strong": "A good impression: standing up well.",
           "exceptional": "They want you on their list: standing up a long way."
         },
+        "campaign": {
+          "fumble": "You get caught: nothing reaches the market, standing with them falls, and it leaves a trail.",
+          "failure": "Nobody picks it up. The money is gone.",
+          "narrow": "A small mention: their price falls about 1%.",
+          "solid": "It gets around: their price falls about 1.5%.",
+          "strong": "It sticks: their price falls about 2%.",
+          "exceptional": "It's all anyone talks about: their price falls about 2%."
+        },
         "respects": {
           "fumble": "They take it as an insult: standing with them falls.",
           "failure": "They take the gift and say nothing: standing stays where it is.",
@@ -1068,6 +1076,7 @@
       "Offering": "{name} ({ticker}) offers {shares} new shares at {price} eb.",
       "CaseLost": "Regulators fine {name} ({ticker}) {fine} eb.",
       "Smeared": "Damaging stories about {name} ({ticker}) are doing the rounds.",
+      "Leaked": "Leaked documents raise questions at {name} ({ticker}).",
       "Unmasked": "Regulators unmask {holder} as the hidden holder of {pct}% of {name} ({ticker}), and fine them {fine} eb.",
       "Takeover": "{bidder} bids {price} eb a share for {name} ({ticker}), a {premium}% premium.",
       "Administration": "{name} ({ticker}) goes into administration, owing more than it owns.",
@@ -1643,6 +1652,10 @@
         "Name": "Player businesses",
         "Hint": "Let players found and run their own businesses, with the Business window. Turning this off stops their weeks closing and refuses new requests; nothing is deleted."
       },
+      "CampaignApproval": {
+        "Name": "Smears and leaks need GM approval",
+        "Hint": "A business's successful campaign against a company waits in the GM Console's Businesses tab until the GM lets it run."
+      },
       "BusinessApproval": {
         "Name": "New businesses need GM approval",
         "Hint": "A business that has passed its setup roll and has its money waits in the GM Console's Businesses tab until the GM lets it open."
@@ -2146,6 +2159,7 @@
         "takeover": "Approve or turn down the takeover offer from {bidder}",
         "administration": "In administration: restructure it or wind it up",
         "case": "Regulator's case lost: approve the penalty or drop the case",
+        "campaign": "A campaign against {name}: let it run or stop it",
         "offer": "Answer for {name}: a job offer as {post}",
         "syndicate": "Approve or reject the new syndicate"
       }
@@ -2185,6 +2199,9 @@
       "SetupPassed": "Setup roll {band}: {cost} eb of setup (range {range}).",
       "SetupFailed": "Setup roll {band}: can be tried again (range {range}).",
       "Staff": "Staff",
+      "CampaignWaiting": "A {kind} against {name} ({ticker}), run {date}: {percent}% on its share price. Let it run or stop it; the cost stays spent.",
+      "CampaignApprove": "Let the campaign run",
+      "CampaignReject": "Stop the campaign",
       "StaffOffer": "{name}, an NPC, is offered a job as {post} at {wage} eb a week. Answer for them.",
       "StaffAccept": "Take the job",
       "StaffDecline": "Turn it down",
@@ -2484,6 +2501,7 @@
         "keepSafe": { "Name": "Keep it safe", "Hint": "Tactics, Persuasion, Combat Awareness or Backup: less protection money this week." },
         "court": { "Name": "Court a client", "Hint": "Business, Persuasion, Trading, Operator, Charismatic Impact or Credibility: raises standing with a corporation." },
         "respects": { "Name": "Pay respects", "Hint": "Streetwise, Persuasion, Operator or Charismatic Impact: raises standing with a gang." },
+        "campaign": { "Name": "Run a campaign", "Hint": "A smear (Composition or Persuasion) or a leak (Library Search or Interface) against a listed company: its share price falls a little. One a month." },
         "contracts": { "Name": "Chase contracts", "Hint": "Business (Persuasion or Trading at DV +2), Teamwork, Operator or Maker: sets the week's takings, and Reputation up a little." },
         "books": { "Name": "Tighten the books", "Hint": "Accounting (Business at DV +2) or Moto: the Cost base down." },
         "relations": { "Name": "Investor relations", "Hint": "Trading (Persuasion or Wardrobe & Style at DV +2), Credibility or Charismatic Impact: Reputation up." },
@@ -2617,6 +2635,7 @@
         "vested": "{staff}'s granted shares vested",
         "medical": "Medical bills",
         "factionGift": "A gift to a faction",
+        "campaign": "A campaign against a company",
         "wages": "Wages"
       },
       "CapTable": "Partners",
@@ -2667,6 +2686,10 @@
       "DaysLeft": "You have {n} business day(s) left this week.",
       "AimGift": "Aiming at a faction costs a {gift} eb gift from the cash, spent whatever the roll.",
       "AimNone": "No faction",
+      "Campaign": { "smear": "smear", "leak": "leak" },
+      "CampaignCost": "A campaign costs {cost} eb from the cash, spent whatever the roll.",
+      "CampaignAwaiting": "Against {name}: waiting for the GM.",
+      "CampaignWait": "Another campaign is possible in {n} day(s).",
       "AimedAt": "Aimed at {name}",
       "WaitingVote": "{n} proposal(s) waiting for votes on the Partners tab.",
       "WaitingVoteCompany": "{n} proposal(s) waiting for votes on the Shareholders tab.",
@@ -2914,6 +2937,9 @@
         "bad-action": "there is no such action",
         "no-slot": "this week's action slots are all taken",
         "no-faction": "that action needs a faction to aim at",
+        "no-target": "that action needs a company to aim at",
+        "campaign-wait": "the business has run a campaign too recently",
+        "no-campaign": "no campaign is waiting",
         "bad-faction": "that action cannot be aimed at that faction",
         "no-gift": "the business does not have the cash for the gift",
         "action-taken": "that action has already been taken this week",

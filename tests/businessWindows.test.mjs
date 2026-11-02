@@ -576,6 +576,7 @@ test('the Pending tab has a row for each decision waiting, and the tab buttons c
       takeover: { status: 'awaiting', bidderId: 'x', bidderName: 'Rival', price: 5, shares: 10, tenders: {} },
       administration: { since: day },
       regCase: { status: 'lost', reason: 'report', openedDay: day, endDay: day + 14, fine: 250 },
+      campaign: { status: 'awaiting', ticker: 'ARA', name: 'Arasaka', kind: 'smear', percent: -1.5, actorId: med.id, day },
       staff: [{ id: 's_t', actorId: fix.id, name: 'Nix', post: 'floor', wage: 100, status: 'offered', source: 'npc' }],
     });
     await MarketStore.setGigs({ ...gigsBefore, pending: ['mapping', 'review', 'business'].map((kind, i) => ({ id: `p${i}`, kind, sourceKey: `gig:p${i}`, client: 'Kiroshi', title: `Job ${kind}`, outcome: 'done', reward: 100, date: '2045-01-01', how: 'tag' })) });
@@ -583,27 +584,29 @@ test('the Pending tab has a row for each decision waiting, and the tab buttons c
 
     const html = await renderConsole('pending');
     assertClean(html, 'pending tab');
-    assert.equal(group(html, 'pending'), 'Pending 11');
-    assert.equal(group(html, 'players'), 'Players 8', 'each group shows its tabs\' total');
+    assert.equal(group(html, 'pending'), 'Pending 12');
+    assert.equal(group(html, 'players'), 'Players 9', 'each group shows its tabs\' total');
     assert.equal(group(html, 'tools'), 'Tools 3', 'business gigs count as well');
-    assert.match(html, /<span class="nci-count">11<\/span>/, 'as a count of its own');
+    assert.match(html, /<span class="nci-count">12<\/span>/, 'as a count of its own');
     assert.equal(group(html, 'market'), 'Market');
     assert.doesNotMatch(html.match(/<\/nav>[\s\S]*/)[0], /<nav/, 'the Pending group has no second row');
     const players = await renderConsole('businesses');
     assertClean(players, 'every decision on the Businesses tab');
-    assert.equal(tabButton(players, 'businesses'), 'Businesses 7');
+    assert.equal(tabButton(players, 'businesses'), 'Businesses 8');
     assert.equal(tabButton(players, 'heat'), 'Heat 1');
     assert.equal(tabButton(await renderConsole('gigs'), 'gigs'), 'Gigs 3');
     // Every GM button on an entry comes after its tables, and an offer's words are with its buttons.
     const entry = players.split('<div class="nci-gig">').find((x) => x.includes('businessRestructure'));
     assert.ok(entry.lastIndexOf('</table>') < entry.indexOf('data-action='), 'the buttons are at the foot');
     assert.ok(entry.indexOf('Nix') > entry.indexOf('nci-gmbuttons'));
-    assert.equal(html.match(/<tr class="nci-row" data-action="switchTab"/g).length, 11);
+    assert.match(entry, /A smear against Arasaka \(ARA\)/);
+    assert.match(entry, /data-action="businessCampaignApprove"/);
+    assert.equal(html.match(/<tr class="nci-row" data-action="switchTab"/g).length, 12);
     for (const words of [/Job mapping Choose which company/, /Medtech Approve or dismiss the penalty: Fine of 500 eb/, /Approve or reject the charter/, /Approve or turn down the listing/,
-      /Delisting review/, /takeover offer from Rival/, /In administration/, /Regulator\S+s case lost/, /Answer for Nix/]) assert.match(text(html), words);
+      /Delisting review/, /takeover offer from Rival/, /In administration/, /Regulator\S+s case lost/, /A campaign against Arasaka/, /Answer for Nix/]) assert.match(text(html), words);
     assert.match(html, /<tr class="nci-row" data-action="switchTab" data-tab="businesses">/);
 
-    await S.BusinessRepository.save({ ...b, status: 'open', charter: null, listing: null, takeover: null, administration: null, regCase: null, staff: [] });
+    await S.BusinessRepository.save({ ...b, status: 'open', charter: null, listing: null, takeover: null, administration: null, regCase: null, campaign: null, staff: [] });
     await MarketStore.setGigs({ ...gigsBefore, pending: [] });
     await MarketStore.setHeat({ ...heatBefore, penalties: [] });
     const quiet = await renderConsole('pending');

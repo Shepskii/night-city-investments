@@ -31,6 +31,7 @@ function businessRows() {
       b.takeover?.status === 'awaiting' && need('takeover', { bidder: b.takeover.bidderName }),
       b.administration && need('administration'),
       b.regCase?.status === 'lost' && need('case'),
+      b.campaign?.status === 'awaiting' && need('campaign', { name: b.campaign.name }),
       ...(b.staff ?? []).filter((s) => s.status === 'offered' && s.source === 'npc')
         .map((s) => need('offer', { name: s.name, post: L(`NCI.Staff.Post.${s.post}`) })),
     ].filter(Boolean);

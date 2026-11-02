@@ -96,7 +96,7 @@ export const DISTRICTS = Object.freeze(Object.fromEntries([
 export const districtOf = (id) => DISTRICTS[id] ?? { id: '', traffic: 1, rent: 1, risk: 1 };
 
 /** In display order. */
-export const ACTION_IDS = Object.freeze(['work', 'promote', 'source', 'fixUp', 'keepSafe', 'court', 'respects']);
+export const ACTION_IDS = Object.freeze(['work', 'promote', 'source', 'fixUp', 'keepSafe', 'court', 'respects', 'campaign']);
 
 /**
  * The weekly actions (DESIGN §27.0; `court` and `respects`, F1b). `skills` roll the action itself (`work` uses the
@@ -111,10 +111,11 @@ export const ACTIONS = Object.freeze({
   keepSafe: Object.freeze({ skills: [S.tactics, S.persuasion], abilities: [A.combatAwareness, A.backup], help: [S.streetwise, S.humanPerception] }),
   court: Object.freeze({ skills: [S.business, S.persuasion, S.trading], abilities: [A.operator, A.charismaticImpact, A.credibility], help: [S.humanPerception, S.librarySearch] }),
   respects: Object.freeze({ skills: [S.streetwise, S.persuasion], abilities: [A.operator, A.charismaticImpact], help: [S.localExpert, S.humanPerception] }),
+  campaign: Object.freeze({ skills: [S.composition, S.persuasion, S.librarySearch], abilities: [A.interface], help: [S.humanPerception, S.streetwise] }),
 });
 
 /** A chartered company's five actions (DESIGN §27.4, §31): they replace the shop actions at stage 2. */
-export const COMPANY_ACTION_IDS = Object.freeze(['contracts', 'books', 'relations', 'permits', 'shortcuts']);
+export const COMPANY_ACTION_IDS = Object.freeze(['contracts', 'books', 'relations', 'permits', 'shortcuts', 'campaign']);
 
 /** Each company action's skill, its alternatives at DV +2, the role abilities that fit, and its help. */
 export const COMPANY_ACTIONS = Object.freeze({
@@ -132,6 +133,7 @@ export const COMPANY_ACTIONS = Object.freeze({
     abilities: [A.backup], help: [S.localExpert, S.librarySearch],
   }),
   shortcuts: Object.freeze({ skills: [S.bribery, Object.freeze({ ...S.streetwise, dvAdd: 2 })], abilities: [A.operator], help: [S.streetwise, S.humanPerception] }),
+  campaign: Object.freeze({ skills: [S.composition, S.persuasion, S.librarySearch], abilities: [A.interface], help: [S.humanPerception, S.streetwise] }),
 });
 
 /** The action ids a business at this stage can take. */
@@ -331,6 +333,12 @@ export const BUSINESS_DEFAULTS = Object.freeze({
    * with standing hits; winding up sells its assets at `salvage` of book value.
    * Going into administration dents a listed company's price by `hit` (a log-return).
    */
+  /**
+   * A smear or leak campaign (F1c): `cost` eb whatever the roll, one in `days`; `size` is the target's
+   * move by band, in percent, from `delayDays` on. Landing costs `standing` with a target that is a faction,
+   * and a fumble is `caughtStanding` and `caughtExposure`.
+   */
+  campaign: Object.freeze({ cost: 1000, days: 28, delayDays: 2, size: byBand([0, 0, -1, -1.5, -2, -2]), standing: -5, caughtStanding: -8, caughtExposure: 5 }),
   /**
    * Standing with factions (F1a, DESIGN §36.3): the bands players see; at most `weeklyCap` of movement
    * in seven days; `drift` back toward 0 each week. A gig for a faction moves it `done` or `failed`,
