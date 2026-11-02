@@ -35,7 +35,7 @@ Open it from the scene controls (sliders icon). The top row of buttons picks a g
 | | Factions | The list of corporations and gangs |
 | | Tools | Self-check, macros, suggested companies, recent trades |
 
-A tab's button shows how many decisions are waiting on it, like **Gigs (2)**, a group's button the total for its tabs, and the Pending button the total of all. Syndicate proposals are not counted: members' votes settle them, though you can still pass or veto one.
+A tab shows how many decisions are waiting on it as a small number beside its name, a group shows the total for its tabs, and Pending the total of all. Syndicate proposals are not counted: members' votes settle them, though you can still pass or veto one.
 
 ## Running time
 

@@ -1,13 +1,13 @@
 <section class="nci-console">
   <nav class="nci-tabs nci-groups">
     {{#each groups}}
-    <button type="button" data-action="switchTab" data-group="{{id}}" class="{{#if active}}active{{/if}}">{{label}}</button>
+    <button type="button" data-action="switchTab" data-group="{{id}}" class="{{#if active}}active{{/if}}">{{label}}{{#if count}} <span class="nci-count">{{count}}</span>{{/if}}</button>
     {{/each}}
   </nav>
   {{#if subTabs.length}}
   <nav class="nci-tabs nci-subtabs">
     {{#each subTabs}}
-    <button type="button" data-action="switchTab" data-tab="{{id}}" class="{{#if active}}active{{/if}}">{{label}}</button>
+    <button type="button" data-action="switchTab" data-tab="{{id}}" class="{{#if active}}active{{/if}}">{{label}}{{#if count}} <span class="nci-count">{{count}}</span>{{/if}}</button>
     {{/each}}
   </nav>
   {{/if}}

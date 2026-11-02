@@ -143,7 +143,7 @@ test('waiting for the GM: the player is told, and the GM tab offers approval', a
 
   const gm = await renderConsole();
   assertClean(gm, 'GM businesses tab');
-  assert.match(text(gm), /Businesses \(1\)/, 'the tab counts what is waiting');
+  assert.match(text(gm), /Businesses 1/, 'the tab counts what is waiting');
   assert.match(gm, /data-action="businessApprove"/);
 });
 
@@ -565,7 +565,7 @@ test('the Pending tab has a row for each decision waiting, and the tab buttons c
   const gigsBefore = MarketStore.getGigs();
   const heatBefore = MarketStore.getHeat();
   const day = b.period.startDay;
-  const button = (html, attr, id) => text(html.match(new RegExp(`<nav[\\s\\S]*?data-${attr}="${id}"[^>]*>([^<]*)<`))[1]);
+  const button = (html, attr, id) => text(html.match(new RegExp(`<nav[\\s\\S]*?data-${attr}="${id}"[^>]*>([\\s\\S]*?)</button>`))[1]).trim();
   const group = (html, id) => button(html, 'group', id);
   const tabButton = (html, id) => button(html, 'tab', id);
   try {
@@ -583,16 +583,17 @@ test('the Pending tab has a row for each decision waiting, and the tab buttons c
 
     const html = await renderConsole('pending');
     assertClean(html, 'pending tab');
-    assert.equal(group(html, 'pending'), 'Pending (11)');
-    assert.equal(group(html, 'players'), 'Players (8)', 'each group shows its tabs\' total');
-    assert.equal(group(html, 'tools'), 'Tools / Maintenance (3)', 'business gigs count as well');
+    assert.equal(group(html, 'pending'), 'Pending 11');
+    assert.equal(group(html, 'players'), 'Players 8', 'each group shows its tabs\' total');
+    assert.equal(group(html, 'tools'), 'Tools / Maintenance 3', 'business gigs count as well');
+    assert.match(html, /<span class="nci-count">11<\/span>/, 'as a count of its own');
     assert.equal(group(html, 'market'), 'Market');
     assert.doesNotMatch(html.match(/<\/nav>[\s\S]*/)[0], /<nav/, 'the Pending group has no second row');
     const players = await renderConsole('businesses');
     assertClean(players, 'every decision on the Businesses tab');
-    assert.equal(tabButton(players, 'businesses'), 'Businesses (7)');
-    assert.equal(tabButton(players, 'heat'), 'Heat (1)');
-    assert.equal(tabButton(await renderConsole('gigs'), 'gigs'), 'Gigs (3)');
+    assert.equal(tabButton(players, 'businesses'), 'Businesses 7');
+    assert.equal(tabButton(players, 'heat'), 'Heat 1');
+    assert.equal(tabButton(await renderConsole('gigs'), 'gigs'), 'Gigs 3');
     // Every GM button on an entry comes after its tables, and an offer's words are with its buttons.
     const entry = players.split('<div class="nci-gig">').find((x) => x.includes('businessRestructure'));
     assert.ok(entry.lastIndexOf('</table>') < entry.indexOf('data-action='), 'the buttons are at the foot');

@@ -444,7 +444,7 @@ test('the GM console Gigs tab shows what needs mapping, what awaits approval, ma
   const app = new Apps.GMConsole();
   app.tab = 'gigs';
   let ctx = await app._prepareContext();
-  assert.ok(ctx.tabs.find((t) => t.id === 'gigs').label.includes('(2)'), 'the tab shows how many need attention');
+  assert.equal(ctx.tabs.find((t) => t.id === 'gigs').count, 2, 'the tab shows how many need attention');
   let html = render('templates/gm/console.hbs', ctx);
   assertClean(html, 'gigs tab');
   let t = text(html);

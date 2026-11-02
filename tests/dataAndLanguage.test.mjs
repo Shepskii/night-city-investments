@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { escapeHtml, textToHtml, htmlToText } from '../scripts/utils/text.js';
 import { STARTER_COMPANIES } from '../scripts/data/starter-companies.js';
@@ -191,4 +191,13 @@ test('dynamically built language keys exist', () => {
     ...['invalid-alert', 'alert-duplicate', 'alert-already-met', 'too-many-alerts'].map((r) => lang.Reasons[r]),
   ];
   assert.ok(need.every((v) => typeof v === 'string' && v.length), 'a dynamic language key is missing');
+});
+
+test('every font the stylesheet names is bundled, with its licence, and the tabs need nothing from another module', () => {
+  const css = readFileSync(new URL('../styles/night-city-investments.css', import.meta.url), 'utf8');
+  const urls = [...css.matchAll(/url\('\.\.\/(assets\/fonts\/[^']+)'\)/g)].map((m) => m[1]);
+  assert.equal(urls.length, 5);
+  for (const file of urls) assert.ok(existsSync(new URL(`../${file}`, import.meta.url)), file);
+  for (const folder of ['Rajdhani', 'ShareTechMono']) assert.ok(existsSync(new URL(`../assets/fonts/${folder}/OFL.txt`, import.meta.url)), folder);
+  assert.doesNotMatch(css, /modules\/night-city-messenger/);
 });

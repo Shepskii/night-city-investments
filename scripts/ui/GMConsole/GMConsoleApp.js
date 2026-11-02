@@ -132,15 +132,15 @@ export class GMConsoleApp extends BaseApplication {
 
   async _prepareContext() {
     const waiting = pending.waiting();
-    const counted = (label, n) => (n ? `${label} (${n})` : label);
-    const tabs = Object.keys(TABS).map((t) => ({ id: t, label: counted(L(`NCI.GMConsole.Tab.${t}`), waiting[t]), active: t === this.tab }));
+    const tabs = Object.keys(TABS).map((t) => ({ id: t, label: L(`NCI.GMConsole.Tab.${t}`), count: waiting[t] ?? 0, active: t === this.tab }));
     const group = groupOf(this.tab);
     const context = {
       tab: this.tab,
       tabs,
       groups: Object.keys(GROUPS).map((g) => ({
         id: g,
-        label: counted(L(`NCI.GMConsole.Group.${g}`), GROUPS[g].reduce((a, t) => a + (waiting[t] ?? 0), 0)),
+        label: L(`NCI.GMConsole.Group.${g}`),
+        count: GROUPS[g].reduce((a, t) => a + (waiting[t] ?? 0), 0),
         active: g === group,
       })),
       // A group of one has no second row.

@@ -4,7 +4,7 @@
     {{#unless business.invited}}
     {{#each tabs}}<button type="button" data-action="switchTab" data-tab="{{id}}" class="{{#if active}}active{{/if}}">{{label}}</button>{{/each}}
     {{/unless}}
-    <button type="button" data-action="startNew" title="{{localize 'NCI.Business.StartHint'}}"><i class="fas fa-plus"></i> {{localize "NCI.Business.Start"}}</button>
+    <button type="button" class="nci-tab-new" data-action="startNew" title="{{localize 'NCI.Business.StartHint'}}">+ {{localize "NCI.Business.Start"}}</button>
     {{/if}}
     <div class="nci-pickers">
       {{#if picker.businesses.length}}

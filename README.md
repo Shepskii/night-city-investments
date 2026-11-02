@@ -95,4 +95,4 @@ docs/                  the guides above
 
 ## License
 
-MIT
+MIT. The bundled fonts, Rajdhani and Share Tech Mono, are under the SIL Open Font License; each licence is in its folder under `assets/fonts`.

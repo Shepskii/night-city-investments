@@ -1,5 +1,52 @@
 /* Night City Investments: dark Cyberpunk RED theme (black with red accents) */
 
+/* The tabs' fonts, bundled (assets/fonts, SIL OFL: the licence is in each folder). Rajdhani's weights and
+   Share Tech Mono's counts; the same files Night City Messenger uses. */
+@font-face {
+  font-family: 'Rajdhani';
+  src: url('../assets/fonts/Rajdhani/Rajdhani-600-latin.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Rajdhani';
+  src: url('../assets/fonts/Rajdhani/Rajdhani-600-latin-ext.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Rajdhani';
+  src: url('../assets/fonts/Rajdhani/Rajdhani-700-latin.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Rajdhani';
+  src: url('../assets/fonts/Rajdhani/Rajdhani-700-latin-ext.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Share Tech Mono';
+  src: url('../assets/fonts/ShareTechMono/ShareTechMono-400-latin.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 .nci-app,
 .nci-ticker {
   /* Accent reds. Change these to re-theme the whole module. */
@@ -20,6 +67,12 @@
   --nci-up: #3ddc84;
   --nci-down: #ff6a4d;
   --nci-warn: #ffb347;
+
+  /* The tabs. */
+  --nci-tab-text: #d8d8d8;
+  --nci-tab-on: #ff8a96;
+  --nci-count-bg: rgba(255, 42, 68, 0.22);
+  --nci-count-text: #ffb3bc;
 }
 
 .nci-app {
@@ -179,8 +232,49 @@
 
 .nci-app .nci-star { color: #ffcc33; font-size: 10px; }
 
-.nci-app .nci-tabs { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
-.nci-app .nci-tabs button { width: auto; padding: 0 12px; }
+/* The tabs: a flat strip with an underline on the open one (after Night City Messenger's). */
+.nci-app .nci-tabs { display: flex; flex-wrap: wrap; align-items: stretch; padding: 0 8px; margin-bottom: 8px; background: var(--nci-accent-bg); border-bottom: 1px solid var(--nci-accent-dim); }
+.nci-app .nci-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  height: auto;
+  margin-bottom: -1px;
+  padding: 8px 13px;
+  background: none !important;
+  color: var(--nci-tab-text) !important;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  box-shadow: none;
+  font: 600 14px/1.2 'Rajdhani', 'Segoe UI', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.nci-app .nci-tabs button:hover { color: #fff !important; border-color: transparent; border-bottom-color: var(--nci-accent-dim); }
+.nci-app .nci-tabs button.active { background: none !important; color: var(--nci-tab-on) !important; border-color: transparent; border-bottom-color: var(--nci-accent-bright); }
+.nci-app .nci-tabs button:focus-visible { outline: 1px solid var(--nci-accent-bright); outline-offset: -2px; }
+.nci-app .nci-tabs button.nci-tab-new { color: var(--nci-up) !important; }
+.nci-app .nci-tabs select { align-self: center; }
+.nci-app .nci-count { padding: 2px 5px; border-radius: 2px; background: var(--nci-count-bg); color: var(--nci-count-text); font: 11px/1 'Share Tech Mono', monospace; letter-spacing: 0; }
+
+/* The GM Console's groups: folder tabs, the open one running into its strip of tabs. */
+.nci-app .nci-console > .nci-groups { gap: 3px; padding: 0; background: none; border-bottom: 2px solid var(--nci-accent-dim); }
+.nci-app .nci-console > .nci-groups:has(+ .nci-subtabs) { margin-bottom: 0; }
+.nci-app .nci-console > .nci-groups button {
+  margin-bottom: 0;
+  padding: 8px 20px 8px 14px;
+  background: var(--nci-row) !important;
+  border: 0;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  font: 700 15px/1.2 'Rajdhani', 'Segoe UI', sans-serif;
+  letter-spacing: 0.06em;
+}
+.nci-app .nci-console > .nci-groups button:hover { background: var(--nci-row-hover) !important; }
+.nci-app .nci-console > .nci-groups button.active { background: var(--nci-accent-dim) !important; color: #fff !important; }
+.nci-app .nci-console > .nci-subtabs button { padding: 7px 13px; font-size: 13px; }
 .nci-app .nci-actor { margin-left: auto; max-width: 220px; }
 /* The Business window's pickers, kept together at the right of the tab bar as the market window's is. */
 .nci-app .nci-tabs .nci-pickers { display: flex; gap: 6px; margin-left: auto; flex: 0 0 auto; }
@@ -363,16 +457,12 @@
 .nci-app .nci-roll .nci-approach .nci-muted { font-size: 11px; }
 
 /* The Pending tab: a row goes to its tab; the row's button does the same from the keyboard. */
-.nci-app .nci-console > .nci-tabs { flex-wrap: wrap; }
 .nci-app .nci-pending tbody tr { cursor: pointer; }
 .nci-app .nci-pending button { width: auto; padding: 0 8px; }
 
-/* The GM Console's two rows of buttons; a business's entry, its name first and the GM's buttons at the foot. */
+/* A business's entry on the GM Console: its name first, and the GM's buttons at the foot. */
 .nci-app .nci-bizhead { border-bottom: 1px solid var(--nci-accent-dim); padding-bottom: 6px; margin-bottom: 6px; }
 .nci-app .nci-bizname { font-size: 1.45em; font-weight: bold; line-height: 1.25; color: #fff; }
-.nci-app .nci-console > .nci-groups { margin-bottom: 4px; }
-.nci-app .nci-console > .nci-subtabs { border-bottom: 1px solid var(--nci-accent-dim); padding-bottom: 8px; }
-.nci-app .nci-console > .nci-subtabs button { height: 26px; font-size: 0.92em; }
 .nci-app .nci-gmbuttons { border-top: 1px solid var(--nci-accent-dim); margin-top: 8px; padding-top: 2px; }
 .nci-app .nci-gmbuttons .nci-actions { margin: 6px 0; }
 

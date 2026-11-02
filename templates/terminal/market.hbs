@@ -6,9 +6,9 @@
   </header>
 
   <nav class="nci-tabs">
-    <button type="button" data-action="switchTab" data-tab="market" class="{{#if isMarket}}active{{/if}}"><i class="fas fa-chart-line"></i> {{localize "NCI.Terminal.TabMarket"}}</button>
-    <button type="button" data-action="switchTab" data-tab="portfolio" class="{{#if isPortfolio}}active{{/if}}"><i class="fas fa-briefcase"></i> {{localize "NCI.Terminal.TabPortfolio"}}</button>
-    <button type="button" data-action="switchTab" data-tab="news" class="{{#if isNews}}active{{/if}}"><i class="fas fa-newspaper"></i> {{localize "NCI.Terminal.TabNews"}}</button>
+    <button type="button" data-action="switchTab" data-tab="market" class="{{#if isMarket}}active{{/if}}">{{localize "NCI.Terminal.TabMarket"}}</button>
+    <button type="button" data-action="switchTab" data-tab="portfolio" class="{{#if isPortfolio}}active{{/if}}">{{localize "NCI.Terminal.TabPortfolio"}}</button>
+    <button type="button" data-action="switchTab" data-tab="news" class="{{#if isNews}}active{{/if}}">{{localize "NCI.Terminal.TabNews"}}</button>
     {{#if actors.length}}
     <select name="actorId" class="nci-actor">
       {{#each actors}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}
