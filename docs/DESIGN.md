@@ -2071,6 +2071,21 @@ Tested in the test world (2026-11-02): a Supply contract rolled with Moto, offer
 
 The order: R1 and R2, then F1 with Media stories, then X1, then B7 and character ties. U1 and P1 stay as planned, after F1; X1's NET runs share Messenger work with U1 (§36.4).
 
+### 36.8 The windows reworked, and what came with them (2026-11-02 and 03; for v0.19.0)
+
+The user's requests after U1, each built and committed on its own. Colours, layout and wording changes are not all listed; the commits have them.
+
+- **Market Terminal** (5da8102, 6af679b). Folders Market, News, Portfolio and Settings, in the GM Console's style; Portfolio has Overview, Brokerage, Investments and Ledger. The Overview's chart is `portfolioPnl` (§4.3). The companies and funds tables share columns (`nci-listcols`), as do syndicates and private businesses (`nci-holdcols`).
+- **Business window** (168dd3c). Folders Overview, Financial (Ledger, Reports), Operations (Work, Staff, Projects, Back Room) and Ownership (Partners or Shareholders, Growth). Back Room holds the room's panel, company crime, Shortcuts and campaigns, and is not there for a company's non-officers, who therefore cannot help on those actions. A raid shows on Work and Back Room.
+- **Exposure as a bar** (32ff590, 639db8d). Bands only, on the Back Room tab and in the Overview's standings, while a room is running, and at a company for officers only. A company with no room still has to audit to learn it.
+- **Back-room staff** (6832c3d, ac97d68): see §36.1, U1c. A fixer's own bribes keep `crime.fixerFloor` (5,000 eb) in the cash; the live test saw a small company paying 1,000 eb a week against 701 eb of takings.
+- **Tickers in news** (`withTickers`, `newsFeed.js`). Added where a headline is posted and again where it is shown, so older entries and GM-written ones have them. Exact names only: "Kiroshi" does not match "Kiroshi Optical".
+- **Pending, for the GM** (69884c2). Each row has its home tab's buttons and fields, run by that tab's own handlers (`tabs/pending.js`); a click elsewhere on the row opens the tab. A big event's "leave it as a roll" is no button: doing nothing is that choice.
+- **Pending, for players** (96e9377, `Business/pending.js`). A folder with a count: everything a character could settle now across their businesses, those of syndicates they are officers of, their jobs and their syndicates, read from what the tabs would offer (`businessContext`), so the rules stay in one place. Buttons go through `pendingAct`, which runs a tab's action as the row's account and business and restores the pickers. Left out on purpose: the week's optional actions. Left out for now: an employee's request for a raise, which would need to open the Employee window.
+- **Colour theme** (c4e9f69, 8feab74; `core/theme.js`). A client setting, Night City red or Match Pneuma's Visual Tools, offered only with that module active. Every colour in the stylesheet is a token (a test holds to this). Matching reads what that module publishes, `data-pvt-base`, `--pvt-*` and `--cpr-*`, under `html.nci-theme-pvt`, and mixes the rest, so no colours of theirs are copied. It applies with any of its five skins (Dark, Light, Pneuma Dark, Pneuma Light, Pneuma Hub) or Colorize alone. The ticker takes `pneuma-theme-technical`, the class that module uses to reach something that is not a window. The skins' success and failure colours are drawn toward the text colour, because some are too faint for small text; losses on Dark's alternate rows are still 3.7:1.
+
+**Tested in the test world** (2026-11-02 and 03): the folders and tabs of both windows; a Launderer and a Fixer at a weekly close; votes refused and agreed from the player's Pending, as a character and as a syndicate, with a row opening its tab; all five skins and Colorize by screenshot and measured contrast. **Not yet tried live:** the GM Console's Pending actions, spacing and aligned tables and the Factions layout, on any skin (the user's login); on a player's Pending, job offers, invitations, takeovers and roll rows, for want of any open; the cash floor at a close.
+
 ## 37. Roadmap
 
 | Phase | Deliverable |
@@ -2098,8 +2113,9 @@ The order: R1 and R2, then F1 with Media stories, then X1, then B7 and character
 | R2 | **Done (v0.16.0), see §36.7.** Role abilities: a player rolls rank + 9 in business rolls, as staff do |
 | F1 | **Done (v0.17.0), see §36.3 and §36.7.** Faction standing with corps and gangs, moved by gigs and business actions; smear campaigns through the impact pipeline; Media rumours and published stories moving prices; after R1 |
 | X1 | **Part done (v0.18.0), see §36.7:** big events as scenes, and more for Lawmen, Nomads and Rockerboys. **Still proposed:** player rivalry: private share deals, Netrunner runs on a company's NET, poaching and sabotage; after F1 |
-| B7 | **Proposed, see §27.8 and §36.7.** Downtime bridge (separate module): company work through Crew Tools downtime, businesses on Night City Map. With it, character ties: REP and IP from business milestones, a business covering Housing and Lifestyle, and Teamwork's Loyalty checks; after X1 |
-| U1 | **Built, see §36.1, for the next release.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships; after F1 and B6 |
+| B7 | **Recommended next, after releasing v0.19.0; the user to confirm. Proposed, see §27.8 and §36.7.** Downtime bridge (separate module): company work through Crew Tools downtime, businesses on Night City Map. With it, character ties: REP and IP from business milestones, a business covering Housing and Lifestyle, and Teamwork's Loyalty checks; after X1 |
+| U1 | **Built, see §36.1 and §36.8, for v0.19.0.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships, back-room staff; after F1 and B6 |
+| UI | **Built, see §36.8, for v0.19.0.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
 | P1 | **Proposed, see §36.2.** Production: workshops, lines, stock, selling and fencing; after E3 |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |
