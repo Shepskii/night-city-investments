@@ -371,6 +371,6 @@
 .nci-app .nci-endbtns select[name="aimFaction"] { width: auto; max-width: 170px; }
 
 /* Standing with factions (F1a): a business's factions, each with its band. */
-.nci-app .nci-factions { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.nci-app .nci-factions :is(th, td) { width: 33.33%; vertical-align: top; }
 .nci-app .nci-faction-hostile, .nci-app .nci-faction-wary { color: var(--nci-down); }
 .nci-app .nci-faction-friendly, .nci-app .nci-faction-allied { color: var(--nci-up); }

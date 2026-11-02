@@ -512,8 +512,8 @@ test('a company\'s later states render cleanly: a regulator\'s case, administrat
     await rendered({ district: 'watson', standings: { corp_bio: 'friendly' } });
     const overview = text(await renderBusiness(windowFor(med, 'overview')));
     assert.match(overview, /Standing with factions/);
-    assert.match(overview, /Biotechnica friendly/);
-    assert.match(overview, /Tyger Claws neutral \(your turf\)/);
+    assert.match(overview, /Biotechnica \(friendly\)/);
+    assert.match(overview, /Tyger Claws \(your turf\)/);
     assert.doesNotMatch(overview, /Maelstrom/, 'a faction it has not met, off its turf');
     const tab = await renderConsole('factions');
     assertClean(tab, 'factions tab');
@@ -638,10 +638,15 @@ test('aiming at a faction: the Work tab offers the pick and the gift, the action
     assert.match(text(done), /Aimed at Maelstrom/);
 
     // Good terms on the Overview tab, and the week's event saying whose it is.
-    await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], standings: { gang_maelstrom: 'allied' }, period: { ...S.BusinessRepository.all()[0].period, event: { kind: 'smear', factionId: 'corp_bio', factionName: 'Biotechnica' } } });
+    await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], standings: { gang_maelstrom: 'allied', corp_bio: 'hostile', corp_mil: 'wary' }, period: { ...S.BusinessRepository.all()[0].period, event: { kind: 'smear', factionId: 'corp_bio', factionName: 'Biotechnica' } } });
     const over = await renderBusiness(windowFor(med, 'overview'));
     assertClean(over, 'overview terms');
     assert.match(text(over), /Protection money from gangs on your turf: -50%/);
+    assert.match(text(over), /Negative Neutral Friendly/);
+    const [, negative, neutral, friendly] = over.match(/<table class="nci-market nci-factions">[\s\S]*?<\/table>/)[0].split('<td');
+    assert.match(text(`<td${negative}`), /Biotechnica \(hostile\) Militech \(wary\)/, 'the strongest feeling first');
+    assert.match(text(`<td${neutral}`), /Inquisitors \(your turf\)/, 'a gang on the turf, even with no dealings');
+    assert.match(text(`<td${friendly}`), /Maelstrom \(allied\) \(your turf\)/);
     const hit = await renderBusiness(windowFor(med, 'week'));
     assertClean(hit, 'a hostile act');
     assert.match(text(hit), /A smear campaign/);

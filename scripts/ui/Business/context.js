@@ -1270,10 +1270,13 @@ function factionsContext(business) {
   const all = FactionRepository.list();
   const met = new Set(Object.keys(business.standings ?? {}));
   const turf = new Set(turfFactions(all, business.district).map((f) => f.id));
-  return all.filter((f) => met.has(f.id) || turf.has(f.id)).map((f) => {
+  const known = all.filter((f) => met.has(f.id) || turf.has(f.id)).map((f) => {
     const band = business.standings?.[f.id] ?? 'neutral';
-    return { name: f.name, band, label: L(`NCI.Faction.Band.${band}`), turf: turf.has(f.id) ? L('NCI.Faction.Turf') : '' };
+    return { name: f.name, band, label: band === 'neutral' ? '' : L(`NCI.Faction.Band.${band}`), turf: turf.has(f.id) ? L('NCI.Faction.Turf') : '' };
   });
+  // One column for each side, the strongest feeling at the top.
+  const inBands = (...bands) => bands.flatMap((band) => known.filter((f) => f.band === band));
+  return known.length ? { negative: inBands('hostile', 'wary'), neutral: inBands('neutral'), friendly: inBands('allied', 'friendly') } : null;
 }
 
 /** What standing does to the business's costs, in words (F1b); nothing while it does nothing. */

@@ -1770,6 +1770,7 @@
       "NoStanding": "No dealings yet.",
       "SetStanding": "Set standing",
       "WindowTitle": "Standing with factions",
+      "Column": { "negative": "Negative", "neutral": "Neutral", "friendly": "Friendly" },
       "Turf": "(your turf)",
       "Band": { "hostile": "hostile", "wary": "wary", "neutral": "neutral", "friendly": "friendly", "allied": "allied" }
     },
