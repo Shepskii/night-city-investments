@@ -2252,6 +2252,7 @@
       "Shut": "Shut by a raid. It can be built again as a project.",
       "InformantFound": "Your money found out who has been talking: {name}.",
       "AuditInformant": "Last internal audit ({date}): someone on the staff has been talking: {name}.",
+      "RaidIfNot": "Unanswered, they seize all the dirty cash, fine the business and shut the back room, and every partner draws heat.",
       "RaidSubject": "{name}: a raid",
       "RaidWon": "The raid on {name} found nothing it could use. Some of the heat is off.",
       "RaidLost": "The raid on {name} found the back room's money: {seized} eb seized and a {fine} eb fine. The room is still running.",

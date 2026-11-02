@@ -841,6 +841,7 @@ test('a raid and a shut back room read as words, and the hand\'s post is offered
     const raided = await renderBusiness(windowFor(med, 'week'));
     assertClean(raided, 'a raid on the Work tab');
     assert.match(text(raided), /A raid on the back room/);
+    assert.match(text(raided), /Unanswered, they seize all the dirty cash/);
     assert.match(text(raided), /Your GM may choose to play this one out/);
     assert.match(await renderBusiness(windowFor(med, 'staff')), /Back-room hand/);
     assert.doesNotMatch(sceneHook({ name: 'Back Room', location: 'upstairs', backRoom: { kind: 'ripping' } }, { kind: 'bust' }), /NCI\.|\{\w+\}/);

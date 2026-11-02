@@ -635,7 +635,7 @@ function eventContext(business, canAct, free) {
     // The GM may play a big one out at the table instead (X1).
     maybeScene: !answer && isBigEvent(event) ? L('NCI.Business.MaybeScene') : '',
     canAnswer: canAct && free && !answer,
-    ifNot: def.staff ? L(`NCI.Event.${event.kind}.IfNot`, { name: event.staffId ? staffOf(business, event.staffId)?.name ?? '' : '' }) : def.good ? L('NCI.Business.WindfallIfNot') : L('NCI.Business.EventIfNot'),
+    ifNot: event.kind === 'bust' ? L('NCI.BackRoom.RaidIfNot') : def.staff ? L(`NCI.Event.${event.kind}.IfNot`, { name: event.staffId ? staffOf(business, event.staffId)?.name ?? '' : '' }) : def.good ? L('NCI.Business.WindfallIfNot') : L('NCI.Business.EventIfNot'),
   };
 }
 
