@@ -106,6 +106,23 @@ class HeatServiceImpl {
     });
   }
 
+  /** A Lawman's favour (X1): takes heat off, and any penalty waiting for them; a fumble puts heat on. */
+  applyQuash(actor, key, effect) {
+    if (!isActiveGM()) return Promise.resolve();
+    return this._queue.run(async () => {
+      const tick = this.tick();
+      let { heat } = applyHeatEffect(MarketStore.getHeat(), { actorId: actor.id, name: actor.name, key, action: 'quash', tick, date: MarketClock.dateString() }, effect);
+      if (effect.outcome === 'success') {
+        for (const penalty of heat.penalties.filter((p) => p.actorId === actor.id && p.status === 'pending')) {
+          heat = upsertPenalty(heat, { ...penalty, status: 'dismissed' });
+          Hooks.callAll(HOOKS.HEAT_PENALTY, { penalty: { ...penalty, status: 'dismissed' } });
+        }
+      }
+      await MarketStore.setHeat(heat);
+      Hooks.callAll(HOOKS.HEAT_CHANGED);
+    });
+  }
+
   /** Someone has heard a rumour about this move (F1c): on its open window, they count as tipped. */
   noteTipped(sourceKey, actorId) {
     if (!isActiveGM() || !this.enabled()) return Promise.resolve();

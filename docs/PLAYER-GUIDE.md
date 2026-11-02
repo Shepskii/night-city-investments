@@ -233,6 +233,8 @@ To raise your business's standing with a faction, use **Court a client** (a corp
 
 You also hear things. Every few days your Credibility may bring a rumour by mail about a price move on its way or a hidden stake, saying more the better you roll. **Dig for rumours** on a company's page, once a week, does the same for that company. Trading on a rumour still counts for insider heat, though less than trading on something you did yourself.
 
+Some roles have something extra to offer. A **Nomad** can arrange a **Supply contract** (Moto) that cuts running costs for four weeks. A **Rockerboy** can play a **Gig at the venue** (Charismatic Impact), which lifts the week's takings and Reputation, most of all at a bar or club. A **Lawman** can use Backup to answer a raid or a regulator's case, once a month for each business, and can **Call in a favour** on the market window's heat panel to bring down their own heat.
+
 Your GM may decide to play a big event out with you, such as a raid or a hostile faction's move. You'll get a mail and there's nothing to roll: how the scene goes decides it.
 
 A business can also **Run a campaign** against a listed company: a smear or a leak that pushes its share price down a little. It costs 1,000 eb whatever the roll, you can run one a month, and your GM may need to approve it. Trading that company before the news lands draws insider heat, and a fumble gets you caught.

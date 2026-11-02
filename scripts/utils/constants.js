@@ -94,6 +94,7 @@ export const FLAGS = Object.freeze({
   DISCOVERIES: 'discoveries',
   /** When a character last looked into each hidden holding (B6d): layer ref -> game day, for the weekly limit. */
   INVESTIGATED: 'investigated',
+  QUASHED: 'quashed',
   /** On actors. The jobs a character holds or is offered at player businesses (DESIGN §32). Written only by the GM. */
   JOBS: 'jobs',
   /** On a syndicate's journal: its record, which its members can read. Written only by the GM. (Its account is the `portfolio` flag beside it.) */

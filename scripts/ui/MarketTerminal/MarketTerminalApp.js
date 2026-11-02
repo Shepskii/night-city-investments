@@ -26,6 +26,7 @@ import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient } from '../../services/BusinessClient.js';
 import { investigate, withDiscoveries } from '../investigate.js';
 import { publishStory, digRumours } from '../publishStory.js';
+import { quashRoll } from '../quash.js';
 import { StoryService } from '../../services/StoryService.js';
 import { SyndicateClient } from '../../services/SyndicateClient.js';
 import { accountFor, tradingAccounts, ownerOf } from '../accounts.js';
@@ -303,6 +304,8 @@ export class MarketTerminalApp extends BaseApplication {
   /** Try one of the cover-up actions. The player makes the skill roll on this client; the GM's side checks it and takes the cost. */
   static async _onCoverTracks(event, target) {
     if (!this.actor) return ui.notifications.warn(L('NCI.Errors.NoActor'));
+    // A Lawman's favour has its own roll (X1).
+    if (target.dataset.id === 'quash') return quashRoll(this.actor);
     await PortfolioClient.heatAction(this.actor, target.dataset.id);
   }
 

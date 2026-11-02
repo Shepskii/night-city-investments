@@ -508,6 +508,22 @@
           "strong": "A good impression: standing up well.",
           "exceptional": "They want you on their list: standing up a long way."
         },
+        "supply": {
+          "fumble": "The shipment is lost on the road, and the business pays for it.",
+          "failure": "Nothing comes of it.",
+          "narrow": "A small contract: running costs down 3% for four weeks.",
+          "solid": "A good contract: running costs down 5% for four weeks.",
+          "strong": "A strong contract: running costs down 8% for four weeks.",
+          "exceptional": "The best the roads can offer: running costs down 10% for four weeks."
+        },
+        "venue": {
+          "fumble": "It goes badly: takings and Reputation down.",
+          "failure": "A quiet night. Nothing changes.",
+          "narrow": "A decent crowd: takings and Reputation up a little.",
+          "solid": "A good night: takings and Reputation up.",
+          "strong": "A great night: takings and Reputation up well.",
+          "exceptional": "They'll talk about this one: takings and Reputation up a long way."
+        },
         "campaign": {
           "fumble": "You get caught: nothing reaches the market, standing with them falls, and it leaves a trail.",
           "failure": "Nobody picks it up. The money is gone.",
@@ -1386,6 +1402,15 @@
           "success": "{action}: it works. Things should quiet down. ({total} against DV {dv}; {cost} spent.)",
           "failure": "{action}: it does not take. Nothing changes. ({total} against DV {dv}; {cost} spent.)",
           "fumble": "{action}: it goes badly, and people will have noticed. ({total} against DV {dv}; {cost} spent.)"
+        },
+        "quash": {
+          "Name": "Call in a favour",
+          "Desc": "Backup, and a friend on the force. Takes a lot off your heat and stops any penalty waiting for you. It costs the same whatever comes of it, you can do it once a month, and a fumble makes things worse.",
+          "Result": {
+            "success": "Your friend makes it go away. Your heat is down, and any pending penalty is dropped.",
+            "failure": "Your friend can't help this time.",
+            "fumble": "The favour goes wrong, and more people are looking at you now."
+          }
         },
         "mask": { "Name": "Mask the pattern", "Desc": "Run offsetting trades so the pattern is harder to read. Cheap, and you can do it often, but it only takes a little off." },
         "books": { "Name": "Cook the books", "Desc": "Make the paperwork tell a different story. A solid reduction for a modest price." },
@@ -2582,6 +2607,8 @@
         "keepSafe": { "Name": "Keep it safe", "Hint": "Tactics, Persuasion, Combat Awareness or Backup: less protection money this week." },
         "court": { "Name": "Court a client", "Hint": "Business, Persuasion, Trading, Operator, Charismatic Impact or Credibility: raises standing with a corporation." },
         "respects": { "Name": "Pay respects", "Hint": "Streetwise, Persuasion, Operator or Charismatic Impact: raises standing with a gang." },
+        "supply": { "Name": "Supply contract", "Hint": "Moto, and a Nomad's contacts on the roads: running costs down by up to 10% for four weeks. A fumble loses the shipment." },
+        "venue": { "Name": "Gig at the venue", "Hint": "Charismatic Impact: this week's takings and Reputation up, most of all at a bar or club." },
         "campaign": { "Name": "Run a campaign", "Hint": "A smear (Composition or Persuasion) or a leak (Library Search or Interface) against a listed company: its share price falls a little. One a month." },
         "contracts": { "Name": "Chase contracts", "Hint": "Business (Persuasion or Trading at DV +2), Teamwork, Operator or Maker: sets the week's takings, and Reputation up a little." },
         "books": { "Name": "Tighten the books", "Hint": "Accounting (Business at DV +2) or Moto: the Cost base down." },
@@ -2716,6 +2743,7 @@
         "vested": "{staff}'s granted shares vested",
         "medical": "Medical bills",
         "factionGift": "A gift to a faction",
+        "shipmentLost": "A shipment lost on the road",
         "campaign": "A campaign against a company",
         "sceneWon": "Came out of a scene well",
         "sceneLost": "Came off worse in a scene",
@@ -2769,6 +2797,7 @@
       "DaysLeft": "You have {n} business day(s) left this week.",
       "AimGift": "Aiming at a faction costs a {gift} eb gift from the cash, spent whatever the roll.",
       "AimNone": "No faction",
+      "SupplyRunning": "A supply contract: running costs down {pct}% for {weeks} more week(s).",
       "SceneOpen": "{event}: your GM is playing this one out with you, so there is nothing to roll.",
       "MaybeScene": "Your GM may choose to play this one out with you instead.",
       "Campaign": { "smear": "smear", "leak": "leak" },
@@ -3026,6 +3055,10 @@
         "not-media": "that takes the Media role's Credibility",
         "bad-angle": "that is not an angle for a story",
         "story-wait": "you have published a story too recently",
+        "not-lawman": "that takes the Lawman role's Backup",
+        "quash-wait": "you have called in a favour too recently",
+        "backup-wait": "Backup has answered for this business too recently",
+        "heat-off": "insider heat is switched off",
         "rumour-wait": "you have dug for rumours too recently",
         "story-same-topic": "that company has been in the news: another story needs new evidence",
         "no-story": "that story is no longer waiting",

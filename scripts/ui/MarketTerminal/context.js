@@ -6,7 +6,7 @@
 import {
   getSeries, rangeStats, describeTerms, sessionActive, lockedOut, fundComposition, normalizeNotify, moverThreshold,
   NOTIFY_CATEGORIES, NOTIFY_CHANNELS, dueWithdrawals, ipoStatus, ipoPrice, ipoOrdersFor, dayIndex,
-  HEAT_ACTIONS, HEAT_ACTION_IDS, canAttempt, cooldownLeft, isFrozen,
+  HEAT_ACTIONS, HEAT_ACTION_IDS, canAttempt, cooldownLeft, isFrozen, ABILITIES, BUSINESS_DEFAULTS,
 } from '../../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS } from '../../utils/constants.js';
 import { CompanyRepository } from '../../data/CompanyRepository.js';
@@ -16,6 +16,7 @@ import { MarketClock } from '../../services/MarketClockService.js';
 import { TradingSettings } from '../../services/TradingSettings.js';
 import { TerminalAccess } from '../../services/TerminalAccess.js';
 import { SkillAdapter } from '../../services/SkillAdapter.js';
+import { quashWait } from '../quash.js';
 import { sparkline, lineChart } from '../components/chart.js';
 import { L, money, whole, pct, trendClass } from '../format.js';
 
@@ -48,6 +49,20 @@ export function heatContext(actor, portfolio, tick) {
       canUse: can.ok,
     };
   }) : [];
+  // A Lawman can call in a favour (X1).
+  if (show && SkillAdapter.baseFor(actor, ABILITIES.backup).base > 0) {
+    const rules = BUSINESS_DEFAULTS.roles.quash;
+    const wait = quashWait(actor);
+    actions.push({
+      id: 'quash',
+      name: L('NCI.Heat.Action.quash.Name'),
+      desc: L('NCI.Heat.Action.quash.Desc'),
+      skill: L('NCI.Heat.Panel.Skill', { skill: ABILITIES.backup.ability, total: SkillAdapter.rollBase(actor, ABILITIES.backup).base, dv: rules.dv }),
+      cost: L('NCI.Heat.Panel.Cost', { cost: rules.cost.toLocaleString() }),
+      status: wait > 0 ? L('NCI.Heat.Panel.ReadyIn', { n: wait }) : L('NCI.Heat.Panel.Ready'),
+      canUse: wait === 0,
+    });
+  }
 
   return {
     show,

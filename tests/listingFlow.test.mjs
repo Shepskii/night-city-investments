@@ -913,3 +913,47 @@ test('a big event as a scene: run, then lost, with what it leaves behind; run ag
     await S.MarketStore.setBusinessesHidden(hiddenSaved);
   }
 });
+
+test('a Lawman calls in a favour: heat down and penalties dropped; a miss still costs; a month between; a fumble adds heat', async () => {
+  const { SkillAdapter } = await import('../scripts/services/SkillAdapter.js');
+  const { HeatService } = await import('../scripts/services/HeatService.js');
+  const baseFor = SkillAdapter.baseFor;
+  const verifyLevers = SkillAdapter.verifyLevers;
+  const { MODULE_ID, FLAGS } = await import('../scripts/utils/constants.js');
+  const heatSaved = S.MarketStore.getHeat();
+  const rolled = { band: 'solid' };
+  SkillAdapter.baseFor = (actor, use) => (use.ability === 'Backup' && actor.id === cass.id ? { base: 4, name: 'Backup', parts: 'Backup 4' } : baseFor.call(SkillAdapter, actor, use));
+  SkillAdapter.verifyLevers = async () => ({ ok: true, result: { ...rolled } });
+  env.store.set('heatEnabled', true);
+  const quash = (actor) => S.BusinessService._quash(actor, { key: `q${Math.random()}` });
+  const heatOf = () => HeatService.heatOf(cass.id);
+  try {
+    await S.MarketStore.setHeat({ ...heatSaved, penalties: [{ id: 'hq', actorId: cass.id, name: 'Cass', kind: 'fine', params: { amount: 10 }, status: 'pending' }, { id: 'hq2', actorId: bob.id, name: 'Bob', kind: 'fine', params: { amount: 10 }, status: 'pending' }] });
+    await HeatService.setHeat(cass.id, 60);
+    await cass.unsetFlag?.(MODULE_ID, FLAGS.QUASHED);
+    assert.equal((await quash(bob)).reason, 'not-lawman');
+    const wealth = cass.system.wealth.value;
+    assert.deepEqual(await quash(cass), { ok: true, quash: { outcome: 'success' } });
+    await settle();
+    const rules = E.BUSINESS_DEFAULTS.roles.quash;
+    assert.equal(cass.system.wealth.value, wealth - rules.cost);
+    assert.ok(heatOf() <= 60 - rules.reduce + 1, `heat ${heatOf()}`);
+    const statusOf = (id) => S.MarketStore.getHeat().penalties.find((p) => p.id === id).status;
+    assert.equal(statusOf('hq'), 'dismissed');
+    assert.equal(statusOf('hq2'), 'pending', 'someone else\'s stays');
+    assert.equal((await quash(cass)).reason, 'quash-wait');
+
+    await cass.unsetFlag?.(MODULE_ID, FLAGS.QUASHED);
+    rolled.band = 'fumble';
+    const before = heatOf();
+    assert.equal((await quash(cass)).quash.outcome, 'fumble');
+    await settle();
+    assert.ok(heatOf() > before, 'it makes things worse');
+  } finally {
+    SkillAdapter.baseFor = baseFor;
+    SkillAdapter.verifyLevers = verifyLevers;
+    env.store.set('heatEnabled', false);
+    await cass.unsetFlag?.(MODULE_ID, FLAGS.QUASHED);
+    await S.MarketStore.setHeat(heatSaved);
+  }
+});

@@ -9,7 +9,7 @@ import {
   daysLeft, activeProject, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
   projectOffer, PROJECT_KINDS, upgradesOf, protectionFactor, headcountOf,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
-  actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent,
+  actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent, supplyCut, actionFor,
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
@@ -502,7 +502,7 @@ function weekContext(business, actor, canAct) {
     noSlots: period.slots.length >= slots,
     daysText: canAct ? L('NCI.Business.DaysLeft', { n: daysLeft(business, actor.id) }) : '',
     // A chartered company has the five company actions; a smaller business the shop actions.
-    actions: actionIdsFor(business.stage).filter((id) => !(id === 'campaign' || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).map((id) => {
+    actions: actionIdsFor(business.stage).filter((id) => !(id === 'campaign' || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).map((id) => {
       const slot = taken.get(id);
       const bonus = period.bonuses.some((b) => b.action === id && !b.used);
       return {
@@ -515,7 +515,7 @@ function weekContext(business, actor, canAct) {
         aim: aimOf(id),
         canRoll: runs && free && !slot && !(id === 'campaign' && (business.campaign || campaignWait(business, BusinessClient.day()) > 0)),
         canHelp: canAct && !helped && !slot,
-        waiting: id === 'campaign' ? campaignNote(business) : '',
+        waiting: id === 'campaign' ? campaignNote(business) : id === 'supply' ? supplyNote(business) : '',
       };
     }),
     helped: actor && helped && canAct ? L('NCI.Business.AlreadyHelped') : '',
@@ -526,6 +526,22 @@ function weekContext(business, actor, canAct) {
     info: business.stage >= 2 ? infoContext(business, runs) : null,
     unworkedNote: L('NCI.Business.UnworkedNote'),
   };
+}
+
+/** A role's own action shows only if the character or an employee has that role's ability (X1). */
+function roleCanDo(business, actor, id) {
+  const action = actionFor(business.stage, id);
+  if (!action?.roleOnly) return true;
+  const ability = action.abilities[0];
+  const roller = actor?.isSyndicate ? actor.as : actor;
+  return (roller && SkillAdapter.baseFor(roller, ability).base > 0)
+    || (business.staff ?? []).some((s) => s.status === 'active' && (s.bases?.[useKey(ability)] ?? 0) > 0);
+}
+
+/** A running supply contract, in words (X1). */
+function supplyNote(business) {
+  const cut = supplyCut(business, business.period.index);
+  return cut ? L('NCI.Business.SupplyRunning', { pct: Math.round(cut * 100), weeks: business.supply.until - business.period.index + 1 }) : '';
 }
 
 /** The companies a campaign may be aimed at, and what it costs (F1c). */

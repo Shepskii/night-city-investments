@@ -41,6 +41,7 @@ export * from './factions.js';
 export * from './businessCampaign.js';
 export * from './stories.js';
 export * from './businessScenes.js';
+export * from './businessRoles.js';
 export * from './funds.js';
 export * from './withdrawals.js';
 export * from './brokerMail.js';

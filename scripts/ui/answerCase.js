@@ -5,7 +5,7 @@
  *              the answer to the GM's service, which reads the roll back.
  */
 
-import { BUSINESS_DEFAULTS, MAX_LUCK_PER_ROLL } from '../engine/index.js';
+import { BUSINESS_DEFAULTS, MAX_LUCK_PER_ROLL, backupWait } from '../engine/index.js';
 import { SkillAdapter } from '../services/SkillAdapter.js';
 import { BusinessClient } from '../services/BusinessClient.js';
 import { L } from './format.js';
@@ -17,7 +17,9 @@ import { L } from './format.js';
 export async function answerCase(account, business) {
   const roller = account?.isSyndicate ? account.as : account;
   if (!roller) return ui.notifications.warn(L('NCI.Errors.NoActor'));
-  const { uses, bribe } = BUSINESS_DEFAULTS.regulator;
+  const { bribe } = BUSINESS_DEFAULTS.regulator;
+  // Backup only for a Lawman, and once a month (X1).
+  const uses = BUSINESS_DEFAULTS.regulator.uses.filter((u) => u.kind !== 'ability' || (SkillAdapter.baseFor(roller, u).base > 0 && backupWait(business, BusinessClient.day()) === 0));
   const luckLeft = SkillAdapter.luck(roller);
   const luckMax = Math.min(MAX_LUCK_PER_ROLL, luckLeft);
   const title = L('NCI.Regulator.RollTitle', { name: business.name });
@@ -25,7 +27,7 @@ export async function answerCase(account, business) {
     window: { title },
     position: { width: 420 },
     content: `<p>${L('NCI.Regulator.RollHint', { bribe })}</p>`
-      + `<label>${L('NCI.Ownership.Skill')} <select name="use">${uses.map((u, i) => `<option value="${i}">${u.skill}</option>`).join('')}</select></label>`
+      + `<label>${L('NCI.Ownership.Skill')} <select name="use">${uses.map((u, i) => `<option value="${i}">${u.skill ?? u.ability}</option>`).join('')}</select></label>`
       + `<label>${L('NCI.Ownership.LuckLeft', { n: luckLeft })} <input type="number" name="luck" min="0" max="${luckMax}" step="1" value="0" ${luckMax ? '' : 'disabled'}></label>`,
     ok: { label: L('NCI.Regulator.Answer'), callback: (e, button) => ({ use: uses[Number(button.form.elements.use.value)], luck: Math.min(luckMax, Math.max(0, Math.floor(Number(button.form.elements.luck.value) || 0))) }) },
     rejectClose: false,

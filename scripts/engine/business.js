@@ -67,6 +67,7 @@ import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from './businessEvents.js';
 import { aimCheck, giftFor } from './factions.js';
 import { campaignCheck, runCampaign } from './businessCampaign.js';
+import { supplyCut, runSupply, runVenue, backupWait } from './businessRoles.js';
 import { normalizeName, gigTags } from './gigImpact.js';
 import {
   fixerOffer, takeFixerLoan, bankCheck, applyBankRoll, repayLoan, payLoans, investorOffer, inviteInvestor, acceptInvestment,
@@ -292,7 +293,9 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     if (b.period.slots.length >= (p.stages[b.stage]?.slots ?? 1)) return fail('no-slot');
     // A staff event's own employee (the one off sick, caught stealing, being poached...) cannot answer it.
     if (use?.kind === 'staff' && event.staffId && use.staffId === event.staffId) return fail('staff-involved');
-    return allowed(eventUses(b, event.kind), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b, traits });
+    // A Lawman's Backup answers a raid once a month (X1).
+    const uses = eventUses(b, event.kind).filter((u) => !(event.kind === 'raid' && u.ability === 'Backup' && backupWait(b, day, p) > 0));
+    return allowed(uses, use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
 
   if (request.type === 'action') {
@@ -310,7 +313,9 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
       if (!campaign.ok) return campaign;
     }
     const bonusAvailable = b.period.bonuses.some((x) => x.action === request.action && !x.used);
-    return allowed(actionUses(request.action, arch, b.stage), use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p, b, traits });
+    // A role's own action takes that role: no hired help (X1).
+    const allowHire = !actionFor(b.stage, request.action).roleOnly;
+    return allowed(actionUses(request.action, arch, b.stage), use, { dv: stageDv(b.stage, p), allowHire, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
 
   if (request.type === 'assist') {
@@ -556,6 +561,8 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
         addLedger(b, { day, kind: 'factionGift', amount: -aim.gift }, p);
         out.events.push({ type: 'factionDeal', factionId: aim.faction.id, band: r.band });
       }
+      if (request.action === 'supply') runSupply(b, { band: r.band, day }, p);
+      if (request.action === 'venue') runVenue(b, { band: r.band }, p);
       if (target) {
         out.events.push(...runCampaign(b, { ticker: target.ticker, name: target.name, useKey: useKey(request.use), band: r.band, actorId: actor.id, day, approval: ctx.campaignApproval !== false }, p));
       }
@@ -940,6 +947,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
         action: 'respond', event: b.period.event.kind, by: rollerId(), use: useKey(request.use), band: r.band, total: r.total, dv: r.dv, approach: r.approach, luck: r.luck, bonus: 0,
       });
       out.events.push({ type: 'roll', action: 'respond', band: r.band, exposure: r.exposure });
+      if (b.period.event.kind === 'raid' && request.use?.ability === 'Backup') b.lastBackupDay = day;
       break;
     }
     case 'loanRoll':
@@ -1569,7 +1577,8 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   // A security upgrade cuts the protection money for good.
   // So do friendly gangs on the turf, and hostile ones raise it; corporations in its sector move the Cost base (F1b).
   const fixed = (stage.rent + (stage.licence ?? 0)) * district.rent + stage.protection * protection * (relations?.protection ?? 1) * protectionFactor(b, p) * district.risk;
-  const costBase = b.state.costFactor * (relations?.cost ?? 1);
+  // A Nomad's supply contract takes a share off too, while it runs (X1).
+  const costBase = b.state.costFactor * (relations?.cost ?? 1) * (1 - supplyCut(b, b.period.index, p));
   const upkeep = Math.round((arch.costs * b.state.capacity ** 0.85 * costBase + fixed) * part);
   // What the upkeep is made of, for the week's cashbook; protection money takes the rounding.
   const running = Math.round(arch.costs * b.state.capacity ** 0.85 * costBase * part);

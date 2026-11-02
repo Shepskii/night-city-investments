@@ -96,7 +96,7 @@ export const DISTRICTS = Object.freeze(Object.fromEntries([
 export const districtOf = (id) => DISTRICTS[id] ?? { id: '', traffic: 1, rent: 1, risk: 1 };
 
 /** In display order. */
-export const ACTION_IDS = Object.freeze(['work', 'promote', 'source', 'fixUp', 'keepSafe', 'court', 'respects', 'campaign']);
+export const ACTION_IDS = Object.freeze(['work', 'promote', 'source', 'fixUp', 'keepSafe', 'court', 'respects', 'campaign', 'supply', 'venue']);
 
 /**
  * The weekly actions (DESIGN §27.0; `court` and `respects`, F1b). `skills` roll the action itself (`work` uses the
@@ -111,11 +111,13 @@ export const ACTIONS = Object.freeze({
   keepSafe: Object.freeze({ skills: [S.tactics, S.persuasion], abilities: [A.combatAwareness, A.backup], help: [S.streetwise, S.humanPerception] }),
   court: Object.freeze({ skills: [S.business, S.persuasion, S.trading], abilities: [A.operator, A.charismaticImpact, A.credibility], help: [S.humanPerception, S.librarySearch] }),
   respects: Object.freeze({ skills: [S.streetwise, S.persuasion], abilities: [A.operator, A.charismaticImpact], help: [S.localExpert, S.humanPerception] }),
+  supply: Object.freeze({ skills: [], abilities: [A.moto], help: [S.driveLand, S.trading], roleOnly: true }),
+  venue: Object.freeze({ skills: [], abilities: [A.charismaticImpact], help: [S.playInstrument, S.persuasion], roleOnly: true }),
   campaign: Object.freeze({ skills: [S.composition, S.persuasion, S.librarySearch], abilities: [A.interface], help: [S.humanPerception, S.streetwise] }),
 });
 
 /** A chartered company's five actions (DESIGN §27.4, §31): they replace the shop actions at stage 2. */
-export const COMPANY_ACTION_IDS = Object.freeze(['contracts', 'books', 'relations', 'permits', 'shortcuts', 'campaign']);
+export const COMPANY_ACTION_IDS = Object.freeze(['contracts', 'books', 'relations', 'permits', 'shortcuts', 'campaign', 'supply', 'venue']);
 
 /** Each company action's skill, its alternatives at DV +2, the role abilities that fit, and its help. */
 export const COMPANY_ACTIONS = Object.freeze({
@@ -133,6 +135,8 @@ export const COMPANY_ACTIONS = Object.freeze({
     abilities: [A.backup], help: [S.localExpert, S.librarySearch],
   }),
   shortcuts: Object.freeze({ skills: [S.bribery, Object.freeze({ ...S.streetwise, dvAdd: 2 })], abilities: [A.operator], help: [S.streetwise, S.humanPerception] }),
+  supply: Object.freeze({ skills: [], abilities: [A.moto], help: [S.driveLand, S.trading], roleOnly: true }),
+  venue: Object.freeze({ skills: [], abilities: [A.charismaticImpact], help: [S.playInstrument, S.persuasion], roleOnly: true }),
   campaign: Object.freeze({ skills: [S.composition, S.persuasion, S.librarySearch], abilities: [A.interface], help: [S.humanPerception, S.streetwise] }),
 });
 
@@ -333,6 +337,18 @@ export const BUSINESS_DEFAULTS = Object.freeze({
    * with standing hits; winding up sells its assets at `salvage` of book value.
    * Going into administration dents a listed company's price by `hit` (a log-return).
    */
+  /**
+   * What roles bring (X1). A supply contract takes `cut` off the running costs for `weeks`, a fumble losing
+   * `shipment` eb by stage. A gig at the venue adds `takings` and `reputation`, times `venueScale` at the `venues`.
+   * Backup answers a raid or a case once in `backup.days`. Quashing costs `cost` eb, once in `days`, and takes
+   * `reduce` heat and any pending penalty; a fumble adds `fumble`.
+   */
+  roles: Object.freeze({
+    supply: Object.freeze({ weeks: 4, maxCut: 0.1, cut: byBand([0, 0, 0.03, 0.05, 0.08, 0.1]), shipment: Object.freeze([200, 500, 1500]) }),
+    venue: Object.freeze({ takings: byBand([-0.05, 0, 0.05, 0.1, 0.15, 0.2]), reputation: byBand([-2, 0, 1, 2, 3, 4]), venues: Object.freeze(['bar']), venueScale: 1.5 }),
+    backup: Object.freeze({ days: 28 }),
+    quash: Object.freeze({ dv: 17, cost: 1000, days: 28, reduce: 25, fumble: 15 }),
+  }),
   /** A big event played out at the table (X1): what winning it does for Reputation. */
   scene: Object.freeze({ wonReputation: 2 }),
   /**
@@ -389,7 +405,7 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     chance: Object.freeze({ clean: 0, low: 0.05, moderate: 0.15, high: 0.35 }),
     bonus: Object.freeze({ clean: 0, low: 0, moderate: 2, high: 4 }),
     base: 14, notice: 14, clearShare: 0.5, fine: 0.05, fineHigh: 0.1, compliance: -10, bribe: 500, unmaskShare: 0.25,
-    uses: Object.freeze([S.bureaucracy, S.accounting, S.bribery]),
+    uses: Object.freeze([S.bureaucracy, S.accounting, S.bribery, A.backup]),
   }),
   /**
    * Hidden ownership (B6d): at most `maxLayers` layers on a holding (a broker's nominee, then shells),

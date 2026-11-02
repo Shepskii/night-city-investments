@@ -24,7 +24,7 @@ import {
   takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
   restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask,
   concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget, scandalHit, investigationCost, spendDays,
-  moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene,
+  moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene, ABILITIES, backupWait, quashEffect,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
@@ -513,6 +513,8 @@ class BusinessServiceImpl {
     // A Media's story (F1c) has nothing to do with whether player businesses are switched on.
     if (request.type === 'publishStory') return this._receipt(actor, request, await StoryService.publish(actor, request));
     if (request.type === 'rumourRoll') return this._receipt(actor, request, await StoryService.digRumours(actor, request));
+    // A Lawman quashing their own heat (X1) has nothing to do with businesses either.
+    if (request.type === 'quashRoll') return this._receipt(actor, request, await this._quash(actor, request));
     if (!this.enabled()) return this._receipt(actor, request, { ok: false, reason: 'disabled' });
     // Looking behind a hidden holding (B6d) reads only the GM's hidden state and changes no business.
     if (request.type === 'investigate') return this._receipt(actor, request, await this._investigate(actor, request));
@@ -849,6 +851,7 @@ class BusinessServiceImpl {
     // A Media's story (F1c): whether it was believed.
     if (out.story) result.story = out.story;
     if (out.rumour) result.rumour = out.rumour;
+    if (out.quash) result.quash = out.quash;
     await actor.setFlag(MODULE_ID, FLAGS.BUSINESS_RECEIPTS, [{
       processed: [...r.processed, request.key].slice(-PROCESSED_CAP),
       results: [...r.results, result].slice(-RESULTS_CAP),
@@ -1247,6 +1250,8 @@ class BusinessServiceImpl {
     if (!can.ok) return can;
     const use = (request.use && BUSINESS_DEFAULTS.regulator.uses.find((u) => useKey(u) === useKey(request.use))) ?? null;
     if (!use) return { ok: false, reason: 'bad-use' };
+    // A Lawman's Backup answers a case once a month (X1).
+    if (use.ability === 'Backup' && backupWait(stored, this.day()) > 0) return { ok: false, reason: 'backup-wait' };
     const bribe = caseBribe(use);
     if (bribe > stored.till) return { ok: false, reason: 'no-funds' };
     const hidden = MarketStore.getBusinessesHidden();
@@ -1256,6 +1261,7 @@ class BusinessServiceImpl {
     if (!check.ok) return check;
     const day = this.day();
     const b = normalizeBusiness(structuredClone(stored));
+    if (use.ability === 'Backup') b.lastBackupDay = day;
     if (bribe) payCaseBribe(b, bribe, day);
     const r = check.result;
     if (r.success) {
@@ -1510,6 +1516,25 @@ class BusinessServiceImpl {
       { runners: [actorId], tipped: owners },
     );
     await this._campaignStanding(b, ticker, rules.standing);
+  }
+
+  /** A Lawman calls in a favour against their own heat (X1): a roll, a cost whatever comes of it, once a month. */
+  async _quash(actor, request) {
+    const rules = BUSINESS_DEFAULTS.roles.quash;
+    if (!HeatService.enabled()) return { ok: false, reason: 'heat-off' };
+    if (!(SkillAdapter.baseFor(actor, ABILITIES.backup).base > 0)) return { ok: false, reason: 'not-lawman' };
+    const day = this.day();
+    const last = actor.getFlag(MODULE_ID, FLAGS.QUASHED);
+    if (Number.isFinite(last) && day - last < rules.days) return { ok: false, reason: 'quash-wait' };
+    const wealth = WealthAdapter.get(actor);
+    if (wealth < rules.cost) return { ok: false, reason: 'insufficient-funds' };
+    const check = await SkillAdapter.verifyLevers(actor, request, { dv: rules.dv, use: ABILITIES.backup });
+    if (!check.ok) return check;
+    await WealthAdapter.set(actor, wealth - rules.cost, L('NCI.Heat.Action.quash.Name'));
+    await actor.setFlag(MODULE_ID, FLAGS.QUASHED, day);
+    const effect = quashEffect(check.result.band);
+    await HeatService.applyQuash(actor, request.key, effect);
+    return { ok: true, quash: { outcome: effect.outcome } };
   }
 
   /** What the GM is told, and the owners, when a big event becomes a scene (X1). */

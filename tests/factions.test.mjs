@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   BUSINESS_DEFAULTS, DISTRICTS, normalizeFaction, standingBand, matchFaction, turfFactions, gigStanding, moveStanding, driftStanding, standingBands, matchBusiness,
   findTarget, targetShare, gigTags, resolveClient, applyBusinessRequest, advanceBusiness, rollSpec, normalizeBusiness, drawEvent, hostileAct, hostileChance, factionEffects, factionFallout,
-  giftFor, campaignKind, believability, storyPercent, rollStory, storyCheck, rumourLevel, freshRumours, STORY_RULES, isBigEvent, sceneCandidate, startScene, sceneToRoll, settleScene, ARCHETYPES, SKILLS, ABILITIES,
+  giftFor, campaignKind, believability, storyPercent, rollStory, storyCheck, rumourLevel, freshRumours, STORY_RULES, isBigEvent, sceneCandidate, startScene, sceneToRoll, settleScene, supplyCut, runVenue, backupWait, quashEffect, ARCHETYPES, SKILLS, ABILITIES,
 } from '../scripts/engine/index.js';
 import { resolveRoll } from '../scripts/engine/rolls.js';
 import { starterFactions } from '../scripts/data/starter-factions.js';
@@ -407,4 +407,75 @@ test('a shakedown is heavy when the gang is hostile', () => {
   const gangs = [{ id: 'mael', name: 'Maelstrom' }];
   assert.ok(draws({ shakedown: 1, gangs, hostile: [{ id: 'mael' }] }).every((e) => e.heavy));
   assert.ok(draws({ shakedown: 1, gangs, hostile: [] }).every((e) => !e.heavy));
+});
+
+// ── X1: Nomads, Rockerboys and Lawmen ───────────────────────────────
+
+test('a Nomad\'s supply contract cuts running costs for four weeks, and a fumble loses the shipment', () => {
+  const b = shop();
+  const before = b.till;
+  const moto = ABILITIES.moto;
+  const out = send(b, { type: 'action', businessId: 'b1', action: 'supply', use: moto }, checkOf(9));
+  assert.equal(out.ok, true, out.reason);
+  const { cut, until } = out.business.supply;
+  assert.ok(cut >= 0.03 && cut <= 0.1);
+  assert.equal(until, b.period.index + 3);
+  assert.equal(out.business.till, before, 'nothing spent on a pass');
+  assert.deepEqual([b.period.index, until, until + 1].map((i) => supplyCut(out.business, i)), [cut, cut, 0], 'four weeks, then over');
+  assert.equal(supplyCut(b, b.period.index), 0);
+
+  const lost = send(b, { type: 'action', businessId: 'b1', action: 'supply', use: moto }, { ok: true, result: resolveRoll({ base: 14, roll: { total: -5, crit: 'fumble' }, dv: 13 }) });
+  assert.equal(lost.business.till, before - BUSINESS_DEFAULTS.roles.supply.shipment[0]);
+  assert.equal(lost.business.ledger.at(-1).kind, 'shipmentLost');
+  assert.equal(lost.business.supply, null);
+
+  const close = (x) => advanceBusiness(x, x.period.endDay, { weekday: 1, seed: 'test' }).business.digests.at(-1).costs.running;
+  assert.ok(close(out.business) < close(b), 'the close charges less');
+});
+
+test('a role\'s own action takes that role: no hired help, and only the ability', () => {
+  const b = shop();
+  assert.equal(rollSpec(b, { type: 'action', action: 'supply', use: { kind: 'hire', hire: 'good' } }, 'med', { day: DAY }).reason, 'hire-not-allowed');
+  assert.equal(rollSpec(b, { type: 'action', action: 'supply', use: SKILLS.persuasion }, 'med', { day: DAY }).reason, 'bad-use');
+  assert.equal(rollSpec(b, { type: 'action', action: 'venue', use: ABILITIES.moto }, 'med', { day: DAY }).reason, 'bad-use');
+  assert.equal(rollSpec(b, { type: 'action', action: 'venue', use: ABILITIES.charismaticImpact }, 'med', { day: DAY }).ok, true);
+  const company = normalizeBusiness({ ...b, stage: 2, company: { ticker: 'BRC', sector: 'health', charteredDay: DAY }, officers: ['med'] });
+  assert.equal(rollSpec(company, { type: 'action', action: 'supply', use: ABILITIES.moto }, 'med', { day: DAY }).ok, true, 'a company too');
+});
+
+test('a Rockerboy\'s gig lifts takings and Reputation, more at a bar, within the limit on a boost', () => {
+  const at = (archetype, band) => {
+    const b = { archetype, boost: 0, state: { reputation: 50 } };
+    runVenue(b, { band });
+    return [Math.round(b.boost * 1000) / 1000, b.state.reputation];
+  };
+  assert.deepEqual(at('clinic', 'solid'), [0.1, 52]);
+  assert.deepEqual(at('bar', 'solid'), [0.15, 53]);
+  assert.deepEqual(at('clinic', 'failure'), [0, 50]);
+  assert.deepEqual(at('clinic', 'fumble'), [-0.05, 48]);
+  const capped = { archetype: 'bar', boost: 0.25, state: { reputation: 99 } };
+  runVenue(capped, { band: 'exceptional' });
+  assert.deepEqual([capped.boost, capped.state.reputation], [BUSINESS_DEFAULTS.gigs.boostCap, 100]);
+});
+
+test('a Lawman\'s Backup answers a raid once a month for a business, and quashing heat by the roll', () => {
+  const b = shop();
+  b.period.event = { kind: 'raid' };
+  const backup = ABILITIES.backup;
+  const first = send(b, { type: 'respond', businessId: 'b1', use: backup }, checkOf(9));
+  assert.equal(first.ok, true, first.reason);
+  assert.equal(first.business.lastBackupDay, DAY);
+  const again = { ...first.business, period: { ...first.business.period, slots: [], event: { kind: 'raid' } } };
+  assert.equal(rollSpec(again, { type: 'respond', use: backup }, 'med', { day: DAY + 27 }).reason, 'bad-use');
+  assert.equal(rollSpec(again, { type: 'respond', use: backup }, 'med', { day: DAY + 28 }).ok, true);
+  assert.equal(rollSpec(again, { type: 'respond', use: SKILLS.persuasion }, 'med', { day: DAY + 1 }).ok, true, 'other answers are fine');
+  assert.deepEqual([backupWait(again, DAY + 10), backupWait(again, DAY + 28), backupWait(b, DAY)], [18, 0, 0]);
+  const shakedown = { ...first.business, period: { ...first.business.period, slots: [], event: { kind: 'shakedown' } } };
+  assert.equal(rollSpec(shakedown, { type: 'respond', use: backup }, 'med', { day: DAY + 1 }).ok, true, 'only a raid is limited');
+
+  const q = BUSINESS_DEFAULTS.roles.quash;
+  assert.deepEqual(quashEffect('solid'), { outcome: 'success', reduce: q.reduce, add: 0 });
+  assert.deepEqual(quashEffect('failure'), { outcome: 'failure', reduce: 0, add: 0 });
+  assert.deepEqual(quashEffect('fumble'), { outcome: 'fumble', reduce: 0, add: q.fumble });
+  assert.ok(BUSINESS_DEFAULTS.regulator.uses.some((u) => u.ability === 'Backup'));
 });
