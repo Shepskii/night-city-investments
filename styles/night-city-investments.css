@@ -340,6 +340,8 @@
 .nci-app td.nci-endbtns > button { display: inline-flex; vertical-align: middle; width: auto; margin: 0 0 0 4px; padding: 0 10px; }
 /* The Projects tab: Capacity against the stage's ceiling (now, and what the next expansion adds), and a project's progress. */
 .nci-app .nci-standing.nci-capacity { grid-template-columns: 110px minmax(200px, 360px) 1fr; }
+/* Exposure lines up with the standings' weeks: twelve cells of 22px, with 3px between them. */
+.nci-app .nci-standing.nci-exposure { grid-template-columns: 110px calc(12 * 22px + 11 * 3px) 1fr; }
 .nci-app .nci-capbar { display: flex; height: 14px; background: #2a2023; border: 1px solid #4a3a3e; overflow: hidden; }
 .nci-app .nci-capnow { background: #4f9bd9; }
 /* Exposure, by band: the colours of the standings' levels. */
