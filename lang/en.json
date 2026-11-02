@@ -1392,6 +1392,7 @@
         "ReadyIn": "Ready in {n} day(s)",
         "Try": "Try",
         "TooPoor": "Not enough in your account",
+        "TooPoorSheet": "Not enough eddies on hand",
         "Frozen": "Your account is frozen until day {until}. You cannot trade or withdraw until then, but you can still pay money in.",
         "BrokerBan": "Your old broker will not take you back until day {until}."
       },

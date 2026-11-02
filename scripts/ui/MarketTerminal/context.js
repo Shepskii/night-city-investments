@@ -16,6 +16,7 @@ import { MarketClock } from '../../services/MarketClockService.js';
 import { TradingSettings } from '../../services/TradingSettings.js';
 import { TerminalAccess } from '../../services/TerminalAccess.js';
 import { SkillAdapter } from '../../services/SkillAdapter.js';
+import { WealthAdapter } from '../../services/WealthAdapter.js';
 import { quashWait } from '../quash.js';
 import { sparkline, lineChart } from '../components/chart.js';
 import { L, money, whole, pct, trendClass } from '../format.js';
@@ -59,8 +60,9 @@ export function heatContext(actor, portfolio, tick) {
       desc: L('NCI.Heat.Action.quash.Desc'),
       skill: L('NCI.Heat.Panel.Skill', { skill: ABILITIES.backup.ability, total: SkillAdapter.rollBase(actor, ABILITIES.backup).base, dv: rules.dv }),
       cost: L('NCI.Heat.Panel.Cost', { cost: rules.cost.toLocaleString() }),
-      status: wait > 0 ? L('NCI.Heat.Panel.ReadyIn', { n: wait }) : L('NCI.Heat.Panel.Ready'),
-      canUse: wait === 0,
+      // A favour comes out of the character's own pocket, not the brokerage account.
+      status: wait > 0 ? L('NCI.Heat.Panel.ReadyIn', { n: wait }) : WealthAdapter.get(actor) < rules.cost ? L('NCI.Heat.Panel.TooPoorSheet') : L('NCI.Heat.Panel.Ready'),
+      canUse: wait === 0 && WealthAdapter.get(actor) >= rules.cost,
     });
   }
 
