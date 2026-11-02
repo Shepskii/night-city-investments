@@ -14,7 +14,7 @@ import { BUSINESS_DEFAULTS, EVENTS, POSTS, useKey } from './businessConfig.js';
 import { archetypeOf, fail, addLedger, clamp, totalUnits } from './businessRecord.js';
 import { daysLeft, spendDays } from './businessGrowth.js';
 import {
-  teamRefuses, activeStaff, staffOf, hasLoyalty, traitOf, moveLoyalty, postOpen, postBase, wageOf, postUses, staffBase, shiftsOf,
+  teamRefuses, onTimeOff, activeStaff, staffOf, hasLoyalty, traitOf, moveLoyalty, postOpen, postBase, wageOf, postUses, staffBase, shiftsOf,
 } from './businessStaff.js';
 
 /** Staff with loyalty and a life of their own: NPCs and recruits who have started. */
@@ -548,9 +548,6 @@ export function vestGrants(b, day, p = BUSINESS_DEFAULTS) {
 export const teamSize = (rank, p = BUSINESS_DEFAULTS) => p.staff.team.ranks.filter((r) => rank >= r).length;
 
 const careDone = (b, staff) => (staff.careWeek?.week === b.period?.index ? staff.careWeek.done : []);
-
-/** Whether the Exec gave this team member the week off. */
-export const onTimeOff = (b, staff) => staff.source === 'team' && careDone(b, staff).includes('timeOff');
 
 /** What an Exec can do for one of their team this week, each once: a word of thanks, a perk from the cash, a paid week off. */
 export function teamCareCheck(b, staff, actorId, how, p = BUSINESS_DEFAULTS) {

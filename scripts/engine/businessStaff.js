@@ -109,6 +109,9 @@ export function teamRefuses(b, staff) {
   return createRng('nci', 'teamSave', b.id, b.period?.index ?? 0, staff.id).int(1, 6) >= (staff.care ?? 0);
 }
 
+/** Whether a team member's Exec gave them this week off. */
+export const onTimeOff = (b, staff) => staff.source === 'team' && staff.careWeek?.week === b.period?.index && staff.careWeek.done.includes('timeOff');
+
 /** Whether a moonlighter has other work this week, drawn from the business and the week. */
 export function moonlighting(b, staff, traits, p = BUSINESS_DEFAULTS) {
   if (traitOf(traits, staff) !== 'moonlighter') return false;
@@ -408,6 +411,7 @@ export function staffRoll(b, use, uses, kind, funds, p = BUSINESS_DEFAULTS, trai
   if (moonlighting(b, staff, traits, p)) return fail('moonlighting');
   // A team member's save is drawn for the week, so a refusal is known before any dice roll (B7a).
   if (teamRefuses(b, staff)) return fail('team-refused');
+  if (onTimeOff(b, staff)) return fail('team-off');
   const cost = overtimePay(b, staff, kind, p);
   if (funds < cost) return fail('no-funds');
   const best = uses

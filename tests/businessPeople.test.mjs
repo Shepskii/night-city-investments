@@ -340,6 +340,7 @@ test('team Loyalty (B7a): drawn at 1d6 + 1, kept apart from the staff\'s, and mo
   assert.equal(ruth().care, start + 11, 'past the cap, within the week');
   assert.ok(onTimeOff(b, ruth()));
   assert.ok(idleStaff(b).has(ruth().id), 'a week off is a week off');
+  assert.equal(staffRoll(b, { staffId: ruth().id }, [{ kind: 'skill', skill: 'Paramedic' }], 'roll', 10000).reason, 'team-off', 'nor can they be called in');
   assert.equal(apply(b, { type: 'teamCare', businessId: 'b1', staffId: ruth().id, how: 'compliment' }, { id: 'other', name: 'Other', wealth: 0 }, { expect: false }).ok, false, 'only for a partner\'s own');
   assert.equal(apply(b, { type: 'bonus', businessId: 'b1', staffId: ruth().id, quarters: 1 }, MED, { expect: false }).reason, 'team-unpaid');
   // The week closes: back to the cap.
@@ -632,4 +633,11 @@ test('loose lips on a target\'s staff tell due diligence a band more', () => {
   assert.equal(plain.band, 'failure');
   assert.equal(leaky.band, 'narrow');
   assert.ok(leaky.range);
+});
+
+test('every request a player can make says when it is done', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { BUSINESS_REQUESTS } = await import('../scripts/engine/business.js');
+  const done = JSON.parse(readFileSync(new URL('../lang/en.json', import.meta.url), 'utf8')).NCI.Business.Done;
+  assert.deepEqual(BUSINESS_REQUESTS.filter((type) => !(type in done)), []);
 });

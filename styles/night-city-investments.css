@@ -237,6 +237,7 @@
 .nci-app button.nci-danger { border-color: var(--nci-accent); }
 .nci-app button.nci-danger:hover { background: var(--nci-accent) !important; border-color: var(--nci-accent-bright); color: var(--nci-on-accent) !important; }
 .nci-app button.nci-dim { opacity: 0.55; }
+.nci-app button:disabled { opacity: 0.45; cursor: default; }
 
 /* Other UI themes stretch inputs and enlarge headings; keep the layout compact. */
 .nci-app h2 { font-size: 18px; margin: 6px 0; }
