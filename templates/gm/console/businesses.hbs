@@ -8,7 +8,7 @@
 <div class="nci-block">
   <h3>{{localize "NCI.GMBusiness.Waiting"}}</h3>
   {{#each businesses.pending}}
-  <div class="nci-gig">
+  <div class="nci-gig nci-bizentry">
     <div class="nci-bizhead">
       <div class="nci-bizname">{{name}}</div>
       <div class="nci-muted">{{archetype}}{{#if location}} &middot; {{location}}{{/if}}</div>
@@ -34,7 +34,7 @@
 <div class="nci-block">
   <h3>{{localize "NCI.GMBusiness.Running"}}</h3>
   {{#each businesses.active}}
-  <div class="nci-gig">
+  <div class="nci-gig nci-bizentry">
     <div class="nci-bizhead">
       <div class="nci-bizname">{{name}}</div>
       <div><strong>{{status}}</strong> <span class="nci-muted">&middot; {{archetype}}{{#if location}} &middot; {{location}}{{/if}}</span></div>

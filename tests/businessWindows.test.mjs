@@ -598,7 +598,7 @@ test('the Pending tab has a row for each decision waiting, and the tab buttons c
     assert.equal(tabButton(players, 'heat'), 'Heat 1');
     assert.equal(tabButton(await renderConsole('gigs'), 'gigs'), 'Gigs 3');
     // Every GM button on an entry comes after its tables, and an offer's words are with its buttons.
-    const entry = players.split('<div class="nci-gig">').find((x) => x.includes('businessRestructure'));
+    const entry = players.split('<div class="nci-gig nci-bizentry">').find((x) => x.includes('businessRestructure'));
     assert.ok(entry.lastIndexOf('</table>') < entry.indexOf('data-action='), 'the buttons are at the foot');
     assert.ok(entry.indexOf('Nix') > entry.indexOf('nci-gmbuttons'));
     assert.match(entry, /A smear against Arasaka \(ARA\)/);

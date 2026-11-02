@@ -485,6 +485,9 @@
 /* A business's entry on the GM Console: its name first, and the GM's buttons at the foot. */
 .nci-app .nci-bizhead { border-bottom: 1px solid var(--nci-accent-dim); padding-bottom: 6px; margin-bottom: 6px; }
 .nci-app .nci-bizname { font-size: 1.45em; font-weight: bold; line-height: 1.25; color: #fff; }
+/* Each business on the GM Console's Businesses tab: well apart, with a heavy edge along the top. */
+.nci-app .nci-gig.nci-bizentry { margin: 26px 0; padding: 10px 12px; border-top: 3px solid var(--nci-accent); }
+.nci-app .nci-gig.nci-bizentry:first-of-type { margin-top: 8px; }
 .nci-app .nci-gmbuttons { border-top: 1px solid var(--nci-accent-dim); margin-top: 8px; padding-top: 2px; }
 .nci-app .nci-gmbuttons .nci-actions { margin: 6px 0; }
 
