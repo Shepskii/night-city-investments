@@ -2353,7 +2353,7 @@
     },
     "Pending": {
       "Title": "Waiting for GM",
-      "Intro": "Every decision that needs you. Make it here, or click a row to open its tab for more detail.",
+      "Intro": "Every decision that needs you. Action it here, or click a row to open its tab for more detail.",
       "None": "No items waiting",
       "Where": "Tab",
       "Item": "Who or what",
