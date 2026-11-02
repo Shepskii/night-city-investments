@@ -801,7 +801,7 @@ test('a Media story: believed, it waits for the GM and reaches the market; refus
   const baseFor = SkillAdapter.baseFor;
   const rollOne = SkillAdapter.rollOne;
   const rolls = [];
-  SkillAdapter.baseFor = (actor, use) => (use.ability === 'Credibility' && actor.id === alice.id ? 5 : baseFor.call(SkillAdapter, actor, use));
+  SkillAdapter.baseFor = (actor, use) => (use.ability === 'Credibility' && actor.id === alice.id ? { base: 5, name: 'Credibility', parts: 'Credibility 5' } : baseFor.call(SkillAdapter, actor, use));
   SkillAdapter.rollOne = async () => ({ value: rolls.shift() ?? 10, roll: null });
   const storiesSaved = S.MarketStore.getStories();
   env.store.set('heatEnabled', true);

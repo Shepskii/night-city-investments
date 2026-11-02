@@ -43,7 +43,7 @@ export const StoryService = {
 
   /** A character's Credibility rank. */
   rankOf(actor) {
-    return actor && !actor.isSyndicate ? SkillAdapter.baseFor(actor, ABILITIES.credibility) : 0;
+    return actor && !actor.isSyndicate ? SkillAdapter.baseFor(actor, ABILITIES.credibility).base : 0;
   },
 
   /** GM only: put a piece of evidence about a company in a character's inventory. */
