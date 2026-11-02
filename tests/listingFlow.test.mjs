@@ -878,3 +878,38 @@ test('a Media story: believed, it waits for the GM and reaches the market; refus
     await S.MarketStore.setStories(storiesSaved);
   }
 });
+
+test('a big event as a scene: run, then lost, with what it leaves behind; run again, then won', async () => {
+  const saved = structuredClone(business());
+  const hiddenSaved = structuredClone(S.MarketStore.getBusinessesHidden());
+  const raid = { kind: 'raid', factionId: 'corp_bio', factionName: 'Biotechnica' };
+  try {
+    const setUp = () => S.BusinessRepository.save({ ...business(), status: 'open', scene: null, digests: [{ index: 1, takings: 1000 }], state: { ...business().state, compliance: 50 }, period: { ...business().period, slots: [], event: raid } });
+    await setUp();
+    assert.equal((await S.BusinessService.runScene('bus_play')).ok, true);
+    assert.equal(business().scene.event.kind, 'raid');
+    assert.equal(business().period.event, null);
+    assert.equal((await S.BusinessService.runScene('bus_play')).reason, 'no-scene');
+
+    const exposure = S.MarketStore.getBusinessesHidden().bus_play?.exposure ?? 0;
+    const till = business().till;
+    assert.equal((await S.BusinessService.settleScene('bus_play', false)).ok, true);
+    assert.equal(business().scene, null);
+    assert.equal(business().till, till - 150);
+    assert.equal(S.MarketStore.getBusinessesHidden().bus_play.exposure, exposure + E.BUSINESS_DEFAULTS.standing.hostile.raidExposure, 'the raid\'s Exposure reaches the hidden state');
+
+    await setUp();
+    assert.equal((await S.BusinessService.runScene('bus_play')).ok, true);
+    const reputation = business().state.reputation;
+    assert.equal((await S.BusinessService.settleScene('bus_play', true)).ok, true);
+    assert.equal(business().state.reputation, reputation + E.BUSINESS_DEFAULTS.scene.wonReputation);
+
+    await setUp();
+    assert.equal((await S.BusinessService.runScene('bus_play')).ok, true);
+    assert.equal((await S.BusinessService.sceneToRoll('bus_play')).ok, true);
+    assert.equal(business().period.event.kind, 'raid');
+  } finally {
+    await S.BusinessRepository.save(saved);
+    await S.MarketStore.setBusinessesHidden(hiddenSaved);
+  }
+});

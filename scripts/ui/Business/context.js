@@ -9,7 +9,7 @@ import {
   daysLeft, activeProject, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
   projectOffer, PROJECT_KINDS, upgradesOf, protectionFactor, headcountOf,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
-  actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait,
+  actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent,
   POST_IDS, POSTS, levelOf, postBest, staffBase, goingRate, askingWage, postOpen, recruitCheck, archetypeOf,
   hasLoyalty, loyaltyBand, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
@@ -520,6 +520,8 @@ function weekContext(business, actor, canAct) {
     }),
     helped: actor && helped && canAct ? L('NCI.Business.AlreadyHelped') : '',
     event: eventContext(business, runs, free),
+    // A big event the GM is playing out with the table (X1).
+    scene: business.scene ? L('NCI.Business.SceneOpen', { event: L(`NCI.Event.${business.scene.event.kind}.Name`) }) : '',
     notOfficer: business.stage >= 2 && canAct && !runs ? L('NCI.Company.NotOfficer') : '',
     info: business.stage >= 2 ? infoContext(business, runs) : null,
     unworkedNote: L('NCI.Business.UnworkedNote'),
@@ -587,6 +589,8 @@ function eventContext(business, canAct, free) {
     uses: L('NCI.Business.AnswerWith', { skills: uses.join(', ') }),
     answered: answer ? L('NCI.Business.TakenBy', { name: nameOf(business, answer.by), band: L(`NCI.Roll.Band.${answer.band}`) }) : '',
     security: def.security ? L('NCI.Business.SecurityNote') : '',
+    // The GM may play a big one out at the table instead (X1).
+    maybeScene: !answer && isBigEvent(event) ? L('NCI.Business.MaybeScene') : '',
     canAnswer: canAct && free && !answer,
     ifNot: def.staff ? L(`NCI.Event.${event.kind}.IfNot`, { name: event.staffId ? staffOf(business, event.staffId)?.name ?? '' : '' }) : def.good ? L('NCI.Business.WindfallIfNot') : L('NCI.Business.EventIfNot'),
   };

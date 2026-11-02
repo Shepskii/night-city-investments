@@ -11,6 +11,7 @@ import { MarketStore } from '../../../data/MarketStore.js';
 import { SyndicateRepository } from '../../../data/SyndicateRepository.js';
 import { BusinessService } from '../../../services/BusinessService.js';
 import { HeatService } from '../../../services/HeatService.js';
+import { sceneCandidate } from '../../../engine/index.js';
 import { penaltyText } from './heat.js';
 import { StoryService } from '../../../services/StoryService.js';
 
@@ -33,6 +34,8 @@ function businessRows() {
       b.administration && need('administration'),
       b.regCase?.status === 'lost' && need('case'),
       b.campaign?.status === 'awaiting' && need('campaign', { name: b.campaign.name }),
+      sceneCandidate(b) && need('scene', { event: L(`NCI.Event.${b.period.event.kind}.Name`) }),
+      b.scene && need('sceneOpen', { event: L(`NCI.Event.${b.scene.event.kind}.Name`) }),
       ...(b.staff ?? []).filter((s) => s.status === 'offered' && s.source === 'npc')
         .map((s) => need('offer', { name: s.name, post: L(`NCI.Staff.Post.${s.post}`) })),
     ].filter(Boolean);

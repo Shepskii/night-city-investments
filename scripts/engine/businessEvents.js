@@ -39,7 +39,9 @@ export function drawEvent(b, seed = 'nci', p = BUSINESS_DEFAULTS, traits = null,
   // Its own stream, so naming a gang leaves the draws of other weeks and businesses as they were.
   const gangs = kind === 'shakedown' ? relations?.gangs ?? [] : [];
   const gang = gangs.length ? gangs[createRng(seed, 'business-gang', b.id, b.period.index).int(0, gangs.length - 1)] : null;
-  return { kind, ...(staffId ? { staffId } : {}), ...(rival ? { rival: { businessId: rival.businessId, name: rival.name } } : {}), ...(gang ? { factionId: gang.id, factionName: gang.name } : {}) };
+  // A gang that is hostile to the business makes it a heavy shakedown, big enough to play out (X1).
+  const heavy = gang && relations?.hostile?.some((h) => h.id === gang.id);
+  return { kind, ...(staffId ? { staffId } : {}), ...(rival ? { rival: { businessId: rival.businessId, name: rival.name } } : {}), ...(gang ? { factionId: gang.id, factionName: gang.name } : {}), ...(heavy ? { heavy: true } : {}) };
 }
 
 /**
@@ -128,7 +130,7 @@ export function settleEvent(b, takings, slots, p = BUSINESS_DEFAULTS, staffCtx =
   return { kind: event.kind, outcome, band: answer?.band ?? null, change: -Math.round(takings * share) };
 }
 
-function applyHit(b, hit, scale) {
+export function applyHit(b, hit, scale) {
   if (hit.reputation) b.state.reputation = clamp(b.state.reputation + hit.reputation * scale, 0, 100);
   if (hit.capacity) b.state.capacity = Math.max(0.5, b.state.capacity + hit.capacity * scale);
   if (hit.costFactor) b.state.costFactor = Math.min(1.2, b.state.costFactor + hit.costFactor * scale);

@@ -2167,6 +2167,22 @@
         "detailed": "There's a hidden stake of about {percent}% in {name} ({ticker}), held through {layer}."
       }
     },
+    "Scene": {
+      "HookTitle": "A scene for {name}",
+      "MailSubject": "{name}: trouble in person",
+      "Mail": "{event} at {name}: this one is going to be settled in person. Talk to your GM.",
+      "MailWon": "{name} came out of it well. Word gets round, and Reputation is up a little.",
+      "MailLost": "{name} came off worse. The damage is in the books.",
+      "Hook": {
+        "sabotage": "{faction} wants {name} out of action. Someone is in {place} tonight, after hours, with tools and bad intentions. Catch them, follow them, or cut a deal.",
+        "smear": "{faction} is paying for dirt on {name}. A journalist with a story and a deadline turns up at {place} asking for a comment, and someone has fed them. Who, and what do they have?",
+        "raid": "Inspectors are on their way to {place}, tipped off by {faction}, and they know where to look. The crew has an hour to clean up, bluff it out or lean on someone.",
+        "poaching": "{faction} wants {staff} away from {name}, and has made an offer with a threat behind it. Meet {staff}, meet their handler, or make a better case.",
+        "shakedown": "{faction} has had enough of {name}. A crew arrives at {place}, armed and in no mood to talk, for more than the usual cut.",
+        "collectors": "Collectors arrive at {place} for what {name} owes, and they've brought friends. Pay, talk, or make them regret it.",
+        "grudge": "An employee {name} let go is back at {place} with friends, and a list of what they're owed."
+      }
+    },
     "Story": {
       "Title": "A story about {name}",
       "Hint": "The public believes it on 1d10 of {base} or under, without Luck. Any evidence adds {bonus}, and more than {many} pieces add {manyBonus}. Your rank moves the price up to {cap}%. You can publish once a week, and another story about the same company within 30 days needs new evidence.",
@@ -2216,6 +2232,8 @@
         "administration": "In administration: restructure it or wind it up",
         "case": "Regulator's case lost: approve the penalty or drop the case",
         "campaign": "A campaign against {name}: let it run or stop it",
+        "scene": "{event}: run it as a scene, or leave it as a roll",
+        "sceneOpen": "{event}: say how the scene went",
         "story": "A story about {name}: let it run or spike it",
         "offer": "Answer for {name}: a job offer as {post}",
         "syndicate": "Approve or reject the new syndicate"
@@ -2257,6 +2275,12 @@
       "SetupFailed": "Setup roll {band}: can be tried again (range {range}).",
       "Staff": "Staff",
       "CampaignWaiting": "A {kind} against {name} ({ticker}), run {date}: {percent}% on its share price. Let it run or stop it; the cost stays spent.",
+      "BigEvent": "A big event this week: {event}. Run it as a scene, or leave it as a roll. {hook}",
+      "SceneOpen": "A scene, since {date}: {event}. {hook}",
+      "SceneRun": "Run as a scene",
+      "SceneWon": "They won",
+      "SceneLost": "They lost",
+      "SceneRoll": "Back to a roll",
       "CampaignApprove": "Let the campaign run",
       "CampaignReject": "Stop the campaign",
       "StaffOffer": "{name}, an NPC, is offered a job as {post} at {wage} eb a week. Answer for them.",
@@ -2693,6 +2717,8 @@
         "medical": "Medical bills",
         "factionGift": "A gift to a faction",
         "campaign": "A campaign against a company",
+        "sceneWon": "Came out of a scene well",
+        "sceneLost": "Came off worse in a scene",
         "wages": "Wages"
       },
       "CapTable": "Partners",
@@ -2743,6 +2769,8 @@
       "DaysLeft": "You have {n} business day(s) left this week.",
       "AimGift": "Aiming at a faction costs a {gift} eb gift from the cash, spent whatever the roll.",
       "AimNone": "No faction",
+      "SceneOpen": "{event}: your GM is playing this one out with you, so there is nothing to roll.",
+      "MaybeScene": "Your GM may choose to play this one out with you instead.",
       "Campaign": { "smear": "smear", "leak": "leak" },
       "CampaignCost": "A campaign costs {cost} eb from the cash, spent whatever the roll.",
       "CampaignAwaiting": "Against {name}: waiting for the GM.",
@@ -3003,6 +3031,8 @@
         "no-story": "that story is no longer waiting",
         "no-evidence-item": "the evidence could not be created",
         "campaign-wait": "the business has run a campaign too recently",
+        "no-scene": "there is no big event to play out",
+        "event-busy": "this week already has an event",
         "no-campaign": "no campaign is waiting",
         "bad-faction": "that action cannot be aimed at that faction",
         "no-gift": "the business does not have the cash for the gift",

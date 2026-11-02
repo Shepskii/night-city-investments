@@ -233,6 +233,8 @@ To raise your business's standing with a faction, use **Court a client** (a corp
 
 You also hear things. Every few days your Credibility may bring a rumour by mail about a price move on its way or a hidden stake, saying more the better you roll. **Dig for rumours** on a company's page, once a week, does the same for that company. Trading on a rumour still counts for insider heat, though less than trading on something you did yourself.
 
+Your GM may decide to play a big event out with you, such as a raid or a hostile faction's move. You'll get a mail and there's nothing to roll: how the scene goes decides it.
+
 A business can also **Run a campaign** against a listed company: a smear or a leak that pushes its share price down a little. It costs 1,000 eb whatever the roll, you can run one a month, and your GM may need to approve it. Trading that company before the news lands draws insider heat, and a fumble gets you caught.
 
 A job your GM tags as done for the business counts as a contract: its Reputation, its share price if it is listed, and its standing with the client and any target all move. Ordinary crew gigs are freelance: they can move the client's and target's share prices, but don't touch your business.

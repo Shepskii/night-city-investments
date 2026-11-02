@@ -240,11 +240,13 @@
   <div class="nci-block">
     <h3>{{localize "NCI.Business.ThisWeek"}}</h3>
     <p class="nci-hint">{{localize "NCI.Business.WeekRuns" from=from to=to day=closesOn}} {{daysText}}</p>
+    {{#if scene}}<div class="nci-warn">{{scene}}</div>{{/if}}
     {{#with event}}
     <div class="nci-gig">
       <div class="nci-gigtop"><strong>{{name}}</strong>{{#if good}}<span class="nci-up">{{localize "NCI.Business.Opportunity"}}</span>{{else}}<span class="nci-down">{{localize "NCI.Business.Trouble"}}</span>{{/if}}</div>
       <div>{{hint}}</div>
       {{#if from}}<div class="nci-muted">{{from}}</div>{{/if}}
+      {{#if maybeScene}}<div class="nci-muted">{{maybeScene}}</div>{{/if}}
       <div class="nci-muted">{{uses}} {{security}}</div>
       {{#if answered}}<div><strong>{{answered}}</strong></div>{{else}}<div class="nci-muted">{{ifNot}}</div>{{/if}}
       {{#if canAnswer}}<div class="nci-actions"><button type="button" data-action="respond"><i class="fas fa-dice-d10"></i> {{localize "NCI.Business.Answer"}}</button></div>{{/if}}

@@ -751,3 +751,35 @@ test('every rumour reads as words, saying more at each level', async () => {
   assert.match(said[7], /about 12% in Back Room \(BRC\), held through Kestrel Holdings/);
   for (const why of ['report', 'campaign', 'story']) assert.doesNotMatch(StoryService._rumourText({ ...move, why }, 2), /NCI\./);
 });
+
+test('a big event: the GM can run it as a scene, the player is told, and every hook reads as words', async () => {
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const { sceneHook } = await import('../scripts/services/BusinessService.js');
+  try {
+    const raid = { kind: 'raid', factionId: 'corp_bio', factionName: 'Biotechnica' };
+    await S.BusinessRepository.save({ ...b, status: 'open', period: { ...b.period, slots: [], event: raid } });
+    const asked = await renderConsole('businesses');
+    assertClean(asked, 'a big event on the Businesses tab');
+    assert.match(asked, /data-action="businessSceneRun"/);
+    assert.match(text(await renderConsole('pending')), /A tipped-off raid: run it as a scene, or leave it as a roll/);
+    const week = await renderBusiness(windowFor(med, 'week'));
+    assertClean(week, 'the player sees a maybe');
+    assert.match(text(week), /Your GM may choose to play this one out/);
+
+    await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], scene: { event: raid, day: b.period.startDay }, period: { ...b.period, slots: [], event: null } });
+    const open = await renderConsole('businesses');
+    assertClean(open, 'a scene on the Businesses tab');
+    for (const action of ['businessSceneWon', 'businessSceneLost', 'businessSceneRoll']) assert.match(open, new RegExp(`data-action="${action}"`));
+    assert.doesNotMatch(open, /businessSceneRun/);
+    assert.match(text(await renderConsole('pending')), /A tipped-off raid: say how the scene went/);
+    const playing = await renderBusiness(windowFor(med, 'week'));
+    assertClean(playing, 'the player sees the scene');
+    assert.match(text(playing), /your GM is playing this one out/);
+
+    const hookOf = (kind) => sceneHook({ name: 'Back Room', location: 'upstairs', staff: [{ id: 's', name: 'Nix' }] }, { kind, factionName: 'Maelstrom', staffId: 's' });
+    for (const kind of ['sabotage', 'smear', 'raid', 'poaching', 'shakedown', 'collectors', 'grudge']) assert.doesNotMatch(hookOf(kind), /NCI\.|\{\w+\}/, kind);
+  } finally {
+    await S.BusinessRepository.save(saved);
+  }
+});

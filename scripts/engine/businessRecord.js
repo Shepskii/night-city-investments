@@ -179,6 +179,8 @@ export function normalizeBusiness(raw) {
     administration: b.administration ?? null,
     // A regulator's case (R1): what it is about and how far along; the Exposure behind it stays hidden.
     regCase: b.regCase ?? null,
+    // A big event being played out at the table (X1).
+    scene: b.scene ?? null,
     // A campaign waiting for the GM, and when the last one ran (F1c).
     campaign: b.campaign ?? null,
     lastCampaignDay: b.lastCampaignDay ?? null,

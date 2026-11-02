@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   BUSINESS_DEFAULTS, DISTRICTS, normalizeFaction, standingBand, matchFaction, turfFactions, gigStanding, moveStanding, driftStanding, standingBands, matchBusiness,
   findTarget, targetShare, gigTags, resolveClient, applyBusinessRequest, advanceBusiness, rollSpec, normalizeBusiness, drawEvent, hostileAct, hostileChance, factionEffects, factionFallout,
-  giftFor, campaignKind, believability, storyPercent, rollStory, storyCheck, rumourLevel, freshRumours, STORY_RULES, ARCHETYPES, SKILLS, ABILITIES,
+  giftFor, campaignKind, believability, storyPercent, rollStory, storyCheck, rumourLevel, freshRumours, STORY_RULES, isBigEvent, sceneCandidate, startScene, sceneToRoll, settleScene, ARCHETYPES, SKILLS, ABILITIES,
 } from '../scripts/engine/index.js';
 import { resolveRoll } from '../scripts/engine/rolls.js';
 import { starterFactions } from '../scripts/data/starter-factions.js';
@@ -330,4 +330,81 @@ test('how much a rumour says, and what a Media has not heard', () => {
   assert.deepEqual(freshRumours(sources, {}, 0, 'me').map((s) => s.sourceKey), ['a', 'c'], 'not their own');
   assert.deepEqual(freshRumours(sources, { a: 1 }, 1, 'me').map((s) => s.sourceKey), ['c'], 'not what they have heard at that level');
   assert.deepEqual(freshRumours(sources, { a: 1 }, 2, 'me').map((s) => s.sourceKey), ['a', 'c'], 'more of the same is news');
+});
+
+// ── X1: big events as scenes ────────────────────────────────────────
+
+test('which events are big, and only an unanswered one can become a scene', () => {
+  assert.deepEqual(['raid', 'sabotage', 'smear', 'collectors', 'grudge'].map((kind) => isBigEvent({ kind })), [true, true, true, true, true]);
+  assert.equal(isBigEvent({ kind: 'theft' }), false);
+  assert.equal(isBigEvent({ kind: 'shakedown', factionId: 'x' }), false, 'an ordinary shakedown');
+  assert.equal(isBigEvent({ kind: 'shakedown', factionId: 'x', heavy: true }), true);
+  assert.equal(isBigEvent({ kind: 'poaching', staffId: 's' }), false, 'an ordinary poaching');
+  assert.equal(isBigEvent({ kind: 'poaching', staffId: 's', factionId: 'x' }), true);
+  assert.equal(isBigEvent(null), false);
+  const b = shop();
+  b.period.event = { kind: 'raid', factionId: 'tti', factionName: 'Trauma Team' };
+  assert.equal(sceneCandidate(b).kind, 'raid');
+  assert.equal(sceneCandidate({ ...b, period: { ...b.period, slots: [{ action: 'respond' }] } }), null);
+  assert.equal(sceneCandidate({ ...b, scene: { event: { kind: 'raid' } } }), null);
+});
+
+test('a scene leaves the week, the weeks run on, and it waits; won, lost or back to a roll', () => {
+  const start = () => {
+    const b = structuredClone(shop());
+    b.period.event = { kind: 'raid', factionId: 'tti', factionName: 'Trauma Team' };
+    b.digests = [{ index: 1, takings: 1000 }];
+    b.state.compliance = 50;
+    return b;
+  };
+  const b = start();
+  assert.equal(startScene(b, DAY).ok, true);
+  assert.equal(b.period.event, null);
+  assert.equal(b.scene.event.kind, 'raid');
+  assert.equal(startScene(b, DAY).reason, 'no-scene');
+  const later = advanceBusiness(b, b.period.endDay, { weekday: 1, seed: 'test' }).business;
+  assert.equal(later.scene.event.kind, 'raid', 'a week closing leaves it waiting');
+  assert.equal(later.digests.at(-1).event, undefined, 'and it costs that week nothing');
+
+  const won = structuredClone(b);
+  const rep = won.state.reputation;
+  const till = won.till;
+  assert.deepEqual(settleScene(won, true, DAY), { ok: true, events: [] });
+  assert.equal(won.state.reputation, rep + BUSINESS_DEFAULTS.scene.wonReputation);
+  assert.deepEqual([won.scene, won.till], [null, till]);
+  assert.equal(settleScene(won, true, DAY).reason, 'no-scene');
+
+  const lost = structuredClone(b);
+  const out = settleScene(lost, false, DAY);
+  assert.equal(lost.till, till - 150, '15% of the last week');
+  assert.equal(lost.state.compliance, 42, 'the raid\'s own hit');
+  assert.equal(out.events[0].exposure, BUSINESS_DEFAULTS.standing.hostile.raidExposure, 'and what it leaves behind');
+  assert.equal(lost.ledger.at(-1).kind, 'sceneLost');
+
+  const back = structuredClone(b);
+  assert.equal(sceneToRoll(back).ok, true);
+  assert.deepEqual([back.scene, back.period.event.kind], [null, 'raid']);
+  const busy = structuredClone(b);
+  busy.period.event = { kind: 'theft' };
+  assert.equal(sceneToRoll(busy).reason, 'event-busy');
+});
+
+test('a lost poaching scene takes the employee, unless they are devoted', () => {
+  const start = (loyalty) => {
+    const b = structuredClone(shop());
+    b.staff = [{ id: 's1', name: 'Nix', status: 'active', post: 'floor', wage: 100, loyalty }];
+    b.scene = { event: { kind: 'poaching', staffId: 's1', factionId: 'tti' }, day: DAY };
+    settleScene(b, false, DAY);
+    return b.staff.length;
+  };
+  assert.equal(start(50), 0);
+  assert.equal(start(BUSINESS_DEFAULTS.staff.loyalty.devoted), 1);
+});
+
+test('a shakedown is heavy when the gang is hostile', () => {
+  const b = shop();
+  const draws = (relations) => Array.from({ length: 3000 }, (_, i) => drawEvent({ ...b, period: { ...b.period, index: i } }, 'test', BUSINESS_DEFAULTS, null, relations)).filter((e) => e?.kind === 'shakedown');
+  const gangs = [{ id: 'mael', name: 'Maelstrom' }];
+  assert.ok(draws({ shakedown: 1, gangs, hostile: [{ id: 'mael' }] }).every((e) => e.heavy));
+  assert.ok(draws({ shakedown: 1, gangs, hostile: [] }).every((e) => !e.heavy));
 });

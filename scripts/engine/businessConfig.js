@@ -333,6 +333,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
    * with standing hits; winding up sells its assets at `salvage` of book value.
    * Going into administration dents a listed company's price by `hit` (a log-return).
    */
+  /** A big event played out at the table (X1): what winning it does for Reputation. */
+  scene: Object.freeze({ wonReputation: 2 }),
   /**
    * A smear or leak campaign (F1c): `cost` eb whatever the roll, one in `days`; `size` is the target's
    * move by band, in percent, from `delayDays` on. Landing costs `standing` with a target that is a faction,

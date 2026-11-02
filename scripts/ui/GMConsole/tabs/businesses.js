@@ -4,8 +4,8 @@
  * @description Action handlers run with `this` set to the console window.
  */
 
-import { holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty, debtsOf, solvency, standingBand, turfFactions } from '../../../engine/index.js';
-import { BusinessService } from '../../../services/BusinessService.js';
+import { sceneCandidate, holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty, debtsOf, solvency, standingBand, turfFactions } from '../../../engine/index.js';
+import { BusinessService, sceneHook } from '../../../services/BusinessService.js';
 import { FactionRepository } from '../../../data/FactionRepository.js';
 import { BusinessApp } from '../../Business/BusinessApp.js';
 import { dayText, LT, holderWho, factionTerms } from '../../Business/context.js';
@@ -81,6 +81,22 @@ async function onCampaignReject(event, target) {
   report(await BusinessService.rejectCampaign(target.dataset.id));
 }
 
+async function onSceneRun(event, target) {
+  report(await BusinessService.runScene(target.dataset.id));
+}
+
+async function onSceneWon(event, target) {
+  report(await BusinessService.settleScene(target.dataset.id, true));
+}
+
+async function onSceneLost(event, target) {
+  report(await BusinessService.settleScene(target.dataset.id, false));
+}
+
+async function onSceneRoll(event, target) {
+  report(await BusinessService.sceneToRoll(target.dataset.id));
+}
+
 async function onDelist(event, target) {
   if (!(await confirm(L('NCI.GMBusiness.Delist'), L('NCI.GMBusiness.DelistConfirm')))) return;
   report(await BusinessService.delist(target.dataset.id));
@@ -142,6 +158,10 @@ export const actions = {
   businessStaffAnswer: onStaffAnswer,
   businessSetStanding: onSetStanding,
   businessCampaignApprove: onCampaignApprove,
+  businessSceneRun: onSceneRun,
+  businessSceneWon: onSceneWon,
+  businessSceneLost: onSceneLost,
+  businessSceneRoll: onSceneRoll,
   businessCampaignReject: onCampaignReject,
 };
 
@@ -200,6 +220,9 @@ export function context() {
           : L('NCI.GMBusiness.CaseLost', { why: L(`NCI.Regulator.Reason.${b.regCase.reason}`), fine: whole(b.regCase.fine ?? 0), how: L(b.regCase.silent ? 'NCI.GMBusiness.CaseSilent' : b.regCase.fumble ? 'NCI.GMBusiness.CaseFumbled' : 'NCI.GMBusiness.CaseRolled'), more: b.regCase.serious ? L('NCI.GMBusiness.CaseSerious') : '' }),
       } : null,
       canOpenCase: !b.regCase && b.stage === 2 && b.status === 'open',
+      // A big event the GM could play out, or is playing out (X1).
+      bigEvent: sceneCandidate(b) ? L('NCI.GMBusiness.BigEvent', { event: L(`NCI.Event.${b.period.event.kind}.Name`), hook: sceneHook(b, b.period.event) }) : '',
+      scene: b.scene ? L('NCI.GMBusiness.SceneOpen', { event: L(`NCI.Event.${b.scene.event.kind}.Name`), date: dayText(b.scene.day), hook: sceneHook(b, b.scene.event) }) : '',
       // A campaign waiting for the GM (F1c).
       campaign: b.campaign?.status === 'awaiting' ? L('NCI.GMBusiness.CampaignWaiting', {
         kind: L(`NCI.Business.Campaign.${b.campaign.kind}`), name: b.campaign.name, ticker: b.campaign.ticker, percent: b.campaign.percent, date: dayText(b.campaign.day),

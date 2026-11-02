@@ -24,7 +24,7 @@ import {
   takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
   restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask,
   concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget, scandalHit, investigationCost, spendDays,
-  moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount,
+  moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
@@ -34,6 +34,7 @@ import { BusinessRepository } from '../data/BusinessRepository.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
 import { FactionRepository } from '../data/FactionRepository.js';
 import { StoryService } from './StoryService.js';
+import { escapeHtml } from '../utils/text.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
 import { SkillAdapter } from './SkillAdapter.js';
@@ -1511,6 +1512,46 @@ class BusinessServiceImpl {
     await this._campaignStanding(b, ticker, rules.standing);
   }
 
+  /** What the GM is told, and the owners, when a big event becomes a scene (X1). */
+  async _sceneNotes(b) {
+    const { event } = b.scene;
+    const hook = sceneHook(b, event);
+    await ChatMessage.create({ content: `<p><strong>${escapeHtml(L('NCI.Scene.HookTitle', { name: b.name }))}</strong></p><p>${escapeHtml(hook)}</p>`, whisper: (ChatMessage.getWhisperRecipients?.('GM') ?? []).map((u) => u.id) });
+    await this._mailHolders(b, L('NCI.Scene.MailSubject', { name: b.name }), [L('NCI.Scene.Mail', { name: b.name, event: L(`NCI.Event.${event.kind}.Name`) })]);
+  }
+
+  /** The GM plays this week's big event out (X1). */
+  async runScene(id) {
+    const out = await this._gm(id, (stored) => {
+      const b = normalizeBusiness(structuredClone(stored));
+      const done = startScene(b, this.day());
+      return done.ok ? { ok: true, business: b } : done;
+    });
+    if (out.ok) await this._sceneNotes(out.business);
+    return out;
+  }
+
+  /** The GM says how the scene went (X1); the owners hear of it. */
+  async settleScene(id, won) {
+    const name = BusinessRepository.get(id)?.name ?? '';
+    const out = await this._gm(id, (stored) => {
+      const b = normalizeBusiness(structuredClone(stored));
+      const done = settleScene(b, won, this.day());
+      return done.ok ? { ok: true, business: b, events: done.events } : done;
+    });
+    if (out.ok) await this._mailHolders(out.business, L('NCI.Scene.MailSubject', { name }), [L(won ? 'NCI.Scene.MailWon' : 'NCI.Scene.MailLost', { name })]);
+    return out;
+  }
+
+  /** The GM sends the event back to a roll (X1). */
+  sceneToRoll(id) {
+    return this._gm(id, (stored) => {
+      const b = normalizeBusiness(structuredClone(stored));
+      const done = sceneToRoll(b);
+      return done.ok ? { ok: true, business: b } : done;
+    });
+  }
+
   /** The GM lets a campaign run (F1c). */
   approveCampaign(id) {
     if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
@@ -1820,6 +1861,14 @@ class BusinessServiceImpl {
     const hidden = MarketStore.getBusinessesHidden();
     return BusinessRepository.all().map((b) => ({ business: b, hidden: hidden[b.id] ?? { exposure: 0 } }));
   }
+}
+
+/** A big event as a hook for the GM to play out (X1). */
+export function sceneHook(b, event) {
+  return L(`NCI.Scene.Hook.${event.kind}`, {
+    name: b.name, faction: event.factionName ?? '', place: b.location || b.name,
+    staff: (b.staff ?? []).find((s) => s.id === event.staffId)?.name ?? '',
+  });
 }
 
 export const BusinessService = new BusinessServiceImpl();
