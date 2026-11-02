@@ -1017,7 +1017,7 @@ test('the Business window has four folders, each with its tabs, and each tab hol
     const tabsOn = (html) => [...html.matchAll(/data-tab="(\w+)"/g)].map((m) => m[1]);
     const foldersOn = (html) => [...html.matchAll(/data-group="(\w+)"/g)].map((m) => m[1]);
     const overview = await renderBusiness(windowFor(med, 'overview'));
-    assert.deepEqual(foldersOn(overview), ['overview', 'financial', 'operations', 'ownership']);
+    assert.deepEqual(foldersOn(overview), ['pending', 'overview', 'financial', 'operations', 'ownership']);
     assert.deepEqual(tabsOn(overview), [], 'Overview has no tabs under it');
     assert.match(overview, /<div class="nci-bizname">Back Room<\/div>/, 'the name stands out');
     const pages = {};
@@ -1073,3 +1073,66 @@ test('the Business window has four folders, each with its tabs, and each tab hol
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('the Pending tab lists what waits for a character, across their businesses, and acts as the right account', async () => {
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const submit = S.BusinessClient.submit;
+  const sent = [];
+  S.BusinessClient.submit = async (account, type, payload) => {
+    sent.push({ account: account.id, type, ...payload });
+    return 'key';
+  };
+  try {
+    await S.BusinessRepository.save({ ...b, status: 'open', stage: 0, company: null, officers: [], listing: null, charter: null, takeover: null, administration: null, regCase: null, backRoom: null,
+      proposals: [{ id: 'pr1', kind: 'close', by: fix.id, day: b.period.startDay, expires: b.period.startDay + 7, votes: { [fix.id]: true } }] });
+    const app = windowFor(med, 'pending');
+    app.render = () => {};
+    const html = await renderBusiness(app);
+    assertClean(html, 'the player\'s Pending tab');
+    assert.match(html, /data-group="pending"[^>]*>Pending <span class="nci-count">\d+<\/span>/, 'a count on the folder');
+    assert.match(text(html), /Back Room/);
+    assert.match(text(html), /proposes/);
+    assert.doesNotMatch(html, /nci-bizname/, 'the list, not one business');
+    const actions = Apps.Business.DEFAULT_OPTIONS.actions;
+    for (const [, action] of html.matchAll(/data-do="([^"]+)"/g)) assert.ok(action in actions, `no handler for ${action}`);
+    assert.match(html, /data-do="vote" data-account="[^"]+" data-business="[^"]+" data-id="pr1" data-yes="true"/);
+
+    // Whichever account and business are picked, the row's are used, and the picks are put back after.
+    app.businessId = 'another';
+    await actions.pendingAct.call(app, null, { dataset: { do: 'vote', account: med.id, business: b.id, id: 'pr1', yes: 'true' } });
+    assert.deepEqual(sent.at(-1), { account: med.id, type: 'vote', businessId: b.id, proposalId: 'pr1', yes: true });
+    assert.equal(app.businessId, 'another');
+
+    // A click on the row opens it; a click among its fields does not.
+    const rowClick = (inFields) => actions.pendingOpen.call(app, { target: { closest: () => inFields } }, { dataset: { account: med.id, business: b.id, tab: 'partners' } });
+    await rowClick(true);
+    assert.equal(app.tab, 'pending');
+    await rowClick(null);
+    assert.deepEqual([app.tab, app.businessId], ['partners', b.id]);
+
+    // Someone who has voted has nothing left to do here.
+    await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], proposals: [{ id: 'pr1', kind: 'close', by: fix.id, day: b.period.startDay, expires: b.period.startDay + 7, votes: { [fix.id]: true, [med.id]: true } }] });
+    const voted = await renderBusiness(windowFor(med, 'pending'));
+    assert.doesNotMatch(voted, /data-id="pr1"/);
+  } finally {
+    S.BusinessClient.submit = submit;
+    await S.BusinessRepository.save(saved);
+  }
+});
+
+test('with no business, the window has only the Pending and Overview folders', async () => {
+  const businesses = S.BusinessRepository.all;
+  S.BusinessRepository.all = () => [];
+  try {
+    const app = windowFor(med, 'pending');
+    const html = await renderBusiness(app);
+    assertClean(html, 'nothing to show but the list');
+    assert.deepEqual([...html.matchAll(/data-group="(\w+)"/g)].map((m) => m[1]), ['pending', 'overview']);
+    assert.doesNotMatch(html, /data-action="found"/, 'the start form is on Overview');
+    assert.match(await renderBusiness(windowFor(med, 'overview')), /data-action="found"/);
+  } finally {
+    S.BusinessRepository.all = businesses;
+  }
+});
+

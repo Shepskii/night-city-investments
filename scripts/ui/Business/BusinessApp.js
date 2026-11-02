@@ -11,7 +11,7 @@ import { MODULE_ID, HOOKS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient } from '../../services/BusinessClient.js';
 import { SyndicateClient } from '../../services/SyndicateClient.js';
-import { accountFor } from '../accounts.js';
+import { accountFor, ownerOf } from '../accounts.js';
 import { BaseApplication } from '../BaseApplication.js';
 import { RollDialogApp } from './RollDialogApp.js';
 import { jobsOf } from '../../services/BusinessClient.js';
@@ -23,9 +23,11 @@ import { L } from '../format.js';
 import { investigate } from '../investigate.js';
 import { answerCase } from '../answerCase.js';
 import { pickerContext, startContext, businessContext, usableActors, jobsContext, termKey } from './context.js';
+import { pendingRows } from './pending.js';
 
 /** The folders along the top, and the tabs in each. */
 const FOLDERS = Object.freeze({
+  pending: ['pending'],
   overview: ['overview'],
   financial: ['ledger', 'reports'],
   operations: ['week', 'staff', 'projects', 'backRoom'],
@@ -49,6 +51,11 @@ export class BusinessApp extends BaseApplication {
     position: { width: 1200, height: 660 },
     actions: {
       switchTab: BusinessApp._onTab,
+      pendingOpen: BusinessApp._onPendingOpen,
+      pendingAct: BusinessApp._onPendingAct,
+      synVote: BusinessApp._onSynVote,
+      synJoin: BusinessApp._onSynAnswer,
+      synDecline: BusinessApp._onSynAnswer,
       viewOnMarket: BusinessApp._onViewOnMarket,
       startNew: BusinessApp._onStartNew,
       cancelStart: BusinessApp._onCancelStart,
@@ -164,12 +171,14 @@ export class BusinessApp extends BaseApplication {
   _onFirstRender(context, options) {
     super._onFirstRender?.(context, options);
     Hooks.on(HOOKS.BUSINESSES_CHANGED, this._refresh);
+    Hooks.on(HOOKS.SYNDICATES_CHANGED, this._refresh);
     // The "no GM online" warning follows who is connected.
     Hooks.on('userConnected', this._refresh);
   }
 
   _onClose(options) {
     Hooks.off(HOOKS.BUSINESSES_CHANGED, this._refresh);
+    Hooks.off(HOOKS.SYNDICATES_CHANGED, this._refresh);
     Hooks.off('userConnected', this._refresh);
     super._onClose?.(options);
   }
@@ -275,7 +284,57 @@ export class BusinessApp extends BaseApplication {
     this.render();
   }
 
+  /** A row on the Pending tab: its business's tab, or the terminal for a syndicate. A click among its fields stays put. */
+  static async _onPendingOpen(event, target) {
+    if (event?.target?.closest?.('.nci-rowactions')) return;
+    const { account, business, tab, terminal } = target.dataset;
+    if (terminal) {
+      const { MarketTerminalApp } = await import('../MarketTerminal/MarketTerminalApp.js');
+      const app = MarketTerminalApp.open({ actorId: account });
+      app.tab = 'portfolio';
+      app.sub = terminal;
+      app.render();
+      return;
+    }
+    this.actorId = account;
+    this.businessId = business ?? null;
+    this.starting = false;
+    this.tab = tab;
+    this.lastInFolder[folderOf(tab)] = tab;
+    this.render();
+  }
+
+  /** A button on a Pending row: its tab's own action, as the account and on the business the row is about, whichever are picked. */
+  static async _onPendingAct(event, target) {
+    const { do: action, account, business } = target.dataset;
+    const handler = BusinessApp.DEFAULT_OPTIONS.actions[action];
+    if (!handler) return;
+    const picked = { actorId: this.actorId, businessId: this.businessId };
+    this.actorId = account ?? this.actorId;
+    this.businessId = business ?? this.businessId;
+    try {
+      await handler.call(this, event, target);
+    } finally {
+      Object.assign(this, picked);
+    }
+  }
+
+  /** A vote in a syndicate, from the Pending tab; its account's character votes. */
+  static _onSynVote(event, target) {
+    const voter = ownerOf(this.actor);
+    if (!voter) return undefined;
+    return SyndicateClient.submit(voter, 'vote', { syndicateId: target.dataset.syndicate, proposalId: target.dataset.id, yes: target.dataset.yes === 'true' });
+  }
+
+  /** An invitation to a syndicate, from the Pending tab. */
+  static _onSynAnswer(event, target) {
+    const character = ownerOf(this.actor);
+    if (!character) return undefined;
+    return SyndicateClient.submit(character, target.dataset.do === 'synJoin' ? 'join' : 'decline', { syndicateId: target.dataset.syndicate });
+  }
+
   static _onStartNew() {
+    this.tab = 'overview';
     this.starting = true;
     this.render();
   }
@@ -628,7 +687,8 @@ export class BusinessApp extends BaseApplication {
 
   /** An employee's answer to an offer, or their notice, sent from their own character to the business named. */
   static async _onJob(event, target) {
-    const type = target.dataset.action;
+    // From the Pending tab, the action it stands for.
+    const type = target.dataset.do ?? target.dataset.action;
     if (type === 'quitJob' && !(await this._confirm('NCI.Staff.QuitConfirm'))) return null;
     if (!this.actor || this.actor.isSyndicate) return null;
     return BusinessClient.submit(this.actor, type, { businessId: target.dataset.id });
@@ -689,7 +749,7 @@ export class BusinessApp extends BaseApplication {
       tab: this.tab,
       isSyndicate: !!this.actor?.isSyndicate,
       // A member who is not an officer sees the syndicate's businesses but cannot act for it.
-      readOnly: !!this.actor?.isSyndicate && !this.actor.isOfficer,
+      readOnly: !!this.actor?.isSyndicate && !this.actor.isOfficer && this.tab !== 'pending',
       gearDrafts: Object.fromEntries(GEAR_FORMS.map((f) => [f, this.gearDrafts[f].map((g) => ({ ...g, value: g.value.toLocaleString() }))])),
     };
     const shown = this.actor && business ? businessContext(business, this.actor) : null;
@@ -699,9 +759,17 @@ export class BusinessApp extends BaseApplication {
     context.tab = this.tab;
     for (const t of TABS) context[`is${t[0].toUpperCase()}${t.slice(1)}`] = t === this.tab;
     const tabLabel = (t) => ({ id: t, label: L(termKey(business, `NCI.Business.Tab.${t}`)), active: t === this.tab });
-    const folder = folderOf(this.tab);
-    context.folders = Object.keys(FOLDERS).map((id) => ({ id, label: L(`NCI.Business.Folder.${id}`), active: id === folder }));
-    context.subTabs = FOLDERS[folder].length > 1 ? FOLDERS[folder].filter(hasTab).map(tabLabel) : [];
+    context.pendingRows = this.actor ? pendingRows(this.actor) : [];
+    // With no business to show, or only an invitation, there is just this list and the Overview's form.
+    const whole = !!shown && !shown.invited;
+    const folder = whole || this.tab === 'pending' ? folderOf(this.tab) : 'overview';
+    context.folders = this.actor ? Object.keys(FOLDERS).filter((id) => whole || id === 'pending' || id === 'overview').map((id) => ({
+      id,
+      label: L(`NCI.Business.Folder.${id}`),
+      active: id === folder,
+      count: id === 'pending' ? context.pendingRows.length : 0,
+    })) : [];
+    context.subTabs = whole && FOLDERS[folder].length > 1 ? FOLDERS[folder].filter(hasTab).map(tabLabel) : [];
     if (!this.actor) return { ...context, noActor: true };
     // The jobs this character holds or is offered at other people's businesses (DESIGN §32).
     context.jobs = jobsContext(this.actor);

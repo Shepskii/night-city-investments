@@ -2929,7 +2929,26 @@
       "LeaveConfirmCompany": "Offer your shares to the other shareholders? They have the buy-out window to buy them at book value; after that they go to your heir.",
       "DecisionsHint": "Closing needs every partner with a vote; one refusal ends the proposal.",
       "DecisionsHintCompany": "Closing needs every shareholder with a vote; one refusal ends the proposal.",
-      "Folder": { "overview": "Overview", "financial": "Financial", "operations": "Operations", "ownership": "Ownership" },
+      "Pending": {
+        "Title": "Waiting for you",
+        "Intro": "Everything waiting for this character, across their businesses, jobs and syndicates. Action it here, or click a row to open it for more detail.",
+        "None": "No items waiting",
+        "Where": "Where",
+        "Needed": "What it needs",
+        "Action": "Action",
+        "Need": {
+          "invited": "You are invited to join. Put in cash here, or click the row to bring gear as well.",
+          "defend": "A takeover offer: defend the company",
+          "setup": "Make the setup roll",
+          "charter": "Charter roll: {part}",
+          "prospectus": "Prospectus roll: {part}",
+          "bank": "The bank loan is agreed: make the roll",
+          "report": "Prepare this month's report",
+          "job": "A job offer as {post}",
+          "syndicate": "{founder} invites you to join"
+        }
+      },
+      "Folder": { "pending": "Pending", "overview": "Overview", "financial": "Financial", "operations": "Operations", "ownership": "Ownership" },
       "Tab": { "overview": "Overview", "week": "Work", "projects": "Projects", "ledger": "Ledger", "reports": "Reports", "backRoom": "Back Room", "partners": "Partners", "partnersCompany": "Shareholders", "growth": "Growth", "staff": "Staff" },
       "DaysLeft": "You have {n} business day(s) left this week.",
       "AimGift": "Aiming at a faction costs a {gift} eb gift from the cash, spent whatever the roll.",

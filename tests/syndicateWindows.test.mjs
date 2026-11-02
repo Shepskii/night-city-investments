@@ -127,6 +127,12 @@ test('the invited character sees the invitation; once a member, the syndicate jo
   assertClean(invited, 'invitation');
   assert.match(text(invited), /Medtech invites you to join Back Room Capital/);
   assert.match(invited, /data-action="synJoin"/);
+  // The same invitation waits on the Business window's Pending tab.
+  const { pendingRows } = await import('../scripts/ui/Business/pending.js');
+  const waiting = pendingRows(fix).find((r) => r.where === 'Back Room Capital');
+  assert.equal(waiting.needed, 'Medtech invites you to join');
+  assert.deepEqual(waiting.buttons.map((b) => b.do), ['synJoin', 'synDecline']);
+  assert.equal(waiting.terminal, 'investments', 'its row opens the terminal');
 
   await send(fix, 'join', { syndicateId: syndicate().id });
   await send(med, 'deposit', { syndicateId: syndicate().id, amount: 6000 });
@@ -162,6 +168,25 @@ test('a member votes on an open proposal from the panel', async () => {
   assert.match(t, /Yes 33%/);
   assert.match(html, /data-action="synVote" data-id="[^"]+" data-yes="true"/);
   assert.match(html, /data-action="synVote" data-id="[^"]+" data-yes="false"/, 'not voted yet: yes and no');
+
+  // The vote waits on the Business window's Pending tab for whoever has not voted, whichever account is picked.
+  const { pendingRows } = await import('../scripts/ui/Business/pending.js');
+  const { accountFor } = await import('../scripts/ui/accounts.js');
+  const vote = (actor) => pendingRows(actor).filter((r) => r.terminal === 'brokerage');
+  assert.match(vote(med)[0].needed, /Set the officers' limit to 8,000 eb/);
+  assert.deepEqual(vote(med)[0].buttons.map((b) => [b.do, b.yes]), [['synVote', 'true'], ['synVote', 'false']]);
+  assert.equal(vote(accountFor(key(med))).length, 1);
+  assert.equal(vote(fix).length, 0, 'the proposer has voted');
+  // The button sends it as the member, for the syndicate on its row.
+  const { SyndicateClient } = await import('../scripts/services/SyndicateClient.js');
+  const submit = SyndicateClient.submit;
+  let sentVote = null;
+  SyndicateClient.submit = async (actor, type, payload) => { sentVote = [actor.id, type, payload]; };
+  const voteButton = vote(med)[0].buttons[0];
+  const { BusinessApp } = await import('../scripts/ui/Business/BusinessApp.js');
+  await BusinessApp.DEFAULT_OPTIONS.actions.pendingAct.call(new BusinessApp(), null, { dataset: voteButton });
+  SyndicateClient.submit = submit;
+  assert.deepEqual(sentVote, [med.id, 'vote', { syndicateId: syndicate().id, proposalId: voteButton.id, yes: true }]);
 
   // The Fixer proposed it, so has voted yes: the panel says so, and offers only to change the vote.
   const mine = await portfolioTab(key(fix));

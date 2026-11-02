@@ -131,6 +131,16 @@ test('the partners hire a player character, who accepts from their own window an
   assert.match(text(job), /Your jobs/);
   assert.match(text(job), /Back Room/);
   assert.match(job, /data-action="acceptJob"/);
+  // The offer also waits on the Pending tab, and its button answers it.
+  const { pendingRows } = await import('../scripts/ui/Business/pending.js');
+  const offer = pendingRows(nova).find((r) => r.buttons.some((x) => x.do === 'acceptJob'));
+  assert.match(offer.needed, /A job offer as/);
+  const offerSubmit = S.BusinessClient.submit;
+  let answered = null;
+  S.BusinessClient.submit = async (actor, type, payload) => { answered = [actor.id, type, payload]; };
+  await Apps.Business.DEFAULT_OPTIONS.actions.pendingAct.call(new Apps.Business(), null, { dataset: offer.buttons[0] });
+  S.BusinessClient.submit = offerSubmit;
+  assert.deepEqual(answered, [nova.id, 'acceptJob', { businessId: business().id }]);
 
   await send(nova, 'acceptJob', { businessId: business().id });
   assert.equal(receipt(nova).ok, true, receipt(nova).reason);

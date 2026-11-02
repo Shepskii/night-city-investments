@@ -115,7 +115,7 @@ Open the **Business** window from the scene controls (the shop icon). Pick your 
 
 ## The week
 
-The Business window has four folders. **Overview:** where the business stands. **Financial:** the **Ledger** (drawing money, adding funds, loans, dividends and every entry) and **Reports** (monthly reports and weekly digests). **Operations:** **Work** (the week's ordinary actions), **Staff**, **Projects** and **Back Room** (the back room and anything illegal or likely to draw attention, including campaigns and Shortcuts; at a company, only officers see this tab). **Ownership:** **Partners** or **Shareholders** (the owners, votes and capital) and **Growth**.
+The Business window has five folders. **Pending:** everything waiting for your character, across all their businesses, jobs and syndicates, with a count on the folder: votes, invitations, job offers, regulators' notices, takeover offers and rolls that are due. Action it there, or click a row to open it. **Overview:** where the business stands. **Financial:** the **Ledger** (drawing money, adding funds, loans, dividends and every entry) and **Reports** (monthly reports and weekly digests). **Operations:** **Work** (the week's ordinary actions), **Staff**, **Projects** and **Back Room** (the back room and anything illegal or likely to draw attention, including campaigns and Shortcuts; at a company, only officers see this tab). **Ownership:** **Partners** or **Shareholders** (the owners, votes and capital) and **Growth**.
 
 A business week closes on the weekday your GM chose.
 
