@@ -2112,6 +2112,7 @@ The user's requests after U1, each built and committed on its own. Colours, layo
 **Tested in the test world** (2026-11-03): a suggestion on Pending, its IP changed and applied, with both logs on the sheet. The takeover, listing, unmasking, fine and wind-up calls have not run for real.
 
 **B7d Living costs as built** (`business.js` `payLiving`, `coverLiving` and `stopLiving`; `BusinessService` `livingCostOf`, `_livingCosts`). A majority of the votes can have the business pay a partner's Housing and Lifestyle (`system.lifestyle.housing.cost` and `.lifeStyle.cost`; Fashion, extras and Trauma Team are left out). At each report month's close it pays what the sheet shows then, by payslip mail, or straight to the sheet with staff mail off, so it works with Crew Tools' rent or without. It is an owner's take, so in the ledger but not against the week's profit. One the cash cannot cover goes without that month, with a note in the digest; one no longer an active partner is dropped; a business in administration pays none. A player sets their own sheet, so the ledger is the GM's check, and the vote shows the sum.
+**Tested in the test world** (2026-11-03): a partner's proposal, voted through from Pending; three closes, paying 1,100 eb at the month's end only, with the ledger line and a message to claim.
 
 ## 37. Roadmap
 
