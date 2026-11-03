@@ -2165,7 +2165,7 @@
       }
     },
     "Production": {
-      "GMHint": "What each kind of business can make. The defaults come from the system's compendiums; drop an item in the box to add another, from a compendium or the Items directory. Items marked illegal stay off every workshop's line until back-room production is built.",
+      "GMHint": "What each kind of business can make. The defaults come from the system's compendiums; drop an item in the box to add another, from a compendium or the Items directory. Items marked illegal need an open back room to make (a company needs none), and can only be sold by fencing.",
       "BusinessType": "Business type",
       "AddLabel": "Add an item",
       "AddPlaceholder": "Drop an item here",
@@ -2206,7 +2206,10 @@
       "OpenStoreroom": "Open the storeroom",
       "StoreroomName": "Stock — {name}",
       "SellsAt": "The shop sells it at {price} eb",
-      "NotForShop": "Not for the shop's counter",
+      "NotForShop": "Illegal: only a fence takes it, at {price} eb",
+      "IllegalTag": "[Illegal] ",
+      "IllegalLine": "Illegal: off the books, paid from dirty cash first, and each run adds Exposure.",
+      "FenceTerms": "Pays {price}% of market price, off the books.",
       "ConsignedBy": "Consigned by {name}",
       "BuyAt": "Buy, {price} eb each",
       "HandOver": "Propose giving",
@@ -2833,6 +2836,7 @@
       "UnworkedNote": "A week nobody works the shop still trades, at a little under the usual takings. Reputation drifts back toward the district's usual and costs creep up when nobody looks after them.",
       "NotOpenYet": "The business is not open.",
       "Action": {
+        "fence": { "Name": "Fence stock", "Hint": "Trading, Streetwise or Operator: sells stock off the books, illegal goods first. The roll sets how much, and it adds Exposure." },
         "produce": { "Name": "Run the line", "Hint": "With the trade's skills or Maker, at the book's DV for the item: how many come out sellable." },
         "work": { "Name": "Work the shop", "Hint": "With the trade's skills: sets the week's takings." },
         "promote": { "Name": "Promote", "Hint": "Persuasion, Wardrobe & Style, Composition, Credibility or Charismatic Impact: Reputation and foot traffic up." },
@@ -2887,6 +2891,8 @@
       "NoLedger": "Nothing yet.",
       "Ledger": {
         "materials": "Materials for {count} × {itemName}",
+        "illegalMaterials": "Materials off the books for {count} × {itemName}",
+        "fenced": "Stock fenced for {sold} eb",
         "stockSales": "Stock sold for {sold} eb: the profit, after what it cost",
         "stockCostBack": "Stock sold: what it cost, back in the cash",
         "stockBought": "{name} bought {count} × {itemName} from stock",
@@ -3346,7 +3352,9 @@
         "no-workshop": "the business has no workshop yet",
         "no-workshop-use": "this kind of business makes nothing to sell",
         "no-line": "choose what the workshop makes first",
-        "illegal-line": "that item is illegal, and the workshop cannot make it",
+        "illegal-line": "that item is illegal, and takes an open back room to make",
+        "nothing-to-fence": "there is no stock of the business's own to fence",
+        "item-illegal": "the shop takes no illegal goods",
         "run-going": "the benches are busy with a run",
         "bad-line": "this business cannot make that",
         "line-too-dear": "that is beyond what the business can make at this stage",
@@ -3733,6 +3741,8 @@
         "livingShort": "The cash could not cover {name}'s Housing and Lifestyle this month.",
         "madeStock": "{name} came off the benches.",
         "soldStock": "{name} sold from stock.",
+        "fencedStock": "{name} went to a fence.",
+        "seizedStock": "{name} seized in the raid.",
         "runFailed": "A run of {name} failed: the week was lost, not the materials.",
         "runNoCash": "A run of {name} went ahead without the cash for materials: nothing was made."
       },

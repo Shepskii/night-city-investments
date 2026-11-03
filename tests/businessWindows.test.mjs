@@ -1507,3 +1507,46 @@ test('a week\'s cashbook adds up with stock sold: its margin is profit, its cost
   assert.ok(page.other.some((x) => x.amount === '+40'), 'what it cost comes back as other money');
   assert.ok(!page.unlisted, `nothing unaccounted for: ${page.unlisted}`);
 });
+
+test('illegal goods in the windows (P1c): tagged on the line list, fenced from the Back Room tab, secret at a company, refused on consignment', async () => {
+  const { ProductionCatalog } = await import('../scripts/data/ProductionCatalog.js');
+  const { MODULE_ID, SETTINGS } = await import('../scripts/utils/constants.js');
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const savedCatalog = game.settings.get(MODULE_ID, SETTINGS.PRODUCTION_CATALOG);
+  const fromUuidBefore = globalThis.fromUuid;
+  const lace = { documentName: 'Item', uuid: 'Item.lace', name: 'Black Lace', type: 'drug', img: '', system: { price: { market: 50 } } };
+  globalThis.fromUuid = async () => lace;
+  const open = { ...b, status: 'open', stage: 0, company: null, officers: [], listing: null, charter: null, takeover: null, administration: null, regCase: null, proposals: [], upgrades: { workshop: [0] }, production: { line: null, run: null, allowance: 0 }, stock: [] };
+  try {
+    await ProductionCatalog.add('clinic', lace.uuid);
+    await ProductionCatalog.setIllegal(lace.uuid, true);
+    await S.BusinessRepository.save({ ...open, backRoom: null });
+    assert.doesNotMatch(text(await renderBusiness(windowFor(med, 'production'))), /Black Lace/, 'no room, not on the list');
+
+    const stock = [{ uuid: 'Item.lace', name: 'Black Lace', type: 'drug', img: '', price: 50, cost: 20, count: 3, illegal: true }];
+    await S.BusinessRepository.save({ ...open, backRoom: { kind: 'ripping', status: 'open', dirty: 0, day: 0 }, stock });
+    const production = text(await renderBusiness(windowFor(med, 'production')));
+    assert.match(production, /\[Illegal\] Black Lace: Costly/);
+    assert.match(production, /Illegal: only a fence takes it, at 45 eb/);
+    const room = await renderBusiness(windowFor(med, 'backRoom'));
+    assertClean(room, 'the back room with stock to fence');
+    assert.match(room, /data-action="actionRoll" data-id="fence"/);
+    assert.match(text(room), /Pays 90% of market price, off the books/);
+    assert.doesNotMatch(await renderBusiness(windowFor(med, 'week')), /data-id="fence"/);
+
+    assert.ok(ProductionCatalog.isIllegal({ name: 'Black Lace', type: 'drug' }), 'by name and type');
+    assert.ok(ProductionCatalog.isIllegal({ name: 'Other', type: 'drug', _stats: { compendiumSource: 'Item.lace' } }), 'or by where it came from');
+    assert.ok(!ProductionCatalog.isIllegal({ name: 'Black Lace', type: 'gear' }));
+
+    await S.BusinessRepository.save({ ...open, stage: 2, company: { ticker: 'TST' }, officers: [], backRoom: null, stock, production: { line: { uuid: 'Item.lace', name: 'Black Lace', type: 'drug', img: '', price: 50, illegal: true, qty: 1 }, run: null, allowance: 0 } });
+    const outsider = await renderBusiness(windowFor(med, 'production'));
+    assertClean(outsider, 'production for a holder who is no officer');
+    assert.doesNotMatch(text(outsider), /Black Lace/, 'the officers\' secret');
+    assert.doesNotMatch(outsider, /data-id="fence"/);
+  } finally {
+    globalThis.fromUuid = fromUuidBefore;
+    await game.settings.set(MODULE_ID, SETTINGS.PRODUCTION_CATALOG, savedCatalog);
+    await S.BusinessRepository.save(saved);
+  }
+});

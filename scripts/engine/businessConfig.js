@@ -119,6 +119,7 @@ export const ACTIONS = Object.freeze({
   payOff: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.persuasion] }),
   dealGang: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.localExpert] }),
   produce: Object.freeze({ skills: [], abilities: [A.maker], help: [S.basicTech, S.trading] }),
+  fence: Object.freeze({ skills: [S.trading, S.streetwise], abilities: [A.operator], help: [S.business, S.localExpert] }),
 });
 
 /** A chartered company's five actions (DESIGN §27.4, §31): they replace the shop actions at stage 2. */
@@ -131,6 +132,7 @@ export const COMPANY_ACTIONS = Object.freeze({
     abilities: [A.teamwork, A.operator, A.maker], help: [S.librarySearch, S.humanPerception],
   }),
   produce: Object.freeze({ skills: [], abilities: [A.maker], help: [S.basicTech, S.trading] }),
+  fence: Object.freeze({ skills: [S.trading, S.streetwise], abilities: [A.operator], help: [S.business, S.localExpert] }),
   books: Object.freeze({ skills: [S.accounting, Object.freeze({ ...S.business, dvAdd: 2 })], abilities: [A.moto], help: [S.librarySearch, S.business] }),
   relations: Object.freeze({
     skills: [S.trading, Object.freeze({ ...S.persuasion, dvAdd: 2 }), Object.freeze({ ...S.wardrobe, dvAdd: 2 })],
@@ -274,6 +276,17 @@ export const BUSINESS_DEFAULTS = Object.freeze({
       bank: 4,
       reputation: Object.freeze({ poor: 0.75, modest: 1, good: 1.1, excellent: 1.25 }),
       consignCut: 0.3,
+    }),
+    /**
+     * Fencing (P1c): `price` as a share of market price, in dirty cash, or at a company, in its cash; a week's limit as
+     * `limitShare` of its takings, times `band`; a company has no laundering to pay for, so `companyExposure` times the
+     * back room's Exposure for the work.
+     */
+    fence: Object.freeze({
+      price: 0.9,
+      limitShare: 0.5,
+      band: Object.freeze({ fumble: 0, failure: 0, narrow: 0.5, solid: 0.75, strong: 1, exceptional: 1.25 }),
+      companyExposure: 2,
     }),
     makes: Object.freeze({
       gunShop: Object.freeze([{ type: 'weapon' }, { type: 'ammo' }, { type: 'itemUpgrade', kind: 'weapon' }]),

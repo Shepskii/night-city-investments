@@ -2168,6 +2168,13 @@ A Maker with a base of 14 costs more than a shop's line earns (70 eb a week agai
 - **Closing:** stock goes into the pot at cost rather than at salvage, consigned items go back, and the storeroom sheet is deleted. A run on the benches counts too.
 - **The GM moving stock by hand:** Pending asks whether it was sold, given or lost. Only items leaving the sheet are asked about; anything the GM adds by hand stays outside the record.
 
+**P1c as decided (the user's choices, 2026-11-04).**
+- **Fencing:** a weekly action, on the Back Room tab, rolling Trading, Streetwise or Operator. The limit is the week's takings × 0.5 × the band (Narrow 0.5, Solid 0.75, Strong 1, Exceptional 1.25), and a passed roll always moves at least one item, with no carry-over. It pays 90% of market price in dirty cash, illegal goods first, dearest first, and adds Exposure as working the room does.
+- **Who and what:** a partner can fence any of the business's own stock. A Hand, in a week no partner does, fences illegal stock only, on top of working the room. Consignments are not fenced.
+- **Companies:** an officer's fence pays into the cash, shown to other holders as a plain line, and adds Exposure at twice the back room's rate. Its action, line, stock and notes are hidden from those not running it.
+- **Off the books:** illegal stock is no part of the assets, so a closing pays nothing for it. Dirty cash pays for its materials first, then the cash.
+- **Consigning:** the shop refuses illegal goods, at the drop and again at the GM's service.
+
 **To check while building:** how item quantities and ammunition stacks work when items are created.
 
 ## 37. Roadmap
@@ -2200,6 +2207,6 @@ A Maker with a base of 14 costs more than a shop's line earns (70 eb a week agai
 | B7 | **Done (v0.20.0), see §36.9.** B7a Teamwork against the rulebook, B7b Crew Tools downtime, B7c REP and IP, B7d living costs and B7e businesses on Night City Map, with the bridge at 0.3.0 |
 | U1 | **Done (v0.19.0), see §36.1 and §36.8.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships, back-room staff; after F1 and B6 |
 | UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
-| P1 | **In progress, see §36.10.** P1a (the workshop, item lists and the GM's tab, runs, the Maker post, the storeroom sheet) and P1b (shop sales, buying, consigning, stock in book value, closing, the GM's question) are built and live-tested. Next: P1c, fencing and illegal production through a back room |
+| P1 | **In progress, see §36.10.** P1a (the workshop, item lists and the GM's tab, runs, the Maker post, the storeroom sheet) and P1b (shop sales, buying, consigning, stock in book value, closing, the GM's question) are built and live-tested. P1c, fencing and illegal production through a back room, is built |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |

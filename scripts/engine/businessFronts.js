@@ -13,13 +13,14 @@ import { approachOf, bandPassed } from './rolls.js';
 import { createRng } from './rng.js';
 import { exposureBand } from './businessCompany.js';
 import { traitOf } from './businessStaff.js';
+import { seizeIllegal } from './businessProduction.js';
 
 export const ROOM_ACTIONS = Object.freeze(['roomWork', 'launder', 'payOff', 'dealGang']);
 /** A company's crime (U1c), which a world's underworld setting hides. */
-export const CRIME_ACTIONS = Object.freeze(['dumping', 'bribeRegulator', 'blackOps']);
+export const CRIME_ACTIONS = Object.freeze(['dumping', 'bribeRegulator', 'blackOps', 'fence']);
 /** What only those running a company should see of its crime: slots, and ledger lines, which others see in plain words. */
 export const SECRET_ACTIONS = Object.freeze([...ROOM_ACTIONS, ...CRIME_ACTIONS, 'lieLow']);
-export const SECRET_LEDGER = Object.freeze(['laundered', 'dirtyTaken', 'raidFine', 'blackOps', 'regulatorBribe']);
+export const SECRET_LEDGER = Object.freeze(['laundered', 'dirtyTaken', 'raidFine', 'blackOps', 'regulatorBribe', 'illegalMaterials', 'fenced']);
 
 /** The kinds of back room this business's front could hide. */
 export const roomKinds = (b) => Object.keys(BACK_ROOMS[b.archetype] ?? {});
@@ -182,6 +183,8 @@ export function bustFallout(b, event, outcome, day, p = BUSINESS_DEFAULTS) {
   const fine = worst ? r.fineLost : r.fineFail;
   const shut = worst || room.band === 'high';
   room.dirty -= seized;
+  // Illegal stock goes the same way, in the same share (P1c).
+  const taken = seizeIllegal(b, worst ? 1 : r.failShare);
   b.till -= fine;
   addLedger(b, { day, kind: 'raidFine', amount: -fine }, p);
   if (shut) {
@@ -189,7 +192,7 @@ export function bustFallout(b, event, outcome, day, p = BUSINESS_DEFAULTS) {
     room.deal = null;
     room.offer = null;
   }
-  return [{ type: 'bustLost', seized, fine, shut, heat: worst ? r.heat : 0 }];
+  return [{ type: 'bustLost', seized, fine, shut, heat: worst ? r.heat : 0 }, ...taken];
 }
 
 /** A partner takes dirty cash straight, as eddies. No cap, but it leaves a trail: Exposure for each `takeEvery` eb. */

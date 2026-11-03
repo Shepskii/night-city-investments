@@ -10,7 +10,8 @@
  * A run:   `{ uuid, name, type, img, price, cost, count, left }`, `left` being the bench days still to do.
  * A stack: `{ uuid, name, type, img, price, cost, count, illegal, owner }` in `b.stock`. `owner` is the character a
  *          consigned stack still belongs to: it costs the business nothing, and is no part of its book value. What
- *          the business's own stock cost stands in `b.assets`, so book value and valuation count it.
+ *          the business's own stock cost stands in `b.assets`, so book value and valuation count it. Illegal stock
+ *          is off the books: no part of the assets, and worth nothing when the business closes.
  */
 
 import { BUSINESS_DEFAULTS } from './businessConfig.js';
@@ -45,6 +46,9 @@ export function benchesOf(b, p = BUSINESS_DEFAULTS) {
 export const hasWorkshop = (b, p = BUSINESS_DEFAULTS) => benchesOf(b, p) > 0;
 
 /** Items on the shelves that are one item each, for the storeroom's limit. */
+/** Illegal goods take an open back room; a company's are its officers' secret, and need none (P1c). */
+export const illegalAllowed = (b) => b.stage >= 2 || b.backRoom?.status === 'open';
+
 export const looseStock = (b) => (b.stock ?? []).filter((s) => !s.owner && !STACKING_TYPES.includes(s.type)).reduce((a, s) => a + s.count, 0);
 
 /** What the shop sells an item for. */
@@ -59,7 +63,7 @@ export function salesLimit(b, takings, p = BUSINESS_DEFAULTS) {
 /** What the business's own stock stands at in its assets, with any run on the benches. */
 export function stockCost(b) {
   const run = b.production?.run;
-  return (b.stock ?? []).filter((s) => !s.owner).reduce((a, s) => a + s.cost * s.count, 0) + (run ? run.cost * run.count : 0);
+  return (b.stock ?? []).filter((s) => !s.owner && !s.illegal).reduce((a, s) => a + s.cost * s.count, 0) + (run && !run.illegal ? run.cost * run.count : 0);
 }
 
 /** One stack: the business's own, or a consignment. */
@@ -68,7 +72,7 @@ const stackOf = (b, uuid) => (b.stock ?? []).find((s) => s.uuid === uuid) ?? nul
 /** Take items off a stack, and what they cost out of the assets. */
 function takeOff(b, stack, count) {
   stack.count -= count;
-  if (!stack.owner) b.assets = Math.max(0, b.assets - stack.cost * count);
+  if (!stack.owner && !stack.illegal) b.assets = Math.max(0, b.assets - stack.cost * count);
   b.stock = b.stock.filter((s) => s.count > 0);
 }
 
@@ -88,18 +92,20 @@ export function runOffer(b, line, p = BUSINESS_DEFAULTS, part = 1) {
   return size >= 1 ? { ok: true, tier, dv: tier.dv, days: tier.days, materials: tier.materials, size } : fail('store-full');
 }
 
+/** What a run can draw on: illegal goods are paid from the room's dirty cash first. */
+const materialFunds = (b, line) => Math.max(0, b.till) + (line.illegal && b.backRoom?.status === 'open' ? b.backRoom.dirty : 0);
+
 /** Whether a run can start this week, and at what DV, before any dice. */
 export function produceCheck(b, p = BUSINESS_DEFAULTS) {
   if (!hasWorkshop(b, p)) return fail('no-workshop');
   const line = b.production?.line;
   if (!line) return fail('no-line');
   if (b.production.run) return fail('run-going');
-  // Illegal items wait for the back room's own runs (P1c).
-  if (line.illegal) return fail('illegal-line');
+  if (line.illegal && !illegalAllowed(b)) return fail('illegal-line');
   const offer = runOffer(b, line, p);
   if (!offer.ok) return offer;
-  // Enough for one item: a run makes what the cash can pay for.
-  return b.till >= offer.materials ? offer : fail('no-funds');
+  // Enough for one item: a run makes what the cash, and for illegal goods the dirty cash, can pay for.
+  return materialFunds(b, line) >= offer.materials ? offer : fail('no-funds');
 }
 
 /** Choose what the benches make, or (no item) stop. The GM's service found the item on the business's list. */
@@ -109,7 +115,7 @@ export function setLine(b, item, qty, p = BUSINESS_DEFAULTS) {
     b.production = { ...b.production, line: null };
     return { ok: true };
   }
-  if (item.illegal) return fail('illegal-line');
+  if (item.illegal && !illegalAllowed(b)) return fail('illegal-line');
   const tier = tierOf(item.price, p);
   if (!tier) return fail('bad-line');
   if (tier.price > topTierOf(b, p).price) return fail('line-too-dear');
@@ -140,10 +146,15 @@ export function productionWeek(b, day, out, p = BUSINESS_DEFAULTS) {
   if (!hasWorkshop(b, p)) return;
   // A short week gives the benches less time, as it gives the shop less takings.
   const part = Math.min(1, (b.period.endDay - b.period.startDay) / 7);
-  const note = (kind, name) => { b.pendingNotes = [...(b.pendingNotes ?? []), { kind, name }]; };
+  // A company's illegal work is its officers' secret, and notes go to every holder.
+  const note = (kind, name, illegal = b.production?.line?.illegal) => {
+    if (!(illegal && b.stage >= 2)) b.pendingNotes = [...(b.pendingNotes ?? []), { kind, name }];
+  };
   const slot = b.period.slots.find((s) => s.action === 'produce');
   const line = b.production?.line;
   if (slot && line && !b.production.run) {
+    // Illegal work leaves a trail, as the back room's does, however the roll went (P1c).
+    if (line.illegal) out.events.push({ type: 'illegalRun', exposure: p.backRoom.workExposure[slot.band] ?? 0 });
     const offer = runOffer(b, line, p, part);
     // Careful or Bold moved the DV, so they move the yield too, as they do any action's effect.
     const share = Math.min(1, (p.production.yield[slot.band] ?? 0) * approachOf(slot.approach).effect);
@@ -152,15 +163,23 @@ export function productionWeek(b, day, out, p = BUSINESS_DEFAULTS) {
     } else {
       // At least one comes of a passed roll; the cash may stop it short of the rest.
       const sellable = Math.max(1, Math.floor(offer.size * share));
-      const count = Math.min(sellable, Math.floor(Math.max(0, b.till) / offer.materials));
+      const count = Math.min(sellable, Math.floor(materialFunds(b, line) / offer.materials));
       if (count < 1) {
         note('runNoCash', line.name);
       } else {
         const paid = count * offer.materials;
-        b.till -= paid;
-        // Materials become stock: they leave the cash, not the books.
-        b.assets += paid;
-        addLedger(b, { day, kind: 'materials', amount: -paid, itemName: line.name, count }, p);
+        if (line.illegal) {
+          // Off the books: from the dirty cash first, and no asset.
+          const dirty = b.backRoom?.status === 'open' ? Math.min(paid, b.backRoom.dirty) : 0;
+          if (dirty) b.backRoom.dirty -= dirty;
+          b.till -= paid - dirty;
+          addLedger(b, { day, kind: 'illegalMaterials', amount: -(paid - dirty), itemName: line.name, count }, p);
+        } else {
+          b.till -= paid;
+          // Materials become stock: they leave the cash, not the books.
+          b.assets += paid;
+          addLedger(b, { day, kind: 'materials', amount: -paid, itemName: line.name, count }, p);
+        }
         const { uuid, name, type, img, price, illegal } = line;
         b.production.run = { uuid, name, type, img, price, illegal: !!illegal, cost: offer.materials, count, left: offer.size * offer.days };
       }
@@ -172,7 +191,7 @@ export function productionWeek(b, day, out, p = BUSINESS_DEFAULTS) {
   if (run.left > 1e-6) return;
   addStock(b, run);
   b.production.run = null;
-  note('madeStock', `${run.count} × ${run.name}`);
+  note('madeStock', `${run.count} × ${run.name}`, run.illegal);
   out.events.push({ type: 'stockMade', item: { uuid: run.uuid, type: run.type }, count: run.count });
 }
 
@@ -225,6 +244,75 @@ export function salesWeek(b, takings, day, out, p = BUSINESS_DEFAULTS) {
     if (totals.kept - totals.margin) addLedger(b, { day, kind: 'stockCostBack', amount: totals.kept - totals.margin }, p);
   }
   return totals;
+}
+
+/** Stock the business owns outright, which a fence can take: not a consignment. */
+const ownStock = (b, illegalOnly = false) => (b.stock ?? []).filter((s) => !s.owner && s.count > 0 && (!illegalOnly || s.illegal));
+
+/** Whether there is illegal stock a Hand may fence without a partner's say. */
+export const hasIllegalStock = (b) => ownStock(b, true).length > 0;
+
+/** What a fence pays for an item. */
+export const fencePrice = (price, p = BUSINESS_DEFAULTS) => Math.round(price * p.production.fence.price);
+
+/** Whether a fence can be arranged this week: a room that is open and not lying low, or a company; and something to sell. */
+export function fenceCheck(b) {
+  if (b.stage < 2 && b.backRoom?.status !== 'open') return fail('no-back-room');
+  if (b.period?.slots?.some((s) => s.action === 'lieLow')) return fail('lying-low');
+  return ownStock(b).length ? { ok: true } : fail('nothing-to-fence');
+}
+
+/**
+ * The week's fence, at its close, before the shop sells. The band sets the limit, and a passed roll always moves at least
+ * one item. Illegal stock goes first, dearest first; a Hand, acting without a partner's say, sells only illegal stock.
+ * The money is dirty cash, no part of the profit; a company has none, so it goes in the cash, under a plain ledger line.
+ * @returns {number} what it sold for
+ */
+export function fenceWeek(b, takings, day, out, p = BUSINESS_DEFAULTS) {
+  const slot = b.period.slots.find((s) => s.action === 'fence');
+  if (!slot) return 0;
+  const rules = p.production.fence;
+  const company = b.stage >= 2;
+  const trail = (p.backRoom.workExposure[slot.band] ?? 0) * (company ? rules.companyExposure : 1);
+  out.events.push({ type: 'fenceWeek', exposure: trail });
+  const room = b.backRoom?.status === 'open' ? b.backRoom : null;
+  // The room may have been raided shut this very week.
+  if (!company && !room) return 0;
+  let left = Math.round(takings * rules.limitShare * (rules.band[slot.band] ?? 0) * approachOf(slot.approach).effect);
+  if (!((rules.band[slot.band] ?? 0) > 0)) return 0;
+  const shelves = ownStock(b, !!slot.staff).sort((x, y) => (y.illegal ? 1 : 0) - (x.illegal ? 1 : 0) || y.price - x.price);
+  let sold = 0;
+  for (const stack of shelves) {
+    const price = fencePrice(stack.price, p);
+    const count = Math.max(sold ? 0 : 1, Math.min(stack.count, Math.floor(left / price)));
+    if (count < 1) continue;
+    const gross = count * price;
+    left -= gross;
+    sold += gross;
+    const { uuid, name, type } = stack;
+    takeOff(b, stack, count);
+    out.events.push({ type: 'stockSold', uuid, name, itemType: type, owner: null, count });
+    if (!company) b.pendingNotes = [...(b.pendingNotes ?? []), { kind: 'fencedStock', name: `${count} × ${name}` }];
+  }
+  if (!sold) return 0;
+  if (company) b.till += sold;
+  else room.dirty += sold;
+  addLedger(b, { day, kind: 'fenced', amount: company ? sold : 0, sold }, p);
+  return sold;
+}
+
+/** A raid takes this share of the illegal stock, and what it takes goes off the sheet (P1c). */
+export function seizeIllegal(b, share) {
+  const events = [];
+  for (const stack of ownStock(b, true)) {
+    const count = share >= 1 ? stack.count : Math.floor(stack.count * share);
+    if (count < 1) continue;
+    const { uuid, name, type } = stack;
+    takeOff(b, stack, count);
+    events.push({ type: 'stockSold', uuid, name, itemType: type, owner: null, count });
+    b.pendingNotes = [...(b.pendingNotes ?? []), { kind: 'seizedStock', name: `${count} × ${name}` }];
+  }
+  return events;
 }
 
 /** A partner buys stock: at cost, or at a company, where it would come out of other shareholders' pockets, at the shop's price. */
@@ -296,6 +384,7 @@ export function takeBackStock(b, actor, uuid, day, out, p = BUSINESS_DEFAULTS) {
 
 /**
  * A business closes: what its stock cost goes into the pot in full, rather than at salvage, and consigned items go home.
+ * Illegal stock was never on the books, and is simply gone.
  * @returns {number} the eb its own stock adds to the salvage
  */
 export function clearStock(b, out) {
@@ -312,7 +401,7 @@ export function clearStock(b, out) {
 export function raiseStockQuery(b, stack, missing, day) {
   stack.count -= missing;
   b.stockQueries = [...(b.stockQueries ?? []), {
-    id: `sq_${day}_${b.stockQueries?.length ?? 0}_${stack.uuid.slice(-8)}`, name: stack.name, cost: stack.cost, price: stack.price, owner: stack.owner ?? null, count: missing,
+    id: `sq_${day}_${b.stockQueries?.length ?? 0}_${stack.uuid.slice(-8)}`, name: stack.name, cost: stack.cost, price: stack.price, owner: stack.owner ?? null, illegal: !!stack.illegal, count: missing,
   }];
   b.stock = b.stock.filter((s) => s.count > 0);
 }
@@ -325,7 +414,7 @@ export function settleStockQuery(b, id, what, day, out, p = BUSINESS_DEFAULTS) {
   const worth = what === 'sold' ? salePrice(q.price, p) * q.count : 0;
   const share = q.owner ? Math.round(worth * (1 - p.production.sale.consignCut)) : 0;
   if (q.owner && share) out.wealth[q.owner] = (out.wealth[q.owner] ?? 0) + share;
-  if (!q.owner) b.assets = Math.max(0, b.assets - q.cost * q.count);
+  if (!q.owner && !q.illegal) b.assets = Math.max(0, b.assets - q.cost * q.count);
   b.till += worth - share;
   addLedger(b, { day, kind: `stock${what[0].toUpperCase()}${what.slice(1)}`, amount: worth - share, itemName: q.name, count: q.count }, p);
   b.stockQueries = b.stockQueries.filter((x) => x.id !== id);

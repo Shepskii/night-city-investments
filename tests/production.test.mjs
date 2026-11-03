@@ -8,6 +8,7 @@ import {
   BUSINESS_DEFAULTS as P, benchesOf, hasWorkshop, madeByDefault, makesThings, produceCheck, productionWeek, projectOffer,
   rollSpec, runOffer, setLine, staffShifts, tierOf, topTierOf, looseStock, normalizeBusiness, bookValue, salesLimit, salesWeek, salePrice,
   buyStock, consignStock, takeBackStock, handOffer, handStock, stockCost, clearStock, raiseStockQuery, settleStockQuery,
+  fenceCheck, fenceWeek, fencePrice, illegalAllowed, seizeIllegal, bustFallout,
 } from '../scripts/engine/index.js';
 import { addProjectDays, startProject } from '../scripts/engine/businessGrowth.js';
 
@@ -217,7 +218,7 @@ test('the Maker runs the line in a week nobody did, at the book\'s DV, and not a
   assert.equal(partner.period.slots.filter((s) => s.action === 'produce').length, 1, 'a partner got there first');
 });
 
-test('illegal items stay off every line for now (P1c brings the back room\'s runs)', () => {
+test('illegal items stay off the line with no back room open', () => {
   const b = shop();
   assert.equal(setLine(b, { ...PREMIUM, illegal: true }).reason, 'illegal-line');
   assert.equal(b.production.line, null);
@@ -457,4 +458,199 @@ test('materials stand in the assets, so a run leaves book value alone', () => {
   assert.equal(b.assets, 250);
   assert.equal(bookValue(b), 1000);
   assert.equal(stockCost(b), 250);
+});
+
+// ── P1c: illegal goods and fencing ─────────────────────
+const ILLEGAL = { ...PREMIUM, uuid: 'i.lace', name: 'Black Lace', type: 'drug', illegal: true };
+const withRoom = (over = {}, dirty = 1000) => {
+  const b = shop(over);
+  b.backRoom = { kind: 'ripping', status: 'open', dirty, day: 0 };
+  return b;
+};
+const fence = (b, band, { takings = 1000, staff = false, approach = 'standard' } = {}) => {
+  b.period.slots = [{ action: 'fence', by: 'med', band, approach, ...(staff ? { staff: true } : {}) }];
+  const out = { wealth: {}, events: [] };
+  return { sold: fenceWeek(b, takings, 7, out, P), out };
+};
+
+test('an illegal line takes an open back room, or a company', () => {
+  assert.equal(illegalAllowed(shop()), false);
+  assert.equal(illegalAllowed(withRoom()), true);
+  assert.equal(illegalAllowed(shop({ stage: 2 })), true);
+  const room = withRoom();
+  assert.ok(setLine(room, ILLEGAL).ok);
+  assert.ok(produceCheck(room).ok);
+  room.backRoom.status = 'shut';
+  assert.equal(produceCheck(room).reason, 'illegal-line', 'a shut room stops the line');
+  assert.ok(setLine(shop({ stage: 2, workshop: [2] }), ILLEGAL).ok);
+});
+
+test('an illegal run: dirty cash first, off the books, and it adds Exposure however the roll goes', () => {
+  const b = withRoom({ till: 500 }, 100);
+  b.assets = 1000;
+  setLine(b, ILLEGAL);
+  b.period.slots = [{ action: 'produce', by: 'med', band: 'strong' }];
+  const out = { events: [], wealth: {} };
+  productionWeek(b, 7, out, P);
+  assert.equal(b.stock[0].count, 6, '90% of 7');
+  assert.equal(b.backRoom.dirty, 0, 'the 100 eb of dirty cash went first');
+  assert.equal(b.till, 300, 'and 200 eb came from the cash');
+  assert.equal(b.assets, 1000, 'off the books');
+  assert.equal(stockCost(b), 0);
+  assert.ok(b.stock[0].illegal);
+  assert.equal(out.events.find((e) => e.type === 'illegalRun').exposure, 1);
+  assert.equal(b.ledger.at(-1).kind, 'illegalMaterials');
+  assert.equal(b.ledger.at(-1).amount, -200);
+  const failed = withRoom();
+  setLine(failed, ILLEGAL);
+  failed.period.slots = [{ action: 'produce', by: 'med', band: 'fumble' }];
+  const trail = { events: [], wealth: {} };
+  productionWeek(failed, 7, trail, P);
+  assert.equal(trail.events[0].exposure, 8, 'a fumble is the worst');
+  assert.equal(failed.stock.length, 0);
+  assert.equal(failed.backRoom.dirty, 1000, 'and a failure costs no materials');
+  const legal = withRoom({ till: 500 }, 1000);
+  setLine(legal, PREMIUM);
+  legal.period.slots = [{ action: 'produce', by: 'med', band: 'exceptional' }];
+  productionWeek(legal, 7, { events: [], wealth: {} }, P);
+  assert.equal(legal.backRoom.dirty, 1000, 'legal goods never touch the dirty cash');
+  assert.equal(legal.till, 150);
+});
+
+test('a fence: refused with no room, lying low or nothing of its own to sell', () => {
+  const stacked = stack();
+  assert.equal(fenceCheck({ ...shop(), stock: [stacked] }).reason, 'no-back-room');
+  const b = withRoom();
+  assert.equal(fenceCheck(b).reason, 'nothing-to-fence');
+  b.stock = [stack({ owner: 'fix', cost: 0 })];
+  assert.equal(fenceCheck(b).reason, 'nothing-to-fence', 'a consignment is not the business\'s to fence');
+  b.stock = [stacked];
+  assert.ok(fenceCheck(b).ok);
+  b.period.slots = [{ action: 'lieLow' }];
+  assert.equal(fenceCheck(b).reason, 'lying-low');
+  const spec = rollSpec({ ...withRoom(), stock: [stacked] }, { type: 'action', action: 'fence', use: { kind: 'skill', skill: 'Trading', stat: 'int' } }, 'med', { day: 1 });
+  assert.ok(spec.ok, spec.reason);
+  assert.ok(spec.uses.some((u) => u.skill === 'Streetwise'));
+  assert.ok(spec.uses.some((u) => u.ability === 'Operator'));
+});
+
+test('a fence pays 90% in dirty cash, as far as the band\'s limit goes, illegal goods first', () => {
+  assert.equal(fencePrice(100), 90);
+  const at = (band) => {
+    const b = withRoom({}, 0);
+    b.stock = [stack({ count: 20 })];
+    fence(b, band);
+    return b.backRoom.dirty;
+  };
+  assert.deepEqual(['narrow', 'solid', 'strong', 'exceptional'].map(at), [180, 360, 450, 540], 'limits 250, 375, 500 and 625 of takings 1000, whole items at 90');
+  const b = withRoom({ till: 1000 }, 0);
+  b.assets = 1000;
+  b.stock = [stack({ count: 3 }), stack({ uuid: 'i.lace', name: 'Black Lace', type: 'drug', illegal: true, cost: 50, count: 2 })];
+  const { sold, out } = fence(b, 'strong');
+  assert.equal(sold, 450, 'all five, within 500');
+  assert.equal(b.backRoom.dirty, 450);
+  assert.equal(b.till, 1000, 'none of it in the cash');
+  assert.equal(b.assets, 850, 'only the legal goods were on the books');
+  assert.equal(out.events.filter((e) => e.type === 'stockSold')[0].name, 'Black Lace');
+  assert.equal(out.events[0].exposure, 1, 'Exposure by band');
+  assert.ok(b.pendingNotes.some((n) => n.kind === 'fencedStock'));
+});
+
+test('a passed fence always moves one item, and a failed one nothing', () => {
+  const dear = () => {
+    const b = withRoom({}, 0);
+    b.stock = [stack({ uuid: 'i.dear', price: 5000, cost: 1000, count: 2, illegal: true })];
+    return b;
+  };
+  const b = dear();
+  assert.equal(fence(b, 'narrow', { takings: 100 }).sold, 4500, 'one, though it is over the limit');
+  assert.equal(b.stock[0].count, 1);
+  const failed = dear();
+  const done = fence(failed, 'failure');
+  assert.equal(done.sold, 0);
+  assert.equal(failed.stock[0].count, 2);
+  assert.equal(done.out.events[0].exposure, 4, 'it still leaves a trail');
+  assert.equal(fence(dear(), 'fumble').out.events[0].exposure, 8);
+});
+
+test('a Hand fences only illegal stock; a raid-shut room sells nothing', () => {
+  const b = withRoom({}, 0);
+  b.stock = [stack({ count: 2 })];
+  assert.equal(fence(b, 'strong', { staff: true }).sold, 0, 'legal goods are for a partner to decide');
+  assert.equal(b.stock[0].count, 2);
+  b.stock.push(stack({ uuid: 'i.lace', name: 'Black Lace', type: 'drug', illegal: true, count: 1 }));
+  assert.equal(fence(b, 'strong', { staff: true }).sold, 90);
+  assert.equal(b.stock.length, 1);
+  const hand = withRoom();
+  hand.stock = [stack({ illegal: true })];
+  hand.staff = [{ id: 's1', name: 'Hand', post: 'hand', status: 'active', source: 'npc', bases: { 'skill:Cybertech': 14 }, pct: 1, loyalty: 60 }];
+  staffShifts(hand, 'seed', P);
+  assert.ok(hand.period.slots.some((s) => s.action === 'fence' && s.staff));
+  assert.ok(hand.period.slots.some((s) => s.action === 'roomWork'), 'on top of working the room');
+  const clean = withRoom();
+  clean.stock = [stack()];
+  clean.staff = hand.staff;
+  staffShifts(clean, 'seed', P);
+  assert.ok(!clean.period.slots.some((s) => s.action === 'fence'));
+  const shut = withRoom();
+  shut.stock = [stack({ illegal: true })];
+  shut.backRoom.status = 'shut';
+  assert.equal(fence(shut, 'strong').sold, 0);
+});
+
+test('a company fences into its cash, at twice the Exposure, and says little', () => {
+  const b = shop({ stage: 2, workshop: [2], till: 1000 });
+  b.stock = [stack({ illegal: true, count: 2 })];
+  const { sold, out } = fence(b, 'solid');
+  assert.equal(sold, 180);
+  assert.equal(b.till, 1180);
+  assert.equal(out.events[0].exposure, 4, 'twice the 2 of a solid roll');
+  assert.equal(b.ledger.at(-1).kind, 'fenced');
+  assert.ok(!(b.pendingNotes ?? []).some((n) => n.kind === 'fencedStock'), 'nothing for the holders to read');
+  setLine(b, ILLEGAL);
+  b.period.slots = [{ action: 'produce', by: 'med', band: 'solid' }];
+  productionWeek(b, 7, { events: [], wealth: {} }, P);
+  assert.ok(!(b.pendingNotes ?? []).some((n) => n.kind === 'madeStock'));
+});
+
+test('a raid seizes illegal stock in the dirty cash\'s share, and leaves legal goods', () => {
+  const stocked = () => {
+    const b = withRoom({}, 1000);
+    b.stock = [stack({ uuid: 'i.lace', name: 'Black Lace', type: 'drug', illegal: true, count: 10 }), stack({ count: 4 })];
+    return b;
+  };
+  const lost = stocked();
+  const events = bustFallout(lost, { kind: 'bust' }, 'unanswered', 7, P);
+  assert.equal(lost.stock.length, 1, 'all the illegal stock');
+  assert.equal(lost.stock[0].uuid, 'i.scanner');
+  assert.ok(events.some((e) => e.type === 'stockSold' && e.count === 10), 'and it goes off the sheet');
+  assert.ok(lost.pendingNotes.some((n) => n.kind === 'seizedStock'));
+  const failed = stocked();
+  const share = P.backRoom.raid.failShare;
+  bustFallout(failed, { kind: 'bust' }, 'failed', 7, P);
+  assert.equal(failed.stock.find((s) => s.illegal).count, 10 - Math.floor(10 * share));
+  assert.equal(failed.backRoom.dirty, 1000 - Math.floor(1000 * share), 'the same share');
+  const won = stocked();
+  bustFallout(won, { kind: 'bust' }, 'answered', 7, P);
+  assert.equal(won.stock.find((s) => s.illegal).count, 10);
+  assert.deepEqual(seizeIllegal(withRoom(), 1), []);
+});
+
+test('illegal stock is worth nothing at a closing, and buying or giving it leaves the books alone', () => {
+  const b = withRoom({ till: 0 }, 0);
+  b.assets = 1000;
+  b.stock = [stack({ illegal: true, count: 5 }), stack({ uuid: 'i.legal', count: 2 })];
+  assert.equal(stockCost(b), 100, 'only the legal two');
+  assert.equal(clearStock(b, { events: [], wealth: {} }), 100);
+  const bought = withRoom({ till: 0 }, 0);
+  bought.assets = 1000;
+  bought.stock = [stack({ illegal: true })];
+  buyStock(bought, { id: 'med', name: 'Medtech', wealth: 1000 }, 'i.scanner', 1, 7, { events: [], wealth: {} });
+  assert.equal(bought.assets, 1000);
+  const asked = withRoom({ till: 0 }, 0);
+  asked.assets = 1000;
+  asked.stock = [stack({ illegal: true })];
+  raiseStockQuery(asked, asked.stock[0], 1, 7);
+  settleStockQuery(asked, asked.stockQueries[0].id, 'lost', 7, { events: [], wealth: {} });
+  assert.equal(asked.assets, 1000);
 });

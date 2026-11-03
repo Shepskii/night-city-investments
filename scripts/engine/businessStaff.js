@@ -26,7 +26,7 @@ import { BUSINESS_DEFAULTS, POSTS, SKILLS, ABILITIES, EVENTS, useKey, stageDv } 
 import { archetypeOf, fail, int, addLedger, partnerOf } from './businessRecord.js';
 import { exposureBand } from './businessCompany.js';
 import { payOffCost } from './businessFronts.js';
-import { hasWorkshop, produceCheck } from './businessProduction.js';
+import { hasIllegalStock, hasWorkshop, produceCheck } from './businessProduction.js';
 
 /** Every use an employee's sheet is read for: each skill and role ability a business roll names. */
 export const STAFF_USES = Object.freeze([...Object.values(SKILLS), ...Object.values(ABILITIES)]);
@@ -497,6 +497,8 @@ export function staffShifts(b, seed = 'nci', p = BUSINESS_DEFAULTS, { idle = nul
   if (!taken('lieLow')) {
     const hand = staff.find((s) => s.post === 'hand');
     if (hand && room && !taken('roomWork')) shift(hand, 'hand', 'roomWork');
+    // The Hand moves illegal goods too, on top of the room's work; legal stock is for a partner to decide (P1c).
+    if (hand && room && !taken('fence') && hasIllegalStock(b)) shift(hand, 'hand', 'fence');
     const launderer = staff.find((s) => s.post === 'launderer');
     if (launderer && room && !taken('launder') && (room.dirty > 0 || taken('roomWork'))) shift(launderer, 'launderer', 'launder');
     const fixer = staff.find((s) => s.post === 'fixer');

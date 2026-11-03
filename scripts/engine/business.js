@@ -67,7 +67,7 @@
  * hidden state; a result's `traits` are new ones for the service to keep there, never on the record.
  */
 
-import { makesThings, buyStock, clearStock, consignStock, handOffer, handStock, produceCheck, productionWeek, salesWeek, setLine, takeBackStock } from './businessProduction.js';
+import { fenceCheck, fenceWeek, makesThings, buyStock, clearStock, consignStock, handOffer, handStock, produceCheck, productionWeek, salesWeek, setLine, takeBackStock } from './businessProduction.js';
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from './businessEvents.js';
 import { aimCheck, giftFor } from './factions.js';
@@ -335,6 +335,10 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     // A run takes a workshop and a line, and rolls at the book's DV for the item (P1a).
     const run = request.action === 'produce' ? produceCheck(b, p) : null;
     if (run && !run.ok) return run;
+    if (request.action === 'fence') {
+      const fence = fenceCheck(b);
+      if (!fence.ok) return fence;
+    }
     // A role's own action takes that role: no hired help (X1).
     const allowHire = !actionFor(b.stage, request.action).roleOnly;
     return allowed(room?.uses ?? actionUses(request.action, arch, b.stage), use, { dv: run?.dv ?? stageDv(b.stage, p), allowHire, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p, b, traits });
@@ -668,7 +672,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (me?.status !== 'active' || !me.voting || !canRun(b, actor.id)) return fail('not-partner');
       if (!openRoom(b)) return fail('no-back-room');
       if (b.period.slots.length >= (p.stages[b.stage]?.slots ?? 1)) return fail('no-slot');
-      if (b.period.slots.some((s) => s.action === 'lieLow' || s.action === 'roomWork')) return fail('action-taken');
+      if (b.period.slots.some((s) => s.action === 'lieLow' || s.action === 'roomWork' || s.action === 'fence')) return fail('action-taken');
       b.period.slots.push({ action: 'lieLow', by: actor.id, use: 'none', band: 'solid', total: 0, dv: 0, approach: 'standard', luck: 0, bonus: 0 });
       break;
     }
@@ -1763,7 +1767,8 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   out.events.push(...factionFallout(b, event, p));
   out.events.push(...bustFallout(b, b.period.event, event?.outcome, b.period.endDay, p));
   const takings = Math.max(0, base + (event?.change ?? 0));
-  // Stock sold over the counter (P1b).
+  // What goes out the back goes first (P1c), then what is left is sold over the counter (P1b).
+  const fenced = fenceWeek(b, takings, b.period.endDay, out, p);
   const sales = salesWeek(b, takings, b.period.endDay, out, p);
   // What went on behind the shop this week (U1a).
   const room = roomWeek(b, takings, part, p, traits);
@@ -1836,6 +1841,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
     ...(wages.wages || wages.owed || wages.paid ? { wages: wages.wages, paid: wages.paid, owed: wages.owed } : {}),
     worked: !!work,
     ...(sales.sold ? { stock: sales } : {}),
+    ...(fenced ? { fenced } : {}),
     ...(room ? { room: { earned: room.earned, laundered: room.laundered, paid: room.paid, low: room.low, ...(room.cut ? { cut: room.cut } : {}), ...(room.unpaid ? { unpaid: true } : {}), ...(room.informant ? { informant: room.informant } : {}) } } : {}),
     ...(event ? { event: { kind: event.kind, outcome: event.outcome, band: event.band, change: event.change, ...(b.period.event?.factionName ? { faction: b.period.event.factionName } : {}), ...(eventCost ? { cost: eventCost } : {}) } } : {}),
     ...(notes.length ? { staff: notes } : {}),

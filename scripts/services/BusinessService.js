@@ -579,6 +579,10 @@ class BusinessServiceImpl {
       const gear = await this.resolveGear(actor, request.gear);
       if (!gear.ok) return this._receipt(actor, request, gear);
       context.gear = gear.gear;
+      if (request.type === 'consign') {
+        await ProductionCatalog.load();
+        if (gear.gear.some((g) => g.item && ProductionCatalog.isIllegal(g.item))) return this._receipt(actor, request, { ok: false, reason: 'item-illegal' });
+      }
     }
     let check = null;
     if (business && ROLL_REQUESTS.includes(request.type) && request.use) {

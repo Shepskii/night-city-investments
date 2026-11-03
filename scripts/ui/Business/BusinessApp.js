@@ -237,6 +237,8 @@ export class BusinessApp extends BaseApplication {
     const owner = item.parent?.documentName === 'Actor' ? item.parent : null;
     const read = itemGear({ type: item.type, name: item.name, img: item.img, system: item.system, ownerId: owner?.id ?? null }, this.actor.id);
     if (!read.ok) return ui.notifications.warn(L(`NCI.Business.Reason.${read.reason}`));
+    // Refused here, before any roll or request: the shop takes no illegal goods (P1c).
+    if (form === 'consign' && ProductionCatalog.isIllegal(item)) return ui.notifications.warn(L('NCI.Business.Reason.item-illegal'));
     if (this.gearDrafts[form].some((g) => g.uuid === item.uuid)) return null;
     this.gearDrafts[form].push({ uuid: item.uuid, name: read.name, value: read.value, img: read.img, fromActor: read.fromActor });
     return this.render();

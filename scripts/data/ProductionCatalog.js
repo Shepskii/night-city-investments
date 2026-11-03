@@ -77,6 +77,17 @@ export const ProductionCatalog = {
     return (index ?? []).filter((r) => removed.includes(r.uuid) && madeByDefault(archetype, r)).sort((a, b) => a.name.localeCompare(b.name));
   },
 
+  /** Whether a sheet item is one the GM marked illegal: by where it came from, or failing that, by its name and type (P1c). */
+  isIllegal(item) {
+    const data = read();
+    const illegal = new Set(data.illegal ?? []);
+    if (!illegal.size) return false;
+    const source = item._stats?.compendiumSource ?? item.flags?.core?.sourceId ?? null;
+    if (source && illegal.has(source)) return true;
+    const known = [...(index ?? []), ...Object.values(data).flatMap((e) => e?.added ?? [])];
+    return known.some((r) => illegal.has(r.uuid) && r.name === item.name && r.type === item.type);
+  },
+
   /** Add a priced item to a business type's list, by its UUID. */
   async add(archetype, uuid) {
     if (!ARCHETYPES[archetype]) return { ok: false, reason: 'bad-archetype' };

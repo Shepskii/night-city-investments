@@ -9,7 +9,7 @@ import {
   stateBands, lastDigest, gearValue, rollSpec, BUSINESS_DEFAULTS,
   daysLeft, activeProject, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
   projectOffer, PROJECT_KINDS, upgradesOf, protectionFactor, headcountOf,
-  activeStaff, benchesOf, hasWorkshop, looseStock, salePrice, salesLimit, makesThings, produceCheck, runOffer, tierOf, topTierOf,
+  activeStaff, benchesOf, fenceCheck, fencePrice, hasWorkshop, illegalAllowed, looseStock, salePrice, salesLimit, makesThings, produceCheck, runOffer, tierOf, topTierOf,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent, supplyCut, actionFor, ROOM_ACTIONS, roomKinds, openRoom, payOffCost, CRIME_ACTIONS, dealCut, SECRET_ACTIONS, SECRET_LEDGER,
   POST_IDS, POSTS, levelOf, postBest, staffBase, postRate, askingWage, postOpen, postOffered, recruitCheck, archetypeOf,
@@ -494,6 +494,12 @@ function produceNote(business) {
   return check.ok ? '' : L(`NCI.Business.Reason.${check.reason}`);
 }
 
+/** Why a fence cannot be arranged this week, on its row. */
+function fenceNote(business) {
+  const check = fenceCheck(business);
+  return check.ok ? L('NCI.Production.FenceTerms', { price: Math.round(BUSINESS_DEFAULTS.production.fence.price * 100) }) : L(`NCI.Business.Reason.${check.reason}`);
+}
+
 /** What the shop can sell, from last week's takings, and what it has saved of its limit. */
 function salesNote(business) {
   const last = lastDigest(business);
@@ -508,9 +514,11 @@ function productionContext(business, actor, canAct) {
   const benches = benchesOf(business);
   const tierName = (t) => L(`NCI.Production.Tier.${t.id}`);
   const top = topTierOf(business);
-  const line = business.production?.line ?? null;
+  // A company's illegal work is its officers' secret.
+  const secret = (x) => !!x?.illegal && business.stage >= 2 && !runs;
+  const line = secret(business.production?.line) ? null : business.production?.line ?? null;
   const offer = line ? runOffer(business, line) : null;
-  const run = business.production?.run ?? null;
+  const run = secret(business.production?.run) ? null : business.production?.run ?? null;
   const week = benches * P.benchDays;
   const isSyndicatePick = !game.actors.get(actor.id);
   const handPending = business.proposals.some((x) => x.kind === 'handStock');
@@ -524,20 +532,20 @@ function productionContext(business, actor, canAct) {
     line: line ? {
       name: line.name,
       terms: offer?.ok
-        ? L('NCI.Production.LineTerms', { tier: tierName(offer.tier), dv: offer.dv, size: offer.size, materials: whole(offer.materials), price: whole(line.price) })
+        ? L('NCI.Production.LineTerms', { tier: tierName(offer.tier), dv: offer.dv, size: offer.size, materials: whole(offer.materials), price: whole(line.price) }) + (line.illegal ? ` ${L('NCI.Production.IllegalLine')}` : '')
         : L(`NCI.Business.Reason.${offer.reason}`),
     } : null,
     run: run ? L('NCI.Production.RunGoing', { count: run.count, name: run.name, weeks: Math.ceil(run.left / week) }) : '',
     maker: activeStaff(business).some((s) => s.post === 'maker'),
-    options: runs ? ProductionCatalog.list(business.archetype).filter((r) => !r.illegal && tierOf(r.price) && r.price <= top.price).map((r) => {
+    options: runs ? ProductionCatalog.list(business.archetype).filter((r) => (!r.illegal || illegalAllowed(business)) && tierOf(r.price) && r.price <= top.price).map((r) => {
       const tier = tierOf(r.price);
       return {
         uuid: r.uuid,
         selected: r.uuid === line?.uuid,
-        label: L('NCI.Production.Option', { name: r.name, tier: tierName(tier), dv: tier.dv, materials: whole(tier.materials), days: tier.days < 1 ? L('NCI.Production.Hours', { hours: tier.days * 8 }) : L('NCI.Production.Days', { days: tier.days }) }),
+        label: (r.illegal ? L('NCI.Production.IllegalTag') : '') + L('NCI.Production.Option', { name: r.name, tier: tierName(tier), dv: tier.dv, materials: whole(tier.materials), days: tier.days < 1 ? L('NCI.Production.Hours', { hours: tier.days * 8 }) : L('NCI.Production.Days', { days: tier.days }) }),
       };
     }) : [],
-    stock: (business.stock ?? []).map((s) => {
+    stock: (business.stock ?? []).filter((s) => !secret(s)).map((s) => {
       const mine = s.owner === actor.id;
       return {
         uuid: s.uuid,
@@ -545,7 +553,7 @@ function productionContext(business, actor, canAct) {
         count: s.count,
         cost: s.owner ? '' : whole(s.cost),
         price: whole(s.price),
-        sells: s.illegal ? L('NCI.Production.NotForShop') : L('NCI.Production.SellsAt', { price: whole(salePrice(s.price)) }),
+        sells: s.illegal ? L('NCI.Production.NotForShop', { price: whole(fencePrice(s.price)) }) : L('NCI.Production.SellsAt', { price: whole(salePrice(s.price)) }),
         consigned: s.owner ? L('NCI.Production.ConsignedBy', { name: nameOf(business, s.owner) }) : '',
         canBuy: !s.owner && !isSyndicatePick && (business.stage < 2 || runs),
         buyAt: s.owner ? '' : L('NCI.Production.BuyAt', { price: whole(business.stage >= 2 ? salePrice(s.price) : s.cost) }),
@@ -601,7 +609,7 @@ function weekContext(business, actor, canAct) {
     daysText: canAct ? daysLine(business, actor) : '',
     // A chartered company has the five company actions; a smaller business the shop actions.
     // Crime is hidden from those not running a company (U1).
-    actions: [...actionIdsFor(business.stage), ...(hasWorkshop(business) ? ['produce'] : []), ...(openRoom(business) ? ROOM_ACTIONS : [])].filter((id) => !(business.stage >= 2 && !runs && SECRET_ACTIONS.includes(id))).filter((id) => !(['campaign', 'blackOps', 'dealGang'].includes(id) || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).filter((id) => !CRIME_ACTIONS.includes(id) || underworldOn(business)).filter((id) => id !== 'dealGang' || !business.backRoom?.deal).map((id) => {
+    actions: [...actionIdsFor(business.stage), ...(hasWorkshop(business) ? ['produce'] : []), ...(openRoom(business) ? ROOM_ACTIONS : []), ...(makesThings(business) && (business.stage >= 2 || openRoom(business)) ? ['fence'] : [])].filter((id) => !(business.stage >= 2 && !runs && SECRET_ACTIONS.includes(id))).filter((id) => !(['campaign', 'blackOps', 'dealGang'].includes(id) || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).filter((id) => !CRIME_ACTIONS.includes(id) || underworldOn(business)).filter((id) => id !== 'dealGang' || !business.backRoom?.deal).map((id) => {
       const slot = taken.get(id);
       const bonus = period.bonuses.some((b) => b.action === id && !b.used);
       return {
@@ -614,9 +622,10 @@ function weekContext(business, actor, canAct) {
         aim: aimOf(id),
         canRoll: runs && free && !slot && !((id === 'campaign' || id === 'blackOps') && (business.campaign || campaignWait(business, BusinessClient.day()) > 0))
           && !(id === 'roomWork' && period.slots.some((s) => s.action === 'lieLow'))
-          && !(id === 'produce' && !produceCheck(business).ok),
-        canHelp: canAct && !helped && !slot && !(id === 'produce' && !produceCheck(business).ok),
-        waiting: id === 'produce' ? produceNote(business) : id === 'campaign' || id === 'blackOps' ? campaignNote(business) : id === 'bribeRegulator' ? L('NCI.Business.BribeCost', { cost: whole(BUSINESS_DEFAULTS.crime.bribeCost) }) : id === 'supply' ? supplyNote(business) : id === 'payOff' ? L('NCI.BackRoom.PayOffCost', { cost: whole(payOffCost(business)) }) : '',
+          && !(id === 'produce' && !produceCheck(business).ok)
+          && !(id === 'fence' && !fenceCheck(business).ok),
+        canHelp: canAct && !helped && !slot && !(id === 'produce' && !produceCheck(business).ok) && !(id === 'fence' && !fenceCheck(business).ok),
+        waiting: id === 'produce' ? produceNote(business) : id === 'fence' ? fenceNote(business) : id === 'campaign' || id === 'blackOps' ? campaignNote(business) : id === 'bribeRegulator' ? L('NCI.Business.BribeCost', { cost: whole(BUSINESS_DEFAULTS.crime.bribeCost) }) : id === 'supply' ? supplyNote(business) : id === 'payOff' ? L('NCI.BackRoom.PayOffCost', { cost: whole(payOffCost(business)) }) : '',
       };
     }),
     helped: actor && helped && canAct ? L('NCI.Business.AlreadyHelped') : '',
