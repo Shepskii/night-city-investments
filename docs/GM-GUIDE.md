@@ -4,7 +4,7 @@ How to run the market at the table, steer it, approve and check what players do,
 
 ## The market in your Night City
 
-Technically speaking, Cyberpunk RED describes no stock exchange in Night City, so this one is the module's invention. A framing that sits well with the setting: with the old global NET gone, it is a local exchange on one of Ziggurat's air-gapped CitiNets, reached through brokers' Agents or a CorpNet terminal. Global names like Arasaka trade thinly here, on rumour. The starter companies are starting points; two of them (Night Corp and Kang Tao) are best known from the 2077 era, so remove or replace them if you prefer.
+Technically speaking, Cyberpunk RED describes no stock exchange in Night City, so this one is the module's invention. A framing that sits well with the setting: with the old global NET gone, it is a local exchange spanning several of Ziggurat's air-gapped CitiNets, reached through brokers' Agents or a CorpNet connected terminal or device. Global names like Arasaka trade thinly here, on rumour. The starter companies are starting points; two of them (Night Corp and Kang Tao) are best known from the 2077 era, so remove or replace them if you prefer.
 
 Re-importing does not overwrite companies a world already has.
 
@@ -21,12 +21,12 @@ Open it from the scene controls (sliders icon). The top row of buttons picks a g
 
 | Group | Tab | For |
 |---|---|---|
-| **Pending** | | Every decision waiting for you, one row each, with its type. Act on it there, or click the row to open its tab for more detail |
+| **Pending** | | Every decision waiting for you, one row each, with its type. Act on it there, or click the row to open the relevant tab for more detail |
 | **Market** | Market | The clock, steering (bias, regime, volatility, halt), undo, reset |
 | | Events | Shocks, glides, headlines, setting a price, giving evidence, the event queue |
 | | Corp actions | Special dividends, splits, buyouts, delistings, bankruptcies |
-| | Brokers | Brokers and terminal grants |
-| **Players** | Businesses | Every player business: its true state, owners, staff and faction standing, with your buttons at the foot of each entry |
+| | Brokers | Brokers and terminal access for direct trade |
+| **Players** | Businesses | Every player business: its true state, owners, staff and faction standing, with **Open** at the top of each entry and your other buttons at the foot |
 | | Syndicates | Each syndicate's account and members, with your buttons at the foot: approving it, passing or vetoing its proposals |
 | | Heat | Insider-trading heat, penalties, watch windows and audits, and each business's Exposure |
 | **Tools** | Gigs | Gig impacts from Night City Map: approval and client mapping |
@@ -38,7 +38,15 @@ Open it from the scene controls (sliders icon). The top row of buttons picks a g
 
 A tab shows how many decisions are waiting on it as a small number beside its name, a group shows the total for its tabs, and Pending the total of all. Syndicate proposals are not counted: members' votes settle them, though you can still pass or veto one.
 
-## Running time
+## Pending
+
+One list of everything waiting for you, across every tab, each row with its type: a new business, a charter, a gig, a heat penalty, a story, suggested REP and IP. Fields and buttons on the row let you act from there. What each decision means is under its tab below.
+
+## Market group
+
+### Market tab
+
+#### Running time
 
 - By default the market ticks with the **in-world clock** (one tick per 10 in-world minutes), so it keeps pace with Simple Calendar. A jump forward is caught up a game day at a time, so anything that fell due happens.
 - **Advance 1 / 7 / 30 ticks** and **Advance 1 day** (Market tab) work in every mode. At the default interval 30 ticks is about five hours; use **Advance 1 day** to move a whole day.
@@ -46,65 +54,49 @@ A tab shows how many decisions are waiting on it as a small number beside its na
 - The **market date** is what dividends, fund payouts, IPOs and statements follow. A world that advanced by hand on an earlier version may have it ahead of the calendar: the Market tab says by how many days, and **Move the calendar on** closes the gap. It moves the calendar only, never the market.
 - Player **businesses** close their week on the first tick on or after the weekday in settings.
 
-## Steering the market
+#### Steering the market
 
 | You want to... | Use |
 |---|---|
 | Nudge the whole market, a sector or one company | Market tab: a **sentiment bias**, with a duration and an optional fade-out |
 | Make a boom or a storm | Market tab: **force a regime**, or raise the **volatility** multiplier |
 | Stop all trading | Market tab: **halt** |
+| See what a change will do first | The **Preview** button beside bias, shock and glide: 200 simulated futures, with and without it |
+| Take back the last tick | Market tab: **Undo last tick** (refused once a player's money moved because of it, or after a split, price change or new company) |
+| Start prices again | Market tab: **Reset market** (portfolios are kept) |
+
+[Price model](PRICE-MODEL.md) explains what each control does to prices.
+
+### Events tab
+
+| You want to... | Use |
+|---|---|
 | Make a story event hit a company | Events tab: a **shock**, with a delay, a persistence level and an optional public headline |
 | Walk a price to a target | Events tab: a **glide** over N days |
 | Fix a price outright | Events tab: **set price** |
 | Post news | Events tab: **headline** |
 | See what a change will do first | The **Preview** button beside bias, shock and glide: 200 simulated futures, with and without it |
-| Take back the last tick | Market tab: **Undo last tick** (refused once a player's money moved because of it, or after a split, price change or new company) |
-| Start prices again | Market tab: **Reset market** (portfolios are kept) |
 
-The Events tab keeps a log of recent GM actions. [Price model](PRICE-MODEL.md) explains what each control does to prices.
+**Media stories** wait on Market > Events (and the Pending tab) once believed, unless you turn off the approval setting: **Let it run** or **Spike it**. Give a character evidence for one on Market > Events. A successful investigation or due diligence on a listed company makes evidence by itself.
 
-## Companies, funds and corporate actions
+**Rumours** run by themselves: a player's Media gets a mail every few days if their roll beats the DV and there is anything to hear. You have nothing to do.
 
-- **Companies tab:** create, edit, delete or import companies. Each has a sector, volatility, beta, liquidity, a dividend policy and optional aliases (for matching gig clients). Tick **automatic split** to split when the price passes a threshold.
-- **Launch a company later** with an IPO: untick Listed, set a listing date, an offer price, a subscription window and an optional share cap. Players subscribe from the Market tab; oversubscription fills pro rata. **List now** launches it early.
-- **Funds tab:** create, edit, import, or close a fund (holders are paid out). A fund can rebalance and carry a manager's yearly edge.
-- **Actions tab:** special dividends, stock splits, buyouts, delistings and bankruptcies. Each updates the market, every portfolio and the news.
+### Corp actions tab
 
-## Brokers and direct trading
+Special dividends, stock splits, buyouts, delistings and bankruptcies. Each updates the market, every portfolio and the news.
+
+### Brokers tab
 
 - **Make a broker** from a character (their Accounting is read from the sheet) or tag a Night City Messenger contact (you set a rating). A broker's skill sets their speed (1–5 days) and fees. A character with a Personality on their sheet writes in that voice.
 - Set a minimum withdrawal, disable a broker, or remove one nobody is using.
 - **Terminal access:** grant a character direct trading without a CorpNet connection.
 - With **Broker order handling** set to Manual, mailed orders wait for you.
 
-## Gigs (with the Night City Map bridge)
+## Players group
 
-A gig marked Completed or Failed queues a price impact on its client. In the **Gigs** tab:
+### Businesses tab
 
-- **Needs a company:** a client that matches no company by name, ticker or alias. Pick one (or ignore the client); the choice is remembered for the client's other gigs.
-- **Waiting for approval:** change the size, delay or headline, then approve, or discard.
-- **Report an outcome by hand** for a gig the bridge did not report.
-- For a gig you wrote with no client, add `[NCI: ARA]` (or `[NCI: ignore]`) to its GM notes.
-
-A 1,000 eb job moves its client about 1.5%, a failure 1.3 times as much, shown one to three days later with a generic headline. Each gig moves the market only once.
-
-## Insider-trading heat
-
-With **Track insider-trading heat** on, a watch window opens on a company whenever news is coming: a gig's client before the effect shows, or a listed player company between its report and the price move. When the window closes, trades placed in it in the direction of the news add hidden **heat** to the account that made them (runners and officers count most, tipped characters less, a skilled broker's clients less).
-
-The **Heat** tab shows each character's heat, open windows, recent audits with the trades that counted, and penalties. With consequences on, heat brings a broker's warning, then an NCPD enquiry and slower, dearer broker orders, and at the top a **penalty** (a fine, a frozen account or a dropped broker) that waits for you to **approve, change or dismiss**. You can also set a character's heat by hand.
-
-## Syndicates
-
-In the **Syndicates** tab:
-
-- **Approve** or **reject** a newly founded syndicate (with approval on). No money is paid in until you approve.
-- **Pass** or **veto** any open proposal.
-- **Close** a syndicate.
-
-## Player businesses
-
-The **Businesses** tab lists every business with its true state, Exposure included, and an **Open** button that opens it in the Business window. Suggested REP and IP wait under **Waiting**, with new businesses. To change a business's Exposure by hand, use the **Heat** tab. The decisions waiting for you:
+This tab lists every business with its true state, Exposure included, and an **Open** button that opens it in the Business window. Suggested REP and IP wait under **Waiting**, with new businesses. To change a business's Exposure by hand, use the **Heat** tab. The decisions waiting for you:
 
 | When | You |
 |---|---|
@@ -129,41 +121,79 @@ The rest runs itself: weeks close, events are drawn, wages are paid, reports are
 
 **Gigs for a player's business:** a gig whose client is a player business changes its Reputation and takings once approved in the Gigs tab.
 
-## Production
-
-Businesses with a workshop make real items from the system's compendiums, by the rulebook's Fabrication table. The player guide has the rules. You have little to do while it runs: weekly sales, runs and fences happen at the close.
-
-**The lists.** Tools > Production shows what each kind of business can make, with each item's price category and DV. The defaults come from the core compendiums, by item type, with a short list of named gear for bars, food stalls, media and garages. Drop an item from any compendium or the Items directory into the box to add it, or take one off with the trash button; **Put back** restores a default. Stage limits still apply: up to Premium for a side business, Very Expensive once registered, and Luxury for a company. Couriers and security firms make nothing, and can't build a workshop even if you add items for them.
-
-**Illegal items.** **Mark illegal** applies wherever the item is made. It then needs an open back room to make, or a company's officers, and only a fence will take it. Nothing is illegal until you mark it, so decide what counts in your game. A line already set on the item follows your mark from its next run, but stock already made stays legal. With the **Underworld content** setting off, nobody can make illegal items, and any illegal line stops at once, with a note in that business's digest. A run already on the benches finishes, and goods already made can still go to a fence.
-
-**Storeroom sheets.** Each business's stock gets a container actor called "Stock — *business*", in a **Night City Investments** actor folder. Those running the business can look at it, but can't drag from it or buy from it. Its cart icon still shows, and clicking it gives a permission warning. The business's record holds the money, and the sheet follows the record:
-
-- **Taking an item off the sheet by hand** raises a question on Pending, as above. The record counts it gone at once, but its cost stays on the books until you answer.
-- **Adding an item by hand** isn't noticed, and stays outside the record: the shop won't sell it, and closing doesn't count it. It disappears with the sheet if the business closes.
-- **Don't rename or stack items by hand.** The sheet recognises its items by a hidden mark, and older ones by name.
-
-**Reading the numbers.** The Businesses tab shows the true state, Exposure included. A workshop is worth having and isn't a way to print money: on its best line, a small or registered business adds about 40% to 65% to its ordinary profit and pays off in about 20 to 25 weeks, while a company adds under 10%. `npm run simulate:production` shows the working if you want to change the numbers in `businessConfig.js`.
-
-**A company's illegal work** is its officers' secret, as a back room is: others see "Other costs" and "Other income" in the ledger. It adds Exposure, which is what regulators' cases draw on, and fencing there adds twice as much.
-
-## Factions
-
-Players can raise a business's standing with a faction: a shop uses **Court a client** or **Pay respects**, and a company aims **Chase contracts** or **Investor relations**. Each costs a gift from the cash. Standing then changes costs: corporations in the business's sector move its running costs by up to 15%, and gangs on its turf move protection money and shakedowns by up to 50%.
-
 **A back room at a company** is the officers' secret: other shareholders see only plain ledger lines and a raid as an inspection, and a raid that shuts it there shuts it for good. They would find out through a scandal, if it's listed, or through you.
 
-**Rumours** run by themselves: a player's Media gets a mail every few days if their roll beats the DV and there is anything to hear. You have nothing to do.
+#### REP and Improvement Points from businesses
 
-**Media stories** wait on Market > Events (and the Pending tab) once believed, unless you turn off the approval setting: **Let it run** or **Spike it**. Give a character evidence for one on Market > Events. A successful investigation or due diligence on a listed company makes evidence by itself.
+A business's big moments suggest REP and IP on the **Pending** tab, and under **Waiting** at the top of the Businesses tab, one row for each character running it: officers at a company, active voting partners below that, and a syndicate's officers for a syndicate. Change the numbers, then **Apply** or **Dismiss**. Nothing touches a sheet until you do.
 
-A hostile faction (standing below -60) may act against the business, up to 15% of weeks: a smear, sabotage, a tipped-off raid or poaching. These run by themselves as the week's event, and the players answer them as usual. A smear that lands dips a listed company's price by up to 2%. Beating a gang's shakedown by force costs 3 standing with that gang.
+| Milestone | REP | IP |
+|---|---|---|
+| Registered | 3 | 10 |
+| Chartered | 4 | 20 |
+| Went public | 7 | 30 |
+| Took control in a takeover (the bidder) | 7 | 30 |
+| Fought off a takeover (after a defence roll) | 5 | 20 |
+| A big-event scene, won or lost | - | 20 or 10 |
+| Lost a regulator's case | 4 | - |
+| Unmasked as a hidden holder (the holder) | 6 | - |
+| Wound up | 5 | - |
+| A back-room raid lost | 4 | - |
 
-The **Factions** tab holds the corporations and gangs businesses can stand well or badly with. Press **Import starter factions** to add the market's corporations and Night City's gangs by district, then edit, add or remove as you like. Link a corporation to its ticker, and give a gang its districts, so businesses there see it.
+REP follows the rulebook: a level replaces the old one only if it is higher, and a bad deed has a level too, since being known for something is being known. The sheet's REP log says what it was for, so you can use that at the table. Dismiss a scene's row for anyone who was not there. Routine rolls suggest nothing.
 
-Each business's entry on the **Businesses** tab shows its true standing with the factions it knows, and has a control to set one by hand. Its owners only see the band.
+#### Regulators
 
-Standing runs from -100 to 100 for each business; its owners see only a band (hostile, wary, neutral, friendly, allied). It fades 2 points a week and moves at most 15 a week; you can set it by hand on the same tab.
+Exposure has consequences. A case opens by chance at a monthly report (low 5%, moderate 15%, high 35%), or at once when a corp plant is fired, a Shortcuts roll is fumbled, or NCPD unmasks a holder of over 25% of a company. You can also press **Open a regulator's case** on any company, or **Drop the case** at any stage.
+
+An officer has 14 days to answer, rolling against 14 + 1d10, plus 2 at moderate Exposure or 4 at high. Players see neither the total nor the band; the Businesses tab shows you the Exposure. A win clears half of it. A loss or silence waits for you with a proposed fine (5% of book value, 10% at high Exposure). Approving it takes the fine and 10 Compliance, and a listed company makes the news. A fumble or high Exposure makes it serious: a listing application stops, or the last three reports are restated at their real figures.
+
+#### Hidden ownership
+
+Players can hide their shareholdings behind layers (a broker's nominee, then shell companies). Nothing waits for you, but you see everything:
+
+- **The owners table** on the Businesses tab lists each hidden holder with every layer and its strength (the layer roll's total).
+- **Everyone else** sees the outermost layer: on the Shareholders tab, in the votes, and on a listed company's public register on the terminal.
+- **Concealment** (hiding over 5% of a listed company) runs itself: weekly heat and Exposure, and a monthly NCPD audit (14 + 1d10 against the outer layer's strength plus 2 for each beneath). One that sees through unmasks and fines the holder, makes the news, and dents the price the next day (a tenth of the hidden stake, 2% to 8%).
+- **Investigations** by players roll against a layer's strength plus 2 for each layer they have already peeled. What each investigator has found is kept in the hidden state, and they learn it by mail.
+- Like the rest of the hidden state, the strengths and what investigators know live in the "NCI GM Control" journal.
+
+#### Checking outcomes
+
+- **The Business window, opened from the Businesses tab,** shows a business as its owners see it. Each weekly digest on the Reports tab opens a cashbook of that week's income and expenses. Each monthly report opens to show the **real figures beside the reported ones** (an aggressive report inflates the reported profit).
+- **Exposure** (the hidden trail from Shortcuts, Bold rolls and the rest) is on the Businesses tab. An internal audit by the officers can find and cut it, and it counts against a listing.
+- **Staff traits** (light fingers, loose lips, a corp plant, a moonlighter, dedicated, connected) are in the hidden state. Vetting shows them to players.
+
+#### Crew Tools downtime
+
+With Pneuma's Crew Tools active, **Business days come from Crew Tools downtime** is on by default: extra time, project days and mentoring spend a character's downtime, with no weekly allowance. Award days as usual, and open Downtime once for each character, or they have none to spend. Each spend shows in their Downtime Log as "NCI: business: what it was for". You can check it there: a player owns that log, as they do their chat cards. An investigation's legwork becomes money. Turn the setting off for the 3 business days a week without Crew Tools' involvement.
+
+### Syndicates tab
+
+- **Approve** or **reject** a newly founded syndicate (with approval on). No money is paid in until you approve.
+- **Pass** or **veto** any open proposal.
+- **Close** a syndicate.
+
+### Heat tab
+
+With **Track insider-trading heat** on, a watch window opens on a company whenever news is coming: a gig's client before the effect shows, or a listed player company between its report and the price move. When the window closes, trades placed in it in the direction of the news add hidden **heat** to the account that made them (runners and officers count most, tipped characters less, a skilled broker's clients less).
+
+The tab shows each character's heat, open windows, recent audits with the trades that counted, and penalties. With consequences on, heat brings a broker's warning, then an NCPD enquiry and slower, dearer broker orders, and at the top a **penalty** (a fine, a frozen account or a dropped broker) that waits for you to **approve, change or dismiss**. You can also set a character's heat by hand.
+
+**Business Exposure** is here too: each open business, with its band and a field to set it by hand. A back room's band follows at once.
+
+## Tools group
+
+### Gigs tab
+
+A gig marked Completed or Failed queues a price impact on its client, with the Night City Map bridge. Here:
+
+- **Needs a company:** a client that matches no company by name, ticker or alias. Pick one (or ignore the client); the choice is remembered for the client's other gigs.
+- **Waiting for approval:** change the size, delay or headline, then approve, or discard.
+- **Report an outcome by hand** for a gig the bridge did not report.
+- For a gig you wrote with no client, add `[NCI: ARA]` (or `[NCI: ignore]`) to its GM notes.
+
+A 1,000 eb job moves its client about 1.5%, a failure 1.3 times as much, shown one to three days later with a generic headline. Each gig moves the market only once.
 
 **Tags in a gig's GM notes** say who it involves, by name, ticker or alias (requires the Night City Map and Night City Map - Night City Investments Bridge modules):
 
@@ -182,53 +212,51 @@ The older `[NCI: ARA]` (a client's ticker, or a business), `[NCI: ignore]` and `
 
 Private businesses, gangs and unknown clients have no share price, so only the other effects apply. A gang as a freelance gig's client asks for no mapping: only its target's price moves, and with no target the gig is simply recorded. The approval card lists every party before you approve.
 
-## REP and Improvement Points from businesses
+### Companies tab
 
-A business's big moments suggest REP and IP on the **Pending** tab, and on that business's entry on the Businesses tab, one row for each character running it: officers at a company, active voting partners below that, and a syndicate's officers for a syndicate. Change the numbers, then **Apply** or **Dismiss**. Nothing touches a sheet until you do.
+Create, edit, delete or import companies. Each has a sector, volatility, beta, liquidity, a dividend policy and optional aliases (for matching gig clients). Tick **automatic split** to split when the price passes a threshold.
+**Launch a company later** with an IPO: untick Listed, set a listing date, an offer price, a subscription window and an optional share cap. Players subscribe from the Market tab; oversubscription fills pro rata. **List now** launches it early.
 
-| Milestone | REP | IP |
-|---|---|---|
-| Registered | 3 | 10 |
-| Chartered | 4 | 20 |
-| Went public | 7 | 30 |
-| Took control in a takeover (the bidder) | 7 | 30 |
-| Fought off a takeover (after a defence roll) | 5 | 20 |
-| A big-event scene, won or lost | - | 20 or 10 |
-| Lost a regulator's case | 4 | - |
-| Unmasked as a hidden holder (the holder) | 6 | - |
-| Wound up | 5 | - |
-| A back-room raid lost | 4 | - |
+### Funds tab
 
-REP follows the rulebook: a level replaces the old one only if it is higher, and a bad deed has a level too, since being known for something is being known. The sheet's REP log says what it was for, so you can use that at the table. Dismiss a scene's row for anyone who was not there. Routine rolls suggest nothing.
+Create, edit, import, or close a fund (holders are paid out). A fund can rebalance and carry a manager's yearly edge.
 
-## Crew Tools downtime
+### Factions tab
 
-With Pneuma's Crew Tools active, **Business days come from Crew Tools downtime** is on by default: extra time, project days and mentoring spend a character's downtime, with no weekly allowance. Award days as usual, and open Downtime once for each character, or they have none to spend. Each spend shows in their Downtime Log as "NCI: business: what it was for". You can check it there: a player owns that log, as they do their chat cards. An investigation's legwork becomes money. Turn the setting off for the 3 business days a week without Crew Tools' involvement.
+This tab holds the corporations and gangs businesses can stand well or badly with. Press **Import starter factions** to add the market's corporations and Night City's gangs by district, then edit, add or remove as you like. Link a corporation to its ticker, and give a gang its districts, so businesses there see it.
 
-## Regulators
+Players can raise a business's standing with a faction: a shop uses **Court a client** or **Pay respects**, and a company aims **Chase contracts** or **Investor relations**. Each costs a gift from the cash. Standing then changes costs: corporations in the business's sector move its running costs by up to 15%, and gangs on its turf move protection money and shakedowns by up to 50%.
 
-Exposure has consequences. A case opens by chance at a monthly report (low 5%, moderate 15%, high 35%), or at once when a corp plant is fired, a Shortcuts roll is fumbled, or NCPD unmasks a holder of over 25% of a company. You can also press **Open a regulator's case** on any company, or **Drop the case** at any stage.
+A hostile faction (standing below -60) may act against the business, up to 15% of weeks: a smear, sabotage, a tipped-off raid or poaching. These run by themselves as the week's event, and the players answer them as usual. A smear that lands dips a listed company's price by up to 2%. Beating a gang's shakedown by force costs 3 standing with that gang.
 
-An officer has 14 days to answer, rolling against 14 + 1d10, plus 2 at moderate Exposure or 4 at high. Players see neither the total nor the band; the Businesses tab shows you the Exposure. A win clears half of it. A loss or silence waits for you with a proposed fine (5% of book value, 10% at high Exposure). Approving it takes the fine and 10 Compliance, and a listed company makes the news. A fumble or high Exposure makes it serious: a listing application stops, or the last three reports are restated at their real figures.
+Each business's entry on the **Businesses** tab shows its true standing with the factions it knows, and has a control to set one by hand. Its owners only see the band.
 
-## Hidden ownership
+Standing runs from -100 to 100 for each business; its owners see only a band (hostile, wary, neutral, friendly, allied). It fades 2 points a week and moves at most 15 a week; you can set it by hand on the same tab.
 
-Players can hide their shareholdings behind layers (a broker's nominee, then shell companies). Nothing waits for you, but you see everything:
+### Production tab
 
-- **The owners table** on the Businesses tab lists each hidden holder with every layer and its strength (the layer roll's total).
-- **Everyone else** sees the outermost layer: on the Shareholders tab, in the votes, and on a listed company's public register on the terminal.
-- **Concealment** (hiding over 5% of a listed company) runs itself: weekly heat and Exposure, and a monthly NCPD audit (14 + 1d10 against the outer layer's strength plus 2 for each beneath). One that sees through unmasks and fines the holder, makes the news, and dents the price the next day (a tenth of the hidden stake, 2% to 8%).
-- **Investigations** by players roll against a layer's strength plus 2 for each layer they have already peeled. What each investigator has found is kept in the hidden state, and they learn it by mail.
-- Like the rest of the hidden state, the strengths and what investigators know live in the "NCI GM Control" journal.
+Businesses with a workshop make real items from the system's compendiums, by the rulebook's Fabrication table. The player guide has the rules. You have little to do while it runs: weekly sales, runs and fences happen at the close.
 
-## Checking outcomes
+**The lists.** Tools > Production shows what each kind of business can make, with each item's price category and DV. The defaults come from the core compendiums, by item type, with a short list of named gear for bars, food stalls, media and garages. Drop an item from any compendium or the Items directory into the box to add it, or take one off with the trash button; **Put back** restores a default. Stage limits still apply: up to Premium for a side business, Very Expensive once registered, and Luxury for a company. Couriers and security firms make nothing, and can't build a workshop even if you add items for them.
 
-- **The Business window, opened from the Businesses tab,** shows a business as its owners see it. Each weekly digest on the Reports tab opens a cashbook of that week's income and expenses. Each monthly report opens to show the **real figures beside the reported ones** (an aggressive report inflates the reported profit).
-- **Exposure** (the hidden trail from Shortcuts, Bold rolls and the rest) is on the Businesses tab. An internal audit by the officers can find and cut it, and it counts against a listing.
-- **Staff traits** (light fingers, loose lips, a corp plant, a moonlighter, dedicated, connected) are in the hidden state. Vetting shows them to players.
-- **Recent trades** (Audit tab) lists the latest fills across every portfolio.
-- **The self-check** (Audit tab, or `game.nightcity.investments.verify()`) looks over companies, funds, the market, portfolios and the Messenger link, and lists anything broken or odd. It changes nothing.
-- **Companies to consider** (Audit tab) lists organisations on Messenger contacts and gigs that are not on the market, ready to create in one click.
+**Illegal items.** **Mark illegal** applies wherever the item is made. It then needs an open back room to make, or a company's officers, and only a fence will take it. Nothing is illegal until you mark it, so decide what counts in your game. A line already set on the item follows your mark from its next run, but stock already made stays legal. With the **Underworld content** setting off, nobody can make illegal items, and any illegal line stops at once, with a note in that business's digest. A run already on the benches finishes, and goods already made can still go to a fence.
+
+**Storeroom sheets.** Each business's stock gets a container actor called "Stock — *business*", in a **Night City Investments** actor folder. Those running the business can look at it, but can't drag from it or buy from it. Its cart icon still shows, and clicking it gives a permission warning. The business's record holds the money, and the sheet follows the record:
+
+- **Taking an item off the sheet by hand** raises a question on Pending (see the Businesses tab). The record counts it gone at once, but its cost stays on the books until you answer.
+- **Adding an item by hand** isn't noticed, and stays outside the record: the shop won't sell it, and closing doesn't count it. It disappears with the sheet if the business closes.
+- **Don't rename or stack items by hand.** The sheet recognises its items by a hidden mark, and older ones by name.
+
+**Reading the numbers.** The Businesses tab shows the true state, Exposure included. A workshop is worth having and isn't a way to print money: on its best line, a small or registered business adds about 40% to 65% to its ordinary profit and pays off in about 20 to 25 weeks, while a company adds under 10%. `npm run simulate:production` shows the working if you want to change the numbers in `businessConfig.js`.
+
+**A company's illegal work** is its officers' secret, as a back room is: others see "Other costs" and "Other income" in the ledger. It adds Exposure, which is what regulators' cases draw on, and fencing there adds twice as much.
+
+### Audit tab
+
+- **Your recent actions:** a log of what you did to the market.
+- **Recent trades** lists the latest fills across every portfolio.
+- **The self-check** (or `game.nightcity.investments.verify()`) looks over companies, funds, the market, portfolios and the Messenger link, and lists anything broken or odd. It changes nothing.
+- **Companies to consider** lists organisations on Messenger contacts and gigs that are not on the market, ready to create in one click.
 
 ## Console scripts
 
