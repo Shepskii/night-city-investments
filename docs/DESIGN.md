@@ -1922,6 +1922,8 @@ Tested in the test world (2026-11-02): a gang's offer at neutral through the Wor
 
 **Still to decide:** how fast stock sells through the shop, and whether it can go stale; caps on production value per week, so eddies cannot be farmed; and whether quality is tracked.
 
+**Superseded where they differ by §36.10,** the plan as the user decided it.
+
 ### 36.3 Faction standing, and moving markets
 
 **The idea.** A **business** has **standing** with factions: corporations and gangs. Standing runs from −100 to 100 and drifts back toward 0. Players see it only as a band (hostile, wary, neutral, friendly, allied); the GM sees the number. Characters' own reputation stays with Crew Tools: this module does not track it, though a Crew Tools bridge (B7) could later let a partner's reputation help a roll aimed at a faction.
@@ -2117,6 +2119,33 @@ The user's requests after U1, each built and committed on its own. Colours, layo
 **B7e The map as built** (the bridge module's `syncPins`, 0.3.0; `BusinessService.directory`, `api.gm.businessDirectory`). The bridge's active GM client keeps a pin in Night City Map's own data for each open business, at its district's centre, offset so that several do not stack, with its name, kind, stage and location. The directory holds nothing else, so a back room or a balance cannot reach the map. Pins are Night City Map's ordinary custom pins: the GM moves one in its Arrange mode, edits or hides it, and the bridge keeps that, rewriting the text only when the business's own changes. It remembers what it has placed, in a setting of its own, so a pin the GM deletes stays deleted. A closed business's pin goes. A custom map's own districts have other ids: its pins start at the map's centre, for the GM to move. Night City Map has no API for pins, so the bridge writes its `state` setting and reads district positions from its `data.js`, both checked against 0.27.1.
 **Tested in the test world** (2026-11-03): both open businesses' pins, seen as a player with the right text; one already moved by the GM. A pin deleted and a business closed have been tried only in tests. A business's location is the player's own words, shown as written.
 
+### 36.10 P1 Production: the plan (the user's choices, 2026-11-03; not built)
+
+**Against the rulebook.** Fabrication's table (core rulebook, Maker): Cheap and Everyday DV 9, 1 hour; Costly DV 13, 6 hours; Premium DV 17, 1 day; Expensive DV 21, 1 week; Very Expensive DV 24, 2 weeks; Luxury and Super Luxury DV 29, 1 month. Materials cost one price category lower (Super Luxury, half its price), and a failure costs the time, not the materials. So §36.2's "about half the market price" was wrong: a 500 eb item takes 100 eb.
+
+**Decisions.**
+- **Runs: bench time, by the book.** A workshop's benches each give 7 days of work a week. A run takes the book's time per item, materials from the cash when it starts, and one roll at the book's DV. Faster items come in larger numbers. A failure wastes the time, not the materials.
+- **Who: a weekly action, or a new Maker post.** A partner takes an action slot to run production, rolling trade skills or Maker. A Maker on the staff runs the queued line when nobody does, as a manager works the shop.
+- **Items: by type and stage, the GM can edit.** Each business type has default item types, capped by stage: up to Premium for a shop, Very Expensive once registered, Luxury for a company. A new GM tab adds, removes and marks items illegal.
+- **Selling: weekly shop sales, limited.** The shop sells stock at a discount to market price, up to a limit set by Capacity and Reputation, into takings. Partners can buy at cost.
+- **Stock: the storeroom sheet,** as §36.2 has it: a "Stock" container of real items that partners may view, the record holding the money, and taking an item done through the Business window. If the GM moves one by hand, Pending asks what it was.
+- **Fencing:** with an open back room, a weekly Fence action sells stock for dirty cash at a better margin, adding Exposure. Illegal items can only be sold this way.
+- **Quality and spoilage:** the roll sets how many come out sellable. No separate quality, and stock does not go stale.
+- **Links:** a character can consign a finished item, such as one made with Crew Tools, to the stock at its value; Crew Tools keeps the crafting rules. No facility bonus, which Crew Tools has no way to accept. Market contracts wait for a later phase.
+
+**Why bench time should not be a farm.** A bench-week at full price, less materials: Premium 7 items at a 50 eb margin, 350 eb; Expensive 1 at 400 eb; Very Expensive half of one at 500 eb, 250 eb; Luxury a quarter of one at 4,000 eb, 1,000 eb. Everyday looks like 56 items at a 10 eb margin, 560 eb, which the sales limit holds back. That is about what a business already earns in a week, and it is before the shop's discount, failed rolls and the sales limit.
+
+**Draft numbers, for the simulator to test before they are final.** Benches 1, 2 and 4 by stage. The workshop project costs 1,500, 4,000 and 12,000 eb, and takes 3, 5 and 9 days. The shop sells at 70% of market price. The weekly sales limit is half the week's ordinary takings, moved by the Reputation band. Fencing pays 90% of market price in dirty cash.
+
+**Which businesses make what** (defaults, by the compendium's item types): gun shop, weapons, ammunition and weapon attachments; garage, vehicle upgrades and gear; clinic, cyberware and drugs; info shop, programs and cyberdeck hardware; boutique, clothing; media, gear such as recordings; bar and food stall, gear such as food and drink; courier and security, none.
+
+**The parts, in order.** Each ends as the others do, with tests and a run in the test world.
+- **P1a:** the workshop project and benches, item lists and the GM's tab, runs and the Maker post, stock on the record and the storeroom sheet. The simulator check comes first.
+- **P1b:** weekly shop sales, buying at cost, handing an item to a partner, consigning, stock in book value and valuation, and Pending's question when the GM moves an item by hand.
+- **P1c:** fencing and illegal items.
+
+**To check while building:** how a container actor's `vendor` and `restricted` fields behave, for a sheet players can see but not take from, and whether vendor mode could one day allow direct sales; how item quantities and ammunition stacks work when items are created; and whether a company's stock should be the officers' secret when it is illegal.
+
 ## 37. Roadmap
 
 | Phase | Deliverable |
@@ -2147,6 +2176,6 @@ The user's requests after U1, each built and committed on its own. Colours, layo
 | B7 | **Done (v0.20.0), see §36.9.** B7a Teamwork against the rulebook, B7b Crew Tools downtime, B7c REP and IP, B7d living costs and B7e businesses on Night City Map, with the bridge at 0.3.0 |
 | U1 | **Done (v0.19.0), see §36.1 and §36.8.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships, back-room staff; after F1 and B6 |
 | UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
-| P1 | **Proposed, see §36.2.** Production: workshops, lines, stock, selling and fencing; after E3 |
+| P1 | **Planned, see §36.10.** Production: workshops, runs by the rulebook's fabrication table, a storeroom sheet, shop sales and fencing |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |
