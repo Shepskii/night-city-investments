@@ -212,8 +212,8 @@ export function businessContext(business, actor) {
     status,
     statusLabel: L(`NCI.Business.Status.${status}`),
     seesBackRoom: business.stage < 2 || (canAct && canRun(business, actor.id)),
-    seesProduction: canAct && makesThings(business),
-    production: canAct && makesThings(business) ? productionContext(business, actor, canAct) : null,
+    seesProduction: status === 'open' && canAct && makesThings(business),
+    production: status === 'open' && canAct && makesThings(business) ? productionContext(business, actor, canAct) : null,
     exposure: exposureContext(business, actor, canAct),
     // Standing with factions (F1a): those it has dealt with, and the gangs on its turf; bands only.
     factions: factionsContext(business),
@@ -1625,7 +1625,7 @@ function partnersContext(business, actor) {
     ],
     heirOptions: [{ value: '', label: L('NCI.Business.NoHeir') }, ...characters.map((a) => ({ value: a.id, label: a.name }))]
       .map((o) => ({ ...o, selected: o.value === (me?.heirId ?? '') })),
-    canSetHeir: !!me && ['active', 'leaving', 'invited'].includes(me.status),
+    canSetHeir: business.status !== 'closed' && !!me && ['active', 'leaving', 'invited'].includes(me.status),
     canLeave: open && me?.status === 'active' && holders(business).length > 1,
     canPropose: open && canAct && !business.proposals.some((x) => x.kind === 'close'),
     investors: open ? investorsContext(business, actor, canAct) : null,

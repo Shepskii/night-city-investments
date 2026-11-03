@@ -30,9 +30,9 @@
   </div>
   {{else}}{{#unless businesses.rewards.length}}<p class="nci-empty">{{localize "NCI.GMBusiness.NoneWaiting"}}</p>{{/unless}}{{/each}}
   {{#if businesses.rewards.length}}
-  <table class="nci-market nci-owners">
+  <table class="nci-market nci-pending nci-rewards">
     <thead><tr><th>{{localize "NCI.Reward.Title"}}</th><th></th><th></th></tr></thead>
-    <tbody>{{#each businesses.rewards}}<tr><td>{{item}}</td><td class="nci-muted">{{needed}}</td><td><div class="nci-actions">
+    <tbody>{{#each businesses.rewards}}<tr><td>{{item}}</td><td class="nci-muted">{{needed}}</td><td class="nci-rowactions"><div class="nci-actions">
       {{#each fields}}<label class="nci-inline">{{label}} <input type="number" name="{{name}}" value="{{value}}" class="nci-days"></label>{{/each}}
       {{#each buttons}}<button type="button" data-action="{{action}}" data-id="{{id}}" data-reward="{{reward}}"><i class="fas {{icon}}"></i> {{label}}</button>{{/each}}
     </div></td></tr>{{/each}}</tbody>

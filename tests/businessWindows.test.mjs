@@ -1674,3 +1674,48 @@ test('GM fixes: Pending lists each row\'s type with no button to its tab, Exposu
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('a closed business has no Production tab and no choice of heir, and the GM\'s side refuses them too', async () => {
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const live = { ...b, status: 'open', stage: 0, company: null, officers: [], listing: null, charter: null, takeover: null, administration: null, regCase: null, proposals: [], upgrades: { workshop: [0] }, stock: [], production: { line: null, run: null, allowance: 0 } };
+  try {
+    await S.BusinessRepository.save(live);
+    assert.match(await renderBusiness(windowFor(med, 'production')), /data-tab="production"/);
+    assert.match(await renderBusiness(windowFor(med, 'partners')), /name="heirId"/);
+
+    await S.BusinessRepository.save({ ...live, status: 'closed', closedDay: 1, closeReason: 'closed' });
+    const app = windowFor(med, 'production');
+    const html = await renderBusiness(app);
+    assertClean(html, 'a closed business, asked for production');
+    assert.doesNotMatch(html, /data-tab="production"/, 'no tab for it');
+    assert.doesNotMatch(html, /data-action="setLine"/, 'and no form');
+    assert.equal(app.tab, 'week', 'the window goes to another tab');
+    assert.doesNotMatch(await renderBusiness(windowFor(med, 'partners')), /name="heirId"|data-action="setHeir"/);
+
+    const { applyBusinessRequest } = await import('../scripts/engine/index.js');
+    const closed = S.BusinessRepository.all()[0];
+    const ask = (request) => applyBusinessRequest({ business: closed, request, actor: { id: med.id, name: med.name, wealth: 0 }, day: 1, context: {} });
+    assert.equal(ask({ type: 'setHeir', heirId: null }).reason, 'not-open');
+    assert.equal(ask({ type: 'setLine', uuid: '' }).reason, 'not-open');
+  } finally {
+    await S.BusinessRepository.save(saved);
+  }
+});
+
+test('REP and IP on the GM\'s Businesses tab are laid out as Pending\'s rows', async () => {
+  const { MarketStore } = await import('../scripts/data/MarketStore.js');
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const hiddenBefore = structuredClone(MarketStore.getBusinessesHidden());
+  try {
+    await S.BusinessRepository.save({ ...b, status: 'open' });
+    await S.BusinessService._suggestReward(S.BusinessRepository.all()[0], 'sceneWon', [med.id]);
+    const html = await renderConsole('businesses');
+    assert.match(html, /<table class="nci-market nci-pending nci-rewards">/);
+    assert.match(html, /<td class="nci-rowactions"><div class="nci-actions">/);
+  } finally {
+    await MarketStore.setBusinessesHidden(hiddenBefore);
+    await S.BusinessRepository.save(saved);
+  }
+});

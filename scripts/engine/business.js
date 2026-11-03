@@ -585,6 +585,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       break;
     }
     case 'setLine': {
+      if (b.status !== 'open') return fail('not-open');
       if (me?.status !== 'active' || !me.voting || !canRun(b, actor.id)) return fail('not-officer');
       // The GM's service found the item on this kind of business's list; the request's own word for it is not used.
       if (request.uuid && !ctx.lineItem) return fail('bad-line');
@@ -691,6 +692,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       break;
     }
     case 'setHeir':
+      if (b.status === 'closed') return fail('not-open');
       if (!me || !['active', 'leaving', 'invited'].includes(me.status)) return fail('not-partner');
       me.heirId = heirOf(request.heirId, actor.id, ctx);
       if (request.heirId && !me.heirId) return fail('bad-heir');

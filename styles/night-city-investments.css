@@ -637,3 +637,9 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .nci-app :is(h1, h2, h
 /* Foundry leaves a margin after a button's icon for its label; these have none, so it would pull the icon off centre. */
 .nci-app .nci-rowbtns:not(.nci-endbtns) button:not(.nci-labelled) > i,
 .nci-app td.nci-endbtns > button[data-action="productionRemove"] > i { margin: 0; }
+
+/* REP and IP on the GM's Businesses tab: laid out as Pending's rows, each on one line, with nothing to click on the row. */
+.nci-app .nci-rewards tbody tr { cursor: default; }
+.nci-app .nci-rewards .nci-rowactions { width: 46%; }
+.nci-app .nci-rewards .nci-actions { flex-wrap: nowrap; justify-content: flex-end; }
+.nci-app .nci-rewards label.nci-inline { white-space: nowrap; }
