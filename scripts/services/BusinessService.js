@@ -124,6 +124,7 @@ class BusinessServiceImpl {
       staffActors: Object.fromEntries(staffActors().map((a) => [a.id, a.source])),
       staffNames: Object.fromEntries(staffActors().map((a) => [a.id, a.name])),
       basesOf: (id) => this.basesOf(id),
+      livingCostOf: (id) => this.livingCostOf(id),
       // The listing threshold (B5a), a world setting.
       listingThreshold: this.listingThreshold(),
       // A listed company's price now, for its offering roll (B6a).
@@ -663,6 +664,7 @@ class BusinessServiceImpl {
     await this._rewardEvents(out);
     await this._syncJobs(out.business);
     await this._payslips(out);
+    await this._livingCosts(out);
     await this._twoJobs(out);
     await this._scheduleListing(out.business);
     await this._capitalEvents(out);
@@ -740,6 +742,31 @@ class BusinessServiceImpl {
         }
       }
       if (!sent && paid) await this._pay({ [actor.id]: paid }, out.business);
+    }
+  }
+
+  /** A character's monthly Housing and Lifestyle, from their sheet (B7d). */
+  livingCostOf(actorId) {
+    const lifestyle = game.actors.get(actorId)?.system?.lifestyle;
+    return Math.max(0, Math.round((Number(lifestyle?.housing?.cost) || 0) + (Number(lifestyle?.lifeStyle?.cost) || 0)));
+  }
+
+  /** What a business pays towards a partner's living costs: claimed from a payslip, or straight onto their sheet with no mail (B7d). */
+  async _livingCosts(out) {
+    const mail = game.settings.get(MODULE_ID, SETTINGS.STAFF_MAIL) !== false;
+    for (const paid of out.events.filter((e) => e.type === 'livingCosts')) {
+      const actor = game.actors.get(paid.actorId);
+      if (!actor) continue;
+      let sent = false;
+      if (mail) {
+        try {
+          const terms = { name: out.business.name, amount: paid.amount.toLocaleString() };
+          sent = !!(await MailService.fromWire(actor, { subject: L('NCI.Living.Subject', terms), lines: [L('NCI.Living.Body', terms)], eddies: paid.amount }))?.ok;
+        } catch (error) {
+          log.warn('Living costs mail failed', error);
+        }
+      }
+      if (!sent) await this._pay({ [actor.id]: paid.amount }, out.business);
     }
   }
 
@@ -896,7 +923,11 @@ class BusinessServiceImpl {
         const team = refreshTeams(business, (id) => this.basesOf(id), day);
         if (team.notes.length) business.pendingNotes = [...(business.pendingNotes ?? []), ...team.notes];
         const hiddenEntry = MarketStore.getBusinessesHidden()[business.id];
-        const relations = { ...factionEffects(business, factions, hiddenEntry?.standing ?? {}), exposure: hiddenEntry?.exposure ?? 0 };
+        const relations = {
+          ...factionEffects(business, factions, hiddenEntry?.standing ?? {}),
+          exposure: hiddenEntry?.exposure ?? 0,
+          living: Object.fromEntries((business.covered ?? []).map((id) => [id, this.livingCostOf(id)])),
+        };
         const out = advanceBusiness(business, day, { ...opts, traits: this.traitsOf(business.id), relations });
         if (!out.changed && !reread && !marked && !team.changed) continue;
         await this._commit({ ...out, ok: true });

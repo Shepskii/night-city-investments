@@ -720,6 +720,7 @@
           <td><strong>{{{who}}}</strong> <span class="nci-muted">{{status}}{{#if voting}} &middot; {{voting}}{{/if}}{{#if officer}} &middot; {{officer}}{{/if}}</span>
             {{#if put}}<div class="nci-muted">{{put}}{{#if gear}} &middot; {{gear}}{{/if}}</div>{{/if}}
             {{#if heir}}<div class="nci-muted">{{heir}}</div>{{/if}}
+            {{#if covered}}<div class="nci-muted">{{covered}}</div>{{/if}}
             {{#if leaving}}<div class="nci-warn">{{leaving}}</div>{{/if}}
           </td>
           <td>{{units}}</td>
@@ -727,7 +728,9 @@
           <td class="nci-rowbtns">{{#if buyout}}<button type="button" data-action="buyout" data-id="{{actorId}}">{{buyout}}</button>{{/if}}
             {{#if investigateRef}}<button type="button" class="nci-labelled" data-action="investigate" data-ref="{{investigateRef}}" data-label="{{maskName}}"><i class="fas fa-magnifying-glass"></i> {{localize "NCI.Ownership.Investigate"}}</button>{{/if}}
             {{#if canElect}}<button type="button" class="nci-labelled" data-action="proposeElect" data-id="{{actorId}}"><i class="fas fa-user-tie"></i> {{localize "NCI.Company.Elect"}}</button>{{/if}}
-            {{#if canDismiss}}<button type="button" class="nci-labelled" data-action="proposeDismiss" data-id="{{actorId}}"><i class="fas fa-user-slash"></i> {{localize "NCI.Company.Dismiss"}}</button>{{/if}}</td>
+            {{#if canDismiss}}<button type="button" class="nci-labelled" data-action="proposeDismiss" data-id="{{actorId}}"><i class="fas fa-user-slash"></i> {{localize "NCI.Company.Dismiss"}}</button>{{/if}}
+            {{#if canCover}}<button type="button" class="nci-labelled" data-action="proposeCover" data-id="{{actorId}}"><i class="fas fa-house"></i> {{localize "NCI.Living.Propose"}}</button>{{/if}}
+            {{#if canStopCover}}<button type="button" class="nci-labelled" data-action="proposeStopCover" data-id="{{actorId}}"><i class="fas fa-house-circle-xmark"></i> {{localize "NCI.Living.Stop"}}</button>{{/if}}</td>
         </tr>
         {{/each}}
       </tbody>

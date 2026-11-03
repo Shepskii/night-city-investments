@@ -200,6 +200,8 @@ export function normalizeBusiness(raw) {
     teamLost: b.teamLost ?? {},
     /** Crew Tools spends already counted here, so that none pays twice (B7b). */
     downtimeUsed: (b.downtimeUsed ?? []).slice(-100),
+    /** Partners whose Housing and Lifestyle the business pays each month (B7d). */
+    covered: b.covered ?? [],
     // Standing with factions (F1a): the band for each faction met. The number is in the GM's hidden state.
     standings: b.standings ?? {},
     // Hidden ownership (B6d): each holder's layers, innermost first; their strengths are GM-only.

@@ -165,6 +165,8 @@ export const PROPOSAL_RULES = Object.freeze({
   elect: 'majority', dismiss: 'majority',
   // Taking an employee on, or letting one go (DESIGN §32).
   hire: 'majority', fire: 'majority', pay: 'majority',
+  // Paying a partner's Housing and Lifestyle (B7d).
+  coverLiving: 'majority', stopLiving: 'majority',
   // A share grant for an employee (E3, company only).
   grant: 'majority',
   // A listed company's payout ratio (B5c).
@@ -1318,6 +1320,20 @@ function canPropose(b, kind, request, ctx, p) {
       return fireOffer(b, request.staffId);
     case 'pay':
       return payOffer(b, request, p);
+    case 'coverLiving': {
+      const partner = partnerOf(b, String(request.actorId ?? ''));
+      if (partner?.status !== 'active' || !partner.voting) return fail('bad-partner');
+      if ((b.covered ?? []).includes(partner.actorId)) return fail('already-covered');
+      // A character's sheet says what they pay; a syndicate has no sheet.
+      const cost = ctx.livingCostOf?.(partner.actorId);
+      if (!(cost > 0)) return fail('no-living-costs');
+      return { ok: true, terms: { actorId: partner.actorId, name: partner.name, cost } };
+    }
+    case 'stopLiving': {
+      const partner = partnerOf(b, String(request.actorId ?? ''));
+      if (!(b.covered ?? []).includes(request.actorId)) return fail('not-covered');
+      return { ok: true, terms: { actorId: request.actorId, name: partner?.name ?? '' } };
+    }
     case 'grant':
       return grantOffer(b, request.staffId, request.pct, p);
     case 'payout':
@@ -1439,6 +1455,12 @@ function enact(b, proposal, day, p, ctx, out) {
       if (done.ok) out.events.push({ type: 'fired', staffId: proposal.terms.staffId, exposure: done.exposure });
       return done;
     }
+    case 'coverLiving':
+      b.covered = [...new Set([...(b.covered ?? []), proposal.terms.actorId])];
+      return { ok: true };
+    case 'stopLiving':
+      b.covered = (b.covered ?? []).filter((id) => id !== proposal.terms.actorId);
+      return { ok: true };
     case 'pay': {
       const done = enactPay(b, proposal.terms, day, ctx.traits, p);
       if (done.ok) out.events.push({ type: 'payChanged', staffId: proposal.terms.staffId, pct: proposal.terms.pct });
@@ -1602,6 +1624,27 @@ function startPeriod(b, index, startDay, weekday, seed, p, traits = null, relati
   }
 }
 
+/**
+ * A month's end: the business pays the Housing and Lifestyle of those it covers, as their sheets now have them, to be
+ * claimed from a payslip (B7d). One who has gone is dropped; one the cash cannot cover goes without this month.
+ * It is what an owner takes out of a business, so it does not count against the week's profit.
+ */
+function payLiving(b, living, day, out, p) {
+  b.covered = (b.covered ?? []).filter((id) => partnerOf(b, id)?.status === 'active');
+  if (b.administration) return;
+  for (const actorId of b.covered) {
+    const amount = Math.round(Number(living[actorId]) || 0);
+    if (amount <= 0) continue;
+    if (b.till < amount) {
+      b.pendingNotes = [...(b.pendingNotes ?? []), { kind: 'livingShort', name: partnerOf(b, actorId).name }];
+      continue;
+    }
+    b.till -= amount;
+    addLedger(b, { day, kind: 'livingCosts', amount: -amount, actorId }, p);
+    out.events.push({ type: 'livingCosts', actorId, amount });
+  }
+}
+
 /** A bribe to the regulator: paid whatever comes of it; a good roll also helps with a case already open. */
 function payRegulator(b, band, day, out, p) {
   b.till -= p.crime.bribeCost;
@@ -1710,6 +1753,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
 
   // The staff's week: loyalty, raises asked for at a month's end, and who has had enough (E2).
   const monthEnd = b.period.index % p.report.weeks === 0;
+  if (monthEnd) payLiving(b, relations?.living ?? {}, b.period.endDay, out, p);
   const monthProfit = profit + b.digests.slice(-(p.report.weeks - 1)).reduce((a, d) => a + d.profit, 0);
   const unanswered = !!event && !EVENTS[event.kind]?.good && event.outcome === 'unanswered';
   const people = loyaltyWeek(b, { monthEnd, monthProfit, unanswered, traits, seed, day: b.period.endDay }, p);

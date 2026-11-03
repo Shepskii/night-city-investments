@@ -641,3 +641,38 @@ test('every request a player can make says when it is done', async () => {
   const done = JSON.parse(readFileSync(new URL('../lang/en.json', import.meta.url), 'utf8')).NCI.Business.Done;
   assert.deepEqual(BUSINESS_REQUESTS.filter((type) => !(type in done)), []);
 });
+
+test('living costs (B7d): a vote, then each month\'s end the cash pays what the sheet shows; going short, leaving and stopping', () => {
+  const costs = { med: 1100, fix: 0 };
+  const ctx = { context: { livingCostOf: (id) => costs[id] ?? 0 } };
+  const propose = (b, kind, actorId, opts = ctx) => apply(b, { type: 'propose', businessId: 'b1', kind, actorId }, MED, opts);
+  assert.equal(propose(clinic({}), 'coverLiving', 'nobody', { ...ctx, expect: false }).reason, 'bad-partner');
+  let b = propose(clinic({}), 'coverLiving', 'med').business;
+  if (b.proposals.length) b = apply(b, { type: 'vote', businessId: 'b1', proposalId: b.proposals[0].id, yes: true }, FIX).business;
+  assert.deepEqual(b.covered, ['med'], 'agreed by the votes');
+  assert.equal(propose(b, 'coverLiving', 'med', { ...ctx, expect: false }).reason, 'already-covered');
+
+  const close = (business, living = { med: 1100 }) => advanceBusiness(business, business.period.endDay, { weekday: MONDAY, seed: 'test', relations: { exposure: 0, living } });
+  const toMonthEnd = (business, weeks = BUSINESS_DEFAULTS.report.weeks) => ({ ...business, period: { ...business.period, index: weeks } });
+  // Not a month's end: nothing.
+  const midMonth = close({ ...b, till: 5000, period: { ...b.period, index: BUSINESS_DEFAULTS.report.weeks + 1 } });
+  assert.equal(midMonth.events.some((e) => e.type === 'livingCosts'), false);
+  // A month's end: from the cash, for them to claim, in the ledger.
+  const paid = close({ ...toMonthEnd(b), till: 5000 });
+  assert.deepEqual(paid.events.filter((e) => e.type === 'livingCosts').map((e) => [e.actorId, e.amount]), [['med', 1100]]);
+  assert.ok(paid.business.ledger.some((e) => e.kind === 'livingCosts' && e.amount === -1100));
+  assert.equal(paid.wealth?.med ?? 0, 0, 'not straight to the sheet: the service sends it by payslip');
+  // The cash cannot cover it: they go without, and the partners hear.
+  const short = close({ ...toMonthEnd(b), till: 10 });
+  assert.equal(short.events.some((e) => e.type === 'livingCosts'), false);
+  assert.ok(JSON.stringify(short.business.digests.at(-1)).includes('livingShort'), 'and the digest says so');
+  // Gone from the business: dropped.
+  const left = structuredClone({ ...toMonthEnd(b), till: 5000 });
+  left.partners.find((x) => x.actorId === 'med').status = 'left';
+  assert.deepEqual(close(left).business.covered, []);
+  // Voted to stop.
+  let stopped = propose(b, 'stopLiving', 'med').business;
+  if (stopped.proposals.length) stopped = apply(stopped, { type: 'vote', businessId: 'b1', proposalId: stopped.proposals[0].id, yes: true }, FIX).business;
+  assert.deepEqual(stopped.covered, []);
+});
+

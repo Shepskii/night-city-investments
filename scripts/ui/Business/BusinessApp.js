@@ -117,6 +117,8 @@ export class BusinessApp extends BaseApplication {
       openHire: BusinessApp._onOpenHire,
       proposeHire: BusinessApp._onProposeHire,
       proposeFire: BusinessApp._onProposeFire,
+      proposeCover: BusinessApp._onProposeCover,
+      proposeStopCover: BusinessApp._onProposeStopCover,
       openEmployee: BusinessApp._onOpenEmployee,
       openCashbook: BusinessApp._onOpenCashbook,
       openReport: BusinessApp._onOpenReport,
@@ -462,6 +464,15 @@ export class BusinessApp extends BaseApplication {
   /** Nothing behind the shop this week (U1a). */
   static _onLieLow() {
     return this._send('lieLow', {});
+  }
+
+  /** Ask the others to pay a partner's Housing and Lifestyle from the cash each month, or to stop (B7d). */
+  static _onProposeCover(event, target) {
+    return this._send('propose', { kind: 'coverLiving', actorId: target.dataset.id });
+  }
+
+  static _onProposeStopCover(event, target) {
+    return this._send('propose', { kind: 'stopLiving', actorId: target.dataset.id });
   }
 
   static async _onAddDays(event, target) {

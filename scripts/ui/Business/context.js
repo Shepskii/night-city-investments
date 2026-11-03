@@ -1474,6 +1474,12 @@ function hidingContext(business, actor) {
   };
 }
 
+/** A character's monthly Housing and Lifestyle, as their sheet has it. */
+const livingCost = (actorId) => {
+  const lifestyle = game.actors.get(actorId)?.system?.lifestyle;
+  return Math.round((Number(lifestyle?.housing?.cost) || 0) + (Number(lifestyle?.lifeStyle?.cost) || 0));
+};
+
 function partnersContext(business, actor) {
   const units = totalUnits(business);
   const value = unitValue(business);
@@ -1502,6 +1508,10 @@ function partnersContext(business, actor) {
       gear: p.gear.map((g) => `${g.name} (${whole(g.value)})`).join(', '),
       voting: p.voting ? '' : L('NCI.Business.NonVoting'),
       heir: p.heirId ? L('NCI.Business.HeirIs', { name: game.actors.get(p.heirId)?.name ?? p.heirId }) : '',
+      // What the business pays towards their Housing and Lifestyle (B7d), and asking the others to start or stop.
+      covered: (business.covered ?? []).includes(p.actorId) ? L('NCI.Living.Covered', { amount: whole(livingCost(p.actorId)) }) : '',
+      canCover: open && canAct && p.status === 'active' && p.voting && !(business.covered ?? []).includes(p.actorId) && livingCost(p.actorId) > 0 && !business.proposals.some((x) => x.kind === 'coverLiving'),
+      canStopCover: open && canAct && (business.covered ?? []).includes(p.actorId) && !business.proposals.some((x) => x.kind === 'stopLiving'),
       leaving: p.status === 'leaving' ? L('NCI.Business.LeavingSince', { date: dayText((p.leavingSince ?? 0) + business.agreement.buyoutDays) }) : '',
       buyout: p.status === 'leaving' && open && canAct && p.actorId !== actor?.id ? L('NCI.Business.BuyFor', { price: whole(Math.round(p.units * value)) }) : '',
       // A company's officers, and electing or dismissing one by a majority of the shares (B4c).
@@ -1544,6 +1554,7 @@ function partnersContext(business, actor) {
         shares: proposal.terms?.shares != null ? whole(proposal.terms.shares) : '',
         budget: proposal.terms?.budget != null ? whole(proposal.terms.budget) : '',
         project: proposal.terms?.project ? L(`NCI.Project.Kind.${proposal.terms.project}`) : '',
+        cost: proposal.terms?.cost != null ? whole(proposal.terms.cost) : '',
       }),
       rule: LT(business, `NCI.Business.Rule.${PROPOSAL_RULES[proposal.kind]}`, { date: dayText(proposal.expires ?? proposal.day) }),
       // Each voter, linked to their character, and how they voted.

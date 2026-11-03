@@ -1866,6 +1866,13 @@
       "IntelFound": "{bands}; worth about {low} to {high} eb",
       "IntelNothing": "nothing useful found"
     },
+    "Living": {
+      "Propose": "Propose paying their living costs",
+      "Stop": "Propose stopping that",
+      "Covered": "The business pays their Housing and Lifestyle: {amount} eb a month, as their sheet has it.",
+      "Subject": "{name}: Housing and Lifestyle",
+      "Body": "{name} pays your Housing and Lifestyle this month: {amount} eb. Claim it from this message, then pay your rent as usual."
+    },
     "Reward": {
       "Title": "REP and IP suggested",
       "Rep": "REP",
@@ -2914,6 +2921,7 @@
         "teamPerk": "A perk for {staff}",
         "teamFee": "Hiring fees for {staff}, replacing a team member",
         "teamBetrayed": "{staff} betrayed their Exec and left",
+        "livingCosts": "Housing and Lifestyle for {name}",
         "vested": "{staff}'s granted shares vested",
         "medical": "Medical bills",
         "factionGift": "A gift to a faction",
@@ -3059,6 +3067,8 @@
         "elect": "{name} proposes electing an officer.",
         "dismiss": "{name} proposes dismissing an officer.",
         "hire": "{name} proposes hiring {who} as {post}.",
+        "coverLiving": "{name} proposes the business pays {who}'s Housing and Lifestyle, {cost} eb a month as it stands.",
+        "stopLiving": "{name} proposes the business stops paying {who}'s Housing and Lifestyle.",
         "fire": "{name} proposes letting {who} go.",
         "pay": "{name} proposes paying {who} {pct}% of the going rate.",
         "grant": "{name} proposes granting {who} {share}% of the company in shares.",
@@ -3238,6 +3248,8 @@
         "elect": "Agreed: the officer is elected.",
         "dismiss": "Agreed: the officer is dismissed.",
         "hire": "Agreed: the hire goes ahead.",
+        "coverLiving": "Agreed: the business will pay their Housing and Lifestyle each month.",
+        "stopLiving": "Agreed: the business no longer pays their Housing and Lifestyle.",
         "hired": "Agreed: hired, starting now.",
         "jobOffered": "Agreed: the job is offered. They answer it.",
         "fire": "Agreed: they have been let go.",
@@ -3411,6 +3423,9 @@
         "team-refused": "they refuse to work this week",
         "team-off": "they are on a paid week off",
         "no-reward": "that suggestion is no longer waiting",
+        "already-covered": "the business already pays their living costs",
+        "not-covered": "the business does not pay their living costs",
+        "no-living-costs": "their sheet shows no Housing or Lifestyle to pay",
         "no-downtime": "the downtime spent for this cannot be found in the character's log",
         "team-care-done": "you have already done that this week",
         "not-your-team": "they are on another Exec's team",
@@ -3623,7 +3638,8 @@
         "gainedFullTime": "{name} left {rival} to work here full time.",
         "vested": "{name}'s granted shares vested: they are a holder now.",
         "teamLeft": "{name} left with their Exec.",
-        "teamBetrayed": "{name} of the Exec's team sold them out and left."
+        "teamBetrayed": "{name} of the Exec's team sold them out and left.",
+        "livingShort": "The cash could not cover {name}'s Housing and Lifestyle this month."
       },
       "OnCall": "On call",
       "OnCallHint": "A player character on the staff can be asked for one of this week's rolls: a free action slot, the week's event, or a help. They roll it themselves, from their own Job view, with their own skills and Luck. It is one of their two overtime shifts, and the overtime is paid from the cash onto their payslip.",

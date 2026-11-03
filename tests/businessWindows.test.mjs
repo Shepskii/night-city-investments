@@ -1225,3 +1225,37 @@ test('REP and IP (B7c): a milestone suggests them to the GM, for those running i
     await med.update({ 'system.reputation': sheets.med.reputation ?? { value: 0, transactions: [] }, 'system.improvementPoints': sheets.med.improvementPoints ?? { value: 0, transactions: [] } });
   }
 });
+
+test('living costs (B7d): offered on the Partners tab with what the sheet shows, and paid straight to the sheet with staff mail off', async () => {
+  const { MODULE_ID, SETTINGS } = await import('../scripts/utils/constants.js');
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const lifestyle = med.system.lifestyle;
+  const mail = game.settings.get(MODULE_ID, SETTINGS.STAFF_MAIL);
+  try {
+    await S.BusinessRepository.save({ ...b, status: 'open', stage: 0, company: null, officers: [], listing: null, charter: null, takeover: null, administration: null, regCase: null, proposals: [], covered: [] });
+    assert.doesNotMatch(await renderBusiness(windowFor(med, 'partners')), new RegExp(`data-action="proposeCover" data-id="${med.id}"`), 'nothing on the sheet to pay');
+    med.system.lifestyle = { housing: { cost: 1000 }, lifeStyle: { cost: 100 }, extras: { cost: 500 } };
+    assert.equal(S.BusinessService.livingCostOf(med.id), 1100, 'Housing and Lifestyle, not the extras');
+    const asked = await renderBusiness(windowFor(med, 'partners'));
+    assertClean(asked, 'partners with living costs');
+    assert.match(asked, new RegExp(`data-action="proposeCover" data-id="${med.id}"`));
+
+    const covered = { ...S.BusinessRepository.all()[0], covered: [med.id] };
+    await S.BusinessRepository.save(covered);
+    const row = await renderBusiness(windowFor(med, 'partners'));
+    assertClean(row, 'a partner covered');
+    assert.match(text(row), /The business pays their Housing and Lifestyle: 1,100 eb a month/);
+    assert.match(row, new RegExp(`data-action="proposeStopCover" data-id="${med.id}"`));
+
+    await game.settings.set(MODULE_ID, SETTINGS.STAFF_MAIL, false);
+    const wealth = med.system.wealth.value;
+    await S.BusinessService._livingCosts({ business: covered, events: [{ type: 'livingCosts', actorId: med.id, amount: 1100 }] });
+    assert.equal(med.system.wealth.value, wealth + 1100);
+    med.system.wealth.value = wealth;
+  } finally {
+    med.system.lifestyle = lifestyle;
+    await game.settings.set(MODULE_ID, SETTINGS.STAFF_MAIL, mail);
+    await S.BusinessRepository.save(saved);
+  }
+});
