@@ -59,6 +59,12 @@ Or unzip a release into `Data/modules/night-city-investments`. Then enable **Nig
 - **Go public.** List the company on the market through an IPO. Shares then sit in portfolios, reports move the price, and dividends follow a payout ratio the shareholders vote. A daily liquidity cap and a delisting review keep it honest.
 - **Corporate play.** Issue new shares, buy shares back, bid for another company with a tender offer, survive (or not) administration when debts outgrow assets, hide behind nominees and shell companies while rivals dig, and answer to regulators when shortcuts leave a trail.
 
+### Production
+- **Workshops.** Most kinds of business can build benches and make real items from the system's compendiums, by the rulebook's Fabrication table: its DVs, its times and its materials costs.
+- **A storeroom you can see.** What you make sits on a sheet of real items that those running the business can look at, with the money kept on the business's record. Hire a Maker to run the line when no partner does.
+- **Selling it.** The shop sells stock each week up to a limit set by takings and Reputation. Partners can buy at cost, vote to hand items over, or consign their own for a cut.
+- **The black market.** With a back room, or quietly at a company, make goods the GM has marked illegal and sell them through a fence for dirty cash. They stay off the books, add Exposure, and a raid can seize them.
+
 ### Moving the market
 - **Campaigns.** A business can run a smear or a leak against a listed company, for a small dip in its price.
 - **Media stories.** A Media publishes an exposé or a puff piece, with Believability by Credibility rank as in the rules, backed by evidence shards. Medias also hear rumours by mail, or dig for them.

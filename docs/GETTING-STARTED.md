@@ -50,7 +50,7 @@ All are world settings, set by the GM in Configure Settings → Night City Inves
 | Market tick mode | In-world clock | **In-world clock:** one tick every set number of in-world minutes. A jump forward in the calendar is caught up a game day at a time; going back just takes the new date. **In-world day:** one tick per day the calendar moves, and rolling the date back rolls the market back. **Manual:** only when the GM advances it. |
 | Tick interval (in-world minutes) | 10 | For the in-world clock: how finely prices move. Anything that lasts days (a gig's delay, a broker's speed, a heat window) is counted in game days, so this does not change how long things take. |
 
-The **market date** is the calendar date plus any days the GM has advanced the market by hand. Dividends, fund payouts, IPOs and statements fall due on it.
+Advancing the market by hand moves the calendar with it, except in manual mode. The **market date** is what dividends, fund payouts, IPOs and statements fall due on. If a world's market has got ahead of its calendar, the Market tab says so and offers to close the gap.
 
 ### Trading
 

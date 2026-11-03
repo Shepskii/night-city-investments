@@ -119,7 +119,7 @@ Open the **Business** window from the scene controls (the shop icon). Pick your 
 
 ## The week
 
-The Business window has five folders. **Pending:** everything waiting for your character, across all their businesses, jobs and syndicates, with a count on the folder: votes, invitations, job offers, regulators' notices, takeover offers and rolls that are due. Action it there, or click a row to open it. **Overview:** where the business stands. **Financial:** the **Ledger** (drawing money, adding funds, loans, dividends and every entry) and **Reports** (monthly reports and weekly digests). **Operations:** **Work** (the week's ordinary actions), **Staff**, **Projects** and **Back Room** (the back room and anything illegal or likely to draw attention, including campaigns and Shortcuts; at a company, only officers see this tab). **Ownership:** **Partners** or **Shareholders** (the owners, votes and capital) and **Growth**.
+The Business window has five folders. **Pending:** everything waiting for your character, across all their businesses, jobs and syndicates, with a count on the folder: votes, invitations, job offers, regulators' notices, takeover offers and rolls that are due. Action it there, or click a row to open it. **Overview:** where the business stands. **Financial:** the **Ledger** (drawing money, adding funds, loans, dividends and every entry) and **Reports** (monthly reports and weekly digests). **Operations:** **Work** (the week's ordinary actions), **Production** (the workshop and stock, for businesses that make things), **Staff**, **Projects** and **Back Room** (the back room and anything illegal or likely to draw attention, including campaigns and Shortcuts; at a company, only officers see this tab). **Ownership:** **Partners** or **Shareholders** (the owners, votes and capital) and **Growth**.
 
 A business week closes on the weekday your GM chose.
 
@@ -139,6 +139,58 @@ Agreed by a majority of units, paid from the cash, and finished with **business 
 - **Security upgrade:** less protection money and fewer break-ins.
 - **Storefront:** more Reputation.
 - **Staff room:** room for one more employee, and happier staff.
+- **Workshop:** benches for making things to sell (see **Production**). Couriers and security firms have no use for one.
+
+## Production
+
+A business with a **Workshop** can make real items and sell them. Build one on the Projects tab: 1,500 eb and 3 business days at a side business, 4,000 eb and 5 days once registered, 12,000 eb and 9 days as a company. A workshop gives 1 bench, then 2, then 4 if you build it again after stepping up. Each bench does 7 days of work a week.
+
+**What you can make** depends on the kind of business and how far it has grown: up to Premium items at a side business, Very Expensive once registered, and Luxury as a company. Your GM can change the lists.
+
+| Kind of business | Makes |
+|---|---|
+| Gun shop | Weapons, ammunition and weapon attachments |
+| Garage | Vehicle upgrades and some tools and gear |
+| Ripperdoc clinic | Cyberware and drugs |
+| Info shop | Programs, cyberdecks and their upgrades |
+| Boutique | Clothing |
+| Media | Recording and playback gear |
+| Bar, food stall | Food and drink |
+
+**Making a run.** On the **Production** tab, choose an item and the most you want in a run, and **Set the line**. Then a partner takes the week's **Run the line** slot and rolls the trade's skills or Maker, or a **Maker** on the staff does it in any week nobody else does. The item's price sets the rest, by the rulebook:
+
+| Price category | Market price | DV | Time each | Materials each |
+|---|---|---|---|---|
+| Cheap | 10 eb | 9 | 1 hour | 5 eb |
+| Everyday | 20 eb | 9 | 1 hour | 10 eb |
+| Costly | 50 eb | 13 | 6 hours | 20 eb |
+| Premium | 100 eb | 17 | 1 day | 50 eb |
+| Expensive | 500 eb | 21 | 1 week | 100 eb |
+| Very Expensive | 1,000 eb | 24 | 2 weeks | 500 eb |
+| Luxury | 5,000 eb | 29 | 1 month | 1,000 eb |
+
+An item priced between two categories counts as the one above. How many come out depends on how well you rolled: half on a Narrow success, three quarters on Solid, nine in ten on Strong, and all of them on Exceptional, with at least one on any pass. Careful and Bold scale that as they do any action's effect. You pay materials only for what comes out sellable, when the week closes, and a failed roll costs the week but no materials. A run makes at most 20 items, and an item that takes longer than a week stays on the benches until it's done. A short week gives the benches less time.
+
+**Stock** is listed on the Production tab. **Open the storeroom** to see the real items on their own sheet; you can look, but buying and taking go through the Business window. Ammunition, clothing, drugs and gear stack. Anything else is one item each, and the storeroom holds 25, 50 or 100 of those by stage. What stock cost stays in your book value, so a run doesn't make the business look poorer.
+
+**The shop sells stock** by itself at each week's close, at **70% of market price**, dearest first. The week's limit is half its takings, times 0.75 at Poor Reputation, 1 at Modest, 1.1 at Good or 1.25 at Excellent. Unused limit carries over, up to four weeks' worth, so the shop saves up for an item dearer than a week's limit, and holds cheaper things back until it sells. Anything beyond four weeks' worth is passed over. Only what a sale makes over cost counts as profit.
+
+**Taking stock for yourself:**
+
+- **Buy** at what its materials cost, with no vote. At a company, only officers can buy, and they pay the shop's price, since cost would come out of the other shareholders' pockets.
+- **Propose giving** puts it to a majority vote to hand items to a partner for nothing.
+- **Consign** an item from your own sheet by dropping it in the box: it stays yours until it sells, you get 70% of the sale, which is 49% of market price, and the shop keeps the rest. It uses the shop's limit, and you can take it back at any time. The shop refuses anything your GM has marked illegal.
+
+**If the business closes,** its stock goes into the payout at what it cost, rather than at the reduced value gear gets, along with anything on the benches. Consigned items go back to their owners, and the storeroom is cleared.
+
+**Illegal goods and fencing.** Your GM decides which items are illegal. With a back room open, they appear on your list, tagged `[Illegal]`. A chartered company needs no room, but it's the officers' secret: other shareholders see only plain ledger lines, and no sign of the line, the stock or the fence. If the room shuts, the line stops.
+
+- **Materials** come from dirty cash first, then the cash, and the goods stay off the books: not in your book value, and worth nothing if the business closes.
+- **Each run adds Exposure,** by how the roll went, even if it fails.
+- **The shop can't sell them.** **Fence stock**, on the Back Room tab, rolls Trading, Streetwise or Operator. It pays **90% of market price** in dirty cash, illegal goods first and then the dearest, up to a limit of half the week's takings, times 0.5 on a Narrow success, 0.75 on Solid, 1 on Strong or 1.25 on Exceptional. A passed roll always moves at least one item, however dear, and nothing carries over. It adds Exposure like working the room, and can't be done while you're lying low.
+- **You can fence legal stock too,** for a better price than the shop's, but it's dirty money and the Exposure is the same. A **Back-room hand** fences illegal stock in any week no partner does, on top of working the room, and leaves legal stock for you to decide.
+- **At a company,** a fence pays into the ordinary cash instead, with no laundering to pay for, and adds twice the Exposure.
+- **A raid** seizes illegal stock along with the dirty cash: part of it if you fail, all of it if you leave the raid unanswered or fumble. Legal stock is left alone.
 
 ## The roll dialog
 
@@ -298,7 +350,7 @@ Side and registered businesses don't go into administration: they still close wh
 A business can take on staff: one at a side business, three for registered, eight as a company. Open roles are on the **Staff** tab.
 
 - **Who:** a player character, an NPC your GM has tagged as staff in Messenger, or a recruit found by **advertising** (a recruiting roll brings applicants). **Vetting** shows their real skill and any hidden traits.
-- **Roles:** floor staff lift the takings, a manager works the shop when no partner does, security answers trouble nobody answered, and a bookkeeper helps with the books. A company adds sales, publicist and compliance roles.
+- **Roles:** floor staff lift the takings, a manager works the shop when no partner does, security answers trouble nobody answered, a bookkeeper helps with the books, and a Maker runs the workshop's line. A company adds sales, publicist and compliance roles.
 - **Pay:** a weekly wage that follows their skill, offered at 80–150% of the going rate. Partners can call any employee in for one of the week's rolls, for overtime.
 - **Loyalty** (NPCs): paid weeks, good months, bonuses, training and share grants raise it. Missed wages, extra shifts, pay cuts and refused raises lower it. Sullen staff steal and quit; devoted staff try harder.
 - **Manage** an employee for pay, bonuses, moving role, **training** (a course, or mentoring by a more skilled partner who rolls Education) and letting them go.

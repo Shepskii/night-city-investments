@@ -33,6 +33,7 @@ Open it from the scene controls (sliders icon). The top row of buttons picks a g
 | | Companies | Creating, editing, importing and launching companies (IPOs) |
 | | Funds | Creating, editing, importing and closing funds |
 | | Factions | The list of corporations and gangs |
+| | Production | What each kind of business can make, and which items are illegal |
 | | Audit | Self-check, macros, suggested companies, recent trades, your recent actions |
 
 A tab shows how many decisions are waiting on it as a small number beside its name, a group shows the total for its tabs, and Pending the total of all. Syndicate proposals are not counted: members' votes settle them, though you can still pass or veto one.
@@ -111,6 +112,7 @@ The **Businesses** tab lists every business with its true state, Exposure includ
 | A charter's rolls are done | **Approve** the charter (the funding window opens, or it forms at once if net assets cover the quote), or **reject** it (the fee is not refunded) |
 | A company applies to list | **Approve** the listing (the prospectus rolls open), or **turn it down** (the fee is not refunded; they may try again in 14 days). The tab shows the valuation, float and hidden Exposure |
 | A business offers an NPC a job | **Accept** or **decline** for the NPC |
+| An item left a **storeroom sheet** by your hand | Say what became of it: **Sold** at the shop's price (the money goes to the business, or to a consignment's owner less the shop's cut), **Given away** or **Lost** |
 | A player has left the table | Mark the partner as **leaving**, so the others can buy them out or the stake passes to the heir |
 | A character or syndicate bids for a company | **Approve the offer** (the whole offer is held from the bidder's brokerage balance, or the bid lapses if they cannot cover it; it opens for 7 days) or **refuse** it. The tab then shows the offer and what players have tendered |
 | A company is in **administration** (net assets below zero at two closes in a row) | **Restructure** it (its cash pays what it can, keeping four weeks of upkeep; the rest of the debt becomes non-voting shares for its creditors, shown as Receivers, diluting the holders; Reputation and Compliance −10) or **Wind it up** (assets sold at half value; owed wages, then loans, then holders; it closes, and a listed company's shares leave portfolios). The tab shows its net assets, loans, wages owed and overdraft. If its owners put in enough cash, it comes out by itself at a close |
@@ -126,6 +128,24 @@ The rest runs itself: weeks close, events are drawn, wages are paid, reports are
 **NPC staff:** tag an NPC's Night City Messenger contact `staff` or `employee` to make them hireable. An NPC actor (not a player's character) can also join an Exec's team.
 
 **Gigs for a player's business:** a gig whose client is a player business changes its Reputation and takings once approved in the Gigs tab.
+
+## Production
+
+Businesses with a workshop make real items from the system's compendiums, by the rulebook's Fabrication table. The player guide has the rules. You have little to do while it runs: weekly sales, runs and fences happen at the close.
+
+**The lists.** Tools > Production shows what each kind of business can make, with each item's price category and DV. The defaults come from the core compendiums, by item type, with a short list of named gear for bars, food stalls, media and garages. Drop an item from any compendium or the Items directory into the box to add it, or take one off with the trash button; **Put back** restores a default. Stage limits still apply: up to Premium for a side business, Very Expensive once registered, and Luxury for a company. Couriers and security firms make nothing, and can't build a workshop even if you add items for them.
+
+**Illegal items.** **Mark illegal** applies wherever the item is made. It then needs an open back room to make, or a company's officers, and only a fence will take it. Nothing is illegal until you mark it, so decide what counts in your game. A line already set on the item follows your mark from its next run, but stock already made stays legal. With the underworld setting off, leave items unmarked: a company could still make them, with no Fence action to sell them.
+
+**Storeroom sheets.** Each business's stock gets a container actor called "Stock — *business*", in a **Night City Investments** actor folder. Those running the business can look at it, but can't drag from it or buy from it. Its cart icon still shows, and clicking it gives a permission warning. The business's record holds the money, and the sheet follows the record:
+
+- **Taking an item off the sheet by hand** raises a question on Pending, as above. The record counts it gone at once, but its cost stays on the books until you answer.
+- **Adding an item by hand** isn't noticed, and stays outside the record: the shop won't sell it, and closing doesn't count it. It disappears with the sheet if the business closes.
+- **Don't rename or stack items by hand.** The sheet recognises its items by a hidden mark, and older ones by name.
+
+**Reading the numbers.** The Businesses tab shows the true state, Exposure included. A workshop is worth having and isn't a way to print money: on its best line, a small or registered business adds about 40% to 65% to its ordinary profit and pays off in about 20 to 25 weeks, while a company adds under 10%. `npm run simulate:production` shows the working if you want to change the numbers in `businessConfig.js`.
+
+**A company's illegal work** is its officers' secret, as a back room is: others see "Other costs" and "Other income" in the ledger. It adds Exposure, which is what regulators' cases draw on, and fencing there adds twice as much.
 
 ## Factions
 
