@@ -1867,8 +1867,8 @@
       "IntelNothing": "nothing useful found"
     },
     "Living": {
-      "Propose": "Propose paying their living costs",
-      "Stop": "Propose stopping that",
+      "Propose": "Propose living allowance",
+      "Stop": "Revoke living allowance",
       "Covered": "The business pays their Housing and Lifestyle: {amount} eb a month, as their sheet has it.",
       "Subject": "{name}: Housing and Lifestyle",
       "Body": "{name} pays your Housing and Lifestyle this month: {amount} eb. Claim it from this message, then pay your rent as usual."

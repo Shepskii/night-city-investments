@@ -608,10 +608,10 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .nci-app :is(h1, h2, h
 .nci-business select[name="lineItem"] { width: 34rem; max-width: 100%; }
 /* The labels sit above the fields, so the row lines up along the bottom. */
 .nci-app .nci-actions[data-line-form] { align-items: flex-end; }
-/* A stock row's fields: the form rule's full width would push its buttons out of the window. The button's width keeps the rows in line. */
+/* A stock row's fields: the form rule's full width would push its buttons out of the window. The button's width has room for a 5-digit price, and keeps the rows in line. */
 .nci-app td.nci-endbtns input[name="stockCount"] { display: inline-block; width: 56px; vertical-align: middle; }
 .nci-app td.nci-endbtns select[name="handTo"] { display: inline-block; width: 120px; margin-left: 4px; vertical-align: middle; }
-.nci-app td.nci-endbtns > button[data-action="buyStock"] { min-width: 150px; justify-content: center; }
+.nci-app td.nci-endbtns > button[data-action="buyStock"] { width: 192px; }
 
 /* One height for every button, entry field and menu in every window. Tabs have their own. */
 .nci-app { --nci-control-height: 30px; }
@@ -632,3 +632,4 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .nci-app :is(h1, h2, h
 .nci-app .nci-business :is(select[name="heirId"], input[name="shellName"], select[name="issuePct"]) { width: 320px; max-width: 100%; }
 .nci-app .nci-business .nci-grid:has(select[name="investor"]) { grid-template-columns: minmax(0, 320px) 140px 220px; justify-content: start; align-items: end; }
 .nci-app .nci-business .nci-form :is(input[name="tenderQty"], input[name="rightsQty"], input[name="sellBackQty"], input[name="buybackBudget"]) { width: 120px !important; }
+.nci-app .nci-business button.nci-labelled:is([data-action="proposeCover"], [data-action="proposeStopCover"]) { width: 230px; }
