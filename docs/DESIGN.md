@@ -2157,7 +2157,9 @@ A Maker with a base of 14 costs more than a shop's line earns (70 eb a week agai
 - **Paying and running:** materials come from the room's dirty cash, then the ordinary cash if that runs short. A partner or the Maker runs it, the Maker at the back room's rate (1.5 times) while on illegal work. The ledger uses plain words, as back-room lines do.
 - **Companies:** no room needed. It is the officers' secret, and each run adds Exposure.
 
-**To check while building:** how a container actor's `vendor` and `restricted` fields behave, for a sheet players can see but not take from, and whether vendor mode could one day allow direct sales; how item quantities and ammunition stacks work when items are created; and whether a company's stock should be the officers' secret when it is illegal.
+**Checked live, 2026-11-03.** Observer access is enough for a sheet players can see but not take from: the sheet stops a drag, and CPR's `_purchaseItem` refuses anyone who is not an owner, for whole and part purchases. Its cart icon still shows, and clicking it gives a permission warning. Direct sales through vendor mode would need players to own the sheet, so they stay in the Business window.
+
+**To check while building:** how item quantities and ammunition stacks work when items are created.
 
 ## 37. Roadmap
 
