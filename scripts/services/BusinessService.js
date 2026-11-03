@@ -669,7 +669,8 @@ class BusinessServiceImpl {
     }
     await BusinessRepository.save(out.business);
     await this._moveItems(out);
-    await this._syncStock(out);
+    // The record is saved by now: trouble with the sheet must not stop the wages, Exposure and the rest.
+    await this._syncStock(out).catch((error) => log.error(`The storeroom of ${out.business.name} could not be updated`, error));
     await this._saveHidden(out);
     await this._rewardEvents(out);
     await this._syncJobs(out.business);
@@ -762,9 +763,14 @@ class BusinessServiceImpl {
     const existing = this.storeroomOf(out.business.id);
     if (!moves.length) {
       if (!existing) return;
+      // Foundry makes the GM who created the sheet its owner: only the players' access is this service's to set.
       const wanted = this._storeroomOwnership(out.business);
-      const same = Object.keys({ ...wanted, ...existing.ownership }).every((k) => (wanted[k] ?? 0) === (existing.ownership[k] ?? 0));
-      if (!same) await existing.update({ ownership: { ...Object.fromEntries(Object.keys(existing.ownership).map((k) => [`-=${k}`, null])), ...wanted } }, { diff: false, recursive: false });
+      const isGM = (id) => !!game.users.get(id)?.isGM;
+      const same = Object.keys({ ...wanted, ...existing.ownership }).filter((k) => !isGM(k)).every((k) => (wanted[k] ?? 0) === (existing.ownership[k] ?? 0));
+      if (!same) {
+        const gms = Object.fromEntries(Object.entries(existing.ownership).filter(([k]) => isGM(k)));
+        await existing.update({ ownership: { ...gms, ...wanted } }, { diff: false, recursive: false });
+      }
       return;
     }
     const closing = moves.find((e) => e.type === 'stockClosed');

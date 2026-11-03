@@ -1459,3 +1459,38 @@ test('the GM\'s business entry: Open under the location, the regulator\'s case b
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('the storeroom\'s access (P1b): the GM who made it stays its owner, and a player losing access is put right', async () => {
+  const b = S.BusinessRepository.all()[0];
+  const updates = [];
+  const usersBefore = game.users;
+  const gm = { id: 'gmUser', isGM: true };
+  const player = { id: 'playerUser', isGM: false };
+  const list = [gm, player];
+  game.users = Object.assign(list, { get: (id) => list.find((u) => u.id === id), activeGM: usersBefore.activeGM });
+  const room = { ownership: {}, getFlag: (scope, key) => (key === 'stockFor' ? b.id : undefined), update: async (data, options) => { updates.push({ data, options }); } };
+  const ownershipBefore = S.BusinessService._storeroomOwnership;
+  S.BusinessService._storeroomOwnership = () => ({ default: 0, playerUser: 2 });
+  game.actors.push(room);
+  try {
+    room.ownership = { gmUser: 3, default: 0, playerUser: 2 };
+    await S.BusinessService._syncStock({ business: b, events: [] });
+    assert.equal(updates.length, 0, 'the creating GM is not a difference');
+
+    room.ownership = { gmUser: 3, default: 0, playerUser: 0, goneUser: 2 };
+    await S.BusinessService._syncStock({ business: b, events: [] });
+    assert.equal(updates.length, 1);
+    assert.deepEqual(updates[0].data.ownership, { gmUser: 3, default: 0, playerUser: 2 });
+    assert.ok(Object.keys(updates[0].data.ownership).every((k) => !k.startsWith('-=')), 'Foundry takes only user ids here');
+    assert.equal(updates[0].options.recursive, false, 'so a user who has gone is dropped');
+
+    room.update = async () => { throw new Error('validation errors'); };
+    const out = { business: b, wealth: {}, events: [], items: {}, taken: {}, traits: {} };
+    await S.BusinessService._commit(out);
+    assert.ok(true, 'and the rest of a commit still runs when the sheet cannot be updated');
+  } finally {
+    game.users = usersBefore;
+    S.BusinessService._storeroomOwnership = ownershipBefore;
+    game.actors.splice(game.actors.indexOf(room), 1);
+  }
+});
