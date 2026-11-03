@@ -2115,6 +2115,7 @@ The user's requests after U1, each built and committed on its own. Colours, layo
 **Tested in the test world** (2026-11-03): a partner's proposal, voted through from Pending; three closes, paying 1,100 eb at the month's end only, with the ledger line and a message to claim.
 
 **B7e The map as built** (the bridge module's `syncPins`, 0.3.0; `BusinessService.directory`, `api.gm.businessDirectory`). The bridge's active GM client keeps a pin in Night City Map's own data for each open business, at its district's centre, offset so that several do not stack, with its name, kind, stage and location. The directory holds nothing else, so a back room or a balance cannot reach the map. Pins are Night City Map's ordinary custom pins: the GM moves one in its Arrange mode, edits or hides it, and the bridge keeps that, rewriting the text only when the business's own changes. It remembers what it has placed, in a setting of its own, so a pin the GM deletes stays deleted. A closed business's pin goes. A custom map's own districts have other ids: its pins start at the map's centre, for the GM to move. Night City Map has no API for pins, so the bridge writes its `state` setting and reads district positions from its `data.js`, both checked against 0.27.1.
+**Tested in the test world** (2026-11-03): both open businesses' pins, seen as a player with the right text; one already moved by the GM. A pin deleted and a business closed have been tried only in tests. A business's location is the player's own words, shown as written.
 
 ## 37. Roadmap
 
