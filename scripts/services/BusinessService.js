@@ -18,7 +18,7 @@ import { ProductionCatalog } from '../data/ProductionCatalog.js';
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
-  STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
+  raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
   isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact, payListedDividend,
   reviewListing, clearReview, delistCompany,
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
@@ -58,7 +58,7 @@ import { BrokerRepository } from '../data/BrokerRepository.js';
 const STOCK_FOLDER = 'Night City Investments';
 const RESULTS_CAP = 40;
 /** Requests that may bring gear: the items are looked up here, never taken from the request. */
-const GEAR_REQUESTS = ['found', 'join', 'contribute'];
+const GEAR_REQUESTS = ['found', 'join', 'contribute', 'consign'];
 const WEALTH_REASON = 'Night City Investments: business';
 
 class BusinessServiceImpl {
@@ -129,6 +129,7 @@ class BusinessServiceImpl {
       staffNames: Object.fromEntries(staffActors().map((a) => [a.id, a.name])),
       basesOf: (id) => this.basesOf(id),
       livingCostOf: (id) => this.livingCostOf(id),
+      isSyndicate: (id) => SyndicateCash.isSyndicate(id),
       // The listing threshold (B5a), a world setting.
       listingThreshold: this.listingThreshold(),
       // A listed company's price now, for its offering roll (B6a).
@@ -717,34 +718,119 @@ class BusinessServiceImpl {
     });
   }
 
-  /** Keep the storeroom matching the record: new items off the benches, and who may look. */
+  /** The units a stack counts for one sheet item: ammunition by the box of 10 rounds, stacking items by their amount. */
+  _stockUnits(item) {
+    const amount = Math.max(1, Number(item.system?.amount) || 1);
+    return item.type === 'ammo' ? Math.ceil(amount / 10) : STACKING_TYPES.includes(item.type) ? amount : 1;
+  }
+
+  /** The sheet items that are this stack. Items made before their flag was set are known by their name. */
+  _stockItems(room, { uuid, name, owner = null }) {
+    return room.items.filter((i) => {
+      const flagged = i.getFlag?.(MODULE_ID, 'stockUuid');
+      return (flagged ? flagged === uuid : i.name === name) && (i.getFlag?.(MODULE_ID, 'stockOwner') ?? null) === (owner ?? null);
+    });
+  }
+
+  /** Take `count` units of a stack off the sheet, and give back their data for another sheet. */
+  async _takeStock(room, stack) {
+    let left = stack.count;
+    const taken = [];
+    for (const item of this._stockItems(room, stack)) {
+      if (left <= 0) break;
+      const units = this._stockUnits(item);
+      const data = item.toObject();
+      delete data._id;
+      if (data.flags?.[MODULE_ID]) delete data.flags[MODULE_ID];
+      const per = item.type === 'ammo' ? 10 : 1;
+      if (units > left) {
+        await item.update({ 'system.amount': (units - left) * per });
+        data.system.amount = left * per;
+        left = 0;
+      } else {
+        await room.deleteEmbeddedDocuments('Item', [item.id]);
+        left -= units;
+      }
+      taken.push(data);
+    }
+    return taken;
+  }
+
+  /** Keep the storeroom matching the record: what came off the benches, sold, moved or closed, and who may look. */
   async _syncStock(out) {
-    const made = (out.events ?? []).filter((e) => e.type === 'stockMade');
+    const moves = (out.events ?? []).filter((e) => e.type?.startsWith('stock'));
     const existing = this.storeroomOf(out.business.id);
-    if (!made.length) {
+    if (!moves.length) {
       if (!existing) return;
       const wanted = this._storeroomOwnership(out.business);
       const same = Object.keys({ ...wanted, ...existing.ownership }).every((k) => (wanted[k] ?? 0) === (existing.ownership[k] ?? 0));
       if (!same) await existing.update({ ownership: { ...Object.fromEntries(Object.keys(existing.ownership).map((k) => [`-=${k}`, null])), ...wanted } }, { diff: false, recursive: false });
       return;
     }
-    const room = await this._storeroom(out.business);
-    for (const { item, count } of made) {
-      const source = await fromUuid(item.uuid).catch(() => null);
-      if (!source) {
-        log.warn(`A business made an item that is no longer there: ${item.uuid}`);
-        continue;
-      }
-      const data = source.toObject();
-      delete data._id;
-      if (STACKING_TYPES.includes(item.type)) {
-        // Cyberpunk RED prices ammunition per box: a box each, of however many rounds the item holds.
-        data.system.amount = item.type === 'ammo' ? count * Math.max(1, Number(source.system?.amount) || 10) : count;
-        await room.createEmbeddedDocuments('Item', [data]);
-      } else {
-        await room.createEmbeddedDocuments('Item', Array.from({ length: count }, () => structuredClone(data)));
+    const closing = moves.find((e) => e.type === 'stockClosed');
+    if (closing && !existing) return;
+    const room = existing ?? await this._storeroom(out.business);
+    const give = async (actorId, data) => {
+      const actor = game.actors.get(actorId);
+      if (actor && data.length) await actor.createEmbeddedDocuments('Item', data);
+    };
+    for (const e of moves) {
+      const stack = { uuid: e.uuid, name: e.name, owner: e.owner, count: e.count };
+      if (e.type === 'stockMade') {
+        const source = await fromUuid(e.item.uuid).catch(() => null);
+        if (!source) {
+          log.warn(`A business made an item that is no longer there: ${e.item.uuid}`);
+          continue;
+        }
+        const data = source.toObject();
+        delete data._id;
+        data.flags = { ...data.flags, [MODULE_ID]: { stockUuid: e.item.uuid } };
+        if (STACKING_TYPES.includes(e.item.type)) {
+          // Cyberpunk RED prices ammunition per box of 10 rounds.
+          data.system.amount = e.item.type === 'ammo' ? e.count * 10 : e.count;
+          await room.createEmbeddedDocuments('Item', [data]);
+        } else {
+          await room.createEmbeddedDocuments('Item', Array.from({ length: e.count }, () => structuredClone(data)));
+        }
+      } else if (e.type === 'stockConsigned') {
+        await room.createEmbeddedDocuments('Item', [{ ...e.item, flags: { ...e.item.flags, [MODULE_ID]: { stockUuid: e.uuid, stockOwner: e.owner } } }]);
+      } else if (e.type === 'stockSold') {
+        await this._takeStock(room, stack);
+      } else if (e.type === 'stockTaken') {
+        await give(e.actorId, await this._takeStock(room, stack));
+      } else if (e.type === 'stockClosed') {
+        for (const r of e.returned) await give(r.owner, await this._takeStock(room, r));
+        await room.delete();
       }
     }
+  }
+
+  /** The storeroom changed by a hand other than this service's: anything the record has and the sheet has not, the GM is asked about. */
+  reconcileStock(businessId) {
+    return this._gm(businessId, (business) => {
+      const room = this.storeroomOf(businessId);
+      if (!room || business.status === 'closed') return { ok: false, reason: 'no-change' };
+      const b = structuredClone(normalizeBusiness(business));
+      let found = false;
+      for (const stack of [...b.stock]) {
+        const real = this._stockItems(room, stack).reduce((a, i) => a + this._stockUnits(i), 0);
+        if (real < stack.count) {
+          raiseStockQuery(b, stack, stack.count - real, this.day());
+          found = true;
+        }
+      }
+      return found ? { ok: true, business: b } : { ok: false, reason: 'no-change' };
+    });
+  }
+
+  /** The GM says what became of items moved by hand (P1b). */
+  settleStock(businessId, queryId, what) {
+    return this._gm(businessId, (business) => {
+      const b = structuredClone(normalizeBusiness(business));
+      const out = { wealth: {}, events: [] };
+      const done = settleStockQuery(b, queryId, what, this.day(), out);
+      return done.ok ? { ok: true, business: b, ...out } : done;
+    });
   }
 
   /**

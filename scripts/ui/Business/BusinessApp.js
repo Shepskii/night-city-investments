@@ -44,7 +44,7 @@ const value = (target, name) => field(target, name)?.value ?? '';
 const amount = (target, name) => Math.floor(Number(value(target, name)) || 0);
 
 /** The forms that take gear, each with its own drop zone. */
-const GEAR_FORMS = ['start', 'join', 'contribute'];
+const GEAR_FORMS = ['start', 'join', 'contribute', 'consign'];
 
 export class BusinessApp extends BaseApplication {
   static DEFAULT_OPTIONS = {
@@ -77,6 +77,10 @@ export class BusinessApp extends BaseApplication {
       vote: BusinessApp._onVote,
       proposeProject: BusinessApp._onProposeProject,
       setLine: BusinessApp._onSetLine,
+      buyStock: BusinessApp._onBuyStock,
+      handStock: BusinessApp._onHandStock,
+      takeBackStock: BusinessApp._onTakeBackStock,
+      consignStock: BusinessApp._onConsignStock,
       clearLine: BusinessApp._onClearLine,
       openStoreroom: BusinessApp._onOpenStoreroom,
       takeDirty: BusinessApp._onTakeDirty,
@@ -172,7 +176,7 @@ export class BusinessApp extends BaseApplication {
   /** Showing the Start a business form instead of a business. */
   starting = false;
   /** Items dragged into each form and not sent yet: `{uuid, name, value, img, fromActor}`. */
-  gearDrafts = { start: [], join: [], contribute: [] };
+  gearDrafts = { start: [], join: [], contribute: [], consign: [] };
   _refresh = () => this.render();
 
   _onFirstRender(context, options) {
@@ -240,7 +244,7 @@ export class BusinessApp extends BaseApplication {
 
   /** Items dragged for one character or business do not carry over to another. */
   _clearGear() {
-    this.gearDrafts = { start: [], join: [], contribute: [] };
+    this.gearDrafts = { start: [], join: [], contribute: [], consign: [] };
   }
 
   static _onRemoveGear(event, target) {
@@ -451,6 +455,28 @@ export class BusinessApp extends BaseApplication {
 
   static _onClearLine() {
     return this._send('setLine', { uuid: '' });
+  }
+
+  /** Buy stock for the picked character's own sheet (P1b). */
+  static _onBuyStock(event, target) {
+    const row = target.closest('tr');
+    return this._send('buyStock', { uuid: target.dataset.uuid, count: Number(row?.querySelector('[name="stockCount"]')?.value) || 1 });
+  }
+
+  /** Propose giving stock to a partner, for nothing. */
+  static _onHandStock(event, target) {
+    const row = target.closest('tr');
+    return this._send('propose', { kind: 'handStock', uuid: target.dataset.uuid, count: Number(row?.querySelector('[name="stockCount"]')?.value) || 1, actorId: row?.querySelector('[name="handTo"]')?.value ?? '' });
+  }
+
+  static _onTakeBackStock(event, target) {
+    return this._send('takeBack', { uuid: target.dataset.uuid });
+  }
+
+  /** Put the items dropped in the box in the shop, still the character's until they sell. */
+  static _onConsignStock() {
+    const gear = this._takeGear('consign');
+    return gear.length ? this._send('consign', { gear }) : null;
   }
 
   /** Open the storeroom sheet, to look. */

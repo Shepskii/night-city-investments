@@ -2159,6 +2159,15 @@ A Maker with a base of 14 costs more than a shop's line earns (70 eb a week agai
 
 **Checked live, 2026-11-03.** Observer access is enough for a sheet players can see but not take from: the sheet stops a drag, and CPR's `_purchaseItem` refuses anyone who is not an owner, for whole and part purchases. Its cart icon still shows, and clicking it gives a permission warning. Direct sales through vendor mode would need players to own the sheet, so they stay in the Business window.
 
+**P1b as decided (the user's choices, 2026-11-03).**
+- **Sales limit:** half the week's takings, times 0.75, 1, 1.1 or 1.25 by Reputation band (Poor, Modest, Good, Excellent), with up to 4 weeks' worth carried. Dearest first, holding the limit for a dear item rather than selling cheaper ones past it.
+- **Buying:** any active partner at a shop or registered business pays cost, with no vote. At a company, officers pay the shop's price (70% of market), since cost would come out of other shareholders' pockets.
+- **Handing over:** a majority vote gives items to a partner for nothing.
+- **Consigning:** the item stays its owner's until sold, and they get the sale price less the shop's 30% (49% of market). It uses the sales limit, is not in book value, and can be taken back.
+- **Book value:** materials move from cash to assets, so stock counts at cost in book value and valuation. Only what a sale made over cost is profit.
+- **Closing:** stock goes into the pot at cost rather than at salvage, consigned items go back, and the storeroom sheet is deleted. A run on the benches counts too.
+- **The GM moving stock by hand:** Pending asks whether it was sold, given or lost. Only items leaving the sheet are asked about; anything the GM adds by hand stays outside the record.
+
 **To check while building:** how item quantities and ammunition stacks work when items are created.
 
 ## 37. Roadmap

@@ -2204,7 +2204,17 @@
       "CostEach": "Cost each",
       "StoreCap": "Items that do not stack: {loose} of {cap} the storeroom holds.",
       "OpenStoreroom": "Open the storeroom",
-      "StoreroomName": "Stock — {name}"
+      "StoreroomName": "Stock — {name}",
+      "SellsAt": "The shop sells it at {price} eb",
+      "NotForShop": "Not for the shop's counter",
+      "ConsignedBy": "Consigned by {name}",
+      "BuyAt": "Buy, {price} eb each",
+      "HandOver": "Propose giving",
+      "TakeBack": "Take it back",
+      "SalesNote": "The shop sells stock at the week's close, up to about {limit} eb a week as things stand, dearest first. Unused limit carries over: {saved} eb saved so far, up to {most} eb.",
+      "ConsignHint": "Consign items from your own sheet: they stay yours until they sell, and you get the sale price less the shop's 30%. Take them back any time.",
+      "ConsignDrop": "Drop an item from your sheet here",
+      "Consign": "Put them in the shop"
     },
     "Project": {
       "Intro": "Projects improve the premises. The partners agree on one (a majority of the votes) and it is paid from the cash at once; then they finish it with business days, 3 each a week, which lapse when the week closes. One project at a time.",
@@ -2293,6 +2303,8 @@
       "Missing": "{n} of its weeks are no longer kept (the business keeps its last 12)."
     },
     "Cashbook": {
+      "StockMargin": "Stock sold, over its cost",
+      "StockSold": "{sold} eb across the counter",
       "Title": "{name}: cashbook, week {n}",
       "Open": "Open this week's cashbook",
       "Gone": "This week's figures are no longer kept: the business keeps its last 12 weeks.",
@@ -2471,10 +2483,14 @@
         "story": "A story about {name}: let it run or spike it",
         "offer": "Answer for {name}: a job offer as {post}",
         "reward": "{what}: apply, change or dismiss",
+        "stockMoved": "{count} × {name} left the storeroom by hand: what became of them?",
         "syndicate": "Approve or reject the new syndicate"
       }
     },
     "GMBusiness": {
+      "StockSold": "Sold, at the shop's price",
+      "StockGiven": "Given away",
+      "StockLost": "Lost",
       "CharterApprove": "Approve the charter",
       "CharterReject": "Turn the charter down",
       "CharterRejectConfirm": "Turn this charter down? Anything the partners paid in is refunded; the filing fee is not.",
@@ -2871,6 +2887,15 @@
       "NoLedger": "Nothing yet.",
       "Ledger": {
         "materials": "Materials for {count} × {itemName}",
+        "stockSales": "Stock sold for {sold} eb: the profit, after what it cost",
+        "stockCostBack": "Stock sold: what it cost, back in the cash",
+        "stockBought": "{name} bought {count} × {itemName} from stock",
+        "stockHanded": "{count} × {itemName} given to {name}",
+        "stockConsigned": "{name} consigned {itemName}",
+        "stockReturned": "{name} took back {itemName}",
+        "stockSold": "{count} × {itemName} sold by hand",
+        "stockGiven": "{count} × {itemName} given away by hand",
+        "stockLost": "{count} × {itemName} lost from stock",
         "founded": "Founded by {name}",
         "foundedGear": "Founded by {name}, who also brought {gear} eb of gear",
         "contribution": "{name} put money in",
@@ -3115,6 +3140,7 @@
         "elect": "{name} proposes electing an officer.",
         "dismiss": "{name} proposes dismissing an officer.",
         "hire": "{name} proposes hiring {who} as {post}.",
+        "handStock": "{name} proposes giving {who} {count} × {item} from stock, for nothing.",
         "coverLiving": "{name} proposes the business pays {who}'s Housing and Lifestyle, {cost} eb a month as it stands.",
         "stopLiving": "{name} proposes the business stops paying {who}'s Housing and Lifestyle.",
         "fire": "{name} proposes letting {who} go.",
@@ -3223,6 +3249,9 @@
       },
       "Refused": "Your business request was refused: {reason}",
       "Done": {
+        "buyStock": "Bought: it is on your sheet.",
+        "consign": "Your items are in the shop.",
+        "takeBack": "It is back on your sheet.",
         "setLine": "The workshop's line is set.",
         "rightsTake": "New shares taken.",
         "sellBack": "Shares sold back to the company.",
@@ -3297,6 +3326,7 @@
         "elect": "Agreed: the officer is elected.",
         "dismiss": "Agreed: the officer is dismissed.",
         "hire": "Agreed: the hire goes ahead.",
+        "handStock": "Agreed: the items go to them.",
         "coverLiving": "Agreed: the business will pay their Housing and Lifestyle each month.",
         "stopLiving": "Agreed: the business no longer pays their Housing and Lifestyle.",
         "hired": "Agreed: hired, starting now.",
@@ -3311,6 +3341,8 @@
         "void": "Agreed, but it could not be done: {reason}"
       },
       "Reason": {
+        "no-stock": "that is no longer in stock",
+        "syndicate-no-items": "a syndicate has no sheet to hold items",
         "no-workshop": "the business has no workshop yet",
         "no-workshop-use": "this kind of business makes nothing to sell",
         "no-line": "choose what the workshop makes first",
@@ -3700,6 +3732,7 @@
         "teamBetrayed": "{name} of the Exec's team sold them out and left.",
         "livingShort": "The cash could not cover {name}'s Housing and Lifestyle this month.",
         "madeStock": "{name} came off the benches.",
+        "soldStock": "{name} sold from stock.",
         "runFailed": "A run of {name} failed: the week was lost, not the materials.",
         "runNoCash": "A run of {name} went ahead without the cash for materials: nothing was made."
       },

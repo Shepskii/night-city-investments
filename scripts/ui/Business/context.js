@@ -9,7 +9,7 @@ import {
   stateBands, lastDigest, gearValue, rollSpec, BUSINESS_DEFAULTS,
   daysLeft, activeProject, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
   projectOffer, PROJECT_KINDS, upgradesOf, protectionFactor, headcountOf,
-  activeStaff, benchesOf, hasWorkshop, looseStock, makesThings, produceCheck, runOffer, tierOf, topTierOf,
+  activeStaff, benchesOf, hasWorkshop, looseStock, salePrice, salesLimit, makesThings, produceCheck, runOffer, tierOf, topTierOf,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent, supplyCut, actionFor, ROOM_ACTIONS, roomKinds, openRoom, payOffCost, CRIME_ACTIONS, dealCut, SECRET_ACTIONS, SECRET_LEDGER,
   POST_IDS, POSTS, levelOf, postBest, staffBase, postRate, askingWage, postOpen, postOffered, recruitCheck, archetypeOf,
@@ -494,6 +494,13 @@ function produceNote(business) {
   return check.ok ? '' : L(`NCI.Business.Reason.${check.reason}`);
 }
 
+/** What the shop can sell, from last week's takings, and what it has saved of its limit. */
+function salesNote(business) {
+  const last = lastDigest(business);
+  const limit = last ? salesLimit(business, last.takings) : 0;
+  return L('NCI.Production.SalesNote', { limit: whole(limit), saved: whole(business.production?.allowance ?? 0), most: whole(limit * BUSINESS_DEFAULTS.production.sale.bank) });
+}
+
 /** The Production tab (P1a): the benches, the line, any run going, and what is on the shelves. */
 function productionContext(business, actor, canAct) {
   const runs = canAct && canRun(business, actor.id);
@@ -505,6 +512,9 @@ function productionContext(business, actor, canAct) {
   const offer = line ? runOffer(business, line) : null;
   const run = business.production?.run ?? null;
   const week = benches * P.benchDays;
+  const isSyndicatePick = !game.actors.get(actor.id);
+  const handPending = business.proposals.some((x) => x.kind === 'handStock');
+  const handTo = business.partners.filter((x) => x.status === 'active' && game.actors.get(x.actorId)).map((x) => ({ value: x.actorId, label: x.name }));
   return {
     built: benches > 0,
     benches: L('NCI.Production.Benches', { benches, top: tierName(top) }),
@@ -527,7 +537,25 @@ function productionContext(business, actor, canAct) {
         label: L('NCI.Production.Option', { name: r.name, tier: tierName(tier), dv: tier.dv, materials: whole(tier.materials), days: tier.days < 1 ? L('NCI.Production.Hours', { hours: tier.days * 8 }) : L('NCI.Production.Days', { days: tier.days }) }),
       };
     }) : [],
-    stock: (business.stock ?? []).map((s) => ({ name: s.name, count: s.count, cost: whole(s.cost), price: whole(s.price), illegal: s.illegal })),
+    stock: (business.stock ?? []).map((s) => {
+      const mine = s.owner === actor.id;
+      return {
+        uuid: s.uuid,
+        name: s.name,
+        count: s.count,
+        cost: s.owner ? '' : whole(s.cost),
+        price: whole(s.price),
+        sells: s.illegal ? L('NCI.Production.NotForShop') : L('NCI.Production.SellsAt', { price: whole(salePrice(s.price)) }),
+        consigned: s.owner ? L('NCI.Production.ConsignedBy', { name: nameOf(business, s.owner) }) : '',
+        canBuy: !s.owner && !isSyndicatePick && (business.stage < 2 || runs),
+        buyAt: s.owner ? '' : L('NCI.Production.BuyAt', { price: whole(business.stage >= 2 ? salePrice(s.price) : s.cost) }),
+        canHand: !s.owner && !handPending && handTo.length > 0,
+        canTakeBack: mine,
+      };
+    }),
+    handTo,
+    sales: salesNote(business),
+    canConsign: !isSyndicatePick,
     storeCap: L('NCI.Production.StoreCap', { loose: looseStock(business), cap: P.storeCap[business.stage] ?? 0 }),
     hasStoreroom: !!game.actors.find((a) => a.getFlag?.(MODULE_ID, 'stockFor') === business.id),
   };
@@ -747,7 +775,7 @@ function ledgerLine(business, e, officer = true) {
   const secret = !officer && SECRET_LEDGER.includes(e.kind);
   return {
     date: dayText(e.day),
-    what: secret ? L(e.amount > 0 ? 'NCI.Business.Ledger.sundryIn' : 'NCI.Business.Ledger.sundryOut') : L(`NCI.Business.Ledger.${e.kind}${e.gear > 0 ? 'Gear' : ''}`, { name: e.actorId ? nameOf(business, e.actorId) : '', staff: e.staffName ?? '', project: e.project ? L(`NCI.Project.Kind.${e.project}`) : '', seller: e.sellerId ? nameOf(business, e.sellerId) : '', price: whole(e.price ?? 0), salvage: whole(e.salvage ?? 0), gear: whole(e.gear ?? 0) }),
+    what: secret ? L(e.amount > 0 ? 'NCI.Business.Ledger.sundryIn' : 'NCI.Business.Ledger.sundryOut') : L(`NCI.Business.Ledger.${e.kind}${e.gear > 0 ? 'Gear' : ''}`, { name: e.actorId ? nameOf(business, e.actorId) : e.name ?? '', count: e.count ?? '', itemName: e.itemName ?? '', sold: whole(e.sold ?? 0), staff: e.staffName ?? '', project: e.project ? L(`NCI.Project.Kind.${e.project}`) : '', seller: e.sellerId ? nameOf(business, e.sellerId) : '', price: whole(e.price ?? 0), salvage: whole(e.salvage ?? 0), gear: whole(e.gear ?? 0) }),
     amount: e.amount ? signed(e.amount) : '',
     cls: e.amount > 0 ? 'nci-up' : e.amount < 0 ? 'nci-down' : '',
   };
@@ -771,7 +799,7 @@ function weekMoney(digests, i) {
 }
 
 /** Ledger entries the week's close writes; the cashbook shows them from the digest instead. */
-const AT_CLOSE = new Set(['takings', 'upkeep', 'wages', 'medical']);
+const AT_CLOSE = new Set(['takings', 'upkeep', 'wages', 'medical', 'stockSales']);
 /** Entries made while the business was being set up, into the money held for it rather than its cash. */
 const FORMING = new Set(['founded', 'contribution', 'setupLoss', 'refund']);
 
@@ -793,7 +821,11 @@ export function cashbookContext(business, index, officer = true) {
   const eventKind = !officer && d.event?.kind === 'bust' ? 'inspection' : d.event?.kind;
   const event = change ? line(L(`NCI.Event.${eventKind}.Name`), change, [d.event.faction, L(`NCI.Cashbook.Outcome.${d.event.outcome}`)].filter(Boolean).join(', ')) : null;
   // A windfall is income; what trouble cost is an expense.
-  const income = [line(L('NCI.Cashbook.Takings'), gross, d.boost ? row.gig : ''), ...(change > 0 ? [event] : [])];
+  const income = [
+    line(L('NCI.Cashbook.Takings'), gross, d.boost ? row.gig : ''),
+    ...(change > 0 ? [event] : []),
+    ...(d.stock?.margin ? [line(L('NCI.Cashbook.StockMargin'), d.stock.margin, L('NCI.Cashbook.StockSold', { sold: whole(d.stock.sold) }))] : []),
+  ];
   const upkeep = d.costs
     ? ['running', 'rent', 'licence', 'protection'].filter((k) => d.costs[k]).map((k) => line(L(`NCI.Cashbook.Cost.${k}`), -d.costs[k]))
     : [line(L('NCI.Business.Upkeep'), -d.upkeep)];
@@ -804,7 +836,7 @@ export function cashbookContext(business, index, officer = true) {
     ...(d.wages ? [line(L('NCI.Cashbook.Wages'), -d.wages, d.owed ? L('NCI.Cashbook.Owed', { owed: whole(d.owed) }) : '')] : []),
     ...(d.interest ? [line(L('NCI.Cashbook.Interest'), -d.interest)] : []),
   ];
-  const totalIn = gross + Math.max(change, 0);
+  const totalIn = gross + Math.max(change, 0) + (d.stock?.margin ?? 0);
   const totalOut = Math.max(-change, 0) + d.upkeep + (d.event?.cost ?? 0) + (d.wages ?? 0) + (d.interest ?? 0);
   // An entry made before entries were marked with their week is placed by its date (setting-up entries left out).
   const inWeek = (e) => (e.week != null ? e.week === d.index : e.day >= d.startDay && e.day <= d.endDay && !FORMING.has(e.kind));

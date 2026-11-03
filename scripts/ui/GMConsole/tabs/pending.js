@@ -81,6 +81,10 @@ function businessRows() {
       b.backRoom?.status === 'pending' && need('backRoom', { kind: L(`NCI.BackRoom.Kind.${b.backRoom.kind}`) }, act('businessRoomApprove', 'RoomApprove', yes), act('businessRoomReject', 'RoomReject', no)),
       sceneCandidate(b) && need('scene', { event: L(`NCI.Event.${b.period.event.kind}.Name`) }, act('businessSceneRun', 'SceneRun', 'fa-masks-theater')),
       b.scene && need('sceneOpen', { event: L(`NCI.Event.${b.scene.event.kind}.Name`) }, act('businessSceneWon', 'SceneWon', yes), act('businessSceneLost', 'SceneLost', no), act('businessSceneRoll', 'SceneRoll', 'fa-dice-d10')),
+      ...(b.stockQueries ?? []).map((q) => need('stockMoved', { count: q.count, name: q.name },
+        act('businessStockSettle', 'StockSold', 'fa-cash-register', { reward: q.id, yes: 'sold' }),
+        act('businessStockSettle', 'StockGiven', 'fa-hand-holding', { reward: q.id, yes: 'given' }),
+        act('businessStockSettle', 'StockLost', no, { reward: q.id, yes: 'lost' }))),
       ...(b.staff ?? []).filter((s) => s.status === 'offered' && s.source === 'npc')
         .map((s) => need('offer', { name: s.name, post: L(`NCI.Staff.Post.${s.post}`) },
           act('businessStaffAnswer', 'StaffAccept', 'fa-handshake', { staff: s.id, yes: 'true' }), act('businessStaffAnswer', 'StaffDecline', no, { staff: s.id, yes: 'false' }))),

@@ -13,6 +13,7 @@
 
 import { BUSINESS_DEFAULTS } from './businessConfig.js';
 import { addLedger, fail, totalUnits, unitValue, close, holders, clamp } from './businessRecord.js';
+import { clearStock } from './businessProduction.js';
 import { isListed } from './businessListing.js';
 
 const cents = (v) => Math.round(v * 100) / 100;
@@ -131,7 +132,9 @@ export function restructure(b, day, p = BUSINESS_DEFAULTS, out = null) {
 export function windUp(b, day, out, p = BUSINESS_DEFAULTS) {
   if (!b.administration) return fail('not-administration');
   const listed = isListed(b);
-  const salvage = Math.round((b.assets ?? 0) * p.insolvency.salvage);
+  // Stock goes in at what it cost; the rest of the assets at their salvage (P1b).
+  const stock = clearStock(b, out);
+  const salvage = stock + Math.round(Math.max(0, (b.assets ?? 0) - stock) * p.insolvency.salvage);
   const total = Math.max(0, b.till) + salvage;
   let pot = total;
   let wages = 0;

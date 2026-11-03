@@ -202,8 +202,9 @@ export function normalizeBusiness(raw) {
     downtimeUsed: (b.downtimeUsed ?? []).slice(-100),
     /** Partners whose Housing and Lifestyle the business pays each month (B7d). */
     covered: b.covered ?? [],
-    production: { line: b.production?.line ?? null, run: b.production?.run ?? null },
+    production: { line: b.production?.line ?? null, run: b.production?.run ?? null, allowance: b.production?.allowance ?? 0 },
     stock: b.stock ?? [],
+    stockQueries: b.stockQueries ?? [],
     // Standing with factions (F1a): the band for each faction met. The number is in the GM's hidden state.
     standings: b.standings ?? {},
     // Hidden ownership (B6d): each holder's layers, innermost first; their strengths are GM-only.

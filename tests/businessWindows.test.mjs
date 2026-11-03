@@ -1363,3 +1363,74 @@ test('the Production tab for the GM: lists by business type, removes and restore
     await game.settings.set(MODULE_ID, SETTINGS.PRODUCTION_CATALOG, savedCatalog);
   }
 });
+
+test('stock on the Production tab (P1b): buying, handing over, consigning and the GM\'s question', async () => {
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const wealth = med.system.wealth.value;
+  const given = [];
+  const room = {
+    id: 'room', ownership: {}, items: Object.assign([], { filter: Array.prototype.filter }),
+    getFlag: (scope, key) => (key === 'stockFor' ? b.id : undefined),
+    createEmbeddedDocuments: async (_, docs) => docs,
+    deleteEmbeddedDocuments: async (_, ids) => ids.forEach((id) => { const i = room.items.findIndex((x) => x.id === id); if (i >= 0) room.items.splice(i, 1); }),
+    delete: async () => { room.deleted = true; },
+    update: async () => {},
+  };
+  const sheetItem = (id, stockUuid) => ({ id, name: 'Medscanner', type: 'weapon', system: {}, getFlag: (scope, key) => (key === 'stockUuid' ? stockUuid : null), toObject: () => ({ _id: id, name: 'Medscanner', type: 'weapon', system: {}, flags: {} }) });
+  const createBefore = med.createEmbeddedDocuments;
+  med.createEmbeddedDocuments = async (_, docs) => given.push(...docs);
+  game.actors.push(room);
+  try {
+    room.items.push(sheetItem('i1', 'Item.scanner'), sheetItem('i2', 'Item.scanner'));
+    const stock = [{ uuid: 'Item.scanner', name: 'Medscanner', type: 'weapon', img: '', price: 100, cost: 50, count: 2, illegal: false }];
+    await S.BusinessRepository.save({ ...b, status: 'open', stage: 0, company: null, officers: [], listing: null, charter: null, takeover: null, administration: null, regCase: null, proposals: [], upgrades: { workshop: [0] }, stock, assets: 100, till: 1000 });
+    const html = await renderBusiness(windowFor(med, 'production'));
+    assertClean(html, 'production with stock');
+    assert.match(text(html), /The shop sells it at 70 eb/);
+    assert.match(text(html), /Buy, 50 eb each/);
+    assert.match(html, /data-action="handStock"/);
+    assert.match(html, /data-gear="consign"/);
+
+    await send(med, 'buyStock', { businessId: b.id, uuid: 'Item.scanner', count: 1 });
+    const after = S.BusinessRepository.all()[0];
+    assert.equal(after.stock[0].count, 1);
+    assert.equal(after.till, 1050);
+    assert.equal(med.system.wealth.value, wealth - 50);
+    assert.equal(given.length, 1, 'on their sheet');
+    assert.equal(given[0].flags['night-city-investments'], undefined, 'and no longer stock');
+    assert.equal(room.items.length, 1, 'off the storeroom');
+
+    room.items.length = 0;
+    await S.BusinessService.reconcileStock(b.id);
+    const queried = S.BusinessRepository.all()[0];
+    assert.equal(queried.stockQueries.length, 1);
+    assert.equal(queried.stock.length, 0);
+    assert.match(text(await renderConsole('pending')), /1 × Medscanner left the storeroom by hand/);
+    assert.ok((await S.BusinessService.settleStock(b.id, queried.stockQueries[0].id, 'sold')).ok);
+    const settled = S.BusinessRepository.all()[0];
+    assert.deepEqual(settled.stockQueries, []);
+    assert.equal(settled.till, 1120);
+    await S.BusinessRepository.save({
+      ...S.BusinessRepository.all()[0],
+      ledger: [
+        ...S.BusinessRepository.all()[0].ledger,
+        { day: 1, kind: 'materials', amount: -100, itemName: 'Medscanner', count: 2 },
+        { day: 1, kind: 'stockSales', amount: 40, sold: 140 },
+        { day: 1, kind: 'stockHanded', amount: 0, name: 'Fixer', itemName: 'Medscanner', count: 1 },
+      ],
+    });
+    const ledger = text(await renderBusiness(windowFor(med, 'ledger')));
+    assert.match(ledger, /1 × Medscanner sold by hand/);
+    assert.match(ledger, /Medtech bought 1 × Medscanner from stock/);
+    assert.match(ledger, /Materials for 2 × Medscanner/);
+    assert.match(ledger, /Stock sold for 140 eb/);
+    assert.match(ledger, /1 × Medscanner given to Fixer/);
+    assert.doesNotMatch(ledger, /undefined|\{count\}|\{itemName\}/);
+  } finally {
+    med.createEmbeddedDocuments = createBefore;
+    game.actors.splice(game.actors.indexOf(room), 1);
+    med.system.wealth.value = wealth;
+    await S.BusinessRepository.save(saved);
+  }
+});

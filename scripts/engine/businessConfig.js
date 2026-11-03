@@ -264,6 +264,17 @@ export const BUSINESS_DEFAULTS = Object.freeze({
       Object.freeze({ id: 'superLuxury', price: 10000, dv: 29, days: 28, materials: 5000 }),
     ]),
     yield: Object.freeze({ fumble: 0, failure: 0, narrow: 0.5, solid: 0.75, strong: 0.9, exceptional: 1 }),
+    /**
+     * Selling (P1b): the shop's `price` as a share of market price; a week's limit as `limitShare` of its takings, moved
+     * by the Reputation band, with up to `bank` weeks of it carried over; what the shop keeps of a consigned item's sale.
+     */
+    sale: Object.freeze({
+      price: 0.7,
+      limitShare: 0.5,
+      bank: 4,
+      reputation: Object.freeze({ poor: 0.75, modest: 1, good: 1.1, excellent: 1.25 }),
+      consignCut: 0.3,
+    }),
     makes: Object.freeze({
       gunShop: Object.freeze([{ type: 'weapon' }, { type: 'ammo' }, { type: 'itemUpgrade', kind: 'weapon' }]),
       garage: Object.freeze([{ type: 'itemUpgrade', kind: 'vehicle' }, { type: 'gear', names: ['Techtool', 'Tech Bag', 'Duct Tape', 'Flashlight', 'Road Flare', 'Rope (60m/yd)', 'Techscanner'] }]),

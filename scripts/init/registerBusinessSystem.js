@@ -19,6 +19,13 @@ export function registerBusinessSystem(initializer) {
         BusinessService.processActor(actor);
       }
     });
+    // A storeroom's items only change by the service's hand or the GM's (P1b).
+    for (const hook of ['deleteItem', 'updateItem']) {
+      Hooks.on(hook, (item) => {
+        const businessId = item.parent?.getFlag?.(MODULE_ID, 'stockFor');
+        if (businessId && isActiveGM()) BusinessService.reconcileStock(businessId);
+      });
+    }
     for (const hook of ['createJournalEntry', 'updateJournalEntry', 'deleteJournalEntry']) {
       Hooks.on(hook, (journal, changes) => BusinessWatcher.onJournal(journal, hook === 'updateJournalEntry' ? changes : null));
     }

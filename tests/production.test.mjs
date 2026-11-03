@@ -6,7 +6,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   BUSINESS_DEFAULTS as P, benchesOf, hasWorkshop, madeByDefault, makesThings, produceCheck, productionWeek, projectOffer,
-  rollSpec, runOffer, setLine, staffShifts, tierOf, topTierOf, looseStock, normalizeBusiness,
+  rollSpec, runOffer, setLine, staffShifts, tierOf, topTierOf, looseStock, normalizeBusiness, bookValue, salesLimit, salesWeek, salePrice,
+  buyStock, consignStock, takeBackStock, handOffer, handStock, stockCost, clearStock, raiseStockQuery, settleStockQuery,
 } from '../scripts/engine/index.js';
 import { addProjectDays, startProject } from '../scripts/engine/businessGrowth.js';
 
@@ -250,4 +251,210 @@ test('a short week gives the benches less time', () => {
   week(long, 'exceptional');
   assert.equal(long.production.run.left, 4, 'one item, with 4 of its 7 bench days to go');
   assert.equal(long.stock.length, 0);
+});
+
+// ── P1b: selling, buying, consigning, closing ──────────
+const stack = (over = {}) => ({ uuid: 'i.scanner', name: 'Medscanner', type: 'gear', img: '', price: 100, cost: 50, count: 10, illegal: false, ...over });
+const selling = (stock, { till = 1000, assets = 1000, rep = 40 } = {}) => {
+  const b = shop({ till });
+  b.assets = assets;
+  b.stock = stock;
+  b.state.reputation = rep;
+  return b;
+};
+const sell = (b, takings = 400) => {
+  const out = { wealth: {}, events: [] };
+  return { out, sales: salesWeek(b, takings, 7, out, P) };
+};
+
+test('the sales limit: half the takings, moved by the Reputation band', () => {
+  const at = (rep) => salesLimit(selling([], { rep }), 400);
+  assert.equal(at(20), 150, 'Poor, 0.75');
+  assert.equal(at(40), 200, 'Modest, 1');
+  assert.equal(at(55), 220, 'Good, 1.1');
+  assert.equal(at(80), 250, 'Excellent, 1.25');
+  assert.equal(salePrice(100), 70);
+});
+
+test('a week\'s sales: up to the limit, into the cash, with only what it made over cost as profit', () => {
+  const b = selling([stack()]);
+  const { sales, out } = sell(b);
+  assert.equal(sales.sold, 140, 'two at 70 eb within 200 eb');
+  assert.equal(sales.margin, 40, 'twenty over cost on each');
+  assert.equal(b.till, 1140);
+  assert.equal(b.assets, 900, 'what they cost leaves the books');
+  assert.equal(b.stock[0].count, 8);
+  assert.equal(b.production.allowance, 60, 'the rest carries');
+  assert.deepEqual(out.events[0], { type: 'stockSold', uuid: 'i.scanner', name: 'Medscanner', itemType: 'gear', owner: null, count: 2 });
+  assert.equal(bookValue(b), 2040, 'book value rises by the profit alone');
+  assert.ok(b.ledger.some((e) => e.kind === 'stockSales' && e.amount === 40));
+  assert.ok(b.ledger.some((e) => e.kind === 'stockCostBack' && e.amount === 100));
+});
+
+test('unused limit carries, up to four weeks, so a dear item can sell, and holds cheaper ones back', () => {
+  const dear = stack({ uuid: 'i.dear', name: 'Skinweave', price: 500, cost: 100, count: 1 });
+  const b = selling([stack({ uuid: 'i.cheap', name: 'Chip', price: 10, cost: 5, count: 5 }), dear]);
+  sell(b);
+  assert.equal(b.stock.find((s) => s.uuid === 'i.cheap').count, 5, 'the limit is held for the dear one');
+  assert.equal(b.production.allowance, 200);
+  sell(b);
+  assert.equal(b.stock.some((s) => s.uuid === 'i.dear'), false, 'two weeks: 400 eb buys the 350 eb sale');
+  assert.equal(b.stock.length, 0, 'and what is left of it sells the cheap ones');
+});
+
+test('an item beyond four weeks of limit does not stop the rest', () => {
+  const b = selling([stack({ uuid: 'i.dear', price: 5000, cost: 1000, count: 1 }), stack({ uuid: 'i.cheap', name: 'Chip', price: 10, cost: 5, count: 3 })]);
+  const { sales } = sell(b);
+  assert.equal(sales.sold, 21);
+  assert.equal(b.stock.length, 1);
+  assert.equal(b.stock[0].uuid, 'i.dear');
+  const saving = selling([stack({ uuid: 'i.big', price: 1000, cost: 500, count: 1 })]);
+  for (let i = 0; i < 3; i += 1) sell(saving);
+  assert.equal(saving.stock.length, 1, 'three weeks: 600 eb');
+  sell(saving);
+  assert.equal(saving.stock.length, 0, 'the fourth: 800 eb buys a 700 eb sale');
+  const capped = selling([stack({ uuid: 'i.big', price: 5000, cost: 1000, count: 1 })]);
+  for (let i = 0; i < 8; i += 1) sell(capped);
+  assert.equal(capped.production.allowance, 800, 'saved up to four weeks, and no further');
+});
+
+test('illegal items are not for the shop, and no stock saves no limit', () => {
+  const b = selling([stack({ illegal: true })]);
+  assert.equal(sell(b).sales.sold, 0);
+  assert.equal(b.stock[0].count, 10);
+  const empty = selling([]);
+  sell(empty);
+  assert.equal(empty.production.allowance, 0);
+});
+
+test('a partner buys at cost, or at a company at the shop\'s price', () => {
+  const b = selling([stack()]);
+  const out = { wealth: {}, events: [] };
+  const buyer = { id: 'med', name: 'Medtech', wealth: 1000 };
+  assert.ok(buyStock(b, buyer, 'i.scanner', 2, 7, out).ok);
+  assert.equal(out.wealth.med, -100);
+  assert.equal(b.till, 1100);
+  assert.equal(b.assets, 900);
+  assert.equal(bookValue(b), 2000, 'at cost, the books do not move');
+  assert.equal(out.events[0].actorId, 'med');
+  assert.equal(buyStock(b, { ...buyer, wealth: 10 }, 'i.scanner', 1, 7, out).reason, 'insufficient-funds');
+  assert.equal(buyStock(b, buyer, 'i.scanner', 99, 7, out).reason, 'bad-amount');
+  assert.equal(buyStock(b, buyer, 'nothing', 1, 7, out).reason, 'no-stock');
+  const company = selling([stack()]);
+  company.stage = 2;
+  const paid = { wealth: {}, events: [] };
+  assert.ok(buyStock(company, buyer, 'i.scanner', 1, 7, paid).ok);
+  assert.equal(paid.wealth.med, -70);
+});
+
+test('handing stock over: to a partner, for nothing, and it leaves the books', () => {
+  const b = selling([stack()]);
+  const partner = { actorId: 'fix', name: 'Fixer' };
+  assert.equal(handOffer(b, partner, 'i.scanner', 99).reason, 'bad-amount');
+  const offer = handOffer(b, partner, 'i.scanner', 2);
+  assert.ok(offer.ok);
+  const out = { wealth: {}, events: [] };
+  assert.ok(handStock(b, offer.terms, 7, out).ok);
+  assert.equal(b.stock[0].count, 8);
+  assert.equal(b.assets, 900);
+  assert.equal(b.till, 1000);
+  assert.equal(out.events[0].actorId, 'fix');
+  b.stock[0].count = 1;
+  assert.equal(handStock(b, offer.terms, 7, out).reason, 'no-stock', 'it may have sold while they voted');
+});
+
+const consigned = (over = {}) => ({ uuid: 'Actor.a.Item.b', name: 'Own Gun', value: 200, img: '', item: { name: 'Own Gun', type: 'weapon', system: {}, _sourceId: 'b' }, ...over });
+
+test('consigning: theirs until sold, 70% of the sale to them, no part of the books', () => {
+  const b = selling([]);
+  const out = { wealth: {}, events: [] };
+  assert.equal(consignStock(b, { id: 'fix', name: 'Fixer' }, [{ name: 'x', value: 5 }], 7, out).reason, 'not-your-item', 'only off their own sheet');
+  assert.ok(consignStock(b, { id: 'fix', name: 'Fixer' }, [consigned()], 7, out).ok);
+  assert.equal(b.stock[0].owner, 'fix');
+  assert.equal(b.stock[0].price, 200);
+  assert.equal(stockCost(b), 0);
+  assert.equal(looseStock(b), 0, 'it takes no room from the shop\'s own');
+  assert.equal(out.events[0].item._sourceId, undefined);
+  assert.equal(bookValue(b), 2000);
+  const { sales, out: sold } = sell(b);
+  assert.equal(sales.sold, 140);
+  assert.equal(sold.wealth.fix, 98, '70% of the 140 eb sale, 49% of market');
+  assert.equal(sales.kept, 42);
+  assert.equal(sales.margin, 42, 'the shop\'s cut is all profit');
+  assert.equal(b.till, 1042);
+  assert.equal(b.assets, 1000);
+  assert.deepEqual(sold.events[0].owner, 'fix');
+});
+
+test('a stacked consignment counts its units, ammunition by the box', () => {
+  const b = selling([]);
+  const out = { wealth: {}, events: [] };
+  consignStock(b, { id: 'fix', name: 'Fixer' }, [consigned({ value: 30, item: { name: 'Rounds', type: 'ammo', system: { amount: 30 }, _sourceId: 'c' } })], 7, out);
+  assert.equal(b.stock[0].count, 3);
+  assert.equal(b.stock[0].price, 10);
+});
+
+test('a consignment goes back only to its owner', () => {
+  const b = selling([stack({ uuid: 'g', owner: 'fix', cost: 0, count: 2 })]);
+  const out = { wealth: {}, events: [] };
+  assert.equal(takeBackStock(b, { id: 'med', name: 'Medtech' }, 'g', 7, out).reason, 'not-your-item');
+  assert.ok(takeBackStock(b, { id: 'fix', name: 'Fixer' }, 'g', 7, out).ok);
+  assert.equal(b.stock.length, 0);
+  assert.deepEqual([out.events[0].actorId, out.events[0].owner, out.events[0].count], ['fix', 'fix', 2]);
+  assert.equal(b.assets, 1000, 'it never was the business\'s');
+});
+
+test('closing: stock counts at cost, consignments go home, and the sheet goes', () => {
+  const b = selling([stack({ count: 4 }), stack({ uuid: 'g', name: 'Own Gun', owner: 'fix', cost: 0, count: 1 })]);
+  b.production.run = { cost: 100, count: 1, left: 7 };
+  assert.equal(stockCost(b), 300);
+  const out = { wealth: {}, events: [] };
+  assert.equal(clearStock(b, out), 300);
+  assert.deepEqual(b.stock, []);
+  assert.equal(b.production.run, null);
+  const closed = out.events.find((e) => e.type === 'stockClosed');
+  assert.equal(closed.returned.length, 1);
+  assert.equal(closed.returned[0].owner, 'fix');
+  const quiet = { wealth: {}, events: [] };
+  assert.equal(clearStock(normalizeBusiness({ id: 'x', archetype: 'clinic', partners: [] }), quiet), 0);
+  assert.deepEqual(quiet.events, [], 'no workshop or stock, nothing to clear');
+});
+
+test('moved by hand: the GM is asked, and each answer settles the books', () => {
+  const asked = (over) => {
+    const b = selling([stack(over)]);
+    raiseStockQuery(b, b.stock[0], 2, 7);
+    return b;
+  };
+  const b = asked();
+  assert.equal(b.stock[0].count, 8);
+  assert.equal(b.assets, 1000, 'on the books until the GM says');
+  const id = b.stockQueries[0].id;
+  const out = { wealth: {}, events: [] };
+  assert.equal(settleStockQuery(b, id, 'nonsense', 7, out).reason, 'bad-query');
+  assert.ok(settleStockQuery(b, id, 'sold', 7, out).ok);
+  assert.equal(b.till, 1140);
+  assert.equal(b.assets, 900);
+  assert.deepEqual(b.stockQueries, []);
+  assert.equal(settleStockQuery(b, id, 'sold', 7, out).reason, 'no-query');
+  const lost = asked();
+  settleStockQuery(lost, lost.stockQueries[0].id, 'lost', 7, out);
+  assert.equal(lost.till, 1000);
+  assert.equal(lost.assets, 900);
+  const theirs = asked({ owner: 'fix', cost: 0 });
+  const paid = { wealth: {}, events: [] };
+  settleStockQuery(theirs, theirs.stockQueries[0].id, 'sold', 7, paid);
+  assert.equal(paid.wealth.fix, 98);
+  assert.equal(theirs.till, 1042);
+  assert.equal(theirs.assets, 1000);
+});
+
+test('materials stand in the assets, so a run leaves book value alone', () => {
+  const b = selling([], { assets: 0 });
+  setLine(b, PREMIUM);
+  week(b, 'solid');
+  assert.equal(b.till, 750);
+  assert.equal(b.assets, 250);
+  assert.equal(bookValue(b), 1000);
+  assert.equal(stockCost(b), 250);
 });

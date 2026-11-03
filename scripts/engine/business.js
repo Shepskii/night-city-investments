@@ -26,6 +26,9 @@
  *   { key, type: 'buyout', businessId, sellerId }
  *   { key, type: 'proposeClose', businessId }
  *   { key, type: 'setLine', businessId, uuid, qty }              what the workshop makes (P1a); no uuid stops it
+ *   { key, type: 'buyStock', businessId, uuid, count }           buy stock for your own sheet (P1b)
+ *   { key, type: 'consign', businessId, gear: [{uuid}] }         put items from your sheet in the shop (P1b)
+ *   { key, type: 'takeBack', businessId, uuid }                  take a consignment back (P1b)
  *   { key, type: 'vote', businessId, proposalId, yes }
  *
  * `use` is how the roll was made: `{kind: 'skill', skill, stat}`, `{kind: 'ability', ability}` or
@@ -64,7 +67,7 @@
  * hidden state; a result's `traits` are new ones for the service to keep there, never on the record.
  */
 
-import { produceCheck, productionWeek, setLine } from './businessProduction.js';
+import { makesThings, buyStock, clearStock, consignStock, handOffer, handStock, produceCheck, productionWeek, salesWeek, setLine, takeBackStock } from './businessProduction.js';
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from './businessEvents.js';
 import { aimCheck, giftFor } from './factions.js';
@@ -125,7 +128,7 @@ export const BUSINESS_REQUESTS = Object.freeze([
   'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'takeDirty', 'lieLow', 'gangDealOfficer', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll', 'prospectusRoll',
   'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant', 'askStaff', 'cancelAsk', 'addTeam', 'teamCare',
   'rightsTake', 'sellBack', 'issueRoll', 'buybackRoll', 'bid', 'tender', 'defenceRoll', 'hideRoll', 'dropLayer',
-  'setLine',
+  'setLine', 'buyStock', 'consign', 'takeBack',
 ]);
 
 /** Item types that are not things a business can own. */
@@ -170,6 +173,8 @@ export const PROPOSAL_RULES = Object.freeze({
   hire: 'majority', fire: 'majority', pay: 'majority',
   // Paying a partner's Housing and Lifestyle (B7d).
   coverLiving: 'majority', stopLiving: 'majority',
+  // Giving stock to a partner, for nothing (P1b).
+  handStock: 'majority',
   // A share grant for an employee (E3, company only).
   grant: 'majority',
   // A listed company's payout ratio (B5c).
@@ -550,6 +555,29 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
         b.setup = { passed: false, band: r.band, retryDay: day + rule.delay, by: actor.id, day };
         if (loss) log('setupLoss', -loss);
       }
+      break;
+    }
+    case 'buyStock': {
+      if (request.syndicateId) return fail('syndicate-no-items');
+      if (b.status !== 'open') return fail('not-open');
+      if (me?.status !== 'active' || (b.stage >= 2 && !canRun(b, actor.id))) return fail('not-officer');
+      const bought = buyStock(b, actor, String(request.uuid ?? ''), request.count, day, out, p);
+      if (!bought.ok) return bought;
+      break;
+    }
+    case 'consign': {
+      if (request.syndicateId) return fail('syndicate-no-items');
+      if (b.status !== 'open') return fail('not-open');
+      if (me?.status !== 'active') return fail('not-partner');
+      if (!makesThings(b, p)) return fail('no-workshop-use');
+      const consigned = consignStock(b, actor, ctx.gear, day, out, p);
+      if (!consigned.ok) return consigned;
+      take(out, actor.id, ctx.gear);
+      break;
+    }
+    case 'takeBack': {
+      const back = takeBackStock(b, actor, String(request.uuid ?? ''), day, out, p);
+      if (!back.ok) return back;
       break;
     }
     case 'setLine': {
@@ -1270,7 +1298,9 @@ export function markLeaving(business, actorId, day) {
 
 /** Pay out what is left (the till and the gear's salvage) by units, and close. */
 function liquidate(b, day, reason, out, p) {
-  const salvage = Math.round(b.assets * (reason === 'failed' ? p.salvage.failed : p.salvage.closed));
+  // Stock goes in at what it cost; the rest of the assets at their salvage (P1b).
+  const stock = clearStock(b, out);
+  const salvage = stock + Math.round(Math.max(0, b.assets - stock) * (reason === 'failed' ? p.salvage.failed : p.salvage.closed));
   const pot = Math.max(0, b.till + salvage);
   const units = totalUnits(b);
   let paid = 0;
@@ -1334,6 +1364,11 @@ function canPropose(b, kind, request, ctx, p) {
       return fireOffer(b, request.staffId);
     case 'pay':
       return payOffer(b, request, p);
+    case 'handStock': {
+      const partner = partnerOf(b, String(request.actorId ?? ''));
+      if (partner?.status !== 'active' || ctx.isSyndicate?.(partner.actorId)) return fail('bad-partner');
+      return handOffer(b, partner, String(request.uuid ?? ''), request.count);
+    }
     case 'coverLiving': {
       const partner = partnerOf(b, String(request.actorId ?? ''));
       if (partner?.status !== 'active' || !partner.voting) return fail('bad-partner');
@@ -1469,6 +1504,8 @@ function enact(b, proposal, day, p, ctx, out) {
       if (done.ok) out.events.push({ type: 'fired', staffId: proposal.terms.staffId, exposure: done.exposure });
       return done;
     }
+    case 'handStock':
+      return handStock(b, proposal.terms, day, out, p);
     case 'coverLiving':
       b.covered = [...new Set([...(b.covered ?? []), proposal.terms.actorId])];
       return { ok: true };
@@ -1726,6 +1763,8 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   out.events.push(...factionFallout(b, event, p));
   out.events.push(...bustFallout(b, b.period.event, event?.outcome, b.period.endDay, p));
   const takings = Math.max(0, base + (event?.change ?? 0));
+  // Stock sold over the counter (P1b).
+  const sales = salesWeek(b, takings, b.period.endDay, out, p);
   // What went on behind the shop this week (U1a).
   const room = roomWeek(b, takings, part, p, traits);
   if (room?.exposure) out.events.push({ type: 'backRoomWeek', exposure: room.exposure });
@@ -1763,7 +1802,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
     });
   }
   const loans = payLoans(b, b.period.endDay, p);
-  const profit = takings - upkeep - eventCost - wages.wages - loans.interest;
+  const profit = takings + sales.margin - upkeep - eventCost - wages.wages - loans.interest;
   b.till -= loans.interest + loans.principal;
 
   // The staff's week: loyalty, raises asked for at a month's end, and who has had enough (E2).
@@ -1796,6 +1835,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
     ...(loans.interest || loans.principal || loans.missed.length ? { interest: loans.interest, repaid: loans.principal, missed: loans.missed } : {}),
     ...(wages.wages || wages.owed || wages.paid ? { wages: wages.wages, paid: wages.paid, owed: wages.owed } : {}),
     worked: !!work,
+    ...(sales.sold ? { stock: sales } : {}),
     ...(room ? { room: { earned: room.earned, laundered: room.laundered, paid: room.paid, low: room.low, ...(room.cut ? { cut: room.cut } : {}), ...(room.unpaid ? { unpaid: true } : {}), ...(room.informant ? { informant: room.informant } : {}) } } : {}),
     ...(event ? { event: { kind: event.kind, outcome: event.outcome, band: event.band, change: event.change, ...(b.period.event?.factionName ? { faction: b.period.event.factionName } : {}), ...(eventCost ? { cost: eventCost } : {}) } } : {}),
     ...(notes.length ? { staff: notes } : {}),

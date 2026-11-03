@@ -133,6 +133,11 @@ async function onRewardApply(event, target) {
   report(await BusinessService.applyReward(target.dataset.id, target.dataset.reward, { rep: read('rewardRep') ?? 0, ip: read('rewardIp') ?? 0 }));
 }
 
+/** What became of stock the GM moved by hand (P1b). */
+async function onStockSettle(event, target) {
+  report(await BusinessService.settleStock(target.dataset.id, target.dataset.reward, target.dataset.yes));
+}
+
 async function onRewardDismiss(event, target) {
   report(await BusinessService.dismissReward(target.dataset.id, target.dataset.reward));
 }
@@ -183,6 +188,7 @@ export const actions = {
   businessStaffAnswer: onStaffAnswer,
   businessTeamLoyalty: onTeamLoyalty,
   businessRewardApply: onRewardApply,
+  businessStockSettle: onStockSettle,
   businessRewardDismiss: onRewardDismiss,
   businessSetStanding: onSetStanding,
   businessCampaignApprove: onCampaignApprove,
