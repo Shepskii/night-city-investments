@@ -2099,6 +2099,7 @@ The user's requests after U1, each built and committed on its own. Colours, layo
 - **The save** is 1d6 under it, drawn from the business and the week, so a refusal is known before any dice roll, and raising Loyalty can still bring them round. One who fails is not offered for rolls and does not do their post's work that week.
 - **Moves.** The business week stands in for the rulebook's session. A week with nothing done costs 1. Their Exec can, once a week each, thank them (+1), give a 200 eb perk (+4) or a paid week off (+6, no work). The rulebook's other gains and losses are for the table: the GM sets the number on the Businesses tab.
 - **At 0 or below** at a close they betray the Exec and go, leaving 15 Exposure. The rulebook has them try to sell the Exec out at 0 and leave below 0 at a session's end; one close does both. The Exec's next member, likewise after letting one go, starts at Loyalty 1 and costs 200 eb.
+- **Tested in the test world** (2026-11-03, Claw, Teamwork 4, at Splice Chrome Clinic): the Hire window's limit; a member joining at a drawn Loyalty; each care button once a week, for the Exec only; a week off stopping work and calls; the cap at a close; the GM's number field; a refusal shown on the Staff tab with no offer in the roll dialog; a betrayal at a close, with the ledger, the digest and 15 Exposure; a replacement at Loyalty 1 for 200 eb. The live test found that a member on a week off could still be called in, and that five kinds of request had no done message, four of them already released (now a test).
 
 ## 37. Roadmap
 
