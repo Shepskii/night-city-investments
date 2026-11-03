@@ -193,11 +193,11 @@ Gigs in Night City map that are marked Completed or Failed queue a price impact 
 - **Needs a company:** a client that matches no company by name, ticker or alias. Pick one (or ignore the client); the choice is remembered for the client's other gigs.
 - **Waiting for approval:** change the size, delay or headline, then approve, or discard.
 - **Report an outcome by hand** for a gig the bridge did not report or that was not created in Night City Map.
-- For a gig you wrote with no client, add `[NCI: ARA]` (or `[NCI: ignore]`) to its GM notes.
+- For a gig you wrote with no client, add a tag to its GM notes.
 
 A 1,000 eb job moves its client about 1.5%, a failure 1.3 times as much, shown one to three days later with a generic headline. Each gig moves the market only once.
 
-**Tags in a gig's GM notes** say who it involves, by name, ticker or alias ():
+**Tags in a gig's GM notes** say who it involves, by name, ticker or alias:
 
 | Tag | Means |
 |---|---|
