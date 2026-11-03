@@ -140,6 +140,7 @@ All **GM**. Useful from macros and scripts.
 | `api.gm.controls` | `addBias({ target, value, days, decay })`, `removeBias(id)`, `forceRegime(regime, days)`, `clearRegime()`, `setVolatility(multiplier)`, `setHalt(halted)`, `addShock({ target, percent, delayDays, persistence, headline })`, `removeImpact(id)`, `addGlide({ companyId, target, days, noise })`, `removeGlide(id)`, `targetOptions()` |
 | `api.gm.corporateActions` | `split(companyId, ratio)`, `buyout(companyId, price)`, `delist(companyId)`, `bankrupt(companyId)`, `setPrice(companyId, price)` |
 | `api.gm.dividends` | `declareSpecial(companyId, perShare)` |
+| `api.gm.businessDirectory` | `()`: each business as the street sees it, for a map: `{ id, name, status, district, location, kind, stage, ticker }`. No money, staff or back room. |
 | `api.gm.ipo` | `listNow(companyId)` |
 | `api.gm.news` | `post({ headline, tone, companyIds })` |
 | `api.gm.undo` | `available()`, `undo()` |

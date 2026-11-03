@@ -36,6 +36,8 @@ export function registerBusinessSystem(initializer) {
   initializer.register('ready', 48, 'Business API', () => {
     const api = game.modules.get(MODULE_ID)?.api;
     if (!api) return;
+    // For a map: what anyone in the street could see of each business, and nothing behind it (B7e).
+    if (api.gm) api.gm.businessDirectory = () => BusinessService.directory();
     api.businesses = {
       list: () => BusinessRepository.all(),
       get: (id) => BusinessRepository.get(id),

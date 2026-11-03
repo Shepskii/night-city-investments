@@ -2115,6 +2115,20 @@ class BusinessServiceImpl {
   }
 
   /** Every business with its hidden state, for the GM's tab. */
+  /** Each business as the street sees it, for a map (B7e): no money, no staff, nothing of a back room. */
+  directory() {
+    return BusinessRepository.all().map((b) => ({
+      id: b.id,
+      name: b.name,
+      status: b.status,
+      district: b.district ?? '',
+      location: b.location ?? '',
+      kind: L(`NCI.Business.Archetype.${b.archetype}.Name`),
+      stage: L(`NCI.Business.Stage.${b.listing?.status === 'listed' ? 3 : b.stage}`),
+      ticker: b.company?.ticker ?? '',
+    }));
+  }
+
   snapshot() {
     const hidden = MarketStore.getBusinessesHidden();
     return BusinessRepository.all().map((b) => ({ business: b, hidden: hidden[b.id] ?? { exposure: 0 } }));

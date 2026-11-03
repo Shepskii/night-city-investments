@@ -1259,3 +1259,18 @@ test('living costs (B7d): offered on the Partners tab with what the sheet shows,
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('the directory (B7e) tells a map what the street can see, and nothing behind it', async () => {
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  try {
+    await S.BusinessRepository.save({ ...b, district: 'watson', location: 'Above the noodle bar', backRoom: { kind: 'ripping', status: 'open', dirty: 900, band: 'high' } });
+    const row = S.BusinessService.directory().find((x) => x.id === b.id);
+    assert.deepEqual(Object.keys(row).sort(), ['district', 'id', 'kind', 'location', 'name', 'stage', 'status', 'ticker']);
+    assert.equal(row.district, 'watson');
+    assert.doesNotMatch(JSON.stringify(row), /ripping|dirty|Black-market|till/);
+    assert.doesNotMatch(row.kind + row.stage, /NCI\./);
+  } finally {
+    await S.BusinessRepository.save(saved);
+  }
+});
