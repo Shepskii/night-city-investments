@@ -27,7 +27,7 @@ Or unzip a release into `Data/modules/night-city-investments`. Then enable **Nig
 | Guide | For |
 |---|---|
 | [Getting started](docs/GETTING-STARTED.md) | Installing, first-time setup and every setting |
-| [Player guide](docs/PLAYER-GUIDE.md) | Trading, syndicates, and founding and running a business |
+| [Player guide](docs/PLAYER-GUIDE.md) | The market and syndicates, running a business from founding to listing, and the underworld |
 | [GM guide](docs/GM-GUIDE.md) | Steering the market, approving and checking players' actions, and the hidden state |
 | [Price model](docs/PRICE-MODEL.md) | How prices move |
 | [API](docs/API.md) | Macros and other modules |

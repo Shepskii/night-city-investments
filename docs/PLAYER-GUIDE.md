@@ -1,25 +1,38 @@
 # Player Guide
 
-How to trade on Night City's market, pool money in a syndicate, found and run your own business. Your GM decides which parts are switched on in your game.
+How to play Night City's money game, in three parts:
+
+- **[Part 1. The Market](#part-1-the-market):** trade shares and funds, pool money in a syndicate, and move prices.
+- **[Part 2. Player Businesses](#part-2-player-businesses):** found a business, run it, make things to sell, and grow it into a listed company.
+- **[Part 3. The Underworld](#part-3-the-underworld):** back rooms, dirty cash, illegal goods, corporate crime, and what happens when someone notices.
+
+Your GM decides which parts are switched on in your game.
+
+## How it works
 
 Everything you do is sent to the GM's client, which carries it out. If no GM is online, it waits and happens when one connects. Results show in the window and, where it says so, by Night City Messenger mail.
+
+You work from two windows, both opened from the scene controls:
+
+- The **Market Terminal** (the chart icon in the first group) is for everything in Part 1.
+- The **Business** window (the shop icon) is for everything in Parts 2 and 3.
+
+**Colours:** with Pneuma's Visual Tools installed, the **Colour theme** module setting can match its skin: Dark, Light, Pneuma Dark, Pneuma Light or Pneuma Hub, and any Colorize colours. It is your own choice, and it starts on Night City red.
 
 ---
 
 # Part 1. The Market
 
-Open the **Market Terminal** from the scene controls (the chart icon in the first group).
-
 ## The terminal
 
 - **Market tab:** every company and fund, with its price, the day's move and a trend line. Click a row for the company page: a chart, the 52-week range, dividend terms, the description, the latest news, a watchlist star, and Buy and Sell buttons. Upcoming IPOs and open share offerings are listed below the table.
-- **Portfolio folder:** pick your character at the top. It has four tabs. **Overview:** your balances, holdings, private stakes, total value and a chart of your profit and loss. **Brokerage:** paying in and taking out, your broker and direct trading, founding a syndicate and takeover bids. **Investments:** your positions, syndicates and private stakes. **Ledger:** open and recent orders, your account ledger and requesting a statement.
-- **Settings folder:** your price alerts and how you are notified.
-- **REP and IP:** big moments for a business, good and bad, can earn those running it REP and Improvement Points, when the GM awards them. REP only rises if the new level is higher, and the log on your sheet says what it was for.
-- **Living costs:** partners can vote, on the Partners or Shareholders tab, for the business to pay a partner's Housing and Lifestyle. At each month's end it pays what their sheet shows, from the cash, as eddies to claim from a message, and they pay their rent as usual. If the cash cannot cover it, they go without that month.
-- **Business days and Crew Tools:** with Pneuma's Crew Tools active and the setting on, extra time on a roll, project days and mentoring spend your character's downtime, and there is no weekly allowance. The day goes as soon as you press the button, whatever the roll.
-- **Colours:** with Pneuma's Visual Tools installed, the **Colour theme** module setting can match its skin: Dark, Light, Pneuma Dark, Pneuma Light or Pneuma Hub, and any Colorize colours. It is your own choice, and it starts on Night City red.
 - **News tab:** market headlines, corporate actions and anything the GM posts.
+- **Portfolio folder:** pick your character at the top. It has four tabs.
+  - **Overview:** your balances, holdings, private stakes, total value and a chart of your profit and loss.
+  - **Brokerage:** paying in and taking out, your broker and direct trading, founding a syndicate and takeover bids.
+  - **Investments:** your positions, syndicates and private stakes.
+  - **Ledger:** open and recent orders, your account ledger and requesting a statement.
+- **Settings folder:** your price alerts and how you are notified.
 
 ## Your brokerage balance
 
@@ -75,51 +88,71 @@ A limit or stop that the price reached during a run of ticks fills even if the p
 - **Notifications** (Settings folder): choose, per category, mail, chat or off: order results, dividends, price alerts, the monthly statement, big movers, rumours, market headlines and a daily digest.
 - **Ticker strip:** a per-user setting that shows a price strip at the top of your screen.
 
-## Insider trading
-
-If your GM tracks it, trading a company in the gap between learning news (a gig you ran, a rumour, your own company's report) and the price moving on it draws **heat**. You never see the number, but you may hear from your broker, then from NCPD Financial Crimes. A watched character's broker orders become slower and dearer, and the worst cases bring a fine, a frozen account or a broker who drops you.
-
-Once warned, you can try to **cover your tracks** from the Brokerage tab. Each attempt is a skill roll (Trading, Accounting, Business or Bribery) that costs eddies whether it works or not.
-
----
-
-# Part 2. Syndicates
+## Syndicates
 
 A syndicate is a crew's shared brokerage account.
 
-## Founding and joining
+**Founding and joining**
 
 - On the Brokerage tab, **Found a syndicate**, name it and invite other characters. Your GM may need to approve it before anyone pays in.
 - Members **pay in** from their own brokerage balance and receive **units** at the syndicate's value per unit.
 - To leave, **redeem** units for their value, paid after the settlement delay.
 
-## Running it
+**Running it**
 
 - **Officers** trade the syndicate's account from the terminal: in the character list, pick "*syndicate* (as *character*)". Each officer has a **daily limit** for orders and business payments.
 - Anything over the limit becomes a **proposal**, decided by a vote of units, as are admitting or removing members, making officers, changing the limit, and dissolving. Proposals last 7 days.
 - Members get Messenger mail when proposals open and are decided, and when redemptions are paid.
 - **Heat is shared:** the syndicate counts as knowing whatever any member knows.
 
-## In a business
+**In a business**
 
 A syndicate can found, join or invest in a player business. Its officers act for it in the Business window (pick the syndicate in the account list): they roll with their own skills and Luck, pay from its account (cash only, no gear), and cast its vote. Payments over an officer's limit go to the members first. Its business stakes count in its value.
 
+## If you're a Media: stories and rumours
+
+A company's market page has **Publish a story**: an exposé to push its price down, or a puff piece to push it up. Your Credibility rank sets how likely the public is to believe it and how far the price can move. Evidence items in your inventory help, and each works once. Holding shares in a company you write about draws heat.
+
+You also hear things. Every few days your Credibility may bring a rumour by mail about a price move on its way or a hidden stake, saying more the better you roll. **Dig for rumours** on a company's page, once a week, does the same for that company. Trading on a rumour still counts for insider heat, though less than trading on something you did yourself.
+
+## Insider trading
+
+If your GM tracks it, trading a company in the gap between learning news (a gig you ran, a rumour, your own company's report) and the price moving on it draws **heat**. You never see the number, but you may hear from your broker, then from NCPD Financial Crimes. A watched character's broker orders become slower and dearer, and the worst cases bring a fine, a frozen account or a broker who drops you.
+
+Once warned, you can try to **cover your tracks** from the Brokerage tab. Each attempt is a skill roll (Trading, Accounting, Business or Bribery) that costs eddies whether it works or not.
+
+A **Lawman** can also **Call in a favour** on the market window's heat panel to bring down their own heat.
+
 ---
 
-# Part 3. Player Businesses
+# Part 2. Player Businesses
 
-Open the **Business** window from the scene controls (the shop icon). Pick your character (or a syndicate you are an officer of) at the top.
+Open the **Business** window and pick your character (or a syndicate you are an officer of) at the top.
 
-## Founding a business
+## The Business window
+
+It has five folders:
+
+- **Pending:** everything waiting for your character, across all their businesses, jobs and syndicates, with a count on the folder: votes, invitations, job offers, regulators' notices, takeover offers and rolls that are due. Action it there, or click a row to open it.
+- **Overview:** where the business stands.
+- **Financial:** the **Ledger** (drawing money, adding funds, loans, dividends and every entry) and **Reports** (monthly reports and weekly digests).
+- **Operations:**
+  - **Work:** the week's ordinary actions.
+  - **Production:** the workshop and stock, for businesses that make things.
+  - **Staff** and **Projects**.
+  - **Back Room:** the back room and anything illegal or likely to draw attention, including campaigns and Shortcuts (see [Part 3](#part-3-the-underworld)). At a company, only officers see this tab.
+- **Ownership:** **Partners** or **Shareholders** (the owners, votes and capital) and **Growth**.
+
+## Starting out
+
+### Founding a business
 
 1. Press **Start a business**. Choose a name, one of ten kinds (ripperdoc clinic, garage or chop shop, bar or club, info shop, boutique or salon, gun shop, courier service, security outfit, screamsheet, food stall) and a district, which sets foot traffic, rent and risk.
 2. Put in **eddies**, and **gear** dragged from your sheet, the Items directory or a compendium (valued at its price). Gear from your sheet moves into the business and comes back if it never opens.
 3. **Invite partners.** Each answers and puts in their own. Units follow what each put in, with an optional sweat-equity slice for one partner.
 4. Once everyone has answered, any partner makes the **setup roll**. It sets the setup cost and the Capacity the business opens with. Your GM may need to approve it.
 
-## The week
-
-The Business window has five folders. **Pending:** everything waiting for your character, across all their businesses, jobs and syndicates, with a count on the folder: votes, invitations, job offers, regulators' notices, takeover offers and rolls that are due. Action it there, or click a row to open it. **Overview:** where the business stands. **Financial:** the **Ledger** (drawing money, adding funds, loans, dividends and every entry) and **Reports** (monthly reports and weekly digests). **Operations:** **Work** (the week's ordinary actions), **Production** (the workshop and stock, for businesses that make things), **Staff**, **Projects** and **Back Room** (the back room and anything illegal or likely to draw attention, including campaigns and Shortcuts; at a company, only officers see this tab). **Ownership:** **Partners** or **Shareholders** (the owners, votes and capital) and **Growth**.
+### The week
 
 A business week closes on the weekday your GM chose.
 
@@ -130,69 +163,9 @@ A business week closes on the weekday your GM chose.
 - **Draws:** each partner may draw their share of last week's profit.
 - **Standing:** Reputation, Capacity, Cost base and (once registered) Compliance move with your results, and the Overview tab charts them.
 
-## Projects
+Your GM may decide to play a big event out with you, such as a raid or a hostile faction's move. You'll get a mail and there's nothing to roll: how the scene goes decides it.
 
-Agreed by a majority of units, paid from the cash, and finished with **business days** (each partner has three a week):
-
-- **Expansion:** more Capacity.
-- **Refit:** a lower Cost base.
-- **Security upgrade:** less protection money and fewer break-ins.
-- **Storefront:** more Reputation.
-- **Staff room:** room for one more employee, and happier staff.
-- **Workshop:** benches for making things to sell (see **Production**). Couriers and security firms have no use for one.
-
-## Production
-
-A business with a **Workshop** can make real items and sell them. Build one on the Projects tab: 1,500 eb and 3 business days at a side business, 4,000 eb and 5 days once registered, 12,000 eb and 9 days as a company. A workshop gives 1 bench, then 2, then 4 if you build it again after stepping up. Each bench does 7 days of work a week.
-
-**What you can make** depends on the kind of business and how far it has grown: up to Premium items at a side business, Very Expensive once registered, and Luxury as a company. Your GM can change the lists.
-
-| Kind of business | Makes |
-|---|---|
-| Gun shop | Weapons, ammunition and weapon attachments |
-| Garage | Vehicle upgrades and some tools and gear |
-| Ripperdoc clinic | Cyberware and drugs |
-| Info shop | Programs, cyberdecks and their upgrades |
-| Boutique | Clothing |
-| Media | Recording and playback gear |
-| Bar, food stall | Food and drink |
-
-**Making a run.** On the **Production** tab, choose an item and the most you want in a run, and **Set the line**. Then a partner takes the week's **Run the line** slot and rolls the trade's skills or Maker, or a **Maker** on the staff does it in any week nobody else does. The item's price sets the rest, by the rulebook:
-
-| Price category | Market price | DV | Time each | Materials each |
-|---|---|---|---|---|
-| Cheap | 10 eb | 9 | 1 hour | 5 eb |
-| Everyday | 20 eb | 9 | 1 hour | 10 eb |
-| Costly | 50 eb | 13 | 6 hours | 20 eb |
-| Premium | 100 eb | 17 | 1 day | 50 eb |
-| Expensive | 500 eb | 21 | 1 week | 100 eb |
-| Very Expensive | 1,000 eb | 24 | 2 weeks | 500 eb |
-| Luxury | 5,000 eb | 29 | 1 month | 1,000 eb |
-
-An item priced between two categories counts as the one above. How many come out depends on how well you rolled: half on a Narrow success, three quarters on Solid, nine in ten on Strong, and all of them on Exceptional, with at least one on any pass. Careful and Bold scale that as they do any action's effect. You pay materials only for what comes out sellable, when the week closes, and a failed roll costs the week but no materials. A run makes at most 20 items, and an item that takes longer than a week stays on the benches until it's done. A short week gives the benches less time.
-
-**Stock** is listed on the Production tab. **Open the storeroom** to see the real items on their own sheet; you can look, but buying and taking go through the Business window. Ammunition, clothing, drugs and gear stack. Anything else is one item each, and the storeroom holds 25, 50 or 100 of those by stage. What stock cost stays in your book value, so a run doesn't make the business look poorer.
-
-**The shop sells stock** by itself at each week's close, at **70% of market price**, dearest first. The week's limit is half its takings, times 0.75 at Poor Reputation, 1 at Modest, 1.1 at Good or 1.25 at Excellent. Unused limit carries over, up to four weeks' worth, so the shop saves up for an item dearer than a week's limit, and holds cheaper things back until it sells. Anything beyond four weeks' worth is passed over. Only what a sale makes over cost counts as profit.
-
-**Taking stock for yourself:**
-
-- **Buy** at what its materials cost, with no vote. At a company, only officers can buy, and they pay the shop's price, since cost would come out of the other shareholders' pockets.
-- **Propose giving** puts it to a majority vote to hand items to a partner for nothing.
-- **Consign** an item from your own sheet by dropping it in the box: it stays yours until it sells, you get 70% of the sale, which is 49% of market price, and the shop keeps the rest. It uses the shop's limit, and you can take it back at any time. The shop refuses anything your GM has marked illegal.
-
-**If the business closes,** its stock goes into the payout at what it cost, rather than at the reduced value gear gets, along with anything on the benches. Consigned items go back to their owners, and the storeroom is cleared.
-
-**Illegal goods and fencing.** Your GM decides which items are illegal, and whether they can be made at all. With a back room open, they appear on your list, tagged `[Illegal]`. A chartered company needs no room, but it's the officers' secret: other shareholders see only plain ledger lines, and no sign of the line, the stock or the fence. If the room shuts, the line stops.
-
-- **Materials** come from dirty cash first, then the cash, and the goods stay off the books: not in your book value, and worth nothing if the business closes.
-- **Each run adds Exposure,** by how the roll went, even if it fails.
-- **The shop can't sell them.** **Fence stock**, on the Back Room tab, rolls Trading, Streetwise or Operator. It pays **90% of market price** in dirty cash, illegal goods first and then the dearest, up to a limit of half the week's takings, times 0.5 on a Narrow success, 0.75 on Solid, 1 on Strong or 1.25 on Exceptional. A passed roll always moves at least one item, however dear, and nothing carries over. It adds Exposure like working the room, and can't be done while you're lying low.
-- **You can fence legal stock too,** for a better price than the shop's, but it's dirty money and the Exposure is the same. A **Back-room hand** fences illegal stock in any week no partner does, on top of working the room, and leaves legal stock for you to decide.
-- **At a company,** a fence pays into the ordinary cash instead, with no laundering to pay for, and adds twice the Exposure.
-- **A raid** seizes illegal stock along with the dirty cash: part of it if you fail, all of it if you leave the raid unanswered or fumble. Legal stock is left alone.
-
-## The roll dialog
+### The roll dialog
 
 Every roll is yours to make, when you press its button. The dialog shows the DV and your chance of each result before you roll, and these levers:
 
@@ -207,7 +180,117 @@ A role ability, where a roll offers one, adds its rank + 9.
 
 Results run from fumble, failure, narrow, solid and strong to exceptional, and the dialog says what each does.
 
-## Money from outside
+### What your character gets out of it
+
+- **REP and IP:** big moments for a business, good and bad, can earn those running it REP and Improvement Points, when the GM awards them. REP only rises if the new level is higher, and the log on your sheet says what it was for.
+- **Living allowance:** partners can vote, on the Partners or Shareholders tab, for the business to pay a partner's Housing and Lifestyle. At each month's end it pays what their sheet shows, from the cash, as eddies to claim from a message, and they pay their rent as usual. If the cash cannot cover it, they go without that month.
+- **Business days and Crew Tools:** with Pneuma's Crew Tools active and the setting on, extra time on a roll, project days and mentoring spend your character's downtime, and there is no weekly allowance. The day goes as soon as you press the button, whatever the roll.
+
+## Running the business
+
+### Projects
+
+Agreed by a majority of units, paid from the cash, and finished with **business days** (each partner has three a week):
+
+- **Expansion:** more Capacity.
+- **Refit:** a lower Cost base.
+- **Security upgrade:** less protection money and fewer break-ins.
+- **Storefront:** more Reputation.
+- **Staff room:** room for one more employee, and happier staff.
+- **Workshop:** benches for making things to sell (see [Production](#production)). Couriers and security firms have no use for one.
+- **Back room:** an illegal operation behind the front (see [Back rooms](#back-rooms)).
+
+### Employees
+
+A business can take on staff: one at a side business, three for registered, eight as a company. Open roles are on the **Staff** tab.
+
+- **Who:** a player character, an NPC your GM has tagged as staff in Messenger, or a recruit found by **advertising** (a recruiting roll brings applicants). **Vetting** shows their real skill and any hidden traits.
+- **Roles:** floor staff lift the takings, a manager works the shop when no partner does, security answers trouble nobody answered, a bookkeeper helps with the books, and a Maker runs the workshop's line. A company adds sales, publicist and compliance roles. Back-room posts are in [Part 3](#back-room-staff).
+- **Pay:** a weekly wage that follows their skill, offered at 80–150% of the going rate. Partners can call any employee in for one of the week's rolls, for overtime.
+- **Loyalty** (NPCs): paid weeks, good months, bonuses, training and share grants raise it. Missed wages, extra shifts, pay cuts and refused raises lower it. Sullen staff steal and quit; devoted staff try harder.
+- **Manage** an employee for pay, bonuses, moving role, **training** (a course, or mentoring by a more skilled partner who rolls Education) and letting them go.
+- **Share grants:** at a company, the shareholders can grant an employee shares, which vest after 12 weeks.
+- **An Exec's team:** an Exec partner can bring their Teamwork team onto the staff: one member each at ranks 3, 5 and 9. Name new members, or drag NPC actors into the Hire window. They are unpaid and leave with the Exec, but they answer to their own Loyalty, 1d6 + 1 to start. Each week they save with 1d6 under it, and one who fails won't work that week. A week with nothing done for them costs 1 Loyalty: thank them, give them a perk or a paid week off on the Employee window. At 0 or below they sell you out and go, and replacing one starts at Loyalty 1 with 200 eb of hiring fees.
+
+### Working for someone else's business
+
+A player character can take a job at another player's business.
+
+- Accept or quit it in your own Business window, where the **Job** view shows it.
+- Your wage arrives on a weekly **payslip** by Messenger, with the money attached to claim, plus any overtime.
+- A partner may put you **on call**: they ask you for one of the week's rolls, and you make it from your Job view with your own skills and Luck.
+
+### Standing with factions
+
+Your business has its own standing with Night City's corporations and gangs, shown on the Overview tab as hostile, wary, neutral, friendly or allied. You'll see the gangs on your turf from the start, and other factions once you've dealt with them. Standing fades slowly if you don't keep it up.
+
+To raise your business's standing with a faction, use **Court a client** (a corporation) or **Pay respects** (a gang) as one of the week's actions. A company aims **Chase contracts** or **Investor relations** at a faction instead. Each costs a gift from the cash, whatever the roll. Good standing with corporations in your sector cuts running costs, and with gangs on your turf cuts protection money and shakedowns. Bad standing does the opposite, and a hostile faction may come after you. Beating a gang's shakedown by force works, but it won't help your standing with them.
+
+### Roles and gigs
+
+Some roles have something extra to offer:
+
+- A **Nomad** can arrange a **Supply contract** (Moto) that cuts running costs for four weeks.
+- A **Rockerboy** can play a **Gig at the venue** (Charismatic Impact), which lifts the week's takings and Reputation, most of all at a bar or club.
+- A **Lawman** can use Backup to answer a raid or a regulator's case, once a month for each business.
+
+A job your GM tags as done for the business counts as a contract: its Reputation, its share price if it is listed, and its standing with the client and any target all move. Ordinary crew gigs are freelance: they can move the client's and target's share prices, but don't touch your business.
+
+## Production
+
+A business with a **Workshop** can make real items and sell them. Build one on the Projects tab: 1,500 eb and 3 business days at a side business, 4,000 eb and 5 days once registered, 12,000 eb and 9 days as a company. A workshop gives 1 bench, then 2, then 4 if you build it again after stepping up. Each bench does 7 days of work a week.
+
+### What you can make
+
+It depends on the kind of business and how far it has grown: up to Premium items at a side business, Very Expensive once registered, and Luxury as a company. Your GM can change the lists.
+
+| Kind of business | Makes |
+|---|---|
+| Gun shop | Weapons, ammunition and weapon attachments |
+| Garage | Vehicle upgrades and some tools and gear |
+| Ripperdoc clinic | Cyberware and drugs |
+| Info shop | Programs, cyberdecks and their upgrades |
+| Boutique | Clothing |
+| Media | Recording and playback gear |
+| Bar, food stall | Food and drink |
+
+### Making a run
+
+On the **Production** tab, choose an item and the most you want in a run, and **Set the line**. Then a partner takes the week's **Run the line** slot and rolls the trade's skills or Maker, or a **Maker** on the staff does it in any week nobody else does. The item's price sets the rest, by the rulebook:
+
+| Price category | Market price | DV | Time each | Materials each |
+|---|---|---|---|---|
+| Cheap | 10 eb | 9 | 1 hour | 5 eb |
+| Everyday | 20 eb | 9 | 1 hour | 10 eb |
+| Costly | 50 eb | 13 | 6 hours | 20 eb |
+| Premium | 100 eb | 17 | 1 day | 50 eb |
+| Expensive | 500 eb | 21 | 1 week | 100 eb |
+| Very Expensive | 1,000 eb | 24 | 2 weeks | 500 eb |
+| Luxury | 5,000 eb | 29 | 1 month | 1,000 eb |
+
+An item priced between two categories counts as the one above. How many come out depends on how well you rolled: half on a Narrow success, three quarters on Solid, nine in ten on Strong, and all of them on Exceptional, with at least one on any pass. Careful and Bold scale that as they do any action's effect. You pay materials only for what comes out sellable, when the week closes, and a failed roll costs the week but no materials. A run makes at most 20 items, and an item that takes longer than a week stays on the benches until it's done. A short week gives the benches less time.
+
+### Stock and the storeroom
+
+Stock is listed on the Production tab. **Open the storeroom** to see the real items on their own sheet; you can look, but buying and taking go through the Business window. Ammunition, clothing, drugs and gear stack. Anything else is one item each, and the storeroom holds 25, 50 or 100 of those by stage. What stock cost stays in your book value, so a run doesn't make the business look poorer.
+
+### Selling
+
+**The shop sells stock** by itself at each week's close, at **70% of market price**, dearest first. The week's limit is half its takings, times 0.75 at Poor Reputation, 1 at Modest, 1.1 at Good or 1.25 at Excellent. Unused limit carries over, up to four weeks' worth, so the shop saves up for an item dearer than a week's limit, and holds cheaper things back until it sells. Anything beyond four weeks' worth is passed over. Only what a sale makes over cost counts as profit.
+
+**Taking stock for yourself:**
+
+- **Buy** at what its materials cost, with no vote. At a company, only officers can buy, and they pay the shop's price, since cost would come out of the other shareholders' pockets.
+- **Propose giving** puts it to a majority vote to hand items to a partner for nothing.
+- **Consign** an item from your own sheet by dropping it in the box: it stays yours until it sells, you get 70% of the sale, which is 49% of market price, and the shop keeps the rest. It uses the shop's limit, and you can take it back at any time. The shop refuses anything your GM has marked illegal.
+
+**If the business closes,** its stock goes into the payout at what it cost, rather than at the reduced value gear gets, along with anything on the benches. Consigned items go back to their owners, and the storeroom is cleared.
+
+Illegal goods and fencing are in [Part 3](#illegal-goods-and-fencing).
+
+## Money and ownership
+
+### Money from outside
 
 - **A fixer's loan:** quick, small and dear; agreed by a majority.
 - **A bank loan:** for a registered business, after a roll; the result sets how much and at what rate.
@@ -215,18 +298,20 @@ Results run from fumble, failure, narrow, solid and strong to exceptional, and t
 - **An angel:** found with an opposed pitch roll.
 - **Top-ups:** any partner can add cash, which buys no new units.
 
-## Partners, heirs and closing
+### Partners, heirs and closing
 
 - **Decisions** on the Partners tab: most need a majority of units; closing and stepping up need everyone.
 - **Name an heir** for your stake.
 - **Leaving:** the other partners may buy your units at book value within 14 days; after that they pass to your heir, or lapse.
 - **Closing** needs every partner; the money and gear are shared out. A business whose cash stays below zero for two losing weeks closes anyway.
 
-## Growing: registration
+## Growing
+
+### Registration
 
 On the **Growth** tab, once the checklist is met (4 weeks open, 100 eb a week profit, Reputation 45, and the 500 eb fee), every partner agrees and someone makes the **registration roll**. A registered business has two slots, pays less protection money but dearer rent and licences, and gains a **Compliance** standing.
 
-## Growing: a chartered company
+### A chartered company
 
 Once registered for 12 weeks, making 400 eb a week, with an expansion done, every partner can agree to **charter**, naming a ticker (the 2,000 eb fee is paid at once). Then three rolls, any partner may make them:
 
@@ -240,11 +325,11 @@ The GM approves, then the partners pay any shortfall within a funding window. Th
 - **Tighten the books:** costs.
 - **Investor relations:** standing with investors.
 - **Permits and compliance:** Compliance.
-- **Shortcuts:** more takings now, and a trail of hidden Exposure.
+- **Shortcuts:** more takings now, and a trail of hidden Exposure (see [Part 3](#exposure)).
 
 **Officers** run a company, elected and dismissed by a majority of the shares; only officers take its actions. Every four weeks it publishes a **monthly report**, which an officer may prepare (Accounting; Bold dresses it up, at a risk). Each report on the Reports tab opens to show the real figures beside the reported ones. Officers can **audit** the company's hidden Exposure and run **due diligence** on a rival business.
 
-## Going public
+### Going public
 
 The Growth tab shows the company's **market valuation**: net assets plus a year of reported profit at its sector's multiple. To list:
 
@@ -264,14 +349,16 @@ Once listed:
 - **"View on market"** in the Business window and **"Manage company"** on the terminal link the two.
 - A company worth too little for three reports goes **under review**, and the market may delist it, taking it private again.
 
-## Capital: new shares and buybacks
+## Corporate play
+
+### Capital: new shares and buybacks
 
 At a company, the **Capital** block on the Shareholders tab offers two proposals, each decided by a majority of the shares:
 
 - **New shares** (5–30% more). A private company offers them to its holders at book value for 14 days, each in proportion to what they hold; what nobody takes lapses. A listed company sells them on the market: an officer's roll sets the discount, and anyone may subscribe on the terminal for five days.
 - **A buyback** with a budget from the company's cash. A private company buys at book value from any holder who sells in the next 14 days. A listed company's officer times it with a roll, then the company buys from the market each day until the budget runs out. The shares bought are retired, so everyone's share rises.
 
-## Takeovers
+### Takeovers
 
 Any character or syndicate can bid for a chartered player company, private or listed.
 
@@ -282,47 +369,7 @@ Any character or syndicate can bid for a chartered player company, private or li
 - **Defence:** the target's officers may make one defence roll (Persuasion or Business). A good result makes NPC holders and the float want a higher premium; a fumble makes them keener.
 - **Control:** a bidder who ends with more than half the shares controls the votes, and can elect and dismiss officers. Holders who did not tender keep their shares.
 
-## Standing with factions
-
-Your business has its own standing with Night City's corporations and gangs, shown on the Overview tab as hostile, wary, neutral, friendly or allied. You'll see the gangs on your turf from the start, and other factions once you've dealt with them. Standing fades slowly if you don't keep it up.
-
-To raise your business's standing with a faction, use **Court a client** (a corporation) or **Pay respects** (a gang) as one of the week's actions. A company aims **Chase contracts** or **Investor relations** at a faction instead. Each costs a gift from the cash, whatever the roll. Good standing with corporations in your sector cuts running costs, and with gangs on your turf cuts protection money and shakedowns. Bad standing does the opposite, and a hostile faction may come after you. Beating a gang's shakedown by force works, but it won't help your standing with them.
-
-**If you're a Media,** a company's market page has **Publish a story**: an exposé to push its price down, or a puff piece to push it up. Your Credibility rank sets how likely the public is to believe it and how far the price can move. Evidence items in your inventory help, and each works once. Holding shares in a company you write about draws heat.
-
-You also hear things. Every few days your Credibility may bring a rumour by mail about a price move on its way or a hidden stake, saying more the better you roll. **Dig for rumours** on a company's page, once a week, does the same for that company. Trading on a rumour still counts for insider heat, though less than trading on something you did yourself.
-
-**Back rooms.** A shop or registered business can open an illegal operation behind the front, as a project on the Projects tab, then works it from the **Back Room** tab, if your GM allows it. Each week you can **Work the back room** for dirty cash, **Launder** some of it into the business's cash, **Pay someone off**, or **Lie low**. You can also take dirty cash straight as eddies. The higher your Exposure, the likelier a **raid**: failing one costs dirty cash and a fine, and leaving one unanswered or fumbling it shuts the back room and draws heat on the partners, though the shop carries on. Watch your staff, too. A back-room hand can work it for you, but an unhappy employee or a hidden informant can bring the raid to your door. All of it moves your Exposure, shown as a band, and dirty cash is off the books: it isn't in your book value or reports, and it's lost if the business closes.
-
-If your business charters, its back room keeps running as the officers' secret: other shareholders don't see it, and the officers take any gang deal themselves. A raid that shuts it at a company shuts it for good.
-
-**Exposure** shows as a bar, by band and never as a number, at the top of the Back Room tab and among the standings on the Overview tab, updated at each weekly close. It shows only while a room is running, and at a company only to its officers. A company with no back room still has to audit to learn its Exposure.
-
-**Back-room staff.** While a room is open you can hire for three posts on the Staff tab, each acting only when nobody else took that action, and none of them while you are lying low. A **Back-room hand** works the room. A **Launderer** (Accounting or Business) washes dirty cash. A **Fixer** (Bribery or Streetwise) pays people off at moderate Exposure or higher. Any chartered company can hire a Fixer, room or no room, who bribes the regulator for 1,000 eb from the cash when there is no dirty money to pay people off with, as long as at least 5,000 eb would be left. They ask half as much again in wages, and each one adds a little to the chance of a raid, more if they turn sullen. At a company, officers hire them without a shareholder vote, and other shareholders see them only as general staff.
-
-**Gang deals.** With a back room running, **Deal with a gang** can bring an offer from a gang on your turf that isn't wary or hostile: money in, for a cut of the takings. Partners vote on it. That gang then charges no protection and sends no shakedowns, but falling behind on the cut costs standing, and ending the deal means paying the money back.
-
-**Corporate crime.** A chartered company has **Dump the waste**, **Bribe a regulator** and **Black ops**, if your GM allows them. They pay well or hit hard, and they add Exposure. Crime at a listed company that comes out is a scandal that dips the share price.
-
-Some roles have something extra to offer. A **Nomad** can arrange a **Supply contract** (Moto) that cuts running costs for four weeks. A **Rockerboy** can play a **Gig at the venue** (Charismatic Impact), which lifts the week's takings and Reputation, most of all at a bar or club. A **Lawman** can use Backup to answer a raid or a regulator's case, once a month for each business, and can **Call in a favour** on the market window's heat panel to bring down their own heat.
-
-Your GM may decide to play a big event out with you, such as a raid or a hostile faction's move. You'll get a mail and there's nothing to roll: how the scene goes decides it.
-
-A business can also **Run a campaign** against a listed company: a smear or a leak that pushes its share price down a little. It costs 1,000 eb whatever the roll, you can run one a month, and your GM may need to approve it. Trading that company before the news lands draws insider heat, and a fumble gets you caught.
-
-A job your GM tags as done for the business counts as a contract: its Reputation, its share price if it is listed, and its standing with the client and any target all move. Ordinary crew gigs are freelance: they can move the client's and target's share prices, but don't touch your business.
-
-## Regulators
-
-Shortcuts, Bold rolls and corp plants leave a hidden trail called **Exposure**. The more of it a company has, the likelier a regulator comes looking at a monthly report. A fired corp plant, a fumbled Shortcuts roll, or a big hidden holder being unmasked brings one at once.
-
-- A banner on the Business window says a case is open, and shareholders are mailed. An officer has **14 days to answer** with one roll: Bureaucracy, Accounting, or Bribery (500 eb from the company's cash, whatever happens). You roll against a total you can't see, and more Exposure makes it harder.
-- **Win,** and the case closes and much of the trail goes.
-- **Lose, or don't answer,** and the market (your GM) decides a penalty: usually a fine of 5–10% of book value from the company's cash, and lost Compliance. A serious loss also stops a listing application, or restates your recent reports at their real figures.
-
-An internal audit (an officer's roll) tells you how much trail you have, and can cut it.
-
-## Hidden ownership
+### Hidden ownership
 
 A shareholder in a chartered or listed company can hide who they are on its register.
 
@@ -333,7 +380,7 @@ A shareholder in a chartered or listed company can hide who they are on its regi
 - **Investigating others:** press **Investigate** on a hidden holder's row (on the terminal's Shareholders table, or the Shareholders tab if you hold shares). Choose Library Search, Streetwise, Bribery or Interface. You roll against how well the layer was built, which you can't see. A win shows you, by mail, the next layer down, or who it is behind the last. A fumble tips them off. Each try takes a business day from one of your businesses, or 100 eb in legwork if you have none free, and Bribery costs 200 eb more, whatever you find. Once a week for each holding.
 - **Takeovers:** selling into a takeover puts your name on the record.
 
-## Insolvency
+### Insolvency
 
 A company (chartered or listed) whose debts (its loans, the wages it owes and any overdraft) are more than its cash and assets at two weekly closes in a row goes into **administration**. A banner on the Business window says so.
 
@@ -345,22 +392,79 @@ A company (chartered or listed) whose debts (its loans, the wages it owes and an
 
 Side and registered businesses don't go into administration: they still close when their cash stays below zero for two losing weeks.
 
-## Employees
+---
 
-A business can take on staff: one at a side business, three for registered, eight as a company. Open roles are on the **Staff** tab.
+# Part 3. The Underworld
 
-- **Who:** a player character, an NPC your GM has tagged as staff in Messenger, or a recruit found by **advertising** (a recruiting roll brings applicants). **Vetting** shows their real skill and any hidden traits.
-- **Roles:** floor staff lift the takings, a manager works the shop when no partner does, security answers trouble nobody answered, a bookkeeper helps with the books, and a Maker runs the workshop's line. A company adds sales, publicist and compliance roles.
-- **Pay:** a weekly wage that follows their skill, offered at 80–150% of the going rate. Partners can call any employee in for one of the week's rolls, for overtime.
-- **Loyalty** (NPCs): paid weeks, good months, bonuses, training and share grants raise it. Missed wages, extra shifts, pay cuts and refused raises lower it. Sullen staff steal and quit; devoted staff try harder.
-- **Manage** an employee for pay, bonuses, moving role, **training** (a course, or mentoring by a more skilled partner who rolls Education) and letting them go.
-- **Share grants:** at a company, the shareholders can grant an employee shares, which vest after 12 weeks.
-- **An Exec's team:** an Exec partner can bring their Teamwork team onto the staff: one member each at ranks 3, 5 and 9. Name new members, or drag NPC actors into the Hire window. They are unpaid and leave with the Exec, but they answer to their own Loyalty, 1d6 + 1 to start. Each week they save with 1d6 under it, and one who fails won't work that week. A week with nothing done for them costs 1 Loyalty: thank them, give them a perk or a paid week off on the Employee window. At 0 or below they sell you out and go, and replacing one starts at Loyalty 1 with 200 eb of hiring fees.
+Everything here is illegal or draws the wrong kind of attention, and it's worked from the **Back Room** tab, if your GM allows it. At a company, only officers see that tab.
 
-## Working for someone else's business
+## Exposure
 
-A player character can take a job at another player's business.
+**Exposure** is the hidden trail your crimes leave. Everything in this part moves it, up or down. Shortcuts, Bold rolls at a company and corp plants add to it too. The higher it is, the likelier a raid on a back room or a regulator at a company.
 
-- Accept or quit it in your own Business window, where the **Job** view shows it.
-- Your wage arrives on a weekly **payslip** by Messenger, with the money attached to claim, plus any overtime.
-- A partner may put you **on call**: they ask you for one of the week's rolls, and you make it from your Job view with your own skills and Luck.
+It shows as a bar, by band and never as a number, at the top of the Back Room tab and among the standings on the Overview tab, updated at each weekly close. It shows only while a room is running, and at a company only to its officers. A company with no back room still has to audit to learn its Exposure.
+
+## Back rooms
+
+A shop or registered business can open an illegal operation behind the front, as a project on the Projects tab, then works it from the **Back Room** tab. Each week you can:
+
+- **Work the back room** for dirty cash.
+- **Launder** some of it into the business's cash.
+- **Pay someone off.**
+- **Lie low.**
+
+You can also take dirty cash straight as eddies. Dirty cash is off the books: it isn't in your book value or reports, and it's lost if the business closes.
+
+**Raids.** The higher your Exposure, the likelier a **raid**. Failing one costs dirty cash and a fine, and leaving one unanswered or fumbling it shuts the back room and draws heat on the partners, though the shop carries on. Watch your staff, too. A back-room hand can work it for you, but an unhappy employee or a hidden informant can bring the raid to your door.
+
+**If your business charters,** its back room keeps running as the officers' secret: other shareholders don't see it, and the officers take any gang deal themselves. A raid that shuts it at a company shuts it for good.
+
+## Back-room staff
+
+While a room is open you can hire for three posts on the Staff tab, each acting only when nobody else took that action, and none of them while you are lying low.
+
+- A **Back-room hand** works the room, and fences illegal stock.
+- A **Launderer** (Accounting or Business) washes dirty cash.
+- A **Fixer** (Bribery or Streetwise) pays people off at moderate Exposure or higher.
+
+Any chartered company can hire a Fixer, room or no room, who bribes the regulator for 1,000 eb from the cash when there is no dirty money to pay people off with, as long as at least 5,000 eb would be left.
+
+They ask half as much again in wages, and each one adds a little to the chance of a raid, more if they turn sullen. At a company, officers hire them without a shareholder vote, and other shareholders see them only as general staff.
+
+## Gang deals
+
+With a back room running, **Deal with a gang** can bring an offer from a gang on your turf that isn't wary or hostile: money in, for a cut of the takings. Partners vote on it. That gang then charges no protection and sends no shakedowns, but falling behind on the cut costs standing, and ending the deal means paying the money back.
+
+## Illegal goods and fencing
+
+This builds on [Production](#production): you need a workshop. Your GM decides which items are illegal, and whether they can be made at all. With a back room open, they appear on your list, tagged `[Illegal]`. A chartered company needs no room, but it's the officers' secret: other shareholders see only plain ledger lines, and no sign of the line, the stock or the fence. If the room shuts, the line stops.
+
+**Making them**
+
+- **Materials** come from dirty cash first, then the cash, and the goods stay off the books: not in your book value, and worth nothing if the business closes.
+- **Each run adds Exposure,** by how the roll went, even if it fails.
+
+**Fencing them**
+
+- **The shop can't sell them.** **Fence stock**, on the Back Room tab, rolls Trading, Streetwise or Operator. It pays **90% of market price** in dirty cash, illegal goods first and then the dearest, up to a limit of half the week's takings, times 0.5 on a Narrow success, 0.75 on Solid, 1 on Strong or 1.25 on Exceptional. A passed roll always moves at least one item, however dear, and nothing carries over. It adds Exposure like working the room, and can't be done while you're lying low.
+- **You can fence legal stock too,** for a better price than the shop's, but it's dirty money and the Exposure is the same. A **Back-room hand** fences illegal stock in any week no partner does, on top of working the room, and leaves legal stock for you to decide.
+- **At a company,** a fence pays into the ordinary cash instead, with no laundering to pay for, and adds twice the Exposure.
+- **A raid** seizes illegal stock along with the dirty cash: part of it if you fail, all of it if you leave the raid unanswered or fumble. Legal stock is left alone.
+
+## Corporate crime
+
+A chartered company has **Shortcuts** among its actions, and **Dump the waste**, **Bribe a regulator** and **Black ops**, if your GM allows them. They pay well or hit hard, and they add Exposure. Crime at a listed company that comes out is a scandal that dips the share price.
+
+## Campaigns
+
+A business can **Run a campaign** against a listed company: a smear or a leak that pushes its share price down a little. It costs 1,000 eb whatever the roll, you can run one a month, and your GM may need to approve it. Trading that company before the news lands draws insider heat, and a fumble gets you caught.
+
+## Regulators
+
+The more Exposure a company has, the likelier a regulator comes looking at a monthly report. A fired corp plant, a fumbled Shortcuts roll, or a big hidden holder being unmasked brings one at once.
+
+- A banner on the Business window says a case is open, and shareholders are mailed. An officer has **14 days to answer** with one roll: Bureaucracy, Accounting, or Bribery (500 eb from the company's cash, whatever happens). You roll against a total you can't see, and more Exposure makes it harder.
+- **Win,** and the case closes and much of the trail goes.
+- **Lose, or don't answer,** and the market (your GM) decides a penalty: usually a fine of 5–10% of book value from the company's cash, and lost Compliance. A serious loss also stops a listing application, or restates your recent reports at their real figures.
+
+An internal audit (an officer's roll) tells you how much trail you have, and can cut it.
