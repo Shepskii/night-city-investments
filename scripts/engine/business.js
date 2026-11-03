@@ -1846,7 +1846,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
     ...(event ? { event: { kind: event.kind, outcome: event.outcome, band: event.band, change: event.change, ...(b.period.event?.factionName ? { faction: b.period.event.factionName } : {}), ...(eventCost ? { cost: eventCost } : {}) } } : {}),
     ...(notes.length ? { staff: notes } : {}),
     ...(boost ? { boost } : {}),
-    actions: b.period.slots.map((s) => ({ action: s.action, by: s.by, band: s.band, ...(s.staff ? { staff: true } : {}) })),
+    actions: b.period.slots.map((s) => ({ action: s.action, by: s.by, band: s.band, ...(s.staff ? { staff: true } : {}), ...(s.illegal ? { illegal: true } : {}) })),
     bands: stateBands(b, p),
   };
   b.digests = [...b.digests, digest].slice(-p.digestCap);

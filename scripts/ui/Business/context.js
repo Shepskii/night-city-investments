@@ -565,7 +565,8 @@ function productionContext(business, actor, canAct) {
     sales: salesNote(business),
     canConsign: !isSyndicatePick,
     storeCap: L('NCI.Production.StoreCap', { loose: looseStock(business), cap: P.storeCap[business.stage] ?? 0 }),
-    hasStoreroom: !!game.actors.find((a) => a.getFlag?.(MODULE_ID, 'stockFor') === business.id),
+    // Only those who may look are told it is there: a company's may hold its officers' secret.
+    hasStoreroom: !!game.actors.find((a) => a.getFlag?.(MODULE_ID, 'stockFor') === business.id && (game.user.isGM || a.testUserPermission?.(game.user, 'OBSERVER'))),
   };
 }
 
@@ -609,7 +610,7 @@ function weekContext(business, actor, canAct) {
     daysText: canAct ? daysLine(business, actor) : '',
     // A chartered company has the five company actions; a smaller business the shop actions.
     // Crime is hidden from those not running a company (U1).
-    actions: [...actionIdsFor(business.stage), ...(hasWorkshop(business) ? ['produce'] : []), ...(openRoom(business) ? ROOM_ACTIONS : []), ...(makesThings(business) && (business.stage >= 2 || openRoom(business)) ? ['fence'] : [])].filter((id) => !(business.stage >= 2 && !runs && SECRET_ACTIONS.includes(id))).filter((id) => !(['campaign', 'blackOps', 'dealGang'].includes(id) || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).filter((id) => !CRIME_ACTIONS.includes(id) || underworldOn(business)).filter((id) => id !== 'dealGang' || !business.backRoom?.deal).map((id) => {
+    actions: [...actionIdsFor(business.stage), ...(hasWorkshop(business) ? ['produce'] : []), ...(openRoom(business) ? ROOM_ACTIONS : []), ...(makesThings(business) && (business.stage >= 2 || openRoom(business)) ? ['fence'] : [])].filter((id) => !(business.stage >= 2 && !runs && (SECRET_ACTIONS.includes(id) || (id === 'produce' && business.production?.line?.illegal)))).filter((id) => !(['campaign', 'blackOps', 'dealGang'].includes(id) || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).filter((id) => !CRIME_ACTIONS.includes(id) || underworldOn(business)).filter((id) => id !== 'dealGang' || !business.backRoom?.deal).map((id) => {
       const slot = taken.get(id);
       const bonus = period.bonuses.some((b) => b.action === id && !b.used);
       return {
@@ -995,7 +996,7 @@ function moneyContext(business, actor) {
 /** One weekly digest for the Reports tab and the cashbook; `i` is where it sits among the digests kept. */
 function digestRow(business, d, i, officer = true) {
   const money = weekMoney(business.digests, i);
-  const actions = officer ? d.actions : d.actions.filter((a) => !SECRET_ACTIONS.includes(a.action));
+  const actions = officer ? d.actions : d.actions.filter((a) => !SECRET_ACTIONS.includes(a.action) && !a.illegal);
   // A raid on the back room reads as an inspection to those who do not know of it.
   const eventKind = !officer && d.event?.kind === 'bust' ? 'inspection' : d.event?.kind;
   return {

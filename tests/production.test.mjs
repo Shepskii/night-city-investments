@@ -654,3 +654,16 @@ test('illegal stock is worth nothing at a closing, and buying or giving it leave
   settleStockQuery(asked, asked.stockQueries[0].id, 'lost', 7, { events: [], wealth: {} });
   assert.equal(asked.assets, 1000);
 });
+
+test('an illegal run is marked for the digest, so those not running a company do not read of it', () => {
+  const b = shop({ stage: 2, workshop: [2] });
+  setLine(b, ILLEGAL);
+  b.period.slots = [{ action: 'produce', by: 'med', band: 'solid' }];
+  productionWeek(b, 7, { events: [], wealth: {} }, P);
+  assert.equal(b.period.slots[0].illegal, true);
+  const legal = shop({ stage: 2, workshop: [2] });
+  setLine(legal, PREMIUM);
+  legal.period.slots = [{ action: 'produce', by: 'med', band: 'solid' }];
+  productionWeek(legal, 7, { events: [], wealth: {} }, P);
+  assert.equal(legal.period.slots[0].illegal, undefined);
+});

@@ -154,7 +154,11 @@ export function productionWeek(b, day, out, p = BUSINESS_DEFAULTS) {
   const line = b.production?.line;
   if (slot && line && !b.production.run) {
     // Illegal work leaves a trail, as the back room's does, however the roll went (P1c).
-    if (line.illegal) out.events.push({ type: 'illegalRun', exposure: p.backRoom.workExposure[slot.band] ?? 0 });
+    if (line.illegal) {
+      out.events.push({ type: 'illegalRun', exposure: p.backRoom.workExposure[slot.band] ?? 0 });
+      // For the digest: those not running a company do not read of this run.
+      slot.illegal = true;
+    }
     const offer = runOffer(b, line, p, part);
     // Careful or Bold moved the DV, so they move the yield too, as they do any action's effect.
     const share = Math.min(1, (p.production.yield[slot.band] ?? 0) * approachOf(slot.approach).effect);

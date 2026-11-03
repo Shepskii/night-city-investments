@@ -1544,6 +1544,19 @@ test('illegal goods in the windows (P1c): tagged on the line list, fenced from t
     assertClean(outsider, 'production for a holder who is no officer');
     assert.doesNotMatch(text(outsider), /Black Lace/, 'the officers\' secret');
     assert.doesNotMatch(outsider, /data-id="fence"/);
+    assert.doesNotMatch(outsider, /Run the line/, 'nor that a run is being made');
+    const company = S.BusinessRepository.all()[0];
+    const week = { index: 9, startDay: 7, endDay: 14, takings: 100, gross: 100, upkeep: 50, costs: { running: 50 }, profit: 50, till: 1000 };
+    await S.BusinessRepository.save({ ...company, digests: [{ ...week, actions: [{ action: 'produce', by: med.id, band: 'solid', illegal: true }] }] });
+    assert.doesNotMatch(text(await renderBusiness(windowFor(med, 'reports'))), /Run the line/, 'or in the week\'s digest');
+    const sheet = { getFlag: (scope, key) => (key === 'stockFor' ? b.id : undefined), testUserPermission: () => false };
+    game.actors.push(sheet);
+    const userBefore = game.user;
+    game.user = { ...userBefore, isGM: false };
+    const hidden = await renderBusiness(windowFor(med, 'production'));
+    game.user = userBefore;
+    game.actors.splice(game.actors.indexOf(sheet), 1);
+    assert.doesNotMatch(hidden, /data-action="openStoreroom"/, 'and no button for a sheet they may not see');
   } finally {
     globalThis.fromUuid = fromUuidBefore;
     await game.settings.set(MODULE_ID, SETTINGS.PRODUCTION_CATALOG, savedCatalog);
