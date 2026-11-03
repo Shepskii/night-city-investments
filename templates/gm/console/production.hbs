@@ -19,7 +19,7 @@
         <td>{{tier}}{{#if dv}} <span class="nci-muted">DV {{dv}}</span>{{/if}}</td>
         <td class="nci-rowbtns nci-endbtns">
           <button type="button" data-action="productionIllegal" data-uuid="{{uuid}}" data-illegal="{{illegal}}">{{#if illegal}}{{localize "NCI.Production.MarkLegal"}}{{else}}{{localize "NCI.Production.MarkIllegal"}}{{/if}}</button>
-          <button type="button" data-action="productionRemove" data-uuid="{{uuid}}"><i class="fas fa-trash"></i> {{localize "NCI.Production.Remove"}}</button>
+          <button type="button" data-action="productionRemove" data-uuid="{{uuid}}" title="{{localize 'NCI.Production.Remove'}}"><i class="fas fa-trash"></i></button>
         </td>
       </tr>
       {{/each}}

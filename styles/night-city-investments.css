@@ -429,7 +429,7 @@
 .nci-app .nci-proposal .nci-actions { margin: 8px 0 2px; }
 .nci-app .nci-days { width: 64px; }
 .nci-app .nci-rowbtns { white-space: nowrap; text-align: right; }
-.nci-app .nci-rowbtns button { width: 26px; padding: 0; }
+.nci-app .nci-rowbtns button { width: var(--nci-control-height); padding: 0; }
 .nci-app .nci-rowbtns button.nci-labelled { width: auto; padding: 0 8px; }
 .nci-app .nci-rowbtns button.nci-tradebtn { width: 44px; }
 
@@ -633,3 +633,4 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .nci-app :is(h1, h2, h
 .nci-app .nci-business .nci-grid:has(select[name="investor"]) { grid-template-columns: minmax(0, 320px) 140px 220px; justify-content: start; align-items: end; }
 .nci-app .nci-business .nci-form :is(input[name="tenderQty"], input[name="rightsQty"], input[name="sellBackQty"], input[name="buybackBudget"]) { width: 120px !important; }
 .nci-app .nci-business button.nci-labelled:is([data-action="proposeCover"], [data-action="proposeStopCover"]) { width: 230px; }
+.nci-app td.nci-endbtns > button[data-action="productionRemove"] { width: var(--nci-control-height); padding: 0; }
