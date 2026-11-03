@@ -604,3 +604,6 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) :is(.nci-app, .nci-tic
 /* Foundry's own dark table header and black text shadows, which only suit a dark window. */
 html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .application.nci-app table thead { background: var(--nci-accent-bg); }
 html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .nci-app :is(h1, h2, h3, h4, th) { text-shadow: none; }
+
+/* The workshop's item list says what each item takes, so it needs the room (P1a). */
+.nci-business select[name="lineItem"] { width: 34rem; max-width: 100%; }

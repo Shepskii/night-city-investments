@@ -587,7 +587,7 @@ function weekContext(business, actor, canAct) {
         canRoll: runs && free && !slot && !((id === 'campaign' || id === 'blackOps') && (business.campaign || campaignWait(business, BusinessClient.day()) > 0))
           && !(id === 'roomWork' && period.slots.some((s) => s.action === 'lieLow'))
           && !(id === 'produce' && !produceCheck(business).ok),
-        canHelp: canAct && !helped && !slot,
+        canHelp: canAct && !helped && !slot && !(id === 'produce' && !produceCheck(business).ok),
         waiting: id === 'produce' ? produceNote(business) : id === 'campaign' || id === 'blackOps' ? campaignNote(business) : id === 'bribeRegulator' ? L('NCI.Business.BribeCost', { cost: whole(BUSINESS_DEFAULTS.crime.bribeCost) }) : id === 'supply' ? supplyNote(business) : id === 'payOff' ? L('NCI.BackRoom.PayOffCost', { cost: whole(payOffCost(business)) }) : '',
       };
     }),

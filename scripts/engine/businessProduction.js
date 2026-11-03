@@ -13,6 +13,7 @@
 
 import { BUSINESS_DEFAULTS } from './businessConfig.js';
 import { addLedger, fail } from './businessRecord.js';
+import { approachOf } from './rolls.js';
 
 /** Item types with an `amount`, which stack as one item on a sheet; anything else is one item each. */
 export const STACKING_TYPES = Object.freeze(['ammo', 'clothing', 'drug', 'gear']);
@@ -115,7 +116,8 @@ export function productionWeek(b, day, out, p = BUSINESS_DEFAULTS) {
   const line = b.production?.line;
   if (slot && line && !b.production.run) {
     const offer = runOffer(b, line, p);
-    const share = p.production.yield[slot.band] ?? 0;
+    // Careful or Bold moved the DV, so they move the yield too, as they do any action's effect.
+    const share = Math.min(1, (p.production.yield[slot.band] ?? 0) * approachOf(slot.approach).effect);
     if (!offer.ok || share <= 0) {
       note('runFailed', line.name);
     } else {

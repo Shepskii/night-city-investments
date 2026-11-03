@@ -224,3 +224,16 @@ test('illegal items stay off every line for now (P1c brings the back room\'s run
   b.production.line.illegal = true;
   assert.equal(produceCheck(b).reason, 'illegal-line', 'marked illegal after the line was set');
 });
+
+test('Careful and Bold move the yield, as they move any action\'s effect', () => {
+  const made = (approach) => {
+    const b = shop({ stage: 1, workshop: [1] });
+    setLine(b, PREMIUM, 8);
+    b.period.slots = [{ action: 'produce', by: 'med', band: 'solid', approach }];
+    productionWeek(b, 6, { events: [] }, P);
+    return b.stock[0]?.count ?? 0;
+  };
+  assert.equal(made('standard'), 6, 'three quarters of 8');
+  assert.equal(made('careful'), 4, 'and three quarters of that');
+  assert.equal(made('bold'), 7, 'and a quarter more');
+});
