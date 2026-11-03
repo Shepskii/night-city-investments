@@ -3049,7 +3049,7 @@
       "VoteNo": "Refuse",
       "ProposeClose": "Propose closing",
       "CloseConfirm": "Propose closing the business? If every partner agrees, the gear is sold for half its value, stock counts at what it cost, consigned items go back to their owners, and everything is paid out by units.",
-      "CloseConfirmCompany": "Propose closing the company? If every shareholder with a vote agrees, the gear is sold for half its value and everything is paid out by shares.",
+      "CloseConfirmCompany": "Propose closing the company? If every shareholder with a vote agrees, the gear is sold for half its value, stock counts at what it cost, consigned items go back to their owners, and everything is paid out by shares.",
       "Leave": "Leave",
       "LeaveConfirm": "Offer your stake to your partners? They have the buy-out window to buy it at book value; after that it goes to your heir.",
       "LeaveConfirmCompany": "Offer your shares to the other shareholders? They have the buy-out window to buy them at book value; after that they go to your heir.",
