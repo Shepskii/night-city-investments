@@ -634,3 +634,6 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .nci-app :is(h1, h2, h
 .nci-app .nci-business .nci-form :is(input[name="tenderQty"], input[name="rightsQty"], input[name="sellBackQty"], input[name="buybackBudget"]) { width: 120px !important; }
 .nci-app .nci-business button.nci-labelled:is([data-action="proposeCover"], [data-action="proposeStopCover"]) { width: 230px; }
 .nci-app td.nci-endbtns > button[data-action="productionRemove"] { width: var(--nci-control-height); padding: 0; }
+/* Foundry leaves a margin after a button's icon for its label; these have none, so it would pull the icon off centre. */
+.nci-app .nci-rowbtns:not(.nci-endbtns) button:not(.nci-labelled) > i,
+.nci-app td.nci-endbtns > button[data-action="productionRemove"] > i { margin: 0; }
