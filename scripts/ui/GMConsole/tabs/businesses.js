@@ -343,6 +343,8 @@ export function context() {
     businesses: {
       enabled: BusinessService.enabled(),
       pending: rows.filter((r) => r.isPending),
+      // Suggested REP and IP wait with the rest, a closed business's too.
+      rewards: rows.flatMap((r) => r.rewards),
       active: rows.filter((r) => !r.isPending && !r.closed),
       closed: rows.filter((r) => r.closed),
     },

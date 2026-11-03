@@ -2013,6 +2013,17 @@ class BusinessServiceImpl {
   }
 
   /** The GM sets a team member's Loyalty, for what happens at the table: the rulebook's other gains and losses (B7a). */
+  /** Set a business's hidden Exposure by hand, through the same commit as any change to it, so a back room's band follows. */
+  setExposure(businessId, value) {
+    const wanted = Math.floor(Number(value));
+    if (value === '' || value == null || !Number.isFinite(wanted) || wanted < 0) return Promise.resolve({ ok: false, reason: 'bad-amount' });
+    return this._gm(businessId, (business) => ({
+      ok: true,
+      business: normalizeBusiness(structuredClone(business)),
+      events: [{ type: 'exposureSet', exposure: wanted - (MarketStore.getBusinessesHidden()[businessId]?.exposure ?? 0) }],
+    }));
+  }
+
   setTeamLoyalty(businessId, staffId, value) {
     if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
     return this._queue.run(async () => {

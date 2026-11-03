@@ -1633,3 +1633,44 @@ test('with the underworld switched off, nobody makes illegal goods, and what was
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('GM fixes: Pending lists each row\'s type with no button to its tab, Exposure is set on Heat, and REP and IP wait with the rest', async () => {
+  const { MarketStore } = await import('../scripts/data/MarketStore.js');
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const hiddenBefore = structuredClone(MarketStore.getBusinessesHidden());
+  try {
+    await S.BusinessRepository.save({ ...b, status: 'open', stage: 2, company: { ticker: 'TST' }, charter: null, listing: null, takeover: null, administration: null, regCase: null, backRoom: { kind: 'ripping', status: 'open', dirty: 0, day: 0 } });
+    await S.BusinessService._suggestReward(S.BusinessRepository.all()[0], 'sceneWon', [med.id]);
+
+    const pending = await renderConsole('pending');
+    assertClean(pending, 'pending with a type column');
+    assert.match(text(pending), /REP and IP/);
+    assert.doesNotMatch(pending, /<td><button type="button" data-action="switchTab"/, 'the row itself opens the tab');
+    assert.match(pending, /<tr class="nci-row" data-action="switchTab" data-tab="businesses">/);
+
+    const console = await renderConsole('businesses');
+    assertClean(console, 'businesses with REP and IP waiting');
+    const waiting = console.indexOf('NCI.GMBusiness.Waiting') > -1 ? console.indexOf('NCI.GMBusiness.Waiting') : console.indexOf('Waiting for GM');
+    assert.ok(console.indexOf('data-action="businessRewardApply"') > waiting);
+    const entry = console.split('<div class="nci-gig nci-bizentry">').slice(1).join('');
+    assert.doesNotMatch(entry, /data-action="businessRewardApply"/, 'not inside the company');
+
+    await S.BusinessService.setExposure(b.id, 40);
+    assert.equal(MarketStore.getBusinessesHidden()[b.id].exposure, 40);
+    assert.equal(S.BusinessRepository.all()[0].backRoom.band, 'high', 'and a back room\'s band follows');
+    const heat = await renderConsole('heat');
+    assertClean(heat, 'heat with business Exposure');
+    assert.match(heat, /name="exposureValue"[^>]*value="40"/);
+    assert.match(heat, /data-action="exposureSet"/);
+    await S.BusinessService.setExposure(b.id, 3);
+    assert.equal(MarketStore.getBusinessesHidden()[b.id].exposure, 3, 'it can come down');
+    assert.equal(S.BusinessRepository.all()[0].backRoom.band, 'clean');
+    assert.equal((await S.BusinessService.setExposure(b.id, -1)).reason, 'bad-amount');
+    assert.equal((await S.BusinessService.setExposure(b.id, '')).reason, 'bad-amount');
+    assert.equal(MarketStore.getBusinessesHidden()[b.id].exposure, 3);
+  } finally {
+    await MarketStore.setBusinessesHidden(hiddenBefore);
+    await S.BusinessRepository.save(saved);
+  }
+});

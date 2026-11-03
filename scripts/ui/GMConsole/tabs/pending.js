@@ -18,7 +18,7 @@ import { context as gigContext } from './gigs.js';
 import { StoryService } from '../../../services/StoryService.js';
 
 /** `controls`, built only when the tab is drawn, gives a row's `{fields, buttons}`; the counts on the tab buttons need none. */
-const row = (tab, item, need, params, controls) => ({ tab, item, needed: L(`NCI.Pending.Need.${need}`, params), controls });
+const row = (tab, item, need, params, controls) => ({ tab, type: L(`NCI.Pending.Kind.${need}`), item, needed: L(`NCI.Pending.Need.${need}`, params), controls });
 
 const button = (action, label, icon, id, extra = {}) => ({ action, label: L(label), icon, id, ...extra });
 const yes = 'fa-check';
@@ -110,7 +110,7 @@ export function rewardRow(businessName, businessId, r) {
 // A wound-up business's suggestions still wait, though it is closed.
 const rewardRows = () => BusinessService.snapshot().flatMap(({ business: b, hidden }) => (hidden.rewards ?? []).map((r) => {
   const { item, needed, controls } = rewardRow(b.name, b.id, r);
-  return { tab: 'businesses', item, needed, controls };
+  return { tab: 'businesses', type: L('NCI.Pending.Kind.reward'), item, needed, controls };
 }));
 
 const syndicateRows = () => SyndicateRepository.all().filter((s) => s.status === 'pending').map((s) => row('syndicates', s.name, 'syndicate', undefined, () => ({
@@ -145,7 +145,6 @@ export function context() {
   return {
     pendingRows: all.map(({ controls, ...r }) => ({
       ...r,
-      where: L(`NCI.GMConsole.Tab.${r.tab}`),
       fields: [],
       buttons: [],
       ...controls?.(made),

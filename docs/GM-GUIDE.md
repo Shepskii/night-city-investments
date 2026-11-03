@@ -21,14 +21,14 @@ Open it from the scene controls (sliders icon). The top row of buttons picks a g
 
 | Group | Tab | For |
 |---|---|---|
-| **Pending** | | Every decision waiting for you, one row each. Act on it there, or click the row to open its tab for more detail |
+| **Pending** | | Every decision waiting for you, one row each, with its type. Act on it there, or click the row to open its tab for more detail |
 | **Market** | Market | The clock, steering (bias, regime, volatility, halt), undo, reset |
 | | Events | Shocks, glides, headlines, setting a price, giving evidence, the event queue |
 | | Corp actions | Special dividends, splits, buyouts, delistings, bankruptcies |
 | | Brokers | Brokers and terminal grants |
 | **Players** | Businesses | Every player business: its true state, owners, staff and faction standing, with your buttons at the foot of each entry |
 | | Syndicates | Each syndicate's account and members, with your buttons at the foot: approving it, passing or vetoing its proposals |
-| | Heat | Insider-trading heat, penalties, watch windows and audits |
+| | Heat | Insider-trading heat, penalties, watch windows and audits, and each business's Exposure |
 | **Tools** | Gigs | Gig impacts from Night City Map: approval and client mapping |
 | | Companies | Creating, editing, importing and launching companies (IPOs) |
 | | Funds | Creating, editing, importing and closing funds |
@@ -104,7 +104,7 @@ In the **Syndicates** tab:
 
 ## Player businesses
 
-The **Businesses** tab lists every business with its true state, Exposure included, and an **Open** button that opens it in the Business window. The decisions waiting for you:
+The **Businesses** tab lists every business with its true state, Exposure included, and an **Open** button that opens it in the Business window. Suggested REP and IP wait under **Waiting**, with new businesses. To change a business's Exposure by hand, use the **Heat** tab. The decisions waiting for you:
 
 | When | You |
 |---|---|

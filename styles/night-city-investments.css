@@ -625,8 +625,8 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .nci-app :is(h1, h2, h
 
 /* The GM's broker menus match, and the heat tab's entry field stays out of the way of its row's buttons. */
 .nci-app .nci-actions select:is([name="brokerActor"], [name="brokerContact"]) { width: 240px !important; }
-.nci-app td.nci-rowbtns input[name="heatValue"] { display: inline-block; width: 64px; vertical-align: middle; }
-.nci-app td.nci-rowbtns:has(input[name="heatValue"]) > button { vertical-align: middle; margin-left: 4px; }
+.nci-app td.nci-rowbtns :is(input[name="heatValue"], input[name="exposureValue"]) { display: inline-block; width: 64px; vertical-align: middle; }
+.nci-app td.nci-rowbtns:has(:is(input[name="heatValue"], input[name="exposureValue"])) > button { vertical-align: middle; margin-left: 4px; }
 
 /* The owners tab: a menu sized for a name, and short boxes for numbers, rather than each filling the row. */
 .nci-app .nci-business :is(select[name="heirId"], input[name="shellName"], select[name="issuePct"]) { width: 320px; max-width: 100%; }

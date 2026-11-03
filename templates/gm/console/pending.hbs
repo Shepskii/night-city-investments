@@ -3,11 +3,11 @@
   <p class="nci-hint">{{localize "NCI.Pending.Intro"}}</p>
   {{#if pendingRows.length}}
   <table class="nci-market nci-pending">
-    <thead><tr><th>{{localize "NCI.Pending.Where"}}</th><th>{{localize "NCI.Pending.Item"}}</th><th>{{localize "NCI.Pending.Needed"}}</th><th>{{localize "NCI.Pending.Action"}}</th></tr></thead>
+    <thead><tr><th>{{localize "NCI.Pending.Type"}}</th><th>{{localize "NCI.Pending.Item"}}</th><th>{{localize "NCI.Pending.Needed"}}</th><th>{{localize "NCI.Pending.Action"}}</th></tr></thead>
     <tbody>
       {{#each pendingRows}}
       <tr class="nci-row" data-action="switchTab" data-tab="{{tab}}">
-        <td><button type="button" data-action="switchTab" data-tab="{{tab}}">{{where}}</button></td>
+        <td>{{type}}</td>
         <td>{{item}}</td>
         <td class="nci-muted">{{needed}}</td>
         <td class="nci-rowactions">

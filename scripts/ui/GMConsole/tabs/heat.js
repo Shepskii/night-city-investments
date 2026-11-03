@@ -5,8 +5,10 @@
  */
 
 import { L, daysInclusive } from '../../format.js';
+import { exposureBand } from '../../../engine/index.js';
 import { HeatService } from '../../../services/HeatService.js';
-import { companyOptions } from '../shared.js';
+import { BusinessService } from '../../../services/BusinessService.js';
+import { companyOptions, report } from '../shared.js';
 import { actorLink } from '../../actorLink.js';
 
 /** A penalty in words. */
@@ -33,7 +35,13 @@ async function onHeatClear(event, target) {
   await HeatService.setHeat(target.dataset.id, 0);
 }
 
+/** A business's Exposure, by hand (a raid played out at the table, a favour called in). */
+async function onExposureSet(event, target) {
+  report(await BusinessService.setExposure(target.dataset.id, target.closest('tr')?.querySelector('[name="exposureValue"]')?.value));
+}
+
 export const actions = {
+  exposureSet: onExposureSet,
   heatApprove: onHeatApprove,
   heatDismiss: onHeatDismiss,
   heatSet: onHeatSet,
@@ -41,7 +49,15 @@ export const actions = {
 };
 
 export function context() {
-  return { heat: build(companyOptions()) };
+  return {
+    heat: {
+      ...build(companyOptions()),
+      exposure: BusinessService.snapshot().filter(({ business: b }) => b.status === 'open').map(({ business: b, hidden }) => {
+        const value = hidden.exposure ?? 0;
+        return { id: b.id, name: b.name, value, band: L(`NCI.Company.Exposure.${exposureBand(value)}`) };
+      }),
+    },
+  };
 }
 
 function build(companyOptions) {

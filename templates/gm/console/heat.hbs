@@ -55,6 +55,29 @@
 </div>
 
 <div class="nci-block">
+  <h3>{{localize "NCI.Heat.ExposureTitle"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Heat.ExposureHint"}}</p>
+  {{#if heat.exposure.length}}
+  <table class="nci-market">
+    <thead><tr><th>{{localize "NCI.Heat.ExposureBusiness"}}</th><th>{{localize "NCI.Heat.ExposureBand"}}</th><th class="num">{{localize "NCI.Heat.ExposureValue"}}</th><th></th></tr></thead>
+    <tbody>
+      {{#each heat.exposure}}
+      <tr>
+        <td><strong>{{name}}</strong></td>
+        <td>{{band}}</td>
+        <td class="num">{{value}}</td>
+        <td class="nci-rowbtns">
+          <input type="number" name="exposureValue" min="0" step="1" value="{{value}}" class="nci-days" title="{{localize 'NCI.Heat.ExposureSet'}}">
+          <button type="button" data-action="exposureSet" data-id="{{id}}" title="{{localize 'NCI.Heat.ExposureSet'}}"><i class="fas fa-save"></i></button>
+        </td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  {{else}}<p class="nci-empty">{{localize "NCI.Heat.NoExposure"}}</p>{{/if}}
+</div>
+
+<div class="nci-block">
   <h3>{{localize "NCI.Heat.Windows"}}</h3>
   <p class="nci-hint">{{localize "NCI.Heat.WindowsHint"}}</p>
   {{#if heat.open.length}}
