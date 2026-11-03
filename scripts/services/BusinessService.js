@@ -39,6 +39,7 @@ import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
 import { SkillAdapter } from './SkillAdapter.js';
 import { CrewToolsAdapter } from '../integrations/CrewToolsAdapter.js';
+import { REWARDS, rewardRunners, rewardChange, rewardMatters } from '../engine/businessRewards.js';
 import { WealthAdapter } from './WealthAdapter.js';
 import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors, staffActors, jobsOf } from './BusinessClient.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
@@ -453,6 +454,7 @@ class BusinessServiceImpl {
       }
       this._syncHolders(b);
       await BusinessRepository.save(b);
+      await this._suggestReward(b, 'listed');
       Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
     });
   }
@@ -658,6 +660,7 @@ class BusinessServiceImpl {
     await BusinessRepository.save(out.business);
     await this._moveItems(out);
     await this._saveHidden(out);
+    await this._rewardEvents(out);
     await this._syncJobs(out.business);
     await this._payslips(out);
     await this._twoJobs(out);
@@ -1071,6 +1074,8 @@ class BusinessServiceImpl {
       const key = done.control ? 'Control' : 'Closed';
       await this._mailHolders(b, L('NCI.Takeover.Mail.ClosedSubject', terms), [L(`NCI.Takeover.Mail.${key}`, terms)]);
       await this._mailAccount(done.bidderId, L('NCI.Takeover.Mail.ClosedSubject', terms), [L(`NCI.Takeover.Mail.Bidder${key}`, terms)]);
+      if (done.control) await this._suggestReward(b, 'takeoverControl', [done.bidderId]);
+      else if (t.defence) await this._suggestReward(b, 'takeoverFoughtOff');
       if (listed) await NewsService.post({ headline: L(done.control ? 'NCI.News.TakeoverControl' : 'NCI.News.TakeoverClosed', terms), tone: 'neutral', companyIds: [ticker] });
       Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
     }
@@ -1189,6 +1194,7 @@ class BusinessServiceImpl {
             const name = account?.name ?? '';
             const terms = { name: b.name, ticker: b.company.ticker, holder: name, pct: Math.round(share * 1000) / 10, fine: fine.toLocaleString() };
             await NewsService.post({ headline: L('NCI.News.Unmasked', terms), tone: 'down', companyIds: [b.company.ticker] });
+            await this._suggestReward(b, 'unmasked', [holderId]);
             // The scandal weighs on the stock from the next day, more for a bigger hidden stake.
             const key = `unmask:${b.id}:${holderId}:${day}`;
             await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
@@ -1349,6 +1355,7 @@ class BusinessServiceImpl {
       const done = applyCaseLoss(b, { day: this.day(), fine });
       if (!done.ok) return done;
       await BusinessRepository.save(b);
+      await this._suggestReward(b, 'caseLost');
       const terms = { name: b.name, ticker: b.company?.ticker ?? '', fine: done.fine.toLocaleString() };
       const more = done.stopped ? 'Stopped' : done.restated ? 'Restated' : null;
       await this._mailHolders(b, L('NCI.Regulator.Mail.FinedSubject', terms), [L('NCI.Regulator.Mail.Fined', terms), ...(more ? [L(`NCI.Regulator.Mail.${more}`, terms)] : [])]);
@@ -1641,7 +1648,7 @@ class BusinessServiceImpl {
     const out = await this._gm(id, (stored) => {
       const b = normalizeBusiness(structuredClone(stored));
       const done = settleScene(b, won, this.day());
-      return done.ok ? { ok: true, business: b, events: done.events } : done;
+      return done.ok ? { ok: true, business: b, events: [...done.events, { type: 'rewardMilestone', kind: won ? 'sceneWon' : 'sceneLost' }] } : done;
     });
     if (out.ok) await this._sceneMail(out.business, event, L('NCI.Scene.MailSubject', { name }), [L(won ? 'NCI.Scene.MailWon' : 'NCI.Scene.MailLost', { name })]);
     return out;
@@ -1718,6 +1725,86 @@ class BusinessServiceImpl {
   }
 
   /** The GM sets a business's standing with a faction by hand (F1a), past the weekly limit. */
+  /** The milestones a change brought about (B7c). */
+  async _rewardEvents(out) {
+    for (const e of out.events ?? []) {
+      if (e.type === 'steppedUp' && e.stage === 1) await this._suggestReward(out.business, 'registered');
+      if (e.type === 'chartered') await this._suggestReward(out.business, 'chartered');
+      if (e.type === 'bustLost') await this._suggestReward(out.business, 'raidLost');
+      if (e.type === 'rewardMilestone') await this._suggestReward(out.business, e.kind);
+    }
+  }
+
+  /**
+   * Suggest a milestone's REP and IP to the GM, one row for each character: those running the business, or those named.
+   * A syndicate's officers stand for it. A suggestion that would change nothing for someone is not made.
+   * @param {object} b - the business, as it was for those it concerns
+   * @param {string} kind - a key of `REWARDS`
+   * @param {string[]} [accounts] - characters or syndicates, in place of those running it
+   */
+  async _suggestReward(b, kind, accounts = rewardRunners(b)) {
+    const characters = [...new Set(accounts.flatMap((id) => {
+      if (game.actors.get(id)) return [id];
+      return (SyndicateRepository.get(id)?.members ?? []).filter((m) => m.status === 'active' && m.role === 'officer').map((m) => m.actorId);
+    }))].map((id) => game.actors.get(id)).filter(Boolean);
+    const rows = characters.filter((a) => rewardMatters(kind, Number(a.system?.reputation?.value ?? 0))).map((a) => ({
+      id: foundry.utils.randomID(12), actorId: a.id, name: a.name, kind, ...REWARDS[kind], day: this.day(),
+    }));
+    if (!rows.length) return;
+    const hidden = MarketStore.getBusinessesHidden();
+    const entry = hidden[b.id] ?? { exposure: 0 };
+    await MarketStore.setBusinessesHidden({ ...hidden, [b.id]: { ...entry, rewards: [...(entry.rewards ?? []), ...rows] } });
+  }
+
+  /** Take a suggestion off the list, and what it was. */
+  async _takeReward(businessId, rewardId) {
+    const hidden = MarketStore.getBusinessesHidden();
+    const entry = hidden[businessId];
+    const reward = entry?.rewards?.find((r) => r.id === rewardId);
+    if (!reward) return null;
+    await MarketStore.setBusinessesHidden({ ...hidden, [businessId]: { ...entry, rewards: entry.rewards.filter((r) => r !== reward) } });
+    return reward;
+  }
+
+  /**
+   * The GM applies a suggestion, as they have set it: REP only if higher, as the rulebook has it, and IP on top. Each goes
+   * in the sheet's own log, saying what for.
+   */
+  applyReward(businessId, rewardId, { rep, ip } = {}) {
+    if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
+    return this._queue.run(async () => {
+      const business = BusinessRepository.get(businessId);
+      const reward = await this._takeReward(businessId, rewardId);
+      if (!reward) return { ok: false, reason: 'no-reward' };
+      const actor = game.actors.get(reward.actorId);
+      if (!actor) return { ok: false, reason: 'no-actor' };
+      const sheet = actor.system ?? {};
+      const change = rewardChange({ rep: rep ?? reward.rep, ip: ip ?? reward.ip }, { rep: Number(sheet.reputation?.value ?? 0), ip: Number(sheet.improvementPoints?.value ?? 0) });
+      const why = L('NCI.Reward.Log', { what: L(`NCI.Reward.Kind.${reward.kind}`, { name: business?.name ?? '' }) });
+      const update = {};
+      if (change.rep != null) {
+        update['system.reputation'] = { ...sheet.reputation, value: change.rep, transactions: [...(sheet.reputation?.transactions ?? []), [`reputation increased to ${change.rep}`, why]] };
+      }
+      if (change.gained > 0) {
+        update['system.improvementPoints'] = { ...sheet.improvementPoints, value: change.ip, transactions: [...(sheet.improvementPoints?.transactions ?? []), [`improvementPoints increased by ${change.gained} to ${change.ip}`, why]] };
+      }
+      if (Object.keys(update).length) await actor.update(update);
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId });
+      return { ok: true };
+    });
+  }
+
+  /** The GM dismisses a suggestion. */
+  dismissReward(businessId, rewardId) {
+    if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
+    return this._queue.run(async () => {
+      const reward = await this._takeReward(businessId, rewardId);
+      if (!reward) return { ok: false, reason: 'no-reward' };
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId });
+      return { ok: true };
+    });
+  }
+
   /** The GM sets a team member's Loyalty, for what happens at the table: the rulebook's other gains and losses (B7a). */
   setTeamLoyalty(businessId, staffId, value) {
     if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
@@ -1856,6 +1943,7 @@ class BusinessServiceImpl {
       const done = windUp(b, this.day(), out);
       if (!done.ok) return done;
       await this._commit({ ok: true, business: b, wealth: out.wealth, events: out.events });
+      await this._suggestReward(mailTo, 'woundUp');
       if (ticker) {
         const tick = timeOf(MarketStore.getPublic());
         for (const account of PortfolioRepository.accounts().filter((a) => PortfolioRepository.hasPortfolio(a))) {

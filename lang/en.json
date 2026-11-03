@@ -1866,6 +1866,27 @@
       "IntelFound": "{bands}; worth about {low} to {high} eb",
       "IntelNothing": "nothing useful found"
     },
+    "Reward": {
+      "Title": "REP and IP suggested",
+      "Rep": "REP",
+      "Ip": "IP",
+      "Apply": "Apply",
+      "Dismiss": "Dismiss",
+      "Log": "NCI: {what}",
+      "Kind": {
+        "registered": "{name} was registered",
+        "chartered": "{name} was chartered",
+        "listed": "{name} went public",
+        "takeoverControl": "Took control of {name}",
+        "takeoverFoughtOff": "Fought off a takeover of {name}",
+        "sceneWon": "A scene won at {name}",
+        "sceneLost": "A scene lost at {name}",
+        "caseLost": "Lost a regulator's case at {name}",
+        "unmasked": "Unmasked as a hidden holder of {name}",
+        "woundUp": "{name} was wound up",
+        "raidLost": "A raid lost at {name}'s back room"
+      }
+    },
     "Downtime": {
       "Reason": "NCI: {name}: {what}",
       "NotEnough": "That takes {days} downtime day(s), and you do not have them.",
@@ -2396,6 +2417,7 @@
         "sceneOpen": "{event}: say how the scene went",
         "story": "A story about {name}: let it run or spike it",
         "offer": "Answer for {name}: a job offer as {post}",
+        "reward": "{what}: apply, change or dismiss",
         "syndicate": "Approve or reject the new syndicate"
       }
     },
@@ -3388,6 +3410,7 @@
         "team-full": "your team is as big as your Teamwork allows",
         "team-refused": "they refuse to work this week",
         "team-off": "they are on a paid week off",
+        "no-reward": "that suggestion is no longer waiting",
         "no-downtime": "the downtime spent for this cannot be found in the character's log",
         "team-care-done": "you have already done that this week",
         "not-your-team": "they are on another Exec's team",

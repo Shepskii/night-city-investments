@@ -2108,6 +2108,8 @@ The user's requests after U1, each built and committed on its own. Colours, layo
 - **Spent is spent.** Crew Tools has no refund, so a day spent for a request the GM's side then refuses is lost. The client makes the same checks first, so this takes a race or a change in between.
 - **Tested in the test world** (2026-11-03, Crew Tools 1.0.13, at Splice Chrome Clinic): balances read from the real log; a character not yet prepared told why, with nothing to spend; project days from two partners, the second asking for more than was needed and spending only what was; a reused key, a forged one and no claim, all refused with nothing changed; a roll with extra time, spending first and carrying its +1 on the card. Mentoring has been tried only against a stand-in.
 
+**B7c REP and IP as built** (`engine/businessRewards.js`, `BusinessService` `_suggestReward`, `_rewardEvents`, `applyReward`, `dismissReward`). Suggestions wait in the GM's hidden state (`hidden[businessId].rewards`), on Pending and on the business's entry, and nothing touches a sheet until the GM applies one, with the numbers as they set them. The table is in the GM Guide. The levels follow the rulebook's scale (4 the local area, 7 a news story, 8 regular headlines). Bad deeds raise REP only if higher, as the rulebook has it, not lowering it as §36.7 first had it. A suggestion that would change nothing, such as a REP-only one at or below a character's REP, is not made. A wound-up business's still wait, though it is closed. Scene suggestions go to all running the business, since the module does not know who took part: the GM dismisses any who were not there.
+
 ## 37. Roadmap
 
 | Phase | Deliverable |
@@ -2135,7 +2137,7 @@ The user's requests after U1, each built and committed on its own. Colours, layo
 | R2 | **Done (v0.16.0), see §36.7.** Role abilities: a player rolls rank + 9 in business rolls, as staff do |
 | F1 | **Done (v0.17.0), see §36.3 and §36.7.** Faction standing with corps and gangs, moved by gigs and business actions; smear campaigns through the impact pipeline; Media rumours and published stories moving prices; after R1 |
 | X1 | **Part done (v0.18.0), see §36.7:** big events as scenes, and more for Lawmen, Nomads and Rockerboys. **Still proposed:** player rivalry: private share deals, Netrunner runs on a company's NET, poaching and sabotage; after F1 |
-| B7 | **In progress, see §36.9.** B7a Teamwork against the rulebook and B7b Crew Tools downtime are built. Still to come: REP and IP from business milestones, a business covering Housing and Lifestyle, and businesses on Night City Map |
+| B7 | **In progress, see §36.9.** B7a Teamwork against the rulebook, B7b Crew Tools downtime and B7c REP and IP are built. Still to come: a business covering Housing and Lifestyle, and businesses on Night City Map |
 | U1 | **Done (v0.19.0), see §36.1 and §36.8.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships, back-room staff; after F1 and B6 |
 | UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
 | P1 | **Proposed, see §36.2.** Production: workshops, lines, stock, selling and fencing; after E3 |

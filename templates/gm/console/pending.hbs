@@ -17,7 +17,7 @@
             {{else if isCheck}}<label class="nci-check"><input type="checkbox" name="{{name}}" {{#if checked}}checked{{/if}}> {{label}}</label>
             {{else}}<label class="nci-inline">{{label}} <input type="{{type}}" name="{{name}}" value="{{value}}"{{#if min includeZero=true}} min="{{min}}"{{/if}}{{#if max}} max="{{max}}"{{/if}}{{#if step}} step="{{step}}"{{/if}}></label>{{/if}}
             {{/each}}
-            {{#each buttons}}<button type="button" data-action="{{action}}" data-id="{{id}}"{{#if staff}} data-staff="{{staff}}"{{/if}}{{#if yes}} data-yes="{{yes}}"{{/if}}><i class="fas {{icon}}"></i> {{label}}</button>{{/each}}
+            {{#each buttons}}<button type="button" data-action="{{action}}" data-id="{{id}}"{{#if staff}} data-staff="{{staff}}"{{/if}}{{#if yes}} data-yes="{{yes}}"{{/if}}{{#if reward}} data-reward="{{reward}}"{{/if}}><i class="fas {{icon}}"></i> {{label}}</button>{{/each}}
           </div>
         </td>
       </tr>

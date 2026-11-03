@@ -88,6 +88,27 @@ function businessRows() {
   });
 }
 
+/** A suggested REP and IP award's row, for here and for its business's entry on the Businesses tab. */
+export function rewardRow(businessName, businessId, r) {
+  return {
+    item: r.name,
+    needed: L('NCI.Pending.Need.reward', { what: L(`NCI.Reward.Kind.${r.kind}`, { name: businessName }) }),
+    controls: () => ({
+      fields: [
+        ...(r.rep > 0 ? [numberField('rewardRep', L('NCI.Reward.Rep'), r.rep, { min: 0, max: 10, step: 1 })] : []),
+        ...(r.ip > 0 ? [numberField('rewardIp', L('NCI.Reward.Ip'), r.ip, { min: 0, step: 5 })] : []),
+      ],
+      buttons: [button('businessRewardApply', 'NCI.Reward.Apply', yes, businessId, { reward: r.id }), button('businessRewardDismiss', 'NCI.Reward.Dismiss', no, businessId, { reward: r.id })],
+    }),
+  };
+}
+
+// A wound-up business's suggestions still wait, though it is closed.
+const rewardRows = () => BusinessService.snapshot().flatMap(({ business: b, hidden }) => (hidden.rewards ?? []).map((r) => {
+  const { item, needed, controls } = rewardRow(b.name, b.id, r);
+  return { tab: 'businesses', item, needed, controls };
+}));
+
 const syndicateRows = () => SyndicateRepository.all().filter((s) => s.status === 'pending').map((s) => row('syndicates', s.name, 'syndicate', undefined, () => ({
   buttons: [button('syndicateApprove', 'NCI.GMSyndicate.Approve', yes, s.id), button('syndicateReject', 'NCI.GMSyndicate.Reject', no, s.id)],
 })));
@@ -96,7 +117,7 @@ const storyRows = () => StoryService.pending().map((s) => row('events', s.media,
   buttons: [button('storyApprove', 'NCI.Story.Approve', yes, s.id), button('storyReject', 'NCI.Story.Reject', no, s.id)],
 })));
 
-const rows = () => [...storyRows(), ...businessRows(), ...syndicateRows(), ...heatRows(), ...gigRows()];
+const rows = () => [...storyRows(), ...businessRows(), ...rewardRows(), ...syndicateRows(), ...heatRows(), ...gigRows()];
 
 /** How many decisions wait on each tab, and in all under `pending`. */
 export function waiting() {

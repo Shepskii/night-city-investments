@@ -65,6 +65,15 @@
     </table>
     {{/if}}
     {{#if applicants}}<div class="nci-muted">{{applicants}}</div>{{/if}}
+    {{#if rewards.length}}
+    <table class="nci-market nci-owners">
+      <thead><tr><th>{{localize "NCI.Reward.Title"}}</th><th></th><th></th></tr></thead>
+      <tbody>{{#each rewards}}<tr><td>{{item}}</td><td class="nci-muted">{{needed}}</td><td><div class="nci-actions">
+        {{#each fields}}<label class="nci-inline">{{label}} <input type="number" name="{{name}}" value="{{value}}" class="nci-days"></label>{{/each}}
+        {{#each buttons}}<button type="button" data-action="{{action}}" data-id="{{id}}" data-reward="{{reward}}"><i class="fas {{icon}}"></i> {{label}}</button>{{/each}}
+      </div></td></tr>{{/each}}</tbody>
+    </table>
+    {{/if}}
     {{#if standing.length}}
     <table class="nci-market nci-owners">
       <thead><tr><th>{{localize "NCI.Faction.StandingTitle"}}</th><th>{{localize "NCI.GMBusiness.Status"}}</th><th class="num">{{localize "NCI.GMBusiness.StandingValue"}}</th></tr></thead>

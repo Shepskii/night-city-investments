@@ -1138,3 +1138,90 @@ test('with no business, the window has only the Pending and Overview folders', a
   }
 });
 
+test('REP and IP (B7c): a milestone suggests them to the GM, for those running it; nothing reaches a sheet until applied', async () => {
+  const { rewardChange, rewardMatters, rewardRunners, REWARDS } = await import('../scripts/engine/businessRewards.js');
+  // The rulebook's rule: REP only if higher, a bad deed included; IP on top.
+  assert.deepEqual(rewardChange({ rep: 4, ip: 20 }, { rep: 2, ip: 5 }), { rep: 4, ip: 25, gained: 20 });
+  assert.equal(rewardChange({ rep: 4 }, { rep: 4 }).rep, null, 'not higher');
+  assert.equal(rewardChange({ rep: 4 }, { rep: 9 }).rep, null, 'and never lower');
+  assert.equal(rewardChange({ rep: 99 }, { rep: 0 }).rep, 10, 'the scale stops at 10');
+  assert.equal(rewardMatters('caseLost', 4), false, 'a bad deed that changes nothing is not raised');
+  assert.equal(rewardMatters('caseLost', 3), true);
+  assert.equal(rewardMatters('sceneWon', 9), true, 'IP still counts');
+
+  const { MarketStore } = await import('../scripts/data/MarketStore.js');
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const hiddenBefore = structuredClone(MarketStore.getBusinessesHidden());
+  const sheets = { med: structuredClone(med.system), fix: structuredClone(fix.system) };
+  const rewards = () => MarketStore.getBusinessesHidden()[b.id]?.rewards ?? [];
+  const rowsFor = (actor) => rewards().filter((r) => r.actorId === actor.id);
+  try {
+    const open = { ...b, status: 'open', stage: 0, company: null, officers: [], listing: null, charter: null, takeover: null, administration: null, regCase: null, proposals: [] };
+    await S.BusinessRepository.save(open);
+    // Those running it: active voting partners below a company, officers at one.
+    assert.ok(rewardRunners(open).includes(med.id) && rewardRunners(open).includes(fix.id));
+    const company = { ...open, stage: 2, company: { ticker: 'BRC', sector: 'health', charteredDay: 1 }, officers: [med.id] };
+    assert.deepEqual(rewardRunners(company), [med.id], 'not a shareholder with no office');
+
+    // Events at a commit bring them: registering, a charter, a lost raid, a scene.
+    await S.BusinessService._rewardEvents({ business: open, events: [{ type: 'steppedUp', stage: 1 }] });
+    assert.deepEqual(rowsFor(med).map((r) => [r.kind, r.rep, r.ip]), [['registered', REWARDS.registered.rep, REWARDS.registered.ip]]);
+    assert.equal(rowsFor(fix).length, 1, 'each their own row');
+    await S.BusinessService._rewardEvents({ business: open, events: [{ type: 'steppedUp', stage: 2 }, { type: 'roll' }] });
+    assert.equal(rowsFor(med).length, 1, 'only registering counts as that');
+    assert.equal(med.system.reputation?.value ?? 0, sheets.med.reputation?.value ?? 0, 'nothing on the sheet yet');
+
+    // On the GM's Pending tab and the business's entry, with its numbers to change.
+    const pending = await renderConsole('pending');
+    assertClean(pending, 'pending with a suggestion');
+    assert.match(text(pending), /was registered: apply, change or dismiss/);
+    assert.match(pending, /data-action="businessRewardApply" data-id="[^"]+"[^>]*data-reward="/);
+    assert.match(pending, /name="rewardRep" value="3"/);
+    assert.match(pending, /name="rewardIp" value="10"/);
+    const entry = await renderConsole('businesses');
+    assertClean(entry, 'an entry with a suggestion');
+    assert.match(text(entry), /REP and IP suggested/);
+    assert.match(entry, /data-action="businessRewardDismiss"/);
+
+    // Applied as the GM set it, with the sheet's own log saying what for.
+    const actions = Apps.GMConsole.DEFAULT_OPTIONS.actions;
+    const row = (values) => ({ querySelector: (sel) => { const name = sel.match(/name="(\w+)"/)[1]; return name in values ? { value: values[name] } : null; } });
+    const click = (action, reward, values = {}) => actions[action].call(new Apps.GMConsole(), null, { dataset: { id: b.id, reward: reward.id }, closest: () => row(values) });
+    const repBefore = med.system.reputation?.value ?? 0;
+    const ipBefore = med.system.improvementPoints?.value ?? 0;
+    await click('businessRewardApply', rowsFor(med)[0], { rewardRep: String(repBefore + 2), rewardIp: '15' });
+    assert.equal(med.system.reputation.value, repBefore + 2);
+    assert.equal(med.system.improvementPoints.value, ipBefore + 15);
+    assert.match(med.system.reputation.transactions.at(-1)[1], /was registered/);
+    assert.equal(rowsFor(med).length, 0, 'done with');
+
+    // Dismissed: nothing happens to the sheet.
+    const fixRep = fix.system.reputation?.value ?? 0;
+    await click('businessRewardDismiss', rowsFor(fix)[0]);
+    assert.equal(rowsFor(fix).length, 0);
+    assert.equal(fix.system.reputation?.value ?? 0, fixRep);
+
+    // A bad deed below their REP is not raised; above it, it applies, and never lowers.
+    await S.BusinessService._suggestReward(open, 'raidLost', [med.id]);
+    const high = med.system.reputation.value;
+    if (high >= REWARDS.raidLost.rep) assert.equal(rowsFor(med).length, 0);
+    await S.BusinessService.dismissReward(b.id, rowsFor(med)[0]?.id);
+    await S.BusinessService._suggestReward(open, 'sceneWon', [med.id]);
+    const scene = rowsFor(med).at(-1);
+    assert.deepEqual([scene.kind, scene.rep, scene.ip], ['sceneWon', 0, REWARDS.sceneWon.ip]);
+    assert.doesNotMatch(await renderConsole('pending'), /name="rewardRep" value="0"/, 'no REP to set for a scene');
+    await click('businessRewardApply', scene, { rewardIp: '20' });
+    assert.equal(med.system.reputation.value, high, 'REP unmoved');
+
+    // A wound-up business is closed, but what it suggested still waits on Pending.
+    await S.BusinessRepository.save({ ...open, status: 'closed' });
+    await S.BusinessService._suggestReward(open, 'woundUp', [fix.id]);
+    assert.match(text(await renderConsole('pending')), /was wound up/);
+    assert.equal((await S.BusinessService.applyReward(b.id, 'nothing', {})).reason, 'no-reward');
+  } finally {
+    await MarketStore.setBusinessesHidden(hiddenBefore);
+    await S.BusinessRepository.save(saved);
+    await med.update({ 'system.reputation': sheets.med.reputation ?? { value: 0, transactions: [] }, 'system.improvementPoints': sheets.med.improvementPoints ?? { value: 0, transactions: [] } });
+  }
+});

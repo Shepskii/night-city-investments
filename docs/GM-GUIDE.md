@@ -161,6 +161,25 @@ The older `[NCI: ARA]` (a client's ticker, or a business), `[NCI: ignore]` and `
 
 Private businesses, gangs and unknown clients have no share price, so only the other effects apply. A gang as a freelance gig's client asks for no mapping: only its target's price moves, and with no target the gig is simply recorded. The approval card lists every party before you approve.
 
+## REP and Improvement Points from businesses
+
+A business's big moments suggest REP and IP on the **Pending** tab, and on that business's entry on the Businesses tab, one row for each character running it: officers at a company, active voting partners below that, and a syndicate's officers for a syndicate. Change the numbers, then **Apply** or **Dismiss**. Nothing touches a sheet until you do.
+
+| Milestone | REP | IP |
+|---|---|---|
+| Registered | 3 | 10 |
+| Chartered | 4 | 20 |
+| Went public | 7 | 30 |
+| Took control in a takeover (the bidder) | 7 | 30 |
+| Fought off a takeover (after a defence roll) | 5 | 20 |
+| A big-event scene, won or lost | - | 20 or 10 |
+| Lost a regulator's case | 4 | - |
+| Unmasked as a hidden holder (the holder) | 6 | - |
+| Wound up | 5 | - |
+| A back-room raid lost | 4 | - |
+
+REP follows the rulebook: a level replaces the old one only if it is higher, and a bad deed has a level too, since being known for something is being known. The sheet's REP log says what it was for, so you can use that at the table. Dismiss a scene's row for anyone who was not there. Routine rolls suggest nothing.
+
 ## Crew Tools downtime
 
 With Pneuma's Crew Tools active, **Business days come from Crew Tools downtime** is on by default: extra time, project days and mentoring spend a character's downtime, with no weekly allowance. Award days as usual, and open Downtime once for each character, or they have none to spend. Each spend shows in their Downtime Log as "NCI: business: what it was for". You can check it there: a player owns that log, as they do their chat cards. An investigation's legwork becomes money. Turn the setting off for the 3 business days a week without Crew Tools' involvement.

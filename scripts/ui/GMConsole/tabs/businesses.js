@@ -12,6 +12,7 @@ import { dayText, LT, holderWho, factionTerms } from '../../Business/context.js'
 import { L, whole } from '../../format.js';
 import { confirm, report } from '../shared.js';
 import { actorLink } from '../../actorLink.js';
+import { rewardRow } from './pending.js';
 import { escapeHtml } from '../../../utils/text.js';
 
 async function onApprove(event, target) {
@@ -125,6 +126,17 @@ async function onRemove(event, target) {
   report(await BusinessService.remove(target.dataset.id));
 }
 
+/** A suggested REP and IP award (B7c), as set on its row. */
+async function onRewardApply(event, target) {
+  const row = target.closest('tr');
+  const read = (name) => row?.querySelector(`[name="${name}"]`)?.value;
+  report(await BusinessService.applyReward(target.dataset.id, target.dataset.reward, { rep: read('rewardRep') ?? 0, ip: read('rewardIp') ?? 0 }));
+}
+
+async function onRewardDismiss(event, target) {
+  report(await BusinessService.dismissReward(target.dataset.id, target.dataset.reward));
+}
+
 /** A team member's Loyalty, by hand, for what happened at the table (B7a). */
 async function onTeamLoyalty(event, target) {
   report(await BusinessService.setTeamLoyalty(target.dataset.id, target.dataset.staff, target.closest('tr')?.querySelector('[name="teamLoyalty"]')?.value));
@@ -170,6 +182,8 @@ export const actions = {
   businessOpen: onOpen,
   businessStaffAnswer: onStaffAnswer,
   businessTeamLoyalty: onTeamLoyalty,
+  businessRewardApply: onRewardApply,
+  businessRewardDismiss: onRewardDismiss,
   businessSetStanding: onSetStanding,
   businessCampaignApprove: onCampaignApprove,
   businessRoomApprove: onRoomApprove,
@@ -288,6 +302,10 @@ export function context() {
         ? L('NCI.GMBusiness.MoneyForming', { escrow: whole(b.escrow), short: whole(fundingShortfall(b) ?? 0) })
         : '',
       // Where an open business stands now: its cash, book value, Reputation, Capacity, and its hidden Exposure.
+      rewards: (hidden.rewards ?? []).map((r) => {
+        const row = rewardRow(b.name, b.id, r);
+        return { item: row.item, needed: row.needed, ...row.controls() };
+      }),
       stats: b.status === 'open' ? [
         [L('NCI.Business.Till'), `${whole(b.till)} eb`],
         [L('NCI.GMBusiness.BookValue'), `${whole(bookValue(b))} eb`],
