@@ -1,5 +1,5 @@
 /**
- * GM Console events tab: shocks, glides, news and price changes.
+ * GM Console events tab: shocks, glides, news, price changes and evidence.
  * @file scripts/ui/GMConsole/tabs/events.js
  * @description Action handlers run with `this` set to the console window.
  */
@@ -11,6 +11,7 @@ import { MarketControlService } from '../../../services/MarketControlService.js'
 import { CorporateActionService } from '../../../services/CorporateActionService.js';
 import { NewsService } from '../../../services/NewsService.js';
 import { StoryService } from '../../../services/StoryService.js';
+import { CompanyRepository } from '../../../data/CompanyRepository.js';
 import { field, report, targetLabel, companyOptions, companiesById } from '../shared.js';
 
 async function onAddShock(event, target) {
@@ -88,7 +89,20 @@ async function onStoryReject(event, target) {
   report(await StoryService.reject(target.dataset.id));
 }
 
+/** The GM puts a piece of evidence about a company in a character's inventory (F1c). */
+async function onCreateEvidence(event, target) {
+  const box = target.closest('.nci-block');
+  const value = (name) => box?.querySelector(`[name="${name}"]`)?.value ?? '';
+  const company = CompanyRepository.get(value('evidenceCompany'));
+  const actor = game.actors.get(value('evidenceActor'));
+  if (!company || !actor) return;
+  const done = await StoryService.grantEvidence(actor, { ticker: company.ticker, name: company.name, note: value('evidenceNote').trim() || L('NCI.Story.NoteGM', { name: company.name }) });
+  report(done);
+  if (done.ok) ui.notifications.info(L('NCI.Story.Created', { actor: actor.name, name: company.name }));
+}
+
 export const actions = {
+  createEvidence: onCreateEvidence,
   storyApprove: onStoryApprove,
   storyReject: onStoryReject,
   addShock: onAddShock,
@@ -112,6 +126,8 @@ export function context(app) {
       text: L('NCI.Story.Waiting', { media: s.media, angle: L(`NCI.Story.AngleName.${s.angle}`), name: s.name, ticker: s.ticker, percent: `${s.percent > 0 ? '+' : ''}${s.percent}` }),
       headline: s.headline,
     })),
+    // Who may be given evidence (F1c).
+    evidence: { companies: companyOptions(), actors: game.actors.filter((a) => a.type === 'character').map((a) => ({ value: a.id, label: a.name })) },
     previewShock: app.preview?.kind === 'shock' ? app.preview : null,
     previewGlide: app.preview?.kind === 'glide' ? app.preview : null,
     impacts: controls.impacts.map((i) => ({

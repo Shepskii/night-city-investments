@@ -23,7 +23,7 @@ Open it from the scene controls (sliders icon). The top row of buttons picks a g
 |---|---|---|
 | **Pending** | | Every decision waiting for you, one row each. Act on it there, or click the row to open its tab for more detail |
 | **Market** | Market | The clock, steering (bias, regime, volatility, halt), undo, reset |
-| | Events | Shocks, glides, headlines, setting a price |
+| | Events | Shocks, glides, headlines, setting a price, giving evidence, the event queue |
 | | Corp actions | Special dividends, splits, buyouts, delistings, bankruptcies |
 | | Brokers | Brokers and terminal grants |
 | **Players** | Businesses | Every player business: its true state, owners, staff and faction standing, with your buttons at the foot of each entry |
@@ -134,7 +134,7 @@ Players can raise a business's standing with a faction: a shop uses **Court a cl
 
 **Rumours** run by themselves: a player's Media gets a mail every few days if their roll beats the DV and there is anything to hear. You have nothing to do.
 
-**Media stories** wait on Market > Events (and the Pending tab) once believed, unless you turn off the approval setting: **Let it run** or **Spike it**. Give a character evidence for one on Tools > Audit. A successful investigation or due diligence on a listed company makes evidence by itself.
+**Media stories** wait on Market > Events (and the Pending tab) once believed, unless you turn off the approval setting: **Let it run** or **Spike it**. Give a character evidence for one on Market > Events. A successful investigation or due diligence on a listed company makes evidence by itself.
 
 A hostile faction (standing below -60) may act against the business, up to 15% of weeks: a smear, sabotage, a tipped-off raid or poaching. These run by themselves as the week's event, and the players answer them as usual. A smear that lands dips a listed company's price by up to 2%. Beating a gang's shakedown by force costs 3 standing with that gang.
 

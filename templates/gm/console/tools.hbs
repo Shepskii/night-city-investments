@@ -54,17 +54,6 @@
   {{else}}<p class="nci-empty">{{localize "NCI.Tools.NoTrades"}}</p>{{/if}}
 </div>
 
-<div class="nci-block">
-  <h3>{{localize "NCI.Story.EvidenceTitle"}}</h3>
-  <p class="nci-hint">{{localize "NCI.Story.EvidenceHint"}}</p>
-  <div class="nci-actions">
-    <select name="evidenceCompany">{{#each evidence.companies}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
-    <select name="evidenceActor">{{#each evidence.actors}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
-    <input type="text" name="evidenceNote" placeholder="{{localize 'NCI.Story.NotePlaceholder'}}">
-    <button type="button" data-action="createEvidence"><i class="fas fa-microchip"></i> {{localize "NCI.Story.Create"}}</button>
-  </div>
-</div>
-
 {{#if log.length}}
 <div class="nci-block">
   <h3>{{localize "NCI.Controls.LogTitle"}}</h3>

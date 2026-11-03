@@ -627,3 +627,8 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .nci-app :is(h1, h2, h
 .nci-app .nci-actions select:is([name="brokerActor"], [name="brokerContact"]) { width: 240px !important; }
 .nci-app td.nci-rowbtns input[name="heatValue"] { display: inline-block; width: 64px; vertical-align: middle; }
 .nci-app td.nci-rowbtns:has(input[name="heatValue"]) > button { vertical-align: middle; margin-left: 4px; }
+
+/* The owners tab: a menu sized for a name, and short boxes for numbers, rather than each filling the row. */
+.nci-app .nci-business :is(select[name="heirId"], input[name="shellName"], select[name="issuePct"]) { width: 320px; max-width: 100%; }
+.nci-app .nci-business .nci-grid:has(select[name="investor"]) { grid-template-columns: minmax(0, 320px) 140px 220px; justify-content: start; align-items: end; }
+.nci-app .nci-business .nci-form :is(input[name="tenderQty"], input[name="rightsQty"], input[name="sellBackQty"], input[name="buybackBudget"]) { width: 120px !important; }

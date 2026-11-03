@@ -29,19 +29,6 @@
     <button type="button" data-action="previewShock" class="{{#if previewShock}}active{{/if}}">{{#if previewShock}}<i class="fas fa-xmark"></i> {{localize "NCI.Preview.Dismiss"}}{{else}}<i class="fas fa-chart-area"></i> {{localize "NCI.Preview.Button"}}{{/if}}</button>
   </div>
   {{> "modules/night-city-investments/templates/gm/console/preview.hbs" p=previewShock}}
-
-  <h3>{{localize "NCI.Controls.Queue"}}</h3>
-  {{#if impacts.length}}
-  <table class="nci-market"><tbody>
-    {{#each impacts}}
-    <tr>
-      <td>{{label}}</td>
-      <td class="nci-muted">{{persistence}} &middot; {{starts}}</td>
-      <td class="nci-rowbtns"><button type="button" data-action="removeImpact" data-id="{{id}}"><i class="fas fa-xmark"></i></button></td>
-    </tr>
-    {{/each}}
-  </tbody></table>
-  {{else}}<p class="nci-empty">{{localize "NCI.Controls.NoImpacts"}}</p>{{/if}}
 </div>
 
 <div class="nci-block nci-form">
@@ -96,4 +83,30 @@
     <label class="nci-check"><input type="checkbox" name="priceFair" checked> {{localize "NCI.Controls.MoveFair"}}</label>
     <button type="button" data-action="setPrice" class="nci-danger">{{localize "NCI.Controls.SetPrice"}}</button>
   </div>
+</div>
+
+<div class="nci-block">
+  <h3>{{localize "NCI.Story.EvidenceTitle"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Story.EvidenceHint"}}</p>
+  <div class="nci-actions">
+    <select name="evidenceCompany">{{#each evidence.companies}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+    <select name="evidenceActor">{{#each evidence.actors}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+    <input type="text" name="evidenceNote" placeholder="{{localize 'NCI.Story.NotePlaceholder'}}">
+    <button type="button" data-action="createEvidence"><i class="fas fa-microchip"></i> {{localize "NCI.Story.Create"}}</button>
+  </div>
+</div>
+
+<div class="nci-block">
+  <h3>{{localize "NCI.Controls.Queue"}}</h3>
+  {{#if impacts.length}}
+  <table class="nci-market"><tbody>
+    {{#each impacts}}
+    <tr>
+      <td>{{label}}</td>
+      <td class="nci-muted">{{persistence}} &middot; {{starts}}</td>
+      <td class="nci-rowbtns"><button type="button" data-action="removeImpact" data-id="{{id}}"><i class="fas fa-xmark"></i></button></td>
+    </tr>
+    {{/each}}
+  </tbody></table>
+  {{else}}<p class="nci-empty">{{localize "NCI.Controls.NoImpacts"}}</p>{{/if}}
 </div>

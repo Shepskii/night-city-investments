@@ -747,7 +747,7 @@ test('the console\'s tabs are in groups: a group goes to its last open tab, and 
   assert.match(await renderConsole('actions'), />\s*Corp actions\s*</);
 });
 
-test('a story waiting for the GM shows on Market > Events and the Pending tab; the Audit tab can make evidence', async () => {
+test('a story waiting for the GM shows on Market > Events and the Pending tab; Events can make evidence', async () => {
   const { MarketStore } = await import('../scripts/data/MarketStore.js');
   const saved = MarketStore.getStories();
   try {
@@ -765,10 +765,16 @@ test('a story waiting for the GM shows on Market > Events and the Pending tab; t
   } finally {
     await MarketStore.setStories(saved);
   }
-  const audit = await renderConsole('tools');
-  assertClean(audit, 'audit tab');
-  assert.match(audit, /data-action="createEvidence"/);
-  assert.match(audit, /name="evidenceActor"/);
+  assertClean(await renderConsole('tools'), 'audit tab');
+  assert.doesNotMatch(await renderConsole('tools'), /data-action="createEvidence"/, 'it moved to Events');
+  const market = await renderConsole('events');
+  assert.match(market, /data-action="createEvidence"/);
+  assert.match(market, /name="evidenceActor"/);
+  // Evidence follows Set a price, and the event queue comes last.
+  const at = (key) => market.indexOf(key);
+  assert.ok(at('data-action="setPrice"') < at('data-action="createEvidence"'));
+  assert.ok(at('data-action="createEvidence"') < market.lastIndexOf('class="nci-block"'));
+  assert.ok(at('data-action="addShock"') < at('data-action="setPrice"'));
 });
 
 test('every rumour reads as words, saying more at each level', async () => {

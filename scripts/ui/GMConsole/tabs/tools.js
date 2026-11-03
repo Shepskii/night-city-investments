@@ -12,9 +12,7 @@ import { DiagnosticsService } from '../../../services/DiagnosticsService.js';
 import { MacroService } from '../../../services/MacroService.js';
 import { MigrationService } from '../../../services/MigrationService.js';
 import { CompanyEditorApp } from '../../CompanyEditor/CompanyEditorApp.js';
-import { report, targetLabel, companiesById, companyOptions } from '../shared.js';
-import { StoryService } from '../../../services/StoryService.js';
-import { CompanyRepository } from '../../../data/CompanyRepository.js';
+import { report, targetLabel, companiesById } from '../shared.js';
 
 function onRunCheck() {
   this.checkReport = DiagnosticsService.verify({ silent: true });
@@ -35,20 +33,7 @@ async function onIgnoreSuggested(event, target) {
   this.render();
 }
 
-/** The GM puts a piece of evidence about a company in a character's inventory (F1c). */
-async function onCreateEvidence(event, target) {
-  const box = target.closest('.nci-block');
-  const value = (name) => box?.querySelector(`[name="${name}"]`)?.value ?? '';
-  const company = CompanyRepository.get(value('evidenceCompany'));
-  const actor = game.actors.get(value('evidenceActor'));
-  if (!company || !actor) return;
-  const done = await StoryService.grantEvidence(actor, { ticker: company.ticker, name: company.name, note: value('evidenceNote').trim() || L('NCI.Story.NoteGM', { name: company.name }) });
-  report(done);
-  if (done.ok) ui.notifications.info(L('NCI.Story.Created', { actor: actor.name, name: company.name }));
-}
-
 export const actions = {
-  createEvidence: onCreateEvidence,
   runCheck: onRunCheck,
   createMacros: onCreateMacros,
   createSuggested: onCreateSuggested,
@@ -59,8 +44,6 @@ export function context(app) {
   return {
     tools: build(app.checkReport),
     log: recentActions(),
-    // Who may be given evidence (F1c).
-    evidence: { companies: companyOptions(), actors: game.actors.filter((a) => a.type === 'character').map((a) => ({ value: a.id, label: a.name })) },
   };
 }
 
