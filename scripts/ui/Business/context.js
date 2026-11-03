@@ -519,7 +519,7 @@ function productionContext(business, actor, canAct) {
     } : null,
     run: run ? L('NCI.Production.RunGoing', { count: run.count, name: run.name, weeks: Math.ceil(run.left / week) }) : '',
     maker: activeStaff(business).some((s) => s.post === 'maker'),
-    options: runs ? ProductionCatalog.list(business.archetype).filter((r) => tierOf(r.price) && r.price <= top.price).map((r) => {
+    options: runs ? ProductionCatalog.list(business.archetype).filter((r) => !r.illegal && tierOf(r.price) && r.price <= top.price).map((r) => {
       const tier = tierOf(r.price);
       return {
         uuid: r.uuid,

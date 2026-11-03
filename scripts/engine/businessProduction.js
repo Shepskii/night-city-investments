@@ -66,6 +66,8 @@ export function produceCheck(b, p = BUSINESS_DEFAULTS) {
   const line = b.production?.line;
   if (!line) return fail('no-line');
   if (b.production.run) return fail('run-going');
+  // Illegal items wait for the back room's own runs (P1c).
+  if (line.illegal) return fail('illegal-line');
   const offer = runOffer(b, line, p);
   if (!offer.ok) return offer;
   // Enough for one item: a run makes what the cash can pay for.
@@ -79,6 +81,7 @@ export function setLine(b, item, qty, p = BUSINESS_DEFAULTS) {
     b.production = { ...b.production, line: null };
     return { ok: true };
   }
+  if (item.illegal) return fail('illegal-line');
   const tier = tierOf(item.price, p);
   if (!tier) return fail('bad-line');
   if (tier.price > topTierOf(b, p).price) return fail('line-too-dear');

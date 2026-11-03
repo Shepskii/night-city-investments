@@ -2149,7 +2149,13 @@ A Maker with a base of 14 costs more than a shop's line earns (70 eb a week agai
 **The parts, in order.** Each ends as the others do, with tests and a run in the test world.
 - **P1a:** the workshop project and benches, item lists and the GM's tab, runs and the Maker post, stock on the record and the storeroom sheet. The simulator check comes first.
 - **P1b:** weekly shop sales, buying at cost, handing an item to a partner, consigning, stock in book value and valuation, and Pending's question when the GM moves an item by hand.
-- **P1c:** fencing and illegal items.
+- **P1c:** fencing, and illegal items made through a back room.
+
+**Illegal production through a back room (the user's choices, 2026-11-03; built in P1c with fencing).** Until then, items marked illegal stay off every line.
+- **Setup:** a workshop and an open back room. The workshop's benches do the work, with no new project or room kind. If the room shuts, illegal lines stop.
+- **Risk:** each illegal run adds Exposure as working the room does (`workExposure`, 1 to 8 by band). A lost raid seizes illegal stock in the same share as dirty cash: part of it on a failure, all of it when unanswered or fumbled.
+- **Paying and running:** materials come from the room's dirty cash, then the ordinary cash if that runs short. A partner or the Maker runs it, the Maker at the back room's rate (1.5 times) while on illegal work. The ledger uses plain words, as back-room lines do.
+- **Companies:** no room needed. It is the officers' secret, and each run adds Exposure.
 
 **To check while building:** how a container actor's `vendor` and `restricted` fields behave, for a sheet players can see but not take from, and whether vendor mode could one day allow direct sales; how item quantities and ammunition stacks work when items are created; and whether a company's stock should be the officers' secret when it is illegal.
 
@@ -2183,6 +2189,6 @@ A Maker with a base of 14 costs more than a shop's line earns (70 eb a week agai
 | B7 | **Done (v0.20.0), see §36.9.** B7a Teamwork against the rulebook, B7b Crew Tools downtime, B7c REP and IP, B7d living costs and B7e businesses on Night City Map, with the bridge at 0.3.0 |
 | U1 | **Done (v0.19.0), see §36.1 and §36.8.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships, back-room staff; after F1 and B6 |
 | UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
-| P1 | **In progress, see §36.10.** P1a is built: the workshop and benches, item lists and the GM's tab, runs and the Maker post, stock and the storeroom sheet. Next: P1b, shop sales; then P1c, fencing |
+| P1 | **In progress, see §36.10.** P1a is built: the workshop and benches, item lists and the GM's tab, runs and the Maker post, stock and the storeroom sheet. Next: P1b, shop sales; then P1c, fencing and illegal production through a back room |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |

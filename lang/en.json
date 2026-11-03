@@ -2165,7 +2165,7 @@
       }
     },
     "Production": {
-      "GMHint": "What each kind of business can make. The defaults come from the system's compendiums; drop an item in the box to add another, from a compendium or the Items directory. Illegal items can only be sold by fencing.",
+      "GMHint": "What each kind of business can make. The defaults come from the system's compendiums; drop an item in the box to add another, from a compendium or the Items directory. Items marked illegal stay off every workshop's line until back-room production is built.",
       "BusinessType": "Business type",
       "AddLabel": "Add an item",
       "AddPlaceholder": "Drop an item here",
@@ -3314,6 +3314,7 @@
         "no-workshop": "the business has no workshop yet",
         "no-workshop-use": "this kind of business makes nothing to sell",
         "no-line": "choose what the workshop makes first",
+        "illegal-line": "that item is illegal, and the workshop cannot make it",
         "run-going": "the benches are busy with a run",
         "bad-line": "this business cannot make that",
         "line-too-dear": "that is beyond what the business can make at this stage",

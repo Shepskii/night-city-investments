@@ -6,6 +6,7 @@
  */
 
 import { ARCHETYPES, madeByDefault } from '../engine/index.js';
+import { BusinessRepository } from './BusinessRepository.js';
 import { MODULE_ID, SETTINGS } from '../utils/constants.js';
 
 /** The core compendiums the defaults come from. Anything else, the GM adds by hand. */
@@ -126,6 +127,10 @@ export const ProductionCatalog = {
     if (illegal) now.add(uuid);
     else now.delete(uuid);
     await write({ ...data, illegal: [...now] });
+    // A line already set on the item follows the GM's word from its next run.
+    for (const b of BusinessRepository.all()) {
+      if (b.production?.line?.uuid === uuid) await BusinessRepository.save({ ...b, production: { ...b.production, line: { ...b.production.line, illegal: !!illegal } } });
+    }
     return { ok: true };
   },
 };

@@ -215,3 +215,12 @@ test('the Maker runs the line in a week nobody did, at the book\'s DV, and not a
   staffShifts(partner, 'seed', P);
   assert.equal(partner.period.slots.filter((s) => s.action === 'produce').length, 1, 'a partner got there first');
 });
+
+test('illegal items stay off every line for now (P1c brings the back room\'s runs)', () => {
+  const b = shop();
+  assert.equal(setLine(b, { ...PREMIUM, illegal: true }).reason, 'illegal-line');
+  assert.equal(b.production.line, null);
+  setLine(b, PREMIUM);
+  b.production.line.illegal = true;
+  assert.equal(produceCheck(b).reason, 'illegal-line', 'marked illegal after the line was set');
+});

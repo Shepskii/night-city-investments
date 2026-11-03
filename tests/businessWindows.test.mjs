@@ -1345,8 +1345,13 @@ test('the Production tab for the GM: lists by business type, removes and restore
     assertClean(html, 'the production tab');
     assert.match(text(html), /Black Lace/);
     assert.match(text(html), /Costly/);
+    const b = S.BusinessRepository.all()[0];
+    const savedBusiness = structuredClone(b);
+    await S.BusinessRepository.save({ ...b, production: { line: { uuid: 'Item.a', name: 'Black Lace', type: 'drug', price: 50, qty: 1 }, run: null } });
     assert.ok((await ProductionCatalog.setIllegal('Item.a', true)).ok);
     assert.equal(ProductionCatalog.find('clinic', 'Item.a').illegal, true);
+    assert.equal(S.BusinessRepository.all()[0].production.line.illegal, true, 'a line already set follows it');
+    await S.BusinessRepository.save(savedBusiness);
     assert.match(await renderConsole('production'), /Mark legal/);
     assert.ok((await ProductionCatalog.remove('clinic', 'Item.a')).ok);
     assert.equal(ProductionCatalog.find('clinic', 'Item.a'), null);
