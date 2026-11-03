@@ -2200,6 +2200,6 @@ A Maker with a base of 14 costs more than a shop's line earns (70 eb a week agai
 | B7 | **Done (v0.20.0), see §36.9.** B7a Teamwork against the rulebook, B7b Crew Tools downtime, B7c REP and IP, B7d living costs and B7e businesses on Night City Map, with the bridge at 0.3.0 |
 | U1 | **Done (v0.19.0), see §36.1 and §36.8.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships, back-room staff; after F1 and B6 |
 | UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
-| P1 | **In progress, see §36.10.** P1a is built: the workshop and benches, item lists and the GM's tab, runs and the Maker post, stock and the storeroom sheet. Next: P1b, shop sales; then P1c, fencing and illegal production through a back room |
+| P1 | **In progress, see §36.10.** P1a (the workshop, item lists and the GM's tab, runs, the Maker post, the storeroom sheet) and P1b (shop sales, buying, consigning, stock in book value, closing, the GM's question) are built and live-tested. Next: P1c, fencing and illegal production through a back room |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |
