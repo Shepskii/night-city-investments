@@ -18,7 +18,7 @@ import { ProductionCatalog } from '../data/ProductionCatalog.js';
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
-  raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
+  dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
   isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact, payListedDividend,
   reviewListing, clearReview, delistCompany,
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
@@ -570,6 +570,7 @@ class BusinessServiceImpl {
 
     const day = this.day();
     const context = this.context(business);
+    if (business && context.underworld === false) Object.assign(business, dropIllegalLine(business));
     if (request.type === 'setLine' && business) {
       await ProductionCatalog.load();
       context.lineItem = ProductionCatalog.find(business.archetype, String(request.uuid ?? ''));
@@ -812,6 +813,19 @@ class BusinessServiceImpl {
         for (const r of e.returned) await give(r.owner, await this._takeStock(room, r));
         await room.delete();
       }
+    }
+  }
+
+  /** Whether the world has its underworld switched on. */
+  underworldOn() {
+    return game.settings.get(MODULE_ID, SETTINGS.UNDERWORLD) !== false;
+  }
+
+  /** The underworld was switched off, or an item marked illegal while it is: no illegal lines may stand (P1c). */
+  async dropIllegalLines() {
+    if (this.underworldOn()) return;
+    for (const b of BusinessRepository.all().filter((x) => x.production?.line?.illegal)) {
+      await this._gm(b.id, (business) => ({ ok: true, business: dropIllegalLine(normalizeBusiness(structuredClone(business))) }));
     }
   }
 
@@ -1090,7 +1104,7 @@ class BusinessServiceImpl {
           exposure: hiddenEntry?.exposure ?? 0,
           living: Object.fromEntries((business.covered ?? []).map((id) => [id, this.livingCostOf(id)])),
         };
-        const out = advanceBusiness(business, day, { ...opts, traits: this.traitsOf(business.id), relations });
+        const out = advanceBusiness(this.underworldOn() ? business : dropIllegalLine(business), day, { ...opts, traits: this.traitsOf(business.id), relations });
         if (!out.changed && !reread && !marked && !team.changed) continue;
         await this._commit({ ...out, ok: true });
         changed++;

@@ -183,7 +183,7 @@ An item priced between two categories counts as the one above. How many come out
 
 **If the business closes,** its stock goes into the payout at what it cost, rather than at the reduced value gear gets, along with anything on the benches. Consigned items go back to their owners, and the storeroom is cleared.
 
-**Illegal goods and fencing.** Your GM decides which items are illegal. With a back room open, they appear on your list, tagged `[Illegal]`. A chartered company needs no room, but it's the officers' secret: other shareholders see only plain ledger lines, and no sign of the line, the stock or the fence. If the room shuts, the line stops.
+**Illegal goods and fencing.** Your GM decides which items are illegal, and whether they can be made at all. With a back room open, they appear on your list, tagged `[Illegal]`. A chartered company needs no room, but it's the officers' secret: other shareholders see only plain ledger lines, and no sign of the line, the stock or the fence. If the room shuts, the line stops.
 
 - **Materials** come from dirty cash first, then the cash, and the goods stay off the books: not in your book value, and worth nothing if the business closes.
 - **Each run adds Exposure,** by how the roll went, even if it fails.

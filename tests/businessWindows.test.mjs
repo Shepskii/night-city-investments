@@ -1579,3 +1579,57 @@ test('the Market tab offers to close a gap between the market date and the calen
     await MarketStore.setPublic(pub);
   }
 });
+
+test('with the underworld switched off, nobody makes illegal goods, and what was made can still be fenced', async () => {
+  const { ProductionCatalog } = await import('../scripts/data/ProductionCatalog.js');
+  const { MODULE_ID, SETTINGS } = await import('../scripts/utils/constants.js');
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const savedCatalog = game.settings.get(MODULE_ID, SETTINGS.PRODUCTION_CATALOG);
+  const savedWorld = game.settings.get(MODULE_ID, SETTINGS.UNDERWORLD);
+  const fromUuidBefore = globalThis.fromUuid;
+  const lace = { documentName: 'Item', uuid: 'Item.lace', name: 'Black Lace', type: 'drug', img: '', system: { price: { market: 50 } } };
+  globalThis.fromUuid = async () => lace;
+  const line = { uuid: 'Item.lace', name: 'Black Lace', type: 'drug', img: '', price: 50, illegal: true, qty: 2 };
+  const open = { ...b, status: 'open', stage: 0, company: null, officers: [], listing: null, charter: null, takeover: null, administration: null, regCase: null, proposals: [], upgrades: { workshop: [0] }, backRoom: { kind: 'ripping', status: 'open', dirty: 0, day: 0 }, stock: [], production: { line: null, run: null, allowance: 0 }, pendingNotes: [] };
+  const current = () => S.BusinessRepository.all()[0];
+  try {
+    await ProductionCatalog.add('clinic', lace.uuid);
+    await ProductionCatalog.setIllegal(lace.uuid, true);
+    await game.settings.set(MODULE_ID, SETTINGS.UNDERWORLD, false);
+    await S.BusinessRepository.save(open);
+    assert.doesNotMatch(text(await renderBusiness(windowFor(med, 'production'))), /Black Lace/, 'not offered, though the room is open');
+    await send(med, 'setLine', { businessId: b.id, uuid: lace.uuid });
+    assert.equal(current().production.line, null, 'and refused if asked for');
+
+    await S.BusinessRepository.save({ ...open, production: { line, run: null, allowance: 0 } });
+    await S.BusinessService.dropIllegalLines();
+    assert.equal(current().production.line, null, 'a line already standing stops');
+    assert.ok(current().pendingNotes.some((n) => n.kind === 'lineStopped'), 'and the digest says so');
+
+    const legal = { ...line, uuid: 'Item.legal', name: 'Stim', illegal: false };
+    await S.BusinessRepository.save({ ...open, pendingNotes: [], production: { line: legal, run: null, allowance: 0 } });
+    await S.BusinessService.dropIllegalLines();
+    assert.equal(current().production.line.name, 'Stim', 'legal lines are left alone');
+
+    await S.BusinessRepository.save({ ...open, production: { line, run: { uuid: 'x', name: 'Going', type: 'drug', price: 50, cost: 20, count: 1, left: 7, illegal: true }, allowance: 0 } });
+    await S.BusinessService.dropIllegalLines();
+    assert.equal(current().production.run.name, 'Going', 'a run on the benches finishes');
+
+    const stock = [{ uuid: 'Item.lace', name: 'Black Lace', type: 'drug', img: '', price: 50, cost: 20, count: 3, illegal: true }];
+    await S.BusinessRepository.save({ ...open, stock, stage: 2, company: { ticker: 'TST' }, officers: [med.id], backRoom: null });
+    assert.match(await renderBusiness(windowFor(med, 'backRoom')), /data-action="actionRoll" data-id="fence"/, 'goods already made are not stranded at a company');
+    await S.BusinessRepository.save({ ...open, stage: 2, company: { ticker: 'TST' }, officers: [med.id], backRoom: null });
+    assert.doesNotMatch(await renderBusiness(windowFor(med, 'backRoom')), /data-id="fence"/, 'with nothing to sell, no Fence at all');
+
+    await game.settings.set(MODULE_ID, SETTINGS.UNDERWORLD, true);
+    await S.BusinessRepository.save({ ...open, production: { line: null, run: null, allowance: 0 } });
+    await send(med, 'setLine', { businessId: b.id, uuid: lace.uuid });
+    assert.equal(current().production.line.name, 'Black Lace', 'switched on, it can be made again');
+  } finally {
+    globalThis.fromUuid = fromUuidBefore;
+    await game.settings.set(MODULE_ID, SETTINGS.UNDERWORLD, savedWorld);
+    await game.settings.set(MODULE_ID, SETTINGS.PRODUCTION_CATALOG, savedCatalog);
+    await S.BusinessRepository.save(saved);
+  }
+});

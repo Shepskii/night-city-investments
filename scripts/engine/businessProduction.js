@@ -95,6 +95,12 @@ export function runOffer(b, line, p = BUSINESS_DEFAULTS, part = 1) {
 /** What a run can draw on: illegal goods are paid from the room's dirty cash first. */
 const materialFunds = (b, line) => Math.max(0, b.till) + (line.illegal && b.backRoom?.status === 'open' ? b.backRoom.dirty : 0);
 
+/** The business with any illegal line taken off, for a world whose underworld setting is off. A run on the benches finishes. */
+export function dropIllegalLine(b) {
+  if (!b.production?.line?.illegal) return b;
+  return { ...b, production: { ...b.production, line: null }, pendingNotes: [...(b.pendingNotes ?? []), { kind: 'lineStopped', name: b.production.line.name }] };
+}
+
 /** Whether a run can start this week, and at what DV, before any dice. */
 export function produceCheck(b, p = BUSINESS_DEFAULTS) {
   if (!hasWorkshop(b, p)) return fail('no-workshop');

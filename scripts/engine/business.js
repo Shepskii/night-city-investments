@@ -588,6 +588,8 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (me?.status !== 'active' || !me.voting || !canRun(b, actor.id)) return fail('not-officer');
       // The GM's service found the item on this kind of business's list; the request's own word for it is not used.
       if (request.uuid && !ctx.lineItem) return fail('bad-line');
+      // A world with its underworld switched off has no illegal production (P1c).
+      if (request.uuid && ctx.lineItem.illegal && ctx.underworld === false) return fail('illegal-off');
       const set = setLine(b, request.uuid ? ctx.lineItem : null, request.qty, p);
       if (!set.ok) return set;
       break;

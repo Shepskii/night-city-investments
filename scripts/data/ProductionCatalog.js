@@ -142,6 +142,8 @@ export const ProductionCatalog = {
     for (const b of BusinessRepository.all()) {
       if (b.production?.line?.uuid === uuid) await BusinessRepository.save({ ...b, production: { ...b.production, line: { ...b.production.line, illegal: !!illegal } } });
     }
+    // With the underworld switched off, a line on what is now illegal stops.
+    await (await import('../services/BusinessService.js')).BusinessService.dropIllegalLines();
     return { ok: true };
   },
 };

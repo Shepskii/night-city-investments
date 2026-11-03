@@ -1755,7 +1755,7 @@
       },
       "Underworld": {
         "Name": "Underworld content",
-        "Hint": "Lets a business open an illegal back room. A back room already open keeps running if you turn this off."
+        "Hint": "Lets a business open an illegal back room, and make illegal items. A back room already open keeps running if you turn this off, but illegal lines stop; goods already made can still be fenced."
       },
       "CampaignApproval": {
         "Name": "Smears, leaks and stories need GM approval",
@@ -2167,7 +2167,7 @@
       }
     },
     "Production": {
-      "GMHint": "What each kind of business can make. The defaults come from the system's compendiums; drop an item in the box to add another, from a compendium or the Items directory. Items marked illegal need an open back room to make (a company needs none), and can only be sold by fencing.",
+      "GMHint": "What each kind of business can make. The defaults come from the system's compendiums; drop an item in the box to add another, from a compendium or the Items directory. Items marked illegal need an open back room to make (a company needs none), and can only be sold by fencing. With the underworld setting off, nobody can make them.",
       "BusinessType": "Business type",
       "AddLabel": "Add an item",
       "AddPlaceholder": "Drop an item here",
@@ -3355,6 +3355,7 @@
         "no-workshop-use": "this kind of business makes nothing to sell",
         "no-line": "choose what the workshop makes first",
         "illegal-line": "that item is illegal, and takes an open back room to make",
+        "illegal-off": "illegal goods are switched off in this game",
         "nothing-to-fence": "there is no stock of the business's own to fence",
         "item-illegal": "the shop takes no illegal goods",
         "run-going": "the benches are busy with a run",
@@ -3742,6 +3743,7 @@
         "teamBetrayed": "{name} of the Exec's team sold them out and left.",
         "livingShort": "The cash could not cover {name}'s Housing and Lifestyle this month.",
         "madeStock": "{name} came off the benches.",
+        "lineStopped": "The line on {name} stopped: illegal goods are switched off in this game.",
         "soldStock": "{name} sold from stock.",
         "fencedStock": "{name} went to a fence.",
         "seizedStock": "{name} seized in the raid.",

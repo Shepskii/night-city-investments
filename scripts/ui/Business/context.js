@@ -9,7 +9,7 @@ import {
   stateBands, lastDigest, gearValue, rollSpec, BUSINESS_DEFAULTS,
   daysLeft, activeProject, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
   projectOffer, PROJECT_KINDS, upgradesOf, protectionFactor, headcountOf,
-  activeStaff, benchesOf, fenceCheck, fencePrice, hasWorkshop, illegalAllowed, looseStock, salePrice, salesLimit, makesThings, produceCheck, runOffer, tierOf, topTierOf,
+  activeStaff, benchesOf, fenceCheck, fencePrice, hasIllegalStock, hasWorkshop, illegalAllowed, looseStock, salePrice, salesLimit, makesThings, produceCheck, runOffer, tierOf, topTierOf,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent, supplyCut, actionFor, ROOM_ACTIONS, roomKinds, openRoom, payOffCost, CRIME_ACTIONS, dealCut, SECRET_ACTIONS, SECRET_LEDGER,
   POST_IDS, POSTS, levelOf, postBest, staffBase, postRate, askingWage, postOpen, postOffered, recruitCheck, archetypeOf,
@@ -537,7 +537,7 @@ function productionContext(business, actor, canAct) {
     } : null,
     run: run ? L('NCI.Production.RunGoing', { count: run.count, name: run.name, weeks: Math.ceil(run.left / week) }) : '',
     maker: activeStaff(business).some((s) => s.post === 'maker'),
-    options: runs ? ProductionCatalog.list(business.archetype).filter((r) => (!r.illegal || illegalAllowed(business)) && tierOf(r.price) && r.price <= top.price).map((r) => {
+    options: runs ? ProductionCatalog.list(business.archetype).filter((r) => (!r.illegal || (illegalAllowed(business) && game.settings.get(MODULE_ID, SETTINGS.UNDERWORLD) !== false)) && tierOf(r.price) && r.price <= top.price).map((r) => {
       const tier = tierOf(r.price);
       return {
         uuid: r.uuid,
@@ -610,7 +610,7 @@ function weekContext(business, actor, canAct) {
     daysText: canAct ? daysLine(business, actor) : '',
     // A chartered company has the five company actions; a smaller business the shop actions.
     // Crime is hidden from those not running a company (U1).
-    actions: [...actionIdsFor(business.stage), ...(hasWorkshop(business) ? ['produce'] : []), ...(openRoom(business) ? ROOM_ACTIONS : []), ...(makesThings(business) && (business.stage >= 2 || openRoom(business)) ? ['fence'] : [])].filter((id) => !(business.stage >= 2 && !runs && (SECRET_ACTIONS.includes(id) || (id === 'produce' && business.production?.line?.illegal)))).filter((id) => !(['campaign', 'blackOps', 'dealGang'].includes(id) || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).filter((id) => !CRIME_ACTIONS.includes(id) || underworldOn(business)).filter((id) => id !== 'dealGang' || !business.backRoom?.deal).map((id) => {
+    actions: [...actionIdsFor(business.stage), ...(hasWorkshop(business) ? ['produce'] : []), ...(openRoom(business) ? ROOM_ACTIONS : []), ...(makesThings(business) && (business.stage >= 2 || openRoom(business)) ? ['fence'] : [])].filter((id) => !(business.stage >= 2 && !runs && (SECRET_ACTIONS.includes(id) || (id === 'produce' && business.production?.line?.illegal)))).filter((id) => !(['campaign', 'blackOps', 'dealGang'].includes(id) || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).filter((id) => !CRIME_ACTIONS.includes(id) || underworldOn(business) || (id === 'fence' && hasIllegalStock(business))).filter((id) => id !== 'dealGang' || !business.backRoom?.deal).map((id) => {
       const slot = taken.get(id);
       const bonus = period.bonuses.some((b) => b.action === id && !b.used);
       return {

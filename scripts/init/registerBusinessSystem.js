@@ -4,7 +4,7 @@
  * @description The weekly close runs after each market tick, as a step of registerTickSequence.js.
  */
 
-import { MODULE_ID, FLAGS, HOOKS } from '../utils/constants.js';
+import { MODULE_ID, FLAGS, HOOKS, SETTINGS } from '../utils/constants.js';
 import { isActiveGM } from '../utils/helpers.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
 import { BusinessService } from '../services/BusinessService.js';
@@ -19,6 +19,12 @@ export function registerBusinessSystem(initializer) {
         BusinessService.processActor(actor);
       }
     });
+    // Switching the underworld off stops any illegal production (P1c).
+    for (const hook of ['createSetting', 'updateSetting']) {
+      Hooks.on(hook, (setting) => {
+        if (setting.key === `${MODULE_ID}.${SETTINGS.UNDERWORLD}` && isActiveGM()) BusinessService.dropIllegalLines();
+      });
+    }
     // A storeroom's items only change by the service's hand or the GM's (P1b).
     for (const hook of ['deleteItem', 'updateItem']) {
       Hooks.on(hook, (item) => {
