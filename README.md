@@ -125,7 +125,7 @@ docs/                  the guides above
 
 ### AI disclosure
 
-This module is developed with generative AI. Most of its code, tests and documentation were written by Anthropic's Claude, using Claude Code, and nearly every commit carries a `Co-Authored-By: Claude` line. The maintainer directs the work: they decide the design and rules, and test changes in Foundry.
+This module is developed with generative AI. Code, tests and documentation were written with assistance from Anthropic's Claude, using Claude Code, and most commits carry a `Co-Authored-By: Claude` line. The maintainer reviews all code, directs the work, decides the design and rules, and tests changes in a working Foundry environment.
 
 ## License
 

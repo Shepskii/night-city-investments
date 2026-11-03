@@ -186,28 +186,30 @@ The tab shows each character's heat, open windows, recent audits with the trades
 
 ### Gigs tab
 
-A gig marked Completed or Failed queues a price impact on its client, with the Night City Map bridge. Here:
+**Requires the Night City Map and Night City Map - Night City Investments Bridge modules.**
+
+Gigs in Night City map that are marked Completed or Failed queue a price impact on the associated client and/or target.
 
 - **Needs a company:** a client that matches no company by name, ticker or alias. Pick one (or ignore the client); the choice is remembered for the client's other gigs.
 - **Waiting for approval:** change the size, delay or headline, then approve, or discard.
-- **Report an outcome by hand** for a gig the bridge did not report.
+- **Report an outcome by hand** for a gig the bridge did not report or that was not created in Night City Map.
 - For a gig you wrote with no client, add `[NCI: ARA]` (or `[NCI: ignore]`) to its GM notes.
 
 A 1,000 eb job moves its client about 1.5%, a failure 1.3 times as much, shown one to three days later with a generic headline. Each gig moves the market only once.
 
-**Tags in a gig's GM notes** say who it involves, by name, ticker or alias (requires the Night City Map and Night City Map - Night City Investments Bridge modules):
+**Tags in a gig's GM notes** say who it involves, by name, ticker or alias ():
 
 | Tag | Means |
 |---|---|
-| `[NCI client: Biotechnica]` | The client. Overrides the gig's client field |
-| `[NCI target: Militech]` | Who it was aimed at |
-| `[NCI contract: Charter Test Clinic]` | Done for this player business, making it a contract |
+| `[NCI client: <name/ticker>]` | The client. Supercedes the gig's client field |
+| `[NCI target: <name/ticker>]` | Who it was aimed at |
+| `[NCI contract: <player business name/ticker>]` | Done for this player business, making it a contract |
 
-The older `[NCI: ARA]` (a client's ticker, or a business), `[NCI: ignore]` and `[NCI: skip]` still work. A contract tag naming no open business waits on the Gigs tab with a warning, since it is probably a typo.
+A contract tag naming no open business waits on the Gigs tab with a warning, since it is probably a typo.
 
 **What a gig affects:**
 - **A freelance gig** (the default, including everything Night City Map generates) moves the client's share price and its target's. No player business is touched.
-- **A contract** (`[NCI contract: ...]`, by the business's name, ticker or id). As well as the client's and target's prices, that business's Reputation and takings move, its own share price if it is listed, and its standing with the client and target. A gig whose client *is* the business counts the same way, without needing the tag.
+- **A contract** (`[NCI contract: ...]`, by the business's name, ticker or id). As well as the client's and target's prices, the named player business's Reputation and takings move, its own share price if it is listed, and its standing with the client and target. A gig whose client *is* the player business counts the same way, without needing the tag.
 - **A target:** gigs don't report one, so tag it (a faction or a market company). Failing that, if the title or description names exactly one faction, the approval card asks you to tick that it really is the target. A target moves opposite to the client: half as much on a success, a quarter on a failure.
 
 Private businesses, gangs and unknown clients have no share price, so only the other effects apply. A gang as a freelance gig's client asks for no mapping: only its target's price moves, and with no target the gig is simply recorded. The approval card lists every party before you approve.
