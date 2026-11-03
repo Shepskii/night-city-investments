@@ -72,6 +72,13 @@ Or unzip a release into `Data/modules/night-city-investments`. Then enable **Nig
 - **Pending lists.** GMs and players each get one list of what is waiting for them, and can act on it there. A click on a row opens the detail.
 - **Colour themes.** With Pneuma's Visual Tools installed, each player can have the windows match its skins and colours.
 
+### Character ties
+- **Crew Tools downtime.** With Pneuma's Crew Tools active, project days and extra time spend a character's downtime, so business work competes with everything else they could do.
+- **REP and Improvement Points.** A business's big moments, good and bad, suggest awards for the GM to apply, change or dismiss.
+- **Living costs.** Partners can vote for the business to pay a partner's Housing and Lifestyle each month.
+- **An Exec's team.** Team sizes and Loyalty follow the rulebook: look after them, or they sell you out.
+- **On the map.** With the Night City Map bridge, each open business gets a pin the GM can move, edit or delete.
+
 ### Roles and scenes
 - **Role actions.** A Nomad's supply contract cuts running costs, a Rockerboy's gig lifts takings and Reputation, and a Lawman's Backup answers raids and cases and can call in a favour against their own heat.
 - **Big events as scenes.** The GM can play out a raid, sabotage or a hostile faction's move at the table, with a ready hook, while the weeks carry on.
