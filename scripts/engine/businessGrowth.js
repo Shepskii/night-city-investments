@@ -28,12 +28,12 @@ export function spendDays(b, actorId, n) {
 // ── Projects ─────────────────────────────────────────────────────────────────
 
 /** Every kind of project, in display order: an expansion, and the upgrades of `projects`. */
-export const PROJECT_KINDS = Object.freeze(['expansion', 'refit', 'security', 'storefront', 'staffRoom', 'backRoom']);
+export const PROJECT_KINDS = Object.freeze(['expansion', 'refit', 'security', 'storefront', 'staffRoom', 'backRoom', 'workshop']);
 
 export const activeProject = (b) => b.projects.find((x) => x.status === 'active') ?? null;
 
 /** The upgrades a business has: security's level, and the stages a storefront and a staff room were built at. */
-export const upgradesOf = (b) => ({ security: b.upgrades?.security ?? 0, storefront: b.upgrades?.storefront ?? [], staffRoom: b.upgrades?.staffRoom ?? [] });
+export const upgradesOf = (b) => ({ workshop: b.upgrades?.workshop ?? [], security: b.upgrades?.security ?? 0, storefront: b.upgrades?.storefront ?? [], staffRoom: b.upgrades?.staffRoom ?? [] });
 
 /**
  * Whether a project of this kind can be started now, and what it would cost (eb from the cash) and
@@ -61,7 +61,9 @@ export function projectOffer(b, kind, p = BUSINESS_DEFAULTS) {
   if (kind === 'expansion' && b.state.capacity >= stage.capacityCap - 1e-6) return fail('at-capacity');
   if (kind === 'refit' && b.state.costFactor <= p.costFloor + 0.005) return fail('at-floor');
   if (kind === 'security' && up.security >= p.projects.security.levels) return fail('top-level');
-  if ((kind === 'storefront' || kind === 'staffRoom') && up[kind].includes(b.stage)) return fail('built-here');
+  if ((kind === 'storefront' || kind === 'staffRoom' || kind === 'workshop') && up[kind].includes(b.stage)) return fail('built-here');
+  // Only what makes things has a use for benches (P1a).
+  if (kind === 'workshop' && !p.production.makes[b.archetype]?.length) return fail('no-workshop-use');
   if (kind === 'backRoom' && b.backRoom && b.backRoom.status !== 'shut') return fail('has-back-room');
   if (kind === 'backRoom' && b.stage >= 2) return fail('not-at-company');
   if (b.till < cost) return { ok: false, reason: 'no-funds', cost, days };
@@ -110,6 +112,9 @@ function finishProject(b, project, growthRate, p, { approval = true, day = 0 } =
       break;
     case 'staffRoom':
       b.upgrades = { ...up, staffRoom: [...up.staffRoom, project.stage] };
+      break;
+    case 'workshop':
+      b.upgrades = { ...up, workshop: [...up.workshop, project.stage] };
       break;
     case 'backRoom':
       // Waits for the GM when new businesses do (U1a).

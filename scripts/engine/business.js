@@ -25,6 +25,7 @@
  *   { key, type: 'leave', businessId }                           offer your stake to the others
  *   { key, type: 'buyout', businessId, sellerId }
  *   { key, type: 'proposeClose', businessId }
+ *   { key, type: 'setLine', businessId, uuid, qty }              what the workshop makes (P1a); no uuid stops it
  *   { key, type: 'vote', businessId, proposalId, yes }
  *
  * `use` is how the roll was made: `{kind: 'skill', skill, stat}`, `{kind: 'ability', ability}` or
@@ -63,6 +64,7 @@
  * hidden state; a result's `traits` are new ones for the service to keep there, never on the record.
  */
 
+import { produceCheck, productionWeek, setLine } from './businessProduction.js';
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from './businessEvents.js';
 import { aimCheck, giftFor } from './factions.js';
@@ -123,6 +125,7 @@ export const BUSINESS_REQUESTS = Object.freeze([
   'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'takeDirty', 'lieLow', 'gangDealOfficer', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll', 'prospectusRoll',
   'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant', 'askStaff', 'cancelAsk', 'addTeam', 'teamCare',
   'rightsTake', 'sellBack', 'issueRoll', 'buybackRoll', 'bid', 'tender', 'defenceRoll', 'hideRoll', 'dropLayer',
+  'setLine',
 ]);
 
 /** Item types that are not things a business can own. */
@@ -324,9 +327,12 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     // The back room's actions need it open, and its kind says how it is worked (U1a).
     const room = ROOM_ACTIONS.includes(request.action) ? roomCheck(b, request.action, p) : null;
     if (room && !room.ok) return room;
+    // A run takes a workshop and a line, and rolls at the book's DV for the item (P1a).
+    const run = request.action === 'produce' ? produceCheck(b, p) : null;
+    if (run && !run.ok) return run;
     // A role's own action takes that role: no hired help (X1).
     const allowHire = !actionFor(b.stage, request.action).roleOnly;
-    return allowed(room?.uses ?? actionUses(request.action, arch, b.stage), use, { dv: stageDv(b.stage, p), allowHire, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p, b, traits });
+    return allowed(room?.uses ?? actionUses(request.action, arch, b.stage), use, { dv: run?.dv ?? stageDv(b.stage, p), allowHire, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
 
   if (request.type === 'assist') {
@@ -544,6 +550,14 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
         b.setup = { passed: false, band: r.band, retryDay: day + rule.delay, by: actor.id, day };
         if (loss) log('setupLoss', -loss);
       }
+      break;
+    }
+    case 'setLine': {
+      if (me?.status !== 'active' || !me.voting || !canRun(b, actor.id)) return fail('not-officer');
+      // The GM's service found the item on this kind of business's list; the request's own word for it is not used.
+      if (request.uuid && !ctx.lineItem) return fail('bad-line');
+      const set = setLine(b, request.uuid ? ctx.lineItem : null, request.qty, p);
+      if (!set.ok) return set;
       break;
     }
     case 'action': {
@@ -1665,6 +1679,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   // a manager working the shop, security answering trouble.
   const idle = idleStaff(b);
   staffShifts(b, seed, p, { idle, traits, exposure: relations?.exposure ?? null });
+  productionWeek(b, b.period.endDay, out, p);
   const bribed = slot('bribeRegulator');
   if (bribed?.staff) payRegulator(b, bribed.band, b.period.endDay, out, p);
 

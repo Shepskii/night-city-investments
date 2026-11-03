@@ -742,7 +742,7 @@ test('the console\'s tabs are in groups: a group goes to its last open tab, and 
     assert.ok(id === 'pending' ? subTabs.length === 0 : subTabs.some((t) => t.id === id && t.active), `${id} is in its group's row`);
     seen.add(id);
   }
-  assert.equal(seen.size, 13);
+  assert.equal(seen.size, 14);
   assert.match(await renderConsole('actions'), />\s*Corp actions\s*</);
 });
 
@@ -1028,7 +1028,7 @@ test('the Business window has four folders, each with its tabs, and each tab hol
       assertClean(pages[tab], tab);
     }
     assert.deepEqual(tabsOn(pages.reports), ['ledger', 'reports']);
-    assert.deepEqual(tabsOn(pages.staff), ['week', 'staff', 'projects', 'backRoom']);
+    assert.deepEqual(tabsOn(pages.staff), ['week', 'production', 'staff', 'projects', 'backRoom']);
     assert.deepEqual(tabsOn(pages.growth), ['partners', 'growth']);
     assert.match(text(pages.ledger), /You may draw up to|Draw/);
     assert.match(pages.ledger, /nci-block[^>]*>\s*<h3>Loans/);
@@ -1272,5 +1272,89 @@ test('the directory (B7e) tells a map what the street can see, and nothing behin
     assert.doesNotMatch(row.kind + row.stage, /NCI\./);
   } finally {
     await S.BusinessRepository.save(saved);
+  }
+});
+
+test('production (P1a): a Production tab for those running the shop, a line to set, and a storeroom sheet of real items', async () => {
+  const { ProductionCatalog } = await import('../scripts/data/ProductionCatalog.js');
+  const { MODULE_ID, SETTINGS } = await import('../scripts/utils/constants.js');
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const savedCatalog = game.settings.get(MODULE_ID, SETTINGS.PRODUCTION_CATALOG);
+  const source = { documentName: 'Item', uuid: 'Item.scanner', name: 'Medscanner', type: 'gear', img: '', system: { price: { market: 100 }, amount: 1 }, toObject() { return { name: this.name, type: this.type, system: { ...this.system } }; } };
+  const fromUuidBefore = globalThis.fromUuid;
+  const actorBefore = globalThis.Actor;
+  const made = [];
+  const room = { ownership: {}, getFlag: (scope, key) => (key === 'stockFor' ? b.id : undefined), createEmbeddedDocuments: async (_, docs) => made.push(...docs) };
+  let created = null;
+  try {
+    await S.BusinessRepository.save({ ...b, status: 'open', stage: 0, company: null, officers: [], listing: null, charter: null, takeover: null, administration: null, regCase: null, proposals: [], upgrades: { workshop: [] }, production: { line: null, run: null }, stock: [] });
+    const none = await renderBusiness(windowFor(med, 'production'));
+    assertClean(none, 'production with no workshop');
+    assert.match(text(none), /No workshop yet/);
+
+    globalThis.fromUuid = async (uuid) => (uuid === source.uuid ? source : null);
+    assert.ok((await ProductionCatalog.add('clinic', source.uuid)).ok);
+    const built = { ...S.BusinessRepository.all()[0], upgrades: { workshop: [0] } };
+    await S.BusinessRepository.save(built);
+    const open = await renderBusiness(windowFor(med, 'production'));
+    assertClean(open, 'production with a workshop');
+    assert.match(open, /data-action="setLine"/);
+    assert.match(text(open), /Medscanner: Premium, DV 17, 1 bench day\(s\) each, materials 50 eb/);
+
+    await send(med, 'setLine', { businessId: b.id, uuid: source.uuid, qty: 4 });
+    assert.equal(S.BusinessRepository.all()[0].production.line.name, 'Medscanner');
+    assert.equal(S.BusinessRepository.all()[0].production.line.price, 100, 'the price on the list');
+    await send(med, 'setLine', { businessId: b.id, uuid: 'Item.nothing' });
+    assert.equal(S.BusinessRepository.all()[0].production.line.name, 'Medscanner', 'nothing off the list');
+    const lined = await renderBusiness(windowFor(med, 'production'));
+    assert.match(text(lined), /up to 4 a run/);
+    assert.match(lined, /data-action="actionRoll" data-id="produce"/);
+    assert.doesNotMatch(await renderBusiness(windowFor(med, 'week')), /data-id="produce"/, 'on its own tab, not on Work');
+
+    globalThis.Actor = { create: async (data) => { created = data; game.actors.push(room); return room; } };
+    game.folders ??= [];
+    await S.BusinessService._syncStock({ business: S.BusinessRepository.all()[0], events: [{ type: 'stockMade', item: { uuid: source.uuid, type: 'gear' }, count: 3 }] });
+    assert.equal(created.type, 'container');
+    assert.equal(created.flags[MODULE_ID].stockFor, b.id);
+    assert.equal(created.name, `Stock — ${b.name}`);
+    assert.equal(made.length, 1, 'gear stacks');
+    assert.equal(made[0].system.amount, 3);
+    made.length = 0;
+    await S.BusinessService._syncStock({ business: S.BusinessRepository.all()[0], events: [{ type: 'stockMade', item: { uuid: source.uuid, type: 'weapon' }, count: 2 }] });
+    assert.equal(made.length, 2, 'what does not stack is an item each');
+  } finally {
+    globalThis.fromUuid = fromUuidBefore;
+    globalThis.Actor = actorBefore;
+    const i = game.actors.indexOf(room);
+    if (i >= 0) game.actors.splice(i, 1);
+    await game.settings.set(MODULE_ID, SETTINGS.PRODUCTION_CATALOG, savedCatalog);
+    await S.BusinessRepository.save(saved);
+  }
+});
+
+test('the Production tab for the GM: lists by business type, removes and restores, marks illegal', async () => {
+  const { ProductionCatalog } = await import('../scripts/data/ProductionCatalog.js');
+  const { MODULE_ID, SETTINGS } = await import('../scripts/utils/constants.js');
+  const savedCatalog = game.settings.get(MODULE_ID, SETTINGS.PRODUCTION_CATALOG);
+  const fromUuidBefore = globalThis.fromUuid;
+  globalThis.fromUuid = async () => ({ documentName: 'Item', uuid: 'Item.a', name: 'Black Lace', type: 'drug', img: '', system: { price: { market: 50 } } });
+  try {
+    assert.ok((await ProductionCatalog.add('clinic', 'Item.a')).ok);
+    const html = await renderConsole('production');
+    assertClean(html, 'the production tab');
+    assert.match(text(html), /Black Lace/);
+    assert.match(text(html), /Costly/);
+    assert.ok((await ProductionCatalog.setIllegal('Item.a', true)).ok);
+    assert.equal(ProductionCatalog.find('clinic', 'Item.a').illegal, true);
+    assert.match(await renderConsole('production'), /Mark legal/);
+    assert.ok((await ProductionCatalog.remove('clinic', 'Item.a')).ok);
+    assert.equal(ProductionCatalog.find('clinic', 'Item.a'), null);
+    globalThis.fromUuid = async () => ({ documentName: 'Item', uuid: 'Item.b', name: 'Free', type: 'gear', system: { price: { market: 0 } } });
+    assert.equal((await ProductionCatalog.add('clinic', 'Item.b')).reason, 'no-price');
+    assert.equal((await ProductionCatalog.add('nonsense', 'Item.b')).reason, 'bad-archetype');
+  } finally {
+    globalThis.fromUuid = fromUuidBefore;
+    await game.settings.set(MODULE_ID, SETTINGS.PRODUCTION_CATALOG, savedCatalog);
   }
 });

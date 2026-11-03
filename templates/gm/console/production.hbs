@@ -1,0 +1,43 @@
+{{#with production}}
+<div class="nci-block">
+  <p class="nci-hint">{{localize "NCI.Production.GMHint"}}</p>
+  <div class="nci-actions" data-production-add>
+    <label class="nci-inline">{{localize "NCI.Production.BusinessType"}} <select name="productionArchetype" data-production-archetype>{{#each archetypes}}<option value="{{id}}"{{#if selected}} selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label class="nci-inline">{{localize "NCI.Production.AddLabel"}} <input type="text" name="uuid" placeholder="{{localize "NCI.Production.AddPlaceholder"}}" data-production-drop></label>
+    <button type="button" data-action="productionAdd"><i class="fas fa-plus"></i> {{localize "NCI.Production.Add"}}</button>
+  </div>
+
+  {{#if rows.length}}
+  <table class="nci-market">
+    <thead><tr><th>{{localize "NCI.Production.Item"}}</th><th>{{localize "NCI.Production.Type"}}</th><th>{{localize "NCI.Production.Price"}}</th><th>{{localize "NCI.Production.Category"}}</th><th></th></tr></thead>
+    <tbody>
+      {{#each rows}}
+      <tr>
+        <td><strong>{{name}}</strong>{{#if illegal}} <span class="nci-down">{{localize "NCI.Production.Illegal"}}</span>{{/if}}</td>
+        <td>{{typeName}}</td>
+        <td>{{priceText}} eb</td>
+        <td>{{tier}}{{#if dv}} <span class="nci-muted">DV {{dv}}</span>{{/if}}</td>
+        <td class="nci-rowbtns nci-endbtns">
+          <button type="button" data-action="productionIllegal" data-uuid="{{uuid}}" data-illegal="{{illegal}}">{{#if illegal}}{{localize "NCI.Production.MarkLegal"}}{{else}}{{localize "NCI.Production.MarkIllegal"}}{{/if}}</button>
+          <button type="button" data-action="productionRemove" data-uuid="{{uuid}}"><i class="fas fa-trash"></i> {{localize "NCI.Production.Remove"}}</button>
+        </td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="nci-empty">{{localize "NCI.Production.NoItems"}}</p>
+  {{/if}}
+
+  {{#if removed.length}}
+  <h3>{{localize "NCI.Production.Removed"}}</h3>
+  <table class="nci-market">
+    <tbody>
+      {{#each removed}}
+      <tr><td>{{name}}</td><td class="nci-rowbtns nci-endbtns"><button type="button" data-action="productionRestore" data-uuid="{{uuid}}"><i class="fas fa-rotate-left"></i> {{localize "NCI.Production.Restore"}}</button></td></tr>
+      {{/each}}
+    </tbody>
+  </table>
+  {{/if}}
+</div>
+{{/with}}

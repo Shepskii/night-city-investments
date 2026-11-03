@@ -2135,7 +2135,14 @@ The user's requests after U1, each built and committed on its own. Colours, layo
 
 **Why bench time should not be a farm.** A bench-week at full price, less materials: Premium 7 items at a 50 eb margin, 350 eb; Expensive 1 at 400 eb; Very Expensive half of one at 500 eb, 250 eb; Luxury a quarter of one at 4,000 eb, 1,000 eb. Everyday looks like 56 items at a 10 eb margin, 560 eb, which the sales limit holds back. That is about what a business already earns in a week, and it is before the shop's discount, failed rolls and the sales limit.
 
-**Draft numbers, for the simulator to test before they are final.** Benches 1, 2 and 4 by stage. The workshop project costs 1,500, 4,000 and 12,000 eb, and takes 3, 5 and 9 days. The shop sells at 70% of market price. The weekly sales limit is half the week's ordinary takings, moved by the Reputation band. Fencing pays 90% of market price in dirty cash.
+**Numbers, as the simulator left them** (`npm run simulate:production`). Benches 1, 2 and 4 by stage. The workshop project costs 1,500, 4,000 and 12,000 eb, and takes 3, 5 and 9 days; it is built once a stage, and building it again at a higher stage gives that stage's benches. The shop sells at 70% of market price. The weekly sales limit is half the week's ordinary takings, moved by the Reputation band. Fencing pays 90% of market price in dirty cash.
+
+**What the simulator changed.** On its best line, a strong or average crew's mature shop or registered business adds about 40% to 65% to its ordinary profit, and the workshop pays for itself in about 20 to 25 weeks. A company adds under 10%, and takes about a year. So it is not a farm, and it matters most to a small business. Three rules came of it:
+- **Only what comes out sellable uses materials,** as the book's "a failure costs the time" suggests. Paying for a whole run made Premium and Very Expensive lines lose money. A passed roll always makes at least one.
+- **A run makes at most 20 items.** Otherwise a company's best line was 150 Everyday items a week. The storeroom also holds at most 25, 50 and 100 items that do not stack (weapons, armor, cyberware, programs, cyberdecks, upgrades and vehicles): only ammunition, clothing, drugs and gear have an amount.
+- **For P1b: up to 4 weeks of unused sales limit carry over.** Without that, an item dearer than a week's limit can never sell.
+
+A Maker with a base of 14 costs more than a shop's line earns (70 eb a week against 40 to 65), about what a registered business's best line earns (126 eb against 98 to 209), and a little less than a company's (196 eb against 142 to 279), so a small shop's line is really a partner's week. Very Expensive and Luxury items rarely pass at the book's DV (24 and 29), so they suit only the best makers: at a roll base of 14 or less they add 5% or less to profit.
 
 **Which businesses make what** (defaults, by the compendium's item types): gun shop, weapons, ammunition and weapon attachments; garage, vehicle upgrades and gear; clinic, cyberware and drugs; info shop, programs and cyberdeck hardware; boutique, clothing; media, gear such as recordings; bar and food stall, gear such as food and drink; courier and security, none.
 
@@ -2176,6 +2183,6 @@ The user's requests after U1, each built and committed on its own. Colours, layo
 | B7 | **Done (v0.20.0), see §36.9.** B7a Teamwork against the rulebook, B7b Crew Tools downtime, B7c REP and IP, B7d living costs and B7e businesses on Night City Map, with the bridge at 0.3.0 |
 | U1 | **Done (v0.19.0), see §36.1 and §36.8.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships, back-room staff; after F1 and B6 |
 | UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
-| P1 | **Planned, see §36.10.** Production: workshops, runs by the rulebook's fabrication table, a storeroom sheet, shop sales and fencing |
+| P1 | **In progress, see §36.10.** P1a is built: the workshop and benches, item lists and the GM's tab, runs and the Maker post, stock and the storeroom sheet. Next: P1b, shop sales; then P1c, fencing |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |

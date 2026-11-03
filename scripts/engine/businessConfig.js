@@ -118,6 +118,7 @@ export const ACTIONS = Object.freeze({
   launder: Object.freeze({ skills: [], abilities: [], help: [S.business, S.librarySearch] }),
   payOff: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.persuasion] }),
   dealGang: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.localExpert] }),
+  produce: Object.freeze({ skills: [], abilities: [A.maker], help: [S.basicTech, S.trading] }),
 });
 
 /** A chartered company's five actions (DESIGN §27.4, §31): they replace the shop actions at stage 2. */
@@ -129,6 +130,7 @@ export const COMPANY_ACTIONS = Object.freeze({
     skills: [S.business, Object.freeze({ ...S.persuasion, dvAdd: 2 }), Object.freeze({ ...S.trading, dvAdd: 2 })],
     abilities: [A.teamwork, A.operator, A.maker], help: [S.librarySearch, S.humanPerception],
   }),
+  produce: Object.freeze({ skills: [], abilities: [A.maker], help: [S.basicTech, S.trading] }),
   books: Object.freeze({ skills: [S.accounting, Object.freeze({ ...S.business, dvAdd: 2 })], abilities: [A.moto], help: [S.librarySearch, S.business] }),
   relations: Object.freeze({
     skills: [S.trading, Object.freeze({ ...S.persuasion, dvAdd: 2 }), Object.freeze({ ...S.wardrobe, dvAdd: 2 })],
@@ -175,7 +177,7 @@ export const actionIdsFor = (stage) => (stage >= 2 ? COMPANY_ACTION_IDS : ACTION
 export const actionFor = (stage, id) => (stage >= 2 ? COMPANY_ACTIONS[id] : ACTIONS[id]) ?? null;
 
 /** Employees' posts, in display order (DESIGN §32). */
-export const POST_IDS = Object.freeze(['floor', 'manager', 'security', 'bookkeeper', 'sales', 'publicist', 'compliance', 'hand', 'launderer', 'fixer']);
+export const POST_IDS = Object.freeze(['floor', 'manager', 'security', 'bookkeeper', 'sales', 'publicist', 'compliance', 'maker', 'hand', 'launderer', 'fixer']);
 
 /**
  * What each post needs: the first stage it exists at, the skills and abilities that count for it
@@ -189,6 +191,8 @@ export const POSTS = Object.freeze({
   sales: Object.freeze({ stage: 2, uses: [S.business, S.persuasion, S.trading] }),
   publicist: Object.freeze({ stage: 2, uses: [S.composition, S.wardrobe, S.persuasion, A.credibility, A.charismaticImpact] }),
   compliance: Object.freeze({ stage: 2, uses: [S.bureaucracy, S.localExpert] }),
+  /** Runs the workshop's line in a week no partner does (P1a). */
+  maker: Object.freeze({ stage: 0, uses: [A.maker], trade: true }),
   /**
    * The back room's own posts (U1b), at `rate` times the going wage, each acting when nobody else did. The hand works
    * the room and the launderer washes its money, while there is one; the fixer pays people off when Exposure runs up,
@@ -233,6 +237,43 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     staffRoom: Object.freeze({ cost: Object.freeze([500, 1200, 4000]), days: Object.freeze([2, 3, 5]), headcount: 1, paidCap: 70 }),
     /** A back room (U1a): off the books, so what it costs is no asset. Not at a company, whose crime is its own (U1c). */
     backRoom: Object.freeze({ cost: Object.freeze([1500, 4000]), days: Object.freeze([3, 5]) }),
+    /** A workshop (P1a): built again at a higher stage, it has that stage's benches. */
+    workshop: Object.freeze({ cost: Object.freeze([1500, 4000, 12000]), days: Object.freeze([3, 5, 9]) }),
+  }),
+  /**
+   * Production (P1a, DESIGN §36.10), checked with tools/simulate-production.mjs. `tiers` is the rulebook's Fabrication
+   * table: the market price each category goes up to, the DV, bench days per item (8 hours a day), and materials, one
+   * category lower. Each bench gives `benchDays` a week, and what is made is capped by `top` for the stage, `runMax` a
+   * run and, for items that do not stack, `storeCap` on the shelves. `yield` is the share of a run that comes out
+   * sellable, by band. `makes` is what each business type makes by default.
+   */
+  production: Object.freeze({
+    benches: Object.freeze([1, 2, 4]),
+    benchDays: 7,
+    runMax: 20,
+    storeCap: Object.freeze([25, 50, 100]),
+    top: Object.freeze(['premium', 'veryExpensive', 'luxury']),
+    tiers: Object.freeze([
+      Object.freeze({ id: 'cheap', price: 10, dv: 9, days: 1 / 8, materials: 5 }),
+      Object.freeze({ id: 'everyday', price: 20, dv: 9, days: 1 / 8, materials: 10 }),
+      Object.freeze({ id: 'costly', price: 50, dv: 13, days: 6 / 8, materials: 20 }),
+      Object.freeze({ id: 'premium', price: 100, dv: 17, days: 1, materials: 50 }),
+      Object.freeze({ id: 'expensive', price: 500, dv: 21, days: 7, materials: 100 }),
+      Object.freeze({ id: 'veryExpensive', price: 1000, dv: 24, days: 14, materials: 500 }),
+      Object.freeze({ id: 'luxury', price: 5000, dv: 29, days: 28, materials: 1000 }),
+      Object.freeze({ id: 'superLuxury', price: 10000, dv: 29, days: 28, materials: 5000 }),
+    ]),
+    yield: Object.freeze({ fumble: 0, failure: 0, narrow: 0.5, solid: 0.75, strong: 0.9, exceptional: 1 }),
+    makes: Object.freeze({
+      gunShop: Object.freeze([{ type: 'weapon' }, { type: 'ammo' }, { type: 'itemUpgrade', kind: 'weapon' }]),
+      garage: Object.freeze([{ type: 'itemUpgrade', kind: 'vehicle' }, { type: 'gear', names: ['Techtool', 'Tech Bag', 'Duct Tape', 'Flashlight', 'Road Flare', 'Rope (60m/yd)', 'Techscanner'] }]),
+      clinic: Object.freeze([{ type: 'cyberware' }, { type: 'drug' }]),
+      infoShop: Object.freeze([{ type: 'program' }, { type: 'cyberdeck' }, { type: 'itemUpgrade', kind: 'cyberdeck' }]),
+      boutique: Object.freeze([{ type: 'clothing' }]),
+      media: Object.freeze([{ type: 'gear', names: ['Audio Recorder', 'Video Camera', 'Memory Chip', 'Braindance Viewer', 'Virtuality Goggles', 'Radio Scanner/Music Player', 'Pocket Amplifier'] }]),
+      bar: Object.freeze([{ type: 'gear', names: ['Kibble Pack', 'MRE', 'Food Stick'] }]),
+      foodStall: Object.freeze([{ type: 'gear', names: ['Kibble Pack', 'MRE', 'Food Stick'] }]),
+    }),
   }),
   /** Side business to registered business (DESIGN §27.0). Bureaucracy, or Local Expert or Persuasion at DV +2. */
   registration: Object.freeze({
@@ -870,7 +911,7 @@ export const stageDv = (stage, p = BUSINESS_DEFAULTS) => DV_LADDER[p.stages[stag
 export function actionUses(actionId, archetype, stage = 0) {
   const action = actionFor(stage, actionId);
   if (!action) return [];
-  const own = actionId === 'work' ? [...(archetype?.trade ?? [])] : [...action.skills];
+  const own = actionId === 'work' || actionId === 'produce' ? [...(archetype?.trade ?? [])] : [...action.skills];
   return [...own, ...action.abilities];
 }
 

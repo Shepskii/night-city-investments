@@ -26,6 +26,7 @@ import { BUSINESS_DEFAULTS, POSTS, SKILLS, ABILITIES, EVENTS, useKey, stageDv } 
 import { archetypeOf, fail, int, addLedger, partnerOf } from './businessRecord.js';
 import { exposureBand } from './businessCompany.js';
 import { payOffCost } from './businessFronts.js';
+import { hasWorkshop, produceCheck } from './businessProduction.js';
 
 /** Every use an employee's sheet is read for: each skill and role ability a business roll names. */
 export const STAFF_USES = Object.freeze([...Object.values(SKILLS), ...Object.values(ABILITIES)]);
@@ -182,6 +183,7 @@ export const floorRoom = (b) => Math.max(1, Math.floor(b.state.capacity));
 
 /** Whether this business has a use for a post: the back room's need a room, but for a company's fixer. */
 export function postOffered(b, post) {
+  if (post === 'maker') return hasWorkshop(b);
   if (!POSTS[post]?.backRoom) return true;
   return (post === 'fixer' && b.stage >= 2) || b.backRoom?.status === 'open';
 }
@@ -484,6 +486,10 @@ export function staffShifts(b, seed = 'nci', p = BUSINESS_DEFAULTS, { idle = nul
     const action = b.stage >= 2 ? 'contracts' : 'work';
     slots.push({ action, by: manager.id, staff: true, approach: 'standard', bonus: 0, ...autoRoll(b, manager, workBase(manager, 'manager', arch, traits, p), dv, seed, action) });
   }
+  // A maker runs the line in a week nobody did (P1a), at the book's DV for the item.
+  const maker = staff.find((s) => s.post === 'maker');
+  const run = maker && !slots.some((s) => s.action === 'produce') ? produceCheck(b, p) : null;
+  if (run?.ok) slots.push({ action: 'produce', by: maker.id, staff: true, approach: 'standard', bonus: 0, ...autoRoll(b, maker, workBase(maker, 'maker', arch, traits, p), run.dv, seed, 'produce') });
   // The back room's posts, each doing what nobody else did (U1b).
   const shift = (who, post, action) => slots.push({ action, by: who.id, staff: true, approach: 'standard', bonus: 0, ...autoRoll(b, who, workBase(who, post, arch, traits, p), dv, seed, action) });
   const taken = (action) => slots.some((s) => s.action === action);

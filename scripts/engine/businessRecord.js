@@ -106,7 +106,7 @@ export function normalizeBusiness(raw) {
     proposals: b.proposals ?? [],
     projects: b.projects ?? [],
     /** Upgrades from projects: security's level, the stages a storefront and a staff room were built at. */
-    upgrades: { security: int(b.upgrades?.security ?? 0), storefront: b.upgrades?.storefront ?? [], staffRoom: b.upgrades?.staffRoom ?? [] },
+    upgrades: { security: int(b.upgrades?.security ?? 0), storefront: b.upgrades?.storefront ?? [], staffRoom: b.upgrades?.staffRoom ?? [], workshop: b.upgrades?.workshop ?? [] },
     /** The partners' agreement to step up, and when a failed registration may be tried again. */
     stepUp: b.stepUp ?? null,
     loans: b.loans ?? [],
@@ -202,6 +202,8 @@ export function normalizeBusiness(raw) {
     downtimeUsed: (b.downtimeUsed ?? []).slice(-100),
     /** Partners whose Housing and Lifestyle the business pays each month (B7d). */
     covered: b.covered ?? [],
+    production: { line: b.production?.line ?? null, run: b.production?.run ?? null },
+    stock: b.stock ?? [],
     // Standing with factions (F1a): the band for each faction met. The number is in the GM's hidden state.
     standings: b.standings ?? {},
     // Hidden ownership (B6d): each holder's layers, innermost first; their strengths are GM-only.

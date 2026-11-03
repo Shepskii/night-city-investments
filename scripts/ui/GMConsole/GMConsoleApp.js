@@ -4,6 +4,7 @@
  * @description Each tab's actions and data live in ./tabs; only the open tab's data is built.
  */
 
+import { ProductionCatalog } from '../../data/ProductionCatalog.js';
 import { MODULE_ID, HOOKS } from '../../utils/constants.js';
 import { PreviewService } from '../../services/PreviewService.js';
 import { BaseApplication } from '../BaseApplication.js';
@@ -21,15 +22,16 @@ import * as heat from './tabs/heat.js';
 import * as businesses from './tabs/businesses.js';
 import * as syndicates from './tabs/syndicates.js';
 import * as factions from './tabs/factions.js';
+import * as production from './tabs/production.js';
 import * as tools from './tabs/tools.js';
 
-const TABS = { pending, market, events, actions, brokers, businesses, syndicates, heat, gigs, companies, funds, factions, tools };
+const TABS = { pending, market, events, actions, brokers, businesses, syndicates, heat, gigs, companies, funds, factions, production, tools };
 /** The two rows of buttons: each group, and its tabs in display order. */
 const GROUPS = {
   pending: ['pending'],
   market: ['market', 'events', 'actions', 'brokers'],
   players: ['businesses', 'syndicates', 'heat'],
-  tools: ['gigs', 'companies', 'funds', 'factions', 'tools'],
+  tools: ['gigs', 'companies', 'funds', 'factions', 'production', 'tools'],
 };
 const groupOf = (tab) => Object.keys(GROUPS).find((g) => GROUPS[g].includes(tab));
 const PARTIALS = `modules/${MODULE_ID}/templates/gm/console`;
@@ -132,7 +134,26 @@ export class GMConsoleApp extends BaseApplication {
 
   // ── Context ────────────────────────────────────────────────────────────────
 
+  /** The Production tab's archetype picker and drop box (P1a), which are not clicks. */
+  async _onRender(context, options) {
+    await super._onRender(context, options);
+    const root = this.element;
+    root.querySelector('[data-production-archetype]')?.addEventListener('change', (event) => {
+      this.productionArchetype = event.target.value;
+      this.render();
+    });
+    root.querySelector('[data-production-drop]')?.addEventListener('drop', (event) => {
+      event.preventDefault();
+      try {
+        event.target.value = JSON.parse(event.dataTransfer.getData('text/plain')).uuid ?? '';
+      } catch {
+        event.target.value = event.dataTransfer.getData('text/plain');
+      }
+    });
+  }
+
   async _prepareContext() {
+    await ProductionCatalog.load();
     const waiting = pending.waiting();
     const tabs = Object.keys(TABS).map((t) => ({ id: t, label: L(`NCI.GMConsole.Tab.${t}`), count: waiting[t] ?? 0, active: t === this.tab }));
     const group = groupOf(this.tab);

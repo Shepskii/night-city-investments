@@ -339,6 +339,46 @@
   {{/with}}
   {{/if}}
 
+  {{#if ../isProduction}}
+  {{#with production}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.Business.Tab.production"}}</h3>
+    {{#if built}}
+    <p class="nci-hint">{{benches}}</p>
+    {{#if line}}<p><strong>{{line.name}}</strong> <span class="nci-muted">{{line.terms}}</span></p>{{else}}<p class="nci-muted">{{localize "NCI.Production.NoLine"}}</p>{{/if}}
+    {{#if run}}<p>{{run}}</p>{{/if}}
+    {{#if canSet}}
+    <div class="nci-actions nci-form" data-line-form>
+      <label class="nci-inline">{{localize "NCI.Production.Make"}} <select name="lineItem">{{#each options}}<option value="{{uuid}}"{{#if selected}} selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+      <label class="nci-inline">{{localize "NCI.Production.RunSize"}} <input type="number" name="lineQty" min="1" max="{{runMax}}" value="{{qty}}"></label>
+      <button type="button" data-action="setLine"><i class="fas fa-industry"></i> {{localize "NCI.Production.SetLine"}}</button>
+      {{#if line}}<button type="button" data-action="clearLine"><i class="fas fa-ban"></i> {{localize "NCI.Production.ClearLine"}}</button>{{/if}}
+    </div>
+    {{/if}}
+    <p class="nci-hint">{{#if maker}}{{localize "NCI.Production.MakerRuns"}}{{else}}{{localize "NCI.Production.NoMaker"}}{{/if}}</p>
+    {{else}}
+    <p class="nci-empty">{{localize "NCI.Production.NoWorkshop"}}</p>
+    {{/if}}
+  </div>
+  {{/with}}
+  {{#with week}}{{#if productionActions.length}}<div class="nci-block">{{> weekActions rows=productionActions}}</div>{{/if}}{{/with}}
+  {{#with production}}
+  <div class="nci-block">
+    <h3>{{localize "NCI.Production.Stock"}}</h3>
+    {{#if stock.length}}
+    <table class="nci-market">
+      <thead><tr><th>{{localize "NCI.Production.Item"}}</th><th>{{localize "NCI.Production.Count"}}</th><th>{{localize "NCI.Production.CostEach"}}</th><th>{{localize "NCI.Production.Price"}}</th></tr></thead>
+      <tbody>{{#each stock}}<tr><td><strong>{{name}}</strong></td><td>{{count}}</td><td>{{cost}} eb</td><td>{{price}} eb</td></tr>{{/each}}</tbody>
+    </table>
+    {{else}}
+    <p class="nci-empty">{{localize "NCI.Production.NoStock"}}</p>
+    {{/if}}
+    <p class="nci-hint">{{storeCap}}</p>
+    {{#if hasStoreroom}}<button type="button" data-action="openStoreroom"><i class="fas fa-box-open"></i> {{localize "NCI.Production.OpenStoreroom"}}</button>{{/if}}
+  </div>
+  {{/with}}
+  {{/if}}
+
   {{#if ../isBackRoom}}
   {{#with week}}
   <div class="nci-block">

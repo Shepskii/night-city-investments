@@ -6,6 +6,7 @@
  *              and every roll is made only when the player presses Roll.
  */
 
+import { ProductionCatalog } from '../../data/ProductionCatalog.js';
 import { itemGear, partnerOf, limitLeft, canRun } from '../../engine/index.js';
 import { MODULE_ID, HOOKS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
@@ -31,7 +32,7 @@ const FOLDERS = Object.freeze({
   pending: ['pending'],
   overview: ['overview'],
   financial: ['ledger', 'reports'],
-  operations: ['week', 'staff', 'projects', 'backRoom'],
+  operations: ['week', 'production', 'staff', 'projects', 'backRoom'],
   ownership: ['partners', 'growth'],
 });
 const TABS = Object.values(FOLDERS).flat();
@@ -75,6 +76,9 @@ export class BusinessApp extends BaseApplication {
       proposeClose: BusinessApp._onProposeClose,
       vote: BusinessApp._onVote,
       proposeProject: BusinessApp._onProposeProject,
+      setLine: BusinessApp._onSetLine,
+      clearLine: BusinessApp._onClearLine,
+      openStoreroom: BusinessApp._onOpenStoreroom,
       takeDirty: BusinessApp._onTakeDirty,
       gangDeal: BusinessApp._onGangDeal,
       endGangDeal: BusinessApp._onEndGangDeal,
@@ -437,6 +441,23 @@ export class BusinessApp extends BaseApplication {
   }
 
   /** A project's Propose button on the Projects tab: any kind, a majority of the votes. */
+  /** Choose what the workshop makes (P1a). */
+  static _onSetLine(event, target) {
+    const box = target.closest('[data-line-form]');
+    const uuid = box?.querySelector('[name="lineItem"]')?.value ?? '';
+    if (!uuid) return null;
+    return this._send('setLine', { uuid, qty: Number(box.querySelector('[name="lineQty"]')?.value) || undefined });
+  }
+
+  static _onClearLine() {
+    return this._send('setLine', { uuid: '' });
+  }
+
+  /** Open the storeroom sheet, to look. */
+  static _onOpenStoreroom() {
+    game.actors.find((a) => a.getFlag?.(MODULE_ID, 'stockFor') === this.businessId)?.sheet?.render(true);
+  }
+
   static _onProposeProject(event, target) {
     // A back room's kind is picked in its row (U1a).
     const room = target.closest('tr')?.querySelector('[name="roomKind"]')?.value;
@@ -762,6 +783,7 @@ export class BusinessApp extends BaseApplication {
   // ── Context ────────────────────────────────────────────────────────────────
 
   async _prepareContext() {
+    await ProductionCatalog.load();
     const picker = pickerContext(this);
     const business = this.starting ? null : this.business;
     if (business) this.businessId = business.id;
@@ -775,7 +797,7 @@ export class BusinessApp extends BaseApplication {
     };
     const shown = this.actor && business ? businessContext(business, this.actor) : null;
     // A company's back room is its officers' secret, so the tab is not there for anyone else (U1).
-    const hasTab = (t) => t !== 'backRoom' || !!shown?.seesBackRoom;
+    const hasTab = (t) => (t !== 'backRoom' || !!shown?.seesBackRoom) && (t !== 'production' || !!shown?.seesProduction);
     if (shown && !hasTab(this.tab)) this.tab = 'week';
     context.tab = this.tab;
     for (const t of TABS) context[`is${t[0].toUpperCase()}${t.slice(1)}`] = t === this.tab;

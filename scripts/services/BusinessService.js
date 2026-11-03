@@ -14,6 +14,7 @@
  *              is refused; the members vote on it instead, and it is then made with `applyFor`.
  */
 
+import { ProductionCatalog } from '../data/ProductionCatalog.js';
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
@@ -26,6 +27,7 @@ import {
   concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget, scandalHit, investigationCost, spendDays,
   moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene, ABILITIES, backupWait, quashEffect, exposureBand, canRun,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
+  STACKING_TYPES,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { L, log, isActiveGM, isCharacter, isItemPile, unwrap } from '../utils/helpers.js';
@@ -52,6 +54,8 @@ import { NewsService } from './NewsService.js';
 import { HeatService } from './HeatService.js';
 import { BrokerRepository } from '../data/BrokerRepository.js';
 
+/** The actor folder storeroom sheets go in. */
+const STOCK_FOLDER = 'Night City Investments';
 const RESULTS_CAP = 40;
 /** Requests that may bring gear: the items are looked up here, never taken from the request. */
 const GEAR_REQUESTS = ['found', 'join', 'contribute'];
@@ -565,6 +569,10 @@ class BusinessServiceImpl {
 
     const day = this.day();
     const context = this.context(business);
+    if (request.type === 'setLine' && business) {
+      await ProductionCatalog.load();
+      context.lineItem = ProductionCatalog.find(business.archetype, String(request.uuid ?? ''));
+    }
     if (request.type === 'hideRoll' && business) context.hide = this._hideTerms(business, as.partner.id, context.marketPrice);
     if (GEAR_REQUESTS.includes(request.type)) {
       const gear = await this.resolveGear(actor, request.gear);
@@ -660,6 +668,7 @@ class BusinessServiceImpl {
     }
     await BusinessRepository.save(out.business);
     await this._moveItems(out);
+    await this._syncStock(out);
     await this._saveHidden(out);
     await this._rewardEvents(out);
     await this._syncJobs(out.business);
@@ -679,6 +688,63 @@ class BusinessServiceImpl {
       Hooks.callAll(HOOKS.BUSINESS_PERIOD, { businessId: out.business.id, digest: event.digest });
     }
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: out.business.id, events: out.events });
+  }
+
+  /** A business's storeroom sheet: the container of real items that matches its stock (P1a), if it has one yet. */
+  storeroomOf(businessId) {
+    return game.actors.find((a) => a.getFlag?.(MODULE_ID, 'stockFor') === businessId) ?? null;
+  }
+
+  /** Who may look at the storeroom: the users of those running the business. They can see it, not take from it. */
+  _storeroomOwnership(business) {
+    const runners = business.partners.filter((x) => x.status === 'active' && canRun(business, x.actorId)).map((x) => game.actors.get(x.actorId)).filter(Boolean);
+    const users = game.users.filter((u) => !u.isGM && runners.some((a) => a.testUserPermission(u, 'OWNER')));
+    return { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE, ...Object.fromEntries(users.map((u) => [u.id, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER])) };
+  }
+
+  /** Find or make the storeroom, in the module's actor folder. */
+  async _storeroom(business) {
+    const found = this.storeroomOf(business.id);
+    if (found) return found;
+    const folder = game.folders.find((f) => f.type === 'Actor' && f.name === STOCK_FOLDER) ?? await Folder.create({ name: STOCK_FOLDER, type: 'Actor', sorting: 'a' });
+    return Actor.create({
+      name: L('NCI.Production.StoreroomName', { name: business.name }),
+      type: 'container',
+      folder: folder?.id ?? null,
+      ownership: this._storeroomOwnership(business),
+      // Nothing for players to do on the sheet: taking an item goes through the Business window.
+      flags: { [MODULE_ID]: { stockFor: business.id }, 'cyberpunk-red-core': { 'container-type': 'custom' } },
+    });
+  }
+
+  /** Keep the storeroom matching the record: new items off the benches, and who may look. */
+  async _syncStock(out) {
+    const made = (out.events ?? []).filter((e) => e.type === 'stockMade');
+    const existing = this.storeroomOf(out.business.id);
+    if (!made.length) {
+      if (!existing) return;
+      const wanted = this._storeroomOwnership(out.business);
+      const same = Object.keys({ ...wanted, ...existing.ownership }).every((k) => (wanted[k] ?? 0) === (existing.ownership[k] ?? 0));
+      if (!same) await existing.update({ ownership: { ...Object.fromEntries(Object.keys(existing.ownership).map((k) => [`-=${k}`, null])), ...wanted } }, { diff: false, recursive: false });
+      return;
+    }
+    const room = await this._storeroom(out.business);
+    for (const { item, count } of made) {
+      const source = await fromUuid(item.uuid).catch(() => null);
+      if (!source) {
+        log.warn(`A business made an item that is no longer there: ${item.uuid}`);
+        continue;
+      }
+      const data = source.toObject();
+      delete data._id;
+      if (STACKING_TYPES.includes(item.type)) {
+        // Cyberpunk RED prices ammunition per box: a box each, of however many rounds the item holds.
+        data.system.amount = item.type === 'ammo' ? count * Math.max(1, Number(source.system?.amount) || 10) : count;
+        await room.createEmbeddedDocuments('Item', [data]);
+      } else {
+        await room.createEmbeddedDocuments('Item', Array.from({ length: count }, () => structuredClone(data)));
+      }
+    }
   }
 
   /**

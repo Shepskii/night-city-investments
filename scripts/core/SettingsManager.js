@@ -240,6 +240,13 @@ export function registerSettings() {
   });
 
   // GM-managed data, kept out of the settings screen.
+  s.register(MODULE_ID, SETTINGS.PRODUCTION_CATALOG, {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {},
+    onChange: notifyBusinessesChanged,
+  });
   s.register(MODULE_ID, SETTINGS.FACTION_DEFS, {
     scope: 'world',
     config: false,

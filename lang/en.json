@@ -1056,7 +1056,7 @@
       "Group": { "pending": "Pending", "market": "Market", "players": "Players", "tools": "Tools" },
       "Tab": {
         "pending": "Pending", "market": "Market", "events": "Events", "actions": "Corp actions", "companies": "Companies",
-        "funds": "Funds", "brokers": "Brokers", "gigs": "Gigs", "heat": "Heat", "businesses": "Businesses", "factions": "Factions", "syndicates": "Syndicates", "tools": "Audit"
+        "funds": "Funds", "brokers": "Brokers", "gigs": "Gigs", "heat": "Heat", "businesses": "Businesses", "factions": "Factions", "production": "Production", "syndicates": "Syndicates", "tools": "Audit"
       },
       "FundsHint": "Funds pool several companies into one tradable unit. Their value follows the companies' prices. Players can only trade them through a broker.",
       "NewFund": "New fund",
@@ -2164,6 +2164,48 @@
         "closed": "dissolved"
       }
     },
+    "Production": {
+      "GMHint": "What each kind of business can make. The defaults come from the system's compendiums; drop an item in the box to add another, from a compendium or the Items directory. Illegal items can only be sold by fencing.",
+      "BusinessType": "Business type",
+      "AddLabel": "Add an item",
+      "AddPlaceholder": "Drop an item here",
+      "Add": "Add",
+      "Item": "Item",
+      "Type": "Type",
+      "Price": "Market price",
+      "Category": "Price category",
+      "Illegal": "Illegal",
+      "MarkIllegal": "Mark illegal",
+      "MarkLegal": "Mark legal",
+      "Remove": "Remove",
+      "Restore": "Put back",
+      "Removed": "Taken off the list",
+      "NoItems": "No items on this list.",
+      "TooDear": "Beyond any category",
+      "ItemType": { "ammo": "Ammunition", "armor": "Armor", "clothing": "Clothing", "cyberdeck": "Cyberdeck", "cyberware": "Cyberware", "drug": "Drug", "gear": "Gear", "itemUpgrade": "Upgrade", "program": "Program", "vehicle": "Vehicle", "weapon": "Weapon" },
+      "Tier": { "cheap": "Cheap", "everyday": "Everyday", "costly": "Costly", "premium": "Premium", "expensive": "Expensive", "veryExpensive": "Very Expensive", "luxury": "Luxury", "superLuxury": "Super Luxury" },
+      "Benches": "{benches} bench(es), each with 7 days of work a week. At this stage the business can make items up to {top}.",
+      "NoWorkshop": "No workshop yet. Build one on the Projects tab.",
+      "NoLine": "Nothing on the line.",
+      "LineTerms": "{tier}, DV {dv}: up to {size} a run, {materials} eb of materials each, market price {price} eb.",
+      "RunGoing": "On the benches: {count} × {name}, about {weeks} more week(s) after this one's close.",
+      "MakerRuns": "Your Maker runs the line in any week no partner does.",
+      "NoMaker": "With no Maker on the staff, the line only runs when a partner takes the week's action.",
+      "Make": "Make",
+      "RunSize": "Most in a run",
+      "SetLine": "Set the line",
+      "ClearLine": "Stop the line",
+      "Option": "{name}: {tier}, DV {dv}, {days}, materials {materials} eb",
+      "Hours": "{hours} hour(s) each",
+      "Days": "{days} bench day(s) each",
+      "Stock": "Stock",
+      "NoStock": "Nothing on the shelves.",
+      "Count": "How many",
+      "CostEach": "Cost each",
+      "StoreCap": "Items that do not stack: {loose} of {cap} the storeroom holds.",
+      "OpenStoreroom": "Open the storeroom",
+      "StoreroomName": "Stock — {name}"
+    },
     "Project": {
       "Intro": "Projects improve the premises. The partners agree on one (a majority of the votes) and it is paid from the cash at once; then they finish it with business days, 3 each a week, which lapse when the week closes. One project at a time.",
       "IntroCompany": "Projects improve the premises. The shareholders agree on one (a majority of the shares) and it is paid from the cash at once; then they finish it with business days, 3 each a week, which lapse when the week closes. One project at a time.",
@@ -2173,7 +2215,8 @@
         "security": "Security upgrade",
         "storefront": "Storefront",
         "staffRoom": "Staff room",
-        "backRoom": "Back room"
+        "backRoom": "Back room",
+        "workshop": "Workshop"
       },
       "Hint": {
         "backRoom": "An illegal operation behind the shop. Off the books, its takings are dirty cash, and it carries risk. Not at a chartered company.",
@@ -2181,7 +2224,8 @@
         "refit": "New kit and better suppliers: cheaper to run.",
         "security": "Locks, cameras, a reinforced door: less protection money, fewer break-ins.",
         "storefront": "A refurbished front and signage: people notice.",
-        "staffRoom": "A break room and lockers: room for one more, and happier staff."
+        "staffRoom": "A break room and lockers: room for one more, and happier staff.",
+        "workshop": "Benches and tools, to make what the shop sells."
       },
       "Effect": {
         "Label": "What it does",
@@ -2191,7 +2235,8 @@
         "securityNone": "No upgrade yet (up to {max} levels): each level cuts protection money by 25% and halves break-ins.",
         "storefront": "Reputation +{rep} at once, and from then on it settles toward {target} rather than 50. Once a stage.",
         "storefrontAgain": "Reputation +{rep} at once. Once a stage.",
-        "staffRoom": "One more place for staff ({places} now), and paid weeks lift NPC staff loyalty to {cap}. Once a stage."
+        "staffRoom": "One more place for staff ({places} now), and paid weeks lift NPC staff loyalty to {cap}. Once a stage.",
+        "workshop": "{benches} bench(es), up to {top} items. Once a stage: built again after stepping up, it has more."
       },
       "Result": {
         "Label": "Result",
@@ -2200,7 +2245,8 @@
         "security": "Security up a level",
         "storefront": "Reputation up",
         "staffRoom": "A place more for staff",
-        "backRoom": "A back room, behind the shop"
+        "backRoom": "A back room, behind the shop",
+        "workshop": "A workshop"
       },
       "DaysFree": "Business days left {free}/{total}",
       "Capacity": "{now} of {cap}",
@@ -2771,6 +2817,7 @@
       "UnworkedNote": "A week nobody works the shop still trades, at a little under the usual takings. Reputation drifts back toward the district's usual and costs creep up when nobody looks after them.",
       "NotOpenYet": "The business is not open.",
       "Action": {
+        "produce": { "Name": "Run the line", "Hint": "With the trade's skills or Maker, at the book's DV for the item: how many come out sellable." },
         "work": { "Name": "Work the shop", "Hint": "With the trade's skills: sets the week's takings." },
         "promote": { "Name": "Promote", "Hint": "Persuasion, Wardrobe & Style, Composition, Credibility or Charismatic Impact: Reputation and foot traffic up." },
         "source": { "Name": "Source supplies", "Hint": "Trading, Streetwise or Operator: the Cost base down." },
@@ -2823,6 +2870,7 @@
       "LedgerTitle": "Ledger",
       "NoLedger": "Nothing yet.",
       "Ledger": {
+        "materials": "Materials for {count} × {itemName}",
         "founded": "Founded by {name}",
         "foundedGear": "Founded by {name}, who also brought {gear} eb of gear",
         "contribution": "{name} put money in",
@@ -3002,7 +3050,7 @@
         }
       },
       "Folder": { "pending": "Pending", "overview": "Overview", "financial": "Financial", "operations": "Operations", "ownership": "Ownership" },
-      "Tab": { "overview": "Overview", "week": "Work", "projects": "Projects", "ledger": "Ledger", "reports": "Reports", "backRoom": "Back Room", "partners": "Partners", "partnersCompany": "Shareholders", "growth": "Growth", "staff": "Staff" },
+      "Tab": { "overview": "Overview", "week": "Work", "production": "Production", "projects": "Projects", "ledger": "Ledger", "reports": "Reports", "backRoom": "Back Room", "partners": "Partners", "partnersCompany": "Shareholders", "growth": "Growth", "staff": "Staff" },
       "DaysLeft": "You have {n} business day(s) left this week.",
       "AimGift": "Aiming at a faction costs a {gift} eb gift from the cash, spent whatever the roll.",
       "AimNone": "No faction",
@@ -3175,6 +3223,7 @@
       },
       "Refused": "Your business request was refused: {reason}",
       "Done": {
+        "setLine": "The workshop's line is set.",
         "rightsTake": "New shares taken.",
         "sellBack": "Shares sold back to the company.",
         "issueRoll": "Offering roll made.",
@@ -3262,6 +3311,13 @@
         "void": "Agreed, but it could not be done: {reason}"
       },
       "Reason": {
+        "no-workshop": "the business has no workshop yet",
+        "no-workshop-use": "this kind of business makes nothing to sell",
+        "no-line": "choose what the workshop makes first",
+        "run-going": "the benches are busy with a run",
+        "bad-line": "this business cannot make that",
+        "line-too-dear": "that is beyond what the business can make at this stage",
+        "store-full": "the storeroom is full",
         "bad-use": "that skill does not fit this roll",
         "not-forming": "the business is no longer being set up",
         "not-partner": "this character is not a partner who can do that",
@@ -3489,6 +3545,7 @@
       "Post": {
         "floor": "Floor",
         "manager": "Manager",
+        "maker": "Maker",
         "security": "Security",
         "bookkeeper": "Bookkeeper",
         "sales": "Sales",
@@ -3501,6 +3558,7 @@
       },
       "PostHint": {
         "floor": "The trade's own skills (role abilities that fit it count higher): lifts the takings, more with a higher base. No more on the floor than the Capacity allows.",
+        "maker": "The trade's skills or Maker: runs the workshop's line in any week no partner does.",
         "manager": "Business, or the trade's skills a level lower: works the shop (at a company, chases contracts) in any week no partner does. One per business.",
         "security": "Tactics, Brawling, Handgun, Melee Weapon or Human Perception (Combat Awareness and Backup count higher): answers a shakedown, break-in or trouble no partner answers.",
         "bookkeeper": "Accounting, or Business a level lower: trims the Cost base each week, and gives a company's monthly report its +1. From registration.",
@@ -3639,7 +3697,10 @@
         "vested": "{name}'s granted shares vested: they are a holder now.",
         "teamLeft": "{name} left with their Exec.",
         "teamBetrayed": "{name} of the Exec's team sold them out and left.",
-        "livingShort": "The cash could not cover {name}'s Housing and Lifestyle this month."
+        "livingShort": "The cash could not cover {name}'s Housing and Lifestyle this month.",
+        "madeStock": "{name} came off the benches.",
+        "runFailed": "A run of {name} failed: the week was lost, not the materials.",
+        "runNoCash": "A run of {name} went ahead without the cash for materials: nothing was made."
       },
       "OnCall": "On call",
       "OnCallHint": "A player character on the staff can be asked for one of this week's rolls: a free action slot, the week's event, or a help. They roll it themselves, from their own Job view, with their own skills and Luck. It is one of their two overtime shifts, and the overtime is paid from the cash onto their payslip.",
