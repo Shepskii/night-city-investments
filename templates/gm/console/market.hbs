@@ -9,6 +9,7 @@
     <span>{{localize "NCI.GMConsole.TrueRegime"}}</span><strong>{{regime}}</strong>
   </div>
   {{#if calendarNote}}<p class="nci-hint">{{calendarNote}}</p>{{/if}}
+  {{#if alignDays}}<div class="nci-actions"><button type="button" data-action="alignCalendar"><i class="fas fa-calendar-check"></i> {{localize "NCI.GMConsole.AlignCalendar" days=alignDays}}</button></div>{{/if}}
   <div class="nci-actions">
     <button type="button" data-action="advance" data-days="1">{{localize "NCI.GMConsole.Advance1"}}</button>
     <button type="button" data-action="advance" data-days="7">{{localize "NCI.GMConsole.Advance7"}}</button>

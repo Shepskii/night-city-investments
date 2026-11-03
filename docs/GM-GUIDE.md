@@ -41,7 +41,8 @@ A tab shows how many decisions are waiting on it as a small number beside its na
 
 - By default the market ticks with the **in-world clock** (one tick per 10 in-world minutes), so it keeps pace with Simple Calendar. A jump forward is caught up a game day at a time, so anything that fell due happens.
 - **Advance 1 / 7 / 30 ticks** and **Advance 1 day** (Market tab) work in every mode. At the default interval 30 ticks is about five hours; use **Advance 1 day** to move a whole day.
-- The **market date** is the calendar date plus any days you advanced by hand. Dividends, fund payouts, IPOs and statements follow it. The Market tab warns when it is ahead of the calendar.
+- **Advancing by hand moves the calendar too**, in the day and in-world clock modes, by the whole days it adds, so in-world time passes for everything that reads the calendar. Manual mode leaves the calendar alone.
+- The **market date** is what dividends, fund payouts, IPOs and statements follow. A world that advanced by hand on an earlier version may have it ahead of the calendar: the Market tab says by how many days, and **Move the calendar on** closes the gap. It moves the calendar only, never the market.
 - Player **businesses** close their week on the first tick on or after the weekday in settings.
 
 ## Steering the market

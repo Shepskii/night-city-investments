@@ -90,7 +90,7 @@ class TickServiceImpl {
     return this._queue.run(async () => {
       await this._sync();
       if (!MarketStore.hasState()) return;
-      await this._runTicks(n, MarketStore.getPublic().lastDay ?? dayIndex(MarketClock.calendarMs()));
+      await this._handTicks(() => this._runTicks(n, MarketStore.getPublic().lastDay ?? dayIndex(MarketClock.calendarMs())));
     });
   }
 
@@ -108,7 +108,43 @@ class TickServiceImpl {
     return this._queue.run(async () => {
       await this._sync();
       if (!MarketStore.hasState()) return;
-      await this._runTicks(n, MarketStore.getPublic().lastDay ?? dayIndex(MarketClock.calendarMs()), undefined, 1);
+      await this._handTicks(() => this._runTicks(n, MarketStore.getPublic().lastDay ?? dayIndex(MarketClock.calendarMs()), undefined, 1));
+    });
+  }
+
+  /** Ticks a GM asked for: the calendar moves on by the days they added, so the market does not leave it behind. */
+  async _handTicks(run) {
+    const before = MarketStore.getPublic().lead ?? 0;
+    await run();
+    await this._moveCalendar((MarketStore.getPublic().lead ?? 0) - before);
+  }
+
+  /** GM-triggered: bring the calendar up to a market that hand advances took past it. */
+  alignCalendar() {
+    if (!isActiveGM()) {
+      ui.notifications.warn(game.i18n.localize('NCI.Errors.NotActiveGM'));
+      return Promise.resolve({ ok: false, reason: 'not-active-gm' });
+    }
+    return this._queue.run(async () => {
+      await this._moveCalendar(MarketStore.getPublic().lead ?? 0);
+      return { ok: true };
+    });
+  }
+
+  /**
+   * Move the calendar on by whole days the market is already past it, turning that lead into calendar days. The market's
+   * date stays where it was. The calendar goes first, so that if it cannot move nothing has changed; the clock check its
+   * change sets off waits in this queue, and then finds nothing due. Manual mode leaves the calendar out of it.
+   */
+  async _moveCalendar(days) {
+    if (!(days > 0) || this.mode === 'manual') return;
+    await game.time.advance(days * 86400);
+    const pub = MarketStore.getPublic();
+    await MarketStore.setPublic({
+      ...pub,
+      lastDay: (pub.lastDay ?? dayIndex(MarketClock.calendarMs())) + days,
+      lead: Math.max(0, (pub.lead ?? 0) - days),
+      ...(pub.lastMs != null ? { lastMs: pub.lastMs + days * DAY_MS } : {}),
     });
   }
 

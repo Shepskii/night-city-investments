@@ -2177,6 +2177,10 @@ A Maker with a base of 14 costs more than a shop's line earns (70 eb a week agai
 
 **To check while building:** how item quantities and ammunition stacks work when items are created.
 
+### 36.11 The market date and the calendar (the user's choice, 2026-11-04)
+
+A hand advance used to move only the market, building a `lead` over the calendar that never closed. Now, outside manual mode, it also moves the calendar by the whole days it added (`TickService._moveCalendar`), so in-world time passes for everything reading the calendar. A gap already there is left for the Market tab's **Move the calendar on** button, so that the first press after updating does not jump the calendar without warning. Both move the calendar first and only then turn lead into calendar days, so the market date never changes, the clock check finds nothing due, and a calendar that cannot move changes nothing. A GM's undo still leaves the clock alone.
+
 ## 37. Roadmap
 
 | Phase | Deliverable |

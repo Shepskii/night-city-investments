@@ -1563,3 +1563,19 @@ test('illegal goods in the windows (P1c): tagged on the line list, fenced from t
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('the Market tab offers to close a gap between the market date and the calendar, and only then', async () => {
+  const { MarketStore } = await import('../scripts/data/MarketStore.js');
+  const pub = MarketStore.getPublic();
+  try {
+    await MarketStore.setPublic({ ...pub, lead: 0 });
+    assert.doesNotMatch(await renderConsole('market'), /data-action="alignCalendar"/);
+    await MarketStore.setPublic({ ...pub, lead: 8 });
+    const html = await renderConsole('market');
+    assertClean(html, 'market tab with a gap');
+    assert.match(html, /data-action="alignCalendar"/);
+    assert.match(text(html), /Move the calendar on 8 day\(s\)/);
+  } finally {
+    await MarketStore.setPublic(pub);
+  }
+});

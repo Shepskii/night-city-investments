@@ -100,7 +100,7 @@ export function installFakeFoundry({ actors: actorSpecs = [], now = Date.UTC(204
     journal: [],
     folders: [],
     actors: Object.assign([...actors], { get: (id) => actors.find((a) => a.id === id) }),
-    time: { worldTime: 0 },
+    time: { worldTime: 0, advance: async function (seconds) { this.worldTime += seconds; clock.ms += seconds * 1000; } },
     i18n: { localize: (k) => k, format: (k, d) => (d ? `${k} ${JSON.stringify(d)}` : k) },
     modules: { get: () => ({ api: { time: { getCurrentTimeMs: () => clock.ms } } }) },
     settings: {

@@ -22,6 +22,14 @@ async function onAdvanceDay(event, target) {
   await TickService.advanceDays(Number(target.dataset.days) || 1);
 }
 
+/** Bring Simple Calendar up to the market date (it moves for everything that reads the calendar). */
+async function onAlignCalendar() {
+  const days = MarketStore.getPublic().lead ?? 0;
+  if (!(days > 0) || !(await confirm(L('NCI.GMConsole.AlignCalendar', { days }), L('NCI.GMConsole.AlignCalendarConfirm', { days })))) return;
+  report(await TickService.alignCalendar());
+  this.render();
+}
+
 async function onAdvanceCustom(event, target) {
   const days = Math.floor(Number(field(target, 'customDays')));
   if (!(days >= 1)) return ui.notifications.warn(L('NCI.GMConsole.InvalidDays'));
@@ -81,6 +89,7 @@ function onPreviewBias(event, target) {
 export const actions = {
   advance: onAdvance,
   advanceDay: onAdvanceDay,
+  alignCalendar: onAlignCalendar,
   advanceCustom: onAdvanceCustom,
   resetMarket: onReset,
   addBias: onAddBias,
@@ -110,6 +119,7 @@ export function context(app) {
     date: MarketClock.dateString(),
     calendarNote: tickMode === 'manual' ? L('NCI.GMConsole.CalendarManual', { calendar })
       : lead > 0 ? L('NCI.GMConsole.CalendarAhead', { calendar, days: lead }) : '',
+    alignDays: tickMode !== 'manual' && lead > 0 ? lead : 0,
     tick: pub.tickIndex ?? 0,
     gameDay: Math.floor(time + 1e-6),
     mood: pub.mood ? L(`NCI.Mood.${pub.mood}`) : '—',
