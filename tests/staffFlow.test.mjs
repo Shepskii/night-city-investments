@@ -687,3 +687,112 @@ test('the Projects tab: days left in the header, Capacity against the ceiling, t
   assert.match(free, /data-action="proposeProject" data-kind="staffRoom"/);
   assert.match(text(free), /Needs 2,000 eb; the cash holds 1,300 eb/);
 });
+
+test('Crew Tools downtime (B7b): project days and extra time come from a character\'s downtime, checked in their log', async () => {
+  const { CrewToolsAdapter } = await import('../scripts/integrations/CrewToolsAdapter.js');
+  const { rollSpec, investigationCost, BUSINESS_DEFAULTS, daysLeft } = await import('../scripts/engine/index.js');
+  const { MODULE_ID, SETTINGS } = await import('../scripts/utils/constants.js');
+  // A stand-in for Crew Tools' API, with its balance rule and its refusal when a GM has not prepared the character.
+  const log = { period: 1, accounts: [{ actorId: med.id }], events: [] };
+  const crew = {
+    active: true,
+    api: { downtime: {
+      getState: (id) => ({ ...log, accounts: log.accounts.filter((a) => a.actorId === id), events: log.events.filter((e) => e.actorId === id) }),
+      use: async (days, kind, reason, actorId, extra) => {
+        if (!log.accounts.some((a) => a.actorId === actorId)) throw new Error('A GM must open Downtime once.');
+        log.events.push({ id: `ev${log.events.length}`, actorId, kind, days, reason, period: log.period, projectId: extra.projectId });
+      },
+    } },
+  };
+  const modules = game.modules;
+  game.modules = { get: (id) => (id === 'pneuma-crewtools' ? crew : modules.get(id)) };
+  const saved = structuredClone(business());
+  const warnings = [];
+  const warn = ui.notifications.warn;
+  ui.notifications.warn = (text) => warnings.push(text);
+  const pid = 'prj_downtime';
+  const project = () => business().projects.find((x) => x.id === pid);
+  try {
+    await S.BusinessRepository.save({ ...saved, proposals: [], projects: [...saved.projects.filter((x) => x.status !== 'active'), { id: pid, kind: 'refit', status: 'active', days: 0, daysNeeded: 4, cost: 0, crew: {}, startedDay: saved.period.startDay }], period: { ...saved.period, days: {} } });
+    const app = windowFor(med, 'projects');
+    app.render = () => {};
+    const addDays = Apps.Business.DEFAULT_OPTIONS.actions.addDays;
+    const clickAdd = (days) => addDays.call(app, null, { dataset: { id: pid }, closest: () => ({ querySelector: () => ({ value: String(days) }) }) });
+    const processed = () => S.BusinessService.processActor(med);
+
+    // None awarded: nothing to spend, and the weekly allowance has gone.
+    assert.equal(CrewToolsAdapter.active(), true);
+    assert.equal(daysLeft(business(), med.id, CrewToolsAdapter.params(med, business())), 0);
+    assert.match(text(await renderBusiness(windowFor(med, 'week'))), /You have 0 downtime day\(s\) left/);
+    await clickAdd(1);
+    assert.equal(log.events.length, 0, 'nothing is spent');
+    assert.match(warnings.at(-1), /downtime day/);
+
+    // Awarded: what is spent goes to the project, once.
+    log.events.push({ id: 'award', actorId: med.id, kind: 'award', days: 5, period: 1 });
+    assert.equal(CrewToolsAdapter.balance(med.id), 5);
+    const tab = text(await renderBusiness(windowFor(med, 'projects')));
+    assert.match(tab, /Downtime days left 5/);
+    assert.match(tab, /Your Crew Tools downtime goes into it/);
+    await clickAdd(2);
+    await processed();
+    assert.equal(project().days, 2);
+    assert.equal(CrewToolsAdapter.balance(med.id), 3);
+    assert.equal(log.events.at(-1).kind, 'spend');
+    assert.match(log.events.at(-1).reason, /Refit/);
+    assert.equal(daysLeft(business(), med.id, CrewToolsAdapter.params(med, business())), 3, 'what is left is their balance, whatever this week has used');
+
+    // Only what the project still needs is spent.
+    await clickAdd(5);
+    await processed();
+    assert.equal(CrewToolsAdapter.balance(med.id), 1, 'two of the five');
+
+    // Refused: no claim, a claim not in the log, the wrong days, and a key used again.
+    await S.BusinessRepository.save({ ...business(), projects: business().projects.map((x) => (x.id === pid ? { ...x, status: 'active', days: 0 } : x)) });
+    const claim = async (payload) => {
+      await S.BusinessClient.submit(med, 'addDays', { businessId: business().id, projectId: pid, days: 1, ...payload });
+      await processed();
+      return receipt(med);
+    };
+    assert.equal((await claim({})).reason, 'no-days', 'no weekly days to fall back on');
+    assert.equal((await claim({ downtime: { key: 'forged', days: 1 } })).reason, 'no-downtime');
+    const paid = log.events.findLast((e) => e.kind === 'spend');
+    assert.equal((await claim({ downtime: { key: paid.projectId, days: paid.days + 1 } })).reason, 'no-downtime', 'more than was spent');
+    assert.equal((await claim({ downtime: { key: paid.projectId, days: paid.days } })).reason, 'no-downtime', 'already counted');
+    log.events.push({ id: 'old', actorId: med.id, kind: 'spend', days: 1, period: 0, projectId: 'lastSession' });
+    assert.equal((await claim({ downtime: { key: 'lastSession', days: 1 } })).reason, 'no-downtime', 'from a session gone by');
+    assert.equal(project().days, 0, 'none of them added anything');
+
+    // Extra time on a roll: offered only with a day to spend; the GM's side needs that day's spend credited.
+    const spec = (params) => rollSpec(business(), { type: 'action', action: 'work', use: null }, med.id, { day: business().period.startDay, params });
+    log.events.push({ id: 'more', actorId: med.id, kind: 'award', days: 1, period: 1 });
+    assert.equal(spec(CrewToolsAdapter.params(med, business())).extraAvailable, true);
+    assert.equal(spec(CrewToolsAdapter.gmParams()).extraAvailable, false);
+    const dialog = new Apps.Roll({ actorId: med.id, businessId: business().id, request: { type: 'action', businessId: business().id, action: 'work' }, rollTitle: 'Work' });
+    assert.match(text(render('templates/dialogs/roll.hbs', await dialog._prepareContext())), /Extra time spends a downtime day/);
+    log.events.push({ id: 'all', actorId: med.id, kind: 'spend', days: CrewToolsAdapter.balance(med.id), period: 1, projectId: 'elsewhere' });
+    assert.equal(spec(CrewToolsAdapter.params(med, business())).extraAvailable, false, 'none left');
+
+    // An investigation's legwork is money: there are no business days to take it from.
+    assert.equal(investigationCost([business()], med.id, null, CrewToolsAdapter.gmParams()).businessId, null);
+    assert.equal(investigationCost([business()], med.id, null, CrewToolsAdapter.gmParams()).fee, BUSINESS_DEFAULTS.ownership.investigate.legwork);
+
+    // A character with no account is told why.
+    const stranger = { id: 'nobody' };
+    assert.equal(CrewToolsAdapter.prepared(stranger.id), false);
+    log.accounts = [];
+    assert.match(text(await renderBusiness(windowFor(med, 'week'))), /a GM has to open Crew Tools/);
+    log.accounts = [{ actorId: med.id }];
+
+    // Switched off, the weekly allowance is back, Crew Tools or no.
+    await game.settings.set(MODULE_ID, SETTINGS.CREW_DOWNTIME, false);
+    assert.equal(CrewToolsAdapter.active(), false);
+    assert.equal(CrewToolsAdapter.params(med, business()), BUSINESS_DEFAULTS);
+    assert.match(text(await renderBusiness(windowFor(med, 'week'))), /business day\(s\) left this week/);
+    await game.settings.set(MODULE_ID, SETTINGS.CREW_DOWNTIME, true);
+  } finally {
+    game.modules = modules;
+    ui.notifications.warn = warn;
+    await S.BusinessRepository.save(saved);
+  }
+});

@@ -394,7 +394,7 @@
     <p class="nci-muted">{{crew}}</p>
     {{#if canAdd}}
     <div class="nci-hirerow">
-      <span class="nci-muted">{{localize "NCI.Project.AddHint"}}</span>
+      <span class="nci-muted">{{../addHint}}</span>
       <label>{{localize "NCI.Business.DaysToAdd"}} <input type="number" name="days" min="1" max="{{max}}" step="1" value="1"></label>
       <button type="button" data-action="addDays" data-id="{{id}}"><i class="fas fa-hammer"></i> {{localize "NCI.Business.AddDays"}}</button>
     </div>

@@ -2101,6 +2101,12 @@ The user's requests after U1, each built and committed on its own. Colours, layo
 - **At 0 or below** at a close they betray the Exec and go, leaving 15 Exposure. The rulebook has them try to sell the Exec out at 0 and leave below 0 at a session's end; one close does both. The Exec's next member, likewise after letting one go, starts at Loyalty 1 and costs 200 eb.
 - **Tested in the test world** (2026-11-03, Claw, Teamwork 4, at Splice Chrome Clinic): the Hire window's limit; a member joining at a drawn Loyalty; each care button once a week, for the Exec only; a week off stopping work and calls; the cap at a close; the GM's number field; a refusal shown on the Staff tab with no offer in the roll dialog; a betrayal at a close, with the ledger, the digest and 15 Exposure; a replacement at Loyalty 1 for 200 eb. The live test found that a member on a week off could still be called in, and that five kinds of request had no done message, four of them already released (now a test).
 
+**B7b Crew Tools downtime as built** (`integrations/CrewToolsAdapter.js`; checked against Crew Tools 1.0.13). A world setting, on by default, offered only with Crew Tools active.
+- **What changes.** Extra time on a roll, project days and a mentor's days come from the character's downtime, and the weekly 3 are gone. Weekly actions still cost none. An officer acting for a syndicate spends their own. An investigation's legwork is money, since it took its day from whichever business had one spare and has none to take now.
+- **How.** The player's client spends first, so a roll that cannot be paid for is never made: `downtime.use(days, 'spend', reason, characterId, { projectId: key })`, with a one-time key, and sends `{key, days}` with the request. It works out the balance as Crew Tools does, awards less all else, since it does not expose one. The engine is unchanged: `params.businessDays` is the balance on the client and 0 on the GM's side, where a verified spend credits the request by making `period.days` negative. The credit is used by that request, and the week's record is not saved if it is refused.
+- **The check.** The spend must be in the character's log, theirs, a `spend`, of the days claimed, in Crew Tools' current period, and not already counted (`downtimeUsed`). The player owns that log and could edit it, as with a roll's chat card (§27.8).
+- **Spent is spent.** Crew Tools has no refund, so a day spent for a request the GM's side then refuses is lost. The client makes the same checks first, so this takes a race or a change in between.
+
 ## 37. Roadmap
 
 | Phase | Deliverable |
@@ -2128,7 +2134,7 @@ The user's requests after U1, each built and committed on its own. Colours, layo
 | R2 | **Done (v0.16.0), see §36.7.** Role abilities: a player rolls rank + 9 in business rolls, as staff do |
 | F1 | **Done (v0.17.0), see §36.3 and §36.7.** Faction standing with corps and gangs, moved by gigs and business actions; smear campaigns through the impact pipeline; Media rumours and published stories moving prices; after R1 |
 | X1 | **Part done (v0.18.0), see §36.7:** big events as scenes, and more for Lawmen, Nomads and Rockerboys. **Still proposed:** player rivalry: private share deals, Netrunner runs on a company's NET, poaching and sabotage; after F1 |
-| B7 | **In progress, see §36.9.** B7a Teamwork against the rulebook is built. Still to come: Crew Tools downtime, REP and IP from business milestones, a business covering Housing and Lifestyle, and businesses on Night City Map |
+| B7 | **In progress, see §36.9.** B7a Teamwork against the rulebook and B7b Crew Tools downtime are built. Still to come: REP and IP from business milestones, a business covering Housing and Lifestyle, and businesses on Night City Map |
 | U1 | **Done (v0.19.0), see §36.1 and §36.8.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships, back-room staff; after F1 and B6 |
 | UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
 | P1 | **Proposed, see §36.2.** Production: workshops, lines, stock, selling and fencing; after E3 |

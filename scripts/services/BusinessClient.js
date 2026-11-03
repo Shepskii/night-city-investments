@@ -7,7 +7,7 @@
  *              chat card's id and the GM reads the dice from the card.
  */
 
-import { dayIndex, rollSpec, partnerOf } from '../engine/index.js';
+import { dayIndex, rollSpec, partnerOf, BUSINESS_DEFAULTS } from '../engine/index.js';
 import { MODULE_ID, FLAGS, OUTBOX_LIMIT, BROKER_TAG, INVESTOR_TAG, STAFF_TAGS } from '../utils/constants.js';
 import { NcmAdapter } from '../integrations/NcmAdapter.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
@@ -15,6 +15,7 @@ import { L, unwrap, isCharacter, isItemPile } from '../utils/helpers.js';
 import { SerialQueue } from '../utils/queue.js';
 import { MarketClock } from './MarketClockService.js';
 import { SkillAdapter } from './SkillAdapter.js';
+import { CrewToolsAdapter } from '../integrations/CrewToolsAdapter.js';
 
 /** What the GM has done with a character's business requests. */
 export function receiptsOf(actor) {
@@ -130,12 +131,19 @@ class BusinessClientImpl {
    * @returns {Promise<string|null>} the request key
    */
   async roll(actor, business, request, { levers = {}, title }) {
-    const spec = rollSpec(business, request, actor.id, { day: this.day(), operatorRank: operatorRankOf(business) });
+    const spec = rollSpec(business, request, actor.id, { day: this.day(), operatorRank: operatorRankOf(business), params: CrewToolsAdapter.params(actor, business) });
     if (!spec.ok) {
       ui.notifications.warn(L(`NCI.Business.Reason.${spec.reason}`));
       return null;
     }
     const use = request.use.kind === 'hire' ? request.use : spec.use;
+    // With Crew Tools, the days this roll takes are spent from downtime first, so one that cannot be paid for is never rolled (B7b).
+    const days = (levers.extra && spec.extraAvailable ? 1 : 0) + (request.type === 'trainRoll' ? BUSINESS_DEFAULTS.staff.training.mentorDays : 0);
+    let downtime = null;
+    if (CrewToolsAdapter.active() && days > 0) {
+      downtime = await CrewToolsAdapter.spend(actor, days, L('NCI.Downtime.Reason', { name: business.name, what: title }));
+      if (!downtime) return null;
+    }
     // An officer acting for a syndicate rolls with their own skills and Luck.
     const { messageId } = await SkillAdapter.leverCheck(actor?.isSyndicate ? actor.as : actor, {
       dv: spec.dv, title, use, levers: { ...levers, bonus: spec.bonusAvailable ? levers.bonus : 0, extra: spec.extraAvailable ? levers.extra : 0 },
@@ -143,7 +151,7 @@ class BusinessClientImpl {
       whisper: request.type === 'hideRoll',
     });
     if (!messageId) return null;
-    return this.submit(actor, request.type, { ...request, use, rollId: messageId });
+    return this.submit(actor, request.type, { ...request, use, rollId: messageId, ...(downtime ? { downtime } : {}) });
   }
 
   /**

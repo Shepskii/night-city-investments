@@ -198,6 +198,8 @@ export function normalizeBusiness(raw) {
     lastCampaignDay: b.lastCampaignDay ?? null,
     /** How many of each Exec's team members were lost: the next hire of theirs starts low and costs a fee (B7a). */
     teamLost: b.teamLost ?? {},
+    /** Crew Tools spends already counted here, so that none pays twice (B7b). */
+    downtimeUsed: (b.downtimeUsed ?? []).slice(-100),
     // Standing with factions (F1a): the band for each faction met. The number is in the GM's hidden state.
     standings: b.standings ?? {},
     // Hidden ownership (B6d): each holder's layers, innermost first; their strengths are GM-only.

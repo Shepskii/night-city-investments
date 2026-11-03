@@ -161,6 +161,10 @@ The older `[NCI: ARA]` (a client's ticker, or a business), `[NCI: ignore]` and `
 
 Private businesses, gangs and unknown clients have no share price, so only the other effects apply. A gang as a freelance gig's client asks for no mapping: only its target's price moves, and with no target the gig is simply recorded. The approval card lists every party before you approve.
 
+## Crew Tools downtime
+
+With Pneuma's Crew Tools active, **Business days come from Crew Tools downtime** is on by default: extra time, project days and mentoring spend a character's downtime, with no weekly allowance. Award days as usual, and open Downtime once for each character, or they have none to spend. Each spend shows in their Downtime Log as "NCI: business: what it was for". You can check it there: a player owns that log, as they do their chat cards. An investigation's legwork becomes money. Turn the setting off for the 3 business days a week without Crew Tools' involvement.
+
 ## Regulators
 
 Exposure has consequences. A case opens by chance at a monthly report (low 5%, moderate 15%, high 35%), or at once when a corp plant is fired, a Shortcuts roll is fumbled, or NCPD unmasks a holder of over 25% of a company. You can also press **Open a regulator's case** on any company, or **Drop the case** at any stage.

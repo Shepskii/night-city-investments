@@ -1741,6 +1741,10 @@
         "Name": "Player businesses",
         "Hint": "Let players found and run their own businesses, with the Business window. Turning this off stops their weeks closing and refuses new requests; nothing is deleted."
       },
+      "CrewDowntime": {
+        "Name": "Business days come from Crew Tools downtime",
+        "Hint": "On: extra time, project days and mentoring spend a character's Crew Tools downtime, and there is no weekly allowance, so business work competes with their other downtime. Remember to award days, and to open Downtime once for each character. Off: 3 business days a week for each voting partner."
+      },
       "Theme": {
         "Name": "Colour theme",
         "Hint": "Your own choice, for this module's windows and ticker. Matching uses whichever skin and colours you have set in Pneuma's Visual Tools, and stays red if you have none active.",
@@ -1861,6 +1865,15 @@
       "DiligenceTitle": "Due diligence on {name}",
       "IntelFound": "{bands}; worth about {low} to {high} eb",
       "IntelNothing": "nothing useful found"
+    },
+    "Downtime": {
+      "Reason": "NCI: {name}: {what}",
+      "NotEnough": "That takes {days} downtime day(s), and you do not have them.",
+      "NotPrepared": "You have no downtime yet: a GM has to open Crew Tools' Downtime for this character.",
+      "DaysLeft": "You have {n} downtime day(s) left.",
+      "DaysFree": "Downtime days left {free}",
+      "AddHint": "Your Crew Tools downtime goes into it.",
+      "ExtraNote": "Extra time spends a downtime day, whatever the roll."
     },
     "Faction": {
       "Hint": "Corporations and gangs a business can stand well or badly with. Link a corporation to its ticker, and give a gang the districts it holds, so the businesses there see it.",
@@ -3375,6 +3388,7 @@
         "team-full": "your team is as big as your Teamwork allows",
         "team-refused": "they refuse to work this week",
         "team-off": "they are on a paid week off",
+        "no-downtime": "the downtime spent for this cannot be found in the character's log",
         "team-care-done": "you have already done that this week",
         "not-your-team": "they are on another Exec's team",
         "no-name": "give them a name",

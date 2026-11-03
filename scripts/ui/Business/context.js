@@ -25,7 +25,8 @@ import { FactionRepository } from '../../data/FactionRepository.js';
 import { CompanyRepository } from '../../data/CompanyRepository.js';
 import { BusinessClient, operatorRankOf, pendingBusinessRequests, investorActors, staffActors, jobsOf } from '../../services/BusinessClient.js';
 import { SyndicateRepository } from '../../data/SyndicateRepository.js';
-import { businessAccounts } from '../accounts.js';
+import { businessAccounts, ownerOf } from '../accounts.js';
+import { CrewToolsAdapter } from '../../integrations/CrewToolsAdapter.js';
 import { MarketClock } from '../../services/MarketClockService.js';
 import { L, whole, signed } from '../format.js';
 import { weeklyBars, balanceLine } from '../components/chart.js';
@@ -294,7 +295,7 @@ function projectBlock(business, offer) {
 function projectsContext(business, actor, canAct) {
   const project = activeProject(business);
   const pending = business.proposals.some((x) => x.kind === 'project' || x.kind === 'expansion');
-  const left = actor ? daysLeft(business, actor.id) : 0;
+  const left = actor ? daysFor(business, actor) : 0;
   const total = BUSINESS_DEFAULTS.businessDays;
   const stage = BUSINESS_DEFAULTS.stages[business.stage];
   const cap = stage?.capacityCap ?? business.state.capacity;
@@ -303,7 +304,8 @@ function projectsContext(business, actor, canAct) {
   const crew = (p) => Object.entries(p.crew ?? {}).map(([id, n]) => `${nameOf(business, id)} ${n}`).join(', ');
   const name = (kind) => L(`NCI.Project.Kind.${kind}`);
   return {
-    daysFree: canAct ? L('NCI.Project.DaysFree', { free: left, total }) : '',
+    daysFree: canAct ? (CrewToolsAdapter.active() ? L('NCI.Downtime.DaysFree', { free: left }) : L('NCI.Project.DaysFree', { free: left, total })) : '',
+    addHint: CrewToolsAdapter.active() ? L('NCI.Downtime.AddHint') : L('NCI.Project.AddHint'),
     noDays: canAct && left <= 0,
     capacity: {
       text: L('NCI.Project.Capacity', { now: business.state.capacity.toFixed(2), cap: cap.toFixed(2) }),
@@ -483,6 +485,15 @@ function formingContext(business, actor) {
 /** The actions listed on the Back Room tab rather than Work: the illegal ones, and those that risk Exposure or being caught. */
 const BACK_ROOM_TAB = Object.freeze([...SECRET_ACTIONS, 'shortcuts', 'campaign']);
 
+/** The days this account has for business work: this week's, or with Crew Tools their downtime (B7b). */
+const daysFor = (business, account) => daysLeft(business, account.id, CrewToolsAdapter.params(account, business));
+
+/** What the week's note says about them. A GM has to open Downtime once for a character before they have any there. */
+function daysLine(business, account) {
+  if (!CrewToolsAdapter.active()) return L('NCI.Business.DaysLeft', { n: daysLeft(business, account.id) });
+  return CrewToolsAdapter.prepared(ownerOf(account)?.id) ? L('NCI.Downtime.DaysLeft', { n: daysFor(business, account) }) : L('NCI.Downtime.NotPrepared');
+}
+
 function weekContext(business, actor, canAct) {
   const period = business.period;
   const slots = BUSINESS_DEFAULTS.stages[business.stage]?.slots ?? 1;
@@ -509,7 +520,7 @@ function weekContext(business, actor, canAct) {
     // Slots still free this week out of the stage's total, in the actions table's header.
     slotsFree: L('NCI.Business.SlotsFree', { free: Math.max(0, slots - period.slots.length), total: slots }),
     noSlots: period.slots.length >= slots,
-    daysText: canAct ? L('NCI.Business.DaysLeft', { n: daysLeft(business, actor.id) }) : '',
+    daysText: canAct ? daysLine(business, actor) : '',
     // A chartered company has the five company actions; a smaller business the shop actions.
     // Crime is hidden from those not running a company (U1).
     actions: [...actionIdsFor(business.stage), ...(openRoom(business) ? ROOM_ACTIONS : [])].filter((id) => !(business.stage >= 2 && !runs && SECRET_ACTIONS.includes(id))).filter((id) => !(['campaign', 'blackOps', 'dealGang'].includes(id) || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).filter((id) => !CRIME_ACTIONS.includes(id) || underworldOn(business)).filter((id) => id !== 'dealGang' || !business.backRoom?.deal).map((id) => {
@@ -1291,7 +1302,7 @@ function trainingContext(business, s, account, runs) {
   const day = BusinessClient.day();
   const actor = account && !account.isSyndicate ? game.actors.get(account.id) : null;
   const mentorBase = actor ? SkillAdapter.baseFor(actor, skill.use).base : 0;
-  const days = account ? daysLeft(business, account.id) : 0;
+  const days = account ? daysFor(business, account) : 0;
   const course = trainCheck(business, s.id, { mentor: false, day });
   const mentor = trainCheck(business, s.id, { mentor: true, mentorBase, days, day });
   const cost = t.perPoint * skill.base;

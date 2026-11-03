@@ -38,6 +38,7 @@ import { escapeHtml } from '../utils/text.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
 import { SkillAdapter } from './SkillAdapter.js';
+import { CrewToolsAdapter } from '../integrations/CrewToolsAdapter.js';
 import { WealthAdapter } from './WealthAdapter.js';
 import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors, staffActors, jobsOf } from './BusinessClient.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
@@ -550,6 +551,15 @@ class BusinessServiceImpl {
       request = { ...request, targetId: target.id };
     }
 
+    // With Crew Tools, no weekly days: only what this request's spend, found in the character's log, pays for (B7b).
+    const params = CrewToolsAdapter.gmParams();
+    if (business && request.downtime && CrewToolsAdapter.active()) {
+      const spent = CrewToolsAdapter.verify(actor.id, request.downtime);
+      if (!spent || (business.downtimeUsed ?? []).includes(spent.id)) return this._receipt(actor, request, { ok: false, reason: 'no-downtime' });
+      spendDays(business, as.partner.id, -spent.days);
+      business.downtimeUsed = [...(business.downtimeUsed ?? []), spent.id];
+    }
+
     const day = this.day();
     const context = this.context(business);
     if (request.type === 'hideRoll' && business) context.hide = this._hideTerms(business, as.partner.id, context.marketPrice);
@@ -561,7 +571,7 @@ class BusinessServiceImpl {
     let check = null;
     if (business && ROLL_REQUESTS.includes(request.type) && request.use) {
       // The same checks the engine makes, first, so a request that would be refused does not use up its card.
-      const spec = rollSpec(business, request, as.partner.id, { day, operatorRank: context.operatorRank });
+      const spec = rollSpec(business, request, as.partner.id, { day, operatorRank: context.operatorRank, params });
       if (spec.ok) {
         check = await SkillAdapter.verifyLevers(actor, request, {
           dv: spec.dv, use: request.use.kind === 'hire' ? request.use : spec.use, bonusAvailable: spec.bonusAvailable, extraAvailable: spec.extraAvailable, allowHire: spec.allowHire,
@@ -569,7 +579,7 @@ class BusinessServiceImpl {
       }
     }
 
-    const out = applyBusinessRequest({ business, request, actor: as.partner, day, check, context });
+    const out = applyBusinessRequest({ business, request, actor: as.partner, day, check, context, params });
     // The engine is pure, so this is a dry run until it is committed: a syndicate's payment over what
     // this officer has left of the day's limit goes to its members instead.
     if (out.ok && as.syndicate && -(out.wealth?.[as.syndicate.id] ?? 0) > limitLeft(as.syndicate, actor.id, day)) {
@@ -1382,7 +1392,7 @@ class BusinessServiceImpl {
     }
     const target = investigationTarget(stored, holderId, entry.layers?.[holderId] ?? [], mine.peeled);
     if (!target.ok) return target;
-    const cost = investigationCost(BusinessRepository.all(), actor.id, use);
+    const cost = investigationCost(BusinessRepository.all(), actor.id, use, CrewToolsAdapter.gmParams());
     const wealth = WealthAdapter.get(actor);
     if (cost.fee > wealth) return { ok: false, reason: 'insufficient-funds' };
     const check = await SkillAdapter.verifyLevers(actor, request, { dv: target.dv, use });

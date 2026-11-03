@@ -6,6 +6,8 @@
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
 import { THEMES, applyTheme, visualToolsActive } from './theme.js';
 
+const CREW_TOOLS_ID = 'pneuma-crewtools';
+
 const notifyMarketUpdated = () => Hooks.callAll(HOOKS.MARKET_UPDATED);
 const notifyBusinessesChanged = () => Hooks.callAll(HOOKS.BUSINESSES_CHANGED);
 const notifySyndicatesChanged = () => Hooks.callAll(HOOKS.SYNDICATES_CHANGED);
@@ -315,6 +317,17 @@ export function registerSettings() {
     hint: 'NCI.Settings.BusinessesEnabled.Hint',
     scope: 'world',
     config: true,
+    type: Boolean,
+    default: true,
+    onChange: notifyBusinessesChanged,
+  });
+
+  // Offered only with Crew Tools there, and on with it: business work competes with a character's other downtime (B7b).
+  s.register(MODULE_ID, SETTINGS.CREW_DOWNTIME, {
+    name: 'NCI.Settings.CrewDowntime.Name',
+    hint: 'NCI.Settings.CrewDowntime.Hint',
+    scope: 'world',
+    config: !!game.modules?.get(CREW_TOOLS_ID)?.active,
     type: Boolean,
     default: true,
     onChange: notifyBusinessesChanged,

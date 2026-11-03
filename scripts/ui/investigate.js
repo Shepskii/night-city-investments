@@ -6,6 +6,7 @@
  */
 
 import { BUSINESS_DEFAULTS, MAX_LUCK_PER_ROLL, investigationCost } from '../engine/index.js';
+import { CrewToolsAdapter } from '../integrations/CrewToolsAdapter.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
 import { WealthAdapter } from '../services/WealthAdapter.js';
 import { SkillAdapter } from '../services/SkillAdapter.js';
@@ -30,7 +31,7 @@ const useLabel = (u) => (u.kind === 'ability' ? u.ability : u.skill);
 
 /** What an investigation takes from this character, before any bribe. */
 function costText(actor) {
-  const cost = investigationCost(BusinessRepository.forActor(actor.id), actor.id, null);
+  const cost = investigationCost(BusinessRepository.forActor(actor.id), actor.id, null, CrewToolsAdapter.gmParams());
   return cost.businessId ? L('NCI.Ownership.CostDay', { name: cost.businessName }) : L('NCI.Ownership.CostFee', { fee: cost.fee });
 }
 
@@ -61,7 +62,7 @@ export async function investigate(actor, { ticker = null, businessId = null, ref
   });
   if (!picked?.use) return null;
   // Refused here if it cannot be paid for, before any dice or Luck are spent.
-  if (investigationCost(BusinessRepository.forActor(actor.id), actor.id, picked.use).fee > WealthAdapter.get(actor)) {
+  if (investigationCost(BusinessRepository.forActor(actor.id), actor.id, picked.use, CrewToolsAdapter.gmParams()).fee > WealthAdapter.get(actor)) {
     return ui.notifications.warn(L('NCI.Business.Reason.insufficient-funds'));
   }
   const { messageId } = await SkillAdapter.leverCheck(actor, { dv: null, title: L('NCI.Ownership.InvestigateTitle', { label }), use: picked.use, levers: { luck: picked.luck } });

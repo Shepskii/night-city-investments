@@ -15,6 +15,7 @@ Open the **Market Terminal** from the scene controls (the chart icon in the firs
 - **Market tab:** every company and fund, with its price, the day's move and a trend line. Click a row for the company page: a chart, the 52-week range, dividend terms, the description, the latest news, a watchlist star, and Buy and Sell buttons. Upcoming IPOs and open share offerings are listed below the table.
 - **Portfolio folder:** pick your character at the top. It has four tabs. **Overview:** your balances, holdings, private stakes, total value and a chart of your profit and loss. **Brokerage:** paying in and taking out, your broker and direct trading, founding a syndicate and takeover bids. **Investments:** your positions, syndicates and private stakes. **Ledger:** open and recent orders, your account ledger and requesting a statement.
 - **Settings folder:** your price alerts and how you are notified.
+- **Business days and Crew Tools:** with Pneuma's Crew Tools active and the setting on, extra time on a roll, project days and mentoring spend your character's downtime, and there is no weekly allowance. The day goes as soon as you press the button, whatever the roll.
 - **Colours:** with Pneuma's Visual Tools installed, the **Colour theme** module setting can match its skin: Dark, Light, Pneuma Dark, Pneuma Light or Pneuma Hub, and any Colorize colours. It is your own choice, and it starts on Night City red.
 - **News tab:** market headlines, corporate actions and anything the GM posts.
 

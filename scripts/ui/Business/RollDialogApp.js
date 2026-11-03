@@ -16,6 +16,7 @@ import { BaseApplication } from '../BaseApplication.js';
 import { L, whole } from '../format.js';
 import { actorLink } from '../actorLink.js';
 import { escapeHtml } from '../../utils/text.js';
+import { CrewToolsAdapter } from '../../integrations/CrewToolsAdapter.js';
 
 const useLabel = (use) => (use.kind === 'ability' ? use.ability : use.skill);
 
@@ -145,7 +146,7 @@ export class RollDialogApp extends BaseApplication {
   /** Whether the roll can be made now, and the ways it may be made (no use named yet). */
   _spec() {
     if (this.asked) return { ok: true, uses: this.asked.uses, dv: this.asked.dv, bonusAvailable: this.asked.bonusAvailable, extraAvailable: false, allowHire: false };
-    return rollSpec(this.business, { ...this.request, use: null }, this.partnerId, { day: BusinessClient.day(), operatorRank: operatorRankOf(this.business) });
+    return rollSpec(this.business, { ...this.request, use: null }, this.partnerId, { day: BusinessClient.day(), operatorRank: operatorRankOf(this.business), params: CrewToolsAdapter.params(this.account, this.business) });
   }
 
   async _prepareContext() {
@@ -195,6 +196,7 @@ export class RollDialogApp extends BaseApplication {
       bonus: !!levers.bonus,
       extraAvailable,
       extra: !!levers.extra,
+      extraNote: extraAvailable && CrewToolsAdapter.active() ? L('NCI.Downtime.ExtraNote') : '',
       dv: preview.dv,
       chance: pct(preview.chance),
       // A 1 is a fumble roll and a 10 adds a die, so "or more" only reads true between them.

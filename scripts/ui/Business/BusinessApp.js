@@ -24,6 +24,7 @@ import { investigate } from '../investigate.js';
 import { answerCase } from '../answerCase.js';
 import { pickerContext, startContext, businessContext, usableActors, jobsContext, termKey } from './context.js';
 import { pendingRows } from './pending.js';
+import { CrewToolsAdapter } from '../../integrations/CrewToolsAdapter.js';
 
 /** The folders along the top, and the tabs in each. */
 const FOLDERS = Object.freeze({
@@ -463,8 +464,17 @@ export class BusinessApp extends BaseApplication {
     return this._send('lieLow', {});
   }
 
-  static _onAddDays(event, target) {
-    return this._send('addDays', { projectId: target.dataset.id, days: amount(target, 'days') });
+  static async _onAddDays(event, target) {
+    const days = amount(target, 'days');
+    // With Crew Tools, the days come out of downtime first, and only what the project still needs (B7b).
+    if (CrewToolsAdapter.active() && days > 0) {
+      const project = this.business?.projects.find((x) => x.id === target.dataset.id);
+      const needed = project ? Math.min(days, project.daysNeeded - project.days) : 0;
+      if (needed < 1) return null;
+      const downtime = await CrewToolsAdapter.spend(this.actor, needed, L('NCI.Downtime.Reason', { name: this.business.name, what: L(`NCI.Project.Kind.${project.kind}`) }));
+      return downtime ? this._send('addDays', { projectId: project.id, days: needed, downtime }) : null;
+    }
+    return this._send('addDays', { projectId: target.dataset.id, days });
   }
 
   static async _onProposeStepUp() {

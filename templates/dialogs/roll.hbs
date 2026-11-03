@@ -32,7 +32,7 @@
   <label><input type="checkbox" name="bonus" {{#if bonus}}checked{{/if}}> {{localize "NCI.Roll.UseBonus"}}</label>
   {{/if}}
   {{#if extraAvailable}}
-  <label><input type="checkbox" name="extra" {{#if extra}}checked{{/if}}> {{localize "NCI.Roll.UseExtra"}}</label>
+  <label><input type="checkbox" name="extra" {{#if extra}}checked{{/if}}> {{localize "NCI.Roll.UseExtra"}}</label>{{#if extraNote}} <span class="nci-muted">{{extraNote}}</span>{{/if}}
   {{/if}}
   {{#if hireNote}}<p class="nci-hint">{{hireNote}}</p>{{/if}}
 
