@@ -12,6 +12,7 @@
     <div class="nci-bizhead">
       <div class="nci-bizname">{{name}}</div>
       <div class="nci-muted">{{archetype}}{{#if location}} &middot; {{location}}{{/if}}</div>
+      <div class="nci-actions"><button type="button" data-action="businessOpen" data-id="{{id}}"><i class="fas fa-store"></i> {{localize "NCI.GMBusiness.Open"}}</button></div>
     </div>
     {{#if owners.length}}
     <table class="nci-market nci-owners nci-peoplecols">
@@ -25,7 +26,6 @@
     <div class="nci-actions">
       <button type="button" data-action="businessApprove" data-id="{{id}}"><i class="fas fa-check"></i> {{localize "NCI.GMBusiness.Approve"}}</button>
       <button type="button" data-action="businessReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.Reject"}}</button>
-      <button type="button" data-action="businessOpen" data-id="{{id}}"><i class="fas fa-store"></i> {{localize "NCI.GMBusiness.Open"}}</button>
     </div>
   </div>
   {{else}}<p class="nci-empty">{{localize "NCI.GMBusiness.NoneWaiting"}}</p>{{/each}}
@@ -38,6 +38,7 @@
     <div class="nci-bizhead">
       <div class="nci-bizname">{{name}}</div>
       <div><strong>{{status}}</strong> <span class="nci-muted">&middot; {{archetype}}{{#if location}} &middot; {{location}}{{/if}}</span></div>
+      <div class="nci-actions"><button type="button" data-action="businessOpen" data-id="{{id}}"><i class="fas fa-store"></i> {{localize "NCI.GMBusiness.Open"}}</button></div>
     </div>
     {{#if stats.length}}<div class="nci-gmstats">{{#each stats}}<span><span class="nci-muted">{{label}}</span> <strong>{{value}}</strong></span>{{/each}}</div>{{/if}}
     {{#if money}}<div>{{money}}</div>{{/if}}
@@ -159,15 +160,22 @@
         <button type="button" data-action="businessSetStanding" data-id="{{id}}"><i class="fas fa-handshake"></i> {{localize "NCI.Faction.SetStanding"}}</button>
       </div>
       {{/if}}
+      {{#if isOpen}}{{#if leavers.length}}
       <div class="nci-actions">
-        <button type="button" data-action="businessOpen" data-id="{{id}}"><i class="fas fa-store"></i> {{localize "NCI.GMBusiness.Open"}}</button>
-        {{#if canOpenCase}}<button type="button" data-action="businessCaseOpen" data-id="{{id}}"><i class="fas fa-scale-balanced"></i> {{localize "NCI.GMBusiness.CaseOpen"}}</button>{{/if}}
-        {{#if isOpen}}{{#if leavers.length}}
         <select name="leaver">{{#each leavers}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
         <button type="button" data-action="businessPartnerLeaves" data-id="{{id}}" title="{{localize 'NCI.GMBusiness.LeavesHint'}}"><i class="fas fa-person-walking-arrow-right"></i> {{localize "NCI.GMBusiness.Leaves"}}</button>
-        {{/if}}{{/if}}
-        {{#if isForming}}<button type="button" data-action="businessReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.Cancel"}}</button>{{/if}}
       </div>
+      {{/if}}{{/if}}
+      {{#if canOpenCase}}
+      <div class="nci-actions">
+        <button type="button" data-action="businessCaseOpen" data-id="{{id}}"><i class="fas fa-scale-balanced"></i> {{localize "NCI.GMBusiness.CaseOpen"}}</button>
+      </div>
+      {{/if}}
+      {{#if isForming}}
+      <div class="nci-actions">
+        <button type="button" data-action="businessReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.Cancel"}}</button>
+      </div>
+      {{/if}}
     </div>
   </div>
   {{else}}<p class="nci-empty">{{localize "NCI.GMBusiness.NoneRunning"}}</p>{{/each}}

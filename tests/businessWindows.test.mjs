@@ -600,9 +600,10 @@ test('the Pending tab has a row for each decision waiting, and the tab buttons c
     assert.equal(tabButton(players, 'businesses'), 'Businesses 8');
     assert.equal(tabButton(players, 'heat'), 'Heat 1');
     assert.equal(tabButton(await renderConsole('gigs'), 'gigs'), 'Gigs 3');
-    // Every GM button on an entry comes after its tables, and an offer's words are with its buttons.
+    // Every GM button on an entry but Open, at the top, comes after its tables, and an offer's words are with its buttons.
     const entry = players.split('<div class="nci-gig nci-bizentry">').find((x) => x.includes('businessRestructure'));
-    assert.ok(entry.lastIndexOf('</table>') < entry.indexOf('data-action='), 'the buttons are at the foot');
+    assert.ok(entry.indexOf('data-action="businessOpen"') < entry.indexOf('<table'), 'Open is at the top');
+    assert.ok(entry.lastIndexOf('</table>') < entry.replace('data-action="businessOpen"', '').indexOf('data-action='), 'the other buttons are at the foot');
     assert.ok(entry.indexOf('Nix') > entry.indexOf('nci-gmbuttons'));
     assert.match(entry, /A smear against Arasaka \(ARA\)/);
     assert.match(entry, /data-action="businessCampaignApprove"/);
@@ -1431,6 +1432,24 @@ test('stock on the Production tab (P1b): buying, handing over, consigning and th
     med.createEmbeddedDocuments = createBefore;
     game.actors.splice(game.actors.indexOf(room), 1);
     med.system.wealth.value = wealth;
+    await S.BusinessRepository.save(saved);
+  }
+});
+
+test('the GM\'s business entry: Open under the location, the regulator\'s case below the partner row', async () => {
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  try {
+    await S.BusinessRepository.save({ ...b, status: 'open', stage: 2, company: { ticker: 'TST' }, regCase: null });
+    const html = await renderConsole('businesses');
+    const at = (needle) => html.indexOf(needle);
+    assert.ok(at('data-action="businessOpen"') > -1);
+    assert.ok(at('nci-bizhead') < at('data-action="businessOpen"'));
+    assert.ok(at('data-action="businessOpen"') < at('nci-gmstats') || at('nci-gmstats') < 0, 'at the top, before the figures');
+    const leaves = at('data-action="businessPartnerLeaves"');
+    const opens = at('data-action="businessCaseOpen"');
+    if (leaves > -1 && opens > -1) assert.ok(leaves < opens, 'the case is below the row that lets a partner leave');
+  } finally {
     await S.BusinessRepository.save(saved);
   }
 });

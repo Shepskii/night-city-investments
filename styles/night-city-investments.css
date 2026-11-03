@@ -622,3 +622,8 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .nci-app :is(h1, h2, h
 }
 .nci-app .window-content button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
 .nci-app .window-content .nci-tabs button { height: auto; min-height: 0; }
+
+/* The GM's broker menus match, and the heat tab's entry field stays out of the way of its row's buttons. */
+.nci-app .nci-actions select:is([name="brokerActor"], [name="brokerContact"]) { width: 240px !important; }
+.nci-app td.nci-rowbtns input[name="heatValue"] { display: inline-block; width: 64px; vertical-align: middle; }
+.nci-app td.nci-rowbtns:has(input[name="heatValue"]) > button { vertical-align: middle; margin-left: 4px; }
