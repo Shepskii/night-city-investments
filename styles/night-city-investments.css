@@ -610,3 +610,7 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .nci-app :is(h1, h2, h
 /* The labels sit above the fields, so the row lines up along the bottom, all at one height. */
 .nci-app .nci-actions[data-line-form] { align-items: flex-end; }
 .nci-app .nci-actions[data-line-form] select { height: 30px; }
+/* A stock row's fields: the form rule's full width would push its buttons out of the window. The button's width keeps the rows in line. */
+.nci-app td.nci-endbtns input[name="stockCount"] { display: inline-block; width: 56px; height: 30px; vertical-align: middle; }
+.nci-app td.nci-endbtns select[name="handTo"] { display: inline-block; width: 120px; height: 30px; margin-left: 4px; vertical-align: middle; }
+.nci-app td.nci-endbtns > button[data-action="buyStock"] { min-width: 150px; justify-content: center; }
