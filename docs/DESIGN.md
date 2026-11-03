@@ -2181,6 +2181,8 @@ A Maker with a base of 14 costs more than a shop's line earns (70 eb a week agai
 
 A hand advance used to move only the market, building a `lead` over the calendar that never closed. Now, outside manual mode, it also moves the calendar by the whole days it added (`TickService._moveCalendar`), so in-world time passes for everything reading the calendar. A gap already there is left for the Market tab's **Move the calendar on** button, so that the first press after updating does not jump the calendar without warning. Both move the calendar first and only then turn lead into calendar days, so the market date never changes, the clock check finds nothing due, and a calendar that cannot move changes nothing. A GM's undo still leaves the clock alone.
 
+The short business periods seen in testing are the calendar's: the test world's Simple Calendar restarts its weekdays on the 1st of each month, so a week can close after 2 or 3 days. Takings, wages, upkeep, bench time and the sales and fence limits all scale with the period. Merging them is the user's choice, still open.
+
 ## 37. Roadmap
 
 | Phase | Deliverable |
@@ -2211,6 +2213,6 @@ A hand advance used to move only the market, building a `lead` over the calendar
 | B7 | **Done (v0.20.0), see §36.9.** B7a Teamwork against the rulebook, B7b Crew Tools downtime, B7c REP and IP, B7d living costs and B7e businesses on Night City Map, with the bridge at 0.3.0 |
 | U1 | **Done (v0.19.0), see §36.1 and §36.8.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships, back-room staff; after F1 and B6 |
 | UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
-| P1 | **In progress, see §36.10.** P1a (the workshop, item lists and the GM's tab, runs, the Maker post, the storeroom sheet) and P1b (shop sales, buying, consigning, stock in book value, closing, the GM's question) are built and live-tested. P1c, fencing and illegal production through a back room, is built |
+| P1 | **In progress, see §36.10.** P1a (the workshop, item lists and the GM's tab, runs, the Maker post, the storeroom sheet) and P1b (shop sales, buying, consigning, stock in book value, closing, the GM's question) are built and live-tested. P1c, fencing and illegal production through a back room, is built and live-tested. **Next: the player and GM guides and the README, then release as v0.21.0** |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |
