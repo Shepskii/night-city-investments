@@ -17,7 +17,7 @@ function shop({ stage = 0, till = 5000, archetype = 'clinic', workshop = [0] } =
     id: 'b1', name: 'Back Room', archetype, status: 'open', stage, till,
     partners: [{ actorId: 'med', name: 'Medtech', status: 'active', voting: true, cash: 0, gear: [], units: 100 }],
     upgrades: { workshop },
-    period: { index: 1, startDay: 0, endDay: 6, slots: [], bonuses: [], helpers: [], overtime: {}, draws: {} },
+    period: { index: 1, startDay: 0, endDay: 7, slots: [], bonuses: [], helpers: [], overtime: {}, draws: {} },
     state: { capacity: 1, reputation: 50, costFactor: 1 },
   });
 }
@@ -236,4 +236,18 @@ test('Careful and Bold move the yield, as they move any action\'s effect', () =>
   assert.equal(made('standard'), 6, 'three quarters of 8');
   assert.equal(made('careful'), 4, 'and three quarters of that');
   assert.equal(made('bold'), 7, 'and a quarter more');
+});
+
+test('a short week gives the benches less time', () => {
+  const b = shop();
+  setLine(b, PREMIUM);
+  b.period.endDay = 3;
+  week(b, 'exceptional');
+  assert.equal(b.stock[0].count, 3, 'three days at one bench, a day each');
+  const long = shop({ stage: 1, workshop: [0] });
+  setLine(long, EXPENSIVE);
+  long.period.endDay = 3;
+  week(long, 'exceptional');
+  assert.equal(long.production.run.left, 4, 'one item, with 4 of its 7 bench days to go');
+  assert.equal(long.stock.length, 0);
 });

@@ -51,11 +51,11 @@ export const looseStock = (b) => (b.stock ?? []).filter((s) => !STACKING_TYPES.i
  * asked for, and the room left on the shelves.
  * @returns {{ok: true, tier: object, dv: number, days: number, materials: number, size: number} | {ok: false, reason: string}}
  */
-export function runOffer(b, line, p = BUSINESS_DEFAULTS) {
+export function runOffer(b, line, p = BUSINESS_DEFAULTS, part = 1) {
   const tier = tierOf(line?.price, p);
   if (!tier) return fail('bad-line');
   if (tier.price > topTierOf(b, p).price) return fail('line-too-dear');
-  const week = benchesOf(b, p) * p.production.benchDays;
+  const week = benchesOf(b, p) * p.production.benchDays * part;
   const room = STACKING_TYPES.includes(line.type) ? Infinity : (p.production.storeCap[b.stage] ?? 0) - looseStock(b);
   const size = Math.min(Math.max(1, Math.floor(week / tier.days)), p.production.runMax, Math.max(1, line.qty ?? p.production.runMax), room);
   return size >= 1 ? { ok: true, tier, dv: tier.dv, days: tier.days, materials: tier.materials, size } : fail('store-full');
@@ -111,11 +111,13 @@ export function addStock(b, run) {
  */
 export function productionWeek(b, day, out, p = BUSINESS_DEFAULTS) {
   if (!hasWorkshop(b, p)) return;
+  // A short week gives the benches less time, as it gives the shop less takings.
+  const part = Math.min(1, (b.period.endDay - b.period.startDay) / 7);
   const note = (kind, name) => { b.pendingNotes = [...(b.pendingNotes ?? []), { kind, name }]; };
   const slot = b.period.slots.find((s) => s.action === 'produce');
   const line = b.production?.line;
   if (slot && line && !b.production.run) {
-    const offer = runOffer(b, line, p);
+    const offer = runOffer(b, line, p, part);
     // Careful or Bold moved the DV, so they move the yield too, as they do any action's effect.
     const share = Math.min(1, (p.production.yield[slot.band] ?? 0) * approachOf(slot.approach).effect);
     if (!offer.ok || share <= 0) {
@@ -137,7 +139,7 @@ export function productionWeek(b, day, out, p = BUSINESS_DEFAULTS) {
   }
   const run = b.production?.run;
   if (!run) return;
-  run.left -= benchesOf(b, p) * p.production.benchDays;
+  run.left -= benchesOf(b, p) * p.production.benchDays * part;
   if (run.left > 1e-6) return;
   addStock(b, run);
   b.production.run = null;
