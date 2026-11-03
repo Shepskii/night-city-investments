@@ -1494,3 +1494,16 @@ test('the storeroom\'s access (P1b): the GM who made it stays its owner, and a p
     game.actors.splice(game.actors.indexOf(room), 1);
   }
 });
+
+test('a week\'s cashbook adds up with stock sold: its margin is profit, its cost is other money, and nothing is left over', async () => {
+  const { cashbookContext } = await import('../scripts/ui/Business/context.js');
+  const b = structuredClone(S.BusinessRepository.all()[0]);
+  const digest = (index, till, extra = {}) => ({ index, startDay: index * 7, endDay: index * 7 + 7, takings: 900, gross: 900, upkeep: 500, costs: { running: 500 }, wages: 300, paid: 300, profit: 100, till, actions: [], ...extra });
+  b.digests = [digest(1, 1000), digest(2, 1000 + 100 + 18 + 40, { profit: 118, stock: { sold: 63, kept: 58, margin: 18, owners: 5 } })];
+  b.ledger = [{ day: 21, kind: 'stockSales', amount: 18, sold: 63, week: 2 }, { day: 21, kind: 'stockCostBack', amount: 40, week: 2 }];
+  const page = cashbookContext(b, 2);
+  assert.equal(page.profit, '+118');
+  assert.ok(page.income.some((x) => x.amount === '+18' && /over its cost/.test(x.label)));
+  assert.ok(page.other.some((x) => x.amount === '+40'), 'what it cost comes back as other money');
+  assert.ok(!page.unlisted, `nothing unaccounted for: ${page.unlisted}`);
+});

@@ -844,7 +844,8 @@ export function cashbookContext(business, index, officer = true) {
   // Whatever moved the cash that the ledger no longer lists (an old week, or entries since trimmed), so the page still adds up.
   const money = weekMoney(business.digests, at);
   const listed = (d.event?.cost ?? 0) + (d.interest ?? 0) + (d.repaid ?? 0);
-  const unlisted = money.other == null ? 0 : money.other + listed - others.reduce((a, e) => a + e.amount, 0);
+  // What stock made over its cost is in the profit already, not among the other money.
+  const unlisted = money.other == null ? 0 : money.other + listed - (d.stock?.margin ?? 0) - others.reduce((a, e) => a + e.amount, 0);
   return {
     business: business.name,
     week: row.week,
