@@ -52,7 +52,7 @@ One list of everything waiting for you, across every tab, each row with its type
 - **Advance 1 / 7 / 30 ticks** and **Advance 1 day** (Market tab) work in every mode. At the default interval 30 ticks is about five hours; use **Advance 1 day** to move a whole day.
 - **Advancing by hand moves the calendar too**, in the day and in-world clock modes, by the whole days it adds, so in-world time passes for everything that reads the calendar. Manual mode leaves the calendar alone.
 - The **market date** is what dividends, fund payouts, IPOs and statements follow. A world that advanced by hand on an earlier version may have it ahead of the calendar: the Market tab says by how many days, and **Move the calendar on** closes the gap. It moves the calendar only, never the market.
-- Player **businesses** close their week on the first tick on or after the weekday in settings. If you move the calendar back past the start of a business's week, that week runs from the new date, with a note in its digest, so its weeks go on closing. Other dates already set on it, such as a loan's next try, keep waiting for the date they were given.
+- Player **businesses** close their week on the first tick on or after the weekday in settings. If you move the calendar back past the start of a business's week, that week runs from the new date, with a note in its digest, so its weeks go on closing. Other dates already set on it, such as the next try at a step-up, charter or listing, keep waiting for the date they were given.
 
 #### Steering the market
 
