@@ -132,4 +132,6 @@ This module is developed with generative AI. Code, tests and documentation were 
 
 ## License
 
-MIT. The bundled fonts, Rajdhani and Share Tech Mono, are under the SIL Open Font License; each licence is in its folder under `assets/fonts`.
+Copyright (c) 2026 Shepskii. Licensed under the [Mozilla Public License 2.0](LICENSE). Versions up to and including 0.21.1 were released under the MIT License and stay available under it. The bundled fonts, Rajdhani and Share Tech Mono, are under the SIL Open Font License; each licence is in its folder under `assets/fonts`.
+
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.

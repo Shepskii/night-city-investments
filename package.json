@@ -12,7 +12,7 @@
     "simulate:production": "node tools/simulate-production.mjs",
     "simulate:backrooms": "node tools/simulate-backrooms.mjs"
   },
-  "license": "MIT",
+  "license": "MPL-2.0",
   "devDependencies": {
     "handlebars": "^4.7.10"
   }
