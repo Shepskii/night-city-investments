@@ -201,7 +201,7 @@ A 1,000 eb job moves its client about 1.5%, a failure 1.3 times as much, shown o
 
 | Tag | Means |
 |---|---|
-| `[NCI client: <name/ticker>]` | The client. Supercedes the gig's client field |
+| `[NCI client: <name/ticker>]` | The client. Supersedes the gig's client field |
 | `[NCI target: <name/ticker>]` | Who it was aimed at |
 | `[NCI contract: <player business name/ticker>]` | Done for this player business, making it a contract |
 
