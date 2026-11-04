@@ -2270,7 +2270,15 @@ That is 11 kinds today and 23 new ones, 34 in all, giving each kind of business 
 
 **Parts, to be shown in turn as P1's were.** U2a: the profiles in the engine, and every kind's numbers, tested against the simulator. U2b: the new kinds, choosing one on the Projects tab with its profile in plain words, and a Connected room's faction. The guides follow.
 
-### 36.13 Press: stories against players (proposed, 2026-11-04; not built)
+### 36.13 Press: stories against players (the user's choices, 2026-11-04; not built)
+
+**Decided.**
+- **Characters** are driven by the worst standing of any business they run, plus their heat. They get no standing of their own.
+- **Mostly true stories,** with room for tabloid falsehoods: the smear needs no facts and is harder to believe. To be set in S1a: when something true can be told, a smear is the pick about one time in five (a starting number).
+- **GM approval** by default.
+- **Character REP** is never touched by a story.
+- **Gangs** don't feed outlets for now; a future addition.
+- **How often** is a GM setting: proposed as Rare, Normal or Often, at half, the table's and double the weekly chances. The 28-day limit stays whichever is chosen.
 
 **The idea.** Stories only run one way today: a player's Media writes about a market company. This runs them the other way. Non-player companies, driven by how they stand with the players, run stories against player companies and individual characters. What a story does depends on what it says: a listed company's price, a business's Reputation, Exposure, or a character's heat.
 
@@ -2287,7 +2295,7 @@ That is 11 kinds today and 23 new ones, 34 in all, giving each kind of business 
 | `HeatService.setHeat`, and tiers at 25, 50 and 75 | Heat is per character, and only with tracking on | What a story about a character adds |
 | Exposure, regulators' cases, hidden holdings | Hidden state, with `caseRank` 5 opening a case on a believed expose | What makes a story true |
 
-**Who runs a story.** A *grudge* and an *outlet*. The grudge is the faction with the reason, and the outlet is who prints it: a corporation may be its own, or use a market company in the media sector such as Network 54. An outlet has a rank that sets Believability and the price limit, as a Media's Credibility does. A gang has no outlet of its own, so it could feed one or stay with sabotage.
+**Who runs a story.** A *grudge* and an *outlet*. The grudge is the faction with the reason, and the outlet is who prints it: a corporation may be its own, or use a market company in the media sector such as Network 54. An outlet has a rank that sets Believability and the price limit, as a Media's Credibility does. A gang has no outlet of its own and stays with sabotage for now; feeding an outlet is a future addition.
 
 **What sets one off.** A weekly check at the close, for each open business, with a chance by its worst standing with a corporation. Numbers are starting points, for the simulator to check.
 
@@ -2313,7 +2321,7 @@ These sit within one event a week, and a target gets at most one story in 28 day
 | **Hidden stake** | Character | A concealed holding in a listed company | Heat +15, the company's price by half the limit; unmasking it is a later step |
 | **Smear** | Either | Always; Believability -1 | A business: Reputation -3, and -2% if listed. A character: heat +5 |
 
-A story about a character also costs the business they run with the worst standing some Reputation: half of what the same story would cost it directly. Character REP is left alone: the module only ever raises it (B7c).
+A story about a character also costs the business they run with the worst standing some Reputation: half of what the same story would cost it directly. Character REP is left alone, as decided.
 
 **Answering.**
 - **A business** answers as it does a smear, with the week's response roll. Answered stops it; failed halves it; unanswered or fumbled takes it in full. A big one can be run as a scene (X1).
@@ -2326,11 +2334,9 @@ A story about a character also costs the business they run with the worst standi
 - **It tells players something.** A true story confirms hidden state: a crime expose says that someone is looking at your back room, though no number. At a company, other shareholders learn what the officers kept quiet, which §36.1 already allows through a scandal.
 - **Naming characters in public.** Headlines go to everyone, so a character's story outs them to the table. Approval is the GM's check on it.
 - **A spiral.** A hit to Reputation and price can make Money trouble and Bad service true, feeding more. The 28-day limit slows this; the simulator should show whether it's enough.
-- **The clock.** A year of 52 weeks may be many sessions or a few, so the chances may want a setting for how often.
+- **The clock.** A year of 52 weeks may be many sessions or a few, which is why how often is a setting.
 
 **Parts, if built, shown in turn.** S1a: the engine, a business as the target, price, Reputation and Exposure, approval. S1b: characters, heat, answering by mail. S1c: rumours beforehand, **Run a story**, and the simulator's numbers in the guides.
-
-**Still to decide:** how characters are driven; true stories or any; approval by default; whether gangs can feed an outlet; and how often.
 
 ## 37. Roadmap
 
@@ -2364,6 +2370,6 @@ A story about a character also costs the business they run with the worst standi
 | UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
 | P1 | **Done (v0.21.0), see §36.10.** P1a workshops, item lists and the GM's tab, runs, the Maker post and the storeroom sheet; P1b shop sales, buying, handing over, consigning, stock in book value and closing; P1c fencing and illegal production through a back room. Also: one control height, and hand advances moving the calendar (§36.11) |
 | U2 | **Done (v0.21.1), see §36.12.** More back room kinds, each with a profile that changes how it plays |
-| S1 | **Proposed, see §36.13.** Press: non-player companies run stories against player companies and characters, driven by standing and heat |
+| S1 | **Planned, see §36.13.** Press: non-player companies run stories against player companies and characters, driven by standing and heat |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |
