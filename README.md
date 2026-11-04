@@ -130,6 +130,10 @@ docs/                  the guides above
 
 This module is developed with generative AI. Code, tests and documentation were written with assistance from Anthropic's Claude, using Claude Code, and most commits carry a `Co-Authored-By: Claude` line. The maintainer reviews all code, directs the work, decides the design and rules, and tests changes in a working Foundry environment.
 
+## Unofficial Content
+
+Night City Investments is unofficial content provided under the Homebrew Content Policy of R. Talsorian Games and is not approved or endorsed by RTG. This content references materials that are the property of R. Talsorian Games and its licensees.
+
 ## License
 
 Copyright (c) 2026 Shepskii. Licensed under the [Mozilla Public License 2.0](LICENSE). Versions up to and including 0.21.1 were released under the MIT License and stay available under it. The bundled fonts, Rajdhani and Share Tech Mono, are under the SIL Open Font License; each licence is in its folder under `assets/fonts`.
