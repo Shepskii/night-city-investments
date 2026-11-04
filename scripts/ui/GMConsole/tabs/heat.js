@@ -55,7 +55,7 @@ export function context() {
       ...build(companyOptions()),
       exposure: BusinessService.snapshot().filter(({ business: b }) => b.status === 'open').map(({ business: b, hidden }) => {
         const value = hidden.exposure ?? 0;
-        return { id: b.id, name: b.name, value, band: L(`NCI.Company.Exposure.${exposureBand(value)}`) };
+        return { id: b.id, name: b.name, value: Math.round(value * 10) / 10, band: L(`NCI.Company.Exposure.${exposureBand(value)}`) };
       }),
     },
   };

@@ -6,7 +6,7 @@
  * A sensible crew runs a registered business's room for a year, with two action slots: it works the room, launders
  * what it can, pays people off at moderate Exposure and lies low at high. Raids come by Exposure band, as the module
  * rolls them, and a crew that fails or fumbles one pays as the module charges. A room that is shut stays shut. `steady`
- * is every back room as it is today, so the others read against it.
+ * is how a room played before profiles, so the others read against it.
  */
 
 import { createRng } from '../scripts/engine/rng.js';
@@ -26,19 +26,8 @@ const TAKINGS = arg('takings', 250);
 const BASE = arg('base', 12);
 const DV = 15;
 
-/**
- * What a profile changes. `earn` scales the room's money; `swing` stretches how far the band moves it; `exposure` scales
- * what working it adds; `raid` scales the chance of a raid; `supply` is the share of what it earned spent on stock each
- * week, out of dirty cash; `launder` scales how much can be washed a week; `quietWeek` is Exposure shed in a week worked.
- */
-export const PROFILES = {
-  steady: { earn: 1, swing: 1, exposure: 1, raid: 1, supply: 0, launder: 1, quietWeek: 0 },
-  loud: { earn: 1.5, swing: 1.5, exposure: 1.5, raid: 1.25, supply: 0, launder: 1, quietWeek: 0 },
-  quiet: { earn: 0.65, swing: 0.75, exposure: 0.5, raid: 0.5, supply: 0, launder: 1, quietWeek: 0 },
-  hungry: { earn: 1.5, swing: 1, exposure: 1.25, raid: 1, supply: 0.25, launder: 1, quietWeek: 0 },
-  connected: { earn: 0.5, swing: 1, exposure: 0.75, raid: 1, supply: 0, launder: 1, quietWeek: 0.5 },
-  laundering: { earn: 0.8, swing: 1, exposure: 0.75, raid: 1, supply: 0, launder: 2, quietWeek: 0 },
-};
+/** The module's own numbers, so what this reports is what plays (`backRoom.profiles`). */
+const PROFILES = P.backRoom.profiles;
 
 const rollBand = (rng, base, dv) => {
   const r = cprD10(() => rng.int(1, 10));

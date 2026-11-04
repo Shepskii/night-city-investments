@@ -23,7 +23,12 @@ export const SECRET_ACTIONS = Object.freeze([...ROOM_ACTIONS, ...CRIME_ACTIONS, 
 export const SECRET_LEDGER = Object.freeze(['laundered', 'dirtyTaken', 'raidFine', 'blackOps', 'regulatorBribe', 'illegalMaterials', 'fenced']);
 
 /** The kinds of back room this business's front could hide. */
-export const roomKinds = (b) => Object.keys(BACK_ROOMS[b.archetype] ?? {});
+export const roomKinds = (b) => Object.entries(BACK_ROOMS[b.archetype] ?? {}).filter(([, kind]) => !kind.draft).map(([id]) => id);
+
+/** How this business's room plays. A kind no longer known plays as every room did before there were profiles. */
+export function roomProfile(b, p = BUSINESS_DEFAULTS) {
+  return p.backRoom.profiles[BACK_ROOMS[b.archetype]?.[b.backRoom?.kind]?.profile] ?? p.backRoom.profiles.steady;
+}
 
 /** A back room that is running. */
 export const openRoom = (b) => (b.backRoom?.status === 'open' ? b.backRoom : null);
@@ -41,7 +46,7 @@ export function roomCheck(b, action, p = BUSINESS_DEFAULTS) {
   if (action === 'roomWork') {
     // Lying low means no work behind the shop this week.
     if (b.period.slots.some((s) => s.action === 'lieLow')) return fail('lying-low');
-    return { ok: true, uses: BACK_ROOMS[b.archetype]?.[room.kind] ?? [] };
+    return { ok: true, uses: BACK_ROOMS[b.archetype]?.[room.kind]?.uses ?? [] };
   }
   if (action === 'dealGang') return room.deal ? fail('has-deal') : { ok: true, uses: p.backRoom.deal.uses };
   if (action === 'launder') return room.dirty > 0 ? { ok: true, uses: p.backRoom.launderUses } : fail('no-dirty');
@@ -53,9 +58,10 @@ export function roomWeek(b, takings, part = 1, p = BUSINESS_DEFAULTS, traits = n
   const room = openRoom(b);
   if (!room) return null;
   const rules = p.backRoom;
+  const profile = roomProfile(b, p);
   const slot = (action) => b.period.slots.find((s) => s.action === action);
   const day = b.period.endDay;
-  const out = { earned: 0, laundered: 0, paid: 0, low: false, exposure: 0 };
+  const out = { earned: 0, supply: 0, laundered: 0, paid: 0, low: false, exposure: 0 };
   // An informant reports in, whether the room is worked or not (U1b).
   const moles = informants(b, traits);
   out.exposure += moles.length * rules.informant.exposure;
@@ -65,10 +71,11 @@ export function roomWeek(b, takings, part = 1, p = BUSINESS_DEFAULTS, traits = n
     out.exposure -= rules.lieLow;
   } else if (slot('roomWork')) {
     const work = slot('roomWork');
-    const scale = 1 + (p.effects.work[work.band] - 1) * approachOf(work.approach).effect;
-    out.earned = work.band === 'fumble' ? 0 : Math.round(archetypeOf(b).takings * b.state.capacity * rules.share * scale * part);
-    room.dirty += out.earned;
-    out.exposure += rules.workExposure[work.band];
+    const scale = 1 + (p.effects.work[work.band] - 1) * approachOf(work.approach).effect * profile.swing;
+    out.earned = work.band === 'fumble' ? 0 : Math.round(archetypeOf(b).takings * b.state.capacity * rules.share * scale * profile.earn * part);
+    out.supply = Math.round(out.earned * profile.supply);
+    room.dirty += out.earned - out.supply;
+    out.exposure += rules.workExposure[work.band] * profile.exposure - profile.quietWeek;
   }
   // A silent partner takes its cut, whether or not there was much to cut (U1c).
   if (room.deal) {
@@ -95,7 +102,7 @@ export function roomWeek(b, takings, part = 1, p = BUSINESS_DEFAULTS, traits = n
   }
   const launder = slot('launder');
   if (launder) {
-    out.laundered = Math.min(room.dirty, Math.round(takings * rules.launderCap * rules.launderShare[launder.band]));
+    out.laundered = Math.min(room.dirty, Math.round(takings * rules.launderCap * profile.launder * rules.launderShare[launder.band]));
     room.dirty -= out.laundered;
     b.till += out.laundered;
     if (out.laundered) addLedger(b, { day, kind: 'laundered', amount: out.laundered }, p);
@@ -150,7 +157,7 @@ export function raidChance(b, exposure, traits = null, p = BUSINESS_DEFAULTS) {
   const staff = (b.staff ?? []).filter((s) => s.status === 'active');
   const inRoom = (s) => !!POSTS[s.post]?.backRoom;
   const sullen = staff.filter((s) => s.source !== 'pc' && s.loyalty != null && s.loyalty < r.sullenBelow).reduce((sum, s) => sum + (inRoom(s) ? r.sullenCrew : 1), 0);
-  return r.chance[exposureBand(exposure, p)] + (informants(b, traits).length ? r.informant : 0) + Math.min(r.sullenCap, sullen * r.sullen) + staff.filter(inRoom).length * r.crew;
+  return r.chance[exposureBand(exposure, p)] * roomProfile(b, p).raid + (informants(b, traits).length ? r.informant : 0) + Math.min(r.sullenCap, sullen * r.sullen) + staff.filter(inRoom).length * r.crew;
 }
 
 /** A raid on the back room this week, or none. It comes in place of what the week would have drawn. */

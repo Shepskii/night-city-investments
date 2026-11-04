@@ -875,7 +875,8 @@ class BusinessServiceImpl {
     const sameLayers = JSON.stringify(layers) === JSON.stringify(entry.layers ?? {});
     if (!exposure && sameTraits && sameLayers) return;
     // An internal audit can wipe some Exposure out, but never below none.
-    const next = { ...entry, exposure: Math.max(0, (entry.exposure ?? 0) + exposure) };
+    // Profiles scale it, so keep it tidy: a quarter of a point is the finest it moves by.
+    const next = { ...entry, exposure: Math.max(0, Math.round(((entry.exposure ?? 0) + exposure) * 100) / 100) };
     if (Object.keys(traits).length) next.traits = traits;
     else delete next.traits;
     if (Object.keys(layers).length) next.layers = layers;

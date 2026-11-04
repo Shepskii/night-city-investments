@@ -489,7 +489,7 @@ const withRoom = (extra = {}) => normalizeBusiness({ ...shop(), backRoom: { kind
 test('every front has a back room with real skills, and every kind has words', () => {
   for (const [front, kinds] of Object.entries(BACK_ROOMS)) {
     assert.ok(ARCHETYPES[front], front);
-    for (const [kind, uses] of Object.entries(kinds)) {
+    for (const [kind, { uses }] of Object.entries(kinds)) {
       assert.ok(uses.length > 0 && uses.every((u) => u?.kind), `${front} ${kind}`);
     }
   }
@@ -510,6 +510,7 @@ test('opening one: a project a shop can vote for, off the books, that waits for 
   assert.equal(started.projects.at(-1).room, 'ripping');
   const proposed = (room, context) => send(b, { type: 'propose', businessId: 'b1', kind: 'project', project: 'backRoom', room }, null, context);
   assert.equal(proposed('gambling').reason, 'bad-project', 'not what a clinic hides');
+  assert.equal(proposed('backAlleySurgery').reason, 'bad-project', 'a draft kind (U2b) cannot be asked for');
   assert.equal(proposed('ripping', { underworld: false }).reason, 'bad-project', 'switched off');
   assert.equal(proposed('ripping').ok, true);
 });

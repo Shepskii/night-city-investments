@@ -317,7 +317,7 @@ export function context() {
         [L('NCI.GMBusiness.BookValue'), `${whole(bookValue(b))} eb`],
         [L('NCI.Business.State.reputation'), b.state.reputation.toFixed(0)],
         [L('NCI.Business.State.capacity'), b.state.capacity.toFixed(2)],
-        [L('NCI.GMBusiness.Exposure'), String(hidden.exposure ?? 0)],
+        [L('NCI.GMBusiness.Exposure'), String(Math.round((hidden.exposure ?? 0) * 10) / 10)],
       ].map(([label, value]) => ({ label, value })) : [],
       setup: b.setup && b.status !== 'open' ? L(b.setup.passed ? 'NCI.GMBusiness.SetupPassed' : 'NCI.GMBusiness.SetupFailed', {
         band: L(`NCI.Roll.Band.${b.setup.band}`), cost: whole(b.setup.cost ?? 0), range: ARCHETYPES[b.archetype].setup.map(whole).join('–'),

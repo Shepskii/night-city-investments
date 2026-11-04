@@ -1747,3 +1747,24 @@ test('dates show in the GM\'s chosen format on the rendered pages, day first by 
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('Exposure can be a fraction now: it stays tidy, and the GM\'s pages show it rounded', async () => {
+  const { MarketStore } = await import('../scripts/data/MarketStore.js');
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const hiddenBefore = structuredClone(MarketStore.getBusinessesHidden());
+  try {
+    await S.BusinessRepository.save({ ...b, status: 'open', stage: 1, company: null, listing: null, backRoom: { kind: 'ripping', status: 'open', dirty: 0, day: 0 } });
+    await S.BusinessService.setExposure(b.id, 10);
+    const open = S.BusinessRepository.all()[0];
+    for (let i = 0; i < 3; i += 1) await S.BusinessService._saveHidden({ business: open, events: [{ type: 'backRoomWeek', exposure: 0.1 }] });
+    assert.equal(MarketStore.getBusinessesHidden()[b.id].exposure, 10.3, 'no 10.300000000000001');
+    assert.match(await renderConsole('heat'), /name="exposureValue"[^>]*value="10\.3"/);
+    assert.match(text(await renderConsole('businesses')), /Exposure 10\.3/);
+    await S.BusinessService._saveHidden({ business: open, events: [{ type: 'backRoomWeek', exposure: -50 }] });
+    assert.equal(MarketStore.getBusinessesHidden()[b.id].exposure, 0, 'never below none');
+  } finally {
+    await MarketStore.setBusinessesHidden(hiddenBefore);
+    await S.BusinessRepository.save(saved);
+  }
+});

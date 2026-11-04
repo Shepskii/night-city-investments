@@ -1846,7 +1846,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
     worked: !!work,
     ...(sales.sold ? { stock: sales } : {}),
     ...(fenced ? { fenced } : {}),
-    ...(room ? { room: { earned: room.earned, laundered: room.laundered, paid: room.paid, low: room.low, ...(room.cut ? { cut: room.cut } : {}), ...(room.unpaid ? { unpaid: true } : {}), ...(room.informant ? { informant: room.informant } : {}) } } : {}),
+    ...(room ? { room: { earned: room.earned, ...(room.supply ? { supply: room.supply } : {}), laundered: room.laundered, paid: room.paid, low: room.low, ...(room.cut ? { cut: room.cut } : {}), ...(room.unpaid ? { unpaid: true } : {}), ...(room.informant ? { informant: room.informant } : {}) } } : {}),
     ...(event ? { event: { kind: event.kind, outcome: event.outcome, band: event.band, change: event.change, ...(b.period.event?.factionName ? { faction: b.period.event.factionName } : {}), ...(eventCost ? { cost: eventCost } : {}) } } : {}),
     ...(notes.length ? { staff: notes } : {}),
     ...(boost ? { boost } : {}),
