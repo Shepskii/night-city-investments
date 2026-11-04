@@ -222,7 +222,7 @@ A player character can take a job at another player's business.
 
 ### Standing with factions
 
-Your business has its own standing with Night City's corporations and gangs, shown on the Overview tab as hostile, wary, neutral, friendly or allied. You'll see the gangs on your turf from the start, and other factions once you've dealt with them. Standing fades slowly if you don't keep it up.
+Your business has its own standing with Night City's corporations and gangs, shown on the Overview tab as hostile, wary, neutral, friendly or allied. You'll see the gangs on your turf from the start, and other factions once you've dealt with them. Standing fades slowly if you don't keep it up, though a [Connected back room](#kinds-of-back-room) slows that for one faction.
 
 To raise your business's standing with a faction, use **Court a client** (a corporation) or **Pay respects** (a gang) as one of the week's actions. A company aims **Chase contracts** or **Investor relations** at a faction instead. Each costs a gift from the cash, whatever the roll. Good standing with corporations in your sector cuts running costs, and with gangs on your turf cuts protection money and shakedowns. Bad standing does the opposite, and a hostile faction may come after you. Beating a gang's shakedown by force works, but it won't help your standing with them.
 
@@ -406,7 +406,7 @@ It shows as a bar, by band and never as a number, at the top of the Back Room ta
 
 ## Back rooms
 
-A shop or registered business can open an illegal operation behind the front, as a project on the Projects tab, then works it from the **Back Room** tab. Each week you can:
+A shop or registered business can open an illegal operation behind the front, as a project on the Projects tab, then works it from the **Back Room** tab. You choose [what kind of room](#kinds-of-back-room) when you propose it. Each week you can:
 
 - **Work the back room** for dirty cash.
 - **Launder** some of it into the business's cash.
@@ -418,6 +418,60 @@ You can also take dirty cash straight as eddies. Dirty cash is off the books: it
 **Raids.** The higher your Exposure, the likelier a **raid**. Failing one costs dirty cash and a fine, and leaving one unanswered or fumbling it shuts the back room and draws heat on the partners, though the shop carries on. Watch your staff, too. A back-room hand can work it for you, but an unhappy employee or a hidden informant can bring the raid to your door.
 
 **If your business charters,** its back room keeps running as the officers' secret: other shareholders don't see it, and the officers take any gang deal themselves. A raid that shuts it at a company shuts it for good.
+
+### Kinds of back room
+
+Each kind of business has three or four kinds of room to choose from, and each kind plays to a **profile**. The Projects tab shows every kind's profile, what it means and what it rolls before you propose it.
+
+A room costs 1,500 eb and 3 business days at a shop, or 4,000 eb and 5 at a registered business, and your GM may need to approve it once it's built. You can't change an open room's kind. If a raid shuts it, rebuilding it is a new project, and you can choose again. Exposure belongs to the business, so a rebuilt room inherits the trail the old one left.
+
+| Profile | Earns | Exposure from work | Raid chance | What's different |
+|---|---|---|---|---|
+| **Steady** | Full | Full | Full | Nothing: the plain back room |
+| **Loud** | 150% | 150% | 125% | The roll swings the money half as far again |
+| **Quiet** | 65% | 50% | 50% | The roll moves the money three quarters as far |
+| **Hungry** | 150% | 125% | Full | A quarter of what it earns goes on supplies, so that part never reaches your dirty cash |
+| **Connected** | 50% | 75% | Full | Each week worked sheds a little Exposure and adds to your standing with a faction you choose |
+| **Laundering** | 80% | 75% | Full | You can wash twice as much dirty cash a week |
+
+**A Connected room** asks you to choose its faction when you propose it, if your world has factions. Any week the room is worked counts, even on a fumble, but a week spent lying low doesn't. It won't build standing by itself, because [standing fades](#standing-with-factions) faster than the room adds to it. It holds you just above neutral, or slows the fall from wherever you've got to, so it pays best alongside the gifts and gigs that raise standing.
+
+| Business | Kind | Profile | Rolls |
+|---|---|---|---|
+| Ripperdoc clinic | Black-market chrome | Steady | Cybertech, Paramedic, Medicine |
+|  | Back-alley surgery | Quiet | Paramedic, Cybertech, Medicine |
+|  | Street pharmacy | Hungry | Paramedic, Trading, Medicine |
+|  | Organ brokering | Loud | Cybertech, Streetwise, Medicine |
+| Garage or chop shop | Chop shop | Steady | Basic Tech, Land Vehicle Tech, Maker |
+|  | Vehicle cloning | Quiet | Land Vehicle Tech, Electronics/Security Tech, Maker |
+|  | Getaway outfitting | Connected | Land Vehicle Tech, Streetwise, Maker |
+| Bar or club | Gambling and dealing | Steady | Streetwise, Persuasion, Charismatic Impact |
+|  | Brothel or dollhouse | Steady | Persuasion, Human Perception, Wardrobe & Style, Charismatic Impact |
+|  | Fight pit | Loud | Streetwise, Brawling, Charismatic Impact |
+|  | Fixers' meeting room | Connected | Conversation, Streetwise, Operator |
+| Info shop or data broker | Data fencing | Steady | Library Search, Interface |
+|  | Identity forgery | Quiet | Library Search, Bureaucracy, Interface |
+|  | Black ICE for hire | Loud | Electronics/Security Tech, Library Search, Interface |
+| Boutique or salon | Laundering for others | Laundering | Business, Streetwise |
+|  | Disguises and new faces | Quiet | Personal Grooming, Wardrobe & Style, Medicine |
+|  | Counterfeit labels | Hungry | Wardrobe & Style, Trading, Maker |
+|  | Second set of books | Laundering | Accounting, Business |
+| Gun shop | Unregistered arms | Steady | Weaponstech, Trading, Operator |
+|  | Illegal modifications | Quiet | Weaponstech, Basic Tech, Maker |
+|  | Arming a gang | Connected | Trading, Streetwise, Operator |
+| Courier service | Smuggling | Steady | Drive Land Vehicle, Local Expert, Moto |
+|  | Hot goods transport | Quiet | Drive Land Vehicle, Streetwise, Moto |
+|  | People running | Loud | Drive Land Vehicle, Streetwise, Moto |
+| Security outfit | Muscle and rackets | Steady | Tactics, Persuasion, Combat Awareness |
+|  | Protection for hire | Connected | Tactics, Streetwise, Combat Awareness |
+|  | Inside jobs | Loud | Tactics, Interrogation, Backup |
+| Screamsheet or media outlet | Blackmail and bootlegs | Steady | Composition, Photography/Film, Credibility |
+|  | Braindance bootlegs | Hungry | Photography/Film, Electronics/Security Tech, Credibility |
+|  | Paid-for stories | Connected | Composition, Persuasion, Credibility |
+| Food stall | A dead drop | Steady | Business, Streetwise |
+|  | Street dealing | Hungry | Streetwise, Local Expert, Operator |
+|  | Lookouts and informants | Connected | Streetwise, Local Expert, Operator |
+|  | The cash till | Laundering | Business, Accounting |
 
 ## Back-room staff
 

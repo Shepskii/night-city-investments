@@ -2183,7 +2183,7 @@ A hand advance used to move only the market, building a `lead` over the calendar
 
 The short business periods seen in testing are the calendar's: the test world's Simple Calendar restarts its weekdays on the 1st of each month, so a week can close after 2 or 3 days. Takings, wages, upkeep, bench time and the sales and fence limits all scale with the period. Merging them is the user's choice, still open.
 
-### 36.12 Back room kinds and profiles: the plan (the user's choices, 2026-11-04; not built)
+### 36.12 Back room kinds and profiles (the user's choices, 2026-11-04; built and tested live, not released yet)
 
 **Decided.**
 - **Kinds:** keep all 34 below, the two marked *dark* included.
@@ -2192,7 +2192,7 @@ The short business periods seen in testing are the calendar's: the test world's 
 - **Kind-specific events** wait for later, a bad batch for Hungry kinds included.
 - **Raid fines** stay flat for now, for future consideration.
 
-**Where it stands.** Every kind plays the same today: `BACK_ROOMS` sets only its name and the skills it rolls. Earnings, Exposure, raids and laundering are one set of numbers, and only a bar has a choice. This gives each kind of business more to choose from, and makes the choice matter.
+**Where it stood before U2.** Every kind plays the same today: `BACK_ROOMS` sets only its name and the skills it rolls. Earnings, Exposure, raids and laundering are one set of numbers, and only a bar has a choice. This gives each kind of business more to choose from, and makes the choice matter.
 
 **The profiles.** Each kind has one. Current kinds are Steady, which is today's numbers exactly, so a room already open plays on unchanged, apart from Laundering for others, as above.
 
@@ -2297,6 +2297,6 @@ That is 11 kinds today and 23 new ones, 34 in all, giving each kind of business 
 | U1 | **Done (v0.19.0), see §36.1 and §36.8.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships, back-room staff; after F1 and B6 |
 | UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
 | P1 | **Done (v0.21.0), see §36.10.** P1a workshops, item lists and the GM's tab, runs, the Maker post and the storeroom sheet; P1b shop sales, buying, handing over, consigning, stock in book value and closing; P1c fencing and illegal production through a back room. Also: one control height, and hand advances moving the calendar (§36.11) |
-| U2 | **Planned, see §36.12.** More back room kinds, each with a profile that changes how it plays |
+| U2 | **Built, not released yet, see §36.12.** More back room kinds, each with a profile that changes how it plays |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |

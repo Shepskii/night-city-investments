@@ -73,7 +73,7 @@ Or unzip a release into `Data/modules/night-city-investments`. Then enable **Nig
 - **Media stories.** A Media publishes an exposé or a puff piece, with Believability by Credibility rank as in the rules, backed by evidence shards. Medias also hear rumours by mail, or dig for them.
 
 ### Fronts
-- **Back rooms.** A shop or registered business can run something illegal behind the front: dirty cash, laundering, pay-offs, raids and informants, with gang deals on the side. At a chartered company it is the officers' secret, and companies have crime of their own.
+- **Back rooms.** A shop or registered business can run something illegal behind the front, from 34 kinds across ten kinds of business, each playing to its own profile of risk and reward: dirty cash, laundering, pay-offs, raids and informants, with gang deals on the side. At a chartered company it is the officers' secret, and companies have crime of their own.
 - **Back-room staff.** Hire a hand, a launderer or a fixer to work it when nobody else does, for more pay and more risk. Exposure shows as a bar, in bands, never as a number.
 
 ### Windows

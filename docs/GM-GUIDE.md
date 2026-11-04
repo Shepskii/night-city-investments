@@ -123,6 +123,12 @@ The rest runs itself: weeks close, events are drawn, wages are paid, reports are
 
 **A back room at a company** is the officers' secret: other shareholders see only plain ledger lines and a raid as an inspection, and a raid that shuts it there shuts it for good. They would find out through a scandal, if it's listed, or through you.
 
+**Kinds of back room.** There are 34, three or four for each kind of business, and the partners choose one when they propose the room. Each has a profile: Steady, Loud, Quiet, Hungry, Connected or Laundering. The [Player Guide](PLAYER-GUIDE.md#kinds-of-back-room) lists them all with their numbers. Two are dark enough that you may want a word at the table before a player chooses them: Organ brokering at a clinic and People running at a courier service. There's no setting to remove a kind, but with approval on, you can turn the room down when it's finished. What it cost stays spent, so say so early.
+
+A room already open before these kinds existed keeps its numbers, apart from **Laundering for others** at a boutique, which now plays as Laundering.
+
+**A Connected room** adds a full +1 standing a week worked with the faction chosen on opening, whatever the roll, and that +1 doesn't count as a repeat dealing, so gigs for that faction keep their value. Standing fades 2 a week, so from zero it holds at 1, and from higher up it falls by 1 a week rather than 2. If your world has no factions, the room opens without one and adds no standing.
+
 #### REP and Improvement Points from businesses
 
 A business's big moments suggest REP and IP on the **Pending** tab, and under **Waiting** at the top of the Businesses tab, one row for each character running it: officers at a company, active voting partners below that, and a syndicate's officers for a syndicate. Change the numbers, then **Apply** or **Dismiss**. Nothing touches a sheet until you do.
