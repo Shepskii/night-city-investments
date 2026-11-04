@@ -2338,6 +2338,90 @@ A story about a character also costs the business they run with the worst standi
 
 **Parts, if built, shown in turn.** S1a: the engine, a business as the target, price, Reputation and Exposure, approval. S1b: characters, heat, answering by mail. S1c: rumours beforehand, **Run a story**, and the simulator's numbers in the guides.
 
+### 36.14 Back room events and actions, by profile (proposed, 2026-11-04; not built)
+
+**The idea.** U2 made rooms differ in their numbers. This makes them differ in what happens and what you can choose. Each profile gets **one thing that goes wrong** because of what makes it different, and **one action only it has**, so choosing a room means choosing its troubles. This takes up what §36.12 left for later, and the list in §36.1 that was never built: a bad batch, a rival operation and an offer you can't refuse. Raids, informants and gang deals exist already and stay as they are.
+
+**How it fits what exists.**
+- **One event a week.** The order today is a raid, then a hostile faction's act, then the ordinary table (`business.js` close). A room event goes after the hostile act and before the ordinary table, so it replaces that week's ordinary event and the total of one a week holds.
+- **Only in a week the room is worked.** A room lying low or left idle draws none. That keeps a player's choice in charge of it.
+- **Answered as events are,** with the week's response roll, using the skills the room's kind rolls. Answered stops it, failed halves it, and unanswered or fumbled takes it in full. Big ones can be played as scenes (X1).
+- **New actions take a slot,** which is the real cost: a shop has one action a week, and a registered business two. Each is on the Back Room tab, rolls the kind's skills, and is refused before any dice if it can't work.
+- **What they change is mostly dirty cash and Exposure,** so `settleEvent`'s `applyHit` needs those two added, or a fallout step as a raid has.
+- **At a company** a room is the officers' secret, so its events must look like something else to other shareholders, as a raid looks like an inspection.
+- **With Underworld content off,** rooms still open follow the same rule as raids.
+
+**Profiles: what goes wrong, and what only they can do.** Numbers are starting points for the simulator.
+
+| Profile | Event: what goes wrong | If not answered | Action only it has | What it does |
+|---|---|---|---|---|
+| **Steady** | None of its own | | None of its own | The plain room, as §36.12 promises; only the shared events below |
+| **Loud** | **Too much noise:** it drew a crowd, and someone filmed it | Exposure +6, Reputation -3 | **A big night:** once in 28 days | This week's room earnings x1.5 on a pass, and its Exposure from work x2 whatever the roll |
+| **Quiet** | **A loose end:** a customer talks | Exposure +8, which is a lot for a room that seldom gains any | **Cover the trail** | No earnings needed: Exposure -2 to -5 by band, free but it takes the slot. Lying low earns nothing and sheds 3, so this is for a crew with a spare slot |
+| **Hungry** | **A bad batch:** the supplies were wrong | The week's earnings lost, Reputation -5; a fumble adds Exposure +5 | **Find a new supplier:** once in 28 days | A pass takes supplies from 25% to 15% for four weeks. A failure makes the next bad batch twice as likely, in the same four weeks |
+| **Connected** | **A favour asked:** the chosen faction wants something | Standing with them -5, which the room's +1 a week takes long to recover | **Call in a favour:** needs friendly or better | Spend 5 standing to clear Exposure -5, or to stop this week's shakedown. Once S1 is built, to spike a press story too |
+| **Laundering** | **The books don't add up:** the trail shows | Exposure +6, and up to a quarter of the dirty cash lost. A bookkeeper makes it less likely | **Wash for a client:** once in 28 days | Earns a fee in dirty cash, a share of the takings cap, and adds Exposure as laundering does |
+
+**Shared by every room.** Rarer, and for Steady the only variety.
+
+| Event | What happens | If not answered |
+|---|---|---|
+| **A rival operation** | Another crew moves in on the room's trade | The week's earnings halved, and Exposure +2 |
+| **An offer you can't refuse** | A good event: a big order from someone you'd rather not owe. It can be turned down at no cost | Answered and passed: 150% of the week's earnings in dirty cash, Exposure +4. Failed: Exposure +4 and nothing else |
+
+**How often.** A room event in about 8% of weeks worked, 80% from the profile's own event and 20% from the shared ones, for about 4 a year in a room worked every week. It's within one event a week, so the rise in trouble is smaller than that. A Steady room would see only the shared events, at about 1 a year.
+
+**What the simulator must check.** Whether the events undo §36.12's balance: Quiet's safety, Loud's reward for skill, and whether Hungry at last has a real cost for its 150%. Connected earned least on purpose and needs its action to be worth choosing, and the simulator can't price standing, so it needs a judgement from play. The events should also be checked against the 93% of small rooms already shut within a year (§36.12), because they mustn't make a weak crew's small room worse still.
+
+**Each kind tells it in its own words.** The numbers come from the profile and the words from the kind, so 34 rooms need 34 lines of text and no new rules. These draw on the troubles §36.12 already lists. The two dark kinds and the brothel stay non-graphic.
+
+| Business | Kind | Profile | The event as it reads |
+|---|---|---|---|
+| Ripperdoc clinic | Black-market chrome | Steady | Shared only |
+| | Back-alley surgery | Quiet | A patient talks |
+| | Street pharmacy | Hungry | A bad batch goes out |
+| | Organ brokering | Loud | A donor's friends come asking |
+| Garage | Chop shop | Steady | Shared only |
+| | Vehicle cloning | Quiet | A cloned plate gets flagged |
+| | Getaway outfitting | Connected | The crew wants a car for a job of its own |
+| Bar or club | Gambling and dealing | Steady | Shared only |
+| | Brothel or dollhouse | Steady | Shared only |
+| | Fight pit | Loud | A fight goes too far, on camera |
+| | Fixers' meeting room | Connected | A fixer wants a meeting kept off the books |
+| Info shop | Data fencing | Steady | Shared only |
+| | Identity forgery | Quiet | A customer is caught with your work |
+| | Black ICE for hire | Loud | NetWatch traces a job |
+| Gun shop | Unregistered arms | Steady | Shared only |
+| | Illegal modifications | Quiet | A gun is traced back to you |
+| | Arming a gang | Connected | The gang wants credit |
+| Courier service | Smuggling | Steady | Shared only |
+| | Hot goods transport | Quiet | A driver is stopped and talks |
+| | People running | Loud | A run goes wrong in public |
+| Boutique or salon | Laundering for others | Laundering | A client's money has been followed |
+| | Disguises and new faces | Quiet | A customer is recognised, and says who did it |
+| | Counterfeit labels | Hungry | A run of fakes falls apart |
+| | Second set of books | Laundering | The two sets stop agreeing |
+| Food stall | A dead drop | Steady | Shared only |
+| | Street dealing | Hungry | A bad batch hits the block |
+| | Lookouts and informants | Connected | Your watchers are asked to watch someone for free |
+| | The cash till | Laundering | The takings look too good for a stall |
+| Screamsheet | Blackmail and bootlegs | Steady | Shared only |
+| | Braindance bootlegs | Hungry | A bad copy burns a customer |
+| | Paid-for stories | Connected | A patron wants a story run |
+| Security outfit | Muscle and rackets | Steady | Shared only |
+| | Protection for hire | Connected | A client wants more than protection |
+| | Inside jobs | Loud | A job is traced to your guards |
+
+**Things to watch.**
+- **Too much to read.** Six events and five actions join the Back Room tab; only those for this room should show.
+- **Connected's favour needs friendly.** The room alone holds standing at 1, so its action only opens with gifts or gigs on top. That's deliberate, but a player may not see why, so the tab should say.
+- **Laundering's client work** could later take another player business's dirty cash, which would be a good link and a larger job. It's left out here.
+- **S1 and this overlap slightly.** A crime expose (§36.13) reads as a loose end told to the press. Neither needs the other, except Call in a favour against a story.
+
+**Parts, if built, shown in turn.** U3a: the room event table in the engine, the six events and the simulator's numbers. U3b: the actions on the Back Room tab. U3c: each kind's words, scenes, how they look at a company, and the guides.
+
+**Still to decide:** whether Steady gets shared events or none; whether kinds get their own words; and how often.
+
 ## 37. Roadmap
 
 | Phase | Deliverable |
@@ -2370,6 +2454,7 @@ A story about a character also costs the business they run with the worst standi
 | UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
 | P1 | **Done (v0.21.0), see §36.10.** P1a workshops, item lists and the GM's tab, runs, the Maker post and the storeroom sheet; P1b shop sales, buying, handing over, consigning, stock in book value and closing; P1c fencing and illegal production through a back room. Also: one control height, and hand advances moving the calendar (§36.11) |
 | U2 | **Done (v0.21.1), see §36.12.** More back room kinds, each with a profile that changes how it plays |
+| U3 | **Proposed, see §36.14.** Back room events and actions, one of each for each profile, with each kind telling them in its own words |
 | S1 | **Planned, see §36.13.** Press: non-player companies run stories against player companies and characters, driven by standing and heat |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |
