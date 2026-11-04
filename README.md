@@ -10,7 +10,10 @@ A living stock market for Cyberpunk RED in Foundry VTT. Characters trade corpora
 
 Optional:
 - [Night City Map](https://github.com/samroaleksej-bit/night-city-map) with the [Night City Map – Night City Investments bridge](https://github.com/Shepskii/night-city-map-night-city-investments-bridge), so completed and failed gigs move share prices
-- Simple Calendar, for the in-world clock the market ticks on
+- [Night City Map - Night City Messenger Bridge](<https://github.com/Shepskii/night-city-map-night-city-messenger-bridge>): for gig briefings, outcomes, completion payments and night market access messages to players 
+- [Simple Calendar](<https://github.com/vigoren/foundryvtt-simple-calendar>), for the in-world clock the market ticks on
+- [Pneuma's Crew Tools](<https://github.com/GMPneuma/PneumaCrewTools>), for linking downtime to business actions
+- [Pneuma's Visual Tools](<https://github.com/GMPneuma/PneumaVisualTools>), for visual themes
 
 ## Installation
 
