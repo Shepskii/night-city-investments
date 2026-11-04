@@ -4,10 +4,17 @@ From a fresh install to a market your players can trade on, then every setting e
 
 ## What you need
 
-- **Foundry VTT v12** and the **Cyberpunk RED Core** system.
-- **Night City Messenger** (NCM). It carries every mail: broker replies, payslips, warnings and statements. Broker contacts live in its directory.
-- Optional: **Simple Calendar**, so the market ticks with the in-world clock.
-- Optional: **Night City Map** and the [bridge module](https://github.com/Shepskii/night-city-map-night-city-investments-bridge), so gigs move share prices.
+**Required**
+- Foundry VTT v12
+- Cyberpunk RED Core
+- [Night City Messenger](https://github.com/christinophrappuccino/night-city-messenger): carries every mail, broker contact and payslip
+
+**Optional**
+- [Night City Map](https://github.com/samroaleksej-bit/night-city-map) with the [Night City Map – Night City Investments bridge](https://github.com/Shepskii/night-city-map-night-city-investments-bridge), so completed and failed gigs move share prices
+- [Night City Map - Night City Messenger Bridge](<https://github.com/Shepskii/night-city-map-night-city-messenger-bridge>): for gig briefings, outcomes, completion payments and night market access messages to players 
+- [Simple Calendar](<https://github.com/vigoren/foundryvtt-simple-calendar>), for the in-world clock the market ticks on
+- [Pneuma's Crew Tools](<https://github.com/GMPneuma/PneumaCrewTools>), for linking downtime to business actions
+- [Pneuma's Visual Tools](<https://github.com/GMPneuma/PneumaVisualTools>), for visual themes
 
 ## Install
 
