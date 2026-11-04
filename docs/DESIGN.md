@@ -2183,11 +2183,18 @@ A hand advance used to move only the market, building a `lead` over the calendar
 
 The short business periods seen in testing are the calendar's: the test world's Simple Calendar restarts its weekdays on the 1st of each month, so a week can close after 2 or 3 days. Takings, wages, upkeep, bench time and the sales and fence limits all scale with the period. Merging them is the user's choice, still open.
 
-### 36.12 Back room kinds and profiles: the map (proposed, 2026-11-04; not built)
+### 36.12 Back room kinds and profiles: the plan (the user's choices, 2026-11-04; not built)
+
+**Decided.**
+- **Kinds:** keep all 34 below, the two marked *dark* included.
+- **Connected:** +1 standing a week worked, with one faction the partners choose when opening the room. Standing fades 2 points a week, so this slows the fade rather than building it alone.
+- **Laundering for others** moves to the Laundering profile, so rooms already open at a boutique change with it. Every other current kind stays Steady.
+- **Kind-specific events** wait for later, a bad batch for Hungry kinds included.
+- **Raid fines** stay flat for now, for future consideration.
 
 **Where it stands.** Every kind plays the same today: `BACK_ROOMS` sets only its name and the skills it rolls. Earnings, Exposure, raids and laundering are one set of numbers, and only a bar has a choice. This gives each kind of business more to choose from, and makes the choice matter.
 
-**The profiles.** Each kind has one. Every current kind is Steady, which is today's numbers exactly, so a room already open plays on unchanged.
+**The profiles.** Each kind has one. Current kinds are Steady, which is today's numbers exactly, so a room already open plays on unchanged, apart from Laundering for others, as above.
 
 | Profile | Earns | Exposure from work | Raid chance | Laundering | Its own rule |
 |---|---|---|---|---|---|
@@ -2195,7 +2202,7 @@ The short business periods seen in testing are the calendar's: the test world's 
 | **Loud** | 150% | 150% | 125% | 100% | The roll swings the money half as far again |
 | **Quiet** | 65% | 50% | 50% | 100% | The roll moves the money three quarters as far |
 | **Hungry** | 150% | 125% | 100% | 100% | A quarter of what it earns goes on supplies, out of dirty cash |
-| **Connected** | 50% | 75% | 100% | 100% | Sheds 0.5 Exposure a week worked, and lifts standing with a chosen faction (number to be set) |
+| **Connected** | 50% | 75% | 100% | 100% | Sheds 0.5 Exposure a week worked, and +1 standing a week worked with a faction chosen on opening |
 | **Laundering** | 80% | 75% | 100% | 200% | The cap on washing dirty cash is doubled |
 
 **What they do over a year,** from `npm run simulate:backrooms`: a registered business at Capacity 3, 1,500 years, a crew that works the room, launders, pays off at moderate Exposure and lies low at high. *Kept* is what is left each week: laundered, plus dirty cash in hand, after supplies, pay-offs, fines and seizures. *Shut* is the chance the room is shut within the year.
@@ -2210,7 +2217,7 @@ The short business periods seen in testing are the calendar's: the test world's 
 | Connected | 69 | 56 | 3.1 | 35% | 161 | 122 | 2.1 | 20% |
 | Laundering | 144 | 91 | 3.1 | 31% | 273 | 218 | 2.3 | 20% |
 
-So no profile beats Steady on both money and safety, and skill matters most to Loud. Connected earns least on purpose, and needs its standing rule to be worth choosing, which the simulator does not price. Hungry is close to Steady for a little more risk, so it may want a rule of its own, such as a bad batch event.
+So no profile beats Steady on both money and safety, and skill matters most to Loud. Connected earns least on purpose, and needs its standing rule to be worth choosing, which the simulator does not price. Hungry is close to Steady for a little more risk, and with its bad batch event left for later, it stays that way for now.
 
 **The map.** All skills and abilities below exist today.
 
@@ -2236,7 +2243,7 @@ So no profile beats Steady on both money and safety, and skill matters most to L
 | Courier service | Smuggling | Current | Steady | Drive Land Vehicle, Local Expert; Moto | Border checks, hijackers |
 | | Hot goods transport | New | Quiet | Drive Land Vehicle, Streetwise; Moto | Hijackers |
 | | People running | New, *dark* | Loud | Drive Land Vehicle, Streetwise; Moto | NCPD, corp security |
-| Boutique or salon | Laundering for others | Current | Steady | Business, Streetwise | The clients' enemies |
+| Boutique or salon | Laundering for others | Current | Laundering | Business, Streetwise | The clients' enemies |
 | | Disguises and new faces | New | Quiet | Personal Grooming, Wardrobe; Medicine | A customer who gets caught |
 | | Counterfeit labels | New | Hungry | Wardrobe, Trading; Maker | The brand's lawyers |
 | | Second set of books | New | Laundering | Accounting, Business | Auditors |
@@ -2251,13 +2258,13 @@ So no profile beats Steady on both money and safety, and skill matters most to L
 | | Protection for hire | New | Connected | Tactics, Streetwise; Combat Awareness | Whoever they protect against |
 | | Inside jobs | New | Loud | Tactics, Interrogation; Backup | The clients, NCPD |
 
-That is 11 kinds today and 23 new ones, 34 in all, giving each kind of business three or four. The two marked *dark* can be dropped on taste. Some fit a better profile than the Steady they keep, such as Laundering for others, which would suit the Laundering profile; it stays Steady only so that no open room changes.
+That is 11 kinds today and 23 new ones, 34 in all, giving each kind of business three or four. The two marked *dark* can be dropped on taste.
 
 **How it would be built.** `BACK_ROOMS` gives each kind a `profile`, and `backRoom.profiles` holds the numbers. `roomWeek` reads them for earnings, Exposure and laundering, `raidChance` for the raid, and the Projects tab shows each kind's profile in plain words beside the choice. A room's `kind` is already stored, so there is nothing to migrate, and an unknown kind reads as Steady.
 
 **Found on the way, whatever is decided here.** A small room run by a weak crew rarely lasts today: at Capacity 1.3 and a roll base of 10, about 93% of rooms are shut within a year, and the crew keeps about 10 eb a week of the 59 eb it earns. The fines are flat (500 and 1,000 eb) whatever the size of the room. Scaling them by Capacity would be fairer, and is a change to today's balance, so it is the user's call. The model gives every room two action slots and a registered business's DV, so a real side business, with one slot and an easier DV, will differ: this wants a closer look before anything changes.
 
-**Still to decide:** which kinds to keep, cut or add; what Connected's standing rule is worth, and with which faction; whether kind-specific events come now or later; whether Laundering for others moves to the Laundering profile; and the flat fines.
+**Parts, to be shown in turn as P1's were.** U2a: the profiles in the engine, and every kind's numbers, tested against the simulator. U2b: the new kinds, choosing one on the Projects tab with its profile in plain words, and a Connected room's faction. The guides follow.
 
 ## 37. Roadmap
 
@@ -2290,6 +2297,6 @@ That is 11 kinds today and 23 new ones, 34 in all, giving each kind of business 
 | U1 | **Done (v0.19.0), see §36.1 and §36.8.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships, back-room staff; after F1 and B6 |
 | UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
 | P1 | **Done (v0.21.0), see §36.10.** P1a workshops, item lists and the GM's tab, runs, the Maker post and the storeroom sheet; P1b shop sales, buying, handing over, consigning, stock in book value and closing; P1c fencing and illegal production through a back room. Also: one control height, and hand advances moving the calendar (§36.11) |
-| U2 | **Proposed, see §36.12.** More back room kinds, each with a profile that changes how it plays |
+| U2 | **Planned, see §36.12.** More back room kinds, each with a profile that changes how it plays |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |
