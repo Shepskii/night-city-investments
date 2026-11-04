@@ -2338,7 +2338,14 @@ A story about a character also costs the business they run with the worst standi
 
 **Parts, if built, shown in turn.** S1a: the engine, a business as the target, price, Reputation and Exposure, approval. S1b: characters, heat, answering by mail. S1c: rumours beforehand, **Run a story**, and the simulator's numbers in the guides.
 
-### 36.14 Back room events and actions, by profile (proposed, 2026-11-04; not built)
+### 36.14 Back room events and actions, by profile (the user's choices, 2026-11-04; not built)
+
+**Decided.**
+- **The shape** stands as mapped below: one event and one action for each profile but Steady, and two events shared by every room.
+- **Steady gets the shared events.** This knowingly changes §36.12's promise that a Steady room plays as it did before profiles.
+- **Each kind has its own wording,** 34 lines in all.
+- **How often:** a room event in 8% to 10% of weeks worked, the simulator to settle where in that range. Whether this has a GM setting of its own, as S1's stories do, is still open; own setting is the recommendation.
+- **Order:** U3 comes before S1. Call in a favour against a press story is added when S1 arrives.
 
 **The idea.** U2 made rooms differ in their numbers. This makes them differ in what happens and what you can choose. Each profile gets **one thing that goes wrong** because of what makes it different, and **one action only it has**, so choosing a room means choosing its troubles. This takes up what §36.12 left for later, and the list in §36.1 that was never built: a bad batch, a rival operation and an offer you can't refuse. Raids, informants and gang deals exist already and stay as they are.
 
@@ -2355,7 +2362,7 @@ A story about a character also costs the business they run with the worst standi
 
 | Profile | Event: what goes wrong | If not answered | Action only it has | What it does |
 |---|---|---|---|---|
-| **Steady** | None of its own | | None of its own | The plain room, as §36.12 promises; only the shared events below |
+| **Steady** | None of its own | | None of its own | The plain room, with only the shared events below |
 | **Loud** | **Too much noise:** it drew a crowd, and someone filmed it | Exposure +6, Reputation -3 | **A big night:** once in 28 days | This week's room earnings x1.5 on a pass, and its Exposure from work x2 whatever the roll |
 | **Quiet** | **A loose end:** a customer talks | Exposure +8, which is a lot for a room that seldom gains any | **Cover the trail** | Earns nothing: Exposure -2 to -5 by band, free but it takes the slot. Lying low earns nothing and sheds 3, so this is for a crew with a spare slot |
 | **Hungry** | **A bad batch:** the supplies were wrong | The week's earnings lost, Reputation -5; a fumble adds Exposure +5 | **Find a new supplier:** once in 28 days | A pass takes supplies from 25% to 15% for four weeks. A failure makes the next bad batch twice as likely, in the same four weeks |
@@ -2369,7 +2376,7 @@ A story about a character also costs the business they run with the worst standi
 | **A rival operation** | Another crew moves in on the room's trade | The week's earnings halved, and Exposure +2 |
 | **An offer you can't refuse** | A good event: a big order from someone you'd rather not owe. It can be turned down at no cost | Answered and passed: 150% of the week's earnings in dirty cash, Exposure +4. Failed: Exposure +4 and nothing else |
 
-**How often.** A room event in about 8% of weeks worked, 80% from the profile's own event and 20% from the shared ones, for about 4 a year in a room worked every week. It's within one event a week, so the rise in trouble is smaller than that. A Steady room would see only the shared events, at about 1 a year.
+**How often.** A room event in 8% to 10% of weeks worked, 80% from the profile's own event and 20% from the shared ones, for about 4 to 5 a year in a room worked every week. It's within one event a week, so the rise in trouble is smaller than that. A Steady room sees only the shared events, at about 1 a year.
 
 **What the simulator must check.** Whether the events undo §36.12's balance: Quiet's safety, Loud's reward for skill, and whether Hungry at last has a real cost for its 150%. Connected earned least on purpose and needs its action to be worth choosing, and the simulator can't price standing, so it needs a judgement from play. The events should also be checked against the 93% of small rooms already shut within a year (§36.12), because they mustn't make a weak crew's small room worse still.
 
@@ -2420,8 +2427,6 @@ A story about a character also costs the business they run with the worst standi
 
 **Parts, if built, shown in turn.** U3a: the room event table in the engine, the seven events and the simulator's numbers. U3b: the actions on the Back Room tab. U3c: each kind's words, scenes, how they look at a company, and the guides.
 
-**Still to decide:** whether Steady gets shared events or none; whether kinds get their own words; and how often.
-
 ## 37. Roadmap
 
 | Phase | Deliverable |
@@ -2454,7 +2459,7 @@ A story about a character also costs the business they run with the worst standi
 | UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
 | P1 | **Done (v0.21.0), see §36.10.** P1a workshops, item lists and the GM's tab, runs, the Maker post and the storeroom sheet; P1b shop sales, buying, handing over, consigning, stock in book value and closing; P1c fencing and illegal production through a back room. Also: one control height, and hand advances moving the calendar (§36.11) |
 | U2 | **Done (v0.21.1), see §36.12.** More back room kinds, each with a profile that changes how it plays |
-| U3 | **Proposed, see §36.14.** Back room events and actions, one of each for every profile but Steady, with each kind telling them in its own words |
-| S1 | **Planned, see §36.13.** Press: non-player companies run stories against player companies and characters, driven by standing and heat |
+| U3 | **Planned, next, see §36.14.** Back room events and actions, one of each for every profile but Steady, with each kind telling them in its own words |
+| S1 | **Planned, after U3, see §36.13.** Press: non-player companies run stories against player companies and characters, driven by standing and heat |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |
