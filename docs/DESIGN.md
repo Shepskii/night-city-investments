@@ -2287,7 +2287,7 @@ That is 11 kinds today and 23 new ones, 34 in all, giving each kind of business 
 | `HeatService.setHeat`, and tiers at 25, 50 and 75 | Heat is per character, and only with tracking on | What a story about a character adds |
 | Exposure, regulators' cases, hidden holdings | Hidden state, with `caseRank` 5 opening a case on a believed expose | What makes a story true |
 
-**Who runs a story.** A *grudge* and an *outlet*. The grudge is the faction with the reason, and the outlet is who prints it: a corporation may be its own, or use a market company in the media sector such as Network 54 or Ziggurat. An outlet has a rank that sets Believability and the price limit, as a Media's Credibility does. A gang has no outlet of its own, so it could feed one or stay with sabotage.
+**Who runs a story.** A *grudge* and an *outlet*. The grudge is the faction with the reason, and the outlet is who prints it: a corporation may be its own, or use a market company in the media sector such as Network 54. An outlet has a rank that sets Believability and the price limit, as a Media's Credibility does. A gang has no outlet of its own, so it could feed one or stay with sabotage.
 
 **What sets one off.** A weekly check at the close, for each open business, with a chance by its worst standing with a corporation. Numbers are starting points, for the simulator to check.
 
@@ -2313,7 +2313,7 @@ These sit within one event a week, and a target gets at most one story in 28 day
 | **Hidden stake** | Character | A concealed holding in a listed company | Heat +15, the company's price by half the limit; unmasking it is a later step |
 | **Smear** | Either | Always; Believability -1 | A business: Reputation -3, and -2% if listed. A character: heat +5 |
 
-A story about a character falls on their businesses too, at half its Reputation hit, split no further than the one they run with the worst standing. Character REP is left alone: the module only ever raises it (B7c).
+A story about a character also costs the business they run with the worst standing some Reputation: half of what the same story would cost it directly. Character REP is left alone: the module only ever raises it (B7c).
 
 **Answering.**
 - **A business** answers as it does a smear, with the week's response roll. Answered stops it; failed halves it; unanswered or fumbled takes it in full. A big one can be run as a scene (X1).
