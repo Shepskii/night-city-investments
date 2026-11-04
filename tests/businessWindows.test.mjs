@@ -1841,3 +1841,22 @@ test('founding a business moves the window to it once it exists, and only to tha
   await renderBusiness(app);
   assert.equal(app.businessId, before[0].id, 'and the player can go back: it only moves once');
 });
+
+test('a connected room\'s weekly move reaches the hidden standing in full, week after week', async () => {
+  const { MarketStore } = await import('../scripts/data/MarketStore.js');
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const hiddenBefore = structuredClone(MarketStore.getBusinessesHidden());
+  const week = { business: b, events: [{ type: 'factionMove', factionId: 'gang_test', amount: 1, steady: true }] };
+  try {
+    await S.BusinessService._factionEvents(structuredClone(week));
+    await S.BusinessService._factionEvents(structuredClone(week));
+    await S.BusinessService._factionEvents(structuredClone(week));
+    const entry = MarketStore.getBusinessesHidden()[b.id].standing.gang_test;
+    assert.equal(entry.value, 3, 'no fade run here, so three full moves');
+    assert.deepEqual(entry.recent, []);
+  } finally {
+    await MarketStore.setBusinessesHidden(hiddenBefore);
+    await S.BusinessRepository.save(saved);
+  }
+});

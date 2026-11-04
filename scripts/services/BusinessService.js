@@ -1667,10 +1667,10 @@ class BusinessServiceImpl {
   }
 
   /** A business's hidden standing with one faction moves: the number stays hidden, the band goes on its record (F1a). */
-  async _moveStanding(businessId, factionId, amount) {
+  async _moveStanding(businessId, factionId, amount, { steady = false } = {}) {
     const hidden = MarketStore.getBusinessesHidden();
     const entry = hidden[businessId] ?? { exposure: 0 };
-    const moved = moveStanding(entry.standing?.[factionId] ?? null, amount, this.day());
+    const moved = moveStanding(entry.standing?.[factionId] ?? null, amount, this.day(), BUSINESS_DEFAULTS, { steady });
     const standing = { ...(entry.standing ?? {}), [factionId]: moved.entry };
     await MarketStore.setBusinessesHidden({ ...hidden, [businessId]: { ...entry, standing } });
     await this._saveBands(businessId, standing);
@@ -1694,7 +1694,7 @@ class BusinessServiceImpl {
     for (const e of out.events) {
       const amount = e.type === 'factionDeal' ? BUSINESS_DEFAULTS.standing.deal[e.band] : e.type === 'factionMove' ? e.amount : 0;
       if (amount) {
-        await this._moveStanding(b.id, e.factionId, amount);
+        await this._moveStanding(b.id, e.factionId, amount, { steady: !!e.steady });
         moved = true;
       }
       if (e.type === 'evidenceFound') {

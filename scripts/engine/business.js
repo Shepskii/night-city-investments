@@ -1791,7 +1791,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   const room = roomWeek(b, takings, part, p, traits);
   if (room?.exposure) out.events.push({ type: 'backRoomWeek', exposure: room.exposure });
   if (room?.unpaid) out.events.push({ type: 'factionMove', factionId: room.unpaid, amount: p.backRoom.deal.unpaid });
-  if (room?.standing) out.events.push({ type: 'factionMove', ...room.standing });
+  if (room?.standing) out.events.push({ type: 'factionMove', ...room.standing, steady: true });
   if (room?.dealEnded) out.events.push({ type: 'gangDealEnded', name: room.dealEnded });
   const turned = turnInformant(b, traits, seed, p);
   if (turned) out.traits = { ...out.traits, ...turned };

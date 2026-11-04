@@ -54,15 +54,16 @@ export function gigStanding({ outcome, reward }, p = BUSINESS_DEFAULTS) {
  * Move a standing. Recent favours make this one count for less, and it moves at most `weeklyCap` in any
  * seven days, either way.
  * @param {object|null} entry - `{value, weekStart, moved, recent: number[]}`, or null for a first dealing
+ * @param {{steady?: boolean}} [o] - `steady`: an ongoing tie, such as a connected back room's week, which counts in full and is not a recent dealing
  * @returns {{entry: object, applied: number}}
  */
-export function moveStanding(entry, amount, day, p = BUSINESS_DEFAULTS) {
+export function moveStanding(entry, amount, day, p = BUSINESS_DEFAULTS, { steady = false } = {}) {
   const s = p.standing;
   const now = entry ?? { value: 0, weekStart: day, moved: 0, recent: [] };
   const recent = (now.recent ?? []).filter((d) => day - d < s.gig.windowDays);
   const fresh = day - (now.weekStart ?? day) >= 7;
   const moved = fresh ? 0 : Number(now.moved) || 0;
-  const scaled = Number(amount) / (1 + recent.length);
+  const scaled = steady ? Number(amount) : Number(amount) / (1 + recent.length);
   const room = Math.max(0, s.weeklyCap - Math.abs(moved));
   const applied = Math.round(Math.max(-room, Math.min(room, scaled)) * 10) / 10;
   return {
@@ -71,7 +72,7 @@ export function moveStanding(entry, amount, day, p = BUSINESS_DEFAULTS) {
       value: Math.max(-100, Math.min(100, Math.round(((Number(now.value) || 0) + applied) * 10) / 10)),
       weekStart: fresh ? day : now.weekStart ?? day,
       moved: Math.round((moved + applied) * 10) / 10,
-      recent: [...recent, day],
+      recent: steady ? recent : [...recent, day],
     },
   };
 }

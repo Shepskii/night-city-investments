@@ -165,5 +165,33 @@ test('the close passes a connected room\'s standing on', async () => {
   b.backRoom.factionId = 'tyger';
   b.period.slots = [{ action: 'roomWork', by: 'med', band: 'solid', approach: 'standard' }];
   const events = advanceBusiness(b, 8, { seed: 'u2b' }).events;
-  assert.deepEqual(events.filter((e) => e.type === 'factionMove'), [{ type: 'factionMove', factionId: 'tyger', amount: 1 }]);
+  assert.deepEqual(events.filter((e) => e.type === 'factionMove'), [{ type: 'factionMove', factionId: 'tyger', amount: 1, steady: true }]);
+});
+
+test('a connected room\'s week is always a full +1, and leaves other dealings with the faction at full value', async () => {
+  const { moveStanding, driftStanding, advanceBusiness } = await import('../scripts/engine/index.js');
+  let entry = null;
+  for (const [week, expected] of [[0, 1], [7, 1], [14, 1], [21, 1], [28, 1]]) {
+    if (entry) entry = driftStanding(entry);
+    const moved = moveStanding(entry, 1, week * 1, undefined, { steady: true });
+    assert.equal(moved.applied, 1, `week starting ${week}`);
+    entry = moved.entry;
+    assert.equal(entry.value, expected, 'from nothing it holds at 1');
+  }
+  assert.deepEqual(entry.recent, [], 'none of it counts as a recent dealing');
+  assert.equal(moveStanding(entry, 6, 30).applied, 6, 'so a gig for them keeps its full value');
+
+  let high = { value: 20, weekStart: 0, moved: 0, recent: [] };
+  for (let week = 1; week <= 4; week += 1) high = moveStanding(driftStanding(high), 1, week * 7, undefined, { steady: true }).entry;
+  assert.equal(high.value, 16, 'from higher up it slows the fade to 1 a week');
+
+  const once = moveStanding(null, 6, 0).entry;
+  assert.equal(moveStanding(once, 6, 1).applied, 3, 'other repeat dealings are still divided');
+
+  const b = room(...KINDS.connected, 0);
+  b.backRoom.factionId = 'gang_x';
+  b.backRoom.factionName = 'X';
+  b.period.slots = [{ action: 'roomWork', by: 'med', band: 'solid', approach: 'standard' }];
+  const closed = advanceBusiness(b, 8, { seed: 'u2' });
+  assert.ok(closed.events.some((e) => e.type === 'factionMove' && e.factionId === 'gang_x' && e.amount === 1 && e.steady === true), 'and a close sends it as steady');
 });

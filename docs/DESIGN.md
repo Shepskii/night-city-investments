@@ -2187,7 +2187,7 @@ The short business periods seen in testing are the calendar's: the test world's 
 
 **Decided.**
 - **Kinds:** keep all 34 below, the two marked *dark* included.
-- **Connected:** +1 standing a week worked, with one faction the partners choose when opening the room. Standing fades 2 points a week, so this slows the fade rather than building it alone.
+- **Connected:** +1 standing a week worked, with one faction the partners choose when opening the room. Standing fades 2 points a week, so this slows the fade rather than building it alone. The +1 is always a full +1: it skips the division of repeat dealings within 28 days, and is not counted as one, so gigs for that faction keep their value (the user's choice after the live test, which saw +1 then +0.5).
 - **Laundering for others** moves to the Laundering profile, so rooms already open at a boutique change with it. Every other current kind stays Steady.
 - **Kind-specific events** wait for later, a bad batch for Hungry kinds included.
 - **Raid fines** stay flat for now, for future consideration.
