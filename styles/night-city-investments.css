@@ -643,3 +643,8 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .nci-app :is(h1, h2, h
 .nci-app .nci-rewards .nci-rowactions { width: 46%; }
 .nci-app .nci-rewards .nci-actions { flex-wrap: nowrap; justify-content: flex-end; }
 .nci-app .nci-rewards label.nci-inline { white-space: nowrap; }
+
+/* Choosing a back room on the Projects tab: the kind's words sit under the menu, which is sized for them. */
+.nci-app .nci-roomchoice select[name="roomKind"] { width: 100%; }
+.nci-app .nci-roomchoice [data-room-info] { margin: 4px 0; }
+.nci-app .nci-roomchoice [hidden] { display: none; }

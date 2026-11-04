@@ -209,6 +209,17 @@ export class BusinessApp extends BaseApplication {
       this._clearGear();
       this.render();
     });
+    // Choosing a back room shows what that kind does, and asks a connected one for its faction (U2).
+    this.element.querySelectorAll('[data-room-choice]').forEach((box) => {
+      const pick = box.querySelector('[name="roomKind"]');
+      const show = () => {
+        box.querySelectorAll('[data-room-info]').forEach((info) => { info.hidden = info.dataset.roomInfo !== pick.value; });
+        const faction = box.querySelector('[data-room-faction]');
+        if (faction) faction.hidden = !pick.selectedOptions[0]?.dataset.connected;
+      };
+      pick.addEventListener('change', show);
+      show();
+    });
     this.element.querySelectorAll('.nci-drop').forEach((zone) => {
       zone.addEventListener('dragover', (event) => {
         event.preventDefault();
@@ -487,9 +498,12 @@ export class BusinessApp extends BaseApplication {
   }
 
   static _onProposeProject(event, target) {
-    // A back room's kind is picked in its row (U1a).
-    const room = target.closest('tr')?.querySelector('[name="roomKind"]')?.value;
-    return this._send('propose', { kind: 'project', project: target.dataset.kind, ...(room ? { room } : {}) });
+    // A back room's kind is picked in its row (U1a), and a connected one's faction with it (U2).
+    const row = target.closest('tr');
+    const pick = row?.querySelector('[name="roomKind"]');
+    const room = pick?.value;
+    const roomFaction = pick?.selectedOptions?.[0]?.dataset.connected ? row.querySelector('[name="roomFaction"]')?.value : null;
+    return this._send('propose', { kind: 'project', project: target.dataset.kind, ...(room ? { room } : {}), ...(roomFaction ? { roomFaction } : {}) });
   }
 
   /** Put a gang's offer to the partners (U1c). */

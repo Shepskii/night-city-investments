@@ -73,7 +73,7 @@ import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from '.
 import { aimCheck, giftFor } from './factions.js';
 import { campaignCheck, runCampaign, runBlackOps } from './businessCampaign.js';
 import { supplyCut, runSupply, runVenue, backupWait } from './businessRoles.js';
-import { ROOM_ACTIONS, roomCheck, roomKinds, roomWeek, takeDirty, openRoom, roomBust, bustFallout, turnInformant, informants, dealCut, runDealRoll, takeDeal, endDeal } from './businessFronts.js';
+import { ROOM_ACTIONS, kindProfile, roomCheck, roomKinds, roomWeek, takeDirty, openRoom, roomBust, bustFallout, turnInformant, informants, dealCut, runDealRoll, takeDeal, endDeal } from './businessFronts.js';
 import { normalizeName, gigTags } from './gigImpact.js';
 import {
   fixerOffer, takeFixerLoan, bankCheck, applyBankRoll, repayLoan, payLoans, investorOffer, inviteInvestor, acceptInvestment,
@@ -1353,8 +1353,14 @@ function canPropose(b, kind, request, ctx, p) {
       if (!PROJECT_KINDS.includes(request.project)) return fail('bad-project');
       // A back room is the underworld's, which a world can switch off; its kind must suit the front (U1a).
       if (request.project === 'backRoom' && (ctx.underworld === false || !roomKinds(b).includes(request.room))) return fail('bad-project');
+      // A connected room chooses its faction on opening, if the world has any (U2).
+      let roomFaction = null;
+      if (request.project === 'backRoom' && kindProfile(b.archetype, request.room) === 'connected' && (ctx.factions ?? []).length) {
+        roomFaction = ctx.factions.find((f) => f.id === request.roomFaction) ?? null;
+        if (!roomFaction) return fail('no-faction');
+      }
       const offer = projectOffer(b, request.project, p);
-      return offer.ok ? { ok: true, terms: { project: request.project, cost: offer.cost, days: offer.days, ...(request.project === 'backRoom' ? { room: request.room } : {}) } } : fail(offer.reason);
+      return offer.ok ? { ok: true, terms: { project: request.project, cost: offer.cost, days: offer.days, ...(request.project === 'backRoom' ? { room: request.room } : {}), ...(roomFaction ? { roomFaction: { id: roomFaction.id, name: roomFaction.name } } : {}) } } : fail(offer.reason);
     }
     // A shareholders' vote would tell them all, so at a company the officers settle it (`gangDealOfficer`).
     case 'gangDeal':
@@ -1482,7 +1488,7 @@ function enact(b, proposal, day, p, ctx, out) {
     case 'expansion':
       return startProject(b, 'expansion', proposal.id, day, p);
     case 'project':
-      return startProject(b, proposal.terms.project, proposal.id, day, p, proposal.terms.room ?? null);
+      return startProject(b, proposal.terms.project, proposal.id, day, p, proposal.terms.room ?? null, proposal.terms.roomFaction ?? null);
     case 'gangDeal':
       return takeDeal(b, day);
     case 'endGangDeal': {
@@ -1778,6 +1784,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   const room = roomWeek(b, takings, part, p, traits);
   if (room?.exposure) out.events.push({ type: 'backRoomWeek', exposure: room.exposure });
   if (room?.unpaid) out.events.push({ type: 'factionMove', factionId: room.unpaid, amount: p.backRoom.deal.unpaid });
+  if (room?.standing) out.events.push({ type: 'factionMove', ...room.standing });
   if (room?.dealEnded) out.events.push({ type: 'gangDealEnded', name: room.dealEnded });
   const turned = turnInformant(b, traits, seed, p);
   if (turned) out.traits = { ...out.traits, ...turned };

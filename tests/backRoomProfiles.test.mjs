@@ -26,7 +26,7 @@ const KINDS = { steady: ['clinic', 'ripping'], loud: ['bar', 'fightPit'], quiet:
 test('the map: 34 kinds across all ten businesses, each with three or four, and every use one that exists', () => {
   const all = Object.values(BACK_ROOMS).flatMap((kinds) => Object.values(kinds));
   assert.equal(all.length, 34);
-  assert.equal(all.filter((k) => !k.draft).length, 11, 'the ones offered today');
+  assert.equal(all.filter((k) => k.profile === 'steady').length, 10, 'every current kind but Laundering for others');
   assert.deepEqual(Object.keys(BACK_ROOMS).sort(), Object.keys(ARCHETYPES).sort());
   for (const [front, kinds] of Object.entries(BACK_ROOMS)) {
     assert.ok([3, 4].includes(Object.keys(kinds).length), front);
@@ -39,20 +39,14 @@ test('the map: 34 kinds across all ten businesses, each with three or four, and 
   }
 });
 
-test('only today\'s kinds are offered until U2b, and the requests hold to that', () => {
-  assert.deepEqual(roomKinds({ archetype: 'clinic' }), ['ripping']);
-  assert.deepEqual(roomKinds({ archetype: 'bar' }), ['gambling', 'brothel']);
-  assert.deepEqual(roomKinds({ archetype: 'boutique' }), ['launderette']);
-  for (const front of Object.keys(BACK_ROOMS)) assert.ok(roomKinds({ archetype: front }).length >= 1);
+test('every kind of a front is offered', () => {
+  for (const [front, kinds] of Object.entries(BACK_ROOMS)) assert.deepEqual(roomKinds({ archetype: front }), Object.keys(kinds));
 });
 
-test('every current kind is Steady, but Laundering for others, as decided', () => {
-  for (const [front, kinds] of Object.entries(BACK_ROOMS)) {
-    for (const [id, kind] of Object.entries(kinds)) {
-      if (kind.draft) continue;
-      assert.equal(kind.profile, id === 'launderette' ? 'laundering' : 'steady', `${front}.${id}`);
-    }
-  }
+test('the kinds that were there before U2 are Steady, but Laundering for others, as decided', () => {
+  const before = { clinic: ['ripping'], garage: ['chopShop'], bar: ['gambling', 'brothel'], infoShop: ['dataFence'], gunShop: ['blackArms'], courier: ['smuggling'], foodStall: ['deadDrop'], media: ['blackmail'], security: ['racket'] };
+  for (const [front, ids] of Object.entries(before)) for (const id of ids) assert.equal(BACK_ROOMS[front][id].profile, 'steady', `${front}.${id}`);
+  assert.equal(BACK_ROOMS.boutique.launderette.profile, 'laundering');
 });
 
 test('a Steady room plays exactly as a room did before profiles', () => {
@@ -143,4 +137,33 @@ test('the week\'s digest keeps what a Hungry room spent on supplies, and a close
   const steady = room(...KINDS.steady, 0);
   steady.period.slots = [{ action: 'roomWork', by: 'med', band: 'solid', approach: 'standard' }];
   assert.equal(advanceBusiness(steady, 8, { seed: 'u2a' }).business.digests.at(-1).room.supply, undefined, 'a room with no supplies says nothing of them');
+});
+
+test('a connected room lifts standing for a week worked, with the faction it chose', () => {
+  const connected = (factionId) => {
+    const b = room(...KINDS.connected);
+    if (factionId) b.backRoom.factionId = factionId;
+    return b;
+  };
+  const b = connected('tyger');
+  b.period.slots = [{ action: 'roomWork', by: 'med', band: 'solid', approach: 'standard' }];
+  assert.deepEqual(roomWeek(b, 1000, 1, P).standing, { factionId: 'tyger', amount: 1 });
+  const idle = connected('tyger');
+  assert.equal(roomWeek(idle, 1000, 1, P).standing, undefined, 'not a week it did not work');
+  const none = connected();
+  none.period.slots = b.period.slots;
+  assert.equal(roomWeek(none, 1000, 1, P).standing, undefined, 'a world with no factions');
+  const steady = room(...KINDS.steady);
+  steady.backRoom.factionId = 'tyger';
+  steady.period.slots = b.period.slots;
+  assert.equal(roomWeek(steady, 1000, 1, P).standing, undefined, 'only a connected room');
+});
+
+test('the close passes a connected room\'s standing on', async () => {
+  const { advanceBusiness } = await import('../scripts/engine/index.js');
+  const b = room(...KINDS.connected);
+  b.backRoom.factionId = 'tyger';
+  b.period.slots = [{ action: 'roomWork', by: 'med', band: 'solid', approach: 'standard' }];
+  const events = advanceBusiness(b, 8, { seed: 'u2b' }).events;
+  assert.deepEqual(events.filter((e) => e.type === 'factionMove'), [{ type: 'factionMove', factionId: 'tyger', amount: 1 }]);
 });

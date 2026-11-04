@@ -859,7 +859,7 @@ test('a back room: pending for the GM, then on the Back Room tab with its dirty 
     assert.match(open, /data-action="lieLow"/);
     const gm = await renderConsole('businesses');
     assertClean(gm, 'an open back room for the GM');
-    assert.match(text(gm), /Back room: Black-market chrome, 1,200 eb of dirty cash/);
+    assert.match(text(gm), /Back room: Black-market chrome \(Steady\), 1,200 eb of dirty cash/);
     const dialog = new Apps.Roll({ actorId: med.id, businessId: b.id, request: { type: 'action', businessId: b.id, action: 'roomWork' }, rollTitle: 'Work' });
     const roll = render('templates/dialogs/roll.hbs', await dialog._prepareContext());
     assertClean(roll, 'the roll dialog');
@@ -1765,6 +1765,52 @@ test('Exposure can be a fraction now: it stays tidy, and the GM\'s pages show it
     assert.equal(MarketStore.getBusinessesHidden()[b.id].exposure, 0, 'never below none');
   } finally {
     await MarketStore.setBusinessesHidden(hiddenBefore);
+    await S.BusinessRepository.save(saved);
+  }
+});
+
+test('choosing a back room (U2b): each kind with its profile in words, a connected one\'s faction, and what the room then shows', async () => {
+  const { MODULE_ID, SETTINGS } = await import('../scripts/utils/constants.js');
+  const { FactionRepository } = await import('../scripts/data/FactionRepository.js');
+  const { applyBusinessRequest } = await import('../scripts/engine/index.js');
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const factionsBefore = structuredClone(game.settings.get(MODULE_ID, SETTINGS.FACTION_DEFS));
+  const open = { ...b, status: 'open', archetype: 'bar', stage: 1, till: 90000, company: null, listing: null, charter: null, takeover: null, administration: null, regCase: null, proposals: [], projects: [], backRoom: null };
+  try {
+    await game.settings.set(MODULE_ID, SETTINGS.FACTION_DEFS, {});
+    await FactionRepository.save({ name: 'The Tyger Claws', kind: 'gang', ticker: '', districts: [] });
+    const claws = FactionRepository.list()[0];
+    await S.BusinessRepository.save(open);
+
+    const projects = await renderBusiness(windowFor(med, 'projects'));
+    assertClean(projects, 'projects with back room kinds');
+    assert.match(text(projects), /Fight pit \(Loud\)/);
+    assert.match(text(projects), /Fixers&#x27;? ?meeting room \(Connected\)|Fixers' meeting room \(Connected\)/);
+    assert.match(text(projects), /Gambling and dealing \(Steady\)/);
+    assert.match(text(projects), /Half as much Exposure again/);
+    assert.match(text(projects), /Rolls Streetwise, Brawling, Charismatic Impact/);
+    assert.match(projects, /data-connected="true"/);
+    assert.match(projects, /name="roomFaction"/);
+
+    const ask = (request) => applyBusinessRequest({ business: S.BusinessRepository.all()[0], request: { type: 'propose', kind: 'project', project: 'backRoom', ...request }, actor: { id: med.id, name: med.name, wealth: 0 }, day: 1, context: { factions: FactionRepository.list() } });
+    assert.equal(ask({ room: 'fixersRoom' }).reason, 'no-faction', 'a connected room must choose');
+    assert.equal(ask({ room: 'fixersRoom', roomFaction: 'nobody' }).reason, 'no-faction');
+    const chosen = ask({ room: 'fixersRoom', roomFaction: claws.id });
+    assert.ok(chosen.ok, chosen.reason);
+    const started = chosen.business.projects.at(-1) ?? chosen.business.proposals.at(-1)?.terms;
+    assert.equal((started.roomFaction).name, 'The Tyger Claws');
+    assert.ok(ask({ room: 'fightPit' }).ok, 'and only a connected one');
+
+    await S.BusinessRepository.save({ ...open, backRoom: { kind: 'fixersRoom', status: 'open', dirty: 100, day: 1, factionId: claws.id, factionName: claws.name }, digests: [{ index: 1, startDay: 0, endDay: 7, takings: 100, gross: 100, upkeep: 50, costs: { running: 50 }, profit: 50, till: 1000, actions: [], room: { earned: 400, supply: 100, laundered: 20, paid: 0, low: false } }] });
+    const room = await renderBusiness(windowFor(med, 'backRoom'));
+    assertClean(room, 'a connected room');
+    assert.match(text(room), /Connected: Earns half/);
+    assert.match(text(room), /Connected with The Tyger Claws/);
+    assert.match(text(room), /400 eb earned, 100 eb of it on supplies/);
+    assert.match(text(await renderConsole('businesses')), /\(Connected\)/);
+  } finally {
+    await game.settings.set(MODULE_ID, SETTINGS.FACTION_DEFS, factionsBefore);
     await S.BusinessRepository.save(saved);
   }
 });

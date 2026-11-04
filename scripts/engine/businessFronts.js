@@ -23,11 +23,14 @@ export const SECRET_ACTIONS = Object.freeze([...ROOM_ACTIONS, ...CRIME_ACTIONS, 
 export const SECRET_LEDGER = Object.freeze(['laundered', 'dirtyTaken', 'raidFine', 'blackOps', 'regulatorBribe', 'illegalMaterials', 'fenced']);
 
 /** The kinds of back room this business's front could hide. */
-export const roomKinds = (b) => Object.entries(BACK_ROOMS[b.archetype] ?? {}).filter(([, kind]) => !kind.draft).map(([id]) => id);
+export const roomKinds = (b) => Object.keys(BACK_ROOMS[b.archetype] ?? {});
+
+/** The id of a kind's profile, for a business type. A kind no longer known is Steady. */
+export const kindProfile = (archetype, kind) => BACK_ROOMS[archetype]?.[kind]?.profile ?? 'steady';
 
 /** How this business's room plays. A kind no longer known plays as every room did before there were profiles. */
 export function roomProfile(b, p = BUSINESS_DEFAULTS) {
-  return p.backRoom.profiles[BACK_ROOMS[b.archetype]?.[b.backRoom?.kind]?.profile] ?? p.backRoom.profiles.steady;
+  return p.backRoom.profiles[kindProfile(b.archetype, b.backRoom?.kind)] ?? p.backRoom.profiles.steady;
 }
 
 /** A back room that is running. */
@@ -76,6 +79,8 @@ export function roomWeek(b, takings, part = 1, p = BUSINESS_DEFAULTS, traits = n
     out.supply = Math.round(out.earned * profile.supply);
     room.dirty += out.earned - out.supply;
     out.exposure += rules.workExposure[work.band] * profile.exposure - profile.quietWeek;
+    // A connected room's work keeps it in with the faction it chose.
+    if (profile.standing && room.factionId) out.standing = { factionId: room.factionId, amount: profile.standing };
   }
   // A silent partner takes its cut, whether or not there was much to cut (U1c).
   if (room.deal) {

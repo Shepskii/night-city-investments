@@ -9,7 +9,7 @@ import {
   stateBands, lastDigest, gearValue, rollSpec, BUSINESS_DEFAULTS,
   daysLeft, activeProject, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
   projectOffer, PROJECT_KINDS, upgradesOf, protectionFactor, headcountOf,
-  activeStaff, benchesOf, fenceCheck, fencePrice, hasIllegalStock, hasWorkshop, illegalAllowed, looseStock, salePrice, salesLimit, makesThings, produceCheck, runOffer, tierOf, topTierOf,
+  BACK_ROOMS, kindProfile, activeStaff, benchesOf, fenceCheck, fencePrice, hasIllegalStock, hasWorkshop, illegalAllowed, looseStock, salePrice, salesLimit, makesThings, produceCheck, runOffer, tierOf, topTierOf,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent, supplyCut, actionFor, ROOM_ACTIONS, roomKinds, openRoom, payOffCost, CRIME_ACTIONS, dealCut, SECRET_ACTIONS, SECRET_LEDGER,
   POST_IDS, POSTS, levelOf, postBest, staffBase, postRate, askingWage, postOpen, postOffered, recruitCheck, archetypeOf,
@@ -343,7 +343,17 @@ function projectsContext(business, actor, canAct) {
         cost: whole(cost),
         days,
         canPropose: canAct && !pending && offer.ok,
-        rooms: kind === 'backRoom' ? roomKinds(business).map((value) => ({ value, label: L(`NCI.BackRoom.Kind.${value}`) })) : [],
+        rooms: kind === 'backRoom' ? roomKinds(business).map((value) => {
+          const profile = kindProfile(business.archetype, value);
+          return {
+            value,
+            connected: !!BUSINESS_DEFAULTS.backRoom.profiles[profile].standing,
+            label: L('NCI.BackRoom.KindLabel', { kind: L(`NCI.BackRoom.Kind.${value}`), profile: L(`NCI.BackRoom.Profile.${profile}.Name`) }),
+            hint: L(`NCI.BackRoom.Profile.${profile}.Hint`),
+            rolls: L('NCI.BackRoom.Rolls', { uses: BACK_ROOMS[business.archetype][value].uses.map((u) => (u.kind === 'ability' ? u.ability : u.skill)).join(', ') }),
+          };
+        }) : [],
+        factions: kind === 'backRoom' ? FactionRepository.list().map((f) => ({ value: f.id, label: f.name })) : [],
         // Nothing more to say while one is running: the row above says so.
         blocked: offer.ok || offer.reason === 'project-running' ? '' : projectBlock(business, offer),
       };
@@ -672,6 +682,11 @@ function backRoomContext(business, runs, canAct, free) {
   const last = lastDigest(business)?.room;
   return {
     name: L(`NCI.BackRoom.Kind.${room.kind}`),
+    profile: L('NCI.BackRoom.ProfileLine', {
+      profile: L(`NCI.BackRoom.Profile.${kindProfile(business.archetype, room.kind)}.Name`),
+      hint: L(`NCI.BackRoom.Profile.${kindProfile(business.archetype, room.kind)}.Hint`),
+    }),
+    connected: room.factionId ? L('NCI.BackRoom.ConnectedTo', { name: FactionRepository.get(room.factionId)?.name ?? room.factionName ?? '' }) : '',
     pending: room.status === 'pending',
     shut: room.status === 'shut',
     shutText: L(business.stage >= 2 ? 'NCI.BackRoom.ShutForGood' : 'NCI.BackRoom.Shut'),
@@ -681,7 +696,7 @@ function backRoomContext(business, runs, canAct, free) {
     canPropose: runs && room.status === 'open' && !business.proposals.some((x) => x.kind === 'gangDeal' || x.kind === 'endGangDeal'),
     dirty: whole(room.dirty ?? 0),
     max: room.dirty ?? 0,
-    last: last ? L(last.low ? 'NCI.BackRoom.LastLow' : 'NCI.BackRoom.Last', { earned: whole(last.earned), laundered: whole(last.laundered), paid: whole(last.paid) }) : '',
+    last: last ? L(last.low ? 'NCI.BackRoom.LastLow' : last.supply ? 'NCI.BackRoom.LastSupply' : 'NCI.BackRoom.Last', { earned: whole(last.earned), supply: whole(last.supply ?? 0), laundered: whole(last.laundered), paid: whole(last.paid) }) : '',
     canTake: runs && room.status === 'open' && room.dirty > 0,
     canLieLow: runs && free && room.status === 'open' && !business.period.slots.some((s) => s.action === 'lieLow' || s.action === 'roomWork'),
     lying: business.period.slots.some((s) => s.action === 'lieLow') ? L('NCI.BackRoom.Lying') : '',
@@ -1648,7 +1663,7 @@ function partnersContext(business, actor) {
         // New shares and buybacks (B6a).
         shares: proposal.terms?.shares != null ? whole(proposal.terms.shares) : '',
         budget: proposal.terms?.budget != null ? whole(proposal.terms.budget) : '',
-        project: proposal.terms?.project ? L(`NCI.Project.Kind.${proposal.terms.project}`) : '',
+        project: proposal.terms?.room ? L('NCI.BackRoom.ProjectName', { kind: L(`NCI.BackRoom.Kind.${proposal.terms.room}`) }) : proposal.terms?.project ? L(`NCI.Project.Kind.${proposal.terms.project}`) : '',
         cost: proposal.terms?.cost != null ? whole(proposal.terms.cost) : '',
       }),
       rule: LT(business, `NCI.Business.Rule.${PROPOSAL_RULES[proposal.kind]}`, { date: dayText(proposal.expires ?? proposal.day) }),

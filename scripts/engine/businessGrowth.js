@@ -74,14 +74,14 @@ export function projectOffer(b, kind, p = BUSINESS_DEFAULTS) {
 export const expansionOffer = (b, p = BUSINESS_DEFAULTS) => projectOffer(b, 'expansion', p);
 
 /** Start a project, paid from the cash at once. What it builds is worth what it cost. */
-export function startProject(b, kind, id, day, p = BUSINESS_DEFAULTS, room = null) {
+export function startProject(b, kind, id, day, p = BUSINESS_DEFAULTS, room = null, roomFaction = null) {
   const offer = projectOffer(b, kind, p);
   if (!offer.ok) return offer;
   b.till -= offer.cost;
   // A back room is off the books, so it adds nothing to them.
   if (kind !== 'backRoom') b.assets += offer.cost;
   b.projects = [...b.projects, {
-    id, kind, stage: b.stage, cost: offer.cost, ...(offer.gain != null ? { gain: offer.gain } : {}), ...(room ? { room } : {}), daysNeeded: offer.days, days: 0, startedDay: day, status: 'active', crew: {},
+    id, kind, stage: b.stage, cost: offer.cost, ...(offer.gain != null ? { gain: offer.gain } : {}), ...(room ? { room } : {}), ...(roomFaction ? { roomFaction } : {}), daysNeeded: offer.days, days: 0, startedDay: day, status: 'active', crew: {},
   }];
   addLedger(b, { day, kind: kind === 'expansion' ? 'expansion' : 'project', project: kind, amount: -offer.cost }, p);
   return { ok: true };
@@ -118,7 +118,10 @@ function finishProject(b, project, growthRate, p, { approval = true, day = 0 } =
       break;
     case 'backRoom':
       // Waits for the GM when new businesses do (U1a).
-      b.backRoom = { kind: project.room, status: approval ? 'pending' : 'open', dirty: 0, day };
+      b.backRoom = {
+        kind: project.room, status: approval ? 'pending' : 'open', dirty: 0, day,
+        ...(project.roomFaction ? { factionId: project.roomFaction.id, factionName: project.roomFaction.name } : {}),
+      };
       break;
     default:
   }

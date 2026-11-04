@@ -4,7 +4,7 @@
  * @description Action handlers run with `this` set to the console window.
  */
 
-import { sceneCandidate, holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty, debtsOf, solvency, standingBand, turfFactions } from '../../../engine/index.js';
+import { kindProfile, sceneCandidate, holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty, debtsOf, solvency, standingBand, turfFactions } from '../../../engine/index.js';
 import { BusinessService, sceneHook } from '../../../services/BusinessService.js';
 import { FactionRepository } from '../../../data/FactionRepository.js';
 import { BusinessApp } from '../../Business/BusinessApp.js';
@@ -259,7 +259,7 @@ export function context() {
       } : null,
       canOpenCase: !b.regCase && b.stage === 2 && b.status === 'open',
       // A back room (U1a): the truth, and whether it waits for the GM.
-      backRoom: b.backRoom ? L({ pending: 'NCI.GMBusiness.RoomPending', shut: 'NCI.GMBusiness.RoomShut' }[b.backRoom.status] ?? 'NCI.GMBusiness.RoomOpen', { kind: L(`NCI.BackRoom.Kind.${b.backRoom.kind}`), dirty: whole(b.backRoom.dirty ?? 0) }) : '',
+      backRoom: b.backRoom ? L({ pending: 'NCI.GMBusiness.RoomPending', shut: 'NCI.GMBusiness.RoomShut' }[b.backRoom.status] ?? 'NCI.GMBusiness.RoomOpen', { kind: L('NCI.BackRoom.KindLabel', { kind: L(`NCI.BackRoom.Kind.${b.backRoom.kind}`), profile: L(`NCI.BackRoom.Profile.${kindProfile(b.archetype, b.backRoom.kind)}.Name`) }), dirty: whole(b.backRoom.dirty ?? 0) }) : '',
       roomPending: b.backRoom?.status === 'pending',
       roomDeal: b.backRoom?.deal ? L('NCI.GMBusiness.RoomDeal', { gang: b.backRoom.deal.name, cut: Math.round(b.backRoom.deal.cut * 100) }) : '',
       // A big event the GM could play out, or is playing out (X1).

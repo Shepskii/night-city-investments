@@ -160,64 +160,63 @@ export const COMPANY_ACTIONS = Object.freeze({
  * What each front can hide (U1a, DESIGN §36.1), and the skills and abilities each is worked with. Where a front
  * has more than one, the partners choose when they open it.
  */
-/** A kind of back room: its profile (`backRoom.profiles`) and what it rolls. A draft is not offered yet (U2b). */
-const roomKind = (profile, uses, draft = false) => Object.freeze({ profile, uses: Object.freeze(uses), ...(draft ? { draft } : {}) });
-const newRoom = (profile, uses) => roomKind(profile, uses, true);
+/** A kind of back room: its profile (`backRoom.profiles`) and what it rolls. */
+const roomKind = (profile, uses) => Object.freeze({ profile, uses: Object.freeze(uses) });
 
 export const BACK_ROOMS = Object.freeze({
   clinic: Object.freeze({
     ripping: roomKind('steady', [S.cybertech, S.paramedic, A.medicine]),
-    backAlleySurgery: newRoom('quiet', [S.paramedic, S.cybertech, A.medicine]),
-    streetPharmacy: newRoom('hungry', [S.paramedic, S.trading, A.medicine]),
-    organBrokering: newRoom('loud', [S.cybertech, S.streetwise, A.medicine]),
+    backAlleySurgery: roomKind('quiet', [S.paramedic, S.cybertech, A.medicine]),
+    streetPharmacy: roomKind('hungry', [S.paramedic, S.trading, A.medicine]),
+    organBrokering: roomKind('loud', [S.cybertech, S.streetwise, A.medicine]),
   }),
   garage: Object.freeze({
     chopShop: roomKind('steady', [S.basicTech, S.landVehicleTech, A.maker]),
-    vehicleCloning: newRoom('quiet', [S.landVehicleTech, S.electronics, A.maker]),
-    getawayOutfitting: newRoom('connected', [S.landVehicleTech, S.streetwise, A.maker]),
+    vehicleCloning: roomKind('quiet', [S.landVehicleTech, S.electronics, A.maker]),
+    getawayOutfitting: roomKind('connected', [S.landVehicleTech, S.streetwise, A.maker]),
   }),
   bar: Object.freeze({
     gambling: roomKind('steady', [S.streetwise, S.persuasion, A.charismaticImpact]),
     brothel: roomKind('steady', [S.persuasion, S.humanPerception, S.wardrobe, A.charismaticImpact]),
-    fightPit: newRoom('loud', [S.streetwise, S.brawling, A.charismaticImpact]),
-    fixersRoom: newRoom('connected', [S.conversation, S.streetwise, A.operator]),
+    fightPit: roomKind('loud', [S.streetwise, S.brawling, A.charismaticImpact]),
+    fixersRoom: roomKind('connected', [S.conversation, S.streetwise, A.operator]),
   }),
   infoShop: Object.freeze({
     dataFence: roomKind('steady', [S.librarySearch, A.interface]),
-    identityForgery: newRoom('quiet', [S.librarySearch, S.bureaucracy, A.interface]),
-    blackIce: newRoom('loud', [S.electronics, S.librarySearch, A.interface]),
+    identityForgery: roomKind('quiet', [S.librarySearch, S.bureaucracy, A.interface]),
+    blackIce: roomKind('loud', [S.electronics, S.librarySearch, A.interface]),
   }),
   gunShop: Object.freeze({
     blackArms: roomKind('steady', [S.weaponstech, S.trading, A.operator]),
-    illegalMods: newRoom('quiet', [S.weaponstech, S.basicTech, A.maker]),
-    armingGang: newRoom('connected', [S.trading, S.streetwise, A.operator]),
+    illegalMods: roomKind('quiet', [S.weaponstech, S.basicTech, A.maker]),
+    armingGang: roomKind('connected', [S.trading, S.streetwise, A.operator]),
   }),
   courier: Object.freeze({
     smuggling: roomKind('steady', [S.driveLand, S.localExpert, A.moto]),
-    hotGoods: newRoom('quiet', [S.driveLand, S.streetwise, A.moto]),
-    peopleRunning: newRoom('loud', [S.driveLand, S.streetwise, A.moto]),
+    hotGoods: roomKind('quiet', [S.driveLand, S.streetwise, A.moto]),
+    peopleRunning: roomKind('loud', [S.driveLand, S.streetwise, A.moto]),
   }),
   boutique: Object.freeze({
     launderette: roomKind('laundering', [S.business, S.streetwise]),
-    newFaces: newRoom('quiet', [S.personalGrooming, S.wardrobe, A.medicine]),
-    counterfeits: newRoom('hungry', [S.wardrobe, S.trading, A.maker]),
-    secondBooks: newRoom('laundering', [S.accounting, S.business]),
+    newFaces: roomKind('quiet', [S.personalGrooming, S.wardrobe, A.medicine]),
+    counterfeits: roomKind('hungry', [S.wardrobe, S.trading, A.maker]),
+    secondBooks: roomKind('laundering', [S.accounting, S.business]),
   }),
   foodStall: Object.freeze({
     deadDrop: roomKind('steady', [S.business, S.streetwise]),
-    streetDealing: newRoom('hungry', [S.streetwise, S.localExpert, A.operator]),
-    lookouts: newRoom('connected', [S.streetwise, S.localExpert, A.operator]),
-    cashTill: newRoom('laundering', [S.business, S.accounting]),
+    streetDealing: roomKind('hungry', [S.streetwise, S.localExpert, A.operator]),
+    lookouts: roomKind('connected', [S.streetwise, S.localExpert, A.operator]),
+    cashTill: roomKind('laundering', [S.business, S.accounting]),
   }),
   media: Object.freeze({
     blackmail: roomKind('steady', [S.composition, S.photography, A.credibility]),
-    bootlegs: newRoom('hungry', [S.photography, S.electronics, A.credibility]),
-    paidStories: newRoom('connected', [S.composition, S.persuasion, A.credibility]),
+    bootlegs: roomKind('hungry', [S.photography, S.electronics, A.credibility]),
+    paidStories: roomKind('connected', [S.composition, S.persuasion, A.credibility]),
   }),
   security: Object.freeze({
     racket: roomKind('steady', [S.tactics, S.persuasion, A.combatAwareness]),
-    protection: newRoom('connected', [S.tactics, S.streetwise, A.combatAwareness]),
-    insideJobs: newRoom('loud', [S.tactics, S.interrogation, A.backup]),
+    protection: roomKind('connected', [S.tactics, S.streetwise, A.combatAwareness]),
+    insideJobs: roomKind('loud', [S.tactics, S.interrogation, A.backup]),
   }),
 });
 
@@ -513,14 +512,15 @@ export const BUSINESS_DEFAULTS = Object.freeze({
      * How each kind of room plays (U2, DESIGN §36.12), checked with tools/simulate-backrooms.mjs. `earn` scales its money,
      * and `swing` how far the band moves it; `exposure` scales what working it adds, and `quietWeek` is Exposure shed by a
      * week's work; `raid` scales the Exposure band's chance of a raid; `supply` is the share of what it earns spent on
-     * stock, out of dirty cash; `launder` scales what can be washed in a week. Steady is every room before U2.
+     * stock, out of dirty cash; `launder` scales what can be washed in a week; `standing` is what a week's work adds with
+     * the faction chosen on opening it. Steady is every room before U2.
      */
     profiles: Object.freeze({
       steady: Object.freeze({ earn: 1, swing: 1, exposure: 1, raid: 1, supply: 0, launder: 1, quietWeek: 0 }),
       loud: Object.freeze({ earn: 1.5, swing: 1.5, exposure: 1.5, raid: 1.25, supply: 0, launder: 1, quietWeek: 0 }),
       quiet: Object.freeze({ earn: 0.65, swing: 0.75, exposure: 0.5, raid: 0.5, supply: 0, launder: 1, quietWeek: 0 }),
       hungry: Object.freeze({ earn: 1.5, swing: 1, exposure: 1.25, raid: 1, supply: 0.25, launder: 1, quietWeek: 0 }),
-      connected: Object.freeze({ earn: 0.5, swing: 1, exposure: 0.75, raid: 1, supply: 0, launder: 1, quietWeek: 0.5 }),
+      connected: Object.freeze({ earn: 0.5, swing: 1, exposure: 0.75, raid: 1, supply: 0, launder: 1, quietWeek: 0.5, standing: 1 }),
       laundering: Object.freeze({ earn: 0.8, swing: 1, exposure: 0.75, raid: 1, supply: 0, launder: 2, quietWeek: 0 }),
     }),
     share: 0.6,
