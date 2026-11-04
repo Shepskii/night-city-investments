@@ -154,7 +154,7 @@ export function ipoRows(actor) {
       ticker: c.ticker,
       name: c.name,
       sector: L(`NCI.Sector.${c.sector}`),
-      date: c.ipo.date,
+      date: MarketClock.showDate(c.ipo.date),
       price: money(ipoPrice(c)),
       status: open
         ? L('NCI.Ipo.WindowOpen', { n: Math.max(0, st.daysToList) })

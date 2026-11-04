@@ -2072,7 +2072,7 @@ class BusinessServiceImpl {
 
   /** A game day as the calendar shows it, for mails. */
   _dayText(day) {
-    return MarketClock.dateString(day * 86400000);
+    return MarketClock.displayDate(day * 86400000);
   }
 
   /**

@@ -41,7 +41,7 @@ const DAY_MS = 86_400_000;
 const LEDGER_ROWS = 15;
 
 /** A market day as a date, e.g. "2045-03-09". */
-export const dayText = (day) => MarketClock.dateString(day * DAY_MS);
+export const dayText = (day) => MarketClock.displayDate(day * DAY_MS);
 
 /** Each standing's bands, worst to best, so a week's band can be drawn as a level from 0 to 3. */
 const BAND_LEVELS = {

@@ -18,7 +18,7 @@ import { isCharacter } from '../../utils/helpers.js';
 
 const DAY_MS = 86_400_000;
 const LEDGER_ROWS = 10;
-const dayText = (day) => MarketClock.dateString(day * DAY_MS);
+const dayText = (day) => MarketClock.displayDate(day * DAY_MS);
 const units = (n) => Number(n).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
 

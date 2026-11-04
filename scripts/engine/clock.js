@@ -43,6 +43,18 @@ export const dayIndex = (ms) => Math.floor(ms / DAY_MS);
  */
 export const marketDay = (pub, calendarDay) => (pub?.lastDay ?? calendarDay) + (pub?.lead ?? 0);
 
+/** How dates may be shown, the GM's choice. Dates are stored as YYYY-MM-DD whatever this says. */
+export const DATE_FORMATS = Object.freeze(['DD-MM-YYYY', 'YYYY-MM-DD', 'MM-DD-YYYY']);
+
+/** A stored "YYYY-MM-DD" as a date format shows it. Anything else, such as an empty date, comes back as it is. */
+export function formatIsoDate(iso, format = DATE_FORMATS[0]) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso ?? ''));
+  if (!m) return iso ?? '';
+  const [, year, month, day] = m;
+  if (format === 'YYYY-MM-DD') return iso;
+  return format === 'MM-DD-YYYY' ? `${month}-${day}-${year}` : `${day}-${month}-${year}`;
+}
+
 /** Calendar date (UTC) for a timestamp in milliseconds; month is 1-12. */
 export function msToDate(ms) {
   const d = new Date(ms);

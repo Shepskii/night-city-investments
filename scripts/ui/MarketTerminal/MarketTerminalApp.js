@@ -460,7 +460,7 @@ export class MarketTerminalApp extends BaseApplication {
     const feed = MarketStore.getNews();
     const nameOf = (id) => companies.find((c) => c.id === id)?.ticker ?? id;
     const newsRows = (items) => items.map((n) => ({
-      date: n.date,
+      date: MarketClock.showDate(n.date),
       // Headlines posted before tickers were added get theirs here.
       headline: withTickers(n.headline, [...companies, ...funds]),
       cls: n.tone === 'up' ? 'nci-up' : n.tone === 'down' ? 'nci-down' : 'nci-flat',
@@ -491,7 +491,7 @@ export class MarketTerminalApp extends BaseApplication {
       hasListings: rows.length > 0 || ipos.length > 0,
       index: { level: money(idx.level), pct: pct(idx.changePct), cls: trendClass(idx.changePct) },
       mood: hasData ? L(`NCI.Mood.${pub.mood}`) : '—',
-      date: MarketClock.dateString(),
+      date: MarketClock.displayDate(),
       tick: pub.tickIndex ?? 0,
       detail,
       backLabel: L(this.cameFrom === 'portfolio' ? 'NCI.Terminal.BackPortfolio' : 'NCI.Terminal.Back'),
@@ -513,11 +513,11 @@ export class MarketTerminalApp extends BaseApplication {
     const periodChange = rangeStats(series).change;
     const record = MarketStore.getDividendRecords()[c.id];
     const lastDividend = record?.perShare
-      ? L('NCI.Terminal.LastDividend', { amount: money(record.perShare), date: record.date })
+      ? L('NCI.Terminal.LastDividend', { amount: money(record.perShare), date: MarketClock.showDate(record.date) })
       : '';
     const assets = [...CompanyRepository.all(), ...FundRepository.all()];
     const companyNews = latestNews(MarketStore.getNews(), { companyId: c.id, limit: 5 }).map((n) => ({
-      date: n.date,
+      date: MarketClock.showDate(n.date),
       headline: withTickers(n.headline, assets),
       cls: n.tone === 'up' ? 'nci-up' : n.tone === 'down' ? 'nci-down' : 'nci-flat',
     }));

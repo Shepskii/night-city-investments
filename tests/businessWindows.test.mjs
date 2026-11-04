@@ -1719,3 +1719,31 @@ test('REP and IP on the GM\'s Businesses tab are laid out as Pending\'s rows', a
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('dates show in the GM\'s chosen format on the rendered pages, day first by default', async () => {
+  const { MODULE_ID, SETTINGS } = await import('../scripts/utils/constants.js');
+  const { MarketClock } = await import('../scripts/services/MarketClockService.js');
+  const { MarketStore } = await import('../scripts/data/MarketStore.js');
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const heatBefore = structuredClone(MarketStore.getHeat());
+  const gigsBefore = structuredClone(MarketStore.getGigs());
+  const before = game.settings.get(MODULE_ID, SETTINGS.DATE_FORMAT);
+  const day = Date.UTC(2045, 2, 9) / 86_400_000;
+  try {
+    await S.BusinessRepository.save({ ...b, status: 'open', stage: 0, company: null, listing: null, ledger: [{ day, kind: 'takings', amount: 100 }] });
+    await MarketStore.setGigs({ ...gigsBefore, pending: [{ id: 'g1', kind: 'mapping', outcome: 'done', reward: 100, date: '2045-03-09', title: 'A gig', client: 'Nobody Known', status: 'pending', sourceKey: 'gig:g1' }] });
+    for (const [format, shown] of [[undefined, '09-03-2045'], ['DD-MM-YYYY', '09-03-2045'], ['MM-DD-YYYY', '03-09-2045'], ['YYYY-MM-DD', '2045-03-09']]) {
+      if (format) await game.settings.set(MODULE_ID, SETTINGS.DATE_FORMAT, format);
+      assert.match(text(await renderBusiness(windowFor(med, 'ledger'))), new RegExp(shown), `the ledger, ${format ?? 'by default'}`);
+      assert.match(text(await renderConsole('gigs')), new RegExp(shown), `a gig, ${format ?? 'by default'}`);
+      assert.match(text(await renderConsole('market')), new RegExp(MarketClock.displayDate().replace(/-/g, '-')), 'the market date');
+    }
+    assert.equal(MarketClock.dateString(day * 86_400_000), '2045-03-09', 'and what is stored is unchanged');
+  } finally {
+    await game.settings.set(MODULE_ID, SETTINGS.DATE_FORMAT, before);
+    await MarketStore.setGigs(gigsBefore);
+    await MarketStore.setHeat(heatBefore);
+    await S.BusinessRepository.save(saved);
+  }
+});

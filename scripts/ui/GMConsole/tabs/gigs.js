@@ -5,6 +5,7 @@
  */
 
 import { L } from '../../format.js';
+import { MarketClock } from '../../../services/MarketClockService.js';
 import { CompanyRepository } from '../../../data/CompanyRepository.js';
 import { MarketStore } from '../../../data/MarketStore.js';
 import { BusinessRepository } from '../../../data/BusinessRepository.js';
@@ -103,7 +104,7 @@ function build(companyOptions) {
     outcome: L(`NCI.Gig.Outcome.${p.outcome}`),
     up: p.outcome === 'done',
     reward: Number(p.reward ?? 0).toLocaleString(),
-    date: p.date,
+    date: MarketClock.showDate(p.date),
     reason: p.reason ? L(`NCI.Gig.Reason.${p.reason}`) : '',
   });
 

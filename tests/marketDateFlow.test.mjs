@@ -97,3 +97,24 @@ test('in manual mode only the market moves its date', async () => {
   assert.equal(today(), '2045-04-10', 'ten day ticks are ten days');
   assert.equal(calendar(), before, 'and manual mode leaves the calendar alone');
 });
+
+test('the date format changes what is shown, and never what is stored', async () => {
+  const { formatIsoDate, DATE_FORMATS } = await import('../scripts/engine/index.js');
+  assert.deepEqual([...DATE_FORMATS], ['DD-MM-YYYY', 'YYYY-MM-DD', 'MM-DD-YYYY']);
+  assert.equal(formatIsoDate('2045-03-09'), '09-03-2045', 'day first by default');
+  assert.equal(formatIsoDate('2045-03-09', 'DD-MM-YYYY'), '09-03-2045');
+  assert.equal(formatIsoDate('2045-03-09', 'YYYY-MM-DD'), '2045-03-09');
+  assert.equal(formatIsoDate('2045-03-09', 'MM-DD-YYYY'), '03-09-2045');
+  assert.equal(formatIsoDate(''), '');
+  assert.equal(formatIsoDate(null), '');
+  assert.equal(formatIsoDate('not a date'), 'not a date');
+
+  const ms = Date.UTC(2045, 2, 9);
+  assert.equal(MarketClock.dateString(ms), '2045-03-09', 'kept for storing, as the logic reads it back');
+  assert.equal(MarketClock.displayDate(ms), '09-03-2045', 'unset, the default');
+  env.store.set('dateFormat', 'MM-DD-YYYY');
+  assert.equal(MarketClock.displayDate(ms), '03-09-2045');
+  assert.equal(MarketClock.showDate('2045-03-09'), '03-09-2045');
+  assert.equal(MarketClock.dateString(ms), '2045-03-09', 'storing does not follow it');
+  env.store.delete('dateFormat');
+});

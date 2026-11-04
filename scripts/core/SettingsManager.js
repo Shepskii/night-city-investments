@@ -3,6 +3,7 @@
  * @file scripts/core/SettingsManager.js
  */
 
+import { DATE_FORMATS } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
 import { THEMES, applyTheme, visualToolsActive } from './theme.js';
 
@@ -448,6 +449,17 @@ export function registerSettings() {
     type: Number,
     default: 1,
     range: { min: 0.5, max: 2, step: 0.25 },
+  });
+
+  s.register(MODULE_ID, SETTINGS.DATE_FORMAT, {
+    name: 'NCI.Settings.DateFormat.Name',
+    hint: 'NCI.Settings.DateFormat.Hint',
+    scope: 'world',
+    config: true,
+    type: String,
+    default: DATE_FORMATS[0],
+    choices: Object.fromEntries(DATE_FORMATS.map((f) => [f, f])),
+    onChange: notifyBusinessesChanged,
   });
 
   s.register(MODULE_ID, SETTINGS.DEBUG_MODE, {

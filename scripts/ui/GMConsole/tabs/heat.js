@@ -5,6 +5,7 @@
  */
 
 import { L, daysInclusive } from '../../format.js';
+import { MarketClock } from '../../../services/MarketClockService.js';
 import { exposureBand } from '../../../engine/index.js';
 import { HeatService } from '../../../services/HeatService.js';
 import { BusinessService } from '../../../services/BusinessService.js';
@@ -69,8 +70,8 @@ function build(companyOptions) {
   const lastOf = (c) => {
     const e = c.log.at(-1);
     if (!e) return '';
-    if (e.action) return L('NCI.Heat.LastAction', { gain: signed(e.gain), what: L(`NCI.Heat.ActionName.${e.action}`), date: e.date });
-    return L('NCI.Heat.LastGain', { gain: signed(e.gain), company: company(e.companyId), date: e.date });
+    if (e.action) return L('NCI.Heat.LastAction', { gain: signed(e.gain), what: L(`NCI.Heat.ActionName.${e.action}`), date: MarketClock.showDate(e.date) });
+    return L('NCI.Heat.LastGain', { gain: signed(e.gain), company: company(e.companyId), date: MarketClock.showDate(e.date) });
   };
   const doneText = (p) => {
     if (p.status !== 'applied' || !p.result) return '';
@@ -88,7 +89,7 @@ function build(companyOptions) {
     days: p.params.days ?? p.params.banDays,
     daysLabel: L(p.kind === 'freeze' ? 'NCI.Heat.FreezeDays' : 'NCI.Heat.BanDays'),
     text: penaltyText(p),
-    line: L('NCI.Heat.PenaltyLine', { kind: L(`NCI.Heat.Status.${p.status}`), heat: p.heat, date: p.date }),
+    line: L('NCI.Heat.PenaltyLine', { kind: L(`NCI.Heat.Status.${p.status}`), heat: p.heat, date: MarketClock.showDate(p.date) }),
     status: L(`NCI.Heat.Status.${p.status}`),
     done: doneText(p),
   });
@@ -118,10 +119,10 @@ function build(companyOptions) {
       up: w.direction === 'up',
       closes: w.closeTick >= snap.tick - 1e-6 ? L('NCI.Heat.ClosesIn', { n: daysInclusive(w.closeTick, snap.tick) }) : L('NCI.Heat.AwaitingFills'),
       tipped: w.tipped.length,
-      opened: w.openDate,
+      opened: MarketClock.showDate(w.openDate),
     })),
     audits: snap.audits.slice(-8).reverse().map((a) => ({
-      date: a.date,
+      date: MarketClock.showDate(a.date),
       company: company(a.companyId),
       direction: dir(a.direction),
       up: a.direction === 'up',

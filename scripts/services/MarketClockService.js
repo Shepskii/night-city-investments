@@ -8,8 +8,9 @@
  *              advanced the market by hand, and in manual mode moves only with the market.
  */
 
-import { msToDate, dayIndex, marketDay, DAY_MS, weekdayOf } from '../engine/index.js';
+import { msToDate, dayIndex, marketDay, DAY_MS, weekdayOf, formatIsoDate } from '../engine/index.js';
 import { MarketStore } from '../data/MarketStore.js';
+import { MODULE_ID, SETTINGS } from '../utils/constants.js';
 
 export const MarketClock = {
   /** The in-world calendar, in milliseconds. */
@@ -102,9 +103,19 @@ export const MarketClock = {
     return game.i18n.localize(`NCI.Weekday.${index}`);
   },
 
-  /** e.g. "2045-03-09" */
+  /** A date to store, always as "2045-03-09". To show one, use `displayDate` or `showDate`. */
   dateString(ms = this.nowMs()) {
     const { year, month, day } = msToDate(ms);
     return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  },
+
+  /** A moment's date as the GM's date format shows it. */
+  displayDate(ms = this.nowMs()) {
+    return this.showDate(this.dateString(ms));
+  },
+
+  /** A stored "2045-03-09" as the GM's date format shows it. */
+  showDate(iso) {
+    return formatIsoDate(iso, game.settings.get(MODULE_ID, SETTINGS.DATE_FORMAT));
   },
 };

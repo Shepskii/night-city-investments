@@ -22,7 +22,7 @@ const DAY_MS = 86_400_000;
 const eb = (n) => Math.round(Number(n) || 0).toLocaleString();
 const units = (n) => Number(n).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const tickerOf = (id) => CompanyRepository.get(id)?.ticker ?? FundRepository.get(id)?.ticker ?? id;
-const dayText = (day) => MarketClock.dateString(day * DAY_MS);
+const dayText = (day) => MarketClock.displayDate(day * DAY_MS);
 
 /** One proposal in words. */
 export function describeProposal(s, p) {

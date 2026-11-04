@@ -1754,6 +1754,10 @@
         "Name": "Business days come from Crew Tools downtime",
         "Hint": "On: extra time, project days and mentoring spend a character's Crew Tools downtime, and there is no weekly allowance, so business work competes with their other downtime. Remember to award days, and to open Downtime once for each character. Off: 3 business days a week for each voting partner."
       },
+      "DateFormat": {
+        "Name": "Date format",
+        "Hint": "How dates show in this module's windows and mails, for everyone. Mails already sent keep the format they had."
+      },
       "Theme": {
         "Name": "Colour theme",
         "Hint": "Your own choice, for this module's windows and ticker. Matching uses whichever skin and colours you have set in Pneuma's Visual Tools, and stays red if you have none active.",

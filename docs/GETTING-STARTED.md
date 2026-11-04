@@ -128,6 +128,7 @@ In both the in-world modes the market only moves when in-world time passes, so a
 
 | Setting | Default | What it does |
 |---|---|---|
+| Date format | DD-MM-YYYY | How dates show in this module's windows and mails, for everyone: DD-MM-YYYY, YYYY-MM-DD or MM-DD-YYYY. Mails already sent keep the format they had. |
 | Colour theme | Night City red | *Per user.* With Pneuma's Visual Tools, match its skins and colours in this module's windows and ticker. Stays red if none is active. |
 | Debug logging | Off | *Per user.* Extra diagnostics in the browser console. |
 

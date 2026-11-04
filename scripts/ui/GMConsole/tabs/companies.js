@@ -54,7 +54,7 @@ export function context() {
   const ipoText = (c) => {
     const st = ipoStatus(c, today);
     if (st.state === 'none') return '';
-    return st.state === 'due' ? L('NCI.Ipo.ListingToday') : L(st.state === 'window' ? 'NCI.Ipo.WindowOpen' : 'NCI.Ipo.ListsOn', { n: st.daysToList, date: c.ipo.date });
+    return st.state === 'due' ? L('NCI.Ipo.ListingToday') : L(st.state === 'window' ? 'NCI.Ipo.WindowOpen' : 'NCI.Ipo.ListsOn', { n: st.daysToList, date: MarketClock.showDate(c.ipo.date) });
   };
   return {
     companies: CompanyRepository.all({ includeUnlisted: true }).map((c) => ({
