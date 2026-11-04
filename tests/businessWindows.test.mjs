@@ -1814,3 +1814,30 @@ test('choosing a back room (U2b): each kind with its profile in words, a connect
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('founding a business moves the window to it once it exists, and only to that one', async () => {
+  const before = S.BusinessRepository.forActor(med.id);
+  assert.ok(before.length > 0, 'the character already has a business on screen');
+  const app = windowFor(med);
+  app.businessId = before[0].id;
+  app.founding = { name: 'Follow Me Bar', known: before.map((b) => b.id) };
+
+  await renderBusiness(app);
+  assert.equal(app.businessId, before[0].id, 'still where it was while the GM has not made it');
+  assert.ok(app.founding, 'and still waiting');
+
+  await send(med, 'found', { name: 'Someone Else Entirely', archetype: 'foodStall', location: 'Watson', cash: 100, invite: [] });
+  await renderBusiness(app);
+  assert.equal(app.businessId, before[0].id, 'another new business is not the one asked for');
+
+  await send(med, 'found', { name: 'Follow Me Bar', archetype: 'bar', location: 'Watson', cash: 100, invite: [] });
+  const html = await renderBusiness(app);
+  const made = S.BusinessRepository.forActor(med.id).find((b) => b.name === 'Follow Me Bar');
+  assert.equal(app.businessId, made.id, 'it moves to the new one');
+  assert.equal(app.founding, null);
+  assert.match(text(html), /Follow Me Bar/);
+
+  app.businessId = before[0].id;
+  await renderBusiness(app);
+  assert.equal(app.businessId, before[0].id, 'and the player can go back: it only moves once');
+});

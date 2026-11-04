@@ -175,6 +175,8 @@ export class BusinessApp extends BaseApplication {
   businessId = null;
   /** Showing the Start a business form instead of a business. */
   starting = false;
+  /** A business just asked for, to show once the GM has made it: `{ name, known }`, where `known` is what the character had before. */
+  founding = null;
   /** Items dragged into each form and not sent yet: `{uuid, name, value, img, fromActor}`. */
   gearDrafts = { start: [], join: [], contribute: [], consign: [] };
   _refresh = () => this.render();
@@ -200,6 +202,7 @@ export class BusinessApp extends BaseApplication {
       this.actorId = event.target.value;
       this.businessId = null;
       this.starting = false;
+      this.founding = null;
       this._clearGear();
       this.render();
     });
@@ -287,6 +290,16 @@ export class BusinessApp extends BaseApplication {
     const key = await SyndicateClient.submit(account.as, 'propose', { syndicateId: account.id, kind: 'business', business: { type, ...payload }, amount, label });
     if (key) ui.notifications.info(L('NCI.Business.ProposedToSyndicate', { name: account.name, amount: amount.toLocaleString() }));
     return key ?? 'refused';
+  }
+
+  /** Move to the business just founded, as soon as it exists. */
+  _followFounded() {
+    if (!this.founding) return;
+    const { name, known } = this.founding;
+    const made = BusinessRepository.forActor(this.actorId).find((b) => b.name === name && !known.includes(b.id));
+    if (!made) return;
+    this.businessId = made.id;
+    this.founding = null;
   }
 
   /** The business on screen: the chosen one, or the character's first that is not closed. */
@@ -385,11 +398,14 @@ export class BusinessApp extends BaseApplication {
       invite,
       sweat: sweatPct > 0 ? { actorId: value(target, 'sweatTo') || this.actor.id, pct: sweatPct } : null,
     };
-    const key = (await this._proposeIfOver('found', request, request.cash, request.name))
-      ?? await BusinessClient.submit(this.actor, 'found', request);
+    const known = BusinessRepository.forActor(this.actor.id).map((b) => b.id);
+    const proposed = await this._proposeIfOver('found', request, request.cash, request.name);
+    const key = proposed ?? await BusinessClient.submit(this.actor, 'found', request);
     if (key) {
       this.starting = false;
       this.tab = 'overview';
+      // Sent to a syndicate's vote, nothing is made yet, and it may never be.
+      this.founding = proposed ? null : { name: request.name, known };
     }
   }
 
@@ -826,6 +842,7 @@ export class BusinessApp extends BaseApplication {
 
   async _prepareContext() {
     await ProductionCatalog.load();
+    this._followFounded();
     const picker = pickerContext(this);
     const business = this.starting ? null : this.business;
     if (business) this.businessId = business.id;
