@@ -1633,6 +1633,13 @@ export function advanceBusiness(business, day, { weekday = 1, growthRate = 1, ac
     changed = true;
   }
 
+  // The calendar went back past this week's start, and it would wait years to close. It runs from today, as it stands.
+  if (b.status === 'open' && b.period.startDay > day) {
+    b.period = { ...b.period, startDay: day, endDay: nextBoundary(day, weekday) };
+    b.pendingNotes = [...(b.pendingNotes ?? []), { kind: 'weekRestarted', name: '' }];
+    changed = true;
+  }
+
   let closes = 0;
   while (b.status === 'open' && b.period.endDay <= day && closes < p.catchUpPeriods) {
     closePeriod(b, { growthRate, weekday, seed, traits, relations, params: p }, out);

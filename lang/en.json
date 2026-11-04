@@ -3814,6 +3814,7 @@
         "teamBetrayed": "{name} of the Exec's team sold them out and left.",
         "livingShort": "The cash could not cover {name}'s Housing and Lifestyle this month.",
         "madeStock": "{name} came off the benches.",
+        "weekRestarted": "The calendar went back, so this week ran from the new date.",
         "lineStopped": "The line on {name} stopped: illegal goods are switched off in this game.",
         "soldStock": "{name} sold from stock.",
         "fencedStock": "{name} went to a fence.",

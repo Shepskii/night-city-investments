@@ -288,3 +288,37 @@ test('gear is read from an item: its market price times how many there are, and 
   assert.equal(itemGear({ type: 'skill', name: 'Cybertech', system: {} }, 'med').reason, 'bad-item');
   assert.equal(itemGear({ type: 'gear', name: 'Junk', system: { price: { market: 0 } } }, 'med').reason, 'no-price');
 });
+
+test('a calendar moved back past the week\'s start: the week runs from today, as it stands, and goes on closing', () => {
+  const start = 28860;
+  const live = normalizeBusiness({
+    id: 'b1', name: 'Front', archetype: 'clinic', status: 'open', stage: 1, till: 5000,
+    partners: [{ actorId: 'med', name: 'Medtech', status: 'active', voting: true, cash: 0, gear: [], units: 100 }],
+    period: { index: 130, startDay: start, endDay: start + 7, slots: [{ action: 'promote', by: 'med', band: 'solid' }], bonuses: [], helpers: [], overtime: {}, draws: {} },
+    state: { capacity: 2, reputation: 50, costFactor: 1 },
+  });
+  const today = start - 780;
+  const moved = advanceBusiness(live, today, { seed: 'back' });
+  assert.ok(moved.changed);
+  assert.equal(moved.business.period.startDay, today);
+  assert.ok(moved.business.period.endDay > today && moved.business.period.endDay <= today + 14, 'closing within a fortnight, not in two years');
+  assert.equal(moved.business.period.index, 130, 'the same week');
+  assert.equal(moved.business.period.slots.length, 1, 'with what was already done in it');
+  assert.ok(moved.business.pendingNotes.some((n) => n.kind === 'weekRestarted'));
+  assert.equal(moved.business.digests.length, live.digests.length, 'nothing closed by it');
+  assert.equal(moved.business.till, 5000, 'nothing paid or earned by it');
+
+  const again = advanceBusiness(moved.business, today, { seed: 'back' });
+  assert.equal(again.changed, false, 'and it happens once');
+
+  const closed = advanceBusiness(moved.business, moved.business.period.endDay, { seed: 'back' });
+  assert.equal(closed.business.digests.length, live.digests.length + 1, 'then the weeks close as usual');
+  assert.equal(closed.business.period.index, 131);
+  assert.ok(closed.business.digests.at(-1).staff.some((n) => n.kind === 'weekRestarted'), 'and the digest says why');
+
+  const within = advanceBusiness(live, start + 3, { seed: 'back' });
+  assert.equal(within.business.period.endDay, start + 7, 'a week still under way is left alone');
+  assert.equal(within.changed, false);
+  const shut = advanceBusiness({ ...live, status: 'closed' }, today, { seed: 'back' });
+  assert.equal(shut.business.period.startDay, start, 'and a closed business stays as it was');
+});
