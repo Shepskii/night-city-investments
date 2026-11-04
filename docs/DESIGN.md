@@ -2357,7 +2357,7 @@ A story about a character also costs the business they run with the worst standi
 |---|---|---|---|---|
 | **Steady** | None of its own | | None of its own | The plain room, as §36.12 promises; only the shared events below |
 | **Loud** | **Too much noise:** it drew a crowd, and someone filmed it | Exposure +6, Reputation -3 | **A big night:** once in 28 days | This week's room earnings x1.5 on a pass, and its Exposure from work x2 whatever the roll |
-| **Quiet** | **A loose end:** a customer talks | Exposure +8, which is a lot for a room that seldom gains any | **Cover the trail** | No earnings needed: Exposure -2 to -5 by band, free but it takes the slot. Lying low earns nothing and sheds 3, so this is for a crew with a spare slot |
+| **Quiet** | **A loose end:** a customer talks | Exposure +8, which is a lot for a room that seldom gains any | **Cover the trail** | Earns nothing: Exposure -2 to -5 by band, free but it takes the slot. Lying low earns nothing and sheds 3, so this is for a crew with a spare slot |
 | **Hungry** | **A bad batch:** the supplies were wrong | The week's earnings lost, Reputation -5; a fumble adds Exposure +5 | **Find a new supplier:** once in 28 days | A pass takes supplies from 25% to 15% for four weeks. A failure makes the next bad batch twice as likely, in the same four weeks |
 | **Connected** | **A favour asked:** the chosen faction wants something | Standing with them -5, which the room's +1 a week takes long to recover | **Call in a favour:** needs friendly or better | Spend 5 standing to clear Exposure -5, or to stop this week's shakedown. Once S1 is built, to spike a press story too |
 | **Laundering** | **The books don't add up:** the trail shows | Exposure +6, and up to a quarter of the dirty cash lost. A bookkeeper makes it less likely | **Wash for a client:** once in 28 days | Earns a fee in dirty cash, a share of the takings cap, and adds Exposure as laundering does |
@@ -2413,12 +2413,12 @@ A story about a character also costs the business they run with the worst standi
 | | Inside jobs | Loud | A job is traced to your guards |
 
 **Things to watch.**
-- **Too much to read.** Six events and five actions join the Back Room tab; only those for this room should show.
+- **Too much to read.** Seven events and five actions join the Back Room tab; only those for this room should show.
 - **Connected's favour needs friendly.** The room alone holds standing at 1, so its action only opens with gifts or gigs on top. That's deliberate, but a player may not see why, so the tab should say.
 - **Laundering's client work** could later take another player business's dirty cash, which would be a good link and a larger job. It's left out here.
 - **S1 and this overlap slightly.** A crime expose (§36.13) reads as a loose end told to the press. Neither needs the other, except Call in a favour against a story.
 
-**Parts, if built, shown in turn.** U3a: the room event table in the engine, the six events and the simulator's numbers. U3b: the actions on the Back Room tab. U3c: each kind's words, scenes, how they look at a company, and the guides.
+**Parts, if built, shown in turn.** U3a: the room event table in the engine, the seven events and the simulator's numbers. U3b: the actions on the Back Room tab. U3c: each kind's words, scenes, how they look at a company, and the guides.
 
 **Still to decide:** whether Steady gets shared events or none; whether kinds get their own words; and how often.
 
@@ -2454,7 +2454,7 @@ A story about a character also costs the business they run with the worst standi
 | UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
 | P1 | **Done (v0.21.0), see §36.10.** P1a workshops, item lists and the GM's tab, runs, the Maker post and the storeroom sheet; P1b shop sales, buying, handing over, consigning, stock in book value and closing; P1c fencing and illegal production through a back room. Also: one control height, and hand advances moving the calendar (§36.11) |
 | U2 | **Done (v0.21.1), see §36.12.** More back room kinds, each with a profile that changes how it plays |
-| U3 | **Proposed, see §36.14.** Back room events and actions, one of each for each profile, with each kind telling them in its own words |
+| U3 | **Proposed, see §36.14.** Back room events and actions, one of each for every profile but Steady, with each kind telling them in its own words |
 | S1 | **Planned, see §36.13.** Press: non-player companies run stories against player companies and characters, driven by standing and heat |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |
