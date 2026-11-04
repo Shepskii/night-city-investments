@@ -9,7 +9,8 @@
     "simulate": "node tools/simulate.mjs",
     "simulate:business": "node tools/simulate-business.mjs",
     "simulate:engine": "node tools/simulate-engine.mjs",
-    "simulate:production": "node tools/simulate-production.mjs"
+    "simulate:production": "node tools/simulate-production.mjs",
+    "simulate:backrooms": "node tools/simulate-backrooms.mjs"
   },
   "license": "MIT",
   "devDependencies": {
