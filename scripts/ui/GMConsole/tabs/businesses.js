@@ -4,6 +4,7 @@
  * @description Action handlers run with `this` set to the console window.
  */
 
+import { DistrictService } from '../../../services/DistrictService.js';
 import { kindProfile, sceneCandidate, holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty, debtsOf, solvency, standingBand, turfFactions } from '../../../engine/index.js';
 import { BusinessService, sceneHook } from '../../../services/BusinessService.js';
 import { FactionRepository } from '../../../data/FactionRepository.js';
@@ -292,7 +293,7 @@ export function context() {
       ticker: b.company?.ticker ?? '',
       isForming: b.status === 'forming',
       isOpen: b.status === 'open',
-      location: [b.district ? L(`NCI.District.${b.district}`) : '', b.location].filter(Boolean).join(', '),
+      location: [DistrictService.name(b.district), b.location].filter(Boolean).join(', '),
       // The owners, as a compact table: each name (HTML) links to their character.
       owners: b.partners.filter((p) => p.status !== 'declined').map((p) => ({
         who: holderWho(b, p, null, { truth: true }),

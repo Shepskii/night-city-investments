@@ -38,6 +38,7 @@ export const SETTINGS = Object.freeze({
   SHOW_TICKER: 'showTicker',
   BROKER_DEFS: 'brokerDefs',
   FACTION_DEFS: 'factionDefs',
+  DISTRICT_DEFS: 'districtDefs',
   DATE_FORMAT: 'dateFormat',
   PRODUCTION_CATALOG: 'productionCatalog',
   FUND_DEFS: 'fundDefs',

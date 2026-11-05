@@ -29,4 +29,24 @@
   {{else}}<p class="nci-empty">{{localize "NCI.Faction.None"}}</p>{{/if}}
   <p class="nci-hint">{{localize "NCI.Faction.DistrictHint" ids=districtIds}}</p>
 </div>
+{{#if districts.length}}
+<div class="nci-block">
+  <h3>{{localize "NCI.DistrictDefs.Title"}}</h3>
+  <p class="nci-hint">{{localize "NCI.DistrictDefs.Hint"}}</p>
+  <table class="nci-market">
+    <thead><tr><th>{{localize "NCI.DistrictDefs.Name"}}</th><th>{{localize "NCI.DistrictDefs.Traffic"}}</th><th>{{localize "NCI.DistrictDefs.Rent"}}</th><th>{{localize "NCI.DistrictDefs.Risk"}}</th><th></th></tr></thead>
+    <tbody>
+      {{#each districts}}
+      <tr data-district-row>
+        <td>{{name}}{{#unless onMap}} <span class="nci-muted">({{localize "NCI.DistrictDefs.OffMap"}})</span>{{/unless}}</td>
+        <td><input type="number" name="traffic" min="0.2" max="2" step="0.05" value="{{traffic}}"></td>
+        <td><input type="number" name="rent" min="0.2" max="2" step="0.05" value="{{rent}}"></td>
+        <td><input type="number" name="risk" min="0.2" max="3" step="0.05" value="{{risk}}"></td>
+        <td><button type="button" data-action="districtSave" data-id="{{id}}">{{localize "NCI.DistrictDefs.Save"}}</button></td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>
+{{/if}}
 {{/with}}

@@ -4,8 +4,9 @@
  * @description Action handlers run with `this` set to the console window (F1a, DESIGN §36.3).
  */
 
-import { DISTRICTS, FACTION_KINDS } from '../../../engine/index.js';
+import { FACTION_KINDS } from '../../../engine/index.js';
 import { FactionRepository } from '../../../data/FactionRepository.js';
+import { DistrictService } from '../../../services/DistrictService.js';
 import { L } from '../../format.js';
 import { confirm, report } from '../shared.js';
 
@@ -42,7 +43,16 @@ async function onRemove(event, target) {
   this.render();
 }
 
+/** The GM adjusts a district that came from Night City Map. */
+async function onDistrictSave(event, target) {
+  const box = target.closest('[data-district-row]');
+  const value = (name) => box?.querySelector(`[name="${name}"]`)?.value;
+  report(await DistrictService.saveNumbers(target.dataset.id, { traffic: value('traffic'), rent: value('rent'), risk: value('risk') }));
+  this.render();
+}
+
 export const actions = {
+  districtSave: onDistrictSave,
   factionImport: onImport,
   factionAdd: onAdd,
   factionSave: onSave,
@@ -56,7 +66,8 @@ export function context() {
     factions: {
       rows: factions.map((f) => ({ ...f, districtText: f.districts.join(', '), kinds: kinds(f.kind) })),
       newKinds: kinds('gang'),
-      districtIds: Object.keys(DISTRICTS).join(', '),
+      districtIds: DistrictService.idList(),
+      districts: DistrictService.rows(),
     },
   };
 }

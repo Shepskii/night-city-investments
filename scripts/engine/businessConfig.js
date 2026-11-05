@@ -93,7 +93,64 @@ export const DISTRICTS = Object.freeze(Object.fromEntries([
   ['pacifica', 0.75, 0.6, 1.6], ['morro', 0.7, 0.75, 1.3], ['oldcorp', 0.6, 0.5, 2.0], ['oldcc', 0.6, 0.5, 2.0],
 ].map(([id, traffic, rent, risk]) => [id, Object.freeze({ id, traffic, rent, risk })])));
 
-export const districtOf = (id) => DISTRICTS[id] ?? { id: '', traffic: 1, rent: 1, risk: 1 };
+/**
+ * Districts from Night City Map that the list above does not have, as the GM's setting holds them. They live here so
+ * that the weekly close and the events need no new arguments; `DistrictService` keeps this in step on every client.
+ */
+let extraDistricts = {};
+
+export function setExtraDistricts(defs = {}) {
+  extraDistricts = Object.fromEntries(Object.entries(defs ?? {}).filter(([id, d]) => !Object.hasOwn(DISTRICTS, id) && Number.isFinite(d?.traffic)));
+}
+
+export const districtOf = (id) => (Object.hasOwn(DISTRICTS, id) ? DISTRICTS[id] : Object.hasOwn(extraDistricts, id) ? extraDistricts[id] : { id: '', traffic: 1, rent: 1, risk: 1 });
+
+/** Whether a business or faction may be in this district: one of ours, or one remembered from the map, even if the map has since lost it. */
+export const isDistrict = (id) => Object.hasOwn(DISTRICTS, id) || Object.hasOwn(extraDistricts, id);
+
+export const districtIds = () => [...Object.keys(DISTRICTS), ...Object.keys(extraDistricts)];
+
+/**
+ * A new district's numbers, by the map's danger (1 corporate to 5 hot zone): the rounded average of the districts above at
+ * that danger. Danger 0 is water, which holds no businesses. Anything else gets plain numbers, for the GM to adjust.
+ */
+export const DISTRICT_DANGER = Object.freeze({
+  1: Object.freeze({ traffic: 1.2, rent: 1.5, risk: 0.65 }),
+  2: Object.freeze({ traffic: 1, rent: 1, risk: 0.95 }),
+  3: Object.freeze({ traffic: 0.95, rent: 0.95, risk: 1.2 }),
+  4: Object.freeze({ traffic: 0.8, rent: 0.65, risk: 1.5 }),
+  5: Object.freeze({ traffic: 0.6, rent: 0.5, risk: 2 }),
+});
+const PLAIN_DISTRICT = Object.freeze({ traffic: 1, rent: 1, risk: 1 });
+
+/** Numbers as the GM typed them, within what the module's own districts span and a little more. */
+export function cleanDistrictNumbers({ traffic, rent, risk } = {}) {
+  const fit = (value, low, high) => Math.max(low, Math.min(high, Math.round((Number(value) || 1) * 100) / 100));
+  return { traffic: fit(traffic, 0.2, 2), rent: fit(rent, 0.2, 2), risk: fit(risk, 0.2, 3) };
+}
+
+/**
+ * Bring the remembered districts up to date with the map's. Ours are skipped, and so is water. One the map has lost is kept.
+ * @param {object} defs - id to `{id, name, danger, traffic, rent, risk, edited}`
+ * @param {{id: string, en?: string, ru?: string, danger?: number}[]} list - the map's; its own names are in `ru`, with `en` empty
+ * @returns {{defs: object, changed: boolean}}
+ */
+export function mergeMapDistricts(defs, list) {
+  const next = { ...defs };
+  let changed = false;
+  for (const d of list ?? []) {
+    if (!d?.id || Object.hasOwn(DISTRICTS, d.id) || d.danger === 0) continue;
+    const name = d.en || d.ru || d.id;
+    const was = next[d.id];
+    const numbers = was?.edited ? {} : DISTRICT_DANGER[d.danger] ?? PLAIN_DISTRICT;
+    const entry = { ...was, id: d.id, name, danger: d.danger ?? null, ...numbers };
+    if (JSON.stringify(entry) !== JSON.stringify({ ...was })) {
+      next[d.id] = entry;
+      changed = true;
+    }
+  }
+  return { defs: next, changed };
+}
 
 /** In display order. */
 export const ACTION_IDS = Object.freeze(['work', 'promote', 'source', 'fixUp', 'keepSafe', 'court', 'respects', 'campaign', 'supply', 'venue']);

@@ -1916,6 +1916,16 @@
       "AddHint": "Your Crew Tools downtime goes into it.",
       "ExtraNote": "Extra time spends a downtime day, whatever the roll."
     },
+    "DistrictDefs": {
+      "Title": "Districts from Night City Map",
+      "Hint": "Districts on the map that this module has no numbers of its own for. They start from the map's danger. Traffic and rent multiply a business's takings and fixed costs, and risk how often events come; 1 is average. New businesses can choose what is on the map now, and a business in a district the map has lost keeps its name and numbers.",
+      "Name": "District",
+      "Traffic": "Traffic",
+      "Rent": "Rent",
+      "Risk": "Risk",
+      "OffMap": "no longer on the map",
+      "Save": "Save"
+    },
     "Faction": {
       "Hint": "Corporations and gangs a business can stand well or badly with. Link a corporation to its ticker, and give a gang the districts it holds, so the businesses there see it.",
       "Import": "Import starter factions",

@@ -8,7 +8,7 @@
  *              Actions aimed at a faction, and what standing does to costs and trouble, are F1b. Pure.
  */
 
-import { BUSINESS_DEFAULTS, DISTRICTS } from './businessConfig.js';
+import { BUSINESS_DEFAULTS, isDistrict } from './businessConfig.js';
 import { normalizeName, gigTags } from './gigImpact.js';
 import { fail } from './businessRecord.js';
 
@@ -23,7 +23,7 @@ export function normalizeFaction(input = {}) {
     name: text(input.name, 60),
     kind: FACTION_KINDS.includes(input.kind) ? input.kind : 'other',
     ticker: text(input.ticker, 5).toUpperCase(),
-    districts: [...new Set((Array.isArray(input.districts) ? input.districts : []).map((d) => text(d, 20)).filter((d) => DISTRICTS[d]))],
+    districts: [...new Set((Array.isArray(input.districts) ? input.districts : []).map((d) => text(d, 20)).filter((d) => isDistrict(d)))],
     aliases: (Array.isArray(input.aliases) ? input.aliases : []).map((a) => text(a, 60)).filter(Boolean),
   };
 }

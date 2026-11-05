@@ -2427,6 +2427,21 @@ A story about a character also costs the business they run with the worst standi
 
 **Parts, if built, shown in turn.** U3a: the room event table in the engine, the seven events and the simulator's numbers. U3b: the actions on the Back Room tab. U3c: each kind's words, scenes, how they look at a company, and the guides.
 
+### 36.15 Districts from Night City Map (the user's choice, 2026-11-05)
+
+**What it was.** A fixed list of 20 in `businessConfig`, never read from the map, while the bridge read only the map's built-in positions, once. A GM's districts reached neither.
+
+**As built.** `DistrictService`, with a world setting (`districtDefs`) that the GM's client writes and every client reads.
+- **Our 20 keep their tuned numbers and names,** and the module works as before without the map.
+- **With the map, founding follows it:** `state.geo.districts` if the GM's are on, or the built-in ones from its `data.js`. It has no API for them.
+- **A district new to us** is remembered with numbers from its danger: the rounded average of our own districts at that danger, checked by a test. The GM can adjust them on Tools > Factions, and then a change of danger leaves them alone. Its name follows the map: `en`, or `ru`, where a GM's own names are kept.
+- **Nothing is forgotten,** so a business or faction in a district the map has lost keeps its name and numbers. `districtOf` and `isDistrict` read a list held in `businessConfig`, set from the setting, so the close and the events need no new arguments.
+- **The bridge** now places new pins by the map's current districts.
+
+**A change from the proposal.** It said the map's three extra districts were a gap to fill. Danger 0 on the map means water, and two of the three are bays, so water is not offered, and only NorCal Military Base is added.
+
+**Limits.** The map's "Start from built-in" gives copies new ids with no link to the originals, so they get danger numbers rather than ours, and existing businesses stay in the originals. Its copies carry their Russian names in `ru` until the GM renames them, so those names reach this module's lists too. Pins already placed don't move.
+
 ## 37. Roadmap
 
 | Phase | Deliverable |

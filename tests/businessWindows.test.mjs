@@ -1860,3 +1860,52 @@ test('a connected room\'s weekly move reaches the hidden standing in full, week 
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('with Night City Map, the founding form follows the map, and a district it lost keeps a business\'s name', async () => {
+  const { DistrictService } = await import('../scripts/services/DistrictService.js');
+  const { setExtraDistricts, districtOf } = await import('../scripts/engine/index.js');
+  const { MODULE_ID: ID, SETTINGS: KEYS } = await import('../scripts/utils/constants.js');
+  const get = game.modules.get;
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const before = game.settings.get(ID, KEYS.DISTRICT_DEFS);
+  const stateBefore = game.settings.get('night-city-map', 'state');
+  const geoWith = (districts) => ({ geo: { on: true, districts } });
+  try {
+    assert.ok(DistrictService.offered().includes('watson'), 'without the map, our own');
+    assert.equal(DistrictService.offered().length, 20);
+
+    game.modules.get = (id) => (id === 'night-city-map' ? { active: true } : get(id));
+    await game.settings.set(ID, KEYS.DISTRICT_DEFS, {});
+    await game.settings.set('night-city-map', 'state', geoWith([
+      { id: 'cdport', ru: 'Old Port', en: '', danger: 4 }, { id: 'cdbay', ru: 'The Bay', en: '', danger: 0 },
+    ]));
+    await DistrictService.sync();
+    setExtraDistricts(game.settings.get(ID, KEYS.DISTRICT_DEFS));
+    assert.deepEqual(DistrictService.offered(), ['cdport'], "the GM's districts in place of ours, and no water");
+    const start = windowFor(med);
+    start.starting = true;
+    assert.match(await renderBusiness(start), /value="cdport"[^>]*>Old Port</);
+    assert.match(await renderConsole('factions'), /name="traffic"[^>]*value="0\.8"/);
+    assert.match(text(await renderConsole('factions')), /cdport \(Old Port\)/);
+
+    await S.BusinessRepository.save({ ...b, district: 'cdport' });
+    assert.match(text(await renderBusiness(windowFor(med))), /Old Port/);
+    assert.equal((await DistrictService.saveNumbers('cdport', { traffic: 1.5, rent: 1, risk: 1 })).ok, true);
+    setExtraDistricts(game.settings.get(ID, KEYS.DISTRICT_DEFS));
+    assert.equal(districtOf('cdport').traffic, 1.5);
+
+    await game.settings.set('night-city-map', 'state', geoWith([]));
+    await DistrictService.sync();
+    assert.deepEqual(DistrictService.offered(), [], 'lost from the map, it cannot be chosen');
+    assert.match(text(await renderBusiness(windowFor(med))), /Old Port/, 'but the business keeps its name');
+    assert.equal(districtOf('cdport').traffic, 1.5, 'and its numbers');
+    assert.match(text(await renderConsole('factions')), /no longer on the map/);
+  } finally {
+    game.modules.get = get;
+    setExtraDistricts({});
+    await game.settings.set(ID, KEYS.DISTRICT_DEFS, before);
+    await game.settings.set('night-city-map', 'state', stateBefore);
+    await S.BusinessRepository.save(saved);
+  }
+});

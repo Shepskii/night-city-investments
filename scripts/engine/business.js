@@ -80,7 +80,7 @@ import {
   angelCheck, findAngel, applyAngelRoll, openLoans, averageProfit,
 } from './businessFinance.js';
 import {
-  POSTS, ARCHETYPES, ACTIONS, BUSINESS_DEFAULTS, DISTRICTS, EVENTS, districtOf, stageDv, actionUses, helpUses, setupUses, usesInclude, useKey, actionFor, actionIdsFor, COMPANY_ACTION_IDS,
+  POSTS, ARCHETYPES, ACTIONS, BUSINESS_DEFAULTS, EVENTS, districtOf, isDistrict, stageDv, actionUses, helpUses, setupUses, usesInclude, useKey, actionFor, actionIdsFor, COMPANY_ACTION_IDS,
 } from './businessConfig.js';
 import {
   BUSINESS_SCHEMA, BUSINESS_STATUS, weekdayOf, nextBoundary, newPeriod, int, clamp, text, normalizeBusiness, archetypeOf, holders, voters,
@@ -1138,7 +1138,7 @@ function found(request, actor, day, ctx, p) {
     name,
     archetype: request.archetype,
     location: text(request.location, 80),
-    district: DISTRICTS[request.district] ? request.district : '',
+    district: isDistrict(request.district) ? request.district : '',
     status: 'forming',
     founderId: actor.id,
     createdDay: day,

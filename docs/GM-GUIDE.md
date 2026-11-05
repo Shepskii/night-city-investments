@@ -231,6 +231,12 @@ Create, edit, import, or close a fund (holders are paid out). A fund can rebalan
 
 ### Factions tab
 
+**Districts from Night City Map.** Without the map, businesses choose from this module's 20 districts. With it, the founding form lists the districts on the map now, and updates when you change them with its **Districts** button, including your own in place of the built-in ones. Water districts aren't offered.
+
+A district this module doesn't know appears in a table at the foot of this tab, with traffic, rent and risk starting from the map's danger, for you to adjust. Its name follows the map, and a change of danger moves its numbers until you save your own. If you remove a district from the map, it can't be chosen for a new business, but businesses and factions already there keep it, with its name and numbers.
+
+The map's **Start from built-in** button makes new districts rather than linking to the old ones, so copies use numbers from their danger, and existing businesses in the originals carry on as they are. Faction turf uses district ids, listed on this tab.
+
 This tab holds the corporations and gangs businesses can stand well or badly with. Press **Import starter factions** to add the market's corporations and Night City's gangs by district, then edit, add or remove as you like. Link a corporation to its ticker, and give a gang its districts, so businesses there see it.
 
 Players can raise a business's standing with a faction: a shop uses **Court a client** or **Pay respects**, and a company aims **Chase contracts** or **Investor relations**. Each costs a gift from the cash. Standing then changes costs: corporations in the business's sector move its running costs by up to 15%, and gangs on its turf move protection money and shakedowns by up to 50%.

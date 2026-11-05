@@ -3,11 +3,12 @@
  * @file scripts/ui/Business/context.js
  */
 
+import { DistrictService } from '../../services/DistrictService.js';
 import { ProductionCatalog } from '../../data/ProductionCatalog.js';
 import {
   ARCHETYPES, ACTION_IDS, partnerOf, holders, totalUnits, unitValue, shareOf, bookValue, drawAllowance, fundingShortfall,
   stateBands, lastDigest, gearValue, rollSpec, BUSINESS_DEFAULTS,
-  daysLeft, activeProject, milestones, stepUpCheck, PROPOSAL_RULES, DISTRICTS, EVENTS, eventUses,
+  daysLeft, activeProject, milestones, stepUpCheck, PROPOSAL_RULES, EVENTS, eventUses,
   projectOffer, PROJECT_KINDS, upgradesOf, protectionFactor, headcountOf,
   BACK_ROOMS, kindProfile, activeStaff, benchesOf, fenceCheck, fencePrice, hasIllegalStock, hasWorkshop, illegalAllowed, looseStock, salePrice, salesLimit, makesThings, produceCheck, runOffer, tierOf, topTierOf,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
@@ -149,8 +150,8 @@ export function usableActors() {
 
 /** Districts for the Start a business form, by name, after "none". */
 export function districtOptions() {
-  return [{ value: '', label: L('NCI.Business.NoDistrict') }, ...Object.keys(DISTRICTS)
-    .map((id) => ({ value: id, label: L(`NCI.District.${id}`) }))
+  return [{ value: '', label: L('NCI.Business.NoDistrict') }, ...DistrictService.offered()
+    .map((id) => ({ value: id, label: DistrictService.name(id) }))
     .sort((a, b) => a.label.localeCompare(b.label))];
 }
 
@@ -202,7 +203,7 @@ export function businessContext(business, actor) {
     id: business.id,
     name: business.name,
     archetype: L(`NCI.Business.Archetype.${business.archetype}.Name`),
-    location: [business.district ? L(`NCI.District.${business.district}`) : '', business.location].filter(Boolean).join(', '),
+    location: [DistrictService.name(business.district), business.location].filter(Boolean).join(', '),
     // A listed company shows as stage 3, though it runs on stage 2's numbers (B5b).
     stage: L(`NCI.Business.Stage.${business.listing?.status === 'listed' ? 3 : business.stage}`),
     // The company's ticker once the charter set it, listed or not (B4).

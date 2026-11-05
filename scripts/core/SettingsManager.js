@@ -3,7 +3,7 @@
  * @file scripts/core/SettingsManager.js
  */
 
-import { DATE_FORMATS } from '../engine/index.js';
+import { DATE_FORMATS, setExtraDistricts } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
 import { THEMES, applyTheme, visualToolsActive } from './theme.js';
 
@@ -254,6 +254,17 @@ export function registerSettings() {
     type: Object,
     default: {},
     onChange: notifyBusinessesChanged,
+  });
+  // Districts remembered from Night City Map (DESIGN §36.15).
+  s.register(MODULE_ID, SETTINGS.DISTRICT_DEFS, {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {},
+    onChange: (value) => {
+      setExtraDistricts(value);
+      notifyBusinessesChanged();
+    },
   });
 
   s.register(MODULE_ID, SETTINGS.BROKER_DEFS, {

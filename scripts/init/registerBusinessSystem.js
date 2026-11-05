@@ -10,6 +10,7 @@ import { BusinessRepository } from '../data/BusinessRepository.js';
 import { BusinessService } from '../services/BusinessService.js';
 import { BusinessClient } from '../services/BusinessClient.js';
 import { BusinessWatcher } from '../services/BusinessWatcher.js';
+import { DistrictService } from '../services/DistrictService.js';
 
 export function registerBusinessSystem(initializer) {
   initializer.register('init', 41, 'Business hooks', () => {
@@ -23,6 +24,8 @@ export function registerBusinessSystem(initializer) {
     for (const hook of ['createSetting', 'updateSetting']) {
       Hooks.on(hook, (setting) => {
         if (setting.key === `${MODULE_ID}.${SETTINGS.UNDERWORLD}` && isActiveGM()) BusinessService.dropIllegalLines();
+        // The GM's districts on Night City Map (DESIGN §36.15).
+        if (setting.key === 'night-city-map.state') DistrictService.sync();
       });
     }
     // A storeroom's items only change by the service's hand or the GM's (P1b).
@@ -39,6 +42,12 @@ export function registerBusinessSystem(initializer) {
     Hooks.on(HOOKS.CORPORATE_ACTION, (action) => {
       if (isActiveGM() && action?.type === 'ipo') BusinessService.onIpo(action.companyId);
     });
+  });
+
+  // Before anything reads a faction's turf or closes a week.
+  initializer.register('ready', 12, 'Districts', async () => {
+    await DistrictService.load();
+    await DistrictService.sync();
   });
 
   initializer.register('ready', 47, 'Business startup', async () => {
