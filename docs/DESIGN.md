@@ -2442,6 +2442,8 @@ A story about a character also costs the business they run with the worst standi
 
 **Limits.** The map's "Start from built-in" gives copies new ids with no link to the originals, so they get danger numbers rather than ours, and existing businesses stay in the originals. Its copies carry their Russian names in `ru` until the GM renames them, so those names reach this module's lists too. Pins already placed don't move.
 
+**Tested live (2026-11-05, Cyberpunk Test).** NorCal on the form and in the table, no bays; a GM's district appearing at once with danger numbers, its rename and change of danger followed, numbers saved by the button and kept, and removal keeping it in the table; the map's setting restored afterwards. Bridge 0.3.1 loaded, with pins in step. **In tests only:** a business in a GM's district, a close on its numbers, and a pin placed by one. A renamed bridge script needs a world relaunch: until then the world looks for the old file, and the bridge doesn't run.
+
 ## 37. Roadmap
 
 | Phase | Deliverable |
