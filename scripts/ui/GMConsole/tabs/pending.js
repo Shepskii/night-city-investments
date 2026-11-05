@@ -88,6 +88,14 @@ function businessRows() {
       ...(b.staff ?? []).filter((s) => s.status === 'offered' && s.source === 'npc')
         .map((s) => need('offer', { name: s.name, post: L(`NCI.Staff.Post.${s.post}`) },
           act('businessStaffAnswer', 'StaffAccept', 'fa-handshake', { staff: s.id, yes: 'true' }), act('businessStaffAnswer', 'StaffDecline', no, { staff: s.id, yes: 'false' }))),
+      // An NPC invited to found it: the GM answers, and says what it puts in (DESIGN §36.16).
+      ...b.partners.filter((x) => x.npc && x.status === 'invited').map((x) => row('businesses', b.name, 'npcPartner', { name: x.name }, () => ({
+        fields: [numberField('npcCash', L('NCI.GMBusiness.NpcPuts'), 0, { min: 0, step: 100 })],
+        buttons: [
+          act('businessNpcPartner', 'NpcAccept', 'fa-handshake', { staff: x.actorId, yes: 'true' }),
+          act('businessNpcPartner', 'NpcDecline', no, { staff: x.actorId, yes: 'false' }),
+        ],
+      }))),
     ].filter(Boolean);
   });
 }

@@ -2444,6 +2444,14 @@ A story about a character also costs the business they run with the worst standi
 
 **Tested live (2026-11-05, Cyberpunk Test).** NorCal on the form and in the table, no bays; a GM's district appearing at once with danger numbers, its rename and change of danger followed, numbers saved by the button and kept, and removal keeping it in the table; the map's setting restored afterwards. Bridge 0.3.1 loaded, with pins in step. **In tests only:** a business in a GM's district, a close on its numbers, and a pin placed by one. A renamed bridge script needs a world relaunch: until then the world looks for the old file, and the bridge doesn't run.
 
+### 36.16 NPCs as founding partners, and inviting by dragging (the user's choices, 2026-11-05)
+
+**The choices.** The GM answers for an NPC on the Pending tab. The GM types what it puts in, which comes off no sheet. It is a silent partner with no vote. The form has a drop zone and a small menu.
+
+**As built.** An invited NPC is a partner under an `npc:` id with `actorRef`, `npc` and `voting: false`, as an angel or a granted stake is, so what already handles those applies: it never holds up a vote, and rights issues, listings and takeovers treat it as they treat them. `_pay` finds no actor for that id, so off-sheet money stays off-sheet coming out too. `answerNpcPartner` settles it; the setup roll waits for it as it waits for any invitation. Dragging takes a player's character or any NPC character or mook; item piles and compendium actors are refused. Syndicates can't be dragged, as they aren't actors, so the menu keeps them, with player characters a player may not be able to see. NPCs are drag only, so a player needs the GM to share one.
+
+**Also fixed.** A redraw of the Start a business form lost what had been typed, which a gear drop did already and invitations would have done constantly. It now keeps the name, kind, district, location, cash and sweat equity.
+
 ## 37. Roadmap
 
 | Phase | Deliverable |

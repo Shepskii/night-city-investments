@@ -104,6 +104,7 @@ This tab lists every business with its true state, Exposure included, and an **O
 | A charter's rolls are done | **Approve** the charter (the funding window opens, or it forms at once if net assets cover the quote), or **reject** it (the fee is not refunded) |
 | A company applies to list | **Approve** the listing (the prospectus rolls open), or **turn it down** (the fee is not refunded; they may try again in 14 days). The tab shows the valuation, float and hidden Exposure |
 | A business offers an NPC a job | **Accept** or **decline** for the NPC |
+| A new business invites an NPC as a founding partner | Enter what they put in, then **Join**, or **Decline**. The setup roll waits for your answer |
 | An item left a **storeroom sheet** by your hand | Say what became of it: **Sold** at the shop's price (the money goes to the business, or to a consignment's owner less the shop's cut), **Given away** or **Lost** |
 | A player has left the table | Mark the partner as **leaving**, so the others can buy them out or the stake passes to the heir |
 | A character or syndicate bids for a company | **Approve the offer** (the whole offer is held from the bidder's brokerage balance, or the bid lapses if they cannot cover it; it opens for 7 days) or **refuse** it. The tab then shows the offer and what players have tendered |
@@ -116,6 +117,8 @@ This tab lists every business with its true state, Exposure included, and an **O
 | A listed company is under the **delisting review** | **Give it time** (the review clears), or **Delist** it: it buys back the float (borrowing what its cash lacks) and goes private. Delisting cannot be undone |
 
 The rest runs itself: weeks close, events are drawn, wages are paid, reports are published, and takeover offers close and settle when their 7 days are up.
+
+**NPC partners:** a player can invite an NPC when founding a business, by dragging them onto the form, so the NPC has to be visible in their Actors directory. What you enter comes off no sheet, and what they earn doesn't reach their sheet either: their stake is off-screen money. They hold units but have no vote and take no actions, so they can't hold up a decision.
 
 **NPC staff:** tag an NPC's Night City Messenger contact `staff` or `employee` to make them hireable. An NPC actor (not a player's character) can also join an Exec's team.
 

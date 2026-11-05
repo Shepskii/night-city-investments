@@ -178,15 +178,18 @@ export function pickerContext(app) {
 /** The Start a business form. */
 export function startContext(app) {
   const actor = app.actor;
+  const invited = app.inviteDrafts ?? [];
+  const taken = new Set(invited.map((x) => x.id));
+  // Who can be added from the menu, for those that can't be dragged: a syndicate isn't an actor, and a player may not see another's character.
   const others = [
     ...game.actors.filter((a) => isCharacter(a) && a.id !== actor?.id && a.hasPlayerOwner),
-    // A syndicate can be invited as a partner too.
     ...SyndicateRepository.all().filter((s) => s.status === 'active' && s.id !== actor?.id),
-  ].sort((a, b) => a.name.localeCompare(b.name));
+  ].filter((a) => !taken.has(a.id)).sort((a, b) => a.name.localeCompare(b.name));
   return {
     archetypes: archetypeOptions(),
     districts: districtOptions(),
-    partners: others.map((a) => ({ id: a.id, name: a.name, who: actorLink(a.id, a.name) })),
+    partners: invited.map((x) => ({ ...x, who: actorLink(x.id, x.name) })),
+    addable: others.map((a) => ({ id: a.id, name: a.name })),
     // A syndicate spends from its brokerage account.
     wealth: whole(actor?.isSyndicate ? freeCash(SyndicateRepository.portfolio(actor.id)) : actor?.system?.wealth?.value ?? 0),
     maxSweat: BUSINESS_DEFAULTS.maxSweatPct,

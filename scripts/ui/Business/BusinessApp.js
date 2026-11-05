@@ -7,10 +7,12 @@
  */
 
 import { ProductionCatalog } from '../../data/ProductionCatalog.js';
-import { itemGear, partnerOf, limitLeft, canRun } from '../../engine/index.js';
+import { BUSINESS_DEFAULTS, itemGear, partnerOf, limitLeft, canRun } from '../../engine/index.js';
+import { isCharacter } from '../../utils/helpers.js';
+import { SyndicateRepository } from '../../data/SyndicateRepository.js';
 import { MODULE_ID, HOOKS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
-import { BusinessClient } from '../../services/BusinessClient.js';
+import { BusinessClient, isNpcActor } from '../../services/BusinessClient.js';
 import { SyndicateClient } from '../../services/SyndicateClient.js';
 import { accountFor, ownerOf } from '../accounts.js';
 import { BaseApplication } from '../BaseApplication.js';
@@ -42,6 +44,9 @@ const folderOf = (tab) => Object.keys(FOLDERS).find((id) => FOLDERS[id].includes
 const field = (target, name) => target.closest('.nci-form')?.querySelector(`[name="${name}"]`);
 const value = (target, name) => field(target, name)?.value ?? '';
 const amount = (target, name) => Math.floor(Number(value(target, name)) || 0);
+
+/** What the Start a business form holds that a redraw would lose. */
+const START_FIELDS = ['name', 'archetype', 'district', 'location', 'cash', 'sweatPct', 'sweatTo'];
 
 /** The forms that take gear, each with its own drop zone. */
 const GEAR_FORMS = ['start', 'join', 'contribute', 'consign'];
@@ -122,6 +127,8 @@ export class BusinessApp extends BaseApplication {
       proposeAngel: BusinessApp._onProposeAngel,
       angelRoll: BusinessApp._onAngelRoll,
       removeGear: BusinessApp._onRemoveGear,
+      addInvite: BusinessApp._onAddInvite,
+      removeInvite: BusinessApp._onRemoveInvite,
       openHire: BusinessApp._onOpenHire,
       proposeHire: BusinessApp._onProposeHire,
       proposeFire: BusinessApp._onProposeFire,
@@ -177,6 +184,10 @@ export class BusinessApp extends BaseApplication {
   starting = false;
   /** A business just asked for, to show once the GM has made it: `{ name, known }`, where `known` is what the character had before. */
   founding = null;
+  /** Who the Start a business form will invite: `{id, name, npc}`. */
+  inviteDrafts = [];
+  /** What is typed on that form, kept across a redraw. */
+  startValues = null;
   /** Items dragged into each form and not sent yet: `{uuid, name, value, img, fromActor}`. */
   gearDrafts = { start: [], join: [], contribute: [], consign: [] };
   _refresh = () => this.render();
@@ -203,6 +214,8 @@ export class BusinessApp extends BaseApplication {
       this.businessId = null;
       this.starting = false;
       this.founding = null;
+      this.inviteDrafts = [];
+      this.startValues = null;
       this._clearGear();
       this.render();
     });
@@ -231,9 +244,62 @@ export class BusinessApp extends BaseApplication {
       zone.addEventListener('dragleave', () => zone.classList.remove('nci-over'));
       zone.addEventListener('drop', (event) => {
         zone.classList.remove('nci-over');
-        this._onDropGear(event, zone.dataset.gear);
+        if (zone.dataset.invite !== undefined) this._onDropInvite(event);
+        else this._onDropGear(event, zone.dataset.gear);
       });
     });
+    this._restoreStartForm();
+  }
+
+  /** A redraw of the Start a business form must not lose what has been typed, as dragging someone in redraws it. */
+  async _preRender(context, options) {
+    await super._preRender?.(context, options);
+    if (!this.starting || !this.element?.querySelector) return;
+    const read = (name) => this.element.querySelector(`[name="${name}"]`)?.value;
+    if (read('name') === undefined) return;
+    this.startValues = Object.fromEntries(START_FIELDS.map((name) => [name, read(name)]));
+  }
+
+  _restoreStartForm() {
+    if (!this.starting || !this.startValues) return;
+    for (const [name, value] of Object.entries(this.startValues)) {
+      const input = this.element.querySelector(`[name="${name}"]`);
+      if (input && value !== undefined && (input.tagName !== 'SELECT' || [...input.options].some((o) => o.value === value))) input.value = value;
+    }
+  }
+
+  /** Someone to invite, from the drop zone or the menu. Refused here; the GM's side checks them again. */
+  _addInvite(entry) {
+    if (!entry?.id || entry.id === this.actor?.id) return false;
+    if (this.inviteDrafts.some((x) => x.id === entry.id)) return false;
+    if (this.inviteDrafts.length >= BUSINESS_DEFAULTS.maxPartners - 1) {
+      ui.notifications.warn(L('NCI.Business.Reason.too-many-partners'));
+      return false;
+    }
+    this.inviteDrafts.push(entry);
+    return true;
+  }
+
+  /** A character dragged from the Actors directory: a player's is invited as usual, and an NPC's goes to the GM to answer. */
+  async _onDropInvite(event) {
+    event.preventDefault();
+    const data = TextEditor.getDragEventData(event);
+    const actor = data?.type === 'Actor' && data.uuid ? await fromUuid(data.uuid) : null;
+    const known = actor && game.actors.get(actor.id) === actor;
+    const pc = known && isCharacter(actor) && actor.hasPlayerOwner;
+    if (!known || !(pc || isNpcActor(actor))) return ui.notifications.warn(L('NCI.Business.Reason.bad-partner'));
+    return this._addInvite({ id: actor.id, name: actor.name, npc: !pc }) ? this.render() : null;
+  }
+
+  static _onAddInvite() {
+    const id = this.element.querySelector('[name="inviteAdd"]')?.value;
+    const account = game.actors.get(id) ?? SyndicateRepository.get(id);
+    if (account && this._addInvite({ id, name: account.name, npc: false })) this.render();
+  }
+
+  static _onRemoveInvite(event, target) {
+    this.inviteDrafts = this.inviteDrafts.filter((x) => x.id !== target.dataset.id);
+    this.render();
   }
 
   /**
@@ -380,13 +446,15 @@ export class BusinessApp extends BaseApplication {
   static _onCancelStart() {
     this.starting = false;
     this.gearDrafts.start = [];
+    this.inviteDrafts = [];
+    this.startValues = null;
     if (!this.business) return this.close();
     return this.render();
   }
 
   static async _onFound(event, target) {
     if (!this.actor) return;
-    const invite = [...this.element.querySelectorAll('input[name="invite"]:checked')].map((el) => el.value);
+    const invite = this.inviteDrafts.map((x) => x.id);
     const sweatPct = amount(target, 'sweatPct');
     const request = {
       name: value(target, 'name').trim(),
@@ -406,6 +474,8 @@ export class BusinessApp extends BaseApplication {
       this.tab = 'overview';
       // Sent to a syndicate's vote, nothing is made yet, and it may never be.
       this.founding = proposed ? null : { name: request.name, known };
+      this.inviteDrafts = [];
+      this.startValues = null;
     }
   }
 

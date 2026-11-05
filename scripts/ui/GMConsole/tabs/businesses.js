@@ -153,6 +153,12 @@ async function onStaffAnswer(event, target) {
   report(await BusinessService.answerOffer(target.dataset.id, target.dataset.staff, target.dataset.yes === 'true'));
 }
 
+/** The GM answers a founding invitation for an NPC, with what it puts in. */
+async function onNpcPartner(event, target) {
+  const cash = target.closest('tr')?.querySelector('[name="npcCash"]')?.value ?? 0;
+  report(await BusinessService.answerNpcPartner(target.dataset.id, target.dataset.staff, target.dataset.yes === 'true', cash));
+}
+
 function onOpen(event, target) {
   BusinessApp.open({ businessId: target.dataset.id });
 }
@@ -187,6 +193,7 @@ export const actions = {
   businessRemove: onRemove,
   businessOpen: onOpen,
   businessStaffAnswer: onStaffAnswer,
+  businessNpcPartner: onNpcPartner,
   businessTeamLoyalty: onTeamLoyalty,
   businessRewardApply: onRewardApply,
   businessStockSettle: onStockSettle,

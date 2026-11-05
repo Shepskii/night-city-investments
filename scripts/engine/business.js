@@ -1123,14 +1123,17 @@ function found(request, actor, day, ctx, p) {
 
   const invite = [...new Set((request.invite ?? []).map(String))].filter((id) => id !== actor.id);
   if (invite.length > p.maxPartners - 1) return fail('too-many-partners');
-  if (invite.some((id) => !(id in ctx.actors))) return fail('bad-partner');
-
-  const founders = new Set([actor.id, ...invite]);
+  // An NPC is a silent partner under an `npc:` id, as an angel is: the GM answers for it, and its money stays off its sheet.
+  const npcs = ctx.teamActors ?? {};
+  if (invite.some((id) => !(id in ctx.actors) && !(id in npcs))) return fail('bad-partner');
+  const partnerId = (id) => (id in npcs ? `npc:${id}` : id);
+  const founders = new Set([actor.id, ...invite.map(partnerId)]);
   let sweat = null;
   if (request.sweat?.actorId && Number(request.sweat.pct) > 0) {
     const pct = int(request.sweat.pct);
-    if (!founders.has(request.sweat.actorId) || pct > p.maxSweatPct) return fail('bad-sweat');
-    sweat = { actorId: request.sweat.actorId, pct };
+    const sweatId = partnerId(request.sweat.actorId);
+    if (!founders.has(sweatId) || pct > p.maxSweatPct) return fail('bad-sweat');
+    sweat = { actorId: sweatId, pct };
   }
 
   const business = normalizeBusiness({
@@ -1144,13 +1147,38 @@ function found(request, actor, day, ctx, p) {
     createdDay: day,
     partners: [
       { actorId: actor.id, name: actor.name, status: 'active', cash: money.cash, gear: money.gear, heirId: heirOf(request.heirId, actor.id, ctx) },
-      ...invite.map((id) => ({ actorId: id, name: ctx.actors[id], status: 'invited', cash: 0, gear: [] })),
+      ...invite.map((id) => (id in npcs
+        ? { actorId: partnerId(id), actorRef: id, name: npcs[id], status: 'invited', cash: 0, gear: [], voting: false, npc: true }
+        : { actorId: id, name: ctx.actors[id], status: 'invited', cash: 0, gear: [] })),
     ],
     agreement: { sweat, buyoutDays: p.buyoutDays },
     escrow: money.cash,
   });
   addLedger(business, { day, kind: 'founded', amount: money.cash, actorId: actor.id, gear: gearValue(business.partners[0]) }, p);
   return { ok: true, business };
+}
+
+/**
+ * The GM answers a founding invitation for an NPC. What it puts in is the GM's word and comes off no sheet.
+ * @param {object} b - the business, changed in place
+ * @param {string} partnerId - the partner's `npc:` id
+ * @param {{yes: boolean, cash?: number}} answer
+ */
+export function answerNpcPartner(b, partnerId, { yes, cash = 0 }, day, p = BUSINESS_DEFAULTS) {
+  if (b.status !== 'forming') return fail('not-forming');
+  const x = b.partners.find((y) => y.actorId === partnerId && y.npc && y.status === 'invited');
+  if (!x) return fail('not-invited');
+  if (!yes) {
+    x.status = 'declined';
+    return { ok: true };
+  }
+  const amount = Number(cash);
+  if (!Number.isFinite(amount) || amount < 0) return fail('bad-amount');
+  x.status = 'active';
+  x.cash = int(amount);
+  b.escrow += x.cash;
+  addLedger(b, { day, kind: 'contribution', amount: x.cash, actorId: x.actorId, gear: 0 }, p);
+  return { ok: true };
 }
 
 /**

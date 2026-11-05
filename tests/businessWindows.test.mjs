@@ -100,7 +100,7 @@ test('a character with no business sees the Start a business form', async () => 
   assertClean(html, 'start form');
   assert.match(text(html), /Start a business/);
   assert.match(text(html), /Ripperdoc clinic/);
-  assert.match(html, /name="invite" value="a_Fixer"/);
+  assert.match(html, /name="inviteAdd"[^]*?value="a_Fixer"/);
 });
 
 test('an invited partner sees the invitation; the founder sees who they are waiting for', async () => {
@@ -1907,5 +1907,106 @@ test('with Night City Map, the founding form follows the map, and a district it 
     await game.settings.set(ID, KEYS.DISTRICT_DEFS, before);
     await game.settings.set('night-city-map', 'state', stateBefore);
     await S.BusinessRepository.save(saved);
+  }
+});
+
+test('an NPC can be invited to found a business: the GM answers, off its sheet, and it has no vote', async () => {
+  const { answerNpcPartner, voters } = await import('../scripts/engine/index.js');
+  const npc = new med.constructor('Silent Sam', 300, false);
+  const pile = new med.constructor('Loot', 0, false);
+  pile.flags = { 'item-piles': { data: { enabled: true } } };
+  env.actors.push(npc, pile);
+  game.actors.push(npc, pile);
+  const before = S.BusinessRepository.all().map((b) => b.id);
+  try {
+    await send(med, 'found', { name: 'Sams Place', archetype: 'foodStall', location: 'Watson', cash: 2000, invite: [npc.id], sweat: { actorId: npc.id, pct: 5 } });
+    const b = () => S.BusinessRepository.all().find((x) => x.name === 'Sams Place');
+    assert.ok(b(), 'founded');
+    const partner = b().partners.find((x) => x.actorRef === npc.id);
+    assert.deepEqual([partner.actorId, partner.status, partner.npc, partner.voting], [`npc:${npc.id}`, 'invited', true, false]);
+    assert.equal(b().agreement.sweat.actorId, partner.actorId, 'sweat equity can go to them');
+
+    const founder = windowFor(med);
+    founder.businessId = b().id;
+    const waiting = await renderBusiness(founder);
+    assertClean(waiting, 'waiting on an NPC');
+    assert.match(text(waiting), /Waiting for: Silent Sam/);
+    assert.doesNotMatch(waiting, /data-action="setupRoll"/, 'no setup roll until the GM has answered');
+
+    const pending = await renderConsole('pending');
+    assertClean(pending, 'GM pending');
+    assert.match(text(pending), /Answer for Silent Sam/);
+    assert.match(pending, /name="npcCash"/);
+    assert.match(pending, /data-action="businessNpcPartner"/);
+
+    assert.equal((await S.BusinessService.answerNpcPartner(b().id, partner.actorId, true, -5)).ok, false, 'no negative money');
+    assert.equal((await S.BusinessService.answerNpcPartner(b().id, med.id, true, 5)).ok, false, 'and only an invited NPC');
+    assert.equal((await S.BusinessService.answerNpcPartner(b().id, partner.actorId, true, 1000)).ok, true);
+    const joined = b().partners.find((x) => x.actorRef === npc.id);
+    assert.deepEqual([joined.status, joined.cash, b().escrow], ['active', 1000, 3000]);
+    assert.equal(npc.system.wealth.value, 300, 'nothing comes off its sheet');
+    assert.doesNotMatch(text(await renderConsole('pending')), /Answer for Silent Sam/);
+    const after = windowFor(med);
+    after.businessId = b().id;
+    assert.match(await renderBusiness(after), /data-action="setupRoll"/, 'and the setup roll can go ahead');
+    assert.deepEqual(voters(b()).map((x) => x.actorId), [med.id], 'only the founder votes');
+    assert.equal(answerNpcPartner({ status: 'open', partners: [] }, 'x', { yes: true }, 1).reason, 'not-forming');
+
+    await send(med, 'found', { name: 'Declined Place', archetype: 'foodStall', cash: 500, invite: [npc.id] });
+    const second = S.BusinessRepository.all().find((x) => x.name === 'Declined Place');
+    await S.BusinessService.answerNpcPartner(second.id, `npc:${npc.id}`, false);
+    assert.equal(S.BusinessRepository.get(second.id).partners.find((x) => x.npc).status, 'declined');
+    await send(med, 'found', { name: 'Pile Place', archetype: 'foodStall', cash: 500, invite: [pile.id] });
+    assert.ok(!S.BusinessRepository.all().some((x) => x.name === 'Pile Place'), 'an item pile is not a partner');
+  } finally {
+    for (const x of S.BusinessRepository.all().filter((y) => !before.includes(y.id))) await S.BusinessRepository.remove?.(x.id);
+    for (const list of [env.actors, game.actors]) list.splice(list.indexOf(npc), 2);
+  }
+});
+
+test('the invite section: a drop zone and a menu, with no checkboxes, and refusals before any request', async () => {
+  const npc = new med.constructor('Dragged Dana', 0, false);
+  const pile = new med.constructor('Loot', 0, false);
+  pile.flags = { 'item-piles': { data: { enabled: true } } };
+  env.actors.push(npc, pile);
+  game.actors.push(npc, pile);
+  const warned = [];
+  const warn = ui.notifications.warn;
+  ui.notifications.warn = (m) => warned.push(m);
+  globalThis.TextEditor = { getDragEventData: (e) => e.data };
+  globalThis.fromUuid = async (uuid) => game.actors.get(uuid);
+  const drop = (app, data) => app._onDropInvite({ preventDefault() {}, data });
+  try {
+    const app = windowFor(med);
+    app.starting = true;
+    app.render = () => {};
+    let html = await renderBusiness(app);
+    assertClean(html, 'start form');
+    assert.match(html, /data-invite/);
+    assert.doesNotMatch(html, /name="invite"/, 'no checkboxes');
+    assert.match(html, /name="inviteAdd"[^]*?>Fixer</, 'a player character is in the menu');
+    assert.doesNotMatch(html.split('name="inviteAdd"')[1].split('</select>')[0], /Dragged Dana/, 'an NPC is not');
+
+    await drop(app, { type: 'Actor', uuid: npc.id });
+    await drop(app, { type: 'Actor', uuid: npc.id });
+    await drop(app, { type: 'Actor', uuid: fix.id });
+    await drop(app, { type: 'Actor', uuid: med.id });
+    assert.deepEqual(app.inviteDrafts.map((x) => [x.name, x.npc]), [['Dragged Dana', true], ['Fixer', false]], 'once each, and never yourself');
+
+    await drop(app, { type: 'Item', uuid: 'x' });
+    await drop(app, { type: 'Actor', uuid: pile.id });
+    await drop(app, { type: 'Actor', uuid: 'nobody' });
+    assert.equal(warned.length, 3, 'an item, an item pile and an unknown actor are refused');
+
+    html = await renderBusiness(app);
+    assert.match(text(html), /Dragged Dana/);
+    assert.match(html, /data-action="removeInvite"/);
+    assert.doesNotMatch(html.includes('name="inviteAdd"') ? html.split('name="inviteAdd"')[1].split('</select>')[0] : '', />Fixer</, 'and out of the menu once invited');
+    assert.match(html, /name="sweatTo"[^]*?Dragged Dana/, 'sweat equity offers who is invited');
+  } finally {
+    ui.notifications.warn = warn;
+    delete globalThis.TextEditor;
+    delete globalThis.fromUuid;
+    for (const list of [env.actors, game.actors]) list.splice(list.indexOf(npc), 2);
   }
 });
