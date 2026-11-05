@@ -2444,7 +2444,7 @@ A story about a character also costs the business they run with the worst standi
 
 **Tested live (2026-11-05, Cyberpunk Test).** NorCal on the form and in the table, no bays; a GM's district appearing at once with danger numbers, its rename and change of danger followed, numbers saved by the button and kept, and removal keeping it in the table; the map's setting restored afterwards. Bridge 0.3.1 loaded, with pins in step. **In tests only:** a business in a GM's district, a close on its numbers, and a pin placed by one. A renamed bridge script needs a world relaunch: until then the world looks for the old file, and the bridge doesn't run.
 
-### 36.16 NPCs as founding partners, and inviting by dragging (the user's choices, 2026-11-05)
+### 36.16 NPCs as founding partners, and inviting by search (the user's choices, 2026-11-05; v0.21.3)
 
 **The choices.** The GM answers for an NPC on the Pending tab. The GM types what it puts in, which comes off no sheet. It is a silent partner with no vote. The form has a search field, which replaced the first build's menu: the user pointed out that a player can't usefully drag NPCs. The search first went by Observer permission, then, as setting that on each NPC was too much work, by the Messenger tag `investor`, which the investor proposal already uses. Its drop zone stays, for a GM.
 
