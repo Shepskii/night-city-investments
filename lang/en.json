@@ -2874,6 +2874,11 @@
       "Invite": "Invite partners",
       "InviteSearch": "Search for a character or syndicate to invite",
       "InviteNpcTag": "(NPC)",
+      "InviteMore": "And {count} more: type more of the name.",
+      "InviteWhy": {
+        "pile": "its contact is linked to an item pile",
+        "kind": "its contact is linked to an actor that is neither a character nor a mook"
+      },
       "InviteNone": "No match. An NPC only appears if your GM has tagged their Night City Messenger contact as an investor.",
       "InviteDrop": "Or drag a character here from the Actors directory.",
       "InviteNpc": "NPC: a silent partner with no vote. The GM answers for them and says what they put in.",

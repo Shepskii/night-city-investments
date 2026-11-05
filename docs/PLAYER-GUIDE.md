@@ -151,7 +151,7 @@ It has five folders:
 2. Put in **eddies**, and **gear** dragged from your sheet, the Items directory or a compendium (valued at its price). Gear from your sheet moves into the business and comes back if it never opens.
 3. **Invite partners.** Type in the search field and pick from the matches: another player's character, a syndicate, or an NPC. Each answers and puts in their own. Units follow what each put in, with an optional sweat-equity slice for one partner.
 
-   You can find an **NPC** if your GM has tagged their Night City Messenger contact as an investor. Your GM answers for them and says what they put in. An NPC is a silent partner: they hold units but don't vote or take actions.
+   You can find an **NPC** if your GM has tagged their Night City Messenger contact as an investor, by their name or the contact's. Your GM answers for them and says what they put in. An NPC is a silent partner: they hold units but don't vote or take actions.
 4. Once everyone has answered, any partner makes the **setup roll**. It sets the setup cost and the Capacity the business opens with. Your GM may need to approve it.
 
 ### The week

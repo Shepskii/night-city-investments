@@ -1976,7 +1976,15 @@ test('the invite section: search finds NPCs tagged investor, a GM can drag, and 
   // No player owns these, so none of them is in a player's character picker.
   for (const x of [npc, pile, hidden]) x.testUserPermission = () => false;
   const nightcityBefore = game.nightcity;
-  game.nightcity = { ...nightcityBefore, masterContactService: { filterByTag: (tag) => (tag === 'investor' ? [{ actorId: npc.id }, { actorId: npc.id }, { actorId: pile.id }, { actorId: fix.id }, { actorId: null }, { actorId: 'gone' }] : [{ actorId: hidden.id }]) } };
+  game.nightcity = { ...nightcityBefore, masterContactService: { getAll: () => [
+    { id: 'c1', name: 'Double D', alias: 'DD', tags: ['Investor Broker'], actorId: npc.id },
+    { id: 'c2', name: 'Dana again', tags: ['INVESTOR'], actorId: npc.id },
+    { id: 'c3', name: 'Loot box', tags: ['investor; fixer'], actorId: pile.id },
+    { id: 'c4', name: 'Fixer contact', tags: ['investor'], actorId: fix.id },
+    { id: 'c5', name: 'Faceless Fred', tags: ['broker', 'investor'], actorId: null },
+    { id: 'c6', name: 'Gone Gina', tags: ['Investor'], actorId: 'gone' },
+    { id: 'c7', name: 'Not An Investor', tags: ['investors', 'BROKER'], actorId: hidden.id },
+  ] } };
   const warned = [];
   const warn = ui.notifications.warn;
   ui.notifications.warn = (m) => warned.push(m);
@@ -1996,14 +2004,19 @@ test('the invite section: search finds NPCs tagged investor, a GM can drag, and 
     assert.match(html, /data-id="a_Fixer"/, "another player's character can be found");
     assert.match(html, /style="display: none" data-action="addInvite"/, 'results start out of sight, whatever the stylesheet does');
     assert.doesNotMatch(html, /<button type="button" data-action="addInvite"/, 'every one of them');
-    assert.equal(text(html).match(/Dragged Dana \(NPC\)/g)?.length, 1, 'and an NPC tagged investor, once');
-    assert.doesNotMatch(html, /Hidden Hal/, 'but not one tagged anything else');
-    assert.doesNotMatch(html, /Fixer \(NPC\)/, "and a tagged player's character stays a player's character");
+    assert.equal(text(html).match(/Dragged Dana \(Double D, DD\) \(NPC\)/g)?.length, 1, 'an NPC tagged among other words, once, with its contact name and alias');
+    assert.match(html, /data-search="Dragged Dana Double D, DD"/, 'which the search matches too');
+    assert.match(html, /data-id="contact:c5"[^>]*>Faceless Fred/, 'a contact with no actor, by its name');
+    assert.match(html, /data-id="contact:c6"[^>]*>Gone Gina/, 'and one whose actor is gone');
+    assert.doesNotMatch(html, /Hidden Hal|Not An Investor/, '"investors" is a different word');
+    assert.doesNotMatch(html, /Fixer \(NPC\)|Fixer contact/, "a tagged player's character stays a player's character");
+    assert.doesNotMatch(html, /Loot/, 'and a player never sees one that cannot be a partner');
     assert.doesNotMatch(html, /data-id="[^"]*"[^>]*data-invite-option>Loot/, 'nor an item pile');
 
     game.user = { ...userBefore, id: 'gm1', isGM: true };
     html = await renderBusiness(app);
     assert.doesNotMatch(html, /Hidden Hal/, 'a GM searches the same list');
+    assert.match(html, /data-id="[^"]+"[^>]*disabled>Loot[^]*?linked to an item pile/, 'but sees the unusable ones greyed, with why');
     assert.match(html, /data-invite[ >]/, 'and has the drop zone for any other NPC');
 
     const { matchInvites } = await import('../scripts/ui/Business/BusinessApp.js');
@@ -2013,7 +2026,9 @@ test('the invite section: search finds NPCs tagged investor, a GM can drag, and 
 
     const add = (id) => Apps.Business._onAddInvite.call(app, null, { dataset: { id } });
     add(hidden.id);
-    assert.deepEqual(app.inviteDrafts.map((x) => [x.name, x.npc]), [['Hidden Hal', true]], 'adding from the search');
+    Apps.Business._onAddInvite.call(app, null, { dataset: { id: 'contact:c5', name: 'Faceless Fred' } });
+    Apps.Business._onAddInvite.call(app, null, { disabled: true, dataset: { id: pile.id } });
+    assert.deepEqual(app.inviteDrafts.map((x) => [x.id, x.name, x.npc]), [[hidden.id, 'Hidden Hal', true], ['contact:c5', 'Faceless Fred', true]], 'adding from the search, a greyed one refused');
     app.inviteDrafts = [];
 
     await drop(app, { type: 'Actor', uuid: npc.id });
@@ -2039,5 +2054,29 @@ test('the invite section: search finds NPCs tagged investor, a GM can drag, and 
     delete globalThis.TextEditor;
     delete globalThis.fromUuid;
     for (const list of [env.actors, game.actors]) list.splice(list.indexOf(npc), 3);
+  }
+});
+
+test('a Messenger contact with no actor founds a business with a player, by its name, and only if tagged', async () => {
+  const nightcityBefore = game.nightcity;
+  game.nightcity = { ...nightcityBefore, masterContactService: { getAll: () => [{ id: 'cx', name: 'Faceless Fred', tags: ['Broker, Investor'], actorId: null }, { id: 'cy', name: 'Untagged Ursula', tags: ['broker'], actorId: null }] } };
+  try {
+    await send(med, 'found', { name: 'Fred Stall', archetype: 'foodStall', cash: 0, invite: ['contact:cx'], sweat: { actorId: 'contact:cx', pct: 2 } });
+    const b = S.BusinessRepository.all().find((x) => x.name === 'Fred Stall');
+    assert.ok(b, 'founded');
+    const fred = b.partners.find((x) => x.npc);
+    assert.deepEqual([fred.actorId, fred.name, fred.voting, fred.actorRef ?? null], ['npc:contact:cx', 'Faceless Fred', false, null]);
+    assert.equal(b.agreement.sweat.actorId, 'npc:contact:cx');
+    assert.match(text(await renderConsole('pending')), /Answer for Faceless Fred/);
+    assert.equal((await S.BusinessService.answerNpcPartner(b.id, 'npc:contact:cx', true, 400)).ok, true);
+    assert.equal(S.BusinessRepository.get(b.id).escrow, 400, 'earlier tests spent the founder money, so the contact money is all of it');
+    const window = windowFor(med);
+    window.businessId = b.id;
+    assertClean(await renderBusiness(window), 'a contact partner in the window');
+
+    await send(med, 'found', { name: 'Ursula Stall', archetype: 'foodStall', cash: 0, invite: ['contact:cy'] });
+    assert.ok(!S.BusinessRepository.all().some((x) => x.name === 'Ursula Stall'), 'an untagged contact is refused by the GM\'s side');
+  } finally {
+    game.nightcity = nightcityBefore;
   }
 });

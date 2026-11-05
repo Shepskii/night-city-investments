@@ -12,7 +12,7 @@ import { isCharacter } from '../../utils/helpers.js';
 import { SyndicateRepository } from '../../data/SyndicateRepository.js';
 import { MODULE_ID, HOOKS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
-import { BusinessClient, isNpcActor } from '../../services/BusinessClient.js';
+import { BusinessClient, isNpcActor, CONTACT_PREFIX } from '../../services/BusinessClient.js';
 import { SyndicateClient } from '../../services/SyndicateClient.js';
 import { accountFor, ownerOf } from '../accounts.js';
 import { BaseApplication } from '../BaseApplication.js';
@@ -205,9 +205,16 @@ export class BusinessApp extends BaseApplication {
     Hooks.on(HOOKS.SYNDICATES_CHANGED, this._refresh);
     // The "no GM online" warning follows who is connected.
     Hooks.on('userConnected', this._refresh);
+    // A contact tagged while the Start a business form is open can be found at once.
+    Hooks.on('updateSetting', this._contactsChanged);
   }
 
+  _contactsChanged = (setting) => {
+    if (this.starting && setting?.key === 'night-city-messenger.masterContacts') this.render();
+  };
+
   _onClose(options) {
+    Hooks.off('updateSetting', this._contactsChanged);
     Hooks.off(HOOKS.BUSINESSES_CHANGED, this._refresh);
     Hooks.off(HOOKS.SYNDICATES_CHANGED, this._refresh);
     Hooks.off('userConnected', this._refresh);
@@ -260,16 +267,22 @@ export class BusinessApp extends BaseApplication {
     const choices = [...this.element.querySelectorAll('[data-invite-option]')];
     // Set on the element, as the theme's button rules outrank a plain `hidden`.
     const setShown = (el, on) => { if (el) el.style.display = on ? '' : 'none'; };
+    const words = choices.map((o) => o.dataset.search ?? o.textContent);
     search?.addEventListener('input', () => {
-      const shown = new Set(matchInvites(search.value, choices.map((o) => o.textContent)));
+      const shown = new Set(matchInvites(search.value, words));
       choices.forEach((o, i) => setShown(o, shown.has(i)));
       setShown(this.element.querySelector('[data-invite-none]'), !!search.value.trim() && !shown.size);
+      // Say when there are more than fit, so a name further down the list isn't taken for missing.
+      const more = matchInvites(search.value, words, Infinity).length - shown.size;
+      const note = this.element.querySelector('[data-invite-more]');
+      if (note) note.textContent = more > 0 ? L('NCI.Business.InviteMore', { count: more }) : '';
+      setShown(note, more > 0);
     });
     // Enter takes the first match: this form has nothing else for it to do.
     search?.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter') return;
       event.preventDefault();
-      choices.find((o) => o.style.display !== 'none')?.click();
+      choices.find((o) => o.style.display !== 'none' && !o.disabled)?.click();
     });
   }
 
@@ -315,6 +328,12 @@ export class BusinessApp extends BaseApplication {
 
   static _onAddInvite(event, target) {
     const { id } = target.dataset;
+    if (target.disabled) return;
+    // A Messenger contact with no actor goes by its name on the button (DESIGN §36.16).
+    if (id?.startsWith(CONTACT_PREFIX)) {
+      if (this._addInvite({ id, name: target.dataset.name, npc: true })) this.render();
+      return;
+    }
     const actor = game.actors.get(id);
     const account = actor ?? SyndicateRepository.get(id);
     if (account && this._addInvite({ id, name: account.name, npc: isNpcActor(actor) })) this.render();

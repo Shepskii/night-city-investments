@@ -1124,7 +1124,8 @@ function found(request, actor, day, ctx, p) {
   const invite = [...new Set((request.invite ?? []).map(String))].filter((id) => id !== actor.id);
   if (invite.length > p.maxPartners - 1) return fail('too-many-partners');
   // An NPC is a silent partner under an `npc:` id, as an angel is: the GM answers for it, and its money stays off its sheet.
-  const npcs = ctx.teamActors ?? {};
+  // A Messenger contact with no actor is one too, by the contact alone (`contact:` ids).
+  const npcs = { ...(ctx.teamActors ?? {}), ...(ctx.investorContacts ?? {}) };
   if (invite.some((id) => !(id in ctx.actors) && !(id in npcs))) return fail('bad-partner');
   const partnerId = (id) => (id in npcs ? `npc:${id}` : id);
   const founders = new Set([actor.id, ...invite.map(partnerId)]);
@@ -1148,7 +1149,7 @@ function found(request, actor, day, ctx, p) {
     partners: [
       { actorId: actor.id, name: actor.name, status: 'active', cash: money.cash, gear: money.gear, heirId: heirOf(request.heirId, actor.id, ctx) },
       ...invite.map((id) => (id in npcs
-        ? { actorId: partnerId(id), actorRef: id, name: npcs[id], status: 'invited', cash: 0, gear: [], voting: false, npc: true }
+        ? { actorId: partnerId(id), ...(id.startsWith('contact:') ? {} : { actorRef: id }), name: npcs[id], status: 'invited', cash: 0, gear: [], voting: false, npc: true }
         : { actorId: id, name: ctx.actors[id], status: 'invited', cash: 0, gear: [] })),
     ],
     agreement: { sweat, buyoutDays: p.buyoutDays },

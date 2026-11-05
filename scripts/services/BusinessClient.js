@@ -65,9 +65,35 @@ export function investorActors() {
 /** Whether an actor is an NPC that can be a founding partner: not a player's, and not an item pile. */
 export const isNpcActor = (a) => ['character', 'mook'].includes(a?.type) && !isItemPile(a) && !a.hasPlayerOwner;
 
-/** The NPCs the invite search can find: those linked to a Night City Messenger contact tagged investor. */
-export const investorNpcs = () => [...new Set(NcmAdapter.contactsTagged(INVESTOR_TAG).map((c) => c?.actorId).filter(Boolean))]
-  .map((id) => game.actors.get(id)).filter(isNpcActor);
+/** A contact with no actor as a partner: its id in a request. */
+export const CONTACT_PREFIX = 'contact:';
+
+/**
+ * What the invite search can find from Night City Messenger contacts tagged investor (DESIGN §36.16). A contact linked
+ * to an NPC finds the NPC; one with no actor, or whose actor is gone, is a partner by the contact alone. One linked to a
+ * player's character is that character, found with the others. One linked to anything else can't be a partner, with
+ * `reason` saying why, for a GM to see.
+ * @returns {{id: string, name: string, also: string, npc: true, reason?: string}[]}
+ */
+export function investorNpcs() {
+  const seen = new Set();
+  const out = [];
+  for (const c of NcmAdapter.contactsWithTagWord(INVESTOR_TAG)) {
+    const actor = c.actorId ? game.actors.get(c.actorId) : null;
+    if (actor && isCharacter(actor) && actor.hasPlayerOwner) continue;
+    const entry = actor
+      ? { id: actor.id, name: actor.name, ...(isNpcActor(actor) ? {} : { reason: isItemPile(actor) ? 'pile' : 'kind' }) }
+      : { id: `${CONTACT_PREFIX}${c.id}`, name: c.name };
+    if (seen.has(entry.id)) continue;
+    seen.add(entry.id);
+    // The contact's own name and alias, which a player knows from Messenger, find it too.
+    out.push({ ...entry, also: [c.name, c.alias].filter((n) => n && n !== entry.name).join(', '), npc: true });
+  }
+  return out;
+}
+
+/** The contacts a request may name as partners, by their prefixed id: the GM's side checks against this. */
+export const investorContacts = () => Object.fromEntries(investorNpcs().filter((e) => e.id.startsWith(CONTACT_PREFIX)).map((e) => [e.id, e.name]));
 
 /**
  * The characters a business may hire (DESIGN §32): player characters ('pc'), and NPCs linked to NCM

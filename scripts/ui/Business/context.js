@@ -183,14 +183,15 @@ export function startContext(app) {
   // Who the search can find: every player's character and syndicate, and NPCs whose Messenger contact is tagged investor.
   const others = [
     ...game.actors.filter((a) => isCharacter(a) && a.id !== actor?.id && a.hasPlayerOwner),
-    ...investorNpcs().map((a) => ({ id: a.id, name: a.name, npc: true })),
+    // A GM also sees the tagged contacts that can't be partners, with why, so the GM knows what to fix.
+    ...investorNpcs().filter((a) => !a.reason || game.user?.isGM).map((a) => ({ ...a, why: a.reason ? L(`NCI.Business.InviteWhy.${a.reason}`) : '' })),
     ...SyndicateRepository.all().filter((s) => s.status === 'active' && s.id !== actor?.id),
   ].filter((a) => !taken.has(a.id)).sort((a, b) => a.name.localeCompare(b.name));
   return {
     archetypes: archetypeOptions(),
     districts: districtOptions(),
     partners: invited.map((x) => ({ ...x, who: actorLink(x.id, x.name) })),
-    addable: others.map((a) => ({ id: a.id, name: a.name, npc: !!a.npc })),
+    addable: others.map((a) => ({ id: a.id, name: a.name, npc: !!a.npc, also: a.also ?? '', why: a.why ?? '', search: [a.name, a.also].filter(Boolean).join(' ') })),
     // Only a GM can drag from the Actors directory in practice.
     canDrag: !!game.user?.isGM,
     // A syndicate spends from its brokerage account.

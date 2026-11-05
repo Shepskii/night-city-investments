@@ -33,6 +33,21 @@ export const NcmAdapter = {
     }
   },
 
+  /**
+   * Contacts with this tag as a word in any of their tags. Messenger splits tags on commas only, so a GM who types
+   * "Investor Broker" or "investor; fixer" gets one tag holding both words, which an exact match misses.
+   */
+  contactsWithTagWord(tag) {
+    const wanted = String(tag).toLowerCase();
+    try {
+      const all = svc('masterContactService')?.getAll?.() ?? [];
+      return all.filter((c) => (c.tags ?? []).some((t) => String(t).toLowerCase().split(/[^a-z0-9_-]+/).includes(wanted)));
+    } catch (error) {
+      log.warn('Could not list NCM contacts', error);
+      return [];
+    }
+  },
+
   brokerContacts() {
     return this.contactsTagged(BROKER_TAG);
   },

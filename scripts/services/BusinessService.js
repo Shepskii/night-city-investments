@@ -43,7 +43,7 @@ import { SkillAdapter } from './SkillAdapter.js';
 import { CrewToolsAdapter } from '../integrations/CrewToolsAdapter.js';
 import { REWARDS, rewardRunners, rewardChange, rewardMatters } from '../engine/businessRewards.js';
 import { WealthAdapter } from './WealthAdapter.js';
-import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors, staffActors, jobsOf } from './BusinessClient.js';
+import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors, investorContacts, staffActors, jobsOf } from './BusinessClient.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
 import { SyndicateCash } from './SyndicateCash.js';
 import { MailService } from './MailService.js';
@@ -135,6 +135,8 @@ class BusinessServiceImpl {
       // A listed company's price now, for its offering roll (B6a).
       marketPrice: business?.company?.ticker ? (MarketStore.getPublic().companies?.[business.company.ticker]?.price ?? 0) : 0,
       // NPC actors an Exec may bring as a team member (E3): not a player's character.
+      // Night City Messenger contacts tagged investor with no actor, who may found a business with a player (DESIGN §36.16).
+      investorContacts: investorContacts(),
       teamActors: Object.fromEntries(game.actors.filter((a) => ['character', 'mook'].includes(a.type) && !isItemPile(a) && !a.hasPlayerOwner).map((a) => [a.id, a.name])),
       newId: `bus_${foundry.utils.randomID(12)}`,
       tickers: this.tickersTaken(business?.id),

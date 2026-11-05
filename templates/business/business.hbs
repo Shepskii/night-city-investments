@@ -151,8 +151,9 @@
       {{#if start.addable.length}}
       <input type="search" name="inviteSearch" autocomplete="off" placeholder="{{localize 'NCI.Business.InviteSearch'}}" aria-label="{{localize 'NCI.Business.InviteSearch'}}">
       <div class="nci-invite-results">
-        {{#each start.addable}}<button type="button" style="display: none" data-action="addInvite" data-id="{{id}}" data-invite-option>{{name}}{{#if npc}} <span class="nci-muted">{{localize "NCI.Business.InviteNpcTag"}}</span>{{/if}}</button>{{/each}}
+        {{#each start.addable}}<button type="button" style="display: none" data-action="addInvite" data-id="{{id}}" data-name="{{name}}" data-search="{{search}}" data-invite-option{{#if why}} disabled{{/if}}>{{name}}{{#if also}} <span class="nci-muted">({{also}})</span>{{/if}}{{#if npc}} <span class="nci-muted">{{localize "NCI.Business.InviteNpcTag"}}</span>{{/if}}{{#if why}} <span class="nci-muted">: {{why}}</span>{{/if}}</button>{{/each}}
         <p class="nci-hint" style="display: none" data-invite-none>{{localize "NCI.Business.InviteNone"}}</p>
+        <p class="nci-hint" style="display: none" data-invite-more></p>
       </div>
       {{/if}}
       {{#if start.canDrag}}<div class="nci-drop" data-invite><p class="nci-hint"><i class="fas fa-hand-pointer"></i> {{localize "NCI.Business.InviteDrop"}}</p></div>{{/if}}
