@@ -2874,6 +2874,7 @@
       "Invite": "Invite partners",
       "InviteSearch": "Search for a character or syndicate to invite",
       "InviteNpcTag": "(NPC)",
+      "InviteNone": "No match. An NPC only appears if your GM has given you at least Observer permission on them.",
       "InviteDrop": "Or drag a character here from the Actors directory.",
       "InviteNpc": "NPC: a silent partner with no vote. The GM answers for them and says what they put in.",
       "InviteRemove": "Remove",

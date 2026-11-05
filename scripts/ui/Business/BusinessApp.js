@@ -258,15 +258,18 @@ export class BusinessApp extends BaseApplication {
     this._restoreStartForm();
     const search = this.element.querySelector('[name="inviteSearch"]');
     const choices = [...this.element.querySelectorAll('[data-invite-option]')];
+    // Set on the element, as the theme's button rules outrank a plain `hidden`.
+    const setShown = (el, on) => { if (el) el.style.display = on ? '' : 'none'; };
     search?.addEventListener('input', () => {
       const shown = new Set(matchInvites(search.value, choices.map((o) => o.textContent)));
-      choices.forEach((o, i) => { o.hidden = !shown.has(i); });
+      choices.forEach((o, i) => setShown(o, shown.has(i)));
+      setShown(this.element.querySelector('[data-invite-none]'), !!search.value.trim() && !shown.size);
     });
     // Enter takes the first match: this form has nothing else for it to do.
     search?.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter') return;
       event.preventDefault();
-      choices.find((o) => !o.hidden)?.click();
+      choices.find((o) => o.style.display !== 'none')?.click();
     });
   }
 

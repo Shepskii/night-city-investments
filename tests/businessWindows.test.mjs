@@ -1992,6 +1992,8 @@ test('the invite section: search finds NPCs the user has Observer on, a GM can d
     assert.doesNotMatch(html, /data-invite[ >]/, 'no drop zone for a player');
     assert.match(html, /name="inviteSearch"/);
     assert.match(html, /data-id="a_Fixer"/, "another player's character can be found");
+    assert.match(html, /style="display: none" data-action="addInvite"/, 'results start out of sight, whatever the stylesheet does');
+    assert.doesNotMatch(html, /<button type="button" data-action="addInvite"/, 'every one of them');
     assert.match(text(html), /Dragged Dana \(NPC\)/, 'and an NPC they have Observer on');
     assert.doesNotMatch(html, /Hidden Hal/, 'but not one they do not');
     assert.doesNotMatch(html, /data-id="[^"]*"[^>]*data-invite-option>Loot/, 'nor an item pile');

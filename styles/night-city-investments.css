@@ -510,7 +510,6 @@
 .nci-app .nci-business .nci-gearrow button { width: auto; margin-left: auto; padding: 0 6px; }
 .nci-app .nci-business .nci-invite-results { display: flex; flex-direction: column; gap: 2px; margin: 4px 0; }
 .nci-app .nci-business .nci-invite-results button { width: 100%; text-align: left; }
-.nci-app .nci-business .nci-invite-results button[hidden] { display: none; }
 .nci-app .nci-business .nci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-bottom: 8px; }
 .nci-app .nci-business label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--nci-label); }
 .nci-app .nci-business fieldset { border: 1px solid var(--nci-accent-dim); margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 4px 16px; }
