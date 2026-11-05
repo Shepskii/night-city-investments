@@ -65,6 +65,10 @@ export function investorActors() {
 /** Whether an actor is an NPC that can be a founding partner: not a player's, and not an item pile. */
 export const isNpcActor = (a) => ['character', 'mook'].includes(a?.type) && !isItemPile(a) && !a.hasPlayerOwner;
 
+/** The NPCs the invite search can find: those linked to a Night City Messenger contact tagged investor. */
+export const investorNpcs = () => [...new Set(NcmAdapter.contactsTagged(INVESTOR_TAG).map((c) => c?.actorId).filter(Boolean))]
+  .map((id) => game.actors.get(id)).filter(isNpcActor);
+
 /**
  * The characters a business may hire (DESIGN §32): player characters ('pc'), and NPCs linked to NCM
  * contacts tagged staff or employee ('npc'), whether the NPC is a character or a Cyberpunk RED mook.

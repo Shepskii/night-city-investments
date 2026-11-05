@@ -147,6 +147,7 @@
     <ul class="nci-hint">{{#each start.archetypes}}<li><strong>{{label}}</strong>: {{hint}}</li>{{/each}}</ul>
     <fieldset>
       <legend>{{localize "NCI.Business.Invite"}}</legend>
+      <div style="flex: 1 1 100%; min-width: 0">
       {{#if start.addable.length}}
       <input type="search" name="inviteSearch" autocomplete="off" placeholder="{{localize 'NCI.Business.InviteSearch'}}" aria-label="{{localize 'NCI.Business.InviteSearch'}}">
       <div class="nci-invite-results">
@@ -159,6 +160,7 @@
       <div class="nci-gearrow"><span>{{{who}}}</span>{{#if npc}}<span class="nci-muted">{{localize "NCI.Business.InviteNpc"}}</span>{{/if}}
         <button type="button" data-action="removeInvite" data-id="{{id}}" title="{{localize 'NCI.Business.InviteRemove'}}"><i class="fas fa-xmark"></i></button></div>
       {{/each}}
+      </div>
     </fieldset>
     <div class="nci-grid">
       <label>{{localize "NCI.Business.SweatPct" max=start.maxSweat}}<input type="number" name="sweatPct" min="0" max="{{start.maxSweat}}" step="1" value="0"></label>

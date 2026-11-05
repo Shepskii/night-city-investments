@@ -26,7 +26,7 @@ import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { FactionRepository } from '../../data/FactionRepository.js';
 import { CompanyRepository } from '../../data/CompanyRepository.js';
-import { BusinessClient, operatorRankOf, pendingBusinessRequests, investorActors, staffActors, jobsOf, isNpcActor } from '../../services/BusinessClient.js';
+import { BusinessClient, operatorRankOf, pendingBusinessRequests, investorActors, staffActors, jobsOf, investorNpcs } from '../../services/BusinessClient.js';
 import { SyndicateRepository } from '../../data/SyndicateRepository.js';
 import { businessAccounts, ownerOf } from '../accounts.js';
 import { CrewToolsAdapter } from '../../integrations/CrewToolsAdapter.js';
@@ -180,10 +180,10 @@ export function startContext(app) {
   const actor = app.actor;
   const invited = app.inviteDrafts ?? [];
   const taken = new Set(invited.map((x) => x.id));
-  // Who the search can find: every player's character and syndicate, and the NPCs this user has at least Observer on.
+  // Who the search can find: every player's character and syndicate, and NPCs whose Messenger contact is tagged investor.
   const others = [
     ...game.actors.filter((a) => isCharacter(a) && a.id !== actor?.id && a.hasPlayerOwner),
-    ...game.actors.filter((a) => isNpcActor(a) && a.testUserPermission(game.user, 'OBSERVER')).map((a) => ({ id: a.id, name: a.name, npc: true })),
+    ...investorNpcs().map((a) => ({ id: a.id, name: a.name, npc: true })),
     ...SyndicateRepository.all().filter((s) => s.status === 'active' && s.id !== actor?.id),
   ].filter((a) => !taken.has(a.id)).sort((a, b) => a.name.localeCompare(b.name));
   return {

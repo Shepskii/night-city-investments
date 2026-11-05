@@ -1965,16 +1965,18 @@ test('an NPC can be invited to found a business: the GM answers, off its sheet, 
   }
 });
 
-test('the invite section: search finds NPCs the user has Observer on, a GM can drag, and refusals come before any request', async () => {
+test('the invite section: search finds NPCs tagged investor, a GM can drag, and refusals come before any request', async () => {
   const npc = new med.constructor('Dragged Dana', 0, false);
   const pile = new med.constructor('Loot', 0, false);
   const hidden = new med.constructor('Hidden Hal', 0, false);
   pile.flags = { 'item-piles': { data: { enabled: true } } };
-  npc.testUserPermission = (user, level) => level === 'OBSERVER';
-  hidden.testUserPermission = (user) => !!user?.isGM;
   env.actors.push(npc, pile, hidden);
   game.actors.push(npc, pile, hidden);
   const userBefore = game.user;
+  // No player owns these, so none of them is in a player's character picker.
+  for (const x of [npc, pile, hidden]) x.testUserPermission = () => false;
+  const nightcityBefore = game.nightcity;
+  game.nightcity = { ...nightcityBefore, masterContactService: { filterByTag: (tag) => (tag === 'investor' ? [{ actorId: npc.id }, { actorId: npc.id }, { actorId: pile.id }, { actorId: fix.id }, { actorId: null }, { actorId: 'gone' }] : [{ actorId: hidden.id }]) } };
   const warned = [];
   const warn = ui.notifications.warn;
   ui.notifications.warn = (m) => warned.push(m);
@@ -1994,14 +1996,15 @@ test('the invite section: search finds NPCs the user has Observer on, a GM can d
     assert.match(html, /data-id="a_Fixer"/, "another player's character can be found");
     assert.match(html, /style="display: none" data-action="addInvite"/, 'results start out of sight, whatever the stylesheet does');
     assert.doesNotMatch(html, /<button type="button" data-action="addInvite"/, 'every one of them');
-    assert.match(text(html), /Dragged Dana \(NPC\)/, 'and an NPC they have Observer on');
-    assert.doesNotMatch(html, /Hidden Hal/, 'but not one they do not');
+    assert.equal(text(html).match(/Dragged Dana \(NPC\)/g)?.length, 1, 'and an NPC tagged investor, once');
+    assert.doesNotMatch(html, /Hidden Hal/, 'but not one tagged anything else');
+    assert.doesNotMatch(html, /Fixer \(NPC\)/, "and a tagged player's character stays a player's character");
     assert.doesNotMatch(html, /data-id="[^"]*"[^>]*data-invite-option>Loot/, 'nor an item pile');
 
     game.user = { ...userBefore, id: 'gm1', isGM: true };
     html = await renderBusiness(app);
-    assert.match(html, /Hidden Hal/, 'a GM finds any NPC');
-    assert.match(html, /data-invite[ >]/, 'and has the drop zone');
+    assert.doesNotMatch(html, /Hidden Hal/, 'a GM searches the same list');
+    assert.match(html, /data-invite[ >]/, 'and has the drop zone for any other NPC');
 
     const { matchInvites } = await import('../scripts/ui/Business/BusinessApp.js');
     assert.deepEqual(matchInvites('', ['Dana', 'Hal']), [], 'nothing until something is typed');
@@ -2032,6 +2035,7 @@ test('the invite section: search finds NPCs the user has Observer on, a GM can d
   } finally {
     ui.notifications.warn = warn;
     game.user = userBefore;
+    game.nightcity = nightcityBefore;
     delete globalThis.TextEditor;
     delete globalThis.fromUuid;
     for (const list of [env.actors, game.actors]) list.splice(list.indexOf(npc), 3);
