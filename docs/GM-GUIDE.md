@@ -118,7 +118,7 @@ This tab lists every business with its true state, Exposure included, and an **O
 
 The rest runs itself: weeks close, events are drawn, wages are paid, reports are published, and takeover offers close and settle when their 7 days are up.
 
-**NPC partners:** a player can invite an NPC when founding a business, by dragging them onto the form, so the NPC has to be visible in their Actors directory. What you enter comes off no sheet, and what they earn doesn't reach their sheet either: their stake is off-screen money. They hold units but have no vote and take no actions, so they can't hold up a decision.
+**NPC partners:** a player can invite an NPC when founding a business, by searching for them on the form. They only find NPCs they have at least **Observer** permission on, so that is how you offer one. You can also drag an NPC onto the form yourself. What you enter comes off no sheet, and what they earn doesn't reach their sheet either: their stake is off-screen money. They hold units but have no vote and take no actions, so they can't hold up a decision.
 
 **NPC staff:** tag an NPC's Night City Messenger contact `staff` or `employee` to make them hireable. An NPC actor (not a player's character) can also join an Exec's team.
 

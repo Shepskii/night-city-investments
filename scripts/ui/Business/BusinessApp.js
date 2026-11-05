@@ -45,6 +45,13 @@ const field = (target, name) => target.closest('.nci-form')?.querySelector(`[nam
 const value = (target, name) => field(target, name)?.value ?? '';
 const amount = (target, name) => Math.floor(Number(value(target, name)) || 0);
 
+/** Which of these names a search matches, as indexes: none until something is typed, and at most `max`. */
+export function matchInvites(query, names, max = 8) {
+  const wanted = String(query ?? '').trim().toLowerCase();
+  if (!wanted) return [];
+  return names.map((name, i) => [String(name).toLowerCase().includes(wanted), i]).filter(([hit]) => hit).slice(0, max).map(([, i]) => i);
+}
+
 /** What the Start a business form holds that a redraw would lose. */
 const START_FIELDS = ['name', 'archetype', 'district', 'location', 'cash', 'sweatPct', 'sweatTo'];
 
@@ -249,6 +256,18 @@ export class BusinessApp extends BaseApplication {
       });
     });
     this._restoreStartForm();
+    const search = this.element.querySelector('[name="inviteSearch"]');
+    const choices = [...this.element.querySelectorAll('[data-invite-option]')];
+    search?.addEventListener('input', () => {
+      const shown = new Set(matchInvites(search.value, choices.map((o) => o.textContent)));
+      choices.forEach((o, i) => { o.hidden = !shown.has(i); });
+    });
+    // Enter takes the first match: this form has nothing else for it to do.
+    search?.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      choices.find((o) => !o.hidden)?.click();
+    });
   }
 
   /** A redraw of the Start a business form must not lose what has been typed, as dragging someone in redraws it. */
@@ -291,10 +310,11 @@ export class BusinessApp extends BaseApplication {
     return this._addInvite({ id: actor.id, name: actor.name, npc: !pc }) ? this.render() : null;
   }
 
-  static _onAddInvite() {
-    const id = this.element.querySelector('[name="inviteAdd"]')?.value;
-    const account = game.actors.get(id) ?? SyndicateRepository.get(id);
-    if (account && this._addInvite({ id, name: account.name, npc: false })) this.render();
+  static _onAddInvite(event, target) {
+    const { id } = target.dataset;
+    const actor = game.actors.get(id);
+    const account = actor ?? SyndicateRepository.get(id);
+    if (account && this._addInvite({ id, name: account.name, npc: isNpcActor(actor) })) this.render();
   }
 
   static _onRemoveInvite(event, target) {

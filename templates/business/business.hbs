@@ -147,19 +147,17 @@
     <ul class="nci-hint">{{#each start.archetypes}}<li><strong>{{label}}</strong>: {{hint}}</li>{{/each}}</ul>
     <fieldset>
       <legend>{{localize "NCI.Business.Invite"}}</legend>
-      <div class="nci-drop" data-invite>
-        <p class="nci-hint"><i class="fas fa-hand-pointer"></i> {{localize "NCI.Business.InviteDrop"}}</p>
-        {{#each start.partners}}
-        <div class="nci-gearrow"><span>{{{who}}}</span>{{#if npc}}<span class="nci-muted">{{localize "NCI.Business.InviteNpc"}}</span>{{/if}}
-          <button type="button" data-action="removeInvite" data-id="{{id}}" title="{{localize 'NCI.Business.InviteRemove'}}"><i class="fas fa-xmark"></i></button></div>
-        {{/each}}
-      </div>
       {{#if start.addable.length}}
-      <div class="nci-actions">
-        <select name="inviteAdd">{{#each start.addable}}<option value="{{id}}">{{name}}</option>{{/each}}</select>
-        <button type="button" data-action="addInvite"><i class="fas fa-plus"></i> {{localize "NCI.Business.InviteAdd"}}</button>
+      <input type="search" name="inviteSearch" autocomplete="off" placeholder="{{localize 'NCI.Business.InviteSearch'}}" aria-label="{{localize 'NCI.Business.InviteSearch'}}">
+      <div class="nci-invite-results">
+        {{#each start.addable}}<button type="button" hidden data-action="addInvite" data-id="{{id}}" data-invite-option>{{name}}{{#if npc}} <span class="nci-muted">{{localize "NCI.Business.InviteNpcTag"}}</span>{{/if}}</button>{{/each}}
       </div>
       {{/if}}
+      {{#if start.canDrag}}<div class="nci-drop" data-invite><p class="nci-hint"><i class="fas fa-hand-pointer"></i> {{localize "NCI.Business.InviteDrop"}}</p></div>{{/if}}
+      {{#each start.partners}}
+      <div class="nci-gearrow"><span>{{{who}}}</span>{{#if npc}}<span class="nci-muted">{{localize "NCI.Business.InviteNpc"}}</span>{{/if}}
+        <button type="button" data-action="removeInvite" data-id="{{id}}" title="{{localize 'NCI.Business.InviteRemove'}}"><i class="fas fa-xmark"></i></button></div>
+      {{/each}}
     </fieldset>
     <div class="nci-grid">
       <label>{{localize "NCI.Business.SweatPct" max=start.maxSweat}}<input type="number" name="sweatPct" min="0" max="{{start.maxSweat}}" step="1" value="0"></label>

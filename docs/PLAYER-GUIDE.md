@@ -149,9 +149,9 @@ It has five folders:
 
 1. Press **Start a business**. Choose a name, one of ten kinds (ripperdoc clinic, garage or chop shop, bar or club, info shop, boutique or salon, gun shop, courier service, security outfit, screamsheet, food stall) and a district, which sets foot traffic, rent and risk.
 2. Put in **eddies**, and **gear** dragged from your sheet, the Items directory or a compendium (valued at its price). Gear from your sheet moves into the business and comes back if it never opens.
-3. **Invite partners.** Drag a character from the Actors directory onto the form, or use the menu for a syndicate or a character you can't see there. Each answers and puts in their own. Units follow what each put in, with an optional sweat-equity slice for one partner.
+3. **Invite partners.** Type in the search field and pick from the matches: another player's character, a syndicate, or an NPC. Each answers and puts in their own. Units follow what each put in, with an optional sweat-equity slice for one partner.
 
-   You can invite an **NPC** the same way, if your GM has shared them so that they appear in your directory. Your GM answers for them and says what they put in. An NPC is a silent partner: they hold units but don't vote or take actions.
+   You can find an **NPC** if your GM has given you at least Observer permission on them. Your GM answers for them and says what they put in. An NPC is a silent partner: they hold units but don't vote or take actions.
 4. Once everyone has answered, any partner makes the **setup roll**. It sets the setup cost and the Capacity the business opens with. Your GM may need to approve it.
 
 ### The week

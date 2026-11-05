@@ -26,7 +26,7 @@ import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { FactionRepository } from '../../data/FactionRepository.js';
 import { CompanyRepository } from '../../data/CompanyRepository.js';
-import { BusinessClient, operatorRankOf, pendingBusinessRequests, investorActors, staffActors, jobsOf } from '../../services/BusinessClient.js';
+import { BusinessClient, operatorRankOf, pendingBusinessRequests, investorActors, staffActors, jobsOf, isNpcActor } from '../../services/BusinessClient.js';
 import { SyndicateRepository } from '../../data/SyndicateRepository.js';
 import { businessAccounts, ownerOf } from '../accounts.js';
 import { CrewToolsAdapter } from '../../integrations/CrewToolsAdapter.js';
@@ -180,16 +180,19 @@ export function startContext(app) {
   const actor = app.actor;
   const invited = app.inviteDrafts ?? [];
   const taken = new Set(invited.map((x) => x.id));
-  // Who can be added from the menu, for those that can't be dragged: a syndicate isn't an actor, and a player may not see another's character.
+  // Who the search can find: every player's character and syndicate, and the NPCs this user has at least Observer on.
   const others = [
     ...game.actors.filter((a) => isCharacter(a) && a.id !== actor?.id && a.hasPlayerOwner),
+    ...game.actors.filter((a) => isNpcActor(a) && a.testUserPermission(game.user, 'OBSERVER')).map((a) => ({ id: a.id, name: a.name, npc: true })),
     ...SyndicateRepository.all().filter((s) => s.status === 'active' && s.id !== actor?.id),
   ].filter((a) => !taken.has(a.id)).sort((a, b) => a.name.localeCompare(b.name));
   return {
     archetypes: archetypeOptions(),
     districts: districtOptions(),
     partners: invited.map((x) => ({ ...x, who: actorLink(x.id, x.name) })),
-    addable: others.map((a) => ({ id: a.id, name: a.name })),
+    addable: others.map((a) => ({ id: a.id, name: a.name, npc: !!a.npc })),
+    // Only a GM can drag from the Actors directory in practice.
+    canDrag: !!game.user?.isGM,
     // A syndicate spends from its brokerage account.
     wealth: whole(actor?.isSyndicate ? freeCash(SyndicateRepository.portfolio(actor.id)) : actor?.system?.wealth?.value ?? 0),
     maxSweat: BUSINESS_DEFAULTS.maxSweatPct,

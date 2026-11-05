@@ -100,7 +100,8 @@ test('a character with no business sees the Start a business form', async () => 
   assertClean(html, 'start form');
   assert.match(text(html), /Start a business/);
   assert.match(text(html), /Ripperdoc clinic/);
-  assert.match(html, /name="inviteAdd"[^]*?value="a_Fixer"/);
+  assert.match(html, /name="inviteSearch"/);
+  assert.match(html, /data-action="addInvite" data-id="a_Fixer"/);
 });
 
 test('an invited partner sees the invitation; the founder sees who they are waiting for', async () => {
@@ -1964,12 +1965,16 @@ test('an NPC can be invited to found a business: the GM answers, off its sheet, 
   }
 });
 
-test('the invite section: a drop zone and a menu, with no checkboxes, and refusals before any request', async () => {
+test('the invite section: search finds NPCs the user has Observer on, a GM can drag, and refusals come before any request', async () => {
   const npc = new med.constructor('Dragged Dana', 0, false);
   const pile = new med.constructor('Loot', 0, false);
+  const hidden = new med.constructor('Hidden Hal', 0, false);
   pile.flags = { 'item-piles': { data: { enabled: true } } };
-  env.actors.push(npc, pile);
-  game.actors.push(npc, pile);
+  npc.testUserPermission = (user, level) => level === 'OBSERVER';
+  hidden.testUserPermission = (user) => !!user?.isGM;
+  env.actors.push(npc, pile, hidden);
+  game.actors.push(npc, pile, hidden);
+  const userBefore = game.user;
   const warned = [];
   const warn = ui.notifications.warn;
   ui.notifications.warn = (m) => warned.push(m);
@@ -1980,12 +1985,31 @@ test('the invite section: a drop zone and a menu, with no checkboxes, and refusa
     const app = windowFor(med);
     app.starting = true;
     app.render = () => {};
+    game.user = { ...userBefore, id: 'u_med', isGM: false };
     let html = await renderBusiness(app);
     assertClean(html, 'start form');
-    assert.match(html, /data-invite/);
     assert.doesNotMatch(html, /name="invite"/, 'no checkboxes');
-    assert.match(html, /name="inviteAdd"[^]*?>Fixer</, 'a player character is in the menu');
-    assert.doesNotMatch(html.split('name="inviteAdd"')[1].split('</select>')[0], /Dragged Dana/, 'an NPC is not');
+    assert.doesNotMatch(html, /data-invite[ >]/, 'no drop zone for a player');
+    assert.match(html, /name="inviteSearch"/);
+    assert.match(html, /data-id="a_Fixer"/, "another player's character can be found");
+    assert.match(text(html), /Dragged Dana \(NPC\)/, 'and an NPC they have Observer on');
+    assert.doesNotMatch(html, /Hidden Hal/, 'but not one they do not');
+    assert.doesNotMatch(html, /data-id="[^"]*"[^>]*data-invite-option>Loot/, 'nor an item pile');
+
+    game.user = { ...userBefore, id: 'gm1', isGM: true };
+    html = await renderBusiness(app);
+    assert.match(html, /Hidden Hal/, 'a GM finds any NPC');
+    assert.match(html, /data-invite[ >]/, 'and has the drop zone');
+
+    const { matchInvites } = await import('../scripts/ui/Business/BusinessApp.js');
+    assert.deepEqual(matchInvites('', ['Dana', 'Hal']), [], 'nothing until something is typed');
+    assert.deepEqual(matchInvites(' da', ['Dana', 'Hal', 'Adam', 'Bo']), [0, 2], 'any part of the name, in any case');
+    assert.equal(matchInvites('a', Array(20).fill('a')).length, 8, 'and a short list');
+
+    const add = (id) => Apps.Business._onAddInvite.call(app, null, { dataset: { id } });
+    add(hidden.id);
+    assert.deepEqual(app.inviteDrafts.map((x) => [x.name, x.npc]), [['Hidden Hal', true]], 'adding from the search');
+    app.inviteDrafts = [];
 
     await drop(app, { type: 'Actor', uuid: npc.id });
     await drop(app, { type: 'Actor', uuid: npc.id });
@@ -2001,12 +2025,13 @@ test('the invite section: a drop zone and a menu, with no checkboxes, and refusa
     html = await renderBusiness(app);
     assert.match(text(html), /Dragged Dana/);
     assert.match(html, /data-action="removeInvite"/);
-    assert.doesNotMatch(html.includes('name="inviteAdd"') ? html.split('name="inviteAdd"')[1].split('</select>')[0] : '', />Fixer</, 'and out of the menu once invited');
+    assert.doesNotMatch(html, /data-action="addInvite" data-id="a_Fixer"/, 'and out of the search once invited');
     assert.match(html, /name="sweatTo"[^]*?Dragged Dana/, 'sweat equity offers who is invited');
   } finally {
     ui.notifications.warn = warn;
+    game.user = userBefore;
     delete globalThis.TextEditor;
     delete globalThis.fromUuid;
-    for (const list of [env.actors, game.actors]) list.splice(list.indexOf(npc), 2);
+    for (const list of [env.actors, game.actors]) list.splice(list.indexOf(npc), 3);
   }
 });
