@@ -1,6 +1,6 @@
 {
   "name": "night-city-investments",
-  "version": "0.21.1",
+  "version": "0.21.2",
   "private": true,
   "type": "module",
   "description": "Stock market and investments for Cyberpunk RED in Foundry VTT",

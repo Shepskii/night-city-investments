@@ -2438,7 +2438,7 @@ A story about a character also costs the business they run with the worst standi
 - **Nothing is forgotten,** so a business or faction in a district the map has lost keeps its name and numbers. `districtOf` and `isDistrict` read a list held in `businessConfig`, set from the setting, so the close and the events need no new arguments.
 - **The bridge** now places new pins by the map's current districts.
 
-**A change from the proposal.** It said the map's three extra districts were a gap to fill. Danger 0 on the map means water, and two of the three are bays, so water is not offered, and only NorCal Military Base is added.
+**A change from the proposal.** It said the map's three extra districts were a gap to fill. Danger 0 on the map means water, and two of the three are bays, so water is not offered, and only NorCal Military Base is added. The user confirmed this: bays and water regions do not count.
 
 **Limits.** The map's "Start from built-in" gives copies new ids with no link to the originals, so they get danger numbers rather than ours, and existing businesses stay in the originals. Its copies carry their Russian names in `ru` until the GM renames them, so those names reach this module's lists too. Pins already placed don't move.
 
