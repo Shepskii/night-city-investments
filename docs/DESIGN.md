@@ -1962,6 +1962,25 @@ Tested in the test world (2026-11-02): a gang's offer at neutral through the Wor
 
 **To check before building:** which of these Messenger's integration API already exposes to other modules (its `IntegrationBridge`) and which need new API in Messenger. Then, for each, whether messages are sent from the GM's client only (as now) or a player's.
 
+**Messenger's API v2, reviewed (2026-11-06, against NCM 2.1.1's `docs/API.md` and `scripts/integrations/publicApi.js`).** NCM now offers `game.modules.get('night-city-messenger').api.v2`: versioned, plain data, every method resolving to `{ok, data}` or `{ok: false, code, error}`, ready after the `night-city-messenger.apiReady` hook. The v1 fields and `game.nightcity` services stay for existing integrations, but can change. Nothing in this module or the map bridge needed changing: a code search found every service, method and hook this module calls still in 2.1.1 (not yet run against it; the test server ran 2.0.7). The map bridge doesn't use NCM.
+
+What can and can't move to v2 (all of it is behind `NcmAdapter`, except the market clock, `StoryService`'s data shards and the broker hook):
+
+| This module | Today | On v2 |
+|---|---|---|
+| Invite search, investors, staff, brokers: tag reads on players' clients | `masterContactService` | No: `directory` is GM-only, and its summaries carry no tags, alias or organization |
+| Payslips, withdrawals and living costs with claimable eddies | `messageService.sendMessage({eddies})` | No: `messages.send` has no eddies |
+| Broker orders read from a reply | `messageRepository.getMessage` for the body | No: `messages.listFor` gives a 140-character preview |
+| CorpNet gating | `networkService.isOnNetwork`, `isAuthenticated`, `requiresAuth` | No: `networks.status()` has no sign-in state |
+| Evidence as data shards | `game.nightcity.messenger.convertToDataShard` | No: v2 opens shards but doesn't make them |
+| The market clock | v1 `api.time.getCurrentTimeMs` | Yes, but v2 `time.nowMs()` falls back to real time when NCM's clock is down, where this module falls back to world time; keep ours |
+| Broker replies | `Hooks.on('night-city-messenger.message:sent')` | Already the same as v2 `events.on` |
+
+**What v2 would let this module add:** `directory.pushToPlayer` to put a broker or NPC partner in the right character's contacts (GM side); `open.composer` for a "Write to your broker" button; `contacts.resolveName` and `resolvePortrait`; `apiReady` and `features.has('networks')` in place of guessing.
+
+**What NCM's v2 would need for this module to move:** tags (with alias and organization) in contact summaries, and a tag lookup players may make without GM notes; eddies on `messages.send`; a GM read of a whole message; sign-in state in `networks.status()`; making a data shard. NCM is another author's module: these are requests, not changes made here. Its API.md also names an `INTEGRATION.md` that isn't in its `docs` folder.
+
+
 ### 36.5 Phasing
 
 | Step | What | Needs |
