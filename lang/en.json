@@ -462,6 +462,22 @@
           "strong": "Capacity well up.",
           "exceptional": "Capacity up a lot."
         },
+        "respondRoom": {
+          "fumble": "It goes badly: the full effect, as if nobody had answered, and a bad batch adds Exposure.",
+          "failure": "It falls short: half the effect.",
+          "narrow": "Dealt with.",
+          "solid": "Dealt with.",
+          "strong": "Dealt with.",
+          "exceptional": "Dealt with."
+        },
+        "respondRoomOffer": {
+          "fumble": "The job falls through, and it still adds Exposure.",
+          "failure": "The job falls through, and it still adds Exposure.",
+          "narrow": "Paid in dirty cash, with more Exposure.",
+          "solid": "Paid in dirty cash, with more Exposure.",
+          "strong": "Paid in dirty cash, with more Exposure.",
+          "exceptional": "Paid in dirty cash, with more Exposure."
+        },
         "respond": {
           "fumble": "It goes badly: 20% of the week's takings lost, and the full mark.",
           "failure": "It falls short: 10% of the week's takings lost, and half the mark.",
@@ -2696,13 +2712,13 @@
       "From": "This is {faction}'s doing.",
       "FromGang": "It's {faction}. Beating them with force (Combat Awareness, Backup or security staff) works, but they won't forget it.",
       "sabotage": { "Name": "Sabotage", "Hint": "Someone has been at the equipment overnight, and it wasn't an accident." },
-      "roomNoise": { "Name": "Too much noise", "Hint": "The back room drew a crowd, and someone filmed it. Left alone, it adds Exposure and hurts the shop's Reputation." },
-      "roomLooseEnd": { "Name": "A loose end", "Hint": "A customer of the back room is talking. Left alone, it adds a lot of Exposure." },
-      "roomBadBatch": { "Name": "A bad batch", "Hint": "The supplies were wrong. Left alone, the week's dirty cash from the room is lost and the shop's Reputation suffers." },
-      "roomFavour": { "Name": "A favour asked", "Hint": "The faction behind the back room wants something done. Left alone, your standing with them falls." },
-      "roomBooks": { "Name": "The books don't add up", "Hint": "The back room's money has left a trail. Left alone, it adds Exposure and costs some of the dirty cash." },
-      "roomRival": { "Name": "A rival operation", "Hint": "Another crew is moving in on the back room's trade. Left alone, its earnings are halved and Exposure rises." },
-      "roomBigOrder": { "Name": "An offer you can't refuse", "Hint": "A big order, from someone you'd rather not owe. Take it for dirty cash and more Exposure, whether or not the job goes well. Leave it, and nothing happens." },
+      "roomNoise": { "Name": "Too much noise", "Hint": "The back room drew a crowd, and someone filmed it.", "IfNot": "Unanswered, it adds Exposure and hurts the shop's Reputation." },
+      "roomLooseEnd": { "Name": "A loose end", "Hint": "A customer of the back room is talking.", "IfNot": "Unanswered, it adds a lot of Exposure." },
+      "roomBadBatch": { "Name": "A bad batch", "Hint": "The supplies were wrong.", "IfNot": "Unanswered, the room earns nothing this week and the shop's Reputation suffers." },
+      "roomFavour": { "Name": "A favour asked", "Hint": "The faction behind the back room wants something done.", "IfNot": "Unanswered, your standing with them falls." },
+      "roomBooks": { "Name": "The books don't add up", "Hint": "The back room's money has left a trail.", "IfNot": "Unanswered, it adds Exposure and costs a quarter of the dirty cash." },
+      "roomRival": { "Name": "A rival operation", "Hint": "Another crew is moving in on the back room's trade.", "IfNot": "Unanswered, the room's earnings are halved this week and Exposure rises." },
+      "roomBigOrder": { "Name": "An offer you can't refuse", "Hint": "A big order, from someone you'd rather not owe. Taking it adds Exposure, whether or not the job goes well, and pays in dirty cash if it does.", "IfNot": "Leave it, and nothing happens." },
       "bust": { "Name": "A raid on the back room", "Hint": "They've come for what's behind the shop, and they aren't leaving without a look." },
       "smear": { "Name": "A smear campaign", "Hint": "Ugly stories about the business are doing the rounds, and someone is paying for them." },
       "raid": { "Name": "A tipped-off raid", "Hint": "Inspectors are on the way, and they seem to know exactly where to look." },

@@ -242,7 +242,11 @@ test('every room event has words, and is answered with what the room rolls', asy
   const lang = JSON.parse(readFileSync(new URL('../lang/en.json', import.meta.url), 'utf8'));
   const kinds = Object.keys(EVENTS).filter((k) => EVENTS[k].room);
   assert.equal(kinds.length, 7);
-  for (const k of kinds) assert.ok(lang.NCI.Event[k]?.Name && lang.NCI.Event[k]?.Hint, k);
+  for (const k of kinds) assert.ok(lang.NCI.Event[k]?.Name && lang.NCI.Event[k]?.Hint && lang.NCI.Event[k]?.IfNot, k);
+  const effects = (o) => Object.values(o).find((v) => v && typeof v === 'object' && v.respondRoom)?.respondRoom ?? null;
+  const roll = Object.values(lang.NCI).map(effects).find(Boolean);
+  assert.ok(roll, 'the roll dialog has words for answering one');
+  assert.ok(!JSON.stringify(roll).includes('takings'), "and they don't claim to cost the shop's takings");
   const b = room(...KINDS.hungry);
   assert.deepEqual(eventUses(b, 'roomBadBatch'), [...BACK_ROOMS.clinic.streetPharmacy.uses]);
 });

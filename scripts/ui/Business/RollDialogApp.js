@@ -174,12 +174,14 @@ export class RollDialogApp extends BaseApplication {
     const preview = previewRoll({ base: chosen?.base ?? 0, dv: full.dv + (chosen?.dvAdd ?? chosen?.use.dvAdd ?? 0), levers });
     const pct = (x) => `${Math.round(x * 100)}%`;
     const good = this.request.type === 'respond' && EVENTS[business.period?.event?.kind]?.good;
+    // A back room's trouble leaves the shop's takings alone, so it has words of its own (U3).
+    const roomEvent = this.request.type === 'respond' && EVENTS[business.period?.event?.kind]?.room;
     const meaning = this.asked ? this.asked.meaning
       : this.request.type === 'action' ? this.request.action
       : this.request.type === 'charterRoll' ? `charter.${this.request.part}`
       : this.request.type === 'prospectusRoll' ? `prospectus.${this.request.part}`
         : ['auditRoll', 'diligenceRoll', 'recruitRoll', 'vetRoll', 'trainRoll', 'issueRoll', 'buybackRoll', 'defenceRoll', 'hideRoll'].includes(this.request.type) ? this.request.type
-        : good ? 'respondGood' : this.request.type;
+        : roomEvent ? (good ? 'respondRoomOffer' : 'respondRoom') : good ? 'respondGood' : this.request.type;
 
     return {
       title: this.rollTitle,
