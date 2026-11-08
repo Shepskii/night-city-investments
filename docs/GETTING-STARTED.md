@@ -81,7 +81,7 @@ In both the in-world modes the market only moves when in-world time passes, so a
 | Direct trading commission (basis points) | 200 | The commission on direct trades (100 = 1%). Brokers charge a share of it. |
 | Direct trading flat fee (eb) | 5 | Charged on every direct trade; brokers charge less. |
 | Terminal check DV | 13 | The DV for INT + Accounting + 1d10 to open a direct trading session. |
-| Terminal network | CORPNET | The Night City Messenger network a device must be on to trade directly. |
+| Terminal network | CORPNET | The Night City Messenger network a device must be on to trade directly. With Messenger's Network simulation off, everyone counts as connected. |
 | Session length (market days) | 1 | How long a passed check keeps direct trading open. |
 | Lockout after a failed check (market days) | 1 | How long a failed check locks a character out (a fumble doubles it). |
 | Deposit fee (eb) | 0 | A flat fee on each deposit into a brokerage balance. |

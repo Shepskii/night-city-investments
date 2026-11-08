@@ -1978,6 +1978,8 @@ What can and can't move to v2 (all of it is behind `NcmAdapter`, except the mark
 
 **What v2 would let this module add:** `directory.pushToPlayer` to put a broker or NPC partner in the right character's contacts (GM side); `open.composer` for a "Write to your broker" button; `contacts.resolveName` and `resolvePortrait`; `apiReady` and `features.has('networks')` in place of guessing.
 
+**Reviewed again against NCM 2.3.3 (2026-11-09); fixed in v0.21.5.** v2 was still 2.1.0, so the table above stands. Two things needed changing, both from NCM features since: with Network simulation off (`networkService.simple`) everyone is on CitiNet for good, which would have refused every direct trade, so that now counts as connected and signed in; and mail records the address it was sent to, so an order to a broker's alias was ignored, and `BrokerRepository.brokerFor` now follows `identityOf` and shared actors. Broker orders remain mail only: NCM's Conversations has no public event. Holding for after U3a, the user's choice: pushing contacts to players.
+
 **What NCM's v2 would need for this module to move:** tags (with alias and organization) in contact summaries, and a tag lookup players may make without GM notes; eddies on `messages.send`; a GM read of a whole message; sign-in state in `networks.status()`; making a data shard. NCM is another author's module: these are requests, not changes made here. Its API.md also names an `INTEGRATION.md` that isn't in its `docs` folder.
 
 

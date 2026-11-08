@@ -39,6 +39,21 @@ export const BrokerRepository = {
     return !!contact?.tags?.some((t) => String(t).toLowerCase() === BROKER_TAG) && !this.defs()[contactId]?.removed;
   },
 
+  /**
+   * The broker a mail reached, by any of that person's addresses. In Messenger one person can have several contacts: all
+   * linked to one character, or aliases pointing at a contact with `identityOf`. Mail records the address it was sent to.
+   * @param {{toContactId?: string, toActorId?: string}} to
+   * @returns {object|null} the contact that is the broker, the address written to first
+   */
+  brokerFor({ toContactId, toActorId }) {
+    const all = NcmAdapter.allContacts();
+    const addressed = all.find((c) => c.id === toContactId) ?? null;
+    const rootId = addressed?.identityOf ?? addressed?.id ?? null;
+    const actorId = toActorId ?? addressed?.actorId ?? all.find((c) => c.id === rootId)?.actorId ?? null;
+    const group = all.filter((c) => (rootId && (c.id === rootId || c.identityOf === rootId)) || (actorId && c.actorId === actorId));
+    return [addressed, ...group].filter(Boolean).find((c) => this.isBroker(c.id)) ?? null;
+  },
+
   /** The broker contact for a linked actor, if there is one. */
   byActor(actorId) {
     const contact = NcmAdapter.contactForActor(actorId);

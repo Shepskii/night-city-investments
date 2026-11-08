@@ -41,8 +41,9 @@ export const BrokerService = {
   /** Handler for NCM's `message:sent` hook (fires on the GM client that delivered the mail). */
   async onMessageSent(data) {
     if (!isActiveGM() || !data?.messageId) return;
-    const contactId = data.toContactId ?? BrokerRepository.byActor(data.toActorId)?.id;
-    if (!contactId || !BrokerRepository.isBroker(contactId)) return;
+    const contact = BrokerRepository.brokerFor(data);
+    if (!contact) return;
+    const contactId = contact.id;
 
     const actor = game.actors.get(data.fromActorId);
     if (!actor || !isCharacter(actor)) return;
@@ -51,8 +52,9 @@ export const BrokerService = {
     seen.add(data.messageId);
     if (seen.size > SEEN_CAP) seen.delete(seen.values().next().value);
 
-    const contact = NcmAdapter.contact(contactId);
-    const message = await NcmAdapter.getMessage([actor.id, contact?.actorId, contactId], data.messageId);
+    // An alias's mail lands in the inbox of the contact it points at, so look there too.
+    const addressed = NcmAdapter.contact(data.toContactId);
+    const message = await NcmAdapter.getMessage([actor.id, contact.actorId, contactId, data.toActorId, data.toContactId, addressed?.identityOf], data.messageId);
     const text = `${message?.subject ?? data.subject ?? ''}\n${stripHtml(message?.body)}`;
 
     try {

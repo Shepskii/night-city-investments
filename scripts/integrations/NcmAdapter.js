@@ -179,6 +179,8 @@ export const NcmAdapter = {
   networkState(networkId) {
     const net = svc('networkService');
     if (typeof net?.isOnNetwork !== 'function') return { known: false, on: false, authenticated: false, requiresAuth: false };
+    // With Messenger's Network simulation off, everyone sits on CitiNet for good and every network gate passes.
+    if (net.simple === true) return { known: true, on: true, authenticated: true, requiresAuth: false };
     const on = !!net.isOnNetwork(networkId);
     const requiresAuth = !!net.getNetwork?.(networkId)?.requiresAuth;
     const authenticated = typeof net.isAuthenticated === 'function' ? !!net.isAuthenticated(networkId) : !requiresAuth;
