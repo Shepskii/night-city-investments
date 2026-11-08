@@ -307,3 +307,129 @@ test('an offer you can\'t refuse: taken for money and Exposure, botched for Expo
   assert.equal(botched.digest.room.earned, none.digest.room.earned);
   assert.equal(left.digest.room.earned, none.digest.room.earned);
 });
+
+const withSlots = (kinds, slots, dirty = 0, extra = {}) => {
+  const b = room(...kinds, dirty);
+  Object.assign(b.backRoom, extra);
+  b.period.slots = slots.map((s) => ({ by: 'med', approach: 'standard', ...s }));
+  return b;
+};
+const closeIt = async (b) => (await import('../scripts/engine/index.js')).advanceBusiness(b, 8, { seed: 'u3b' });
+const hiddenChange = (out) => out.events.filter((e) => e.type === 'backRoomWeek').reduce((a, e) => a + e.exposure, 0);
+
+test('each profile has its own action, and no other room can use it', async () => {
+  const { roomCheck, PROFILE_ACTIONS } = await import('../scripts/engine/businessFronts.js');
+  assert.deepEqual(Object.keys(PROFILE_ACTIONS).sort(), ['connected', 'hungry', 'laundering', 'loud', 'quiet']);
+  for (const [profile, action] of Object.entries(PROFILE_ACTIONS)) {
+    const b = room(...KINDS[profile]);
+    if (profile === 'connected') Object.assign(b, { standings: { gang_x: 'friendly' } }), b.backRoom.factionId = 'gang_x';
+    assert.equal(roomCheck(b, action).ok, true, action);
+    assert.ok(roomCheck(b, action).uses.length > 0, `${action} rolls the room's skills`);
+    assert.equal(roomCheck(room(...KINDS.steady), action).reason, 'wrong-room', `${action} is not Steady's`);
+  }
+});
+
+test('a big night stands in for the week\'s work: more on a pass, double Exposure on any roll, and not again for 28 days', async () => {
+  const { roomCheck } = await import('../scripts/engine/businessFronts.js');
+  const work = await closeIt(withSlots(KINDS.loud, [{ action: 'roomWork', band: 'solid' }]));
+  const night = await closeIt(withSlots(KINDS.loud, [{ action: 'bigNight', band: 'solid' }]));
+  assert.ok(Math.abs(night.business.digests.at(-1).room.earned - work.business.digests.at(-1).room.earned * 1.5) <= 1);
+  assert.equal(hiddenChange(night), hiddenChange(work) * 2);
+  const poor = await closeIt(withSlots(KINDS.loud, [{ action: 'bigNight', band: 'failure' }]));
+  const poorWork = await closeIt(withSlots(KINDS.loud, [{ action: 'roomWork', band: 'failure' }]));
+  assert.equal(poor.business.digests.at(-1).room.earned, poorWork.business.digests.at(-1).room.earned, 'no extra on a failure');
+  assert.equal(hiddenChange(poor), hiddenChange(poorWork) * 2, 'but the Exposure doubles anyway');
+  const after = night.business;
+  assert.ok(after.backRoom.used.bigNight > 0, 'the record keeps when it was used');
+  assert.equal(roomCheck(after, 'bigNight', undefined, after.backRoom.used.bigNight + 27).reason, 'room-wait');
+  assert.equal(roomCheck(after, 'bigNight', undefined, after.backRoom.used.bigNight + 28).ok, true);
+  assert.equal(roomCheck(withSlots(KINDS.loud, [{ action: 'roomWork', band: 'solid' }]), 'bigNight').reason, 'action-taken');
+  assert.equal(roomCheck(withSlots(KINDS.loud, [{ action: 'bigNight', band: 'solid' }]), 'roomWork').reason, 'action-taken');
+});
+
+test('covering the trail sheds Exposure by the roll, and earns nothing', async () => {
+  const bands = { fumble: 0, failure: 0, narrow: -2, solid: -3, strong: -4, exceptional: -5 };
+  for (const [band, change] of Object.entries(bands)) {
+    const out = await closeIt(withSlots(KINDS.quiet, [{ action: 'coverTrail', band }]));
+    assert.equal(hiddenChange(out), change, band);
+    assert.equal(out.business.digests.at(-1).room.earned, 0);
+  }
+});
+
+test('a new supplier cuts the supply bill for four weeks, and a bad one raises the risk of a bad batch', async () => {
+  const { roomEvent } = await import('../scripts/engine/businessFronts.js');
+  const b = withSlots(KINDS.hungry, [{ action: 'newSupplier', band: 'solid' }]);
+  b.period.index = 10;
+  const done = (await closeIt(b)).business;
+  assert.deepEqual(done.backRoom.supplier, { until: 14, supply: 0.15 }, 'kept on the record through a close');
+  const work = (index, supplier) => { const x = withSlots(KINDS.hungry, [{ action: 'roomWork', band: 'solid' }]); x.period.index = index; x.backRoom.supplier = supplier; return closeIt(x); };
+  const cheap = (await work(14, { until: 14, supply: 0.15 })).business.digests.at(-1).room;
+  assert.equal(cheap.supply, Math.round(cheap.earned * 0.15));
+  const over = (await work(15, { until: 14, supply: 0.15 })).business.digests.at(-1).room;
+  assert.equal(over.supply, Math.round(over.earned * 0.25), 'and back to a quarter after');
+
+  const bad = withSlots(KINDS.hungry, [{ action: 'newSupplier', band: 'failure' }]);
+  bad.period.index = 10;
+  assert.deepEqual((await closeIt(bad)).business.backRoom.supplier, { until: 14, risk: 2 });
+  const count = (supplier) => { const x = room(...KINDS.hungry); x.backRoom.supplier = supplier; x.digests = [{ index: x.period.index - 1, actions: [{ action: 'roomWork' }] }]; return Array.from({ length: 4000 }, (_, i) => roomEvent(x, `q${i}`)).filter(Boolean).length; };
+  const until = room(...KINDS.hungry).period.index + 4;
+  assert.ok(count({ until, risk: 2 }) > count(null) * 1.6, 'twice as likely');
+});
+
+test('a favour needs standing: it stops a shakedown or sheds Exposure, and only a pass spends it', async () => {
+  const { roomCheck } = await import('../scripts/engine/businessFronts.js');
+  const connected = (slots, event, standing = 'friendly') => {
+    const b = withSlots(KINDS.connected, slots, 0, { factionId: 'gang_x' });
+    b.standings = { gang_x: standing };
+    b.period.event = event;
+    return b;
+  };
+  assert.equal(roomCheck(connected([], null, 'neutral'), 'callFavour').reason, 'favour-refused');
+  assert.equal(roomCheck(connected([], null, 'allied'), 'callFavour').ok, true);
+
+  const spend = (out) => out.events.filter((e) => e.type === 'factionMove' && e.amount === -5 && e.steady);
+  const calm = await closeIt(connected([{ action: 'callFavour', band: 'solid' }], null));
+  assert.equal(spend(calm).length, 1);
+  assert.equal(hiddenChange(calm), -5);
+  const missed = await closeIt(connected([{ action: 'callFavour', band: 'failure' }], null));
+  assert.equal(spend(missed).length, 0, 'a failure spends nothing');
+  assert.equal(hiddenChange(missed), 0);
+
+  const shaken = await closeIt(connected([{ action: 'callFavour', band: 'solid' }], { kind: 'shakedown' }));
+  assert.equal(shaken.business.digests.at(-1).event.outcome, 'covered', 'it stops the shakedown');
+  assert.equal(spend(shaken).length, 1);
+  assert.equal(hiddenChange(shaken), 0, 'instead of shedding Exposure');
+  const open = await closeIt(connected([{ action: 'callFavour', band: 'failure' }], { kind: 'shakedown' }));
+  assert.equal(open.business.digests.at(-1).event.outcome, 'unanswered');
+});
+
+test('washing for a client pays a fee in dirty cash and leaves traces', async () => {
+  const out = await closeIt(withSlots(KINDS.laundering, [{ action: 'clientWash', band: 'solid' }], 100));
+  const room2 = out.business.backRoom;
+  const fee = out.business.digests.at(-1).room.earned;
+  assert.ok(fee > 0);
+  assert.equal(room2.dirty, 100 + fee);
+  assert.equal(hiddenChange(out), 1, 'as laundering a solid roll does');
+  assert.ok(room2.used.clientWash != null);
+  const none = await closeIt(withSlots(KINDS.laundering, [{ action: 'clientWash', band: 'failure' }], 100));
+  assert.equal(none.business.backRoom.dirty, 100, 'no fee on a failure');
+  assert.equal(hiddenChange(none), 2);
+});
+
+test('a big night counts as working the room for next week\'s trouble', async () => {
+  const { roomEvent } = await import('../scripts/engine/businessFronts.js');
+  const b = room(...KINDS.loud);
+  b.digests = [{ index: b.period.index - 1, actions: [{ action: 'bigNight' }] }];
+  assert.ok(Array.from({ length: 2000 }, (_, i) => roomEvent(b, `n${i}`)).some(Boolean));
+});
+
+test('every room action has its words', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { PROFILE_ACTIONS } = await import('../scripts/engine/businessFronts.js');
+  const lang = JSON.parse(readFileSync(new URL('../lang/en.json', import.meta.url), 'utf8'));
+  const effects = Object.values(lang.NCI).map((o) => Object.values(o ?? {}).find((v) => v && typeof v === 'object' && v.bigNight && v.bigNight.fumble)).find(Boolean);
+  for (const id of Object.values(PROFILE_ACTIONS)) {
+    assert.ok(lang.NCI.Business.Action[id]?.Name && lang.NCI.Business.Action[id]?.Hint, id);
+    assert.deepEqual(Object.keys(effects[id]).sort(), ['exceptional', 'failure', 'fumble', 'narrow', 'solid', 'strong'], id);
+  }
+});

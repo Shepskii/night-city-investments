@@ -130,6 +130,10 @@ export function settleEvent(b, takings, slots, p = BUSINESS_DEFAULTS, staffCtx =
   } else if (def.security && safe && bandPassed(safe.band)) {
     outcome = 'covered';
     share = 0;
+  } else if (event.kind === 'shakedown' && slots.some((s) => s.action === 'callFavour' && bandPassed(s.band))) {
+    // A connected room's faction leans on them (U3b).
+    outcome = 'covered';
+    share = 0;
   } else {
     outcome = 'unanswered';
     share = p.events.loss.unanswered;

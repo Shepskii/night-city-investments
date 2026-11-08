@@ -175,6 +175,11 @@ export const ACTIONS = Object.freeze({
   launder: Object.freeze({ skills: [], abilities: [], help: [S.business, S.librarySearch] }),
   payOff: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.persuasion] }),
   dealGang: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.localExpert] }),
+  bigNight: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.persuasion] }),
+  coverTrail: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.librarySearch] }),
+  newSupplier: Object.freeze({ skills: [], abilities: [], help: [S.trading, S.streetwise] }),
+  callFavour: Object.freeze({ skills: [], abilities: [], help: [S.persuasion, S.streetwise] }),
+  clientWash: Object.freeze({ skills: [], abilities: [], help: [S.business, S.librarySearch] }),
   produce: Object.freeze({ skills: [], abilities: [A.maker], help: [S.basicTech, S.trading] }),
   fence: Object.freeze({ skills: [S.trading, S.streetwise], abilities: [A.operator], help: [S.business, S.localExpert] }),
 });
@@ -207,6 +212,11 @@ export const COMPANY_ACTIONS = Object.freeze({
   launder: Object.freeze({ skills: [], abilities: [], help: [S.business, S.librarySearch] }),
   payOff: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.persuasion] }),
   dealGang: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.localExpert] }),
+  bigNight: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.persuasion] }),
+  coverTrail: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.librarySearch] }),
+  newSupplier: Object.freeze({ skills: [], abilities: [], help: [S.trading, S.streetwise] }),
+  callFavour: Object.freeze({ skills: [], abilities: [], help: [S.persuasion, S.streetwise] }),
+  clientWash: Object.freeze({ skills: [], abilities: [], help: [S.business, S.librarySearch] }),
   // Corporate crime (U1c).
   dumping: Object.freeze({ skills: [S.business, Object.freeze({ ...S.trading, dvAdd: 2 })], abilities: [A.operator], help: [S.accounting, S.bureaucracy] }),
   bribeRegulator: Object.freeze({ skills: [S.bribery], abilities: [A.operator], help: [S.bureaucracy, S.persuasion] }),
@@ -597,6 +607,20 @@ export const BUSINESS_DEFAULTS = Object.freeze({
       roomBooks: Object.freeze({ exposure: 6, dirty: 0.25, bookkeeper: 0.5 }),
       roomRival: Object.freeze({ lost: 0.5, exposure: 2 }),
       roomBigOrder: Object.freeze({ pay: 1.5, exposure: 4 }),
+    }),
+    /**
+     * What each profile alone can do (U3b, DESIGN §36.14). `days` is the wait between uses. A big night stands in for the
+     * week's work: on a pass it earns `earn` times as much, and its Exposure from work is `exposure` times as much on any roll.
+     * Covering the trail moves Exposure by band. A new supplier sets the supply share to `supply` for `weeks` on a pass, and on
+     * a failure makes a bad batch `risk` times as likely for as long. A favour costs `cost` standing, and takes `exposure` off
+     * or stops a shakedown. A client's wash pays `fee` of what the same roll could launder, in dirty cash.
+     */
+    actions: Object.freeze({
+      bigNight: Object.freeze({ earn: 1.5, exposure: 2, days: 28 }),
+      coverTrail: Object.freeze({ exposure: byBand([0, 0, -2, -3, -4, -5]) }),
+      newSupplier: Object.freeze({ supply: 0.15, weeks: 4, risk: 2, days: 28 }),
+      callFavour: Object.freeze({ cost: 5, exposure: -5, bands: Object.freeze(['friendly', 'allied']) }),
+      clientWash: Object.freeze({ fee: 0.5, days: 28 }),
     }),
     share: 0.6,
     workExposure: byBand([8, 4, 3, 2, 1, 1]),

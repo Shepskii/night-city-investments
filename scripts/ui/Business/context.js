@@ -12,7 +12,7 @@ import {
   projectOffer, PROJECT_KINDS, upgradesOf, protectionFactor, headcountOf,
   BACK_ROOMS, kindProfile, activeStaff, benchesOf, fenceCheck, fencePrice, hasIllegalStock, hasWorkshop, illegalAllowed, looseStock, salePrice, salesLimit, makesThings, produceCheck, runOffer, tierOf, topTierOf,
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
-  actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent, supplyCut, actionFor, ROOM_ACTIONS, roomKinds, openRoom, payOffCost, CRIME_ACTIONS, dealCut, SECRET_ACTIONS, SECRET_LEDGER,
+  actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent, supplyCut, actionFor, ROOM_ACTIONS, PROFILE_ACTIONS, roomCheck, roomKinds, openRoom, payOffCost, CRIME_ACTIONS, dealCut, SECRET_ACTIONS, SECRET_LEDGER,
   POST_IDS, POSTS, levelOf, postBest, staffBase, postRate, askingWage, postOpen, postOffered, recruitCheck, archetypeOf,
   hasLoyalty, loyaltyBand, teamRefuses, onTimeOff, teamCareCheck, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
@@ -590,6 +590,21 @@ function productionContext(business, actor, canAct) {
 
 const BACK_ROOM_TAB = Object.freeze([...SECRET_ACTIONS, 'shortcuts', 'campaign']);
 
+const isProfileAction = (id) => Object.values(PROFILE_ACTIONS).includes(id);
+/** What a room can do: every room's actions, and the one its profile has (U3b). */
+const roomActionsFor = (business) => {
+  const own = PROFILE_ACTIONS[kindProfile(business.archetype, business.backRoom.kind)];
+  return ROOM_ACTIONS.filter((id) => !isProfileAction(id) || id === own);
+};
+/** Why a room's own action can't be used yet, if there is a reason the player can act on. */
+function roomActionNote(business, id) {
+  const day = BusinessClient.day();
+  const check = roomCheck(business, id, BUSINESS_DEFAULTS, day);
+  if (check.reason === 'room-wait') return L('NCI.BackRoom.ActionWait', { days: BUSINESS_DEFAULTS.backRoom.actions[id].days - (day - business.backRoom.used[id]) });
+  if (check.reason === 'favour-refused') return L('NCI.BackRoom.FavourNeeds', { name: business.backRoom.factionName ?? '' });
+  return '';
+}
+
 /** The days this account has for business work: this week's, or with Crew Tools their downtime (B7b). */
 const daysFor = (business, account) => daysLeft(business, account.id, CrewToolsAdapter.params(account, business));
 
@@ -628,7 +643,7 @@ function weekContext(business, actor, canAct) {
     daysText: canAct ? daysLine(business, actor) : '',
     // A chartered company has the five company actions; a smaller business the shop actions.
     // Crime is hidden from those not running a company (U1).
-    actions: [...actionIdsFor(business.stage), ...(hasWorkshop(business) ? ['produce'] : []), ...(openRoom(business) ? ROOM_ACTIONS : []), ...(makesThings(business) && (business.stage >= 2 || openRoom(business)) ? ['fence'] : [])].filter((id) => !(business.stage >= 2 && !runs && (SECRET_ACTIONS.includes(id) || (id === 'produce' && business.production?.line?.illegal)))).filter((id) => !(['campaign', 'blackOps', 'dealGang'].includes(id) || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).filter((id) => !CRIME_ACTIONS.includes(id) || underworldOn(business) || (id === 'fence' && hasIllegalStock(business))).filter((id) => id !== 'dealGang' || !business.backRoom?.deal).map((id) => {
+    actions: [...actionIdsFor(business.stage), ...(hasWorkshop(business) ? ['produce'] : []), ...(openRoom(business) ? roomActionsFor(business) : []), ...(makesThings(business) && (business.stage >= 2 || openRoom(business)) ? ['fence'] : [])].filter((id) => !(business.stage >= 2 && !runs && (SECRET_ACTIONS.includes(id) || (id === 'produce' && business.production?.line?.illegal)))).filter((id) => !(['campaign', 'blackOps', 'dealGang'].includes(id) || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).filter((id) => !CRIME_ACTIONS.includes(id) || underworldOn(business) || (id === 'fence' && hasIllegalStock(business))).filter((id) => id !== 'dealGang' || !business.backRoom?.deal).map((id) => {
       const slot = taken.get(id);
       const bonus = period.bonuses.some((b) => b.action === id && !b.used);
       return {
@@ -640,11 +655,12 @@ function weekContext(business, actor, canAct) {
         aimedAt: slot?.factionName ? L('NCI.Business.AimedAt', { name: slot.factionName }) : '',
         aim: aimOf(id),
         canRoll: runs && free && !slot && !((id === 'campaign' || id === 'blackOps') && (business.campaign || campaignWait(business, BusinessClient.day()) > 0))
-          && !(id === 'roomWork' && period.slots.some((s) => s.action === 'lieLow'))
+          && !(id === 'roomWork' && period.slots.some((s) => s.action === 'lieLow' || s.action === 'bigNight'))
+          && !(isProfileAction(id) && !roomCheck(business, id, BUSINESS_DEFAULTS, BusinessClient.day()).ok)
           && !(id === 'produce' && !produceCheck(business).ok)
           && !(id === 'fence' && !fenceCheck(business).ok),
         canHelp: canAct && !helped && !slot && !(id === 'produce' && !produceCheck(business).ok) && !(id === 'fence' && !fenceCheck(business).ok),
-        waiting: id === 'produce' ? produceNote(business) : id === 'fence' ? fenceNote(business) : id === 'campaign' || id === 'blackOps' ? campaignNote(business) : id === 'bribeRegulator' ? L('NCI.Business.BribeCost', { cost: whole(BUSINESS_DEFAULTS.crime.bribeCost) }) : id === 'supply' ? supplyNote(business) : id === 'payOff' ? L('NCI.BackRoom.PayOffCost', { cost: whole(payOffCost(business)) }) : '',
+        waiting: isProfileAction(id) ? roomActionNote(business, id) : id === 'produce' ? produceNote(business) : id === 'fence' ? fenceNote(business) : id === 'campaign' || id === 'blackOps' ? campaignNote(business) : id === 'bribeRegulator' ? L('NCI.Business.BribeCost', { cost: whole(BUSINESS_DEFAULTS.crime.bribeCost) }) : id === 'supply' ? supplyNote(business) : id === 'payOff' ? L('NCI.BackRoom.PayOffCost', { cost: whole(payOffCost(business)) }) : '',
       };
     }),
     helped: actor && helped && canAct ? L('NCI.Business.AlreadyHelped') : '',
@@ -707,7 +723,7 @@ function backRoomContext(business, runs, canAct, free) {
     max: room.dirty ?? 0,
     last: last ? L(last.low ? 'NCI.BackRoom.LastLow' : last.supply ? 'NCI.BackRoom.LastSupply' : 'NCI.BackRoom.Last', { earned: whole(last.earned), supply: whole(last.supply ?? 0), laundered: whole(last.laundered), paid: whole(last.paid) }) : '',
     canTake: runs && room.status === 'open' && room.dirty > 0,
-    canLieLow: runs && free && room.status === 'open' && !business.period.slots.some((s) => s.action === 'lieLow' || s.action === 'roomWork'),
+    canLieLow: runs && free && room.status === 'open' && !business.period.slots.some((s) => ['lieLow', 'roomWork', 'bigNight'].includes(s.action)),
     lying: business.period.slots.some((s) => s.action === 'lieLow') ? L('NCI.BackRoom.Lying') : '',
     takeHint: L('NCI.BackRoom.TakeHint', { every: whole(BUSINESS_DEFAULTS.backRoom.takeEvery), exposure: BUSINESS_DEFAULTS.backRoom.takeExposure }),
   };

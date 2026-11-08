@@ -496,7 +496,7 @@ export function staffShifts(b, seed = 'nci', p = BUSINESS_DEFAULTS, { idle = nul
   const room = b.backRoom?.status === 'open' ? b.backRoom : null;
   if (!taken('lieLow')) {
     const hand = staff.find((s) => s.post === 'hand');
-    if (hand && room && !taken('roomWork')) shift(hand, 'hand', 'roomWork');
+    if (hand && room && !taken('roomWork') && !taken('bigNight')) shift(hand, 'hand', 'roomWork');
     // The Hand moves illegal goods too, on top of the room's work; legal stock is for a partner to decide (P1c).
     if (hand && room && !taken('fence') && hasIllegalStock(b)) shift(hand, 'hand', 'fence');
     const launderer = staff.find((s) => s.post === 'launderer');

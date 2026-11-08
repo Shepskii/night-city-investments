@@ -2450,6 +2450,8 @@ A story about a character also costs the business they run with the worst standi
 
 **The simulator's answer** (`npm run simulate:backrooms`, 1,500 years a run, roll base 12, kept eb a week, without events, then 8%, then 10%): Steady 151, 151, 150. Loud 172, 167, 163. Quiet 121, 122, 123. Hungry 148, 147, 141. Connected 69, 69, 71. Laundering 142, 137, 135. Share of rooms shut in a year moved by 3 points at most, and the small room with a weak crew stayed at 92%. So 8% it is: the events add incident without undoing §36.12's balance. A skilled crew answers most of them, so they cost little. Reputation and standing aren't priced by the simulator.
 
+**U3b as built (2026-11-09, local).** `PROFILE_ACTIONS` and `backRoom.actions`; the five actions join `ROOM_ACTIONS`, so at a company only officers see them. A big night **replaces** the week's room work, as a shop has one action a week, and counts as working the room. A favour stops this week's shakedown if there is one, and otherwise sheds Exposure, with no choice to make; a failed roll spends nothing. A client's wash pays half of what the same roll could launder (the map left this open). The new supplier's effect lasts four weeks from the week it's used. The simulator doesn't model these actions.
+
 **Parts, if built, shown in turn.** U3a: the room event table in the engine, the seven events and the simulator's numbers. U3b: the actions on the Back Room tab. U3c: each kind's words, scenes, how they look at a company, and the guides.
 
 ### 36.15 Districts from Night City Map (the user's choice, 2026-11-05)

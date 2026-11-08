@@ -15,7 +15,12 @@ import { exposureBand } from './businessCompany.js';
 import { traitOf } from './businessStaff.js';
 import { seizeIllegal } from './businessProduction.js';
 
-export const ROOM_ACTIONS = Object.freeze(['roomWork', 'launder', 'payOff', 'dealGang']);
+/** The one thing each profile alone can do (U3b). */
+export const PROFILE_ACTIONS = Object.freeze({ loud: 'bigNight', quiet: 'coverTrail', hungry: 'newSupplier', connected: 'callFavour', laundering: 'clientWash' });
+export const ROOM_ACTIONS = Object.freeze(['roomWork', 'launder', 'payOff', 'dealGang', ...Object.values(PROFILE_ACTIONS)]);
+const PROFILE_ACTION_IDS = Object.values(PROFILE_ACTIONS);
+/** Whether this action works the room for the week: earns, and can draw trouble the week after. */
+const WORK_ACTIONS = Object.freeze(['roomWork', 'bigNight']);
 /** A company's crime (U1c), which a world's underworld setting hides. */
 export const CRIME_ACTIONS = Object.freeze(['dumping', 'bribeRegulator', 'blackOps', 'fence']);
 /** What only those running a company should see of its crime: slots, and ledger lines, which others see in plain words. */
@@ -43,12 +48,25 @@ export function payOffCost(b, p = BUSINESS_DEFAULTS) {
 }
 
 /** Whether one of the back room's actions can be taken, and the skills it is rolled with. */
-export function roomCheck(b, action, p = BUSINESS_DEFAULTS) {
+export function roomCheck(b, action, p = BUSINESS_DEFAULTS, day = null) {
   const room = openRoom(b);
   if (!room) return fail('no-back-room');
+  if (PROFILE_ACTION_IDS.includes(action)) {
+    if (PROFILE_ACTIONS[kindProfile(b.archetype, room.kind)] !== action) return fail('wrong-room');
+    const rules = p.backRoom.actions[action];
+    const last = room.used?.[action];
+    if (rules.days && day != null && last != null && day - last < rules.days) return fail('room-wait');
+    if (action === 'bigNight') {
+      if (b.period.slots.some((s) => s.action === 'lieLow')) return fail('lying-low');
+      if (b.period.slots.some((s) => s.action === 'roomWork')) return fail('action-taken');
+    }
+    if (action === 'callFavour' && !(room.factionId && rules.bands.includes(b.standings?.[room.factionId]))) return fail('favour-refused');
+    return { ok: true, uses: BACK_ROOMS[b.archetype]?.[room.kind]?.uses ?? [] };
+  }
   if (action === 'roomWork') {
-    // Lying low means no work behind the shop this week.
+    // Lying low means no work behind the shop this week, and a big night is the week's work.
     if (b.period.slots.some((s) => s.action === 'lieLow')) return fail('lying-low');
+    if (b.period.slots.some((s) => s.action === 'bigNight')) return fail('action-taken');
     return { ok: true, uses: BACK_ROOMS[b.archetype]?.[room.kind]?.uses ?? [] };
   }
   if (action === 'dealGang') return room.deal ? fail('has-deal') : { ok: true, uses: p.backRoom.deal.uses };
@@ -72,15 +90,19 @@ export function roomWeek(b, takings, part = 1, p = BUSINESS_DEFAULTS, traits = n
   if (slot('lieLow')) {
     out.low = true;
     out.exposure -= rules.lieLow;
-  } else if (slot('roomWork')) {
-    const work = slot('roomWork');
+  } else if (slot('roomWork') || slot('bigNight')) {
+    const work = slot('roomWork') ?? slot('bigNight');
+    const big = work.action === 'bigNight' ? rules.actions.bigNight : null;
     const scale = 1 + (p.effects.work[work.band] - 1) * approachOf(work.approach).effect * profile.swing;
     // What this week's event cost it (U3).
     const kept = 1 - Math.min(1, b.period.roomLost ?? 0);
-    out.earned = work.band === 'fumble' ? 0 : Math.round(archetypeOf(b).takings * b.state.capacity * rules.share * scale * profile.earn * part * kept);
-    out.supply = Math.round(out.earned * profile.supply);
+    const night = big && bandPassed(work.band) ? big.earn : 1;
+    out.earned = work.band === 'fumble' ? 0 : Math.round(archetypeOf(b).takings * b.state.capacity * rules.share * scale * profile.earn * part * kept * night);
+    // A supplier found this month changes what the stock costs (U3b).
+    const supplier = room.supplier && room.supplier.until >= b.period.index ? room.supplier : null;
+    out.supply = Math.round(out.earned * (supplier?.supply ?? profile.supply));
     room.dirty += out.earned - out.supply;
-    out.exposure += rules.workExposure[work.band] * profile.exposure - profile.quietWeek;
+    out.exposure += rules.workExposure[work.band] * profile.exposure * (big?.exposure ?? 1) - profile.quietWeek;
     // A connected room's work keeps it in with the faction it chose.
     if (profile.standing && room.factionId) out.standing = { factionId: room.factionId, amount: profile.standing };
   }
@@ -89,6 +111,30 @@ export function roomWeek(b, takings, part = 1, p = BUSINESS_DEFAULTS, traits = n
     out.earned += b.period.roomBonus;
     room.dirty += b.period.roomBonus;
   }
+  // What only this kind of room can do (U3b).
+  const passed = (s) => !!s && bandPassed(s.band);
+  const cover = slot('coverTrail');
+  if (cover) out.exposure += rules.actions.coverTrail.exposure[cover.band];
+  const sourced = slot('newSupplier');
+  if (sourced) {
+    const r = rules.actions.newSupplier;
+    room.supplier = { until: b.period.index + r.weeks, ...(passed(sourced) ? { supply: r.supply } : { risk: r.risk }) };
+  }
+  const favour = slot('callFavour');
+  if (passed(favour) && room.factionId) {
+    const r = rules.actions.callFavour;
+    out.favour = { factionId: room.factionId, amount: -r.cost };
+    // A shakedown it stopped has been dealt with already: otherwise it quietens things.
+    if (b.period.event?.kind !== 'shakedown') out.exposure += r.exposure;
+  }
+  const wash = slot('clientWash');
+  if (wash) {
+    const fee = Math.round(takings * rules.launderCap * profile.launder * rules.launderShare[wash.band] * rules.actions.clientWash.fee);
+    room.dirty += fee;
+    out.earned += fee;
+    out.exposure += rules.launderExposure[wash.band];
+  }
+  for (const id of PROFILE_ACTION_IDS) if (slot(id) && rules.actions[id].days) room.used = { ...room.used, [id]: day };
   // A silent partner takes its cut, whether or not there was much to cut (U1c).
   if (room.deal) {
     const due = Math.max(rules.deal.minimum, Math.round(out.earned * room.deal.cut));
@@ -187,10 +233,12 @@ export function roomEvent(b, seed = 'nci', p = BUSINESS_DEFAULTS, relations = nu
   const room = openRoom(b);
   if (!room || b.stage >= 2) return null;
   const last = lastDigest(b);
-  if (last?.index !== b.period.index - 1 || !(last.actions ?? []).some((a) => a.action === 'roomWork')) return null;
+  if (last?.index !== b.period.index - 1 || !(last.actions ?? []).some((a) => WORK_ACTIONS.includes(a.action))) return null;
   const rules = p.backRoom.events;
   const rng = createRng(seed, 'business-room-event', b.id, b.period.index);
-  if (!rng.chance(rules.chance * (relations?.roomEvents ?? 1))) return null;
+  // A failed search for a supplier makes a bad batch likelier for a while (U3b).
+  const risky = kindProfile(b.archetype, room.kind) === 'hungry' && room.supplier?.risk && room.supplier.until >= b.period.index ? room.supplier.risk : 1;
+  if (!rng.chance(rules.chance * (relations?.roomEvents ?? 1) * risky)) return null;
   const shared = rng.chance(rules.shared);
   const profile = kindProfile(b.archetype, room.kind);
   let own = rules.byProfile[profile] ?? null;

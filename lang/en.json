@@ -558,6 +558,46 @@
           "strong": "Their price falls about 4%.",
           "exceptional": "Their price falls about 4%, and nobody knows why."
         },
+        "bigNight": {
+          "fumble": "A disaster: nothing earned, and a great deal of Exposure.",
+          "failure": "A poor night: less earned, and a lot more Exposure.",
+          "narrow": "Half as much again, with double the Exposure.",
+          "solid": "Half as much again on a good week, with double the Exposure.",
+          "strong": "Half as much again on a strong week, with double the Exposure.",
+          "exceptional": "Half as much again on its best week, with double the Exposure."
+        },
+        "coverTrail": {
+          "fumble": "Nothing comes of it.",
+          "failure": "Nothing comes of it.",
+          "narrow": "Exposure down a little.",
+          "solid": "Exposure down.",
+          "strong": "Exposure well down.",
+          "exceptional": "Exposure down a lot."
+        },
+        "newSupplier": {
+          "fumble": "A bad contact: a bad batch is twice as likely for four weeks.",
+          "failure": "A bad contact: a bad batch is twice as likely for four weeks.",
+          "narrow": "Supplies cost less for four weeks.",
+          "solid": "Supplies cost less for four weeks.",
+          "strong": "Supplies cost less for four weeks.",
+          "exceptional": "Supplies cost less for four weeks."
+        },
+        "callFavour": {
+          "fumble": "They aren't interested, and no standing is spent.",
+          "failure": "They aren't interested, and no standing is spent.",
+          "narrow": "Done, at a cost in standing.",
+          "solid": "Done, at a cost in standing.",
+          "strong": "Done, at a cost in standing.",
+          "exceptional": "Done, at a cost in standing."
+        },
+        "clientWash": {
+          "fumble": "No fee, and it leaves a clear trail.",
+          "failure": "No fee, and it leaves traces.",
+          "narrow": "A small fee in dirty cash, with traces.",
+          "solid": "A fair fee in dirty cash, with few traces.",
+          "strong": "A full fee in dirty cash, and almost no trace.",
+          "exceptional": "A full fee in dirty cash, and no trace."
+        },
         "roomWork": {
           "fumble": "It goes wrong: nothing earned, and a lot more Exposure.",
           "failure": "A poor week: less earned, and more Exposure.",
@@ -2466,6 +2506,8 @@
       "ProfileLine": "{profile}: {hint}",
       "ProjectName": "a back room, {kind}",
       "Rolls": "Rolls {uses}.",
+      "ActionWait": "Again in {days} day(s).",
+      "FavourNeeds": "Needs friendly standing or better with {name}.",
       "ChooseFaction": "Connected with",
       "ConnectedTo": "Connected with {name}.",
       "Profile": {
@@ -2974,6 +3016,11 @@
         "keepSafe": { "Name": "Keep it safe", "Hint": "Tactics, Persuasion, Combat Awareness or Backup: less protection money this week." },
         "court": { "Name": "Court a client", "Hint": "Business, Persuasion, Trading, Operator, Charismatic Impact or Credibility: raises standing with a corporation." },
         "respects": { "Name": "Pay respects", "Hint": "Streetwise, Persuasion, Operator or Charismatic Impact: raises standing with a gang." },
+        "bigNight": { "Name": "A big night", "Hint": "With the room's own skills, in place of the week's work: half as much dirty cash again on a pass, and twice the Exposure from work whatever the roll. Once in 28 days." },
+        "coverTrail": { "Name": "Cover the trail", "Hint": "With the room's own skills: earns nothing, costs nothing, and sheds Exposure on a pass." },
+        "newSupplier": { "Name": "Find a new supplier", "Hint": "With the room's own skills: on a pass, supplies cost 15% of what it earns instead of 25% for four weeks. On a failure, a bad batch is twice as likely for as long. Once in 28 days." },
+        "callFavour": { "Name": "Call in a favour", "Hint": "With the room's own skills, at friendly or better with its faction: on a pass, spends 5 standing to stop this week's shakedown, or to shed 5 Exposure if there is none." },
+        "clientWash": { "Name": "Wash for a client", "Hint": "With the room's own skills: earns a fee in dirty cash, and leaves traces as laundering does. Once in 28 days." },
         "roomWork": { "Name": "Work the back room", "Hint": "With its own skills: dirty cash, off the books. It always adds some Exposure, and more on a poor roll." },
         "launder": { "Name": "Launder", "Hint": "Accounting or Business (Bribery at DV +2): moves dirty cash into the business's cash, up to 30% of the week's takings. A poor roll leaves traces, and a bookkeeper helps." },
         "payOff": { "Name": "Pay someone off", "Hint": "Bribery: cuts Exposure, paid from the dirty cash. A fumble makes it worse." },
@@ -3513,6 +3560,9 @@
         "no-back-room": "the business has no back room running",
         "has-back-room": "the business already has one",
         "lying-low": "the business is lying low this week",
+        "wrong-room": "this back room can't do that",
+        "room-wait": "not again so soon",
+        "favour-refused": "its faction won't do favours unless you stand friendly or better with them",
         "no-dirty": "there is not enough dirty cash",
         "not-at-company": "not at a chartered company",
         "not-lawman": "that takes the Lawman role's Backup",

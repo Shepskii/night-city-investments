@@ -330,7 +330,7 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     if (request.action === 'bribeRegulator' && b.till < p.crime.bribeCost) return fail('no-funds');
     const bonusAvailable = b.period.bonuses.some((x) => x.action === request.action && !x.used);
     // The back room's actions need it open, and its kind says how it is worked (U1a).
-    const room = ROOM_ACTIONS.includes(request.action) ? roomCheck(b, request.action, p) : null;
+    const room = ROOM_ACTIONS.includes(request.action) ? roomCheck(b, request.action, p, day) : null;
     if (room && !room.ok) return room;
     // A run takes a workshop and a line, and rolls at the book's DV for the item (P1a).
     const run = request.action === 'produce' ? produceCheck(b, p) : null;
@@ -675,7 +675,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (me?.status !== 'active' || !me.voting || !canRun(b, actor.id)) return fail('not-partner');
       if (!openRoom(b)) return fail('no-back-room');
       if (b.period.slots.length >= (p.stages[b.stage]?.slots ?? 1)) return fail('no-slot');
-      if (b.period.slots.some((s) => s.action === 'lieLow' || s.action === 'roomWork' || s.action === 'fence')) return fail('action-taken');
+      if (b.period.slots.some((s) => ['lieLow', 'roomWork', 'bigNight', 'fence'].includes(s.action))) return fail('action-taken');
       b.period.slots.push({ action: 'lieLow', by: actor.id, use: 'none', band: 'solid', total: 0, dv: 0, approach: 'standard', luck: 0, bonus: 0 });
       break;
     }
@@ -1823,6 +1823,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   if (room?.exposure) out.events.push({ type: 'backRoomWeek', exposure: room.exposure });
   if (room?.unpaid) out.events.push({ type: 'factionMove', factionId: room.unpaid, amount: p.backRoom.deal.unpaid });
   if (room?.standing) out.events.push({ type: 'factionMove', ...room.standing, steady: true });
+  if (room?.favour) out.events.push({ type: 'factionMove', ...room.favour, steady: true });
   if (room?.dealEnded) out.events.push({ type: 'gangDealEnded', name: room.dealEnded });
   const turned = turnInformant(b, traits, seed, p);
   if (turned) out.traits = { ...out.traits, ...turned };
