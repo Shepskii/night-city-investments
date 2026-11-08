@@ -9,7 +9,7 @@
  */
 
 import { createRng } from './rng.js';
-import { EVENTS, ABILITIES, BUSINESS_DEFAULTS, districtOf } from './businessConfig.js';
+import { EVENTS, ABILITIES, BUSINESS_DEFAULTS, BACK_ROOMS, districtOf } from './businessConfig.js';
 import { archetypeOf, clamp } from './businessRecord.js';
 import { bandPassed } from './rolls.js';
 import { staffEventWeight, staffEventTarget, settleStaffEvent } from './businessPeople.js';
@@ -85,7 +85,9 @@ export function eventUses(b, kind) {
   const e = EVENTS[kind];
   if (!e) return [];
   const seen = new Set();
-  return [...(e.trade ? archetypeOf(b)?.trade ?? [] : []), ...e.uses].filter((u) => {
+  // A back room's own trouble is answered with what that room rolls (U3).
+  const own = e.room ? BACK_ROOMS[b.archetype]?.[b.backRoom?.kind]?.uses ?? [] : [];
+  return [...(e.trade ? archetypeOf(b)?.trade ?? [] : []), ...own, ...e.uses].filter((u) => {
     const key = u.kind === 'ability' ? `a:${u.ability}` : `s:${u.skill}`;
     if (seen.has(key)) return false;
     seen.add(key);
@@ -108,6 +110,12 @@ export function settleEvent(b, takings, slots, p = BUSINESS_DEFAULTS, staffCtx =
   if (def.staff) return settleStaffEvent(b, takings, slots, staffCtx, p);
   const answer = slots.find((s) => s.action === 'respond');
   const safe = slots.find((s) => s.action === 'keepSafe');
+
+  // A back room's event leaves the shop's takings alone: `roomEventFallout` does the rest (U3).
+  if (def.room) {
+    const outcome = !answer ? 'unanswered' : answer.band === 'fumble' ? 'fumbled' : bandPassed(answer.band) ? 'answered' : 'failed';
+    return { kind: event.kind, outcome, band: answer?.band ?? null, change: 0 };
+  }
 
   if (def.good) {
     const band = answer?.band ?? null;

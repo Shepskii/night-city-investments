@@ -39,6 +39,7 @@ export const SETTINGS = Object.freeze({
   BROKER_DEFS: 'brokerDefs',
   FACTION_DEFS: 'factionDefs',
   DISTRICT_DEFS: 'districtDefs',
+  ROOM_EVENTS: 'roomEventFrequency',
   DATE_FORMAT: 'dateFormat',
   PRODUCTION_CATALOG: 'productionCatalog',
   FUND_DEFS: 'fundDefs',

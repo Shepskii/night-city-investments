@@ -1754,6 +1754,13 @@
         "Name": "Business days come from Crew Tools downtime",
         "Hint": "On: extra time, project days and mentoring spend a character's Crew Tools downtime, and there is no weekly allowance, so business work competes with their other downtime. Remember to award days, and to open Downtime once for each character. Off: 3 business days a week for each voting partner."
       },
+      "RoomEvents": {
+        "Name": "Back room events",
+        "Hint": "How often a back room that was worked last week draws trouble of its own.",
+        "Rare": "Rare",
+        "Normal": "Normal",
+        "Often": "Often"
+      },
       "DateFormat": {
         "Name": "Date format",
         "Hint": "How dates show in this module's windows and mails, for everyone. Mails already sent keep the format they had."
@@ -2689,6 +2696,13 @@
       "From": "This is {faction}'s doing.",
       "FromGang": "It's {faction}. Beating them with force (Combat Awareness, Backup or security staff) works, but they won't forget it.",
       "sabotage": { "Name": "Sabotage", "Hint": "Someone has been at the equipment overnight, and it wasn't an accident." },
+      "roomNoise": { "Name": "Too much noise", "Hint": "The back room drew a crowd, and someone filmed it. Left alone, it adds Exposure and hurts the shop's Reputation." },
+      "roomLooseEnd": { "Name": "A loose end", "Hint": "A customer of the back room is talking. Left alone, it adds a lot of Exposure." },
+      "roomBadBatch": { "Name": "A bad batch", "Hint": "The supplies were wrong. Left alone, the week's dirty cash from the room is lost and the shop's Reputation suffers." },
+      "roomFavour": { "Name": "A favour asked", "Hint": "The faction behind the back room wants something done. Left alone, your standing with them falls." },
+      "roomBooks": { "Name": "The books don't add up", "Hint": "The back room's money has left a trail. Left alone, it adds Exposure and costs some of the dirty cash." },
+      "roomRival": { "Name": "A rival operation", "Hint": "Another crew is moving in on the back room's trade. Left alone, its earnings are halved and Exposure rises." },
+      "roomBigOrder": { "Name": "An offer you can't refuse", "Hint": "A big order, from someone you'd rather not owe. Take it for dirty cash and more Exposure, whether or not the job goes well. Leave it, and nothing happens." },
       "bust": { "Name": "A raid on the back room", "Hint": "They've come for what's behind the shop, and they aren't leaving without a look." },
       "smear": { "Name": "A smear campaign", "Hint": "Ugly stories about the business are doing the rounds, and someone is paying for them." },
       "raid": { "Name": "A tipped-off raid", "Hint": "Inspectors are on the way, and they seem to know exactly where to look." },

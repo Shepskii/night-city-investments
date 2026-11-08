@@ -7,8 +7,8 @@
  *              more of a trail. Every step adds to or cuts the business's hidden Exposure. Pure.
  */
 
-import { BUSINESS_DEFAULTS, BACK_ROOMS, POSTS } from './businessConfig.js';
-import { fail, addLedger, archetypeOf } from './businessRecord.js';
+import { BUSINESS_DEFAULTS, BACK_ROOMS, EVENTS, POSTS } from './businessConfig.js';
+import { fail, addLedger, archetypeOf, lastDigest, clamp } from './businessRecord.js';
 import { approachOf, bandPassed } from './rolls.js';
 import { createRng } from './rng.js';
 import { exposureBand } from './businessCompany.js';
@@ -75,12 +75,19 @@ export function roomWeek(b, takings, part = 1, p = BUSINESS_DEFAULTS, traits = n
   } else if (slot('roomWork')) {
     const work = slot('roomWork');
     const scale = 1 + (p.effects.work[work.band] - 1) * approachOf(work.approach).effect * profile.swing;
-    out.earned = work.band === 'fumble' ? 0 : Math.round(archetypeOf(b).takings * b.state.capacity * rules.share * scale * profile.earn * part);
+    // What this week's event cost it (U3).
+    const kept = 1 - Math.min(1, b.period.roomLost ?? 0);
+    out.earned = work.band === 'fumble' ? 0 : Math.round(archetypeOf(b).takings * b.state.capacity * rules.share * scale * profile.earn * part * kept);
     out.supply = Math.round(out.earned * profile.supply);
     room.dirty += out.earned - out.supply;
     out.exposure += rules.workExposure[work.band] * profile.exposure - profile.quietWeek;
     // A connected room's work keeps it in with the faction it chose.
     if (profile.standing && room.factionId) out.standing = { factionId: room.factionId, amount: profile.standing };
+  }
+  // A big order taken this week (U3), worked or not.
+  if (b.period.roomBonus) {
+    out.earned += b.period.roomBonus;
+    room.dirty += b.period.roomBonus;
   }
   // A silent partner takes its cut, whether or not there was much to cut (U1c).
   if (room.deal) {
@@ -169,6 +176,60 @@ export function raidChance(b, exposure, traits = null, p = BUSINESS_DEFAULTS) {
 export function roomBust(b, seed = 'nci', p = BUSINESS_DEFAULTS, relations = null, traits = null) {
   if (!openRoom(b) || relations?.exposure == null) return null;
   return createRng(seed, 'business-bust', b.id, b.period.index).chance(raidChance(b, relations.exposure, traits, p)) ? { kind: 'bust' } : null;
+}
+
+/**
+ * What goes wrong in a back room this week, or none (U3). Only a room worked last week draws one. A company's room is
+ * left out until its events can pass for something else to the other shareholders (U3c).
+ * @param {object} [relations] - `roomEvents`, the world's frequency
+ */
+export function roomEvent(b, seed = 'nci', p = BUSINESS_DEFAULTS, relations = null) {
+  const room = openRoom(b);
+  if (!room || b.stage >= 2) return null;
+  const last = lastDigest(b);
+  if (last?.index !== b.period.index - 1 || !(last.actions ?? []).some((a) => a.action === 'roomWork')) return null;
+  const rules = p.backRoom.events;
+  const rng = createRng(seed, 'business-room-event', b.id, b.period.index);
+  if (!rng.chance(rules.chance * (relations?.roomEvents ?? 1))) return null;
+  const shared = rng.chance(rules.shared);
+  const profile = kindProfile(b.archetype, room.kind);
+  let own = rules.byProfile[profile] ?? null;
+  // A connected room opened where there are no factions has nobody to ask it a favour.
+  if (own === 'roomFavour' && !room.factionId) own = null;
+  if (shared) return { kind: rng.chance(0.5) ? 'roomRival' : 'roomBigOrder' };
+  if (!own) return null;
+  // A bookkeeper keeps the trail tidier.
+  if (own === 'roomBooks' && (b.staff ?? []).some((s) => s.status === 'active' && s.post === 'bookkeeper') && rng.chance(rules.roomBooks.bookkeeper)) return null;
+  return { kind: own };
+}
+
+/**
+ * What a back room's event leaves behind, once it is settled: a passed answer stops it, a failed one takes half, and
+ * none or a fumble takes it all. What it does to the room's earnings is left on the period for `roomWeek`.
+ * @param {object} settled - from `settleEvent`
+ * @returns {object[]} events for the GM's service
+ */
+export function roomEventFallout(b, event, settled, part = 1, p = BUSINESS_DEFAULTS) {
+  const def = event && EVENTS[event.kind];
+  const room = b.backRoom;
+  if (!def?.room || !room || !settled) return [];
+  const rules = p.backRoom.events[event.kind];
+  const { outcome } = settled;
+  if (event.kind === 'roomBigOrder') {
+    if (outcome === 'unanswered') return [];
+    if (outcome === 'answered') b.period.roomBonus = Math.round(archetypeOf(b).takings * b.state.capacity * p.backRoom.share * roomProfile(b, p).earn * rules.pay * part);
+    return [{ type: 'backRoomEvent', kind: event.kind, exposure: rules.exposure }];
+  }
+  const scale = outcome === 'answered' ? 0 : outcome === 'failed' ? 0.5 : 1;
+  if (!scale) return [];
+  if (rules.lost) b.period.roomLost = rules.lost * scale;
+  if (rules.reputation) b.state.reputation = clamp(b.state.reputation + rules.reputation * scale, 0, 100);
+  if (rules.dirty) room.dirty -= Math.floor(room.dirty * rules.dirty * scale);
+  const exposure = (rules.exposure ?? 0) * scale + (outcome === 'fumbled' ? rules.fumbleExposure ?? 0 : 0);
+  return [
+    { type: 'backRoomEvent', kind: event.kind, exposure },
+    ...(rules.standing && room.factionId ? [{ type: 'factionMove', factionId: room.factionId, amount: rules.standing * scale, steady: true }] : []),
+  ];
 }
 
 /** An employee with no trait may turn informant in a week with a back room running. */

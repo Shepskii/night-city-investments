@@ -73,7 +73,7 @@ import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from '.
 import { aimCheck, giftFor } from './factions.js';
 import { campaignCheck, runCampaign, runBlackOps } from './businessCampaign.js';
 import { supplyCut, runSupply, runVenue, backupWait } from './businessRoles.js';
-import { ROOM_ACTIONS, kindProfile, roomCheck, roomKinds, roomWeek, takeDirty, openRoom, roomBust, bustFallout, turnInformant, informants, dealCut, runDealRoll, takeDeal, endDeal } from './businessFronts.js';
+import { ROOM_ACTIONS, kindProfile, roomCheck, roomKinds, roomWeek, takeDirty, openRoom, roomBust, bustFallout, roomEvent, roomEventFallout, turnInformant, informants, dealCut, runDealRoll, takeDeal, endDeal } from './businessFronts.js';
 import { normalizeName, gigTags } from './gigImpact.js';
 import {
   fixerOffer, takeFixerLoan, bankCheck, applyBankRoll, repayLoan, payLoans, investorOffer, inviteInvestor, acceptInvestment,
@@ -1711,7 +1711,8 @@ function startPeriod(b, index, startDay, weekday, seed, p, traits = null, relati
   b.period.opening = b.till;
   // A hostile faction's act comes in place of what the week would have drawn (F1b).
   // So does a raid on a back room (U1b).
-  const event = roomBust(b, seed, p, relations, traits) ?? hostileAct(b, seed, p, relations) ?? drawEvent(b, seed, p, traits, relations);
+  // So does trouble of the room's own, from a week it was worked (U3).
+  const event = roomBust(b, seed, p, relations, traits) ?? hostileAct(b, seed, p, relations) ?? roomEvent(b, seed, p, relations) ?? drawEvent(b, seed, p, traits, relations);
   if (b.collectors) {
     // A missed payment to a fixer: the collectors come in place of whatever else the week held.
     b.period.event = { kind: 'collectors' };
@@ -1812,6 +1813,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   const event = settleEvent(b, base, b.period.slots, p, { traits, seed, day: b.period.endDay });
   out.events.push(...factionFallout(b, event, p));
   out.events.push(...bustFallout(b, b.period.event, event?.outcome, b.period.endDay, p));
+  out.events.push(...roomEventFallout(b, b.period.event, event, part, p));
   const takings = Math.max(0, base + (event?.change ?? 0));
   // What goes out the back goes first (P1c), then what is left is sold over the counter (P1b).
   const fenced = fenceWeek(b, takings, b.period.endDay, out, p);

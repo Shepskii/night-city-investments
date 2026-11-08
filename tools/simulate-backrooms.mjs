@@ -1,7 +1,7 @@
 /**
  * Calibration for back room profiles (DESIGN §36.12, proposed). Runs without Foundry.
  *
- *   node tools/simulate-backrooms.mjs [--seeds 400] [--weeks 52] [--capacity 3] [--takings 250] [--base 12]
+ *   node tools/simulate-backrooms.mjs [--seeds 400] [--weeks 52] [--capacity 3] [--takings 250] [--base 12] [--events 0.08]
  *
  * A sensible crew runs a registered business's room for a year, with two action slots: it works the room, launders
  * what it can, pays people off at moderate Exposure and lies low at high. Raids come by Exposure band, as the module
@@ -25,6 +25,8 @@ const CAPACITY = arg('capacity', 3);
 const TAKINGS = arg('takings', 250);
 const BASE = arg('base', 12);
 const DV = 15;
+/** The weekly chance of a room's own event (U3); 0 is how a room played before them. */
+const EVENT_RATE = arg('events', P.backRoom.events.chance);
 
 /** The module's own numbers, so what this reports is what plays (`backRoom.profiles`). */
 const PROFILES = P.backRoom.profiles;
@@ -36,18 +38,27 @@ const rollBand = (rng, base, dv) => {
 const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] ?? 0;
 const mean = (xs) => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
 
-function year(profile, seed) {
+/** The event a room draws, as the module chooses it; a Connected room is taken to have a faction. */
+function drawRoomEvent(rng, name) {
+  const ev = P.backRoom.events;
+  if (rng.chance(ev.shared)) return rng.chance(0.5) ? 'roomRival' : 'roomBigOrder';
+  return ev.byProfile[name] ?? null;
+}
+
+function year(profile, seed, name) {
   const rng = createRng(seed, 'back-room');
   const r = P.backRoom;
   const takings = TAKINGS * CAPACITY;
-  let dirty = 0; let exposure = 0; let open = true;
-  const t = { earned: 0, washed: 0, paidOff: 0, supply: 0, fines: 0, seized: 0, raids: 0, weeksShut: 0, exposureSum: 0, shutAt: null };
+  let dirty = 0; let exposure = 0; let open = true; let workedLast = false;
+  const t = { earned: 0, washed: 0, paidOff: 0, supply: 0, fines: 0, seized: 0, raids: 0, events: 0, weeksShut: 0, exposureSum: 0, shutAt: null };
   for (let w = 0; w < WEEKS; w++) {
     if (!open) { t.weeksShut += 1; continue; }
     t.exposureSum += exposure;
     // A raid comes first, and takes the week's answer: a slot.
     let slots = 2;
-    if (rng.chance(Math.min(1, r.raid.chance[exposureBand(exposure)] * profile.raid))) {
+    let lost = 0;
+    const raided = rng.chance(Math.min(1, r.raid.chance[exposureBand(exposure)] * profile.raid));
+    if (raided) {
       t.raids += 1;
       slots -= 1;
       const band = rollBand(rng, BASE, DV);
@@ -62,6 +73,25 @@ function year(profile, seed) {
       }
       if (!open) continue;
     }
+    // Trouble of the room's own comes only in place of a raid, from a week it was worked, and takes an answer too (U3).
+    const kind = !raided && workedLast && rng.chance(EVENT_RATE) ? drawRoomEvent(rng, name) : null;
+    if (kind) {
+      t.events += 1;
+      slots -= 1;
+      const band = rollBand(rng, BASE, DV);
+      const passed = !['fumble', 'failure'].includes(band);
+      const rules = P.backRoom.events[kind];
+      if (kind === 'roomBigOrder') {
+        if (passed) dirty += Math.round(TAKINGS * CAPACITY * r.share * profile.earn * rules.pay);
+        exposure += rules.exposure;
+      } else {
+        const scale = passed ? 0 : band === 'failure' ? 0.5 : 1;
+        exposure += (rules.exposure ?? 0) * scale + (band === 'fumble' ? rules.fumbleExposure ?? 0 : 0);
+        lost = (rules.lost ?? 0) * scale;
+        if (rules.dirty) dirty -= Math.floor(dirty * rules.dirty * scale);
+      }
+    }
+    workedLast = false;
     const heat = exposureBand(exposure);
     // At high Exposure it stops work: lie low, and pay someone if there is the money. Otherwise work, then clean up.
     if (heat === 'high') {
@@ -70,7 +100,8 @@ function year(profile, seed) {
     } else if (slots > 0) {
       const band = rollBand(rng, BASE, DV);
       const scale = 1 + (P.effects.work[band] - 1) * profile.swing;
-      const earned = band === 'fumble' ? 0 : Math.round(TAKINGS * CAPACITY * r.share * scale * profile.earn);
+      const earned = band === 'fumble' ? 0 : Math.round(TAKINGS * CAPACITY * r.share * scale * profile.earn * (1 - lost));
+      workedLast = true;
       const supply = Math.round(earned * profile.supply);
       dirty += earned - supply;
       t.earned += earned; t.supply += supply;
@@ -92,10 +123,10 @@ function year(profile, seed) {
 }
 
 const eb = (n) => `${Math.round(n).toLocaleString('en-US')}`.padStart(6);
-console.log(`Back room profiles: ${SEEDS} years, ${WEEKS} weeks, Capacity ${CAPACITY}, ${TAKINGS} eb base takings, roll base ${BASE} against DV ${DV}`);
+console.log(`Back room profiles: ${SEEDS} years, ${WEEKS} weeks, Capacity ${CAPACITY}, ${TAKINGS} eb base takings, roll base ${BASE} against DV ${DV}, room events ${Math.round(EVENT_RATE * 100)}%`);
 console.log('profile     earned/wk  clean/wk  kept/wk*  fines+seized/yr  raids/yr  avg Exp  shut within a year');
 for (const [name, profile] of Object.entries(PROFILES)) {
-  const runs = Array.from({ length: SEEDS }, (_, i) => year(profile, `${name}-${i}`));
+  const runs = Array.from({ length: SEEDS }, (_, i) => year(profile, `${name}-${i}`, name));
   const kept = runs.map((x) => x.washed + x.dirtyLeft);
   console.log(`${name.padEnd(11)} ${eb(mean(runs.map((x) => x.earned)) / WEEKS)}    ${eb(mean(runs.map((x) => x.washed)) / WEEKS)}    ${eb(mean(kept) / WEEKS)}          ${eb(mean(runs.map((x) => x.fines + x.seized)))}     ${mean(runs.map((x) => x.raids)).toFixed(1).padStart(4)}    ${mean(runs.map((x) => x.avgExposure)).toFixed(0).padStart(4)}     ${String(Math.round((runs.filter((x) => !x.open).length / SEEDS) * 100)).padStart(3)}%`);
 }

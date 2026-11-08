@@ -656,7 +656,8 @@ function weekContext(business, actor, canAct) {
     info: business.stage >= 2 ? infoContext(business, runs) : null,
     unworkedNote: L('NCI.Business.UnworkedNote'),
   };
-  const raided = (kind) => kind === 'bust';
+  // A raid, and trouble of the room's own (U3), show with the room.
+  const raided = (kind) => kind === 'bust' || !!EVENTS[kind]?.room;
   return {
     ...week,
     actions: week.actions.filter((a) => !BACK_ROOM_TAB.includes(a.id) && a.id !== 'produce'),

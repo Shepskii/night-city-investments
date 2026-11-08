@@ -1103,6 +1103,8 @@ class BusinessServiceImpl {
         if (team.notes.length) business.pendingNotes = [...(business.pendingNotes ?? []), ...team.notes];
         const hiddenEntry = MarketStore.getBusinessesHidden()[business.id];
         const relations = {
+          // How often back rooms draw trouble of their own, in this world (U3).
+          roomEvents: BUSINESS_DEFAULTS.backRoom.events.frequency[game.settings.get(MODULE_ID, SETTINGS.ROOM_EVENTS)] ?? 1,
           ...factionEffects(business, factions, hiddenEntry?.standing ?? {}),
           exposure: hiddenEntry?.exposure ?? 0,
           living: Object.fromEntries((business.covered ?? []).map((id) => [id, this.livingCostOf(id)])),

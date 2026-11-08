@@ -580,6 +580,24 @@ export const BUSINESS_DEFAULTS = Object.freeze({
       connected: Object.freeze({ earn: 0.5, swing: 1, exposure: 0.75, raid: 1, supply: 0, launder: 1, quietWeek: 0.5, standing: 1 }),
       laundering: Object.freeze({ earn: 0.8, swing: 1, exposure: 0.75, raid: 1, supply: 0, launder: 2, quietWeek: 0 }),
     }),
+    /**
+     * What goes wrong in a room that was worked last week (U3, DESIGN §36.14). `chance` of an event a week, times the
+     * world's `frequency`; a room with an event of its own (`byProfile`) draws a shared one `shared` of the time, and one
+     * without draws only those. Each event's numbers are its full effect: a failed answer takes half, a passed one none.
+     */
+    events: Object.freeze({
+      chance: 0.08,
+      shared: 0.2,
+      frequency: Object.freeze({ rare: 0.5, normal: 1, often: 2 }),
+      byProfile: Object.freeze({ loud: 'roomNoise', quiet: 'roomLooseEnd', hungry: 'roomBadBatch', connected: 'roomFavour', laundering: 'roomBooks' }),
+      roomNoise: Object.freeze({ exposure: 6, reputation: -3 }),
+      roomLooseEnd: Object.freeze({ exposure: 8 }),
+      roomBadBatch: Object.freeze({ lost: 1, reputation: -5, fumbleExposure: 5 }),
+      roomFavour: Object.freeze({ standing: -5 }),
+      roomBooks: Object.freeze({ exposure: 6, dirty: 0.25, bookkeeper: 0.5 }),
+      roomRival: Object.freeze({ lost: 0.5, exposure: 2 }),
+      roomBigOrder: Object.freeze({ pay: 1.5, exposure: 4 }),
+    }),
     share: 0.6,
     workExposure: byBand([8, 4, 3, 2, 1, 1]),
     lieLow: 3,
@@ -1024,6 +1042,14 @@ export const EVENTS = Object.freeze({
   raid: Object.freeze({ weight: 0, uses: [S.bureaucracy, S.persuasion, S.tactics, A.backup], hit: Object.freeze({ compliance: -8 }) }),
   /** Never drawn at random: a raid on a back room, by its Exposure (U1b). */
   bust: Object.freeze({ weight: 0, uses: [S.bureaucracy, S.persuasion, S.tactics, S.bribery, A.backup], hit: Object.freeze({ compliance: -8, reputation: -3 }) }),
+  /** Never drawn at random: what goes wrong in a back room (U3). Answered with the skills of the room's kind; see `roomEventFallout`. */
+  roomNoise: Object.freeze({ weight: 0, room: true, uses: [], hit: Object.freeze({}) }),
+  roomLooseEnd: Object.freeze({ weight: 0, room: true, uses: [], hit: Object.freeze({}) }),
+  roomBadBatch: Object.freeze({ weight: 0, room: true, uses: [], hit: Object.freeze({}) }),
+  roomFavour: Object.freeze({ weight: 0, room: true, uses: [], hit: Object.freeze({}) }),
+  roomBooks: Object.freeze({ weight: 0, room: true, uses: [], hit: Object.freeze({}) }),
+  roomRival: Object.freeze({ weight: 0, room: true, uses: [], hit: Object.freeze({}) }),
+  roomBigOrder: Object.freeze({ weight: 0, room: true, good: true, uses: [], hit: Object.freeze({}) }),
   /** Never drawn: it comes the week after a missed fixer-loan payment. */
   collectors: Object.freeze({ weight: 0, security: true, uses: [S.persuasion, S.streetwise, S.trading, A.combatAwareness, A.operator], hit: Object.freeze({ reputation: -3 }) }),
   /** Never drawn: it may come the week after a sullen employee is fired. */

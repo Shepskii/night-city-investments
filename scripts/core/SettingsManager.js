@@ -462,6 +462,15 @@ export function registerSettings() {
     range: { min: 0.5, max: 2, step: 0.25 },
   });
 
+  s.register(MODULE_ID, SETTINGS.ROOM_EVENTS, {
+    name: 'NCI.Settings.RoomEvents.Name',
+    hint: 'NCI.Settings.RoomEvents.Hint',
+    scope: 'world',
+    config: true,
+    type: String,
+    choices: { rare: 'NCI.Settings.RoomEvents.Rare', normal: 'NCI.Settings.RoomEvents.Normal', often: 'NCI.Settings.RoomEvents.Often' },
+    default: 'normal',
+  });
   s.register(MODULE_ID, SETTINGS.DATE_FORMAT, {
     name: 'NCI.Settings.DateFormat.Name',
     hint: 'NCI.Settings.DateFormat.Hint',

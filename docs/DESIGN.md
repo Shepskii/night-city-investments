@@ -2446,6 +2446,10 @@ A story about a character also costs the business they run with the worst standi
 - **Laundering's client work** could later take another player business's dirty cash, which would be a good link and a larger job. It's left out here.
 - **S1 and this overlap slightly.** A crime expose (§36.13) reads as a loose end told to the press. Neither needs the other, except Call in a favour against a story.
 
+**U3a as built (2026-11-09, local, not yet live).** `roomEvent` and `roomEventFallout` in `businessFronts.js`, numbers in `backRoom.events`, seven kinds in `EVENTS` with `room: true`. The user's choices at the start of U3a: an event is drawn when the week starts, so "only when worked" means **worked last week**; and a world setting, **Back room events** (Rare, Normal, Often: half, standard, double). A room event replaces the week's ordinary event and comes after a raid and a hostile faction's act. It leaves the shop's takings alone. Not at a company until U3c can disguise it.
+
+**The simulator's answer** (`npm run simulate:backrooms`, 1,500 years a run, roll base 12, kept eb a week, without events, then 8%, then 10%): Steady 151, 151, 150. Loud 172, 167, 163. Quiet 121, 122, 123. Hungry 148, 147, 141. Connected 69, 69, 71. Laundering 142, 137, 135. Share of rooms shut in a year moved by 3 points at most, and the small room with a weak crew stayed at 92%. So 8% it is: the events add incident without undoing §36.12's balance. A skilled crew answers most of them, so they cost little. Reputation and standing aren't priced by the simulator.
+
 **Parts, if built, shown in turn.** U3a: the room event table in the engine, the seven events and the simulator's numbers. U3b: the actions on the Back Room tab. U3c: each kind's words, scenes, how they look at a company, and the guides.
 
 ### 36.15 Districts from Night City Map (the user's choice, 2026-11-05)

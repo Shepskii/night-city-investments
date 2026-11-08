@@ -195,3 +195,111 @@ test('a connected room\'s week is always a full +1, and leaves other dealings wi
   const closed = advanceBusiness(b, 8, { seed: 'u2' });
   assert.ok(closed.events.some((e) => e.type === 'factionMove' && e.factionId === 'gang_x' && e.amount === 1 && e.steady === true), 'and a close sends it as steady');
 });
+
+const workedLastWeek = (b) => {
+  b.digests = [{ index: b.period.index - 1, actions: [{ action: 'roomWork', band: 'solid', by: 'med' }] }];
+  return b;
+};
+
+test('a room draws its own event only if it was worked last week, and never at a company for now', async () => {
+  const { roomEvent } = await import('../scripts/engine/businessFronts.js');
+  const draws = (b, relations = null, n = 4000) => Array.from({ length: n }, (_, i) => roomEvent(b, `s${i}`, undefined, relations)).filter(Boolean);
+  const hungry = workedLastWeek(room(...KINDS.hungry));
+  const got = draws(hungry);
+  assert.ok(got.length > 240 && got.length < 400, `about 8% of weeks: ${got.length}`);
+  const kinds = new Set(got.map((e) => e.kind));
+  assert.deepEqual([...kinds].sort(), ['roomBadBatch', 'roomBigOrder', 'roomRival']);
+  assert.ok(got.filter((e) => e.kind === 'roomBadBatch').length > got.length * 0.7, 'mostly its own');
+
+  assert.equal(draws({ ...hungry, digests: [] }).length, 0, 'a first week draws none');
+  assert.equal(draws({ ...hungry, digests: [{ index: hungry.period.index - 1, actions: [{ action: 'lieLow' }] }] }).length, 0, 'nor one after lying low');
+  assert.equal(draws({ ...hungry, digests: [{ index: hungry.period.index - 5, actions: [{ action: 'roomWork' }] }] }).length, 0, 'nor one long after it was last worked');
+  assert.equal(draws({ ...hungry, stage: 2 }).length, 0, 'nor a company, until its events can be disguised');
+  assert.equal(draws({ ...hungry, backRoom: { ...hungry.backRoom, status: 'shut' } }).length, 0, 'nor a shut room');
+  const rare = draws(hungry, { roomEvents: 0.5 }).length;
+  const often = draws(hungry, { roomEvents: 2 }).length;
+  assert.ok(rare < got.length * 0.7 && often > got.length * 1.5, `the setting: ${rare}, ${got.length}, ${often}`);
+
+  const steady = draws(workedLastWeek(room(...KINDS.steady)));
+  assert.ok(steady.length > 40 && steady.length < 110, `Steady only sees the shared ones, about 1 a year: ${steady.length}`);
+  assert.ok(steady.every((e) => ['roomRival', 'roomBigOrder'].includes(e.kind)));
+
+  const connected = workedLastWeek(room(...KINDS.connected));
+  assert.ok(draws(connected).every((e) => e.kind !== 'roomFavour'), 'a connected room with no faction has nobody to ask a favour');
+  connected.backRoom.factionId = 'gang_x';
+  assert.ok(draws(connected).some((e) => e.kind === 'roomFavour'));
+
+  const books = workedLastWeek(room(...KINDS.laundering));
+  const plain = draws(books).filter((e) => e.kind === 'roomBooks').length;
+  books.staff = [{ status: 'active', post: 'bookkeeper' }];
+  const kept = draws(books).filter((e) => e.kind === 'roomBooks').length;
+  assert.ok(kept < plain * 0.7, `a bookkeeper makes it less likely: ${kept} against ${plain}`);
+});
+
+test('every room event has words, and is answered with what the room rolls', async () => {
+  const { EVENTS, eventUses, BACK_ROOMS } = await import('../scripts/engine/index.js');
+  const { readFileSync } = await import('node:fs');
+  const lang = JSON.parse(readFileSync(new URL('../lang/en.json', import.meta.url), 'utf8'));
+  const kinds = Object.keys(EVENTS).filter((k) => EVENTS[k].room);
+  assert.equal(kinds.length, 7);
+  for (const k of kinds) assert.ok(lang.NCI.Event[k]?.Name && lang.NCI.Event[k]?.Hint, k);
+  const b = room(...KINDS.hungry);
+  assert.deepEqual(eventUses(b, 'roomBadBatch'), [...BACK_ROOMS.clinic.streetPharmacy.uses]);
+});
+
+const settle = async (kinds, kind, slot, dirty = 1000, extra = {}) => {
+  const { advanceBusiness } = await import('../scripts/engine/index.js');
+  const b = room(...kinds, dirty);
+  Object.assign(b.backRoom, extra);
+  b.period.event = { kind };
+  b.period.slots = [{ action: 'roomWork', by: 'med', band: 'solid', approach: 'standard' }, ...(slot ? [{ action: 'respond', by: 'med', band: slot }] : [])];
+  const before = b.state.reputation;
+  const out = advanceBusiness(b, 8, { seed: 'u3a' });
+  const digest = out.business.digests.at(-1);
+  return { out, digest, before, rep: out.business.state.reputation, room: out.business.backRoom, exp: out.events.filter((e) => e.type === 'backRoomEvent').reduce((a, e) => a + e.exposure, 0) };
+};
+
+test('a room event\'s effects: answered none, failed half, left alone or fumbled in full, and the shop\'s takings untouched', async () => {
+  const none = await settle(KINDS.loud, 'roomNoise', 'solid');
+  assert.equal(none.exp, 0);
+  const failed = await settle(KINDS.loud, 'roomNoise', 'failure');
+  assert.equal(failed.exp, 3);
+  const left = await settle(KINDS.loud, 'roomNoise', null);
+  assert.equal(left.exp, 6);
+  assert.ok(left.rep < none.rep, 'Reputation falls');
+  assert.equal(left.digest.takings, none.digest.takings, "the shop's takings are its own");
+  assert.equal((await settle(KINDS.quiet, 'roomLooseEnd', null)).exp, 8);
+
+  const fine = await settle(KINDS.hungry, 'roomBadBatch', 'solid');
+  const half = await settle(KINDS.hungry, 'roomBadBatch', 'failure');
+  const gone = await settle(KINDS.hungry, 'roomBadBatch', null);
+  assert.ok(fine.digest.room.earned > 0);
+  assert.ok(Math.abs(half.digest.room.earned - fine.digest.room.earned / 2) <= 1, 'half, to the eddie');
+  assert.equal(gone.digest.room.earned, 0, 'the week is lost');
+  assert.equal((await settle(KINDS.hungry, 'roomBadBatch', 'fumble')).exp, 5, 'and a fumble adds Exposure');
+
+  const asked = await settle(KINDS.connected, 'roomFavour', null, 0, { factionId: 'gang_x' });
+  assert.ok(asked.out.events.some((e) => e.type === 'factionMove' && e.factionId === 'gang_x' && e.amount === -5 && e.steady));
+
+  const books = await settle(KINDS.laundering, 'roomBooks', null, 1000);
+  const booksOk = await settle(KINDS.laundering, 'roomBooks', 'solid', 1000);
+  assert.equal(books.exp, 6);
+  assert.equal(booksOk.room.dirty - books.room.dirty, 250, 'a quarter of the dirty cash goes');
+
+  const rivalOk = await settle(KINDS.steady, 'roomRival', 'solid');
+  const rival = await settle(KINDS.steady, 'roomRival', null);
+  assert.ok(Math.abs(rival.digest.room.earned - rivalOk.digest.room.earned / 2) <= 1, 'halved, to the eddie');
+  assert.equal(rival.exp, 2);
+});
+
+test('an offer you can\'t refuse: taken for money and Exposure, botched for Exposure alone, or left for nothing', async () => {
+  const none = await settle(KINDS.steady, 'roomRival', 'solid');
+  const taken = await settle(KINDS.steady, 'roomBigOrder', 'solid');
+  const botched = await settle(KINDS.steady, 'roomBigOrder', 'failure');
+  const left = await settle(KINDS.steady, 'roomBigOrder', null);
+  assert.ok(taken.digest.room.earned > none.digest.room.earned);
+  assert.equal(taken.room.dirty, none.room.dirty + (taken.digest.room.earned - none.digest.room.earned));
+  assert.deepEqual([taken.exp, botched.exp, left.exp], [4, 4, 0]);
+  assert.equal(botched.digest.room.earned, none.digest.room.earned);
+  assert.equal(left.digest.room.earned, none.digest.room.earned);
+});
