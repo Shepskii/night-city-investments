@@ -54,8 +54,11 @@ export function registerBusinessSystem(initializer) {
   initializer.register('ready', 47, 'Business startup', async () => {
     BusinessWatcher.snapshot();
     if (isActiveGM()) await BusinessService.sweepAll();
-    // So the job board isn't empty until the next tick (N2).
-    if (isActiveGM()) await JobService.publish();
+    // So the job board isn't empty until the next tick (N2), and jobs at NPC companies show their shift from the start (N3).
+    if (isActiveGM()) {
+      await JobService.publish();
+      for (const business of BusinessRepository.all().filter((b) => b.npcRun && b.status === 'open')) await BusinessService._syncJobs(business);
+    }
   });
 
   initializer.register('ready', 48, 'Business API', () => {
