@@ -2327,7 +2327,7 @@ That is 11 kinds today and 23 new ones, 34 in all, giving each kind of business 
 | Friendly or allied, none worse | 0% | None; a later option is that a friend warns you or spikes one |
 | Neutral | 0%, or 1% with a true story to tell | About 0.5 |
 | Wary | 4% | About 2 |
-| Hostile | The current 5% to 15% | About 3 to 8 |
+| Hostile | The current 5% to 15%, times a draw rate the simulator sets (see below) | At least 3 to 8, up to the 28-day limit |
 
 These sit within one event a week, and a target gets at most one story in 28 days, so bad standing can't stack a story on every other penalty it already brings. At hostile, the story takes the place of the smear rather than adding to it.
 
@@ -2352,6 +2352,13 @@ A story about a character also costs the business they run with the worst standi
 - **A player's Media** can hear of it first: a story waits three days before it runs, and is a rumour source meanwhile, so a Media can warn a friend. Trading on that draws insider heat, as other rumours do. A puff piece still works against the price afterward.
 
 **The GM.** On by default with approval, under a new setting: each story waits on Pending with its grudge, outlet, kind and why it was true, for **Let it run** or **Spike it**, and the GM can reword the headline. **Run a story** on Market > Events does one by hand, whatever the chance. Kinds follow other settings: Crime expose goes with Underworld content, and the character kinds need heat tracking.
+
+**Settled on review (the user's choices, 2026-11-09).** Where these differ from the text above, these stand.
+- **Outlets have two fixed tiers.** A corporation's own press is rank 4: Believability 3 in 10, up to 4% on a price, and no regulator's case. A market company in the media sector is rank 6: 4 in 10, up to 7%, and it can open a case. Evidence adds to both. A hostile corporation uses a media company if the world has one; the starter list has only Network 54.
+- **Every story rolls Believability,** and one not believed prints with no effect. Today's smear always lands unless answered, so stories at hostile are drawn more often to stay as dangerous, at a rate the simulator sets.
+- **A story is next week's event.** It is drawn at the close and goes to the GM. Once approved it is the following week's event: owners see that a reporter is asking questions and have the whole week to answer with the week's response. The headline prints three days in, and the effect lands at that week's close. A Media can hear of it before it prints, which still helps anyone who isn't an owner.
+- **Characters have their own weekly check,** so one with no business can be named: 2% at heat 25, 4% at 50, 8% at 75, as starting numbers. A story about a character and one about a business they run share the 28-day limit, so a crew isn't hit twice at once.
+- **Smaller points.** A Hidden stake headline names the company and not the holder, who alone is told by mail. Spiking a story still starts the 28-day limit. A story takes the week's event ahead of room events and ordinary events, after a back room bust, as a hostile act does now. The checks are in `tools/simulate-press.mjs`.
 
 **Things to watch.**
 - **It tells players something.** A true story confirms hidden state: a crime expose says that someone is looking at your back room, though no number. At a company, other shareholders learn what the officers kept quiet, which §36.1 already allows through a scandal.
