@@ -134,7 +134,8 @@ export function roomWeek(b, takings, part = 1, p = BUSINESS_DEFAULTS, traits = n
     out.earned += fee;
     out.exposure += rules.launderExposure[wash.band];
   }
-  for (const id of PROFILE_ACTION_IDS) if (slot(id) && rules.actions[id].days) room.used = { ...room.used, [id]: day };
+  // The wait runs from the start of the week it was used, so 28 days means every fourth week.
+  for (const id of PROFILE_ACTION_IDS) if (slot(id) && rules.actions[id].days) room.used = { ...room.used, [id]: b.period.startDay };
   // A silent partner takes its cut, whether or not there was much to cut (U1c).
   if (room.deal) {
     const due = Math.max(rules.deal.minimum, Math.round(out.earned * room.deal.cut));

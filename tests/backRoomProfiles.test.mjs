@@ -340,7 +340,7 @@ test('a big night stands in for the week\'s work: more on a pass, double Exposur
   assert.equal(poor.business.digests.at(-1).room.earned, poorWork.business.digests.at(-1).room.earned, 'no extra on a failure');
   assert.equal(hiddenChange(poor), hiddenChange(poorWork) * 2, 'but the Exposure doubles anyway');
   const after = night.business;
-  assert.ok(after.backRoom.used.bigNight > 0, 'the record keeps when it was used');
+  assert.equal(after.backRoom.used.bigNight, night.business.digests.at(-1).startDay, 'counted from the start of that week');
   assert.equal(roomCheck(after, 'bigNight', undefined, after.backRoom.used.bigNight + 27).reason, 'room-wait');
   assert.equal(roomCheck(after, 'bigNight', undefined, after.backRoom.used.bigNight + 28).ok, true);
   assert.equal(roomCheck(withSlots(KINDS.loud, [{ action: 'roomWork', band: 'solid' }]), 'bigNight').reason, 'action-taken');
