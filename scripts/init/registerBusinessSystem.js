@@ -9,6 +9,7 @@ import { isActiveGM } from '../utils/helpers.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
 import { BusinessService } from '../services/BusinessService.js';
 import { BusinessClient } from '../services/BusinessClient.js';
+import { JobService } from '../services/JobService.js';
 import { BusinessWatcher } from '../services/BusinessWatcher.js';
 import { DistrictService } from '../services/DistrictService.js';
 
@@ -53,6 +54,8 @@ export function registerBusinessSystem(initializer) {
   initializer.register('ready', 47, 'Business startup', async () => {
     BusinessWatcher.snapshot();
     if (isActiveGM()) await BusinessService.sweepAll();
+    // So the job board isn't empty until the next tick (N2).
+    if (isActiveGM()) await JobService.publish();
   });
 
   initializer.register('ready', 48, 'Business API', () => {
