@@ -2359,7 +2359,7 @@ A story about a character also costs the business they run with the worst standi
 
 **Parts, if built, shown in turn.** S1a: the engine, a business as the target, price, Reputation and Exposure, approval. S1b: characters, heat, answering by mail. S1c: rumours beforehand, **Run a story**, and the simulator's numbers in the guides.
 
-### 36.14 Back room events and actions, by profile (the user's choices, 2026-11-04; not built)
+### 36.14 Back room events and actions, by profile (the user's choices, 2026-11-04 and 09; done in v0.22.0)
 
 **Decided.**
 - **The shape** stands as mapped below: one event and one action for each profile but Steady, and two events shared by every room.
@@ -2454,6 +2454,8 @@ A story about a character also costs the business they run with the worst standi
 
 **U3c as built (2026-11-09, local).** Each non-Steady kind names its event in its own words (`NCI.BackRoom.Trouble`, 24 lines: the map's 34 less the Steady kinds, which draw only shared events), on the event and its roll. A loose end, a bad batch, a favour asked and a rival operation can be scenes; lost at the table, one does what an unanswered one does, and leaves the takings alone. At a company room events now draw, and those not running it see them as they do a raid: nothing on the tabs, an inspection in the reports, and scene mail only to those who run the room. The GM's own views keep the plain event names.
 
+**Tested live (2026-11-09, Cyberpunk Test, events placed by hand).** A bad batch unanswered, an offer taken, Find a new supplier (a failed roll), Call in a favour (two failures, then a pass), a kind's own wording on the event and its roll, and a favour asked run as a scene and lost. **In tests only:** a random draw, the other events and actions, a passing supplier roll, and the company disguise.
+
 **Parts, if built, shown in turn.** U3a: the room event table in the engine, the seven events and the simulator's numbers. U3b: the actions on the Back Room tab. U3c: each kind's words, scenes, how they look at a company, and the guides.
 
 ### 36.15 Districts from Night City Map (the user's choice, 2026-11-05)
@@ -2519,7 +2521,7 @@ A story about a character also costs the business they run with the worst standi
 | UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
 | P1 | **Done (v0.21.0), see §36.10.** P1a workshops, item lists and the GM's tab, runs, the Maker post and the storeroom sheet; P1b shop sales, buying, handing over, consigning, stock in book value and closing; P1c fencing and illegal production through a back room. Also: one control height, and hand advances moving the calendar (§36.11) |
 | U2 | **Done (v0.21.1), see §36.12.** More back room kinds, each with a profile that changes how it plays |
-| U3 | **Built, not released yet, see §36.14.** Back room events and actions, one of each for every profile but Steady, with each kind telling them in its own words |
+| U3 | **Done (v0.22.0), see §36.14.** Back room events and actions, one of each for every profile but Steady, with each kind telling them in its own words |
 | S1 | **Planned, after U3, see §36.13.** Press: non-player companies run stories against player companies and characters, driven by standing and heat |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |
