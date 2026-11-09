@@ -135,20 +135,23 @@ test('the same seed rolls the same week, and a different action its own dice', (
   assert.deepEqual(roll(), roll());
 });
 
-test('cash above the reserve leaves as the owner\'s draw', () => {
+test('the week\'s profit leaves as the owner\'s draw, keeping the reserve', () => {
   const b = made();
   b.till = 3000;
-  assert.equal(npcDraw(b, 300, 1, DAY), 600);
-  assert.equal(b.till, 2400);
+  assert.equal(npcDraw(b, 300, 200, 1, DAY), 200, 'the profit, not everything above the reserve');
+  assert.equal(b.till, 2800);
   assert.equal(b.ledger.at(-1).kind, 'ownerDraw');
-  assert.equal(b.ledger.at(-1).amount, -600);
-  assert.equal(npcDraw(b, 300, 1, DAY), 0, 'nothing above the reserve');
+  assert.equal(b.ledger.at(-1).amount, -200);
+  b.till = 2500;
+  assert.equal(npcDraw(b, 300, 200, 1, DAY), 100, 'only what is above the reserve');
+  assert.equal(npcDraw(b, 300, 200, 1, DAY), 0, 'nothing once at the reserve');
   b.till = 9000;
-  assert.equal(npcDraw(b, 300, 0.5, DAY), 0, 'not a part week');
+  assert.equal(npcDraw(b, 300, -50, 1, DAY), 0, 'not from a loss');
+  assert.equal(npcDraw(b, 300, 200, 0.5, DAY), 0, 'not a part week');
   b.npcRun.auto = false;
-  assert.equal(npcDraw(b, 300, 1, DAY), 0, 'not when the GM is running it');
+  assert.equal(npcDraw(b, 300, 200, 1, DAY), 0, 'not when the GM is running it');
   b.npcRun = null;
-  assert.equal(npcDraw(b, 300, 1, DAY), 0);
+  assert.equal(npcDraw(b, 300, 200, 1, DAY), 0);
 });
 
 test('a real week closes, with the owner\'s work and draw on it', () => {
@@ -158,7 +161,7 @@ test('a real week closes, with the owner\'s work and draw on it', () => {
   assert.equal(out.business.status, 'open');
   const digest = out.business.digests.at(-1);
   assert.ok(digest.actions.some((a) => a.action === 'work' && a.by === 'npc1'));
-  if (b.period.endDay - b.period.startDay === 7) assert.ok(digest.ownerDraw > 0);
+  if (b.period.endDay - b.period.startDay === 7 && digest.profit > 0) assert.equal(digest.ownerDraw, digest.profit);
 });
 
 test('changing how it is run', () => {

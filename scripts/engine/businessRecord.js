@@ -133,6 +133,9 @@ export function normalizeBusiness(raw) {
     press: b.press ?? null,
     /** Owned and run by an NPC (N1): `{ ownerId, level, profile, auto }`. */
     npcRun: b.npcRun ?? null,
+    /** The job board (N2): applications waiting for the GM, and the day each character last tried. */
+    applications: b.applications ?? [],
+    jobTries: b.jobTries ?? {},
     reportWeeks: int(b.reportWeeks),
     reportPrep: b.reportPrep ?? null,
     /** A company's officers (actor ids), its last internal audit, and what due diligence found. */

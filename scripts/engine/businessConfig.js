@@ -465,7 +465,7 @@ export const BUSINESS_DEFAULTS = Object.freeze({
   /**
    * Companies owned and run by the GM's NPCs (N1, DESIGN §36.17). The owner's level is the base of the week's rolls.
    * A profile's actions are first choice first, as far as the stage's slots go. At its Reputation `target`, what wins
-   * Reputation gives way to `fill`. Cash above `reserveWeeks` of the week's upkeep and wages leaves as the owner's draw.
+   * Reputation gives way to `fill`. The week's profit leaves as the owner's draw, as far as cash stays above `reserveWeeks` of the week's upkeep and wages.
    */
   npc: Object.freeze({
     levels: Object.freeze({ green: 9, skilled: 12, expert: 15, master: 17 }),
@@ -486,6 +486,18 @@ export const BUSINESS_DEFAULTS = Object.freeze({
       Object.freeze({ capacity: 8, staff: Object.freeze(['manager', 'floor', 'floor', 'bookkeeper', 'sales']) }),
     ]),
     staffLess: 1,
+    /**
+     * The job board (N2): from which stage, how long a character waits between tries at one company, the base the
+     * shown wage is worked out at, the share of the going rate each band of the application earns, and which bands
+     * a world may hire without asking the GM.
+     */
+    jobs: Object.freeze({
+      boardStage: 1,
+      waitDays: 7,
+      guideBase: 12,
+      pct: Object.freeze({ narrow: 0.9, solid: 1, strong: 1.1, exceptional: 1.2 }),
+      autoBands: Object.freeze(['solid', 'strong', 'exceptional']),
+    }),
   }),
   /** Reputation drifts this share of the way back to 50 each week; the Cost base creeps up. */
   reputationDrift: 0.03,

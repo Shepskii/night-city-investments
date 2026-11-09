@@ -120,6 +120,22 @@
   </div>
   {{/if}}
 
+  {{#if jobBoard.length}}
+  <details class="nci-block">
+    <summary><strong>{{localize "NCI.Jobs.Board" count=jobBoard.length}}</strong></summary>
+    <p class="nci-hint">{{localize "NCI.Jobs.BoardHint"}}</p>
+    <table class="nci-market"><tbody>
+      {{#each jobBoard}}
+      <tr>
+        <td><strong>{{name}}</strong> <span class="nci-muted">{{archetype}}{{#if location}} &middot; {{location}}{{/if}}</span>
+          <div class="nci-muted">{{postName}} &middot; {{localize "NCI.Jobs.About" wage=wage}}</div></td>
+        <td class="nci-rowbtns">{{#if blocked}}<span class="nci-muted">{{blocked}}</span>{{else}}<button type="button" class="nci-labelled" data-action="applyJob" data-id="{{businessId}}" data-post="{{post}}"><i class="fas fa-briefcase"></i> {{localize "NCI.Jobs.Apply"}}</button>{{/if}}</td>
+      </tr>
+      {{/each}}
+    </tbody></table>
+  </details>
+  {{/if}}
+
   {{#if start}}
   <div class="nci-block nci-form">
     <h3>{{localize "NCI.Business.Start"}}</h3>

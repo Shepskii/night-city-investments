@@ -11,7 +11,8 @@
   <div class="nci-grid">
     <label>{{localize "NCI.GMBusiness.Npc.Name"}}<input type="text" name="npcName" maxlength="60"></label>
     <label>{{localize "NCI.GMBusiness.Npc.Archetype"}}<select name="npcArchetype">{{#each businesses.npcForm.archetypes}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
-    <label>{{localize "NCI.GMBusiness.Npc.Owner"}}<select name="npcOwner">{{#each businesses.npcForm.owners}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+    <label>{{localize "NCI.GMBusiness.Npc.Owner"}}<input type="search" name="npcOwnerSearch" autocomplete="off" placeholder="{{localize 'NCI.GMBusiness.Npc.OwnerSearch'}}"><input type="hidden" name="npcOwner">
+      <span class="nci-invite-results">{{#each businesses.npcForm.owners}}<button type="button" style="display: none" data-npc-owner data-id="{{value}}" data-name="{{label}}">{{label}}</button>{{/each}}</span></label>
     <label>{{localize "NCI.GMBusiness.Npc.OwnerLevel"}}<select name="npcLevel">{{#each businesses.npcForm.levels}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
     <label>{{localize "NCI.GMBusiness.Npc.StageLabel"}}<select name="npcStage">{{#each businesses.npcForm.stages}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
     <label>{{localize "NCI.GMBusiness.Npc.ProfileLabel"}}<select name="npcProfile">{{#each businesses.npcForm.profiles}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>

@@ -7,6 +7,7 @@
 import { DistrictService } from '../../../services/DistrictService.js';
 import { BUSINESS_DEFAULTS, kindProfile, sceneCandidate, holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty, debtsOf, solvency, standingBand, turfFactions } from '../../../engine/index.js';
 import { BusinessService, sceneHook } from '../../../services/BusinessService.js';
+import { JobService } from '../../../services/JobService.js';
 import { FactionRepository } from '../../../data/FactionRepository.js';
 import { BusinessApp } from '../../Business/BusinessApp.js';
 import { dayText, LT, holderWho, factionTerms, districtOptions, archetypeOptions } from '../../Business/context.js';
@@ -189,6 +190,11 @@ async function onNpcSave(event, target) {
   }));
 }
 
+/** The GM answers an application from the job board (N2). */
+async function onJobAnswer(event, target) {
+  report(await JobService.decide(target.dataset.id, target.dataset.reward, target.dataset.yes === 'true'));
+}
+
 function onOpen(event, target) {
   BusinessApp.open({ businessId: target.dataset.id });
 }
@@ -224,6 +230,7 @@ export const actions = {
   businessOpen: onOpen,
   businessNpcCreate: onNpcCreate,
   businessNpcSave: onNpcSave,
+  businessJobAnswer: onJobAnswer,
   businessStaffAnswer: onStaffAnswer,
   businessNpcPartner: onNpcPartner,
   businessTeamLoyalty: onTeamLoyalty,

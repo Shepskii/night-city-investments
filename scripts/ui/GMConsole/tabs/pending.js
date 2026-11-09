@@ -17,6 +17,7 @@ import { penaltyText, context as heatContext } from './heat.js';
 import { context as gigContext } from './gigs.js';
 import { StoryService } from '../../../services/StoryService.js';
 import { PressService } from '../../../services/PressService.js';
+import { JobService } from '../../../services/JobService.js';
 
 /** `controls`, built only when the tab is drawn, gives a row's `{fields, buttons}`; the counts on the tab buttons need none. */
 const row = (tab, item, need, params, controls) => ({ tab, type: L(`NCI.Pending.Kind.${need}`), item, needed: L(`NCI.Pending.Need.${need}`, params), controls });
@@ -141,7 +142,11 @@ const pressRows = () => PressService.held().map((s) => row('events', s.name, 'pr
   buttons: [button('pressCharacterApprove', 'NCI.GMBusiness.PressApprove', yes, s.id), button('pressCharacterSpike', 'NCI.GMBusiness.PressSpike', no, s.id)],
 })));
 
-const rows = () => [...storyRows(), ...pressRows(), ...businessRows(), ...rewardRows(), ...syndicateRows(), ...heatRows(), ...gigRows()];
+const jobRows = () => JobService.waiting().map(({ business: b, application: a }) => row('businesses', a.name, 'jobApplication', { name: b.name, post: L(`NCI.Staff.Post.${a.post}`), band: L(`NCI.Roll.Band.${a.band}`) }, () => ({
+  buttons: [button('businessJobAnswer', 'NCI.Jobs.Hire', yes, b.id, { reward: a.id, yes: 'true' }), button('businessJobAnswer', 'NCI.Jobs.TurnDown', no, b.id, { reward: a.id, yes: 'false' })],
+})));
+
+const rows = () => [...storyRows(), ...pressRows(), ...jobRows(), ...businessRows(), ...rewardRows(), ...syndicateRows(), ...heatRows(), ...gigRows()];
 
 /** How many decisions wait on each tab, and in all under `pending`. */
 export function waiting() {

@@ -44,13 +44,14 @@ export function npcWeek(b, seed = 'nci', p = BUSINESS_DEFAULTS) {
 }
 
 /**
- * What is left in the cash above the reserve goes to the owner, and out of the game, so a company that runs itself
- * doesn't pile up money nobody can use. Only a full week counts.
+ * The week's profit goes to the owner, and out of the game, so a company that runs itself doesn't pile up money nobody
+ * can use. Only what is above the reserve goes, so a poor company builds up first, and what the GM started it with
+ * stays in. Only a full week counts.
  * @returns {number} what was paid out
  */
-export function npcDraw(b, weekly, part, day, p = BUSINESS_DEFAULTS) {
+export function npcDraw(b, weekly, profit, part, day, p = BUSINESS_DEFAULTS) {
   if (!b.npcRun?.auto || part < 1) return 0;
-  const draw = Math.floor(b.till - p.npc.reserveWeeks * weekly);
+  const draw = Math.floor(Math.min(profit, b.till - p.npc.reserveWeeks * weekly));
   if (draw <= 0) return 0;
   b.till -= draw;
   addLedger(b, { day, kind: 'ownerDraw', amount: -draw }, p);

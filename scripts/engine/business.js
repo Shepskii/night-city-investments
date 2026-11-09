@@ -1936,7 +1936,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   const loans = payLoans(b, b.period.endDay, p);
   const profit = takings + sales.margin - upkeep - eventCost - wages.wages - loans.interest;
   b.till -= loans.interest + loans.principal;
-  const ownerDraw = npcDraw(b, upkeep + wages.wages, part, b.period.endDay, p);
+  const ownerDraw = npcDraw(b, upkeep + wages.wages, profit, part, b.period.endDay, p);
 
   // The staff's week: loyalty, raises asked for at a month's end, and who has had enough (E2).
   const monthEnd = b.period.index % p.report.weeks === 0;

@@ -109,6 +109,10 @@ A syndicate is a crew's shared brokerage account.
 
 A syndicate can found, join or invest in a player business. Its officers act for it in the Business window (pick the syndicate in the account list): they roll with their own skills and Luck, pay from its account (cash only, no gear), and cast its vote. Payments over an officer's limit go to the members first. Its business stakes count in its value.
 
+## Looking for work
+
+The Business window has a **Job board** listing roles open at companies around the city, with a rough wage. **Apply** is one roll with your own skill, and you can try each company once a week. If you pass, the GM decides, and you'll hear by mail; if you're taken on you start at once, and a better roll earns a better wage. Your job then shows under **Your jobs**, where you can quit at any time.
+
 ## If you're a Media: stories and rumours
 
 A company's market page has **Publish a story**: an exposé to push its price down, or a puff piece to push it up. Your Credibility rank sets how likely the public is to believe it and how far the price can move. Evidence items in your inventory help, and each works once. Holding shares in a company you write about draws heat.

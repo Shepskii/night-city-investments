@@ -42,6 +42,8 @@ export const SETTINGS = Object.freeze({
   ROOM_EVENTS: 'roomEventFrequency',
   PRESS_FREQUENCY: 'pressFrequency',
   PRESS_APPROVAL: 'pressApproval',
+  JOB_BOARD: 'jobBoard',
+  JOB_AUTO: 'jobAutoHire',
   SHARE_CONTACTS: 'shareContacts',
   DATE_FORMAT: 'dateFormat',
   PRODUCTION_CATALOG: 'productionCatalog',

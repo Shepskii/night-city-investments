@@ -117,6 +117,7 @@ In both the in-world modes the market only moves when in-world time passes, so a
 | Share contacts with players | On | A character who picks a broker, or founds a business with an NPC partner, gets that person in their Night City Messenger contacts. Contacts already shared stay if you turn it off. |
 | Stories in the press | Normal | How often corporations with a grudge run stories against player businesses: Off, Rare, Normal or Often. Off keeps the older smear events. |
 | Press stories need GM approval | On | Each story waits on Pending until you let it run or spike it. |
+| Hire good job applicants automatically | Off | Off: every passed application to an NPC's company waits on Pending. On: a solid roll or better is hired at once. |
 | Back room events | Normal | How often a back room that was worked last week draws trouble of its own: Rare, Normal or Often. |
 | Smears, leaks and stories need GM approval | On | A business's successful campaign, or a Media's believed story, waits on the Pending tab until you let it run. Off: they run at once. |
 

@@ -38,6 +38,7 @@ import { CompanyRepository } from '../data/CompanyRepository.js';
 import { FactionRepository } from '../data/FactionRepository.js';
 import { StoryService } from './StoryService.js';
 import { PressService } from './PressService.js';
+import { JobService } from './JobService.js';
 import { escapeHtml } from '../utils/text.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
@@ -537,6 +538,8 @@ class BusinessServiceImpl {
     if (request.type === 'investigate') return this._receipt(actor, request, await this._investigate(actor, request));
     // Answering a regulator's case (R1) rolls against a total only the GM's service holds.
     if (request.type === 'caseRoll') return this._receipt(actor, request, await this._answerCase(actor, request));
+    // Applying for a job at an NPC's company (N2): the character can't read its record, and isn't a partner.
+    if (request.type === 'jobApply') return this._receipt(actor, request, await JobService.apply(actor, request));
     const as = this._partnerFor(actor, request);
     if (!as.ok) return this._receipt(actor, request, as);
     // A takeover bid names its target by ticker, as the bidder knows it; they cannot read its record (B6b).
@@ -686,6 +689,7 @@ class BusinessServiceImpl {
     await this._saveHidden(out);
     await this._rewardEvents(out);
     await this._syncJobs(out.business);
+    if (out.business?.npcRun) await JobService.publish();
     if (out.events?.some((e) => e.type === 'partnerJoined')) await this._shareNpcPartners(out.business).catch((error) => log.warn('Could not share NPC partners', error));
     await this._payslips(out);
     await this._livingCosts(out);
@@ -1126,6 +1130,7 @@ class BusinessServiceImpl {
       await this._layerFees();
       await this._concealment();
       await this._lapseCases();
+      await JobService.publish();
       return changed;
     });
   }

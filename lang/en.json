@@ -1823,6 +1823,7 @@
         "Hint": "How often corporations with a grudge run stories against player businesses. Off keeps the older smear events instead.",
         "Off": "Off"
       },
+      "JobAuto": { "Name": "Hire good job applicants automatically", "Hint": "Off: every passed application to an NPC's company waits on Pending. On: a solid roll or better is hired at once, and a narrow pass still waits for you." },
       "PressApproval": {
         "Name": "Press stories need GM approval",
         "Hint": "Each story waits on the GM Console's Pending tab until the GM lets it run or spikes it. The owners see nothing until then."
@@ -2580,6 +2581,19 @@
         "grudge": "An employee {name} let go is back at {place} with friends, and a list of what they're owed."
       }
     },
+    "Jobs": {
+      "Board": "Job board ({count} open)",
+      "BoardHint": "Roles open at companies around the city. Applying is one roll with your own skill, and you can try each company once a week. The wage is a guide: what you're paid depends on your skills and how the interview goes.",
+      "About": "about {wage} eb a week",
+      "Apply": "Apply",
+      "Hire": "Hire them",
+      "TurnDown": "Turn them down",
+      "Title": "Apply to be {post} at {name}",
+      "Hint": "A roll against DV {dv}. Pass, and your application goes in. A better roll earns a better wage if you're taken on.",
+      "Subject": "Your application to {name}",
+      "Hired": "{name} has taken you on as {post}, at {wage} eb a week. You start now: see Your jobs in the Business window.",
+      "Turned": "{name} won't be taking you on as {post}. You can try them again in a week."
+    },
     "Press": {
       "Run": {
         "Title": "Run a story",
@@ -2714,6 +2728,7 @@
         "story": "Media story",
         "press": "Press story",
         "pressCharacter": "Press story",
+        "jobApplication": "Job application",
         "offer": "Job offer",
         "npcPartner": "NPC partner",
         "reward": "REP and IP",
@@ -2739,6 +2754,7 @@
         "story": "A story about {name}: let it run or spike it",
         "press": "{outlet} wants to run a story ({story}) for {grudge}. {why} Let it run or spike it",
         "pressCharacter": "{outlet} wants to run a story ({story}) naming this character. {why} Let it run or spike it",
+        "jobApplication": "Applied to be {post} at {name}, with a {band} roll. Hire them or turn them down",
         "offer": "Answer for {name}: a job offer as {post}",
         "npcPartner": "Answer for {name}: invited to found this business as a silent partner",
         "reward": "{what}: apply, change or dismiss",
@@ -2773,6 +2789,7 @@
         "Name": "Name",
         "Archetype": "Kind of business",
         "Owner": "Owner (an NPC)",
+        "OwnerSearch": "Type a name to search",
         "OwnerLevel": "Owner's skill",
         "StageLabel": "Stage",
         "ProfileLabel": "How it's run",
@@ -2792,7 +2809,7 @@
         "Reason": {
           "bad-name": "Give the company a name.",
           "bad-archetype": "Choose a kind of business.",
-          "bad-owner": "Choose an NPC to own it. It can't be a player's character.",
+          "bad-owner": "Search for an NPC and pick one from the list. It can't be a player's character.",
           "bad-stage": "Choose a stage.",
           "bad-level": "Choose the owner's skill.",
           "bad-profile": "Choose how it's run.",
@@ -3232,6 +3249,7 @@
         "hire": "A hired professional, for {name}",
         "opened": "Opened: setup paid",
         "ownerDraw": "Paid out to the owner",
+        "jobApplicant": "{staffName} was hired from the job board",
         "takings": "Takings",
         "upkeep": "Rent, stock, wages and protection",
         "draw": "{name} drew",
@@ -3579,6 +3597,7 @@
       "Refused": "Your business request was refused: {reason}",
       "Done": {
         "pressAnswer": "Your answer is on the record. You'll hear how it went when the week is up.",
+        "jobApply": "Your application is in. You'll hear by mail.",
         "buyStock": "Bought: it is on your sheet.",
         "consign": "Your items are in the shop.",
         "takeBack": "It is back on your sheet.",
@@ -3698,6 +3717,10 @@
         "no-faction": "that action needs a faction to aim at",
         "no-target": "that action needs a company to aim at",
         "no-press": "no story is waiting for an answer",
+        "job-closed": "that job is no longer open",
+        "job-waiting": "your application is with them",
+        "job-wait": "you applied there in the last week",
+        "no-application": "that application is no longer waiting",
         "press-answered": "you have already answered that story",
         "not-media": "that takes the Media role's Credibility",
         "bad-angle": "that is not an angle for a story",

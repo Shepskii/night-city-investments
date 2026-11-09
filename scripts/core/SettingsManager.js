@@ -496,6 +496,22 @@ export function registerSettings() {
     type: Boolean,
     default: true,
   });
+  s.register(MODULE_ID, SETTINGS.JOB_AUTO, {
+    name: 'NCI.Settings.JobAuto.Name',
+    hint: 'NCI.Settings.JobAuto.Hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+  // What players may see of NPC companies' open roles (N2), written by the GM's client.
+  s.register(MODULE_ID, SETTINGS.JOB_BOARD, {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: { companies: [], tried: {}, waiting: {} },
+    onChange: () => Hooks.callAll(HOOKS.BUSINESSES_CHANGED, {}),
+  });
   s.register(MODULE_ID, SETTINGS.DATE_FORMAT, {
     name: 'NCI.Settings.DateFormat.Name',
     hint: 'NCI.Settings.DateFormat.Hint',
