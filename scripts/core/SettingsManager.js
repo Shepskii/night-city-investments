@@ -479,6 +479,23 @@ export function registerSettings() {
     choices: { rare: 'NCI.Settings.RoomEvents.Rare', normal: 'NCI.Settings.RoomEvents.Normal', often: 'NCI.Settings.RoomEvents.Often' },
     default: 'normal',
   });
+  s.register(MODULE_ID, SETTINGS.PRESS_FREQUENCY, {
+    name: 'NCI.Settings.PressFrequency.Name',
+    hint: 'NCI.Settings.PressFrequency.Hint',
+    scope: 'world',
+    config: true,
+    type: String,
+    choices: { off: 'NCI.Settings.PressFrequency.Off', rare: 'NCI.Settings.RoomEvents.Rare', normal: 'NCI.Settings.RoomEvents.Normal', often: 'NCI.Settings.RoomEvents.Often' },
+    default: 'normal',
+  });
+  s.register(MODULE_ID, SETTINGS.PRESS_APPROVAL, {
+    name: 'NCI.Settings.PressApproval.Name',
+    hint: 'NCI.Settings.PressApproval.Hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true,
+  });
   s.register(MODULE_ID, SETTINGS.DATE_FORMAT, {
     name: 'NCI.Settings.DateFormat.Name',
     hint: 'NCI.Settings.DateFormat.Hint',

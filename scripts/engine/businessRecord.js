@@ -129,6 +129,8 @@ export function normalizeBusiness(raw) {
     company: b.company ?? null,
     /** A company's monthly reports, newest last; the weeks closed toward the next; its preparation roll. */
     reports: b.reports ?? [],
+    /** Stories in the press (S1): the day of the last one drawn, and one waiting for the GM. */
+    press: b.press ?? null,
     reportWeeks: int(b.reportWeeks),
     reportPrep: b.reportPrep ?? null,
     /** A company's officers (actor ids), its last internal audit, and what due diligence found. */

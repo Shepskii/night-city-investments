@@ -251,6 +251,8 @@ Players can raise a business's standing with a faction: a shop uses **Court a cl
 
 A hostile faction (standing below -60) may act against the business, up to 15% of weeks: a smear, sabotage, a tipped-off raid or poaching. These run by themselves as the week's event, and the players answer them as usual. A smear that lands dips a listed company's price by up to 2%. Beating a gang's shakedown by force costs 3 standing with that gang.
 
+**Stories in the press.** A corporation with a grudge may run a story against a business, set by **Stories in the press** in the module settings (Off, Rare, Normal or Often). A hostile corporation is the likeliest and goes to a media company if the world has one, a wary one is less likely, and a neutral one only has a small chance if something true can be told. A business gets at most one story in 28 days. With **Press stories need GM approval** on, each waits on Pending showing who is behind it and why it's true, and you can reword the headline, **Let it run** or **Spike it**. The owners see nothing until you decide, and a story you leave undecided goes when the week closes. With stories on, these replace a hostile corporation's smear.
+
 Each business's entry on the **Businesses** tab shows its true standing with the factions it knows, and has a control to set one by hand. Its owners only see the band.
 
 Standing runs from -100 to 100 for each business; its owners see only a band (hostile, wary, neutral, friendly, allied). It fades 2 points a week and moves at most 15 a week; you can set it by hand on the same tab.

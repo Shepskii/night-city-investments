@@ -56,6 +56,8 @@ export function hostileAct(b, seed = 'nci', p = BUSINESS_DEFAULTS, relations = n
   const staffId = staffEventTarget(b, 'poaching', rng, p);
   const kinds = [worst.kind === 'gang' ? 'sabotage' : 'smear', 'raid', ...(staffId ? ['poaching'] : [])];
   const kind = kinds[rng.int(0, kinds.length - 1)];
+  // With stories in the press on (S1), they do a corporation's smearing, so this act does not happen. The others stay as likely.
+  if (kind === 'smear' && relations?.press) return null;
   return { kind, factionId: worst.id, factionName: worst.name, ...(kind === 'poaching' ? { staffId } : {}) };
 }
 
@@ -111,8 +113,8 @@ export function settleEvent(b, takings, slots, p = BUSINESS_DEFAULTS, staffCtx =
   const answer = slots.find((s) => s.action === 'respond');
   const safe = slots.find((s) => s.action === 'keepSafe');
 
-  // A back room's event leaves the shop's takings alone: `roomEventFallout` does the rest (U3).
-  if (def.room) {
+  // A back room's event leaves the shop's takings alone: `roomEventFallout` does the rest (U3). So does a story (S1).
+  if (def.room || def.press) {
     const outcome = !answer ? 'unanswered' : answer.band === 'fumble' ? 'fumbled' : bandPassed(answer.band) ? 'answered' : 'failed';
     return { kind: event.kind, outcome, band: answer?.band ?? null, change: 0 };
   }

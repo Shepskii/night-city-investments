@@ -30,6 +30,7 @@ export * from './syndicate.js';
 export * from './businessCharter.js';
 export * from './businessCompany.js';
 export * from './businessEvents.js';
+export * from './businessPress.js';
 export * from './businessStaff.js';
 export * from './businessPeople.js';
 export * from './businessRewards.js';

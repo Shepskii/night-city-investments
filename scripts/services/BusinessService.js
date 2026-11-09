@@ -18,7 +18,7 @@ import { ProductionCatalog } from '../data/ProductionCatalog.js';
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
-  dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, answerNpcPartner, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
+  dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, answerNpcPartner, approvePress, spikePress, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
   isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact, payListedDividend,
   reviewListing, clearReview, delistCompany,
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
@@ -1109,6 +1109,7 @@ class BusinessServiceImpl {
           roomEvents: BUSINESS_DEFAULTS.backRoom.events.frequency[game.settings.get(MODULE_ID, SETTINGS.ROOM_EVENTS)] ?? 1,
           ...factionEffects(business, factions, hiddenEntry?.standing ?? {}),
           exposure: hiddenEntry?.exposure ?? 0,
+          press: this._pressRelations(business, factions, hiddenEntry),
           living: Object.fromEntries((business.covered ?? []).map((id) => [id, this.livingCostOf(id)])),
         };
         const out = advanceBusiness(this.underworldOn() ? business : dropIllegalLine(business), day, { ...opts, traits: this.traitsOf(business.id), relations });
@@ -1137,6 +1138,68 @@ class BusinessServiceImpl {
       await this._commit({ events: [], ...out });
       return { ok: true, business: out.business };
     });
+  }
+
+  /** Who might run a story about this business, or null with stories off (S1). A company is never its own outlet. */
+  _pressRelations(business, factions, hiddenEntry) {
+    const frequency = BUSINESS_DEFAULTS.press.frequency[game.settings.get(MODULE_ID, SETTINGS.PRESS_FREQUENCY)];
+    if (!frequency) return null;
+    return {
+      frequency,
+      approval: game.settings.get(MODULE_ID, SETTINGS.PRESS_APPROVAL) !== false,
+      underworld: this.underworldOn(),
+      corps: factions.filter((f) => f.kind === 'corp').map((f) => ({ id: f.id, name: f.name, value: hiddenEntry?.standing?.[f.id]?.value ?? 0 })),
+      media: CompanyRepository.all().filter((c) => c.sector === 'media' && c.ticker !== business.company?.ticker).map((c) => ({ name: c.name, ticker: c.ticker })),
+    };
+  }
+
+  /** The GM lets a waiting story run, and it becomes this week's event (S1). */
+  approvePress(id, headline) {
+    return this._gm(id, (b) => {
+      const copy = normalizeBusiness(structuredClone(b));
+      const done = approvePress(copy, headline);
+      return done.ok ? { ok: true, business: copy, wealth: {}, events: [] } : done;
+    });
+  }
+
+  /** The GM spikes a waiting story (S1). */
+  spikePress(id) {
+    return this._gm(id, (b) => {
+      const copy = normalizeBusiness(structuredClone(b));
+      const done = spikePress(copy);
+      return done.ok ? { ok: true, business: copy, wealth: {}, events: [] } : done;
+    });
+  }
+
+  /** A story's headline reaches the news, and what it did reaches the price, the owners and the regulators (S1). */
+  async _pressEvent(b, e) {
+    const ticker = isListed(b) ? b.company.ticker : null;
+    const companyIds = ticker ? [ticker] : [];
+    if (e.type === 'pressPrinted') {
+      await NewsService.post({ headline: e.headline ?? L(`NCI.Press.Headline.${e.story}`, { name: b.name, outlet: e.outlet }), tone: 'down', companyIds });
+      return;
+    }
+    const result = !e.believed ? 'Ignored' : e.scale === 0 ? 'Answered' : e.scale < 1 ? 'Halved' : 'Full';
+    await this._mailRoom(b, L('NCI.Press.Mail.Subject', { name: b.name }), [L(`NCI.Press.Mail.${result}`, { name: b.name, outlet: e.outlet })]);
+    if (ticker && e.percent) {
+      const key = `press:${b.id}:${e.period}`;
+      await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
+        ...controls,
+        impacts: [...controls.impacts, makeImpact({
+          id: `imp_press_${b.id}_${e.period}`, target: { type: 'company', id: ticker }, amount: percentToAmount(e.percent), onsetTick: now + BUSINESS_DEFAULTS.ownership.scandal.delayDays,
+          permanent: 1, sourceKey: key, source: 'press', meta: { businessId: b.id, percent: e.percent },
+        })],
+      }));
+    }
+    if (!e.regCase) return;
+    const stored = BusinessRepository.get(b.id);
+    if (!stored || stored.regCase) return;
+    const withCase = normalizeBusiness(structuredClone(stored));
+    if (openCase(withCase, { reason: 'story', day: this.day() }).ok) {
+      await BusinessRepository.save(withCase);
+      await this._mailCaseOpened(withCase);
+      b.regCase = withCase.regCase;
+    }
   }
 
   /** Let a business waiting for approval open. */
@@ -1734,6 +1797,7 @@ class BusinessServiceImpl {
         }
       }
       if (e.type === 'crimeScandal') await this._scandal(b, e.percent, e.key);
+      if (e.type === 'pressPrinted' || e.type === 'pressResult') await this._pressEvent(b, e);
       if (e.type === 'gangDealEnded') await this._mailRoom(b, L('NCI.BackRoom.DealSubject', { name: b.name }), [L('NCI.BackRoom.DealEnded', { gang: e.name, name: b.name })]);
       if (e.type === 'campaignLands' || e.type === 'campaignCaught') moved = true;
       if (e.type !== 'factionSmear' || !isListed(b)) continue;

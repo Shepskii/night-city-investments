@@ -78,6 +78,12 @@ function businessRows() {
         buttons: [act('businessCaseFine', 'CaseApprove', 'fa-gavel'), act('businessCaseDrop', 'CaseDrop', no)],
       })),
       b.campaign?.status === 'awaiting' && need('campaign', { name: b.campaign.name }, act('businessCampaignApprove', 'CampaignApprove', yes), act('businessCampaignReject', 'CampaignReject', no)),
+      b.press?.held && row('businesses', b.name, 'press', {
+        story: L(`NCI.Press.Story.${b.press.held.story}`), outlet: b.press.held.factionName, grudge: b.press.held.grudge, why: L(b.press.held.story === 'smear' ? 'NCI.Press.Why.smear' : `NCI.Press.Why.${b.press.held.story}`),
+      }, () => ({
+        fields: [{ type: 'text', name: 'pressHeadline', label: L('NCI.GMBusiness.PressHeadline'), value: L(`NCI.Press.Headline.${b.press.held.story}`, { name: b.name, outlet: b.press.held.factionName }) }],
+        buttons: [act('businessPressApprove', 'PressApprove', yes), act('businessPressSpike', 'PressSpike', no)],
+      })),
       b.backRoom?.status === 'pending' && need('backRoom', { kind: L(`NCI.BackRoom.Kind.${b.backRoom.kind}`) }, act('businessRoomApprove', 'RoomApprove', yes), act('businessRoomReject', 'RoomReject', no)),
       sceneCandidate(b) && need('scene', { event: L(`NCI.Event.${b.period.event.kind}.Name`) }, act('businessSceneRun', 'SceneRun', 'fa-masks-theater')),
       b.scene && need('sceneOpen', { event: L(`NCI.Event.${b.scene.event.kind}.Name`) }, act('businessSceneWon', 'SceneWon', yes), act('businessSceneLost', 'SceneLost', no), act('businessSceneRoll', 'SceneRoll', 'fa-dice-d10')),

@@ -167,6 +167,8 @@ A business week closes on the weekday your GM chose.
 
 Your GM may decide to play a big event out with you, such as a raid or a hostile faction's move. You'll get a mail and there's nothing to roll: how the scene goes decides it.
 
+A reporter asking questions means a corporation with a grudge is running a story about you. It prints three days into the week, and the public may not believe it, but you won't know until the week closes. Answer it as you would any event: a pass stops the harm and a failure halves it. Depending on what it says, a story that sticks can cost Reputation, attract attention to your back room, or move your share price if you're listed. You'll get a mail saying how it went.
+
 ### The roll dialog
 
 Every roll is yours to make, when you press its button. The dialog shows the DV and your chance of each result before you roll, and these levers:

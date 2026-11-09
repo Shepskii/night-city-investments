@@ -814,7 +814,7 @@ function eventContext(business, canAct, free) {
   return {
     name: roomEventName(business, event.kind) ?? L(`NCI.Event.${event.kind}.Name`),
     // A staff event names the employee it is about (E2).
-    hint: L(`NCI.Event.${event.kind}.Hint`, { name: event.staffId ? staffOf(business, event.staffId)?.name ?? '' : '' }),
+    hint: event.kind === 'press' ? L(`NCI.Press.Angle.${event.story}`) : L(`NCI.Event.${event.kind}.Hint`, { name: event.staffId ? staffOf(business, event.staffId)?.name ?? '' : '' }),
     // A faction's event says whose it is; force beats a gang's shakedown, at a price (F1b).
     from: event.factionName ? L(event.kind === 'shakedown' ? 'NCI.Event.FromGang' : 'NCI.Event.From', { faction: event.factionName }) : '',
     good: !!def.good,
@@ -824,7 +824,7 @@ function eventContext(business, canAct, free) {
     // The GM may play a big one out at the table instead (X1).
     maybeScene: !answer && isBigEvent(event) ? L('NCI.Business.MaybeScene') : '',
     canAnswer: canAct && free && !answer,
-    ifNot: event.kind === 'bust' ? L('NCI.BackRoom.RaidIfNot') : def.room ? L(`NCI.Event.${event.kind}.IfNot`) : def.staff ? L(`NCI.Event.${event.kind}.IfNot`, { name: event.staffId ? staffOf(business, event.staffId)?.name ?? '' : '' }) : def.good ? L('NCI.Business.WindfallIfNot') : L('NCI.Business.EventIfNot'),
+    ifNot: event.kind === 'press' ? L('NCI.Event.press.IfNot') : event.kind === 'bust' ? L('NCI.BackRoom.RaidIfNot') : def.room ? L(`NCI.Event.${event.kind}.IfNot`) : def.staff ? L(`NCI.Event.${event.kind}.IfNot`, { name: event.staffId ? staffOf(business, event.staffId)?.name ?? '' : '' }) : def.good ? L('NCI.Business.WindfallIfNot') : L('NCI.Business.EventIfNot'),
   };
 }
 

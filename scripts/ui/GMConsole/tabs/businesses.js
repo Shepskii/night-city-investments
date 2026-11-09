@@ -83,6 +83,15 @@ async function onCampaignReject(event, target) {
   report(await BusinessService.rejectCampaign(target.dataset.id));
 }
 
+/** A story in the press: run it under the headline in its row, or spike it (S1). */
+async function onPressApprove(event, target) {
+  report(await BusinessService.approvePress(target.dataset.id, target.closest('tr')?.querySelector('[name="pressHeadline"]')?.value ?? ''));
+}
+
+async function onPressSpike(event, target) {
+  report(await BusinessService.spikePress(target.dataset.id));
+}
+
 async function onRoomApprove(event, target) {
   report(await BusinessService.approveBackRoom(target.dataset.id));
 }
@@ -200,6 +209,8 @@ export const actions = {
   businessRewardDismiss: onRewardDismiss,
   businessSetStanding: onSetStanding,
   businessCampaignApprove: onCampaignApprove,
+  businessPressApprove: onPressApprove,
+  businessPressSpike: onPressSpike,
   businessRoomApprove: onRoomApprove,
   businessRoomReject: onRoomReject,
   businessSceneRun: onSceneRun,

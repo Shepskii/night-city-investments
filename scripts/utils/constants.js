@@ -40,6 +40,8 @@ export const SETTINGS = Object.freeze({
   FACTION_DEFS: 'factionDefs',
   DISTRICT_DEFS: 'districtDefs',
   ROOM_EVENTS: 'roomEventFrequency',
+  PRESS_FREQUENCY: 'pressFrequency',
+  PRESS_APPROVAL: 'pressApproval',
   SHARE_CONTACTS: 'shareContacts',
   DATE_FORMAT: 'dateFormat',
   PRODUCTION_CATALOG: 'productionCatalog',

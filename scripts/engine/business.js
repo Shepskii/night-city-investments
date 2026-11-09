@@ -70,6 +70,7 @@
 import { fenceCheck, fenceWeek, makesThings, buyStock, clearStock, consignStock, handOffer, handStock, produceCheck, productionWeek, salesWeek, setLine, takeBackStock } from './businessProduction.js';
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from './businessEvents.js';
+import { drawPress, placePress, lapsePress, printPress, pressFallout } from './businessPress.js';
 import { aimCheck, giftFor } from './factions.js';
 import { campaignCheck, runCampaign, runBlackOps } from './businessCampaign.js';
 import { supplyCut, runSupply, runVenue, backupWait } from './businessRoles.js';
@@ -1670,6 +1671,9 @@ export function advanceBusiness(business, day, { weekday = 1, growthRate = 1, ac
     changed = true;
   }
 
+  // A story's print day may come in the middle of a week (S1).
+  if (printPress(b, day, seed, out, p)) changed = true;
+
   let closes = 0;
   while (b.status === 'open' && b.period.endDay <= day && closes < p.catchUpPeriods) {
     closePeriod(b, { growthRate, weekday, seed, traits, relations, params: p }, out);
@@ -1712,8 +1716,10 @@ function startPeriod(b, index, startDay, weekday, seed, p, traits = null, relati
   b.period.opening = b.till;
   // A hostile faction's act comes in place of what the week would have drawn (F1b).
   // So does a raid on a back room (U1b).
+  // So does a story in the press (S1), and that comes before a faction's other moves.
   // So does trouble of the room's own, from a week it was worked (U3).
-  const event = roomBust(b, seed, p, relations, traits) ?? hostileAct(b, seed, p, relations) ?? roomEvent(b, seed, p, relations) ?? drawEvent(b, seed, p, traits, relations);
+  lapsePress(b);
+  const event = roomBust(b, seed, p, relations, traits) ?? drawPress(b, seed, p, relations) ?? hostileAct(b, seed, p, relations) ?? roomEvent(b, seed, p, relations) ?? drawEvent(b, seed, p, traits, relations);
   if (b.collectors) {
     // A missed payment to a fixer: the collectors come in place of whatever else the week held.
     b.period.event = { kind: 'collectors' };
@@ -1722,6 +1728,8 @@ function startPeriod(b, index, startDay, weekday, seed, p, traits = null, relati
     // A sullen employee who was let go comes back to make a point.
     b.period.event = { kind: 'grudge' };
     b.grudge = false;
+  } else if (event?.kind === 'press') {
+    placePress(b, event, relations?.press?.approval !== false);
   } else if (event) {
     b.period.event = event;
   }
@@ -1811,8 +1819,11 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   const base = Math.round(arch.takings * b.state.capacity * traffic(b.state.reputation) * district.traffic * workMult * (1 + b.boost) * part);
   const boost = b.boost;
   b.boost = 0;
+  // A short week can close before a story's print day.
+  printPress(b, b.period.endDay, seed, out, p, true);
   const event = settleEvent(b, base, b.period.slots, p, { traits, seed, day: b.period.endDay });
   out.events.push(...factionFallout(b, event, p));
+  out.events.push(...pressFallout(b, event, p));
   out.events.push(...bustFallout(b, b.period.event, event?.outcome, b.period.endDay, p));
   out.events.push(...roomEventFallout(b, b.period.event, event, part, p));
   const takings = Math.max(0, base + (event?.change ?? 0));

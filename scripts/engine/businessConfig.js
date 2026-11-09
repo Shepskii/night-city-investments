@@ -732,6 +732,32 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     hostile: Object.freeze({ chance: Object.freeze([0.05, 0.15]), smear: -0.02, raidExposure: 5, force: -3 }),
   }),
   /**
+   * Stories in the press (S1, DESIGN §36.13). `chance` is weekly below hostile; at hostile it is the hostile act's
+   * chance times `hostileDraw`. `limitDays` between stories for one target; of what can truthfully be told, a smear is
+   * picked `smearShare` of the time. A corporation's own press and a media company have fixed Credibility ranks.
+   * `frequency` is the world setting. `kinds` is what each does in full, if believed and not answered.
+   */
+  press: Object.freeze({
+    chance: Object.freeze({ wary: 0.04, neutral: 0.01 }),
+    hostileDraw: 2,
+    limitDays: 28,
+    smearShare: 0.2,
+    smearPenalty: 1,
+    printDays: 3,
+    rank: Object.freeze({ own: 4, media: 6 }),
+    frequency: Object.freeze({ rare: 0.5, normal: 1, often: 2 }),
+    lookbackWeeks: 4,
+    poorState: 35,
+    raids: Object.freeze(['bust', 'raid']),
+    accidents: Object.freeze(['accident']),
+    kinds: Object.freeze({
+      money: Object.freeze({ reputation: -2, price: true }),
+      crime: Object.freeze({ reputation: -5, exposure: 5, price: true, regCase: true }),
+      service: Object.freeze({ reputation: -5 }),
+      smear: Object.freeze({ reputation: -3, pricePercent: -2 }),
+    }),
+  }),
+  /**
    * Regulators (R1, DESIGN §36.7): the chance of a case at each monthly report, by Exposure band; `notice`
    * days to answer. An officer rolls `uses` (Bribery costs `bribe` eb from the cash) against `base` + 1d10
    * + `bonus` by band; a win clears `clearShare` of the Exposure. A loss is a fine of `fine` of book value
@@ -1064,6 +1090,8 @@ export const EVENTS = Object.freeze({
   sabotage: Object.freeze({ weight: 0, security: true, uses: [S.basicTech, S.tactics, A.combatAwareness, A.maker], hit: Object.freeze({ capacity: -0.05 }) }),
   smear: Object.freeze({ weight: 0, uses: [S.persuasion, S.composition, A.credibility, A.charismaticImpact], hit: Object.freeze({ reputation: -3 }) }),
   raid: Object.freeze({ weight: 0, uses: [S.bureaucracy, S.persuasion, S.tactics, A.backup], hit: Object.freeze({ compliance: -8 }) }),
+  /** Never drawn at random: a story in the press (S1). What it does is `press.kinds`, by what it says. */
+  press: Object.freeze({ weight: 0, press: true, uses: [S.persuasion, S.composition, A.credibility, A.charismaticImpact], hit: Object.freeze({}) }),
   /** Never drawn at random: a raid on a back room, by its Exposure (U1b). */
   bust: Object.freeze({ weight: 0, uses: [S.bureaucracy, S.persuasion, S.tactics, S.bribery, A.backup], hit: Object.freeze({ compliance: -8, reputation: -3 }) }),
   /** Never drawn at random: what goes wrong in a back room (U3). Answered with the skills of the room's kind; see `roomEventFallout`. */

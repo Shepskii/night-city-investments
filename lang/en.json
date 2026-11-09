@@ -1818,6 +1818,15 @@
         "Name": "Share contacts with players",
         "Hint": "A character who picks a broker, or who founds a business with an NPC partner, gets that person in their Night City Messenger contacts."
       },
+      "PressFrequency": {
+        "Name": "Stories in the press",
+        "Hint": "How often corporations with a grudge run stories against player businesses. Off keeps the older smear events instead.",
+        "Off": "Off"
+      },
+      "PressApproval": {
+        "Name": "Press stories need GM approval",
+        "Hint": "Each story waits on the GM Console's Pending tab until the GM lets it run or spikes it. The owners see nothing until then."
+      },
       "RoomEvents": {
         "Name": "Back room events",
         "Hint": "How often a back room that was worked last week draws trouble of its own.",
@@ -2565,6 +2574,34 @@
         "grudge": "An employee {name} let go is back at {place} with friends, and a list of what they're owed."
       }
     },
+    "Press": {
+      "Story": { "money": "money trouble", "crime": "a crime expose", "service": "bad service", "smear": "a smear" },
+      "Angle": {
+        "money": "A reporter is calling round about your finances, and someone is talking.",
+        "crime": "A reporter has been watching who comes and goes, and wants a comment on what goes on here.",
+        "service": "A reporter is collecting complaints from your customers.",
+        "smear": "A reporter has an ugly story about you and doesn't seem to care if it's true."
+      },
+      "Headline": {
+        "money": "{outlet}: is {name} running out of money?",
+        "crime": "{outlet}: what is really going on at {name}?",
+        "service": "{outlet}: customers speak out against {name}",
+        "smear": "{outlet}: the shocking truth about {name}"
+      },
+      "Why": {
+        "money": "It has lost money lately or its compliance is poor.",
+        "crime": "Its Exposure is moderate or higher, or it was raided recently.",
+        "service": "Its Reputation is poor, or it has had an accident or a stock query.",
+        "smear": "Nothing true is needed: it's harder to believe."
+      },
+      "Mail": {
+        "Subject": "The story about {name}",
+        "Ignored": "The story {outlet} ran about {name} went nowhere. Nobody believed it.",
+        "Answered": "People believed the story {outlet} ran about {name}, but your answer killed it. No harm done.",
+        "Halved": "People believed the story {outlet} ran about {name}, and your answer only took the edge off. It cost you, though not as much as it might have.",
+        "Full": "People believed the story {outlet} ran about {name}, and nothing stopped it. It cost you in full."
+      }
+    },
     "Story": {
       "Title": "A story about {name}",
       "Hint": "The public believes it on 1d10 of {base} or under, without Luck. Any evidence adds {bonus}, and more than {many} pieces add {manyBonus}. Your rank moves the price up to {cap}%. You can publish once a week, and another story about the same company within 30 days needs new evidence.",
@@ -2619,6 +2656,7 @@
         "scene": "Big event",
         "sceneOpen": "Big event",
         "story": "Media story",
+        "press": "Press story",
         "offer": "Job offer",
         "npcPartner": "NPC partner",
         "reward": "REP and IP",
@@ -2642,6 +2680,7 @@
         "scene": "{event}: run it as a scene, or leave it as a roll",
         "sceneOpen": "{event}: say how the scene went",
         "story": "A story about {name}: let it run or spike it",
+        "press": "{outlet} wants to run a story ({story}) for {grudge}. {why} Let it run or spike it",
         "offer": "Answer for {name}: a job offer as {post}",
         "npcPartner": "Answer for {name}: invited to found this business as a silent partner",
         "reward": "{what}: apply, change or dismiss",
@@ -2701,6 +2740,9 @@
       "RoomApprove": "Let the back room open",
       "RoomReject": "Turn it down",
       "CampaignApprove": "Let the campaign run",
+      "PressApprove": "Let it run",
+      "PressSpike": "Spike it",
+      "PressHeadline": "Headline",
       "CampaignReject": "Stop the campaign",
       "StaffOffer": "{name}, an NPC, is offered a job as {post} at {wage} eb a week. Answer for them.",
       "NpcPuts": "Puts in (eb)",
@@ -2771,6 +2813,7 @@
       "roomRival": { "Name": "A rival operation", "Hint": "Another crew is moving in on the back room's trade.", "IfNot": "Unanswered, the room's earnings are halved this week and Exposure rises." },
       "roomBigOrder": { "Name": "An offer you can't refuse", "Hint": "A big order, from someone you'd rather not owe. Taking it adds Exposure, whether or not the job goes well, and pays in dirty cash if it does.", "IfNot": "Leave it, and nothing happens." },
       "bust": { "Name": "A raid on the back room", "Hint": "They've come for what's behind the shop, and they aren't leaving without a look." },
+      "press": { "Name": "A reporter asking questions", "IfNot": "If the story is believed and goes unanswered, it costs you in full. Answering well stops it, and answering badly halves it." },
       "smear": { "Name": "A smear campaign", "Hint": "Ugly stories about the business are doing the rounds, and someone is paying for them." },
       "raid": { "Name": "A tipped-off raid", "Hint": "Inspectors are on the way, and they seem to know exactly where to look." },
       "shakedown": { "Name": "A shakedown", "Hint": "A gang wants protection money on top of what you already pay." },
@@ -3586,6 +3629,7 @@
         "no-scene": "there is no big event to play out",
         "event-busy": "this week already has an event",
         "no-campaign": "no campaign is waiting",
+        "no-story": "no story is waiting",
         "bad-faction": "that action cannot be aimed at that faction",
         "no-gift": "the business does not have the cash for the gift",
         "action-taken": "that action has already been taken this week",
