@@ -2506,6 +2506,58 @@ A story about a character also costs the business they run with the worst standi
 
 **Tested live (2026-11-05, Cyberpunk Test, as a player).** The search measured on screen: nothing until typed, then only matches, with a tagged NPC found and an untagged one not, and who is invited below the results. A food stall founded with Clockwork invited at 5% sweat equity: the GM's Join at 1,000 eb, a failed setup roll and a retry, then units of 2,000 and 1,158 (63.3% and 36.7%). A week closed normally. Closing carried on the founder's vote alone, and of 2,137 eb the founder got 1,353 while Clockwork's 783 went nowhere, their sheet staying at 500 eb, with 1 eb lost to rounding. **In tests only:** a GM's real drag onto the form, and a founding sent to a syndicate's vote.
 
+### 36.17 NPC-owned companies, and jobs for player characters (the user's choices, 2026-11-09; not built)
+
+**The idea.** Companies owned and run by the GM's NPCs, set up like player businesses, that player characters can work for.
+
+**Decided.**
+- **Same engine, any stage,** so press, raids, standing and staff apply without new work. Going public is left for later.
+- **Market corporations can have jobs too,** such as Arasaka or Militech, without running weeks.
+- **A company runs itself,** from a profile, and the GM can step in at any time.
+- **Finding work:** a job board and an application roll, and the GM can also offer a job directly. The GM approves applications on Pending, with a setting to accept good rolls automatically.
+- **The job:** a wage and an optional weekly shift roll with the character's own skill and Luck. A good shift earns a bonus and standing with the boss, standing unlocks promotion, and too many missed shifts bring a warning and then the sack. Requests from the boss work as today.
+
+**What exists to build on.** The weekly close, events, press, raids, standing and staff run on the business record whoever owns it. A manager already works a shift automatically (`staffShifts`). A player's job already pays a wage, shows under **Your jobs**, and takes the boss's requests. Partners under `npc:` ids are silent and have no vote.
+
+**What is missing.** A company whose owner is not a player, anything to make its decisions, a way for a player to find work, and jobs at a market corporation, which has no business record to hold them.
+
+**Parts, shown in turn.**
+
+| Part | What it adds |
+|---|---|
+| N0 | The simulator, `tools/simulate-npc-company.mjs`. Done, below |
+| N1 | The company and its autopilot: the GM creates it on the Businesses tab with a name, kind, district, stage, NPC owner, starting cash and profile. Each week it picks and rolls its actions and answers its own events. The GM can take over a week, answer an event or act as the owner in the Business window. Only big decisions, such as insolvency, reach Pending |
+| N2 | The job board: open roles in the Business window, one application roll using the role's skill, at most once a week for each company, and GM offers |
+| N3 | The shift: the weekly roll from **Your jobs**, bonus on the payslip, standing with the boss, promotion confirmed by the GM, warnings and the sack |
+| N4 | Market corporation jobs: a small employer record tied to a market company, with roles and wages set by the GM. No cash or weekly close, so wages come from outside the game's economy and shifts earn bonus and standing but move nothing. An employee trading their employer's shares counts as an insider. This is the only new kind of record, and it could follow in a later release |
+
+**Proposed, to settle at each part.**
+- Unpaid wages follow today's rule, owed and paid first the next week, with a quit option for the player.
+- Second jobs are allowed, with one shift roll a week in total, so jobs don't stack.
+- Players can't buy in at first. Ownership and takeovers bring a lot with them.
+- Press and raids are on by default, with a switch for each company so a GM can protect one the story needs.
+- A shift costs no downtime day under Crew Tools, as the job is its own commitment.
+
+**What the simulator showed (2026-11-09).** The module's real weekly close, for 52 weeks, 300 seeds, an owner of base 12, and every event answered. Median weekly profit, after wages:
+
+| Profile | Side business | Registered | Company |
+|---|---|---|---|
+| Manager only (today) | 7 | 103 | 563 |
+| Steady | 48 | 135 | 802 |
+| Growing | 48 | 406 (Reputation 98) | 1,323 (97) |
+| Growing, target 70 | 48 | 276 (72) | 1,002 (76) |
+| Cost-cutting, target 60 | 48 | 207 (50) | 896 (72) |
+| Shady, target 60 | 48 | 207 (50) | 1,074 (72) |
+
+- **Profiles need a Reputation target.** Left alone, one that keeps promoting reaches the ceiling within the year. With a target it stops there, though a company runs a little over it, as winning contracts raises Reputation as well.
+- **Profiles only differ from the registered stage up.** A side business has one action a week, and that is work. N1 should say so rather than offer a choice that does nothing.
+- **A company in a quiet world doesn't fail,** and none of 300 went broke at any stage or profile. That suits companies a GM wants to keep around. The other side is cash: a company in the table banks 40,000 to 75,000 eb in a year with nothing to spend it on. N1 needs an owner's draw above a reserve of some weeks' upkeep, with the money leaving the game.
+- **An owner's skill matters.** At base 9 a company's Steady profit halves, to 386 a week. Events answered only half the time changed little.
+- **A job shouldn't be on the board at a side business.** A floor job there pays 109% to 215% of what the owner earns. At a registered business it is 67% to 133% and at a company 17% to 33%, against owning, which also builds a stake. So the job board starts at the registered stage. A GM can still offer a job anywhere. Bonus as a share of a week's wage, a starting number: narrow 10%, solid 25%, strong 40%, exceptional 50%.
+- **Engine time is no concern:** 0.17 ms for a company-week at the largest stage, not counting saving it. Saving is the cost to watch once several companies run together.
+
+**Not simulated.** Hostile corporations, press, raids and back rooms; Shady's real risk, as the Exposure from shortcuts has no consequence in this run, so its profit flatters it; Luck on shifts; and a real company's cash needs.
+
 ## 37. Roadmap
 
 | Phase | Deliverable |
@@ -2539,6 +2591,7 @@ A story about a character also costs the business they run with the worst standi
 | P1 | **Done (v0.21.0), see §36.10.** P1a workshops, item lists and the GM's tab, runs, the Maker post and the storeroom sheet; P1b shop sales, buying, handing over, consigning, stock in book value and closing; P1c fencing and illegal production through a back room. Also: one control height, and hand advances moving the calendar (§36.11) |
 | U2 | **Done (v0.21.1), see §36.12.** More back room kinds, each with a profile that changes how it plays |
 | U3 | **Done (v0.22.0), see §36.14.** Back room events and actions, one of each for every profile but Steady, with each kind telling them in its own words |
-| S1 | **Planned, after U3, see §36.13.** Press: non-player companies run stories against player companies and characters, driven by standing and heat |
+| S1 | **Built, on main, not yet released, see §36.13.** Press: non-player companies run stories against player companies and characters, driven by standing and heat; rumours before print and **Run a story** |
+| N | **Planned, see §36.17.** NPC-owned companies that run themselves, a job board and weekly shifts for player characters, and jobs at market corporations. N0, the simulator, is done |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |
