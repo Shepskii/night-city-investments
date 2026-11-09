@@ -111,7 +111,7 @@ A syndicate can found, join or invest in a player business. Its officers act for
 
 ## Looking for work
 
-The **Jobs** tab of the market window lists roles open at companies around the city, with a rough wage. **Apply** is one roll with your own skill, and you can try each company once a week. If you pass, the GM decides, and you'll hear by mail; if you're taken on you start at once, and a better roll earns a better wage, up to half as much again as the wage shown. Your job then shows under **Your jobs**, where you can quit at any time.
+The **Jobs** tab of the market window lists roles open at companies around the city, with a rough wage. **Apply** is one roll with your own skill, and you can try each company once a week. If you pass, the GM decides, and you'll hear by mail; if you're taken on you start at once, and a better roll earns a better wage, up to half as much again as the wage shown. Your job then shows on **Your jobs**, a tab under **Overview** in the Business window, with any job you hold at another player's business. You can quit at any time.
 
 At a company run by an NPC, **Work a shift** there once a week: one roll with your role's skills, and Luck if you like, for all your jobs together. A good shift earns a bonus on your payslip and pleases the boss; a poor one, or not turning up, doesn't. **Your jobs** shows how you stand. Fall too far and you'll be warned, then let go. Keep it up and you may be promoted with a raise.
 

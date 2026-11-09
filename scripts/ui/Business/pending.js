@@ -65,7 +65,7 @@ function businessRows(business, account) {
 
 /** A character's jobs: offers to answer, and rolls a partner has asked of them. */
 function jobRows(character) {
-  const row = (job, needed, buttons) => ({ where: job.name, needed, account: character.id, tab: 'overview', buttons, fields: [] });
+  const row = (job, needed, buttons) => ({ where: job.name, needed, account: character.id, tab: 'jobs', buttons, fields: [] });
   const act = (action, label, icon, data) => ({ do: action, label: L(label), icon, account: character.id, ...data });
   return jobsContext(character).flatMap((job) => [
     ...(job.offered ? [row(job, need('job', { post: job.post }), [

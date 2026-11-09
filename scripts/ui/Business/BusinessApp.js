@@ -34,7 +34,8 @@ import { CrewToolsAdapter } from '../../integrations/CrewToolsAdapter.js';
 /** The folders along the top, and the tabs in each. */
 const FOLDERS = Object.freeze({
   pending: ['pending'],
-  overview: ['overview'],
+  // The business on screen, and the character's jobs at other people's businesses, players' and NPCs' alike.
+  overview: ['overview', 'jobs'],
   financial: ['ledger', 'reports'],
   operations: ['week', 'production', 'staff', 'projects', 'backRoom'],
   ownership: ['partners', 'growth'],
@@ -982,26 +983,39 @@ export class BusinessApp extends BaseApplication {
       gearDrafts: Object.fromEntries(GEAR_FORMS.map((f) => [f, this.gearDrafts[f].map((g) => ({ ...g, value: g.value.toLocaleString() }))])),
     };
     const shown = this.actor && business ? businessContext(business, this.actor) : null;
+    const jobs = jobsContext(this.actor);
+    // A character with jobs and no business of their own opens on their jobs, once; after that the tab is theirs to pick.
+    if (!this._jobsFirst) {
+      this._jobsFirst = true;
+      if (!business && !this.starting && jobs.length && this.tab === 'overview') this.tab = 'jobs';
+    }
     // A company's back room is its officers' secret, so the tab is not there for anyone else (U1).
-    const hasTab = (t) => (t !== 'backRoom' || !!shown?.seesBackRoom) && (t !== 'production' || !!shown?.seesProduction);
-    if (shown && !hasTab(this.tab)) this.tab = 'week';
+    const hasTab = (t) => (t !== 'backRoom' || !!shown?.seesBackRoom) && (t !== 'production' || !!shown?.seesProduction) && (t !== 'jobs' || !this.actor?.isSyndicate);
+    if (!hasTab(this.tab)) this.tab = this.tab === 'jobs' ? 'overview' : 'week';
+    // With no business to show, or only an invitation, there is just Pending, this business's page and the jobs.
+    const whole = !!shown && !shown.invited;
+    if (!whole && !['pending', 'overview', 'jobs'].includes(this.tab)) this.tab = 'overview';
     context.tab = this.tab;
     for (const t of TABS) context[`is${t[0].toUpperCase()}${t.slice(1)}`] = t === this.tab;
-    const tabLabel = (t) => ({ id: t, label: L(termKey(business, `NCI.Business.Tab.${t}`)), active: t === this.tab });
+    // Offers to answer, rolls asked of them, and a shift to work.
+    const jobsToDo = jobs.reduce((n, j) => n + (j.offered ? 1 : 0) + j.asks.length + (j.boss?.canWork ? 1 : 0), 0);
+    const tabText = (t) => {
+      if (t === 'overview') return business?.name ?? L('NCI.Business.Start');
+      return L(termKey(business, `NCI.Business.Tab.${t}`));
+    };
+    const tabLabel = (t) => ({ id: t, label: tabText(t), active: t === this.tab, count: t === 'jobs' ? jobsToDo : 0 });
     context.pendingRows = this.actor ? pendingRows(this.actor) : [];
-    // With no business to show, or only an invitation, there is just this list and the Overview's form.
-    const whole = !!shown && !shown.invited;
-    const folder = whole || this.tab === 'pending' ? folderOf(this.tab) : 'overview';
+    const folder = folderOf(this.tab);
     context.folders = this.actor ? Object.keys(FOLDERS).filter((id) => whole || id === 'pending' || id === 'overview').map((id) => ({
       id,
       label: L(`NCI.Business.Folder.${id}`),
       active: id === folder,
-      count: id === 'pending' ? context.pendingRows.length : 0,
+      count: id === 'pending' ? context.pendingRows.length : id === 'overview' && folder !== 'overview' ? jobsToDo : 0,
     })) : [];
-    context.subTabs = whole && FOLDERS[folder].length > 1 ? FOLDERS[folder].filter(hasTab).map(tabLabel) : [];
+    context.subTabs = this.actor && (whole || folder === 'overview') && FOLDERS[folder].filter(hasTab).length > 1 ? FOLDERS[folder].filter(hasTab).map(tabLabel) : [];
     if (!this.actor) return { ...context, noActor: true };
-    // The jobs this character holds or is offered at other people's businesses (DESIGN §32).
-    context.jobs = jobsContext(this.actor);
+    // The jobs this character holds or is offered at other people's businesses (DESIGN §32), on their own tab.
+    context.jobs = jobs;
     if (!business) return { ...context, start: startContext(this) };
     return { ...context, business: shown };
   }

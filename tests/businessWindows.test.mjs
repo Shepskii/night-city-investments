@@ -1028,7 +1028,11 @@ test('the Business window has four folders, each with its tabs, and each tab hol
     const foldersOn = (html) => [...html.matchAll(/data-group="(\w+)"/g)].map((m) => m[1]);
     const overview = await renderBusiness(windowFor(med, 'overview'));
     assert.deepEqual(foldersOn(overview), ['pending', 'overview', 'financial', 'operations', 'ownership']);
-    assert.deepEqual(tabsOn(overview), [], 'Overview has no tabs under it');
+    assert.deepEqual(tabsOn(overview), ['overview', 'jobs'], 'the business, and the jobs');
+    const jobsPage = await renderBusiness(windowFor(med, 'jobs'));
+    assertClean(jobsPage, 'jobs');
+    assert.doesNotMatch(jobsPage, /nci-bizname/, 'the jobs tab shows no business');
+    assert.match(jobsPage, /No jobs yet/);
     assert.match(overview, /<div class="nci-bizname">Back Room<\/div>/, 'the name stands out');
     const pages = {};
     for (const tab of ['ledger', 'reports', 'week', 'staff', 'projects', 'backRoom', 'partners', 'growth']) {

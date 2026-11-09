@@ -53,11 +53,11 @@
       {{/if}}
     </div>
   </nav>
-  {{#if business}}{{#unless business.invited}}{{#if subTabs.length}}
+  {{#if subTabs.length}}
   <nav class="nci-tabs nci-subtabs">
-    {{#each subTabs}}<button type="button" data-action="switchTab" data-tab="{{id}}" class="{{#if active}}active{{/if}}">{{label}}</button>{{/each}}
+    {{#each subTabs}}<button type="button" data-action="switchTab" data-tab="{{id}}" class="{{#if active}}active{{/if}}">{{label}}{{#if count}} <span class="nci-count">{{count}}</span>{{/if}}</button>{{/each}}
   </nav>
-  {{/if}}{{/unless}}{{/if}}
+  {{/if}}
 
   {{#unless picker.enabled}}<p class="nci-warn">{{localize "NCI.Business.Disabled"}}</p>{{/unless}}
   {{#if readOnly}}<p class="nci-warn">{{localize "NCI.Business.ReadOnly"}}</p>{{/if}}
@@ -90,11 +90,10 @@
     </table>
     {{else}}<p class="nci-empty">{{localize "NCI.Business.Pending.None"}}</p>{{/if}}
   </div>
-  {{else}}
-
-  {{#if jobs.length}}
+  {{else if isJobs}}
   <div class="nci-block">
     <h3>{{localize "NCI.Staff.Jobs"}}</h3>
+    {{#if jobs.length}}
     <table class="nci-market"><tbody>
       {{#each jobs}}
       <tr>
@@ -119,8 +118,9 @@
       {{/each}}
     </tbody></table>
     <p class="nci-hint">{{localize "NCI.Staff.JobsHint"}}</p>
+    {{else}}<p class="nci-empty">{{localize "NCI.Jobs.NoJobs"}}</p>{{/if}}
   </div>
-  {{/if}}
+  {{else}}
 
   {{#if start}}
   <div class="nci-block nci-form">

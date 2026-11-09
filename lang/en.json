@@ -2606,7 +2606,8 @@
       "Promoted": "{name} is pleased with you: your pay goes up to {wage} eb a week.",
       "Promote": "Promote",
       "NotNow": "Not now",
-      "Payslip": { "Bonus": "A bonus for your shift: {bonus} eb, making {total} eb in all." }
+      "Payslip": { "Bonus": "A bonus for your shift: {bonus} eb, making {total} eb in all." },
+      "NoJobs": "No jobs yet. The Jobs tab in the market window lists the companies hiring."
     },
     "Press": {
       "Run": {
@@ -3439,7 +3440,7 @@
         }
       },
       "Folder": { "pending": "Pending", "overview": "Overview", "financial": "Financial", "operations": "Operations", "ownership": "Ownership" },
-      "Tab": { "overview": "Overview", "week": "Work", "production": "Production", "projects": "Projects", "ledger": "Ledger", "reports": "Reports", "backRoom": "Back Room", "partners": "Partners", "partnersCompany": "Shareholders", "growth": "Growth", "staff": "Staff" },
+      "Tab": { "overview": "Overview", "jobs": "Your jobs", "week": "Work", "production": "Production", "projects": "Projects", "ledger": "Ledger", "reports": "Reports", "backRoom": "Back Room", "partners": "Partners", "partnersCompany": "Shareholders", "growth": "Growth", "staff": "Staff" },
       "DaysLeft": "You have {n} business day(s) left this week.",
       "AimGift": "Aiming at a faction costs a {gift} eb gift from the cash, spent whatever the roll.",
       "AimNone": "No faction",

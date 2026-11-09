@@ -164,6 +164,7 @@ test('every word is there', () => {
   for (const k of ['shift-done', 'no-promotion']) assert.ok(lang.Business.Reason[k], k);
   for (const k of ['Work', 'ShiftTitle', 'ShiftHint', 'ShiftDone', 'StandingLine', 'Warned', 'WarnedMail', 'Sacked', 'Promoted', 'Promote', 'NotNow']) assert.ok(lang.Jobs[k], k);
   assert.ok(lang.Jobs.Payslip.Bonus);
+  assert.ok(lang.Jobs.NoJobs && lang.Business.Tab.jobs, 'the Jobs tab');
   assert.ok(lang.Business.Done.shiftRoll);
   assert.ok(lang.Business.Ledger.shiftBonus);
   assert.ok(lang.Pending.Kind.promotion && lang.Pending.Need.promotion);
