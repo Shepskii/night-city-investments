@@ -5,6 +5,24 @@
   <p class="nci-hint">{{localize "NCI.Faction.StandingHint"}}</p>
 </div>
 
+<div class="nci-block nci-form">
+  <h3>{{localize "NCI.GMBusiness.Npc.Title"}}</h3>
+  <p class="nci-hint">{{localize "NCI.GMBusiness.Npc.Hint"}}</p>
+  <div class="nci-grid">
+    <label>{{localize "NCI.GMBusiness.Npc.Name"}}<input type="text" name="npcName" maxlength="60"></label>
+    <label>{{localize "NCI.GMBusiness.Npc.Archetype"}}<select name="npcArchetype">{{#each businesses.npcForm.archetypes}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+    <label>{{localize "NCI.GMBusiness.Npc.Owner"}}<select name="npcOwner">{{#each businesses.npcForm.owners}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+    <label>{{localize "NCI.GMBusiness.Npc.OwnerLevel"}}<select name="npcLevel">{{#each businesses.npcForm.levels}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>{{localize "NCI.GMBusiness.Npc.StageLabel"}}<select name="npcStage">{{#each businesses.npcForm.stages}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>{{localize "NCI.GMBusiness.Npc.ProfileLabel"}}<select name="npcProfile">{{#each businesses.npcForm.profiles}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>{{localize "NCI.GMBusiness.Npc.Cash"}}<input type="number" name="npcCash" min="100" step="100" value="5000"></label>
+    <label>{{localize "NCI.GMBusiness.Npc.Ticker"}}<input type="text" name="npcTicker" maxlength="5"></label>
+    <label>{{localize "NCI.GMBusiness.Npc.District"}}<select name="npcDistrict">{{#each businesses.npcForm.districts}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+    <label>{{localize "NCI.GMBusiness.Npc.Location"}}<input type="text" name="npcLocation" maxlength="80"></label>
+  </div>
+  <div class="nci-actions"><button type="button" data-action="businessNpcCreate"><i class="fas fa-building"></i> {{localize "NCI.GMBusiness.Npc.Create"}}</button></div>
+</div>
+
 <div class="nci-block">
   <h3>{{localize "NCI.GMBusiness.Waiting"}}</h3>
   {{#each businesses.pending}}
@@ -49,6 +67,15 @@
       <div><strong>{{status}}</strong> <span class="nci-muted">&middot; {{archetype}}{{#if location}} &middot; {{location}}{{/if}}</span></div>
       <div class="nci-actions"><button type="button" data-action="businessOpen" data-id="{{id}}"><i class="fas fa-store"></i> {{localize "NCI.GMBusiness.Open"}}</button></div>
     </div>
+    {{#if npc}}
+    <div class="nci-muted">{{npc.label}}</div>
+    <div class="nci-actions">
+      <label class="nci-inline">{{localize "NCI.GMBusiness.Npc.ProfileLabel"}} <select name="npcRunProfile">{{#each npc.profiles}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+      <label class="nci-inline">{{localize "NCI.GMBusiness.Npc.OwnerLevel"}} <select name="npcRunLevel">{{#each npc.levels}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+      <label class="nci-inline"><input type="checkbox" name="npcRunAuto" {{#if npc.auto}}checked{{/if}}> {{localize "NCI.GMBusiness.Npc.Auto"}}</label>
+      <button type="button" data-action="businessNpcSave" data-id="{{id}}"><i class="fas fa-floppy-disk"></i> {{localize "NCI.GMBusiness.Npc.Save"}}</button>
+    </div>
+    {{/if}}
     {{#if stats.length}}<div class="nci-gmstats">{{#each stats}}<span><span class="nci-muted">{{label}}</span> <strong>{{value}}</strong></span>{{/each}}</div>{{/if}}
     {{#if money}}<div>{{money}}</div>{{/if}}
     {{#if setup}}<div class="nci-muted">{{setup}}</div>{{/if}}

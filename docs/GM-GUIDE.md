@@ -182,6 +182,8 @@ Players can hide their shareholdings behind layers (a broker's nominee, then she
 
 With Pneuma's Crew Tools active, **Business days come from Crew Tools downtime** is on by default: extra time, project days and mentoring spend a character's downtime, with no weekly allowance. Award days as usual, and open Downtime once for each character, or they have none to spend. Each spend shows in their Downtime Log as "NCI: business: what it was for". You can check it there: a player owns that log, as they do their chat cards. An investigation's legwork becomes money. Turn the setting off for the 3 business days a week without Crew Tools' involvement.
 
+**NPC companies.** **New NPC company**, at the top of the Businesses tab, makes a company owned and run by one of your NPCs. Choose its kind, an NPC owner and their skill, a stage, how it's run and its starting cash; a company at the top stage also needs a ticker. It opens at once, and a registered business or company comes with some staff already hired, leaving roles open. Each week it runs itself when the week closes, answering its own events. To step in, press **Open** on its entry and act as the owner: it leaves alone whatever you did and fills in only what's left. Untick **Runs itself** to run a company entirely by hand. A company keeps about eight weeks of costs in cash and pays out the rest to its owner, and that money leaves the game. The profile only makes a difference from the registered stage up, because a side business has one action a week and that is work.
+
 ### Syndicates tab
 
 - **Approve** or **reject** a newly founded syndicate (with approval on). No money is paid in until you approve.

@@ -145,7 +145,9 @@ export const nameOf = (business, actorId) => (outerMask(business, actorId) ? mas
 export function usableActors() {
   const characters = game.actors.filter((a) => isCharacter(a));
   const usable = game.user.isGM ? characters.filter((a) => a.hasPlayerOwner) : characters.filter((a) => a.testUserPermission(game.user, 'OWNER'));
-  return (game.user.isGM && !usable.length ? characters : usable).sort((a, b) => a.name.localeCompare(b.name));
+  // A GM can step in as the NPC who owns a company (N1).
+  const owners = game.user.isGM ? BusinessRepository.all().filter((b) => b.npcRun && b.status !== 'closed').map((b) => game.actors.get(b.npcRun.ownerId)).filter(Boolean) : [];
+  return [...new Set([...(game.user.isGM && !usable.length ? characters : usable), ...owners])].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /** Districts for the Start a business form, by name, after "none". */

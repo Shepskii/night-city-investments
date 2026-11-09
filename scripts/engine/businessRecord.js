@@ -131,6 +131,8 @@ export function normalizeBusiness(raw) {
     reports: b.reports ?? [],
     /** Stories in the press (S1): the day of the last one drawn, and one waiting for the GM. */
     press: b.press ?? null,
+    /** Owned and run by an NPC (N1): `{ ownerId, level, profile, auto }`. */
+    npcRun: b.npcRun ?? null,
     reportWeeks: int(b.reportWeeks),
     reportPrep: b.reportPrep ?? null,
     /** A company's officers (actor ids), its last internal audit, and what due diligence found. */

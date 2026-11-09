@@ -18,7 +18,7 @@ import { ProductionCatalog } from '../data/ProductionCatalog.js';
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
-  dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, answerNpcPartner, approvePress, spikePress, runPress, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
+  dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, answerNpcPartner, approvePress, spikePress, runPress, createNpcCompany, setNpcRun, cleanTicker, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
   isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact, payListedDividend,
   reviewListing, clearReview, delistCompany,
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
@@ -45,7 +45,7 @@ import { SkillAdapter } from './SkillAdapter.js';
 import { CrewToolsAdapter } from '../integrations/CrewToolsAdapter.js';
 import { REWARDS, rewardRunners, rewardChange, rewardMatters } from '../engine/businessRewards.js';
 import { WealthAdapter } from './WealthAdapter.js';
-import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors, investorContacts, staffActors, jobsOf } from './BusinessClient.js';
+import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors, investorContacts, staffActors, jobsOf, isNpcActor } from './BusinessClient.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
 import { SyndicateCash } from './SyndicateCash.js';
 import { MailService } from './MailService.js';
@@ -235,6 +235,8 @@ class BusinessServiceImpl {
 
   /** A mail to each of a company's shareholders: characters directly, a syndicate's active members each. */
   async _mailHolders(b, subject, lines) {
+    // An NPC's company has nobody to tell: the GM reads it on the Businesses tab (N1).
+    if (b.npcRun) return;
     const ids = new Set();
     for (const p of b.partners.filter((x) => !x.npc && x.status === 'active' && x.units > 0)) {
       if (game.actors.get(p.actorId)) ids.add(p.actorId);
@@ -1165,6 +1167,31 @@ class BusinessServiceImpl {
     });
   }
 
+  /** The GM creates a company owned and run by an NPC (N1). */
+  createNpcCompany(input) {
+    if (!isActiveGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
+    return this._queue.run(async () => {
+      const owner = game.actors.get(input.ownerId);
+      if (!isNpcActor(owner)) return { ok: false, reason: 'bad-owner' };
+      const taken = [...CompanyRepository.all().map((c) => c.ticker), ...BusinessRepository.all().map((b) => b.company?.ticker).filter(Boolean)];
+      const made = createNpcCompany({
+        ...input, id: `bus_${foundry.utils.randomID(12)}`, owner: { id: owner.id, name: owner.name }, stage: Number(input.stage), taken, day: this.day(), weekday: this.weekday(), seed: this.seed(),
+      });
+      if (!made.ok) return made;
+      await this._commit({ ok: true, business: made.business, wealth: {}, events: [] });
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: made.business.id });
+      return { ok: true, business: made.business };
+    });
+  }
+
+  /** The GM changes how an NPC's company is run (N1). */
+  setNpcRun(id, change) {
+    return this._gm(id, (b) => {
+      const done = setNpcRun(b, change);
+      return done.ok ? { ...done, wealth: {}, events: [] } : done;
+    });
+  }
+
   /** The GM runs a story by hand (S1c). */
   runPress(id, event) {
     return this._gm(id, (b) => {
@@ -1902,6 +1929,7 @@ class BusinessServiceImpl {
 
   /** About a back room: every owner of a smaller business, but only the officers of a company, whose shareholders must not hear. */
   async _mailRoom(b, subject, lines) {
+    if (b.npcRun) return undefined;
     if (b.stage < 2) return this._mailHolders(b, subject, lines);
     for (const id of b.officers ?? []) await this._mailAccount(id, subject, lines);
     return undefined;
@@ -2033,6 +2061,7 @@ class BusinessServiceImpl {
    * @param {string[]} [accounts] - characters or syndicates, in place of those running it
    */
   async _suggestReward(b, kind, accounts = rewardRunners(b)) {
+    if (b.npcRun) return;
     const characters = [...new Set(accounts.flatMap((id) => {
       if (game.actors.get(id)) return [id];
       return (SyndicateRepository.get(id)?.members ?? []).filter((m) => m.status === 'active' && m.role === 'officer').map((m) => m.actorId);

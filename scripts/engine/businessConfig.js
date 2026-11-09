@@ -462,6 +462,31 @@ export const BUSINESS_DEFAULTS = Object.freeze({
   }),
   /** Takings in a week nobody works the shop: between a failed and a narrow roll. */
   unworked: 0.9,
+  /**
+   * Companies owned and run by the GM's NPCs (N1, DESIGN §36.17). The owner's level is the base of the week's rolls.
+   * A profile's actions are first choice first, as far as the stage's slots go. At its Reputation `target`, what wins
+   * Reputation gives way to `fill`. Cash above `reserveWeeks` of the week's upkeep and wages leaves as the owner's draw.
+   */
+  npc: Object.freeze({
+    levels: Object.freeze({ green: 9, skilled: 12, expert: 15, master: 17 }),
+    profiles: Object.freeze({
+      steady: Object.freeze({ shop: Object.freeze(['work', 'keepSafe', 'promote']), company: Object.freeze(['contracts', 'books', 'permits']), target: null }),
+      growing: Object.freeze({ shop: Object.freeze(['work', 'promote', 'fixUp']), company: Object.freeze(['contracts', 'relations', 'books']), target: 70 }),
+      costCutting: Object.freeze({ shop: Object.freeze(['work', 'source', 'keepSafe']), company: Object.freeze(['contracts', 'books', 'relations']), target: 60 }),
+      shady: Object.freeze({ shop: Object.freeze(['work', 'source', 'promote']), company: Object.freeze(['contracts', 'shortcuts', 'relations']), target: 60 }),
+    }),
+    winsReputation: Object.freeze(['promote', 'relations']),
+    fill: Object.freeze({ shop: 'keepSafe', company: 'permits' }),
+    reserveWeeks: 8,
+    minCash: 100,
+    /** By stage: where it starts, and the staff it opens with, at the owner's level less `staffLess`. Roles are left open for the job board. */
+    start: Object.freeze([
+      Object.freeze({ capacity: 1, staff: Object.freeze([]) }),
+      Object.freeze({ capacity: 3, staff: Object.freeze(['manager', 'floor']) }),
+      Object.freeze({ capacity: 8, staff: Object.freeze(['manager', 'floor', 'floor', 'bookkeeper', 'sales']) }),
+    ]),
+    staffLess: 1,
+  }),
   /** Reputation drifts this share of the way back to 50 each week; the Cost base creeps up. */
   reputationDrift: 0.03,
   costCreep: 0.005,

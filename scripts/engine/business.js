@@ -71,6 +71,9 @@ import { fenceCheck, fenceWeek, makesThings, buyStock, clearStock, consignStock,
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from './businessEvents.js';
 import { drawPress, placePress, lapsePress, printPress, pressFallout, startHandPress } from './businessPress.js';
+import { npcWeek, npcDraw } from './businessNpc.js';
+import { createRng } from './rng.js';
+import { charterSector, cleanTicker } from './businessCharter.js';
 import { aimCheck, giftFor } from './factions.js';
 import { campaignCheck, runCampaign, runBlackOps } from './businessCampaign.js';
 import { supplyCut, runSupply, runVenue, backupWait } from './businessRoles.js';
@@ -1268,6 +1271,62 @@ export function openBusiness(business, day, weekday, p = BUSINESS_DEFAULTS, seed
   return b;
 }
 
+/**
+ * GM: a company owned and run by an NPC (N1, DESIGN §36.17). It skips the setup roll and the GM's approval, and opens
+ * at once at the stage asked for, with its first staff. The owner is an ordinary voting partner, so the GM can act as
+ * them in the Business window.
+ * @param {object} o - `owner` `{id, name}`; `level` and `profile` from `BUSINESS_DEFAULTS.npc`; `stage` 0 to 2; `taken` the tickers in use
+ */
+export function createNpcCompany({ id, name, archetype, district = '', location = '', owner, stage, level, profile, cash, ticker = '', taken = [], day, weekday, seed = 'nci' }, p = BUSINESS_DEFAULTS) {
+  const r = p.npc;
+  const title = text(name, 60);
+  if (!title) return fail('bad-name');
+  if (!ARCHETYPES[archetype]) return fail('bad-archetype');
+  if (!owner?.id) return fail('bad-owner');
+  if (![0, 1, 2].includes(stage)) return fail('bad-stage');
+  if (r.levels[level] == null) return fail('bad-level');
+  if (!r.profiles[profile]) return fail('bad-profile');
+  const money = Math.floor(Number(cash));
+  if (!(money >= r.minCash)) return fail('bad-cash');
+  const symbol = cleanTicker(ticker);
+  if (stage === 2 && symbol.length < 2) return fail('bad-ticker');
+  if (stage === 2 && taken.map(cleanTicker).includes(symbol)) return fail('ticker-taken');
+
+  const start = r.start[stage];
+  const b = normalizeBusiness({
+    id, name: title, archetype, location: text(location, 80), district: isDistrict(district) ? district : '', status: 'forming', founderId: owner.id, createdDay: day, stage,
+    partners: [{ actorId: owner.id, name: owner.name, status: 'active', cash: money, gear: [], heirId: null }],
+    agreement: { sweat: null, buyoutDays: p.buyoutDays },
+    escrow: money,
+    setup: { passed: true, cost: 0, capacity: start.capacity },
+    npcRun: { ownerId: owner.id, level, profile, auto: true },
+    ...(stage >= 1 ? { registeredDay: day } : {}),
+    ...(stage === 2 ? { officers: [owner.id] } : {}),
+  });
+  if (stage >= 1) b.state.compliance = p.complianceBaseline;
+  if (stage === 2) b.company = { ticker: symbol, sector: charterSector(b, p), charteredDay: day };
+  openBusiness(b, day, weekday, p, seed);
+  const names = createRng(seed, 'npc-staff', id);
+  const pool = p.staff.recruit;
+  start.staff.forEach((post, i) => {
+    const staffName = `${pool.firstNames[names.int(0, pool.firstNames.length - 1)]} ${pool.lastNames[names.int(0, pool.lastNames.length - 1)]}`;
+    b.candidates = [{ id: `${id}_${i}`, name: staffName, post, base: r.levels[level] - r.staffLess, pct: 1, expires: day + 1 }];
+    enactHire(b, { candidateId: `${id}_${i}`, post, pct: 1 }, day, {}, p);
+  });
+  b.candidates = [];
+  return { ok: true, business: b };
+}
+
+/** GM: change how an NPC's company is run. */
+export function setNpcRun(business, change, p = BUSINESS_DEFAULTS) {
+  const b = structuredClone(normalizeBusiness(business));
+  if (!b.npcRun) return fail('not-npc');
+  if (change.level != null && p.npc.levels[change.level] == null) return fail('bad-level');
+  if (change.profile != null && !p.npc.profiles[change.profile]) return fail('bad-profile');
+  b.npcRun = { ...b.npcRun, ...(change.level != null ? { level: change.level } : {}), ...(change.profile != null ? { profile: change.profile } : {}), ...(change.auto != null ? { auto: !!change.auto } : {}) };
+  return { ok: true, business: b };
+}
+
 /** GM: let a business that is waiting open. */
 export function approveBusiness(business, day, weekday, p = BUSINESS_DEFAULTS, seed = 'nci') {
   const b = structuredClone(normalizeBusiness(business));
@@ -1776,6 +1835,8 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   const g = growthRate;
   const slot = (action) => b.period.slots.find((s) => s.action === action);
   const scale = (s) => approachOf(s.approach).effect;
+  // An NPC owner does what the GM has left undone this week (N1).
+  npcWeek(b, seed, p);
   // Who is off this week (sick, hurt, or downing tools), then what the rest did without a partner:
   // a manager working the shop, security answering trouble.
   const idle = idleStaff(b);
@@ -1875,6 +1936,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   const loans = payLoans(b, b.period.endDay, p);
   const profit = takings + sales.margin - upkeep - eventCost - wages.wages - loans.interest;
   b.till -= loans.interest + loans.principal;
+  const ownerDraw = npcDraw(b, upkeep + wages.wages, part, b.period.endDay, p);
 
   // The staff's week: loyalty, raises asked for at a month's end, and who has had enough (E2).
   const monthEnd = b.period.index % p.report.weeks === 0;
@@ -1906,6 +1968,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
     ...(loans.interest || loans.principal || loans.missed.length ? { interest: loans.interest, repaid: loans.principal, missed: loans.missed } : {}),
     ...(wages.wages || wages.owed || wages.paid ? { wages: wages.wages, paid: wages.paid, owed: wages.owed } : {}),
     worked: !!work,
+    ...(ownerDraw ? { ownerDraw } : {}),
     ...(sales.sold ? { stock: sales } : {}),
     ...(fenced ? { fenced } : {}),
     ...(room ? { room: { earned: room.earned, ...(room.supply ? { supply: room.supply } : {}), laundered: room.laundered, paid: room.paid, low: room.low, ...(room.cut ? { cut: room.cut } : {}), ...(room.unpaid ? { unpaid: true } : {}), ...(room.informant ? { informant: room.informant } : {}) } } : {}),

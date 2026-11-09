@@ -86,7 +86,7 @@ function businessRows() {
         buttons: [act('businessPressApprove', 'PressApprove', yes), act('businessPressSpike', 'PressSpike', no)],
       })),
       b.backRoom?.status === 'pending' && need('backRoom', { kind: L(`NCI.BackRoom.Kind.${b.backRoom.kind}`) }, act('businessRoomApprove', 'RoomApprove', yes), act('businessRoomReject', 'RoomReject', no)),
-      sceneCandidate(b) && need('scene', { event: L(`NCI.Event.${b.period.event.kind}.Name`) }, act('businessSceneRun', 'SceneRun', 'fa-masks-theater')),
+      sceneCandidate(b) && !b.npcRun?.auto && need('scene', { event: L(`NCI.Event.${b.period.event.kind}.Name`) }, act('businessSceneRun', 'SceneRun', 'fa-masks-theater')),
       b.scene && need('sceneOpen', { event: L(`NCI.Event.${b.scene.event.kind}.Name`) }, act('businessSceneWon', 'SceneWon', yes), act('businessSceneLost', 'SceneLost', no), act('businessSceneRoll', 'SceneRoll', 'fa-dice-d10')),
       ...(b.stockQueries ?? []).map((q) => need('stockMoved', { count: q.count, name: q.name },
         act('businessStockSettle', 'StockSold', 'fa-cash-register', { reward: q.id, yes: 'sold' }),

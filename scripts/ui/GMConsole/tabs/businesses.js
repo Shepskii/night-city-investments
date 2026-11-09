@@ -5,13 +5,14 @@
  */
 
 import { DistrictService } from '../../../services/DistrictService.js';
-import { kindProfile, sceneCandidate, holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty, debtsOf, solvency, standingBand, turfFactions } from '../../../engine/index.js';
+import { BUSINESS_DEFAULTS, kindProfile, sceneCandidate, holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty, debtsOf, solvency, standingBand, turfFactions } from '../../../engine/index.js';
 import { BusinessService, sceneHook } from '../../../services/BusinessService.js';
 import { FactionRepository } from '../../../data/FactionRepository.js';
 import { BusinessApp } from '../../Business/BusinessApp.js';
-import { dayText, LT, holderWho, factionTerms } from '../../Business/context.js';
+import { dayText, LT, holderWho, factionTerms, districtOptions, archetypeOptions } from '../../Business/context.js';
+import { isNpcActor } from '../../../services/BusinessClient.js';
 import { L, whole } from '../../format.js';
-import { confirm, report } from '../shared.js';
+import { confirm, field, report } from '../shared.js';
 import { actorLink } from '../../actorLink.js';
 import { rewardRow } from './pending.js';
 import { escapeHtml } from '../../../utils/text.js';
@@ -168,6 +169,26 @@ async function onNpcPartner(event, target) {
   report(await BusinessService.answerNpcPartner(target.dataset.id, target.dataset.staff, target.dataset.yes === 'true', cash));
 }
 
+/** The GM creates an NPC's company from the form (N1). */
+async function onNpcCreate(event, target) {
+  const read = (name) => field(target, name) ?? '';
+  const done = await BusinessService.createNpcCompany({
+    name: read('npcName'), archetype: read('npcArchetype'), district: read('npcDistrict'), location: read('npcLocation'), ownerId: read('npcOwner'),
+    stage: read('npcStage'), level: read('npcLevel'), profile: read('npcProfile'), cash: read('npcCash'), ticker: read('npcTicker'),
+  });
+  if (done.ok) return ui.notifications.info(L('NCI.GMBusiness.Npc.Created', { name: done.business.name }));
+  const key = `NCI.GMBusiness.Npc.Reason.${done.reason}`;
+  return ui.notifications.warn(game.i18n.has(key) ? L(key) : L('NCI.GMConsole.ActionFailed'));
+}
+
+/** How an NPC's company is run, as set on its entry. */
+async function onNpcSave(event, target) {
+  const box = target.closest('.nci-gig');
+  report(await BusinessService.setNpcRun(target.dataset.id, {
+    profile: box?.querySelector('[name="npcRunProfile"]')?.value, level: box?.querySelector('[name="npcRunLevel"]')?.value, auto: box?.querySelector('[name="npcRunAuto"]')?.checked,
+  }));
+}
+
 function onOpen(event, target) {
   BusinessApp.open({ businessId: target.dataset.id });
 }
@@ -201,6 +222,8 @@ export const actions = {
   businessPartnerLeaves: onPartnerLeaves,
   businessRemove: onRemove,
   businessOpen: onOpen,
+  businessNpcCreate: onNpcCreate,
+  businessNpcSave: onNpcSave,
   businessStaffAnswer: onStaffAnswer,
   businessNpcPartner: onNpcPartner,
   businessTeamLoyalty: onTeamLoyalty,
@@ -219,6 +242,18 @@ export const actions = {
   businessSceneRoll: onSceneRoll,
   businessCampaignReject: onCampaignReject,
 };
+
+const npcOptions = (group, set, selected) => Object.keys(set).map((value) => ({ value, label: L(`NCI.GMBusiness.Npc.${group}.${value}`), selected: value === selected }));
+
+/** The new company form: an NPC owner is any character or mook no player owns. */
+const npcForm = () => ({
+  archetypes: archetypeOptions(),
+  districts: districtOptions(),
+  owners: game.actors.filter(isNpcActor).map((a) => ({ value: a.id, label: a.name })).sort((x, y) => x.label.localeCompare(y.label)),
+  levels: npcOptions('Level', BUSINESS_DEFAULTS.npc.levels, 'skilled'),
+  profiles: npcOptions('Profile', BUSINESS_DEFAULTS.npc.profiles, 'steady'),
+  stages: [0, 1, 2].map((value) => ({ value, label: L(`NCI.GMBusiness.Npc.Stage.${value}`), selected: value === 1 })),
+});
 
 /** An employee as a row of the staff table: their true loyalty and hidden trait, for the GM. */
 function staffRow(s, traits) {
@@ -257,6 +292,13 @@ export function context() {
       archetype: L(`NCI.Business.Archetype.${b.archetype}.Name`),
       status: L(`NCI.Business.Status.${b.status}`),
       isPending: b.status === 'pending',
+      // Owned and run by an NPC (N1).
+      npc: b.npcRun ? {
+        label: L(b.npcRun.auto ? 'NCI.GMBusiness.Npc.Runs' : 'NCI.GMBusiness.Npc.Held', { name: game.actors.get(b.npcRun.ownerId)?.name ?? '?' }),
+        auto: b.npcRun.auto,
+        levels: npcOptions('Level', BUSINESS_DEFAULTS.npc.levels, b.npcRun.level),
+        profiles: npcOptions('Profile', BUSINESS_DEFAULTS.npc.profiles, b.npcRun.profile),
+      } : null,
       // A listing under way (B5a), and waiting for the GM.
       listing: b.listing && (['awaiting', 'prospectus', 'ready', 'scheduled'].includes(b.listing.status) || b.listing.review) ? {
         awaiting: b.listing.status === 'awaiting',
@@ -361,6 +403,7 @@ export function context() {
   return {
     businesses: {
       enabled: BusinessService.enabled(),
+      npcForm: npcForm(),
       pending: rows.filter((r) => r.isPending),
       // Suggested REP and IP wait with the rest, a closed business's too.
       rewards: rows.flatMap((r) => r.rewards),
