@@ -3,10 +3,11 @@
  * @file scripts/services/BrokerService.js
  * @description A player mails their broker "BUY 10 ARA", "SELL ALL NC12", "WITHDRAW 500", "STATUS"
  *              and so on. Only the player's own assigned broker acts on their mail. Each mail is
- *              handled once (by message id), and the broker replies in character.
+ *              handled once (by message id), and the broker replies in character. Mail with no market
+ *              command in it gets no answer from here: a broker can be a character players also talk to.
  */
 
-import { parseOrderText, mailCommandToRequest, orderRef } from '../engine/index.js';
+import { marketCommand, mailCommandToRequest, orderRef } from '../engine/index.js';
 import { log, isActiveGM, isCharacter } from '../utils/helpers.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
 import { FundRepository } from '../data/FundRepository.js';
@@ -73,6 +74,9 @@ export const BrokerService = {
     const portfolio = PortfolioRepository.get(actor);
     if (portfolio.processed.includes(key)) return 'ignored';
 
+    const parsed = marketCommand({ text, portfolio, resolveAsset });
+    if (!parsed) return 'ignored';
+
     const reply = (spec) => MailService.fromBroker(contactId, actor, spec);
 
     if (portfolio.brokerContactId !== contactId) {
@@ -81,7 +85,7 @@ export const BrokerService = {
       return 'not-client';
     }
 
-    const cmd = mailCommandToRequest({ parsed: parseOrderText(text), key, portfolio, resolveAsset });
+    const cmd = mailCommandToRequest({ parsed, key, portfolio, resolveAsset });
 
     if (!cmd.ok) {
       await PortfolioService.markProcessed(actor, key);

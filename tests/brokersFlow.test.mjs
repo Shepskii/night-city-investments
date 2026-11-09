@@ -172,10 +172,19 @@ test('the same mail is never acted on twice, and a stranger gets a polite refusa
   assert.ok(lastMail(bob).subject.includes('NotClient.Subject'), 'only a client can instruct the broker');
   assert.equal(S.PortfolioRepository.get(bob).orders.length, 0);
 
-  await mailBroker(alice, brokerId, 'sell me a unicorn');
-  assert.ok(lastMail(alice).subject.includes('Unrecognised.Subject'));
   await mailBroker(alice, brokerId, 'HELP');
   assert.ok(lastMail(alice).subject.includes('Help.Subject'));
+});
+
+test('a mail that is not market business gets no automatic answer, from a client or anyone else', async () => {
+  const brokerId = S.BrokerRepository.list()[0].id;
+  const was = { alice: mailTo(alice).length, bob: mailTo(bob).length, seen: S.PortfolioRepository.get(bob).processed.length };
+  await mailBroker(alice, brokerId, 'sell me a unicorn');
+  await mailBroker(bob, brokerId, 'Are we still on for Friday?');
+  await mailBroker(bob, brokerId, 'Sell 5 guns');
+  assert.equal(mailTo(alice).length, was.alice, 'nothing to the client');
+  assert.equal(mailTo(bob).length, was.bob, 'nothing to anyone else');
+  assert.equal(S.PortfolioRepository.get(bob).processed.length, was.seen, 'and nothing is written to their account');
 });
 
 test('a mailed order can be cancelled by its reference', async () => {

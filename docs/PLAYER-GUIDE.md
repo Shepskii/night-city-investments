@@ -60,7 +60,7 @@ Choose in the Trade window's "Trade through".
 | `CANCEL <ref>` | cancel an order |
 | `HELP` | the list of commands |
 
-Brokers reply and confirm fills in character, in their own voice.
+Brokers reply and confirm fills in character, in their own voice. Put each command on a line of its own. `STATUS`, `STATEMENT` and `HELP` must be the whole message, and a ticker must be on the market. Anything else is treated as ordinary mail, so it gets no automatic reply and the GM answers it if they choose.
 
 **Direct** (instant, dearer). You need a device on the **CorpNet** network in Night City Messenger (or a terminal grant from the GM). Press **Connect to the market terminal** on the Portfolio tab and roll INT + Accounting + 1d10 against the DV. A pass opens a trading session for a while; a failure locks you out for a time (longer on a fumble).
 

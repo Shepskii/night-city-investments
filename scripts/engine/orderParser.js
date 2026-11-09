@@ -18,7 +18,8 @@ function clean(input) {
     .replace(/(\d),(?=\d{3}\b)/g, '$1');
 }
 
-function parseLine(line) {
+/** One line of a mail as a command: `null` if it isn't one, `{ok: false, error}` if it is one that can't be carried out. */
+export function parseOrderLine(line) {
   const text = line.trim().replace(/[.!]+$/, '');
   if (!text) return null;
 
@@ -32,7 +33,7 @@ function parseLine(line) {
     const ticker = m[3].toUpperCase();
     if (STOP_WORDS.has(ticker)) return { ok: false, error: 'bad-ticker' };
     const qty = Number.parseInt(m[2], 10);
-    if (qty <= 0) return { ok: false, error: 'bad-quantity' };
+    if (qty <= 0) return { ok: false, error: 'bad-quantity', ticker };
     const order = { ok: true, cmd: m[1].toLowerCase(), qty, ticker, type: 'market' };
     if (m[4]) {
       order.type = m[4].toLowerCase() === 'stop' ? 'stop' : 'limit';
@@ -56,6 +57,11 @@ function parseLine(line) {
   return null;
 }
 
+/** The lines of a mail body that have anything on them. */
+export function mailLines(input) {
+  return clean(input).split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+}
+
 /**
  * Parse mail text. Subject and body can be passed joined; the first recognised line wins.
  * @returns {{ok: true, cmd: string, ...} | {ok: false, error: string}}
@@ -64,7 +70,7 @@ export function parseOrderText(input) {
   const lines = clean(input).split(/\r?\n/);
   let failure = null;
   for (const line of lines) {
-    const parsed = parseLine(line);
+    const parsed = parseOrderLine(line);
     if (parsed?.ok) return parsed;
     if (parsed && !failure) failure = parsed;
   }

@@ -91,6 +91,7 @@ Special dividends, stock splits, buyouts, delistings and bankruptcies. Each upda
 - Set a minimum withdrawal, disable a broker, or remove one nobody is using.
 - **Terminal access:** grant a character direct trading without a CorpNet connection.
 - With **Broker order handling** set to Manual, mailed orders wait for you.
+- A broker can also be a character your players talk to. Only mail holding a market command gets an automatic reply, and an order sent to someone else's broker is refused. Everything else stays in the broker's inbox for you to answer, including an order for a ticker that doesn't exist, so watch for players' typos.
 
 ## Players group
 
