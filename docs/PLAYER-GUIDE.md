@@ -47,7 +47,7 @@ Shown in the Portfolio folder of your terminal, on the Overview and Brokerage ta
 
 Choose in the Trade window's "Trade through".
 
-**Through a broker** (cheaper, slower). Pick a broker on the Brokerage tab. A broker's skill sets how many market days an order takes (1 to 5) and their fee, which is always less than trading directly. You can also mail your broker in Night City Messenger:
+**Through a broker** (cheaper, slower). Pick a broker on the Brokerage tab. A broker's skill sets how many market days an order takes (1 to 5) and their fee, which is always less than trading directly. You can also mail your broker in Night City Messenger. **Write to your broker** on the Brokerage tab opens a mail to them, with the formats to hand, and picking a broker adds them to your contacts:
 
 | Mail | Does |
 |---|---|

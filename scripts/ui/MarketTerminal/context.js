@@ -11,6 +11,7 @@ import {
 import { MODULE_ID, FLAGS, SETTINGS } from '../../utils/constants.js';
 import { CompanyRepository } from '../../data/CompanyRepository.js';
 import { BrokerRepository } from '../../data/BrokerRepository.js';
+import { NcmAdapter } from '../../integrations/NcmAdapter.js';
 import { PortfolioRepository } from '../../data/PortfolioRepository.js';
 import { MarketClock } from '../../services/MarketClockService.js';
 import { TradingSettings } from '../../services/TradingSettings.js';
@@ -238,6 +239,8 @@ export function accessContext(actor, portfolio, tick) {
     ],
     hasBrokers: brokers.length > 0,
     broker: brokerInfo,
+    // Orders by mail are a character's own: a syndicate trades through this window.
+    canWriteBroker: !!brokerInfo && !actor?.isSyndicate && NcmAdapter.canCompose(),
     direct: { commission: `${(direct.commissionBps / 100).toFixed(2)}%`, flatFee: direct.flatFee, dv: direct.dv },
     terminal: {
       active,

@@ -489,6 +489,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       b.escrow += money.cash;
       pay(actor.id, -money.cash);
       log('contribution', money.cash, { gear: gearValue(me) });
+      out.events.push({ type: 'partnerJoined' });
       tryOpen(b, day, ctx, out.events, p);
       break;
     }

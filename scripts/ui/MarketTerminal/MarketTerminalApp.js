@@ -26,6 +26,7 @@ import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient } from '../../services/BusinessClient.js';
 import { investigate, withDiscoveries } from '../investigate.js';
 import { publishStory, digRumours } from '../publishStory.js';
+import { NcmAdapter } from '../../integrations/NcmAdapter.js';
 import { quashRoll } from '../quash.js';
 import { StoryService } from '../../services/StoryService.js';
 import { SyndicateClient } from '../../services/SyndicateClient.js';
@@ -57,6 +58,7 @@ export class MarketTerminalApp extends BaseApplication {
       investigate: MarketTerminalApp._onInvestigate,
       publishStory: MarketTerminalApp._onPublishStory,
       digRumours: MarketTerminalApp._onDigRumours,
+      writeBroker: MarketTerminalApp._onWriteBroker,
       select: MarketTerminalApp._onSelect,
       openAsset: MarketTerminalApp._onOpenAsset,
       back: MarketTerminalApp._onBack,
@@ -295,6 +297,15 @@ export class MarketTerminalApp extends BaseApplication {
   }
 
   /** A Media asks around about this company (F1c). */
+  /** Open a mail to this character's broker, with the order format to hand. */
+  static async _onWriteBroker() {
+    const actor = this.actor;
+    const contact = NcmAdapter.contact(PortfolioRepository.get(actor)?.brokerContactId);
+    if (!contact) return;
+    const body = L('NCI.Access.WriteBrokerBody').split('\n').map((line) => `<p>${line}</p>`).join('');
+    if (!(await NcmAdapter.compose({ fromActorId: actor.id, contact, subject: L('NCI.Access.WriteBrokerSubject'), body }))) ui.notifications.warn(L('NCI.Access.WriteBrokerFailed'));
+  }
+
   static _onDigRumours(event, target) {
     return digRumours(this.actor, { ticker: target.dataset.ticker, name: target.dataset.name });
   }

@@ -216,6 +216,10 @@
       "Stocks": "Stocks only, market or limit orders",
       "FundEdge": "Fund entry and exit charges waived",
       "LoadWaived": "(better with skill)",
+      "WriteBroker": "Write to your broker",
+      "WriteBrokerSubject": "Instructions",
+      "WriteBrokerBody": "(Delete this and write one order per mail.)\nFor example, to buy 10 shares of Arasaka write the word Buy, then 10, then the ticker ARA.\nOther orders: Sell, Sell all, a limit with @ and a price, Withdraw and an amount, Status, Statement, Cancel and a reference, Help.",
+      "WriteBrokerFailed": "Night City Messenger could not open a new message.",
       "MailHint": "You can also mail your broker: BUY 10 ARA, SELL 5 MIL, WITHDRAW 5000, STATUS, CANCEL and an order reference.",
       "WithdrawViaBroker": "Your broker handles withdrawals. They are slower and arrive as eddies by mail.",
       "WithdrawDirect": "With no broker, withdrawals go straight to your wallet. A broker makes them slower but cheaper.",
@@ -1809,6 +1813,10 @@
       "CrewDowntime": {
         "Name": "Business days come from Crew Tools downtime",
         "Hint": "On: extra time, project days and mentoring spend a character's Crew Tools downtime, and there is no weekly allowance, so business work competes with their other downtime. Remember to award days, and to open Downtime once for each character. Off: 3 business days a week for each voting partner."
+      },
+      "ShareContacts": {
+        "Name": "Share contacts with players",
+        "Hint": "A character who picks a broker, or who founds a business with an NPC partner, gets that person in their Night City Messenger contacts."
       },
       "RoomEvents": {
         "Name": "Back room events",

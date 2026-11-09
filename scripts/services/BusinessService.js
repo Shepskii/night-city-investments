@@ -30,6 +30,7 @@ import {
   STACKING_TYPES,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
+import { NcmAdapter } from '../integrations/NcmAdapter.js';
 import { L, log, isActiveGM, isCharacter, isItemPile, unwrap } from '../utils/helpers.js';
 import { SerialQueue } from '../utils/queue.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
@@ -681,6 +682,7 @@ class BusinessServiceImpl {
     await this._saveHidden(out);
     await this._rewardEvents(out);
     await this._syncJobs(out.business);
+    if (out.events?.some((e) => e.type === 'partnerJoined')) await this._shareNpcPartners(out.business).catch((error) => log.warn('Could not share NPC partners', error));
     await this._payslips(out);
     await this._livingCosts(out);
     await this._twoJobs(out);
@@ -2262,8 +2264,16 @@ class BusinessServiceImpl {
     return this._gm(id, (b) => {
       const copy = normalizeBusiness(structuredClone(b));
       const done = answerNpcPartner(copy, partnerId, { yes, cash }, this.day());
-      return done.ok ? { ok: true, business: copy, wealth: {}, events: [] } : done;
+      return done.ok ? { ok: true, business: copy, wealth: {}, events: yes ? [{ type: 'partnerJoined' }] : [] } : done;
     });
+  }
+
+  /** Everyone who has joined a business gets its NPC partners as contacts (safe to repeat; nothing waits on it). */
+  async _shareNpcPartners(b) {
+    const npcs = b.partners.filter((x) => x.npc && x.status === 'active')
+      .map((x) => (x.actorId.startsWith('npc:contact:') ? x.actorId.slice('npc:contact:'.length) : NcmAdapter.contactForActor(x.actorRef)?.id)).filter(Boolean);
+    const people = b.partners.filter((x) => !x.npc && x.status === 'active').map((x) => x.actorId);
+    for (const contactId of npcs) for (const actorId of people) await NcmAdapter.pushContact(contactId, actorId);
   }
 
   /** A partner has died or left the table: the others may buy the stake, or it goes to the heir. */

@@ -462,6 +462,14 @@ export function registerSettings() {
     range: { min: 0.5, max: 2, step: 0.25 },
   });
 
+  s.register(MODULE_ID, SETTINGS.SHARE_CONTACTS, {
+    name: 'NCI.Settings.ShareContacts.Name',
+    hint: 'NCI.Settings.ShareContacts.Hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true,
+  });
   s.register(MODULE_ID, SETTINGS.ROOM_EVENTS, {
     name: 'NCI.Settings.RoomEvents.Name',
     hint: 'NCI.Settings.RoomEvents.Hint',

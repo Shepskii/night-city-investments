@@ -40,6 +40,7 @@ export const SETTINGS = Object.freeze({
   FACTION_DEFS: 'factionDefs',
   DISTRICT_DEFS: 'districtDefs',
   ROOM_EVENTS: 'roomEventFrequency',
+  SHARE_CONTACTS: 'shareContacts',
   DATE_FORMAT: 'dateFormat',
   PRODUCTION_CATALOG: 'productionCatalog',
   FUND_DEFS: 'fundDefs',

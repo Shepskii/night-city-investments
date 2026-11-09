@@ -104,6 +104,7 @@
           <li>{{localize "NCI.Access.FundEdge"}}: {{portfolio.access.broker.rebate}} {{localize "NCI.Access.LoadWaived"}}</li>
         </ul>
         <p class="nci-hint">{{localize "NCI.Access.MailHint"}}</p>
+        {{#if portfolio.access.canWriteBroker}}<div class="nci-actions"><button type="button" data-action="writeBroker"><i class="fas fa-envelope"></i> {{localize "NCI.Access.WriteBroker"}}</button></div>{{/if}}
         {{else}}<p class="nci-hint">{{localize "NCI.Access.ChooseBroker"}}</p>{{/if}}
         {{else}}<p class="nci-hint">{{localize "NCI.Access.NoBrokersExist"}}</p>{{/if}}
       </div>

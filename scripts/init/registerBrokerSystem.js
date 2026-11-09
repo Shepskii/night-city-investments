@@ -3,6 +3,7 @@
  * @file scripts/init/registerBrokerSystem.js
  */
 
+import { NcmAdapter } from '../integrations/NcmAdapter.js';
 import { MODULE_ID, HOOKS } from '../utils/constants.js';
 import { isActiveGM } from '../utils/helpers.js';
 import { BrokerRepository } from '../data/BrokerRepository.js';
@@ -23,6 +24,8 @@ export function registerBrokerSystem(initializer) {
 
     Hooks.on(HOOKS.PORTFOLIO_EVENTS, (data) => {
       if (!isActiveGM()) return;
+      // A character who picks a broker gets them as a contact.
+      for (const r of data.results ?? []) if (r.type === 'setBroker' && r.ok !== false && r.brokerId) NcmAdapter.pushContact(r.brokerId, data.actorId);
       NotificationService.onPortfolioEvents(data);
       StatementService.onPortfolioEvents(data);
     });

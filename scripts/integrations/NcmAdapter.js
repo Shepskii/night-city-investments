@@ -6,10 +6,12 @@
  *              to "no mail" instead of breaking the market.
  */
 
-import { BROKER_TAG, WIRE_TAG, WIRE_NAME, NCPD_TAG, NCPD_NAME } from '../utils/constants.js';
+import { BROKER_TAG, WIRE_TAG, WIRE_NAME, NCPD_TAG, NCPD_NAME, MODULE_ID, SETTINGS } from '../utils/constants.js';
 import { log } from '../utils/helpers.js';
 
 const svc = (name) => game.nightcity?.[name] ?? null;
+/** Messenger's public API, on a version that has one. */
+const v2 = () => game.modules?.get?.('night-city-messenger')?.api?.v2 ?? null;
 
 export const NcmAdapter = {
   /** Can mail be sent right now? */
@@ -46,6 +48,40 @@ export const NcmAdapter = {
       log.warn('Could not list NCM contacts', error);
       return [];
     }
+  },
+
+  /**
+   * GM: put a contact in a character's own list, if the world allows it. Safe to repeat, and best effort: nothing waits on it.
+   * @returns {Promise<boolean>} whether it was put there, or was already
+   */
+  async pushContact(contactId, actorId) {
+    const push = v2()?.directory?.pushToPlayer;
+    if (typeof push !== 'function' || !contactId || !game.actors?.get?.(actorId)) return false;
+    if (game.settings.get(MODULE_ID, SETTINGS.SHARE_CONTACTS) === false) return false;
+    try {
+      const result = await push(contactId, actorId);
+      if (!result?.ok) log.warn(`Could not share an NCM contact: ${result?.error ?? 'no answer'}`);
+      return !!result?.ok;
+    } catch (error) {
+      log.warn('Could not share an NCM contact', error);
+      return false;
+    }
+  },
+
+  /** Can Messenger's composer be opened? */
+  canCompose() {
+    return typeof v2()?.open?.composer === 'function';
+  },
+
+  /**
+   * Open Messenger's composer, addressed to a directory contact, who may have no actor.
+   * @returns {Promise<boolean>}
+   */
+  async compose({ fromActorId, contact, subject, body }) {
+    const composer = v2()?.open?.composer;
+    if (typeof composer !== 'function' || !contact) return false;
+    const recipients = [{ actorId: contact.actorId ?? null, contactId: contact.id, email: contact.email ?? '', name: contact.name }];
+    return !!(await composer({ fromActorId, recipients, subject, body }))?.ok;
   },
 
   brokerContacts() {

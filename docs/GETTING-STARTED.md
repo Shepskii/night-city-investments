@@ -114,6 +114,7 @@ In both the in-world modes the market only moves when in-world time passes, so a
 | Listing threshold (eb) | 500,000 | The market valuation a chartered company must hold on three monthly reports before it can apply to list. Lower it to let companies list sooner. |
 | Business days come from Crew Tools downtime | On | Needs Crew Tools. On: extra time, project days and mentoring spend a character's downtime, with no weekly allowance. Off: 3 business days a week for each voting partner. |
 | Underworld content | On | Lets a business open a back room and make illegal items, and a company commit crime. Off: nothing new opens, and illegal lines stop. A back room already open keeps running, and goods already made can still be fenced. |
+| Share contacts with players | On | A character who picks a broker, or founds a business with an NPC partner, gets that person in their Night City Messenger contacts. Contacts already shared stay if you turn it off. |
 | Back room events | Normal | How often a back room that was worked last week draws trouble of its own: Rare, Normal or Often. |
 | Smears, leaks and stories need GM approval | On | A business's successful campaign, or a Media's believed story, waits on the Pending tab until you let it run. Off: they run at once. |
 
