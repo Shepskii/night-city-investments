@@ -82,6 +82,7 @@ export const FLAGS = Object.freeze({
   HEAT: 'heat',
   STORIES: 'stories',
   EVIDENCE: 'evidence',
+  PRESS_NOTICE: 'pressNotice',
   /** On world macros this module created: which starter macro it is, so it is not made twice. */
   MACRO: 'macro',
   /** On actors. Written only by the GM executor. */

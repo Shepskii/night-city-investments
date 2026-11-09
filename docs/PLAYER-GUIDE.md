@@ -169,6 +169,8 @@ Your GM may decide to play a big event out with you, such as a raid or a hostile
 
 A reporter asking questions means a corporation with a grudge is running a story about you. It prints three days into the week, and the public may not believe it, but you won't know until the week closes. Answer it as you would any event: a pass stops the harm and a failure halves it. Depending on what it says, a story that sticks can cost Reputation, attract attention to your back room, or move your share price if you're listed. You'll get a mail saying how it went.
 
+A story can name you, too, if you've drawn the wrong kind of attention lately. You'll get a mail and an **Answer** on your Pending tab, with seven days to roll Persuasion, Composition, Bribery or Credibility. Stay silent and a story that sticks costs you in full: more heat, and some Reputation for your business.
+
 ### The roll dialog
 
 Every roll is yours to make, when you press its button. The dialog shows the DV and your chance of each result before you roll, and these levers:

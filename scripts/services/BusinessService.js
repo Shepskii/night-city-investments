@@ -37,6 +37,7 @@ import { BusinessRepository } from '../data/BusinessRepository.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
 import { FactionRepository } from '../data/FactionRepository.js';
 import { StoryService } from './StoryService.js';
+import { PressService } from './PressService.js';
 import { escapeHtml } from '../utils/text.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
@@ -526,6 +527,7 @@ class BusinessServiceImpl {
     // A Media's story (F1c) has nothing to do with whether player businesses are switched on.
     if (request.type === 'publishStory') return this._receipt(actor, request, await StoryService.publish(actor, request));
     if (request.type === 'rumourRoll') return this._receipt(actor, request, await StoryService.digRumours(actor, request));
+    if (request.type === 'pressAnswer') return this._receipt(actor, request, await PressService.answer(actor, request));
     // A Lawman quashing their own heat (X1) has nothing to do with businesses either.
     if (request.type === 'quashRoll') return this._receipt(actor, request, await this._quash(actor, request));
     if (!this.enabled()) return this._receipt(actor, request, { ok: false, reason: 'disabled' });
@@ -1148,6 +1150,7 @@ class BusinessServiceImpl {
       frequency,
       approval: game.settings.get(MODULE_ID, SETTINGS.PRESS_APPROVAL) !== false,
       underworld: this.underworldOn(),
+      sharedLastDay: PressService.sharedLastDay(business),
       corps: factions.filter((f) => f.kind === 'corp').map((f) => ({ id: f.id, name: f.name, value: hiddenEntry?.standing?.[f.id]?.value ?? 0 })),
       media: CompanyRepository.all().filter((c) => c.sector === 'media' && c.ticker !== business.company?.ticker).map((c) => ({ name: c.name, ticker: c.ticker })),
     };

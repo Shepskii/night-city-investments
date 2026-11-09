@@ -7,13 +7,14 @@
  *              optional actions are not here, nor is anything already waiting on someone else.
  */
 
-import { MODULE_ID, SETTINGS } from '../../utils/constants.js';
+import { MODULE_ID, SETTINGS, FLAGS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { SyndicateRepository } from '../../data/SyndicateRepository.js';
 import { accountFor, businessAccounts, ownerOf, syndicateKey } from '../accounts.js';
 import { syndicateContext, characterSyndicates } from '../MarketTerminal/syndicateContext.js';
 import { L } from '../format.js';
 import { businessContext, jobsContext } from './context.js';
+import { BusinessClient } from '../../services/BusinessClient.js';
 
 const need = (key, params) => L(`NCI.Business.Pending.Need.${key}`, params);
 const number = (name, label, value, extra = {}) => ({ name, label: L(label), value, type: 'number', ...extra });
@@ -102,6 +103,16 @@ function syndicateRows(character) {
   return [...invited, ...votes];
 }
 
+/** A story in the press about this character, not yet answered. */
+function pressRows(character) {
+  const notice = character.getFlag?.(MODULE_ID, FLAGS.PRESS_NOTICE);
+  if (!notice || notice.answered) return [];
+  return [{
+    where: notice.outlet, needed: need('press', { days: Math.max(0, notice.deadline - BusinessClient.day()) }), account: character.id, tab: 'overview', fields: [],
+    buttons: [{ do: 'answerPress', label: L('NCI.Press.Char.Answer'), icon: 'fa-comment', account: character.id }],
+  }];
+}
+
 /**
  * Every row for whichever character is behind the picked account.
  * @param {object} picked - the account picked in the window: a character, or a syndicate as one of its members
@@ -113,5 +124,5 @@ export function pendingRows(picked) {
   const accounts = businessAccounts([character]).map((a) => accountFor(a.id)).filter((a) => a && (!a.isSyndicate || a.isOfficer));
   const owned = accounts.flatMap((account) => BusinessRepository.forActor(account.id)
     .filter((b) => b.status !== 'closed').flatMap((b) => businessRows(b, account)));
-  return [...owned, ...jobRows(character), ...syndicateRows(character)];
+  return [...pressRows(character), ...owned, ...jobRows(character), ...syndicateRows(character)];
 }

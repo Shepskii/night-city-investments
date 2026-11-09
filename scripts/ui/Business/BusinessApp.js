@@ -25,6 +25,7 @@ import { ReportDialogApp } from './ReportDialogApp.js';
 import { L } from '../format.js';
 import { investigate } from '../investigate.js';
 import { answerCase } from '../answerCase.js';
+import { answerPress } from '../answerPress.js';
 import { pickerContext, startContext, businessContext, usableActors, jobsContext, termKey, roomEventName } from './context.js';
 import { pendingRows } from './pending.js';
 import { CrewToolsAdapter } from '../../integrations/CrewToolsAdapter.js';
@@ -114,6 +115,7 @@ export class BusinessApp extends BaseApplication {
       tender: BusinessApp._onTender,
       hideRoll: BusinessApp._onHideRoll,
       answerCase: BusinessApp._onAnswerCase,
+      answerPress: BusinessApp._onAnswerPress,
       investigate: BusinessApp._onInvestigate,
       dropLayer: BusinessApp._onDropLayer,
       defenceRoll: BusinessApp._onDefenceRoll,
@@ -427,6 +429,11 @@ export class BusinessApp extends BaseApplication {
       this.lastInFolder[folderOf(chosen)] = chosen;
     }
     this.render();
+  }
+
+  /** A story in the press about this character: their answer (S1b). */
+  static _onAnswerPress() {
+    return answerPress(this.actor);
   }
 
   /** A row on the Pending tab: its business's tab, or the terminal for a syndicate. A click among its fields stays put. */

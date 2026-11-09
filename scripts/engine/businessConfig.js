@@ -750,6 +750,23 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     poorState: 35,
     raids: Object.freeze(['bust', 'raid']),
     accidents: Object.freeze(['accident']),
+    /**
+     * A character's story (S1b): the weekly chance by heat tier, read from the highest heat of the last `windowWeeks`.
+     * `answerDays` to roll one of `uses` against `answerDv`. `heat` is what it adds, `heatMedia` from a media company;
+     * `reputation` falls on the business they run with the worst standing, half what the nearest business story costs.
+     */
+    character: Object.freeze({
+      chance: Object.freeze({ noticed: 0.02, flagged: 0.04, investigated: 0.08 }),
+      windowWeeks: 4,
+      answerDays: 7,
+      answerDv: 15,
+      uses: Object.freeze([S.persuasion, S.composition, S.bribery, A.credibility]),
+      kinds: Object.freeze({
+        dirty: Object.freeze({ heat: 10, heatMedia: 15, reputation: -2.5 }),
+        hidden: Object.freeze({ heat: 15, reputation: -1, priceShare: 0.5 }),
+        smear: Object.freeze({ heat: 5, reputation: -1.5 }),
+      }),
+    }),
     kinds: Object.freeze({
       money: Object.freeze({ reputation: -2, price: true }),
       crime: Object.freeze({ reputation: -5, exposure: 5, price: true, regCase: true }),

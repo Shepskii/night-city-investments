@@ -93,4 +93,11 @@ export const normalizeStories = (value) => ({
   recent: Array.isArray(value?.recent) ? value.recent.slice(-200) : [],
   // Each Media's rumours: when they last heard one and dug for one, and what they have been told.
   rumours: value?.rumours && typeof value.rumours === 'object' ? value.rumours : {},
+  // Stories about characters (S1b): recent peak heat, the day of each one's last story, when the check last ran.
+  press: {
+    peaks: value?.press?.peaks ?? {},
+    lastDay: value?.press?.lastDay ?? {},
+    lastCheck: value?.press?.lastCheck ?? null,
+    stories: Array.isArray(value?.press?.stories) ? value.press.stories : [],
+  },
 });

@@ -14,6 +14,8 @@ import { createRng } from './rng.js';
 import { exposureBand } from './businessCompany.js';
 import { hostileChance, standingBand } from './factions.js';
 import { believability, storyPercent, STORY_RULES } from './stories.js';
+import { heatTier } from './heat.js';
+import { bandPassed } from './rolls.js';
 
 /** Whether the last few weeks' digests hold any of these events. */
 const recentEvent = (b, kinds, p) => b.digests.slice(-p.press.lookbackWeeks).some((d) => kinds.includes(d.event?.kind));
@@ -54,7 +56,7 @@ export function drawPress(b, seed = 'nci', p = BUSINESS_DEFAULTS, relations = nu
   const press = relations?.press;
   if (!press?.corps?.length) return null;
   const day = b.period.startDay;
-  if (b.press?.lastDay != null && day - b.press.lastDay < p.press.limitDays) return null;
+  if (spansLimit(day, [b.press?.lastDay, press.sharedLastDay], p)) return null;
   const worst = [...press.corps].sort((x, y) => x.value - y.value)[0];
   const truths = pressTruths(b, { exposure: relations.exposure ?? 0, underworld: press.underworld !== false }, p);
   const rng = createRng(seed, 'business-press', b.id, b.period.index);
@@ -141,4 +143,79 @@ export function pressFallout(b, settled, p = BUSINESS_DEFAULTS) {
     ...(rules.exposure && scale ? { exposure: rules.exposure * scale } : {}),
     regCase: !!rules.regCase && scale === 1 && event.rank >= STORY_RULES.caseRank && b.stage >= 1,
   }];
+}
+
+// ── Characters (S1b) ─────────────────────────────────────────────────────────
+
+/** The highest heat noted in the last few weeks. Heat halves every week, so a spike must outlast itself to be news. */
+export function heatPeak(peaks, week, p = BUSINESS_DEFAULTS) {
+  const window = p.press.character.windowWeeks;
+  return Math.max(0, ...Object.entries(peaks ?? {}).filter(([w]) => week - Number(w) < window).map(([, v]) => v));
+}
+
+/** Note this week's heat if it is the highest so far, and forget weeks too old to matter. */
+export function notePeak(peaks, week, heat, p = BUSINESS_DEFAULTS) {
+  const window = p.press.character.windowWeeks;
+  const kept = Object.fromEntries(Object.entries(peaks ?? {}).filter(([w]) => week - Number(w) < window));
+  if (heat > (kept[week] ?? 0)) kept[week] = heat;
+  return kept;
+}
+
+/** The weekly chance of a story about a character, from their recent peak. */
+export function characterPressChance(heat, frequency = 1, p = BUSINESS_DEFAULTS) {
+  return Math.min(1, (p.press.character.chance[heatTier(heat)] ?? 0) * frequency);
+}
+
+/** What could truthfully be printed about a character whose recent peak is this. */
+export function characterTruths(heat, stake = null) {
+  return [...(heatTier(heat) === 'quiet' ? [] : ['dirty']), ...(stake ? ['hidden'] : [])];
+}
+
+/** Whether any of these days is inside the limit, counting back from `day`. */
+export const spansLimit = (day, days, p = BUSINESS_DEFAULTS) => days.some((d) => d != null && day - d < p.press.limitDays);
+
+/**
+ * A story about a character. A corporation with a grudge against a business they run is behind it if there is one;
+ * otherwise a media company has picked it up by itself, so with neither there is nobody to print it.
+ * @returns {object|null}
+ */
+export function drawCharacterPress({ id, actorId, name, day, truths, worst = null, businessId = null, stake = null, media = [], rng }, p = BUSINESS_DEFAULTS) {
+  const useMedia = media.length && (!worst || standingBand(worst.value, p) === 'hostile');
+  if (!useMedia && !worst) return null;
+  const chosen = useMedia ? media[rng.int(0, media.length - 1)] : null;
+  const story = truths.length && !rng.chance(p.press.smearShare) ? truths[rng.int(0, truths.length - 1)] : 'smear';
+  return {
+    id,
+    actorId,
+    name,
+    day,
+    status: 'held',
+    story,
+    outlet: chosen?.name ?? worst.name,
+    grudge: worst?.name ?? null,
+    rank: chosen ? p.press.rank.media : p.press.rank.own,
+    businessId,
+    ...(story === 'hidden' ? { stake } : {}),
+  };
+}
+
+/** The public makes up its mind. Kept from the character until the end. */
+export function printCharacterPress(story, die, p = BUSINESS_DEFAULTS) {
+  const smear = story.story === 'smear';
+  const target = Math.max(0, believability(story.rank, smear ? 0 : 1) - (smear ? p.press.smearPenalty : 0));
+  story.printed = true;
+  story.believed = die <= target;
+  story.percent = story.believed ? storyPercent(story.rank, target - die, 'expose') : 0;
+}
+
+export function answerCharacterPress(story, band) {
+  story.answer = band;
+}
+
+/** What it does at the end of its seven days: answered well none of it, badly half, and in silence or a fumble all. */
+export function settleCharacterPress(story, p = BUSINESS_DEFAULTS) {
+  const rules = p.press.character.kinds[story.story];
+  const scale = !story.believed || (story.answer && bandPassed(story.answer)) ? 0 : story.answer && story.answer !== 'fumble' ? 0.5 : 1;
+  const heat = (story.rank >= STORY_RULES.caseRank ? rules.heatMedia ?? rules.heat : rules.heat) * scale;
+  return { scale, heat, reputation: rules.reputation * scale, percent: scale && rules.priceShare ? story.percent * rules.priceShare * scale : 0 };
 }

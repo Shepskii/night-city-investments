@@ -11,6 +11,7 @@ import { MarketControlService } from '../../../services/MarketControlService.js'
 import { CorporateActionService } from '../../../services/CorporateActionService.js';
 import { NewsService } from '../../../services/NewsService.js';
 import { StoryService } from '../../../services/StoryService.js';
+import { PressService } from '../../../services/PressService.js';
 import { CompanyRepository } from '../../../data/CompanyRepository.js';
 import { field, report, targetLabel, companyOptions, companiesById } from '../shared.js';
 
@@ -81,6 +82,14 @@ async function onRemoveGlide(event, target) {
   await MarketControlService.removeGlide(target.dataset.id);
 }
 
+async function onPressCharacterApprove(event, target) {
+  report(await PressService.approve(target.dataset.id, target.closest('tr')?.querySelector('[name="pressHeadline"]')?.value ?? ''));
+}
+
+async function onPressCharacterSpike(event, target) {
+  report(await PressService.spike(target.dataset.id));
+}
+
 async function onStoryApprove(event, target) {
   report(await StoryService.approve(target.dataset.id));
 }
@@ -104,6 +113,8 @@ async function onCreateEvidence(event, target) {
 export const actions = {
   createEvidence: onCreateEvidence,
   storyApprove: onStoryApprove,
+  pressCharacterApprove: onPressCharacterApprove,
+  pressCharacterSpike: onPressCharacterSpike,
   storyReject: onStoryReject,
   addShock: onAddShock,
   removeImpact: onRemoveImpact,

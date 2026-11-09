@@ -650,3 +650,7 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .nci-app :is(h1, h2, h
 .nci-app .nci-roomchoice select[name="roomKind"] { width: 100%; }
 .nci-app .nci-roomchoice [data-room-info] { margin: 4px 0; }
 .nci-app .nci-roomchoice [hidden] { display: none; }
+
+/* A headline to edit needs the room to read it. */
+.nci-app .nci-pending label.nci-inline:has(input[name$="Headline"]) { flex: 1 1 100%; display: flex; flex-direction: row; align-items: center; gap: 8px; }
+.nci-app .nci-pending label.nci-inline input[name$="Headline"] { flex: 1; min-width: 0; width: auto !important; }

@@ -2575,24 +2575,31 @@
       }
     },
     "Press": {
-      "Story": { "money": "money trouble", "crime": "a crime expose", "service": "bad service", "smear": "a smear" },
+      "Story": { "money": "money trouble", "crime": "a crime expose", "service": "bad service", "smear": "a smear", "dirty": "dirty dealing", "hidden": "a hidden stake" },
       "Angle": {
         "money": "A reporter is calling round about your finances, and someone is talking.",
         "crime": "A reporter has been watching who comes and goes, and wants a comment on what goes on here.",
         "service": "A reporter is collecting complaints from your customers.",
-        "smear": "A reporter has an ugly story about you and doesn't seem to care if it's true."
+        "smear": "A reporter has an ugly story about you and doesn't seem to care if it's true.",
+        "dirty": "A reporter has been asking who tipped you off, and how you've done so well out of it.",
+        "hidden": "A reporter has been following the money behind a company you'd rather not be linked to."
       },
       "Headline": {
         "money": "{outlet}: is {name} running out of money?",
         "crime": "{outlet}: what is really going on at {name}?",
         "service": "{outlet}: customers speak out against {name}",
-        "smear": "{outlet}: the shocking truth about {name}"
+        "smear": "{outlet}: the shocking truth about {name}",
+        "dirty": "{outlet}: who is {name} really working for?",
+        "hidden": "{outlet}: who is hiding behind {name}?"
       },
       "Why": {
         "money": "It has lost money lately or its compliance is poor.",
         "crime": "Its Exposure is moderate or higher, or it was raided recently.",
         "service": "Its Reputation is poor, or it has had an accident or a stock query.",
-        "smear": "Nothing true is needed: it's harder to believe."
+        "smear": "Nothing true is needed: it's harder to believe.",
+        "smearCharacter": "Nothing true is needed: it's harder to believe.",
+        "dirty": "Their heat has been noticed or higher lately.",
+        "hidden": "They hold a concealed stake in a listed company. The headline names the company, not them."
       },
       "Mail": {
         "Subject": "The story about {name}",
@@ -2600,6 +2607,18 @@
         "Answered": "People believed the story {outlet} ran about {name}, but your answer killed it. No harm done.",
         "Halved": "People believed the story {outlet} ran about {name}, and your answer only took the edge off. It cost you, though not as much as it might have.",
         "Full": "People believed the story {outlet} ran about {name}, and nothing stopped it. It cost you in full."
+      },
+      "Char": {
+        "Subject": "A reporter is asking about {name}",
+        "Told": "{outlet} is running a story. You have {days} days to answer it, from the Pending tab of your Business window. It prints in a few days, and silence will cost you most if it sticks.",
+        "Title": "Answer {outlet}",
+        "Hint": "A roll against DV {dv}. A pass stops any harm, and a failure halves it. You won't know until the end whether anyone believed the story.",
+        "Answer": "Answer",
+        "ResultSubject": "That story about you",
+        "Ignored": "The story {outlet} ran went nowhere. Nobody believed it.",
+        "Answered": "People believed the story {outlet} ran, but your answer killed it. No harm done.",
+        "Halved": "People believed the story {outlet} ran, and your answer only took the edge off.",
+        "Full": "People believed the story {outlet} ran, and nothing stopped it. It cost you in full."
       }
     },
     "Story": {
@@ -2657,6 +2676,7 @@
         "sceneOpen": "Big event",
         "story": "Media story",
         "press": "Press story",
+        "pressCharacter": "Press story",
         "offer": "Job offer",
         "npcPartner": "NPC partner",
         "reward": "REP and IP",
@@ -2681,6 +2701,7 @@
         "sceneOpen": "{event}: say how the scene went",
         "story": "A story about {name}: let it run or spike it",
         "press": "{outlet} wants to run a story ({story}) for {grudge}. {why} Let it run or spike it",
+        "pressCharacter": "{outlet} wants to run a story ({story}) naming this character. {why} Let it run or spike it",
         "offer": "Answer for {name}: a job offer as {post}",
         "npcPartner": "Answer for {name}: invited to found this business as a silent partner",
         "reward": "{what}: apply, change or dismiss",
@@ -3297,6 +3318,7 @@
         "Needed": "What it needs",
         "Action": "Action",
         "Need": {
+          "press": "A reporter is asking about you. {days} day(s) to answer",
           "invited": "You are invited to join. Put in cash here, or click the row to bring gear as well.",
           "defend": "A takeover offer: defend the company",
           "setup": "Make the setup roll",
@@ -3601,6 +3623,8 @@
         "no-slot": "this week's action slots are all taken",
         "no-faction": "that action needs a faction to aim at",
         "no-target": "that action needs a company to aim at",
+        "no-press": "no story is waiting for an answer",
+        "press-answered": "you have already answered that story",
         "not-media": "that takes the Media role's Credibility",
         "bad-angle": "that is not an angle for a story",
         "story-wait": "you have published a story too recently",

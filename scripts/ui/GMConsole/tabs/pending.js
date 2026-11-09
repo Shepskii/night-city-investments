@@ -16,6 +16,7 @@ import { sceneCandidate } from '../../../engine/index.js';
 import { penaltyText, context as heatContext } from './heat.js';
 import { context as gigContext } from './gigs.js';
 import { StoryService } from '../../../services/StoryService.js';
+import { PressService } from '../../../services/PressService.js';
 
 /** `controls`, built only when the tab is drawn, gives a row's `{fields, buttons}`; the counts on the tab buttons need none. */
 const row = (tab, item, need, params, controls) => ({ tab, type: L(`NCI.Pending.Kind.${need}`), item, needed: L(`NCI.Pending.Need.${need}`, params), controls });
@@ -135,7 +136,12 @@ const storyRows = () => StoryService.pending().map((s) => row('events', s.media,
   buttons: [button('storyApprove', 'NCI.Story.Approve', yes, s.id), button('storyReject', 'NCI.Story.Reject', no, s.id)],
 })));
 
-const rows = () => [...storyRows(), ...businessRows(), ...rewardRows(), ...syndicateRows(), ...heatRows(), ...gigRows()];
+const pressRows = () => PressService.held().map((s) => row('events', s.name, 'pressCharacter', { outlet: s.outlet, story: L(`NCI.Press.Story.${s.story}`), why: L(`NCI.Press.Why.${s.story === 'smear' ? 'smearCharacter' : s.story}`) }, () => ({
+  fields: [{ type: 'text', name: 'pressHeadline', label: L('NCI.GMBusiness.PressHeadline'), value: L(`NCI.Press.Headline.${s.story}`, { name: s.story === 'hidden' ? s.stake.name : s.name, outlet: s.outlet }) }],
+  buttons: [button('pressCharacterApprove', 'NCI.GMBusiness.PressApprove', yes, s.id), button('pressCharacterSpike', 'NCI.GMBusiness.PressSpike', no, s.id)],
+})));
+
+const rows = () => [...storyRows(), ...pressRows(), ...businessRows(), ...rewardRows(), ...syndicateRows(), ...heatRows(), ...gigRows()];
 
 /** How many decisions wait on each tab, and in all under `pending`. */
 export function waiting() {
