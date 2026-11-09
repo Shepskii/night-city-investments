@@ -37,9 +37,8 @@
     </tbody></table>
     {{else}}<p class="nci-empty">{{localize "NCI.Jobs.None"}}</p>{{/if}}
   </div>
-  {{/if}}
 
-  {{#if isPortfolio}}
+  {{else if isPortfolio}}
   {{#if portfolio}}
   <div class="nci-portfolio">
     {{#if portfolio.noGM}}<p class="nci-warn">{{localize "NCI.Portfolio.NoGM"}}</p>{{/if}}
