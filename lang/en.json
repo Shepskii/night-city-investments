@@ -3505,6 +3505,7 @@
       },
       "Refused": "Your business request was refused: {reason}",
       "Done": {
+        "pressAnswer": "Your answer is on the record. You'll hear how it went when the week is up.",
         "buyStock": "Bought: it is on your sheet.",
         "consign": "Your items are in the shop.",
         "takeBack": "It is back on your sheet.",
