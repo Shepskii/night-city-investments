@@ -495,6 +495,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
       boardStage: 1,
       waitDays: 7,
       guideBase: 12,
+      /** The most an NPC's company pays a player character, as a share of the wage the board shows. */
+      wageCap: 1.5,
       pct: Object.freeze({ narrow: 0.9, solid: 1, strong: 1.1, exceptional: 1.2 }),
       autoBands: Object.freeze(['solid', 'strong', 'exceptional']),
     }),

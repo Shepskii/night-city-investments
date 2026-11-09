@@ -172,7 +172,10 @@ export const postRate = (post, base, stage, p = BUSINESS_DEFAULTS) => Math.round
 export function wageOf(b, staff, p = BUSINESS_DEFAULTS) {
   // An Exec's team takes no wage (E3).
   if (staff.source === 'team') return 0;
-  return Math.round(postRate(staff.post, postBase(staff, staff.post, archetypeOf(b), p), b.stage, p) * (staff.pct ?? 1));
+  const wage = Math.round(postRate(staff.post, postBase(staff, staff.post, archetypeOf(b), p), b.stage, p) * (staff.pct ?? 1));
+  // An NPC's company won't pay a player character past a limit, however good they are (N2).
+  if (b.npcRun && staff.source === 'pc') return Math.min(wage, Math.round(postRate(staff.post, p.npc.jobs.guideBase, b.stage, p) * p.npc.jobs.wageCap));
+  return wage;
 }
 
 /** How many employees the business may have: the stage's headcount, and a place more for each staff room. */

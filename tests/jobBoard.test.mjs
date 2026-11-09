@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createNpcCompany, hasJobBoard, openRoles, boardEntry, canApply, recordApplication, decideApplication, autoHires, BUSINESS_DEFAULTS as P } from '../scripts/engine/index.js';
+import { createNpcCompany, hasJobBoard, openRoles, boardEntry, canApply, recordApplication, decideApplication, autoHires, wageOf, useKey, BUSINESS_DEFAULTS as P } from '../scripts/engine/index.js';
 
 const DAY = 20003;
 const company = (over = {}) => {
@@ -83,6 +83,16 @@ test('hired, they start at once, paid by how the roll went', () => {
   assert.equal(wageFor('solid'), 1);
   assert.equal(wageFor('strong'), 1.1);
   assert.equal(wageFor('exceptional'), 1.2);
+});
+
+test('an NPC company caps what it pays a player character, week after week', () => {
+  const b = company();
+  apply(b, 'exceptional');
+  const out = decideApplication(b, 'a_pc1', true, DAY, { basesOf: () => Object.fromEntries(openRoles(b).find((r) => r.post === 'floor').uses.map((u) => [useKey(u), 18])) });
+  const guide = openRoles(company()).find((r) => r.post === 'floor').wage;
+  assert.equal(out.staff.wage, Math.round(guide * P.npc.jobs.wageCap));
+  assert.equal(wageOf(b, out.staff), Math.round(guide * P.npc.jobs.wageCap));
+  assert.equal(wageOf({ ...b, npcRun: null }, out.staff) > out.staff.wage, true, 'a business run by players pays what the rule says');
 });
 
 test('turned down, the application goes', () => {
