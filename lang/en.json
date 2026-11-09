@@ -38,7 +38,7 @@
       "WaitingForTick": "The market opens with the next tick.",
       "EmptyGM": "No companies yet. Open the Market GM Console to import the starter corporations or create your own.",
       "EmptyPlayer": "No companies are listed yet.",
-      "Folder": { "market": "Market", "news": "News", "portfolio": "Portfolio", "settings": "Settings" },
+      "Folder": { "market": "Market", "news": "News", "jobs": "Jobs", "portfolio": "Portfolio", "settings": "Settings" },
       "Portfolio": { "overview": "Overview", "brokerage": "Brokerage", "investments": "Investments", "ledger": "Ledger" },
       "NoNews": "No headlines yet.",
       "LastDividend": "last {amount} eb on {date}",
@@ -2582,7 +2582,8 @@
       }
     },
     "Jobs": {
-      "Board": "Job board ({count} open)",
+      "Board": "Job board",
+      "None": "No roles are open right now.",
       "BoardHint": "Roles open at companies around the city. Applying is one roll with your own skill, and you can try each company once a week. The wage is a guide: what you're paid depends on your skills and how the interview goes.",
       "About": "about {wage} eb a week",
       "Apply": "Apply",

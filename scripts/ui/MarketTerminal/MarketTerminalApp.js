@@ -6,7 +6,8 @@
 import {
   quote, getSeries, rangeStats, equalWeightIndex, valuePortfolio, latestNews, OPEN, timeOf,
 } from '../../engine/index.js';
-import { MODULE_ID, HOOKS } from '../../utils/constants.js';
+import { MODULE_ID, HOOKS, SETTINGS } from '../../utils/constants.js';
+import { applyJob, jobBoardRows } from '../applyJob.js';
 import { CompanyRepository } from '../../data/CompanyRepository.js';
 import { FundRepository } from '../../data/FundRepository.js';
 import { MarketStore } from '../../data/MarketStore.js';
@@ -45,7 +46,8 @@ function dividendText(d) {
 }
 
 /** The folders along the top, and the Portfolio folder's tabs. */
-const FOLDERS = ['market', 'news', 'portfolio', 'settings'];
+const FOLDERS = ['market', 'news', 'jobs', 'portfolio', 'settings'];
+const jobsOn = () => game.settings.get(MODULE_ID, SETTINGS.BUSINESSES_ENABLED) !== false;
 const PORTFOLIO_TABS = ['overview', 'brokerage', 'investments', 'ledger'];
 
 export class MarketTerminalApp extends BaseApplication {
@@ -54,6 +56,7 @@ export class MarketTerminalApp extends BaseApplication {
     window: { title: 'NCI.Terminal.Title', icon: 'fas fa-chart-line' },
     position: { width: 1200, height: 640 },
     actions: {
+      applyJob: MarketTerminalApp._onApplyJob,
       makeBid: MarketTerminalApp._onMakeBid,
       investigate: MarketTerminalApp._onInvestigate,
       publishStory: MarketTerminalApp._onPublishStory,
@@ -188,6 +191,11 @@ export class MarketTerminalApp extends BaseApplication {
   static _onRange(event, target) {
     this.range = Number(target.dataset.range) || 90;
     this.render();
+  }
+
+  /** Apply for a role on the Jobs tab (N2). */
+  static _onApplyJob(event, target) {
+    return applyJob(this.actor, target.dataset.id, target.dataset.post);
   }
 
   static _onTab(event, target) {
@@ -490,8 +498,10 @@ export class MarketTerminalApp extends BaseApplication {
       isMarket: this.tab === 'market',
       isPortfolio: this.tab === 'portfolio',
       isNews: this.tab === 'news',
+      isJobs: this.tab === 'jobs',
+      jobBoard: this.tab === 'jobs' ? jobBoardRows(this.actor) : [],
       isSettings: this.tab === 'settings',
-      folders: FOLDERS.map((id) => ({ id, label: L(`NCI.Terminal.Folder.${id}`), active: id === this.tab })),
+      folders: FOLDERS.filter((id) => id !== 'jobs' || jobsOn()).map((id) => ({ id, label: L(`NCI.Terminal.Folder.${id}`), active: id === this.tab })),
       portfolioTabs: this.tab === 'portfolio' && this.actor ? PORTFOLIO_TABS.map((id) => ({ id, label: L(`NCI.Terminal.Portfolio.${id}`), active: id === this.sub })) : [],
       news: newsRows(latestNews(feed, { limit: 40 })),
       hasData,

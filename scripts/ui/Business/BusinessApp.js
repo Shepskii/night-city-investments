@@ -26,7 +26,6 @@ import { L } from '../format.js';
 import { investigate } from '../investigate.js';
 import { answerCase } from '../answerCase.js';
 import { answerPress } from '../answerPress.js';
-import { applyJob, jobBoardRows } from '../applyJob.js';
 import { pickerContext, startContext, businessContext, usableActors, jobsContext, termKey, roomEventName } from './context.js';
 import { pendingRows } from './pending.js';
 import { CrewToolsAdapter } from '../../integrations/CrewToolsAdapter.js';
@@ -117,7 +116,6 @@ export class BusinessApp extends BaseApplication {
       hideRoll: BusinessApp._onHideRoll,
       answerCase: BusinessApp._onAnswerCase,
       answerPress: BusinessApp._onAnswerPress,
-      applyJob: BusinessApp._onApplyJob,
       investigate: BusinessApp._onInvestigate,
       dropLayer: BusinessApp._onDropLayer,
       defenceRoll: BusinessApp._onDefenceRoll,
@@ -856,11 +854,6 @@ export class BusinessApp extends BaseApplication {
     return this._send('propose', { kind: 'dismiss', actorId: target.dataset.id });
   }
 
-  /** Apply for a role on the job board (N2). */
-  static _onApplyJob(event, target) {
-    return applyJob(this.actor, target.dataset.id, target.dataset.post);
-  }
-
   /** A post's Hire button (DESIGN §32): the Hire window, to hire a character or advertise the job. */
   static _onOpenHire(event, target) {
     const business = this.business;
@@ -1001,7 +994,6 @@ export class BusinessApp extends BaseApplication {
     if (!this.actor) return { ...context, noActor: true };
     // The jobs this character holds or is offered at other people's businesses (DESIGN §32).
     context.jobs = jobsContext(this.actor);
-    context.jobBoard = jobBoardRows(this.actor);
     if (!business) return { ...context, start: startContext(this) };
     return { ...context, business: shown };
   }
