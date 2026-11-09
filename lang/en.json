@@ -2506,6 +2506,7 @@
       "ProfileLine": "{profile}: {hint}",
       "ProjectName": "a back room, {kind}",
       "Rolls": "Rolls {uses}.",
+      "Trouble": {"backAlleySurgery": "A patient talks", "streetPharmacy": "A bad batch goes out", "organBrokering": "A donor's friends come asking", "vehicleCloning": "A cloned plate gets flagged", "getawayOutfitting": "The crew wants a car for a job of its own", "fightPit": "A fight goes too far, on camera", "fixersRoom": "A fixer wants a meeting kept off the books", "identityForgery": "A customer is caught with your work", "blackIce": "NetWatch traces a job", "illegalMods": "A gun is traced back to you", "armingGang": "The gang wants credit", "hotGoods": "A driver is stopped and talks", "peopleRunning": "A run goes wrong in public", "launderette": "A client's money has been followed", "newFaces": "A customer is recognised, and says who did it", "counterfeits": "A run of fakes falls apart", "secondBooks": "The two sets stop agreeing", "streetDealing": "A bad batch hits the block", "lookouts": "Your watchers are asked to watch someone for free", "cashTill": "The takings look too good for a stall", "bootlegs": "A bad copy burns a customer", "paidStories": "A patron wants a story run", "protection": "A client wants more than protection", "insideJobs": "A job is traced to your guards"},
       "ActionWait": "Again in {days} day(s).",
       "FavourNeeds": "Needs friendly standing or better with {name}.",
       "ChooseFaction": "Connected with",

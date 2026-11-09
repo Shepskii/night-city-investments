@@ -590,6 +590,15 @@ function productionContext(business, actor, canAct) {
 
 const BACK_ROOM_TAB = Object.freeze([...SECRET_ACTIONS, 'shortcuts', 'campaign']);
 
+/** Events other shareholders of a company mustn't see for what they are: a raid, and a back room's own trouble. */
+const isSecretEvent = (kind) => kind === 'bust' || !!EVENTS[kind]?.room;
+
+/** A back room's own trouble, in the words of its kind (U3c). Shared events, and everything else, have none. */
+export function roomEventName(business, kind) {
+  const own = BUSINESS_DEFAULTS.backRoom.events.byProfile[kindProfile(business.archetype, business.backRoom?.kind)];
+  return own && own === kind ? L(`NCI.BackRoom.Trouble.${business.backRoom.kind}`) : null;
+}
+
 const isProfileAction = (id) => Object.values(PROFILE_ACTIONS).includes(id);
 /** What a room can do: every room's actions, and the one its profile has (U3b). */
 const roomActionsFor = (business) => {
@@ -664,16 +673,16 @@ function weekContext(business, actor, canAct) {
       };
     }),
     helped: actor && helped && canAct ? L('NCI.Business.AlreadyHelped') : '',
-    event: business.period.event?.kind === 'bust' && business.stage >= 2 && !runs ? null : eventContext(business, runs, free),
+    event: isSecretEvent(business.period.event?.kind) && business.stage >= 2 && !runs ? null : eventContext(business, runs, free),
     backRoom: business.stage >= 2 && !runs ? null : backRoomContext(business, runs, canAct, free),
     // A big event the GM is playing out with the table (X1).
-    scene: business.scene && !(business.scene.event.kind === 'bust' && business.stage >= 2 && !runs) ? L('NCI.Business.SceneOpen', { event: L(`NCI.Event.${business.scene.event.kind}.Name`) }) : '',
+    scene: business.scene && !(isSecretEvent(business.scene.event.kind) && business.stage >= 2 && !runs) ? L('NCI.Business.SceneOpen', { event: L(`NCI.Event.${business.scene.event.kind}.Name`) }) : '',
     notOfficer: business.stage >= 2 && canAct && !runs ? L('NCI.Company.NotOfficer') : '',
     info: business.stage >= 2 ? infoContext(business, runs) : null,
     unworkedNote: L('NCI.Business.UnworkedNote'),
   };
   // A raid, and trouble of the room's own (U3), show with the room.
-  const raided = (kind) => kind === 'bust' || !!EVENTS[kind]?.room;
+  const raided = isSecretEvent;
   return {
     ...week,
     actions: week.actions.filter((a) => !BACK_ROOM_TAB.includes(a.id) && a.id !== 'produce'),
@@ -803,7 +812,7 @@ function eventContext(business, canAct, free) {
   const answer = business.period.slots.find((s) => s.action === 'respond');
   const uses = eventUses(business, event.kind).map((u) => (u.kind === 'ability' ? u.ability : u.skill) + (u.dvAdd ? ` (DV +${u.dvAdd})` : ''));
   return {
-    name: L(`NCI.Event.${event.kind}.Name`),
+    name: roomEventName(business, event.kind) ?? L(`NCI.Event.${event.kind}.Name`),
     // A staff event names the employee it is about (E2).
     hint: L(`NCI.Event.${event.kind}.Hint`, { name: event.staffId ? staffOf(business, event.staffId)?.name ?? '' : '' }),
     // A faction's event says whose it is; force beats a gang's shakedown, at a price (F1b).
@@ -868,7 +877,7 @@ export function cashbookContext(business, index, officer = true) {
   const line = (label, amount, note = '') => ({ label, note, amount: signed(amount), cls: amount > 0 ? 'nci-up' : amount < 0 ? 'nci-down' : '' });
   const change = d.event?.change ?? 0;
   const gross = d.gross ?? d.takings - change;
-  const eventKind = !officer && d.event?.kind === 'bust' ? 'inspection' : d.event?.kind;
+  const eventKind = !officer && isSecretEvent(d.event?.kind) ? 'inspection' : d.event?.kind;
   const event = change ? line(L(`NCI.Event.${eventKind}.Name`), change, [d.event.faction, L(`NCI.Cashbook.Outcome.${d.event.outcome}`)].filter(Boolean).join(', ')) : null;
   // A windfall is income; what trouble cost is an expense.
   const income = [
@@ -1038,7 +1047,7 @@ function digestRow(business, d, i, officer = true) {
   const money = weekMoney(business.digests, i);
   const actions = officer ? d.actions : d.actions.filter((a) => !SECRET_ACTIONS.includes(a.action) && !a.illegal);
   // A raid on the back room reads as an inspection to those who do not know of it.
-  const eventKind = !officer && d.event?.kind === 'bust' ? 'inspection' : d.event?.kind;
+  const eventKind = !officer && isSecretEvent(d.event?.kind) ? 'inspection' : d.event?.kind;
   return {
     index: d.index,
     week: L('NCI.Business.Week', { n: d.index }),

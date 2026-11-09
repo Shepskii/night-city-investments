@@ -226,13 +226,12 @@ export function roomBust(b, seed = 'nci', p = BUSINESS_DEFAULTS, relations = nul
 }
 
 /**
- * What goes wrong in a back room this week, or none (U3). Only a room worked last week draws one. A company's room is
- * left out until its events can pass for something else to the other shareholders (U3c).
+ * What goes wrong in a back room this week, or none (U3). Only a room worked last week draws one.
  * @param {object} [relations] - `roomEvents`, the world's frequency
  */
 export function roomEvent(b, seed = 'nci', p = BUSINESS_DEFAULTS, relations = null) {
   const room = openRoom(b);
-  if (!room || b.stage >= 2) return null;
+  if (!room) return null;
   const last = lastDigest(b);
   if (last?.index !== b.period.index - 1 || !(last.actions ?? []).some((a) => WORK_ACTIONS.includes(a.action))) return null;
   const rules = p.backRoom.events;

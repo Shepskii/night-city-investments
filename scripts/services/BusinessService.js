@@ -1053,7 +1053,7 @@ class BusinessServiceImpl {
       return {
         id: ask.id, what, by: business.partners.find((x) => x.actorId === ask.by)?.name ?? '',
         uses: spec.uses, dv: spec.dv, bonusAvailable: !!spec.bonusAvailable, pay: spec.pay ?? 0,
-        meaning: r.type === 'action' ? r.action : r.type === 'respond' ? (EVENTS[event]?.good ? 'respondGood' : 'respond') : 'assist',
+        meaning: r.type === 'action' ? r.action : r.type === 'respond' ? (EVENTS[event]?.room ? (EVENTS[event]?.good ? 'respondRoomOffer' : 'respondRoom') : EVENTS[event]?.good ? 'respondGood' : 'respond') : 'assist',
       };
     }).filter(Boolean);
   }
@@ -1831,7 +1831,7 @@ class BusinessServiceImpl {
 
   /** A scene's mail: a raid on the back room goes only where the back room is known. */
   _sceneMail(b, event, subject, lines) {
-    return event?.kind === 'bust' ? this._mailRoom(b, subject, lines) : this._mailHolders(b, subject, lines);
+    return event?.kind === 'bust' || EVENTS[event?.kind]?.room ? this._mailRoom(b, subject, lines) : this._mailHolders(b, subject, lines);
   }
 
   /** What the GM is told, and the owners, when a big event becomes a scene (X1). */

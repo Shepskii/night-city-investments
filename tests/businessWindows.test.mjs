@@ -2080,3 +2080,24 @@ test('a Messenger contact with no actor founds a business with a player, by its 
     game.nightcity = nightcityBefore;
   }
 });
+
+test('a back room\'s own trouble: in its kind\'s words to those running the room, and out of sight of other shareholders', async () => {
+  const b = S.BusinessRepository.all().find((x) => x.status === 'open' && x.partners.some((p) => p.actorId === fix.id && p.status === 'active'))
+    ?? S.BusinessRepository.all().find((x) => x.status === 'open');
+  const saved = structuredClone(b);
+  try {
+    const partners = [...b.partners.filter((p) => ![med.id, fix.id].includes(p.actorId)),
+      { actorId: med.id, name: 'Medtech', status: 'active', cash: 100, gear: [], units: 100, voting: true },
+      { actorId: fix.id, name: 'Fixer', status: 'active', cash: 100, gear: [], units: 100, voting: true }];
+    const stored = (stage, extra = {}) => S.BusinessRepository.save({ ...b, stage, partners, officers: [med.id], backRoom: { kind: 'streetPharmacy', status: 'open', dirty: 0, day: 0 }, period: { ...b.period, event: { kind: 'roomBadBatch' }, slots: [] }, ...extra });
+    const look = async (actor, tab = 'week') => { const w = windowFor(actor, tab); w.businessId = b.id; return text(await renderBusiness(w)); };
+
+    await stored(1);
+    assert.match(await look(med, 'backRoom'), /A bad batch goes out/, 'a shop\'s partners see it, in the kind\'s words');
+    await stored(2);
+    assert.match(await look(med, 'backRoom'), /A bad batch goes out/, 'a company\'s officers do too');
+    assert.doesNotMatch(await look(fix), /A bad batch|supplies were wrong/, 'its other shareholders do not');
+  } finally {
+    await S.BusinessRepository.save(saved);
+  }
+});

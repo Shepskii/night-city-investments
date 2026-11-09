@@ -214,7 +214,7 @@ test('a room draws its own event only if it was worked last week, and never at a
   assert.equal(draws({ ...hungry, digests: [] }).length, 0, 'a first week draws none');
   assert.equal(draws({ ...hungry, digests: [{ index: hungry.period.index - 1, actions: [{ action: 'lieLow' }] }] }).length, 0, 'nor one after lying low');
   assert.equal(draws({ ...hungry, digests: [{ index: hungry.period.index - 5, actions: [{ action: 'roomWork' }] }] }).length, 0, 'nor one long after it was last worked');
-  assert.equal(draws({ ...hungry, stage: 2 }).length, 0, 'nor a company, until its events can be disguised');
+  assert.ok(draws({ ...hungry, stage: 2 }).length > 0, 'a company draws them too, disguised to those not running it');
   assert.equal(draws({ ...hungry, backRoom: { ...hungry.backRoom, status: 'shut' } }).length, 0, 'nor a shut room');
   const rare = draws(hungry, { roomEvents: 0.5 }).length;
   const often = draws(hungry, { roomEvents: 2 }).length;
@@ -432,4 +432,31 @@ test('every room action has its words', async () => {
     assert.ok(lang.NCI.Business.Action[id]?.Name && lang.NCI.Business.Action[id]?.Hint, id);
     assert.deepEqual(Object.keys(effects[id]).sort(), ['exceptional', 'failure', 'fumble', 'narrow', 'solid', 'strong'], id);
   }
+});
+
+test('every kind with an event of its own names it in its own words', async () => {
+  const { BACK_ROOMS, BUSINESS_DEFAULTS } = await import('../scripts/engine/index.js');
+  const { readFileSync } = await import('node:fs');
+  const lang = JSON.parse(readFileSync(new URL('../lang/en.json', import.meta.url), 'utf8'));
+  const own = Object.values(BACK_ROOMS).flatMap((kinds) => Object.entries(kinds)).filter(([, k]) => BUSINESS_DEFAULTS.backRoom.events.byProfile[k.profile]);
+  assert.equal(own.length, 24);
+  for (const [id] of own) assert.ok(lang.NCI.BackRoom.Trouble[id], id);
+  assert.equal(new Set(own.map(([id]) => lang.NCI.BackRoom.Trouble[id])).size >= 23, true, 'and they read differently');
+});
+
+test('the serious ones can be played as scenes, and a lost scene does what an unanswered event does, off the shop\'s takings', async () => {
+  const { isBigEvent, settleScene, startScene } = await import('../scripts/engine/businessScenes.js');
+  for (const kind of ['roomLooseEnd', 'roomBadBatch', 'roomFavour', 'roomRival']) assert.ok(isBigEvent({ kind }), kind);
+  for (const kind of ['roomNoise', 'roomBooks', 'roomBigOrder']) assert.ok(!isBigEvent({ kind }), kind);
+  const setup = () => { const b = room(...KINDS.quiet, 500); b.period.event = { kind: 'roomLooseEnd' }; b.digests = [{ index: 0, takings: 1000 }]; assert.equal(startScene(b, 5).ok, true); return b; };
+  const lost = setup();
+  const till = lost.till;
+  const done = settleScene(lost, false, 8);
+  assert.equal(done.ok, true);
+  assert.equal(lost.till, till, 'no share of the takings');
+  assert.equal(done.events.find((e) => e.type === 'backRoomEvent')?.exposure, 8);
+  const won = setup();
+  const before = won.state.reputation;
+  assert.deepEqual(settleScene(won, true, 8).events, []);
+  assert.ok(won.state.reputation > before);
 });

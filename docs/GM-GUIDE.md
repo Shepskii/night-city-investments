@@ -112,7 +112,7 @@ This tab lists every business with its true state, Exposure included, and an **O
 | A company's **black ops** succeeded (approval on) | The same as a campaign, with a bigger move on the price. A fumble is a scandal and a regulator's case by itself |
 | A business's **campaign** against a company succeeded (approval on) | **Let it run** (a generic headline, a price dip of up to 2%, a heat window), or **stop it**. The 1,000 eb stays spent. A setting turns this approval off |
 | A **back room** is finished (approval on) | **Let it open**, or **turn it down**; what it cost stays spent. The underworld setting stops new ones |
-| A **big event** comes up: a raid on a back room, a tipped-off raid, sabotage, a smear, collectors, a grudge, a hostile faction's poaching, a heavy shakedown | **Run as a scene** to play it at the table: you get a hook, and the weeks carry on while it waits. Then **They won**, **They lost**, or **Back to a roll**. Leave it alone and it's a normal event |
+| A **big event** comes up: a raid on a back room, a back room's own serious trouble, a tipped-off raid, sabotage, a smear, collectors, a grudge, a hostile faction's poaching, a heavy shakedown | **Run as a scene** to play it at the table: you get a hook, and the weeks carry on while it waits. Then **They won**, **They lost**, or **Back to a roll**. Leave it alone and it's a normal event |
 | A company lost a **regulator's case**, or nobody answered it | **Approve the penalty** (change the proposed fine first if you like) or **Drop the case**. See below |
 | A listed company is under the **delisting review** | **Give it time** (the review clears), or **Delist** it: it buys back the float (borrowing what its cash lacks) and goes private. Delisting cannot be undone |
 
@@ -131,6 +131,8 @@ The rest runs itself: weeks close, events are drawn, wages are paid, reports are
 A room already open before these kinds existed keeps its numbers, apart from **Laundering for others** at a boutique, which now plays as Laundering.
 
 **A Connected room** adds a full +1 standing a week worked with the faction chosen on opening, whatever the roll, and that +1 doesn't count as a repeat dealing, so gigs for that faction keep their value. Standing fades 2 a week, so from zero it holds at 1, and from higher up it falls by 1 a week rather than 2. If your world has no factions, the room opens without one and adds no standing.
+
+**A back room's own trouble.** A room worked last week may draw an event of its own, in place of the week's usual one: about 8% of weeks, set by **Back room events** in the module settings (Rare, Normal or Often). A Steady room only draws the two every room shares. The [Player Guide](PLAYER-GUIDE.md#when-a-back-room-goes-wrong) lists them. Each is answered with the room's own skills and leaves the shop's takings alone. A loose end, a bad batch, a favour asked and a rival operation can be run as a scene. At a company, shareholders who aren't officers see a back room's trouble as an inspection in the reports, as they do a raid.
 
 #### REP and Improvement Points from businesses
 

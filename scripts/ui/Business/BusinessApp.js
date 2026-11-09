@@ -25,7 +25,7 @@ import { ReportDialogApp } from './ReportDialogApp.js';
 import { L } from '../format.js';
 import { investigate } from '../investigate.js';
 import { answerCase } from '../answerCase.js';
-import { pickerContext, startContext, businessContext, usableActors, jobsContext, termKey } from './context.js';
+import { pickerContext, startContext, businessContext, usableActors, jobsContext, termKey, roomEventName } from './context.js';
 import { pendingRows } from './pending.js';
 import { CrewToolsAdapter } from '../../integrations/CrewToolsAdapter.js';
 
@@ -685,7 +685,7 @@ export class BusinessApp extends BaseApplication {
 
   static _onRespond() {
     const kind = this.business?.period?.event?.kind;
-    this._roll({ type: 'respond' }, L('NCI.Business.AnswerTitle', { event: kind ? L(`NCI.Event.${kind}.Name`) : '' }));
+    this._roll({ type: 'respond' }, L('NCI.Business.AnswerTitle', { event: kind ? roomEventName(this.business, kind) ?? L(`NCI.Event.${kind}.Name`) : '' }));
   }
 
   static _onProposeFixerLoan(event, target) {

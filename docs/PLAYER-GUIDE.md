@@ -475,6 +475,34 @@ A room costs 1,500 eb and 3 business days at a shop, or 4,000 eb and 5 at a regi
 |  | Lookouts and informants | Connected | Streetwise, Local Expert, Operator |
 |  | The cash till | Laundering | Business, Accounting |
 
+### When a back room goes wrong
+
+A room that was worked last week can draw trouble of its own this week, and it comes in place of the week's usual event. A room you lay low in or left idle draws none the following week. Answer it from the Back Room tab with the skills your room rolls. A pass stops it, a failure takes half the effect, and leaving it or fumbling takes it all. None of it touches the shop's takings.
+
+| Profile | What goes wrong | If nobody deals with it |
+|---|---|---|
+| Loud | Too much noise | Exposure rises and the shop's Reputation falls |
+| Quiet | A loose end | A lot more Exposure |
+| Hungry | A bad batch | The room earns nothing that week, and the shop's Reputation falls. A fumble adds Exposure |
+| Connected | A favour asked | Your standing with its faction falls |
+| Laundering | The books don't add up | Exposure rises, and a quarter of the dirty cash is lost |
+
+Each kind of room has its own version: a Street pharmacy sends out a bad batch, and a clinic's back-alley surgery has a patient who talks.
+
+Any room can also meet **a rival operation**, which halves the week's earnings and adds Exposure if it isn't answered, or **an offer you can't refuse**: a big order you're free to ignore. Taking it adds Exposure whether or not the job goes well, and pays half as much again as a week's earnings in dirty cash if it does.
+
+### What only your kind of room can do
+
+Each profile but Steady has one action of its own on the Back Room tab, rolled with your room's skills. It takes one of the week's actions.
+
+| Profile | Action | What it does |
+|---|---|---|
+| Loud | **A big night** | In place of the week's work. Half as much dirty cash again on a pass, and twice the Exposure from work on any roll. Once in 28 days |
+| Quiet | **Cover the trail** | Earns nothing and costs nothing. Sheds some Exposure on a pass |
+| Hungry | **Find a new supplier** | On a pass, supplies cost 15% of what the room earns, not 25%, for four weeks. On a failure, a bad batch is twice as likely for as long. Once in 28 days |
+| Connected | **Call in a favour** | Needs friendly standing or better with the room's faction. On a pass, spends 5 standing to stop this week's shakedown, or to shed 5 Exposure if there isn't one. A failure spends nothing |
+| Laundering | **Wash for a client** | Earns a fee in dirty cash, and leaves traces as laundering does. Once in 28 days |
+
 ## Back-room staff
 
 While a room is open you can hire for three posts on the Staff tab, each acting only when nobody else took that action, and none of them while you are lying low.

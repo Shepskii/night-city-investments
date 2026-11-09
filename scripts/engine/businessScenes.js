@@ -10,9 +10,9 @@
 import { BUSINESS_DEFAULTS, EVENTS } from './businessConfig.js';
 import { fail, addLedger, lastDigest, clamp } from './businessRecord.js';
 import { applyHit, factionFallout } from './businessEvents.js';
-import { bustFallout } from './businessFronts.js';
+import { bustFallout, roomEventFallout } from './businessFronts.js';
 
-const BIG = Object.freeze(['sabotage', 'raid', 'smear', 'collectors', 'grudge', 'bust']);
+const BIG = Object.freeze(['sabotage', 'raid', 'smear', 'collectors', 'grudge', 'bust', 'roomLooseEnd', 'roomBadBatch', 'roomFavour', 'roomRival']);
 
 /** Whether this event is big enough to play out: a hostile faction's move, a heavy shakedown, or a debt come due. */
 export function isBigEvent(event) {
@@ -58,6 +58,11 @@ export function settleScene(b, won, day, p = BUSINESS_DEFAULTS) {
     b.state.reputation = clamp(b.state.reputation + p.scene.wonReputation, 0, 100);
     addLedger(b, { day, kind: 'sceneWon', amount: 0 }, p);
     return { ok: true, events: bustFallout(b, event, 'answered', day, p) };
+  }
+  // A back room's trouble leaves the shop's takings alone, at the table as in a roll (U3c).
+  if (EVENTS[event.kind].room) {
+    addLedger(b, { day, kind: 'sceneLost', amount: 0 }, p);
+    return { ok: true, events: roomEventFallout(b, event, { outcome: 'unanswered' }, 1, p) };
   }
   const loss = Math.round((lastDigest(b)?.takings ?? 0) * p.events.loss.unanswered);
   b.till -= loss;
