@@ -195,6 +195,11 @@ async function onJobAnswer(event, target) {
   report(await JobService.decide(target.dataset.id, target.dataset.reward, target.dataset.yes === 'true'));
 }
 
+/** The GM answers a promotion for a player at an NPC's company (N3). */
+async function onPromote(event, target) {
+  report(await JobService.promote(target.dataset.id, target.dataset.reward, target.dataset.yes === 'true'));
+}
+
 function onOpen(event, target) {
   BusinessApp.open({ businessId: target.dataset.id });
 }
@@ -231,6 +236,7 @@ export const actions = {
   businessNpcCreate: onNpcCreate,
   businessNpcSave: onNpcSave,
   businessJobAnswer: onJobAnswer,
+  businessPromote: onPromote,
   businessStaffAnswer: onStaffAnswer,
   businessNpcPartner: onNpcPartner,
   businessTeamLoyalty: onTeamLoyalty,

@@ -26,6 +26,7 @@ import { L } from '../format.js';
 import { investigate } from '../investigate.js';
 import { answerCase } from '../answerCase.js';
 import { answerPress } from '../answerPress.js';
+import { workShift } from '../workShift.js';
 import { pickerContext, startContext, businessContext, usableActors, jobsContext, termKey, roomEventName } from './context.js';
 import { pendingRows } from './pending.js';
 import { CrewToolsAdapter } from '../../integrations/CrewToolsAdapter.js';
@@ -152,6 +153,7 @@ export class BusinessApp extends BaseApplication {
       declineJob: BusinessApp._onJob,
       quitJob: BusinessApp._onJob,
       rollAsked: BusinessApp._onRollAsked,
+      workShift: BusinessApp._onWorkShift,
       declineAsk: BusinessApp._onDeclineAsk,
     },
   };
@@ -911,6 +913,12 @@ export class BusinessApp extends BaseApplication {
     if (type === 'quitJob' && !(await this._confirm('NCI.Staff.QuitConfirm'))) return null;
     if (!this.actor || this.actor.isSyndicate) return null;
     return BusinessClient.submit(this.actor, type, { businessId: target.dataset.id });
+  }
+
+  /** The week's shift at an NPC's company (N3). */
+  static _onWorkShift(event, target) {
+    if (!this.actor || this.actor.isSyndicate) return null;
+    return workShift(this.actor, target.dataset.id);
   }
 
   /** A roll a partner asked of this character as an employee (E3): the roll dialog, from their job. */

@@ -6,9 +6,9 @@
  */
 
 import { BUSINESS_DEFAULTS, POSTS, POST_IDS, stageDv, ARCHETYPES } from './businessConfig.js';
-import { fail, addLedger } from './businessRecord.js';
+import { fail, addLedger, clamp } from './businessRecord.js';
 import { bandPassed } from './rolls.js';
-import { answerJob, enactHire, postOpen, postRate, postUses } from './businessStaff.js';
+import { activeStaff, answerJob, enactFire, enactHire, postOpen, postRate, postUses, wageOf } from './businessStaff.js';
 
 /** Whether a business can have a job board at all: an NPC's, open, and big enough for a job to be worth more than owning. */
 export const hasJobBoard = (b, p = BUSINESS_DEFAULTS) => !!b.npcRun && b.status === 'open' && b.stage >= p.npc.jobs.boardStage;
@@ -75,4 +75,99 @@ export function decideApplication(b, id, yes, day, ctx = {}, p = BUSINESS_DEFAUL
   b.applications = b.applications.filter((a) => a !== application);
   addLedger(b, { day, kind: 'jobApplicant', amount: 0, staffName: application.name }, p);
   return { ok: true, hired: true, application, staff: made.staff };
+}
+
+// ── The shift (N3) ───────────────────────────────────────────────────────────
+
+/** Where a player character stands with the boss, 0 to 100. Kept from them as a number. */
+export const standingOf = (staff, p = BUSINESS_DEFAULTS) => staff.standing ?? p.npc.shift.start;
+
+/** The band a player is shown for their standing. */
+export const bossBand = (value, p = BUSINESS_DEFAULTS) => p.npc.shift.bands.find(([below]) => value < below)?.[1] ?? 'trusted';
+
+/** The skills a shift can be worked with: the role's own. */
+export const shiftUses = (b, staff, p = BUSINESS_DEFAULTS) => postUses(staff.post, ARCHETYPES[b.archetype], p).filter((u) => u.adj === 0).map((u) => u.use);
+
+/** Whether this character can work a shift here this week. */
+export function canShift(b, actorId) {
+  if (!b.npcRun || b.status !== 'open' || !b.period) return fail('job-closed');
+  const staff = activeStaff(b).find((s) => s.source === 'pc' && s.actorId === actorId);
+  if (!staff) return fail('not-staff');
+  if (b.period.shifts?.[actorId]) return fail('shift-done');
+  return { ok: true, staff };
+}
+
+/** The shift's roll has been made: it counts when the week closes. */
+export function workShift(b, actorId, band) {
+  const can = canShift(b, actorId);
+  if (!can.ok) return can;
+  b.period.shifts = { ...(b.period.shifts ?? {}), [actorId]: band };
+  return { ok: true };
+}
+
+/** What this week's shifts do to the takings, as a share. */
+export function shiftLift(b, p = BUSINESS_DEFAULTS) {
+  if (!b.npcRun) return 0;
+  return Object.values(b.period.shifts ?? {}).reduce((sum, band) => sum + (p.npc.shift.lift[band] ?? 0), 0);
+}
+
+/** A good shift's bonus, from the cash as far as it goes. @returns {object} actorId to eb */
+export function payShiftBonuses(b, day, p = BUSINESS_DEFAULTS) {
+  const paid = {};
+  if (!b.npcRun) return paid;
+  for (const staff of activeStaff(b).filter((s) => s.source === 'pc' && s.actorId)) {
+    const band = b.period.shifts?.[staff.actorId];
+    const amount = Math.min(Math.round(staff.wage * (p.npc.shift.bonus[band] ?? 0)), Math.max(0, b.till));
+    if (amount <= 0) continue;
+    b.till -= amount;
+    paid[staff.actorId] = amount;
+    addLedger(b, { day, kind: 'shiftBonus', amount: -amount, staffName: staff.name }, p);
+  }
+  return paid;
+}
+
+/**
+ * The week's close for the company's player employees: standing moves with the shift or the lack of one, the bottom
+ * band brings a warning and then the sack with a week's pay, and a trusted employee is put up for promotion.
+ */
+export function shiftWeek(b, part, day, out, p = BUSINESS_DEFAULTS) {
+  if (!b.npcRun) return;
+  const r = p.npc.shift;
+  const floor = r.bands[0][0];
+  for (const staff of activeStaff(b).filter((s) => s.source === 'pc' && s.actorId)) {
+    const band = b.period.shifts?.[staff.actorId];
+    // A week they weren't there for the whole of costs nothing.
+    const newcomer = staff.hiredDay != null && staff.hiredDay > b.period.startDay;
+    const move = band ? r.moves[band] ?? 0 : part < 1 || newcomer ? 0 : r.skip;
+    staff.standing = clamp(standingOf(staff, p) + move, 0, 100);
+    if (staff.standing < floor) {
+      if (staff.warned) {
+        const fired = enactFire(b, staff.id, day, p);
+        if (fired.ok) {
+          if (fired.paid) out.wealth[staff.actorId] = (out.wealth[staff.actorId] ?? 0) + fired.paid;
+          out.events.push({ type: 'shiftSacked', actorId: staff.actorId, paid: fired.paid });
+        }
+        continue;
+      }
+      staff.warned = true;
+      out.events.push({ type: 'shiftWarned', actorId: staff.actorId });
+    } else {
+      delete staff.warned;
+    }
+    if (staff.standing >= r.promoteAt && !staff.promotion && (staff.promotedDay == null || day - staff.promotedDay >= r.promoteEvery)) staff.promotion = true;
+  }
+}
+
+/** The GM's answer to a promotion: a raise, under the cap, and a fresh start; or not now, and asked again later. */
+export function decidePromotion(b, staffId, yes, day, p = BUSINESS_DEFAULTS) {
+  const staff = activeStaff(b).find((s) => s.id === staffId);
+  if (!staff?.promotion) return fail('no-promotion');
+  delete staff.promotion;
+  staff.promotedDay = day;
+  if (yes) {
+    staff.pct = Math.round((staff.pct + p.npc.shift.raise) * 100) / 100;
+    staff.standing = p.npc.shift.afterPromotion;
+    staff.wage = wageOf(b, staff, p);
+  }
+  return { ok: true, staff };
 }

@@ -500,6 +500,24 @@ export const BUSINESS_DEFAULTS = Object.freeze({
       pct: Object.freeze({ narrow: 0.9, solid: 1, strong: 1.1, exceptional: 1.2 }),
       autoBands: Object.freeze(['solid', 'strong', 'exceptional']),
     }),
+    /**
+     * The weekly shift at an NPC's company (N3). Standing with the boss starts at `start` and moves by each shift's
+     * band, or by `skip` for a week not worked; the player sees only its band. Below the first band's limit brings a
+     * warning, then the sack. At `promoteAt` the GM is asked about a raise of `raise`, and again `promoteEvery` days on.
+     * A shift pays a share of the week's wage as a bonus and lifts the takings by a share.
+     */
+    shift: Object.freeze({
+      start: 50,
+      moves: Object.freeze({ fumble: -20, failure: -10, narrow: 4, solid: 8, strong: 12, exceptional: 15 }),
+      skip: -8,
+      bands: Object.freeze([Object.freeze([20, 'thinIce']), Object.freeze([45, 'shaky']), Object.freeze([75, 'reliable']), Object.freeze([Infinity, 'trusted'])]),
+      bonus: Object.freeze({ narrow: 0.1, solid: 0.25, strong: 0.4, exceptional: 0.5 }),
+      lift: Object.freeze({ fumble: -0.02, failure: 0, narrow: 0.01, solid: 0.02, strong: 0.03, exceptional: 0.04 }),
+      promoteAt: 75,
+      promoteEvery: 28,
+      raise: 0.1,
+      afterPromotion: 60,
+    }),
   }),
   /** Reputation drifts this share of the way back to 50 each week; the Cost base creeps up. */
   reputationDrift: 0.03,

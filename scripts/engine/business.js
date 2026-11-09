@@ -72,6 +72,7 @@ import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from './businessEvents.js';
 import { drawPress, placePress, lapsePress, printPress, pressFallout, startHandPress } from './businessPress.js';
 import { npcWeek, npcDraw } from './businessNpc.js';
+import { shiftLift, payShiftBonuses, shiftWeek } from './businessJobs.js';
 import { createRng } from './rng.js';
 import { charterSector, cleanTicker } from './businessCharter.js';
 import { aimCheck, giftFor } from './factions.js';
@@ -1872,6 +1873,8 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   // Floor and sales staff lift the takings; a bookkeeper, publicist and compliance officer move the state.
   const team = staffWeek(b, g, p, { idle, traits });
   workMult *= 1 + team.lift;
+  // A player's shift at an NPC's company (N3).
+  workMult *= 1 + shiftLift(b, p);
   // Reputation settles toward 50 (55 with a salesperson), higher with a storefront.
   b.state.reputation = clamp(b.state.reputation + (reputationBaseline(b, team.reputationTarget ?? 50, p) - b.state.reputation) * p.reputationDrift, 0, 100);
   if (b.state.compliance != null) b.state.compliance = clamp(b.state.compliance + (p.complianceBaseline - b.state.compliance) * p.reputationDrift, 0, 100);
@@ -1925,18 +1928,21 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   }
   // Wages next, as far as the cash goes, then the loans.
   const wages = payWages(b, part, b.period.endDay, p);
+  const bonuses = payShiftBonuses(b, b.period.endDay, p);
+  const bonusTotal = Object.values(bonuses).reduce((a, x) => a + x, 0);
   // A payslip for each player character on the staff (DESIGN §32.2). Their wage is not paid to their
   // sheet here: the GM's service attaches it to the payslip mail for them to claim (`paid`).
   for (const s of activeStaff(b).filter((x) => x.source === 'pc' && x.actorId)) {
     out.events.push({
       type: 'payslip', actorId: s.actorId, staffId: s.id, post: s.post, wage: Math.round(s.wage * part), paid: wages.pay[s.actorId] ?? 0, owed: s.owed ?? 0,
-      overtime: b.period.pcOvertime?.[s.actorId] ?? 0, shifts: shiftsOf(b, s.id),
+      overtime: b.period.pcOvertime?.[s.actorId] ?? 0, shifts: shiftsOf(b, s.id), bonus: bonuses[s.actorId] ?? 0,
     });
   }
   const loans = payLoans(b, b.period.endDay, p);
-  const profit = takings + sales.margin - upkeep - eventCost - wages.wages - loans.interest;
+  const profit = takings + sales.margin - upkeep - eventCost - wages.wages - bonusTotal - loans.interest;
   b.till -= loans.interest + loans.principal;
   const ownerDraw = npcDraw(b, upkeep + wages.wages, profit, part, b.period.endDay, p);
+  shiftWeek(b, part, b.period.endDay, out, p);
 
   // The staff's week: loyalty, raises asked for at a month's end, and who has had enough (E2).
   const monthEnd = b.period.index % p.report.weeks === 0;

@@ -18,7 +18,7 @@ import { ProductionCatalog } from '../data/ProductionCatalog.js';
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
-  dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, answerNpcPartner, approvePress, spikePress, runPress, createNpcCompany, setNpcRun, cleanTicker, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
+  dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, answerNpcPartner, approvePress, spikePress, runPress, createNpcCompany, setNpcRun, cleanTicker, bossBand, standingOf, shiftUses, stageDv, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
   isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact, payListedDividend,
   reviewListing, clearReview, delistCompany,
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
@@ -540,6 +540,7 @@ class BusinessServiceImpl {
     if (request.type === 'caseRoll') return this._receipt(actor, request, await this._answerCase(actor, request));
     // Applying for a job at an NPC's company (N2): the character can't read its record, and isn't a partner.
     if (request.type === 'jobApply') return this._receipt(actor, request, await JobService.apply(actor, request));
+    if (request.type === 'shiftRoll') return this._receipt(actor, request, await JobService.shift(actor, request));
     const as = this._partnerFor(actor, request);
     if (!as.ok) return this._receipt(actor, request, as);
     // A takeover bid names its target by ticker, as the bidder knows it; they cannot read its record (B6b).
@@ -689,7 +690,10 @@ class BusinessServiceImpl {
     await this._saveHidden(out);
     await this._rewardEvents(out);
     await this._syncJobs(out.business);
-    if (out.business?.npcRun) await JobService.publish();
+    if (out.business?.npcRun) {
+      await JobService.onEvents(out);
+      await JobService.publish();
+    }
     if (out.events?.some((e) => e.type === 'partnerJoined')) await this._shareNpcPartners(out.business).catch((error) => log.warn('Could not share NPC partners', error));
     await this._payslips(out);
     await this._livingCosts(out);
@@ -910,7 +914,9 @@ class BusinessServiceImpl {
       // The wage paid, and any overtime this week (E3), both claimed from the payslip.
       const wage = Math.max(0, Math.round(Number(slip.paid) || 0));
       const overtime = Math.max(0, Math.round(Number(slip.overtime) || 0));
-      const paid = wage + overtime;
+      // A good shift's bonus at an NPC's company (N3).
+      const bonus = Math.max(0, Math.round(Number(slip.bonus) || 0));
+      const paid = wage + overtime + bonus;
       let sent = false;
       if (mail) {
         try {
@@ -920,6 +926,7 @@ class BusinessServiceImpl {
             lines: [
               L('NCI.Staff.Payslip.Body', { name: out.business.name, post: L(`NCI.Staff.Post.${slip.post}`), wage: eb(slip.wage), paid: eb(wage) }),
               ...(overtime ? [L('NCI.Staff.Payslip.Overtime', { overtime: eb(overtime), shifts: slip.shifts || 1 })] : []),
+              ...(bonus ? [L('NCI.Jobs.Payslip.Bonus', { bonus: eb(bonus), total: eb(paid) })] : []),
               ...(paid ? [L(overtime ? 'NCI.Staff.Payslip.AttachedBoth' : 'NCI.Staff.Payslip.Attached', { paid: eb(paid), wage: eb(wage), overtime: eb(overtime) })] : []),
               ...(slip.owed ? [L('NCI.Staff.Payslip.Owed', { owed: eb(slip.owed) })] : []),
             ],
@@ -1040,6 +1047,8 @@ class BusinessServiceImpl {
         overtime: business.period?.pcOvertime?.[actor.id] ?? 0,
         // The rolls a partner asked of them (E3), with what their roll dialog needs, since they cannot read the business.
         asks: this._asksFor(business, staff, actor),
+        // At an NPC's company (N3): the band of their standing, a warning, this week's shift, and what it needs.
+        ...(business.npcRun && staff.status === 'active' ? { boss: { band: bossBand(standingOf(staff)), warned: !!staff.warned, done: business.period?.shifts?.[actor.id] ?? null, dv: stageDv(business.stage), uses: shiftUses(business, staff) } } : {}),
       }] : kept;
       if (JSON.stringify(jobs) !== JSON.stringify(jobsOf(actor))) await actor.setFlag(MODULE_ID, FLAGS.JOBS, [jobs]);
     }

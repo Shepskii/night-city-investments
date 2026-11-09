@@ -6,7 +6,7 @@
  *              card, and waits on Pending unless the world accepts good rolls by itself.
  */
 
-import { BUSINESS_DEFAULTS, autoHires, boardEntry, canApply, decideApplication, normalizeBusiness, openRoles, recordApplication, stageDv, useKey } from '../engine/index.js';
+import { BUSINESS_DEFAULTS, autoHires, boardEntry, canApply, canShift, decideApplication, decidePromotion, normalizeBusiness, openRoles, recordApplication, shiftUses, stageDv, useKey, workShift } from '../engine/index.js';
 import { MODULE_ID, SETTINGS } from '../utils/constants.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
 import { L } from '../ui/format.js';
@@ -60,6 +60,52 @@ export const JobService = {
     if (made.result === 'refused') await this._tell({ actorId: actor.id, post: request.post }, b, false);
     if (decided?.ok) await this._tell(made.application, b, true, decided.staff.wage);
     return { ok: true, business: b };
+  },
+
+  /** A player works the week's shift (N3). One a week in all, whatever jobs they hold. Runs in the GM's request queue. */
+  async shift(actor, request) {
+    const stored = BusinessRepository.get(request.companyId);
+    if (!stored) return { ok: false, reason: 'job-closed' };
+    const b = normalizeBusiness(structuredClone(stored));
+    const can = canShift(b, actor.id);
+    if (!can.ok) return can;
+    if (BusinessRepository.all().some((o) => o.id !== b.id && o.npcRun && o.period?.shifts?.[actor.id])) return { ok: false, reason: 'shift-done' };
+    const use = shiftUses(b, can.staff).find((u) => useKey(u) === useKey(request.use ?? {})) ?? null;
+    if (!use) return { ok: false, reason: 'bad-use' };
+    const check = await SkillAdapter.verifyLevers(actor, request, { dv: stageDv(b.stage), use });
+    if (!check.ok) return check;
+    workShift(b, actor.id, check.result.band);
+    await BusinessService._commit({ ok: true, business: b, wealth: {}, events: [] });
+    return { ok: true, business: b };
+  },
+
+  /** Players at NPC companies who have earned a promotion, waiting for the GM. */
+  promotions() {
+    return BusinessRepository.all().filter((b) => b.npcRun && b.status === 'open').flatMap((b) => (b.staff ?? []).filter((s) => s.promotion).map((staff) => ({ business: b, staff })));
+  },
+
+  /** The GM's answer to a promotion. */
+  promote(businessId, staffId, yes) {
+    if (!activeGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
+    return BusinessService._queue.run(async () => {
+      const stored = BusinessRepository.get(businessId);
+      if (!stored) return { ok: false, reason: 'no-business' };
+      const b = normalizeBusiness(structuredClone(stored));
+      const done = decidePromotion(b, staffId, yes, BusinessService.day());
+      if (!done.ok) return done;
+      await BusinessService._commit({ ok: true, business: b, wealth: {}, events: [] });
+      if (yes) await BusinessService._mailAccount(done.staff.actorId, L('NCI.Jobs.Subject', { name: b.name }), [L('NCI.Jobs.Promoted', { name: b.name, wage: done.staff.wage })]);
+      return { ok: true };
+    });
+  },
+
+  /** What a week's close at an NPC's company tells its player employees: a warning, or the sack. */
+  async onEvents(out) {
+    const b = out.business;
+    for (const e of out.events ?? []) {
+      if (e.type === 'shiftWarned') await BusinessService._mailAccount(e.actorId, L('NCI.Jobs.Subject', { name: b.name }), [L('NCI.Jobs.WarnedMail', { name: b.name })]);
+      if (e.type === 'shiftSacked') await BusinessService._mailAccount(e.actorId, L('NCI.Jobs.Subject', { name: b.name }), [L('NCI.Jobs.Sacked', { name: b.name, paid: e.paid ?? 0 })]);
+    }
   },
 
   /** The GM's answer on Pending. */

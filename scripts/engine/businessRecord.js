@@ -170,6 +170,11 @@ export function normalizeBusiness(raw) {
       // E3 two jobs: the other business they work for (the GM's service notes it), and whether it is known here.
       ...(x.elsewhere ? { elsewhere: { businessId: String(x.elsewhere.businessId), name: String(x.elsewhere.name ?? ''), shifts: int(x.elsewhere.shifts) } } : {}),
       ...(x.knownElsewhere ? { knownElsewhere: true } : {}),
+      // N3: a player character's standing with an NPC boss, a warning given, a promotion waiting for the GM, the last one decided.
+      ...(x.standing != null ? { standing: Number(x.standing) } : {}),
+      ...(x.warned ? { warned: true } : {}),
+      ...(x.promotion ? { promotion: true } : {}),
+      ...(x.promotedDay != null ? { promotedDay: int(x.promotedDay) } : {}),
       // E3 share grants: one vesting, and the share of the company vested so far.
       ...(x.grant ? { grant: { share: Number(x.grant.share), grantedDay: int(x.grant.grantedDay), vestDay: int(x.grant.vestDay) } } : {}),
       ...(x.vested ? { vested: Number(x.vested) } : {}),

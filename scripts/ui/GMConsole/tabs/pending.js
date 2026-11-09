@@ -146,7 +146,11 @@ const jobRows = () => JobService.waiting().map(({ business: b, application: a })
   buttons: [button('businessJobAnswer', 'NCI.Jobs.Hire', yes, b.id, { reward: a.id, yes: 'true' }), button('businessJobAnswer', 'NCI.Jobs.TurnDown', no, b.id, { reward: a.id, yes: 'false' })],
 })));
 
-const rows = () => [...storyRows(), ...pressRows(), ...jobRows(), ...businessRows(), ...rewardRows(), ...syndicateRows(), ...heatRows(), ...gigRows()];
+const promotionRows = () => JobService.promotions().map(({ business: b, staff: s }) => row('businesses', s.name, 'promotion', { name: b.name, post: L(`NCI.Staff.Post.${s.post}`), wage: s.wage }, () => ({
+  buttons: [button('businessPromote', 'NCI.Jobs.Promote', yes, b.id, { reward: s.id, yes: 'true' }), button('businessPromote', 'NCI.Jobs.NotNow', no, b.id, { reward: s.id, yes: 'false' })],
+})));
+
+const rows = () => [...storyRows(), ...pressRows(), ...jobRows(), ...promotionRows(), ...businessRows(), ...rewardRows(), ...syndicateRows(), ...heatRows(), ...gigRows()];
 
 /** How many decisions wait on each tab, and in all under `pending`. */
 export function waiting() {

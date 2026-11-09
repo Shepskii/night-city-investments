@@ -1488,6 +1488,13 @@ export function jobsContext(actor) {
     overtime: j.overtime ? L('NCI.Staff.OvertimeDue', { amount: whole(j.overtime) }) : '',
     // Rolls a partner asked of them (E3).
     asks: (j.asks ?? []).map((a) => ({ id: a.id, text: L('NCI.Staff.Asked', { what: a.what, name: a.by, pay: whole(a.pay) }) })),
+    // At an NPC's company (N3): where they stand, and this week's shift. One shift a week across all their jobs.
+    boss: j.boss ? {
+      standing: L('NCI.Jobs.StandingLine', { band: L(`NCI.Jobs.Standing.${j.boss.band}`) }),
+      warned: j.boss.warned,
+      done: j.boss.done ? L('NCI.Jobs.ShiftDone', { band: L(`NCI.Roll.Band.${j.boss.done}`) }) : '',
+      canWork: !jobsOf(actor).some((x) => x.boss?.done),
+    } : null,
   }));
 }
 

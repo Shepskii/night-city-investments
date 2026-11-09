@@ -100,6 +100,7 @@
       <tr>
         <td><strong>{{name}}</strong> <span class="nci-muted">{{archetype}}</span>
           <div class="nci-muted">{{post}} &middot; {{localize "NCI.Staff.WageWeek" wage=wage}}{{#if since}} &middot; {{localize "NCI.Staff.Since" date=since}}{{/if}}</div>
+          {{#if boss}}<div class="nci-muted">{{boss.standing}}{{#if boss.done}} &middot; {{boss.done}}{{/if}}</div>{{#if boss.warned}}<div class="nci-warn">{{localize "NCI.Jobs.Warned"}}</div>{{/if}}{{/if}}
           {{#if owed}}<div class="nci-warn">{{owed}}</div>{{/if}}
           {{#if overtime}}<div class="nci-muted">{{overtime}}</div>{{/if}}
           {{#each asks}}<div class="nci-warn">{{text}}
@@ -110,6 +111,7 @@
           <button type="button" class="nci-labelled" data-action="acceptJob" data-id="{{businessId}}"><i class="fas fa-handshake"></i> {{localize "NCI.Staff.Accept"}}</button>
           <button type="button" class="nci-labelled" data-action="declineJob" data-id="{{businessId}}"><i class="fas fa-xmark"></i> {{localize "NCI.Staff.Decline"}}</button>
           {{else}}
+          {{#if boss.canWork}}<button type="button" class="nci-labelled" data-action="workShift" data-id="{{businessId}}"><i class="fas fa-dice-d10"></i> {{localize "NCI.Jobs.Work"}}</button>{{/if}}
           <button type="button" class="nci-labelled" data-action="quitJob" data-id="{{businessId}}"><i class="fas fa-person-walking-arrow-right"></i> {{localize "NCI.Staff.Quit"}}</button>
           {{/if}}
         </td>

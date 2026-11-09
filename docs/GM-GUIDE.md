@@ -186,6 +186,8 @@ With Pneuma's Crew Tools active, **Business days come from Crew Tools downtime**
 
 **The job board.** Open roles at an NPC's registered business or company appear to players on the **Jobs** tab of the market window. A character applies with one roll, once a week per company. A failed roll is turned down automatically, and a pass waits on **Pending** for you to hire or turn down, unless **Hire good job applicants automatically** is on, which takes a solid roll or better at once. To offer someone a job yourself, open the company as its owner and use **Hire** on the Staff tab: the player gets an offer to accept. A side business doesn't advertise, but you can still offer a job there.
 
+**Shifts.** A player character working at an NPC company can **Work a shift** once a week, from **Your jobs**. A good shift earns them a bonus and their boss's good opinion; a poor one or a missed week costs it. They see their standing only as a band. Fall to the bottom and they're warned by mail, and a week later let go with a week's pay. Once they're trusted, **Pending** asks you about a promotion: a 10% raise, or not now. Jobs at player businesses don't have shifts: the owners ask for overtime instead.
+
 ### Syndicates tab
 
 - **Approve** or **reject** a newly founded syndicate (with approval on). No money is paid in until you approve.
