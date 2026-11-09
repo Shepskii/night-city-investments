@@ -8,7 +8,7 @@
  */
 
 import {
-  BUSINESS_DEFAULTS, STORY_RULES, canRun, characterPressChance, characterTruths, concealedHolders, createRng, drawCharacterPress, heatPeak, normalizeBusiness,
+  BUSINESS_DEFAULTS, STORY_RULES, canRun, handPress, isListed, characterPressChance, characterTruths, concealedHolders, createRng, drawCharacterPress, heatPeak, normalizeBusiness,
   notePeak, percentToAmount, makeImpact, printCharacterPress, answerCharacterPress, settleCharacterPress, spansLimit, useKey,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
@@ -196,6 +196,90 @@ export const PressService = {
       press.stories[at] = this._started(press.stories[at], BusinessService.day(), headline);
       await this._open(press.stories[at]);
     });
+  },
+
+  /** What Run a story offers on Market > Events (S1c). */
+  runOptions() {
+    const name = (group, kinds) => kinds.map((k) => ({ value: k, label: L(`NCI.Press.Story.${k}`), group }));
+    return {
+      businesses: BusinessRepository.all().filter((b) => b.status === 'open').map((b) => ({ value: `b:${b.id}`, label: b.name })),
+      characters: characters().map((a) => ({ value: `a:${a.id}`, label: a.name })),
+      businessKinds: name('business', Object.keys(rules().kinds)),
+      characterKinds: name('character', Object.keys(rules().character.kinds)),
+      corps: FactionRepository.list().filter((f) => f.kind === 'corp').map((f) => ({ value: `f:${f.id}`, label: f.name })),
+      media: CompanyRepository.all().filter((c) => c.sector === 'media').map((c) => ({ value: `m:${c.ticker}`, label: c.name })),
+    };
+  },
+
+  /** Who prints it, from the form's value. A market media company carries more weight than a corporation's own press. */
+  _outlet(value) {
+    const [type, id] = String(value ?? '').split(':');
+    if (type === 'f') {
+      const faction = FactionRepository.list().find((f) => f.id === id && f.kind === 'corp');
+      return faction ? { name: faction.name, rank: rules().rank.own, factionId: faction.id } : null;
+    }
+    const company = type === 'm' ? CompanyRepository.all().find((c) => c.ticker === id && c.sector === 'media') : null;
+    return company ? { name: company.name, rank: rules().rank.media } : null;
+  },
+
+  /**
+   * The GM runs a story by hand, whatever the chance and with no approval to wait for.
+   * @param {{target: string, story: string, outlet: string, headline?: string, believed?: string}} o - `believed` is '', 'yes' or 'no'
+   * @returns {Promise<{ok: boolean, when?: 'now'|'next', reason?: string}>}
+   */
+  async run({ target, story, outlet, headline = '', believed = '' }) {
+    if (!activeGM()) return { ok: false, reason: 'not-gm' };
+    const [type, id] = String(target ?? '').split(':');
+    const paper = this._outlet(outlet);
+    if (!paper) return { ok: false, reason: 'press-no-outlet' };
+    const force = believed === 'yes' ? true : believed === 'no' ? false : null;
+    if (type === 'b') {
+      if (!rules().kinds[story]) return { ok: false, reason: 'press-bad-kind' };
+      if (story === 'crime' && !BusinessService.underworldOn()) return { ok: false, reason: 'press-no-underworld' };
+      const done = await BusinessService.runPress(id, handPress({ story, outlet: paper, headline: textOf(headline), believed: force }));
+      if (!done.ok) return done;
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: id });
+      return { ok: true, when: done.business.press?.queued ? 'next' : 'now' };
+    }
+    return type === 'a' ? this._runCharacter(id, { story, paper, headline, force }) : { ok: false, reason: 'no-target' };
+  },
+
+  _runCharacter(actorId, { story, paper, headline, force }) {
+    return BusinessService._queue.run(async () => {
+      const actor = game.actors.get(actorId);
+      if (!actor) return { ok: false, reason: 'no-target' };
+      if (!rules().character.kinds[story]) return { ok: false, reason: 'press-bad-kind' };
+      if (!HeatService.enabled()) return { ok: false, reason: 'press-no-heat' };
+      const press = structuredClone(MarketStore.getStories().press);
+      if (press.stories.some((s) => s.actorId === actorId && s.status === 'open')) return { ok: false, reason: 'press-busy' };
+      const background = this._background(actor);
+      if (story === 'hidden' && !background.stake) return { ok: false, reason: 'press-no-stake' };
+      const day = BusinessService.day();
+      const started = this._started({
+        id: foundry.utils.randomID(12), actorId, name: actor.name, day, status: 'held', story, outlet: paper.name, grudge: null, rank: paper.rank, businessId: background.businessId,
+        ...(story === 'hidden' ? { stake: background.stake } : {}), ...(force == null ? {} : { force }),
+      }, day, headline);
+      // The GM's own story takes the place of one still waiting for them.
+      press.stories = [...press.stories.filter((s) => s.actorId !== actorId), started];
+      press.lastDay[actorId] = day;
+      await this._open(started);
+      await this._save(press);
+      return { ok: true, when: 'now' };
+    });
+  },
+
+  /** Stories let run and not yet printed, which a Media may hear of. A held one may yet be spiked, so it is not news. */
+  rumourSources() {
+    const day = BusinessService.day();
+    const lag = BUSINESS_DEFAULTS.ownership.scandal.delayDays;
+    const aboutCharacters = MarketStore.getStories().press.stories.filter((s) => s.status === 'open' && !s.printed).map((s) => {
+      const hidden = s.story === 'hidden';
+      return { sourceKey: `press:${s.id}`, kind: 'press', ticker: hidden ? s.stake.ticker : null, name: hidden ? s.stake.name : s.name, by: s.actorId, outlet: s.outlet, story: s.story, days: Math.max(1, s.printDay - day), closeIn: s.deadline - day + lag };
+    });
+    const aboutBusinesses = BusinessRepository.all().filter((b) => b.status === 'open' && b.period?.event?.kind === 'press' && !b.period.event.printed).map((b) => ({
+      sourceKey: `press:${b.id}:${b.period.index}`, kind: 'press', ticker: isListed(b) ? b.company.ticker : null, name: b.name, outlet: b.period.event.factionName, story: b.period.event.story, days: Math.max(1, b.period.event.printDay - day), closeIn: b.period.endDay - day + lag,
+    }));
+    return [...aboutCharacters, ...aboutBusinesses];
   },
 
   /** The GM spikes it. The 28 days still run from when it was drawn. */

@@ -57,6 +57,34 @@
 </div>
 
 <div class="nci-block nci-form">
+  <h3>{{localize "NCI.Press.Run.Title"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Press.Run.Hint"}}</p>
+  <div class="nci-grid">
+    <label>{{localize "NCI.Press.Run.Target"}}<select name="pressTarget">
+      <optgroup label="{{localize 'NCI.Press.Run.Businesses'}}">{{#each pressRun.businesses}}<option value="{{value}}">{{label}}</option>{{/each}}</optgroup>
+      <optgroup label="{{localize 'NCI.Press.Run.Characters'}}">{{#each pressRun.characters}}<option value="{{value}}">{{label}}</option>{{/each}}</optgroup>
+    </select></label>
+    <label>{{localize "NCI.Press.Run.Kind"}}<select name="pressKind">
+      <optgroup label="{{localize 'NCI.Press.Run.Businesses'}}">{{#each pressRun.businessKinds}}<option value="{{value}}">{{label}}</option>{{/each}}</optgroup>
+      <optgroup label="{{localize 'NCI.Press.Run.Characters'}}">{{#each pressRun.characterKinds}}<option value="{{value}}">{{label}}</option>{{/each}}</optgroup>
+    </select></label>
+    <label>{{localize "NCI.Press.Run.Outlet"}}<select name="pressOutlet">
+      {{#if pressRun.media.length}}<optgroup label="{{localize 'NCI.Press.Run.Media'}}">{{#each pressRun.media}}<option value="{{value}}">{{label}}</option>{{/each}}</optgroup>{{/if}}
+      {{#if pressRun.corps.length}}<optgroup label="{{localize 'NCI.Press.Run.Corps'}}">{{#each pressRun.corps}}<option value="{{value}}">{{label}}</option>{{/each}}</optgroup>{{/if}}
+    </select></label>
+    <label>{{localize "NCI.Press.Run.Believed"}}<select name="pressBelieved">
+      <option value="">{{localize "NCI.Press.Run.Roll"}}</option>
+      <option value="yes">{{localize "NCI.Press.Run.Yes"}}</option>
+      <option value="no">{{localize "NCI.Press.Run.No"}}</option>
+    </select></label>
+    <label class="wide">{{localize "NCI.Controls.Headline"}}<input type="text" name="pressRunHeadline" placeholder="{{localize 'NCI.Press.Run.HeadlineHint'}}"></label>
+  </div>
+  <div class="nci-actions">
+    <button type="button" data-action="pressRun"><i class="fas fa-newspaper"></i> {{localize "NCI.Press.Run.Button"}}</button>
+  </div>
+</div>
+
+<div class="nci-block nci-form">
   <h3>{{localize "NCI.Controls.NewsTitle"}}</h3>
   <div class="nci-grid">
     <label class="wide">{{localize "NCI.Controls.Headline"}}<input type="text" name="newsHeadline"></label>

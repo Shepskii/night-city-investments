@@ -2464,6 +2464,12 @@
         "substantial": "People are talking about {name}. The word is its price is heading {way}, on account of {why}.",
         "detailed": "A good source on {name} ({ticker}): its price moves {way} about {percent}% within {days} day(s), on account of {why}."
       },
+      "press": {
+        "vague": "Someone has been asking questions about {name}.",
+        "typical": "A reporter is digging into {name}. There's a story on the way.",
+        "substantial": "{outlet} has a story coming about {name}: {story}.",
+        "detailed": "A good source: {outlet} prints {story} about {name} in about {days} day(s)."
+      },
       "hidden": {
         "vague": "Someone's being very quiet about what they own in {name}.",
         "typical": "There's a hidden stake in {name}, held behind a front.",
@@ -2575,6 +2581,37 @@
       }
     },
     "Press": {
+      "Run": {
+        "Title": "Run a story",
+        "Hint": "Runs now, whatever the chance, with no approval. Nothing needs to be true. It ignores the limit of one story in 28 days, and starts it. A business with an event this week gets it as next week's event.",
+        "Target": "About",
+        "Businesses": "Businesses",
+        "Characters": "Characters",
+        "Kind": "Story",
+        "Outlet": "Printed by",
+        "Media": "Media company (carries more weight)",
+        "Corps": "A corporation's own press",
+        "Believed": "Does the public believe it?",
+        "Roll": "Roll it",
+        "Yes": "Believed",
+        "No": "Not believed",
+        "HeadlineHint": "Leave empty for the usual headline",
+        "Button": "Run a story",
+        "Now": "The story is running.",
+        "Next": "This week already has an event, so the story will be next week's.",
+        "Reason": {
+          "press-queued": "That business already has a story waiting for next week.",
+          "press-busy": "That character already has a story running.",
+          "press-no-stake": "That character has no concealed stake in a listed company.",
+          "press-no-heat": "Stories about characters need heat tracking on.",
+          "press-no-underworld": "A crime expose needs Underworld content on.",
+          "press-bad-kind": "That kind of story doesn't fit that target. Pick one from the matching group.",
+          "press-no-outlet": "Choose who prints it. If the list is empty, add a corporation on the Factions tab.",
+          "not-open": "That business isn't open.",
+          "no-business": "That business no longer exists.",
+          "no-target": "Choose who the story is about."
+        }
+      },
       "Story": { "money": "money trouble", "crime": "a crime expose", "service": "bad service", "smear": "a smear", "dirty": "dirty dealing", "hidden": "a hidden stake" },
       "Angle": {
         "money": "A reporter is calling round about your finances, and someone is talking.",

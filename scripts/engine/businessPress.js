@@ -17,6 +17,18 @@ import { believability, storyPercent, STORY_RULES } from './stories.js';
 import { heatTier } from './heat.js';
 import { bandPassed } from './rolls.js';
 
+/**
+ * The public makes up its mind about a story that has printed. A GM who ran it by hand may have decided already
+ * (`force`): believed, it moves the price by the middle of the outlet's range.
+ */
+function judgeStory(story, die, p) {
+  const smear = story.story === 'smear';
+  const target = Math.max(0, believability(story.rank, smear ? 0 : 1) - (smear ? p.press.smearPenalty : 0));
+  story.printed = true;
+  story.believed = story.force ?? die <= target;
+  story.percent = story.believed ? storyPercent(story.rank, story.force ? STORY_RULES.fullMargin / 2 : target - die, 'expose') : 0;
+}
+
 /** Whether the last few weeks' digests hold any of these events. */
 const recentEvent = (b, kinds, p) => b.digests.slice(-p.press.lookbackWeeks).some((d) => kinds.includes(d.event?.kind));
 
@@ -100,6 +112,47 @@ export function spikePress(b) {
   return { ok: true };
 }
 
+/**
+ * A story the GM runs by hand (S1c). Nothing has to be true, and it needs no grudge.
+ * @param {{story: string, outlet: {name: string, rank: number, factionId?: string}, headline?: string, believed?: boolean|null}} o
+ */
+export function handPress({ story, outlet, headline = '', believed = null }) {
+  return {
+    kind: 'press',
+    story,
+    grudge: null,
+    factionId: outlet.factionId ?? null,
+    factionName: outlet.name,
+    rank: outlet.rank,
+    truths: [],
+    byHand: true,
+    ...(headline ? { headline } : {}),
+    ...(believed == null ? {} : { force: believed }),
+  };
+}
+
+/** A hand-run story becomes the week's event, ahead of one the GM had still to decide on. */
+export function startHandPress(b, event, day, p = BUSINESS_DEFAULTS) {
+  b.period.event = { ...event, printDay: day + p.press.printDays };
+  b.press = { ...(b.press ?? {}), lastDay: day, held: null, queued: null };
+}
+
+/**
+ * The GM runs a story on a business: now if the week is free, and as next week's event if it is not. It ignores the
+ * 28 days but starts them, so a drawn story can't follow straight after.
+ * @returns {{ok: boolean, when?: 'now'|'next', reason?: string}}
+ */
+export function runPress(b, event, day, p = BUSINESS_DEFAULTS) {
+  if (b.status !== 'open' || !b.period) return fail('not-open');
+  if (b.press?.queued) return fail('press-queued');
+  if (b.period.event) {
+    b.press = { ...(b.press ?? {}), lastDay: day, queued: event };
+    return { ok: true, when: 'next' };
+  }
+  startHandPress(b, event, day, p);
+  return { ok: true, when: 'now' };
+}
+
 /** A story the GM never answered goes when its week does. */
 export function lapsePress(b) {
   if (b.press?.held) b.press = { ...b.press, held: null };
@@ -113,12 +166,7 @@ export function lapsePress(b) {
 export function printPress(b, day, seed, out, p = BUSINESS_DEFAULTS, force = false) {
   const event = b.period?.event;
   if (event?.kind !== 'press' || event.printed || (!force && day < event.printDay)) return false;
-  const die = createRng(seed, 'press-print', b.id, b.period.index).int(1, 10);
-  const smear = event.story === 'smear';
-  const target = Math.max(0, believability(event.rank, smear ? 0 : 1) - (smear ? p.press.smearPenalty : 0));
-  event.printed = true;
-  event.believed = die <= target;
-  event.percent = event.believed ? storyPercent(event.rank, target - die, 'expose') : 0;
+  judgeStory(event, createRng(seed, 'press-print', b.id, b.period.index).int(1, 10), p);
   out.events.push({ type: 'pressPrinted', story: event.story, outlet: event.factionName, headline: event.headline ?? null });
   return true;
 }
@@ -201,11 +249,7 @@ export function drawCharacterPress({ id, actorId, name, day, truths, worst = nul
 
 /** The public makes up its mind. Kept from the character until the end. */
 export function printCharacterPress(story, die, p = BUSINESS_DEFAULTS) {
-  const smear = story.story === 'smear';
-  const target = Math.max(0, believability(story.rank, smear ? 0 : 1) - (smear ? p.press.smearPenalty : 0));
-  story.printed = true;
-  story.believed = die <= target;
-  story.percent = story.believed ? storyPercent(story.rank, target - die, 'expose') : 0;
+  judgeStory(story, die, p);
 }
 
 export function answerCharacterPress(story, band) {

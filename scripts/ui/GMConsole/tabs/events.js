@@ -90,6 +90,16 @@ async function onPressCharacterSpike(event, target) {
   report(await PressService.spike(target.dataset.id));
 }
 
+/** The GM runs a story by hand (S1c). */
+async function onPressRun(event, target) {
+  const done = await PressService.run({
+    target: field(target, 'pressTarget'), story: field(target, 'pressKind'), outlet: field(target, 'pressOutlet'), headline: field(target, 'pressRunHeadline') ?? '', believed: field(target, 'pressBelieved'),
+  });
+  if (done.ok) return ui.notifications.info(L(`NCI.Press.Run.${done.when === 'next' ? 'Next' : 'Now'}`));
+  const key = `NCI.Press.Run.Reason.${done.reason}`;
+  return ui.notifications.warn(game.i18n.has(key) ? L(key) : L('NCI.GMConsole.ActionFailed'));
+}
+
 async function onStoryApprove(event, target) {
   report(await StoryService.approve(target.dataset.id));
 }
@@ -115,6 +125,7 @@ export const actions = {
   storyApprove: onStoryApprove,
   pressCharacterApprove: onPressCharacterApprove,
   pressCharacterSpike: onPressCharacterSpike,
+  pressRun: onPressRun,
   storyReject: onStoryReject,
   addShock: onAddShock,
   removeImpact: onRemoveImpact,
@@ -137,6 +148,7 @@ export function context(app) {
       text: L('NCI.Story.Waiting', { media: s.media, angle: L(`NCI.Story.AngleName.${s.angle}`), name: s.name, ticker: s.ticker, percent: `${s.percent > 0 ? '+' : ''}${s.percent}` }),
       headline: s.headline,
     })),
+    pressRun: PressService.runOptions(),
     // Who may be given evidence (F1c).
     evidence: { companies: companyOptions(), actors: game.actors.filter((a) => a.type === 'character').map((a) => ({ value: a.id, label: a.name })) },
     previewShock: app.preview?.kind === 'shock' ? app.preview : null,

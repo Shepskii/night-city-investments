@@ -70,7 +70,7 @@
 import { fenceCheck, fenceWeek, makesThings, buyStock, clearStock, consignStock, handOffer, handStock, produceCheck, productionWeek, salesWeek, setLine, takeBackStock } from './businessProduction.js';
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from './businessEvents.js';
-import { drawPress, placePress, lapsePress, printPress, pressFallout } from './businessPress.js';
+import { drawPress, placePress, lapsePress, printPress, pressFallout, startHandPress } from './businessPress.js';
 import { aimCheck, giftFor } from './factions.js';
 import { campaignCheck, runCampaign, runBlackOps } from './businessCampaign.js';
 import { supplyCut, runSupply, runVenue, backupWait } from './businessRoles.js';
@@ -1719,7 +1719,9 @@ function startPeriod(b, index, startDay, weekday, seed, p, traits = null, relati
   // So does a story in the press (S1), and that comes before a faction's other moves.
   // So does trouble of the room's own, from a week it was worked (U3).
   lapsePress(b);
-  const event = roomBust(b, seed, p, relations, traits) ?? drawPress(b, seed, p, relations) ?? hostileAct(b, seed, p, relations) ?? roomEvent(b, seed, p, relations) ?? drawEvent(b, seed, p, traits, relations);
+  // One the GM ran by hand in a week that was busy comes first, and waits if collectors or a grudge take this one.
+  const queued = !b.collectors && !b.grudge ? b.press?.queued ?? null : null;
+  const event = queued ?? roomBust(b, seed, p, relations, traits) ?? drawPress(b, seed, p, relations) ?? hostileAct(b, seed, p, relations) ?? roomEvent(b, seed, p, relations) ?? drawEvent(b, seed, p, traits, relations);
   if (b.collectors) {
     // A missed payment to a fixer: the collectors come in place of whatever else the week held.
     b.period.event = { kind: 'collectors' };
@@ -1728,6 +1730,8 @@ function startPeriod(b, index, startDay, weekday, seed, p, traits = null, relati
     // A sullen employee who was let go comes back to make a point.
     b.period.event = { kind: 'grudge' };
     b.grudge = false;
+  } else if (queued) {
+    startHandPress(b, queued, b.period.startDay, p);
   } else if (event?.kind === 'press') {
     placePress(b, event, relations?.press?.approval !== false);
   } else if (event) {

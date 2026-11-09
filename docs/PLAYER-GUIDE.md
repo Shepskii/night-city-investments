@@ -113,7 +113,7 @@ A syndicate can found, join or invest in a player business. Its officers act for
 
 A company's market page has **Publish a story**: an exposé to push its price down, or a puff piece to push it up. Your Credibility rank sets how likely the public is to believe it and how far the price can move. Evidence items in your inventory help, and each works once. Holding shares in a company you write about draws heat.
 
-You also hear things. Every few days your Credibility may bring a rumour by mail about a price move on its way or a hidden stake, saying more the better you roll. **Dig for rumours** on a company's page, once a week, does the same for that company. Trading on a rumour still counts for insider heat, though less than trading on something you did yourself.
+You also hear things. Every few days your Credibility may bring a rumour by mail about a price move on its way, a hidden stake, or a story about to print about a business or a character, which gives you the chance to warn them. The better you roll, the more it says. **Dig for rumours** on a company's page, once a week, does the same for that company. Trading on a rumour still counts for insider heat, though less than trading on something you did yourself.
 
 ## Insider trading
 

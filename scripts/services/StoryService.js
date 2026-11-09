@@ -23,6 +23,7 @@ import { MarketClock } from './MarketClockService.js';
 import { NewsService } from './NewsService.js';
 import { SkillAdapter } from './SkillAdapter.js';
 import { TickService } from './TickService.js';
+import { PressService } from './PressService.js';
 
 /** What a Media can dig for rumours with. */
 export const RUMOUR_USES = Object.freeze([SKILLS.conversation, SKILLS.streetwise, SKILLS.librarySearch]);
@@ -80,7 +81,7 @@ export const StoryService = {
     return { ok: true, item };
   },
 
-  /** What there is to hear now, on one company or all: queued price moves not yet showing, and hidden holdings. */
+  /** What there is to hear now, on one company or all: stories about to print, queued price moves not yet showing, and hidden holdings. */
   rumourSources(ticker = null) {
     const now = MarketStore.time();
     const companies = CompanyRepository.all();
@@ -94,17 +95,24 @@ export const StoryService = {
     const holdings = BusinessRepository.all().filter((b) => b.status === 'open').flatMap((b) => concealedHolders(b).map((h) => ({
       sourceKey: `hidden:${b.id}:${h.holderId}`, kind: 'hidden', ticker: b.company.ticker, name: b.name, by: h.holderId, percent: Math.round(h.share * 100), layer: b.masks[h.holderId]?.at(-1)?.name ?? '',
     })));
-    return [...moves, ...holdings].filter((s) => !ticker || s.ticker === ticker);
+    // A story comes first: it has only days before it prints, and a Media hears one thing at a time.
+    return [...PressService.rumourSources(), ...moves, ...holdings].filter((s) => !ticker || s.ticker === ticker);
   },
 
   /** A rumour in words, saying more at each level. */
   _rumourText(source, level) {
     const word = RUMOUR_LEVELS[level];
     return L(`NCI.Rumour.${source.kind}.${word}`, {
-      name: source.name, ticker: source.ticker, percent: source.percent, days: source.days, layer: source.layer,
+      name: source.name, ticker: source.ticker, percent: source.percent, days: source.days, layer: source.layer, outlet: source.outlet, story: source.kind === 'press' ? L(`NCI.Press.Story.${source.story}`) : '',
       way: source.kind === 'move' ? L(source.up ? 'NCI.Rumour.Up' : 'NCI.Rumour.Down') : '',
       why: source.kind === 'move' ? L(`NCI.Rumour.Why.${source.why}`) : '',
     });
+  },
+
+  /** A story has no price move queued until it has run its course, so the window for trading on it opens when it is first heard. */
+  async _watchPress(source, actorId) {
+    const company = CompanyRepository.all().find((c) => c.ticker === source.ticker);
+    if (company) await HeatService.openWindow({ sourceKey: source.sourceKey, companyId: company.id, outcome: 'failed', delayDays: source.closeIn }, { tipped: [actorId] });
   },
 
   /** Tell a Media the best they have not heard; returns whether there was anything. */
@@ -115,7 +123,8 @@ export const StoryService = {
     await MailService.fromWire(actor, { subject: L('NCI.Rumour.Subject', { name: source.name }), lines: [this._rumourText(source, level)] });
     rumours[actor.id] = { ...mine, told: { ...(mine.told ?? {}), [source.sourceKey]: level } };
     // They heard it: trading on it now is following a rumour.
-    if (source.kind === 'move') await HeatService.noteTipped(source.sourceKey, actor.id);
+    if (source.kind === 'press' && source.ticker) await this._watchPress(source, actor.id);
+    if (source.kind === 'move' || (source.kind === 'press' && source.ticker)) await HeatService.noteTipped(source.sourceKey, actor.id);
     return true;
   },
 
