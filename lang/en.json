@@ -2606,7 +2606,7 @@
       "Promoted": "{name} is pleased with you: your pay goes up to {wage} eb a week.",
       "Promote": "Promote",
       "NotNow": "Not now",
-      "Payslip": { "Bonus": "A bonus for your shift: {bonus}, making {total} in all." }
+      "Payslip": { "Bonus": "A bonus for your shift: {bonus} eb, making {total} eb in all." }
     },
     "Press": {
       "Run": {
