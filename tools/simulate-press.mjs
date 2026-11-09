@@ -155,6 +155,7 @@ function characterYear(seed, { start, chances, limitWeeks = 4, answer = 0.8, med
   let queued = false;
   let nextAllowed = 0;
   const t = { drawn: 0, believed: 0, heat: 0, peak: start };
+  const recent = [start];
   for (let w = 0; w < WEEKS; w++) {
     if (queued) {
       queued = false;
@@ -172,7 +173,10 @@ function characterYear(seed, { start, chances, limitWeeks = 4, answer = 0.8, med
     // `hold`: someone who keeps trading on what they know, so their heat never falls below where it started.
     if (hold) heat = Math.max(heat, start);
     t.peak = Math.max(t.peak, heat);
-    const tier = heatTier(feedback ? heat : start);
+    // The check reads the highest heat of the last 28 days, so a spike stays newsworthy after it fades.
+    recent.push(heat);
+    if (recent.length > 4) recent.shift();
+    const tier = heatTier(feedback ? Math.max(...recent) : start);
     if (w >= nextAllowed && rng.chance(chances[tier] ?? 0)) {
       queued = true;
       t.drawn += 1;
@@ -241,7 +245,7 @@ for (const [name, chance, exposure] of bands) {
 }
 
 // ── 5. Characters ───────────────────────────────────────────────────────────────────────────────────────────
-console.log(`\n5. A character with no business, heat half-life ${HEAT_TUNING.halfLifeTicks} ticks: 2% at 25, 4% at 50, 8% at 75`);
+console.log(`\n5. A character with no business, heat half-life ${HEAT_TUNING.halfLifeTicks} days: 2% at 25, 4% at 50, 8% at 75, on the highest heat of the last 28 days`);
 console.log('situation          start heat  outlet     stories/yr  believed  heat added  end heat');
 const chances = { noticed: 0.02, flagged: 0.04, investigated: 0.08 };
 for (const [situation, hold] of [['one spike, fades', false], ['keeps drawing heat', true]]) {
