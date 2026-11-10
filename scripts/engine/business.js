@@ -1905,7 +1905,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   if (room?.unpaid) out.events.push({ type: 'factionMove', factionId: room.unpaid, amount: p.backRoom.deal.unpaid });
   if (room?.standing) out.events.push({ type: 'factionMove', ...room.standing, steady: true });
   if (room?.favour) out.events.push({ type: 'factionMove', ...room.favour, steady: true });
-  if (room?.dealEnded) out.events.push({ type: 'gangDealEnded', name: room.dealEnded });
+  if (room?.dealEnded) out.events.push({ type: 'gangDealEnded', name: room.dealEnded, ...(room.dealEndedBy ? { factionId: room.dealEndedBy } : {}) });
   const turned = turnInformant(b, traits, seed, p);
   if (turned) out.traits = { ...out.traits, ...turned };
   // A security upgrade cuts the protection money for good.

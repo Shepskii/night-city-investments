@@ -1893,7 +1893,8 @@
     "SyndicateMail": {
       "Proposed": {
         "Subject": "New proposal to vote on",
-        "Body": "Proposed by {name}. Vote in the market terminal's Portfolio tab, with the syndicate picked, before {date}."
+        "Body": "Proposed by {name}.",
+        "Footer": "Vote in the market terminal's Portfolio tab, with the syndicate picked, before {date}."
       },
       "Passed": {
         "Subject": "Proposal passed",
@@ -1969,7 +1970,8 @@
       "Stop": "Revoke living allowance",
       "Covered": "The business pays their Housing and Lifestyle: {amount} eb a month, as their sheet has it.",
       "Subject": "{name}: Housing and Lifestyle",
-      "Body": "{name} pays your Housing and Lifestyle this month: {amount} eb. Claim it from this message, then pay your rent as usual."
+      "Body": "{name} pays your Housing and Lifestyle this month: {amount} eb.",
+      "Footer": "Claim it from this message, then pay your rent as usual."
     },
     "Reward": {
       "Title": "REP and IP suggested",
@@ -2017,12 +2019,20 @@
       "City": "Night City Inspections",
       "CityOrg": "City of Night City",
       "Collectors": "Collections",
-      "Hr": "{name} Human Resources"
+      "Hr": "{name} Human Resources",
+      "Treasury": "{name} Treasury",
+      "SourceAlias": "A friend",
+      "Source": "A source",
+      "Editor": "The News Desk",
+      "Vice": "NCPD Vice",
+      "Court": "Night City Insolvency Court",
+      "Regulator": "Business Regulation Office",
+      "Exchange": "Night City Exchange"
     },
     "EventMail": {
       "Subject": "{name}: {event}",
       "Answer": "Answer it on the Work tab of the Business window before the week closes.",
-      "Offer": "It's on the Work tab of the Business window, if you want it, until the week closes.",
+      "Offer": "Take it up from the Work tab of the Business window before the week closes.",
       "Line": {
         "shakedown": "Nice place, {name}. Be a shame if something happened to it. We'll be by for our cut this week.",
         "sabotage": "Heard the equipment at {name} is playing up. Funny how that happens. Think about who your friends are.",
@@ -2089,14 +2099,16 @@
       "LostNotice": "The case went against the company. The penalty is being decided.",
       "Mail": {
         "OpenSubject": "A regulator's case against {name}",
-        "Open": "A regulator has opened a case against {name}: {why}. An officer must answer it by {date} from the Business window, or it counts as lost.",
+        "Open": "We have opened a case against {name}: {why}. A response from an officer of the company is required by {date}.",
+        "OpenFooter": "An officer answers from the Business window. Unanswered by then, the case is lost.",
         "AnsweredSubject": "The regulator's case against {name}",
-        "Won": "The case against {name} is closed: the regulator found nothing it could use.",
-        "Lost": "The case against {name} went against the company. The penalty is being decided.",
-        "Silent": "Nobody answered the case against {name} in time, so it went against the company. The penalty is being decided.",
-        "Dropped": "The case against {name} has been dropped.",
+        "Won": "Our case against {name} is closed. We found nothing we could use.",
+        "Lost": "Our case against {name} has been decided against the company. A penalty will follow.",
+        "Silent": "No response to our case against {name} was received by the deadline, so it has been decided against the company. A penalty will follow.",
+        "Dropped": "Our case against {name} has been dropped.",
         "FinedSubject": "{name} has been fined",
-        "Fined": "{name} has been fined {fine} eb, from its cash, and its Compliance has fallen.",
+        "Fined": "{name} has been fined {fine} eb.",
+        "FinedFooter": "The fine is paid from the company's cash, and its Compliance has fallen.",
         "Stopped": "Its application to list has been stopped: the fee is spent, and it may apply again later.",
         "Restated": "It has had to restate its recent reports at their real figures."
       }
@@ -2132,21 +2144,25 @@
         "LapsedSubject": "A layer over your holding in {name} has lapsed",
         "Lapsed": "Your brokerage balance could not cover the {fee} eb monthly fee for {layer}, your layer over your holding in {name}, so it has lapsed, with any layers outside it.",
         "FoundSubject": "What you dug up on {name}'s register",
-        "FoundLayer": "Behind that holding in {name} you found another layer: {found}. Dig again to go deeper.",
-        "FoundHolder": "Behind that holding in {name} you found who it is: {found}.",
+        "FoundLayer": "That holding in {name}? There's another layer behind it: {found}.",
+        "FoundHolder": "That holding in {name}? It's {found}.",
+        "FoundFooter": "Dig again to go deeper.",
         "TippedSubject": "Someone is digging into your holding in {name}",
-        "Tipped": "Word reaches you that someone has been asking clumsy questions about who is behind your holding in {name}.",
+        "Tipped": "Someone's been asking clumsy questions about who's behind your holding in {name}. Thought you'd want to know.",
         "UnmaskedSubject": "NCPD Financial Crimes: your holding in {name}",
-        "Unmasked": "NCPD Financial Crimes has looked behind the layers over your {pct}% of {name} ({ticker}), above the 5% disclosure threshold. Your holding is now on the register under your own name, and you have been fined {fine} eb from your brokerage balance."
+        "Unmasked": "Financial Crimes has looked behind the layers over your {pct}% of {name} ({ticker}), above the 5% disclosure threshold. Your holding is now on the register under your own name, and you have been fined {fine} eb.",
+        "UnmaskedFooter": "The fine came from your brokerage balance."
       }
     },
     "Insolvency": {
       "Banner": "In administration since {date}: net assets {net} eb against debts of {debts} eb. No actions, draws, votes, new shares or buybacks until it is resolved; the weeks still close. Cash put in from the Ledger tab that lifts net assets above zero at a weekly close brings it out; otherwise the market restructures it or winds it up.",
       "Mail": {
         "InSubject": "{name} is in administration",
-        "In": "{name} has had more debts than assets for two weekly closes (net assets {net} eb), so it is in administration. Its owners cannot act, draw, vote or move capital until it is resolved. Cash put in that brings its net assets above zero at a weekly close ends it; otherwise it will be restructured or wound up.",
+        "In": "{name} has had more debts than assets for two weekly closes (net assets {net} eb), and has been placed in administration.",
+        "InFooter": "Its owners can't act, draw, vote or move capital until it's resolved. Cash put in that brings its net assets above zero at a weekly close ends it; otherwise it will be restructured or wound up.",
         "OutSubject": "{name} is out of administration",
-        "Out": "{name}'s net assets are above zero again, so it is out of administration and its owners can run it as before.",
+        "Out": "{name}'s net assets are above zero again, and its administration has ended.",
+        "OutFooter": "Its owners can run it as before.",
         "RestructuredSubject": "{name} has been restructured",
         "Restructured": "{name} has been restructured: of its {debts} eb of debts, {paid} eb was paid from its cash and the rest became {shares} new shares held by its creditors, without a vote (any new shares make yours a smaller part of the company). It is out of administration.",
         "WoundUpSubject": "{name} has been wound up",
@@ -2179,13 +2195,14 @@
       "BidIncomplete": "Give a ticker, a price a share and how many shares.",
       "Mail": {
         "OpenSubject": "Takeover offer for {name}",
-        "Open": "{bidder} offers {price} eb a share for up to {shares} shares of {name}, a {premium}% premium, until {date}. Tender your shares, or not, from the Shareholders tab of the Business window.",
+        "Open": "{bidder} offers {price} eb a share for up to {shares} shares of {name}, a {premium}% premium, until {date}.",
+        "OpenFooter": "Tender your shares, or not, from the Shareholders tab of the Business window.",
         "ApprovedSubject": "Your bid for {name} is open",
         "Approved": "Your offer of {price} eb a share for up to {shares} shares of {name} is open until {date}. {escrow} eb is held from your brokerage balance.",
         "UnfundedSubject": "Your bid for {name} lapsed",
         "Unfunded": "Your brokerage balance could not cover the {escrow} eb your bid for {name} needs, so it has lapsed.",
         "RejectedSubject": "Your bid for {name} was refused",
-        "Rejected": "The market refused your takeover bid for {name}.",
+        "Rejected": "The exchange has refused your takeover bid for {name}.",
         "ClosedSubject": "The takeover offer for {name} has closed",
         "Closed": "{bidder}'s offer for {name} closed: {shares} shares bought at {price} eb. Anything you tendered has been paid into your brokerage balance.",
         "Control": "{bidder}'s offer for {name} closed: {shares} shares bought at {price} eb, and {bidder} now controls the company. Anything you tendered has been paid into your brokerage balance.",
@@ -2245,9 +2262,10 @@
       "Delisted": "Delisted from the market as {ticker} on {date}: the company bought back the public float and is private again.",
       "Mail": {
         "ReviewSubject": "{name}: under the delisting review",
-        "Review": "{name} ({ticker}) is worth {value} eb on the market, under the {floor} eb floor for {n} reports in a row. The market has put it under review; it may be delisted and taken private.",
+        "Review": "{name} ({ticker}) is worth {value} eb on the market, under the {floor} eb floor for {n} reports in a row. The exchange has put it under review; it may be delisted and taken private.",
         "DelistedSubject": "{name}: delisted",
-        "Delisted": "{name} ({ticker}) has been delisted. The company bought the public float back; your shares have left your brokerage portfolio and are shares on its record again."
+        "Delisted": "{name} ({ticker}) has been delisted, and the company has bought back its public float.",
+        "DelistedFooter": "Your shares have left your brokerage portfolio and are on the company's own record again."
       }
     },
     "Charter": {
@@ -2586,7 +2604,8 @@
       "PayOffCost": "Costs {cost} eb of dirty cash.",
       "Shut": "Shut by a raid. It can be built again as a project.",
       "ShutForGood": "Shut by a raid, for good. A chartered company can't build another.",
-      "RaidShutForGood": "The raid on {name} shut the back room for good: {seized} eb seized and a {fine} eb fine. The company carries on.",
+      "RaidShutForGood": "Officers seized {seized} eb in illicit funds at {name}, a fine of {fine} eb has been issued, and the operation has been closed down.",
+      "RaidShutForGoodFooter": "The back room is shut for good; the company carries on.",
       "Offer": "{gang} offers {cash} eb for {cut}% of the back room's takings, at least {minimum} eb a week. It would charge no protection and send no shakedowns.",
       "Deal": "{gang} has a deal: {cut}% of the takings, for {cash} eb put in. No protection money or shakedowns from them.",
       "DealUnpaid": "{gang} has a deal: {cut}% of the takings, for {cash} eb put in. Last week's cut could not be paid, and they noticed.",
@@ -2594,19 +2613,25 @@
       "TakeDeal": "Put the offer to the partners",
       "EndDeal": "Propose ending the deal",
       "DealEnded": "{gang} has walked away from its deal with {name}, and keeps what it put in.",
+      "DealEndedFooter": "{gang} has ended its deal with {name}.",
+      "DealEndedMail": "The deal's off. We're keeping what we put in, and don't come asking for it.",
       "DealSubject": "{name}: the deal is off",
       "InformantFound": "Your money found out who has been talking: {name}.",
       "AuditInformant": "Last internal audit ({date}): someone on the staff has been talking: {name}.",
       "RaidIfNot": "Unanswered, they seize all the dirty cash, fine the business and shut the back room, and every partner draws heat.",
       "RaidSubject": "{name}: a raid",
-      "RaidWon": "The raid on {name} found nothing it could use. Some of the heat is off.",
-      "RaidLost": "The raid on {name} found the back room's money: {seized} eb seized and a {fine} eb fine. The room is still running.",
-      "RaidShut": "The raid on {name} shut the back room: {seized} eb seized and a {fine} eb fine. The shop carries on."
+      "RaidWon": "Officers found no grounds for further action at {name}. The matter is closed, for now.",
+      "RaidWonFooter": "Some of the heat is off.",
+      "RaidLost": "Officers seized {seized} eb in illicit funds at {name}, and a fine of {fine} eb has been issued.",
+      "RaidLostFooter": "The back room is still running.",
+      "RaidShut": "Officers seized {seized} eb in illicit funds at {name}, a fine of {fine} eb has been issued, and the operation has been closed down.",
+      "RaidShutFooter": "The back room is shut; the shop carries on."
     },
     "Scene": {
       "HookTitle": "A scene for {name}",
       "MailSubject": "{name}: trouble in person",
-      "Mail": "{event} at {name}: this one is going to be settled in person. Talk to your GM.",
+      "Mail": "About {name}: this one gets settled face to face.",
+      "MailFooter": "{event} at {name} will be played out at the table. Talk to your GM.",
       "MailWon": "{name} came out of it well. Word gets round, and Reputation is up a little.",
       "MailLost": "{name} came off worse. The damage is in the books.",
       "Hook": {
@@ -2632,8 +2657,10 @@
       "Hint": "A roll against DV {dv}. Pass, and your application goes in. A better roll earns a better wage if you're taken on.",
       "Subject": "Your application to {name}",
       "JobSubject": "Your job at {name}",
-      "Hired": "{name} has taken you on as {post}, at {wage} eb a week. You start now: see Your jobs in the Business window.",
-      "Turned": "{name} won't be taking you on as {post}. You can try them again in a week.",
+      "Hired": "{name} has taken you on as {post}, at {wage} eb a week. You start now.",
+      "HiredFooter": "See Your jobs in the Business window.",
+      "Turned": "{name} won't be taking you on as {post}.",
+      "TurnedFooter": "You can apply to them again in a week.",
       "Work": "Work a shift",
       "ShiftTitle": "Your shift at {name}",
       "ShiftHint": "A roll against DV {dv}, once a week for all your jobs. A pass earns a bonus and raises your performance; a failure or a missed week lowers it.",
@@ -2709,22 +2736,32 @@
       },
       "Mail": {
         "Subject": "The story about {name}",
-        "Ignored": "The story {outlet} ran about {name} went nowhere. Nobody believed it.",
-        "Answered": "People believed the story {outlet} ran about {name}, but your answer killed it. No harm done.",
-        "Halved": "People believed the story {outlet} ran about {name}, and your answer only took the edge off. It cost you, though not as much as it might have.",
-        "Full": "People believed the story {outlet} ran about {name}, and nothing stopped it. It cost you in full."
+        "Ignored": "Our story about {name} went nowhere. Nobody believed it.",
+        "Answered": "People believed our story about {name}, but your answer killed it.",
+        "Halved": "People believed our story about {name}, and your answer only took the edge off.",
+        "Full": "People believed our story about {name}, and nothing you said changed that.",
+        "IgnoredFooter": "No harm done.",
+        "AnsweredFooter": "No harm done.",
+        "HalvedFooter": "It cost the business, though not as much as it might have.",
+        "FullFooter": "It cost the business in full."
       },
       "Char": {
         "Subject": "A reporter is asking about {name}",
-        "Told": "{outlet} is running a story. You have {days} days to answer it, from the Pending tab of your Business window. It prints in a few days, and silence will cost you most if it sticks.",
+        "Told": "We're running a story about you. If you want your side in it, you have {days} days.",
+        "Asks": { "money": "We've been calling round about your finances, and someone is talking.", "crime": "We've been watching who comes and goes, and we'd like a comment on what goes on.", "service": "We've been collecting complaints from your customers.", "smear": "We have a story about you, and we're running it whether it's true or not.", "dirty": "We've been asking who tipped you off, and how you've done so well out of it.", "hidden": "We've been following the money behind a company you'd rather not be linked to." },
+        "Footer": "Answer from the Pending tab of your Business window. It prints in a few days, and silence costs you most if it sticks.",
         "Title": "Answer {outlet}",
         "Hint": "A roll against DV {dv}. A pass stops any harm, and a failure halves it. You won't know until the end whether anyone believed the story.",
         "Answer": "Answer",
         "ResultSubject": "That story about you",
-        "Ignored": "The story {outlet} ran went nowhere. Nobody believed it.",
-        "Answered": "People believed the story {outlet} ran, but your answer killed it. No harm done.",
-        "Halved": "People believed the story {outlet} ran, and your answer only took the edge off.",
-        "Full": "People believed the story {outlet} ran, and nothing stopped it. It cost you in full."
+        "Ignored": "Our story about you went nowhere. Nobody believed it.",
+        "Answered": "People believed our story about you, but your answer killed it.",
+        "Halved": "People believed our story about you, and your answer only took the edge off.",
+        "Full": "People believed our story about you, and nothing you said changed that.",
+        "IgnoredFooter": "No harm done.",
+        "AnsweredFooter": "No harm done.",
+        "HalvedFooter": "It cost you, though not as much as it might have.",
+        "FullFooter": "It cost you in full: more heat, and some Reputation for your business."
       }
     },
     "Story": {
@@ -2749,7 +2786,8 @@
       "Approve": "Let it run",
       "Reject": "Spike it",
       "SpikedSubject": "Your story on {name} was spiked",
-      "Spiked": "Your story on {name} did not run. Any evidence you used is spent.",
+      "Spiked": "We're not running your story on {name}.",
+      "SpikedFooter": "Any evidence you used is spent.",
       "EvidenceTitle": "Evidence",
       "EvidenceHint": "Put a piece of evidence about a company in a character's inventory, for a Media's story. A successful investigation or due diligence makes one by itself.",
       "NotePlaceholder": "What it shows",

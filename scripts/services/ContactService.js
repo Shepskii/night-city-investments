@@ -112,6 +112,51 @@ export const ContactService = {
     return (await NcmAdapter.ensureNcpd())?.id ?? null;
   },
 
+  /** The stock exchange: listings, delistings and takeovers (M3). */
+  exchange() {
+    return this.ensure('exchange', () => this._make({ name: L('NCI.Contacts.Exchange'), organization: L('NCI.Contacts.Exchange'), email: 'listings@ncx.market', type: 'organization' }));
+  },
+
+  /** The city's regulator: cases and fines (M3). */
+  regulator() {
+    return this.ensure('regulator', () => this._make({ name: L('NCI.Contacts.Regulator'), organization: L('NCI.Contacts.CityOrg'), email: 'regulation@nightcity.gov', type: 'organization' }));
+  },
+
+  /** The court that puts a company in administration and sees it out (M3). */
+  court() {
+    return this.ensure('court', () => this._make({ name: L('NCI.Contacts.Court'), organization: L('NCI.Contacts.Court'), email: 'administration@courts.nightcity.gov', type: 'organization' }));
+  },
+
+  /** NCPD's vice squad: a raid on a back room. Financial Crimes keeps heat and hidden holdings (M3). */
+  vice() {
+    return this.ensure('vice', () => this._make({ name: L('NCI.Contacts.Vice'), organization: 'NCPD', email: 'vice@ncpd.gov', type: 'organization' }));
+  },
+
+  /** A Media's editor, who spikes a story (M3). */
+  editor() {
+    return this.ensure('editor', () => this._make({ name: L('NCI.Contacts.Editor'), email: 'editor@nightcity.news' }));
+  },
+
+  /**
+   * A source who passes things on: rumours, what an investigation found, someone digging (M3). Messenger shows them
+   * masked, and the GM, who has the contact, gets any reply.
+   * @returns {Promise<{id: string|null, anonymous: {alias: string}}>}
+   */
+  async source() {
+    const id = await this.ensure('source', () => this._make({ name: L('NCI.Contacts.Source'), email: 'source@darknet.nc' }));
+    return { id, anonymous: { alias: L('NCI.Contacts.SourceAlias') } };
+  },
+
+  /** A player's business itself, for its payroll and what happened to it (M3). */
+  business(b) {
+    return b?.id ? this.ensure(`business:${b.id}`, () => this._make({ name: b.name, organization: b.name, type: 'organization' })) : Promise.resolve(null);
+  },
+
+  /** A syndicate's treasury, for its votes and payouts (M3). */
+  syndicate(s) {
+    return s?.id ? this.ensure(`syndicate:${s.id}`, () => this._make({ name: L('NCI.Contacts.Treasury', { name: s.name }), organization: s.name, type: 'organization' })) : Promise.resolve(null);
+  },
+
   collectors() {
     return this.ensure('collectors', () => this._make({ name: L('NCI.Contacts.Collectors'), email: 'collections@darknet.nc' }));
   },
@@ -156,7 +201,7 @@ export const ContactService = {
       case 'faction': return this.faction(sender.factionId);
       case 'outlet': return this.outlet(sender.name, sender.factionId ?? null);
       case 'city': return this.city();
-      case 'ncpd': return this.ncpd();
+      case 'ncpd': return this.vice();
       case 'collectors': return this.collectors();
       case 'formerStaff': return this.formerStaff(b, sender.staffId);
       case 'staff': {

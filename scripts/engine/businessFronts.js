@@ -148,6 +148,7 @@ export function roomWeek(b, takings, part = 1, p = BUSINESS_DEFAULTS, traits = n
     // A gang that has turned hostile walks away, and keeps what it put in.
     if (b.standings?.[room.deal.factionId] === 'hostile') {
       out.dealEnded = room.deal.name;
+      out.dealEndedBy = room.deal.factionId;
       room.deal = null;
     }
   }

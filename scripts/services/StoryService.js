@@ -17,6 +17,7 @@ import { BusinessRepository } from '../data/BusinessRepository.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { L } from '../ui/format.js';
 import { BusinessService } from './BusinessService.js';
+import { ContactService } from './ContactService.js';
 import { HeatService } from './HeatService.js';
 import { MailService } from './MailService.js';
 import { MarketClock } from './MarketClockService.js';
@@ -120,7 +121,8 @@ export const StoryService = {
     const mine = rumours[actor.id] ?? {};
     const [source] = freshRumours(sources, mine.told, level, actor.id);
     if (!source) return false;
-    await MailService.fromWire(actor, { subject: L('NCI.Rumour.Subject', { name: source.name }), lines: [this._rumourText(source, level)] });
+    // A source passes it on, masked (M3).
+    await BusinessService._mailFrom(actor, { subject: L('NCI.Rumour.Subject', { name: source.name }), lines: [this._rumourText(source, level)], ...(await BusinessService._fromSource()) });
     rumours[actor.id] = { ...mine, told: { ...(mine.told ?? {}), [source.sourceKey]: level } };
     // They heard it: trading on it now is following a rumour.
     if (source.kind === 'press' && source.ticker) await this._watchPress(source, actor.id);
@@ -258,7 +260,7 @@ export const StoryService = {
 
   /** The GM spikes it: its evidence stays used, and the Media is told. */
   reject(id) {
-    return this._decide(id, (story) => BusinessService._mailAccount(story.actorId, L('NCI.Story.SpikedSubject', { name: story.name }), [L('NCI.Story.Spiked', { name: story.name })]));
+    return this._decide(id, async (story) => BusinessService._mailAccount(story.actorId, L('NCI.Story.SpikedSubject', { name: story.name }), [L('NCI.Story.Spiked', { name: story.name })], { from: await ContactService.editor().catch(() => null), footer: L('NCI.Story.SpikedFooter') }));
   },
 };
 

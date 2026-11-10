@@ -162,7 +162,7 @@ export const NcmAdapter = {
    * Send a mail from a contact to a character. The body is HTML. `eddies` attaches claimable money.
    * @returns {Promise<{ok: boolean, messageId?: string, error?: string}>}
    */
-  async send({ fromContactId, toActorId, subject, body, eddies = 0 }) {
+  async send({ fromContactId, toActorId, subject, body, eddies = 0, anonymous = null }) {
     const service = svc('messageService');
     if (typeof service?.sendMessage !== 'function') return { ok: false, error: 'ncm-unavailable' };
     try {
@@ -173,6 +173,8 @@ export const NcmAdapter = {
         subject: String(subject).slice(0, 190),
         body,
         ...(eddies > 0 ? { eddies: Math.round(eddies) } : {}),
+        // Messenger masks the sender from the recipient, and the GM gets any reply (M3).
+        ...(anonymous ? { anonymous: { enabled: true, traceable: false, ...anonymous } } : {}),
       });
       return result?.success ? { ok: true, messageId: result.messageId } : { ok: false, error: result?.error ?? 'send-failed' };
     } catch (error) {

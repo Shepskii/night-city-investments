@@ -211,7 +211,8 @@ test('the week closes: the wage is paid to Nova, and the ledger and the GM tab s
   assert.equal(sent[0].eddies, week.wages + 54);
   assert.equal(sent[0].lines[1], 'Overtime: 54 eb for 1 shift(s) worked this week, on top of the wage.');
   assert.match(sent[0].lines[0], new RegExp(`Floor: this week's wage ${week.wages} eb, ${week.wages} eb of it paid`));
-  assert.equal(sent[0].lines[2], `Attached: ${week.wages + 54} eb to claim from this message (${week.wages} eb wage and 54 eb overtime).`);
+  // Claiming it is the rules' part, set apart after the payslip (M3).
+  assert.equal(sent[0].footer, `Attached: ${week.wages + 54} eb to claim from this message (${week.wages} eb wage and 54 eb overtime).`);
   // A payslip that cannot be sent (no Messenger) pays the sheet instead, so the wage is never lost.
   MailService.fromWire = async () => ({ ok: false, error: 'no-wire' });
   try {

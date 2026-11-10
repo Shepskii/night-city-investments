@@ -18,7 +18,7 @@ import { ProductionCatalog } from '../data/ProductionCatalog.js';
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
-  takeEventMail, dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, answerNpcPartner, approvePress, spikePress, runPress, createNpcCompany, setNpcRun, cleanTicker, bossBand, standingOf, shiftUses, stageDv, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
+  takeEventMail, eventSender, dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, answerNpcPartner, approvePress, spikePress, runPress, createNpcCompany, setNpcRun, cleanTicker, bossBand, standingOf, shiftUses, stageDv, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
   isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact, payListedDividend,
   reviewListing, clearReview, delistCompany, isEmployerId,
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
@@ -232,12 +232,15 @@ class BusinessServiceImpl {
     }));
     const value = Math.round(marketCap).toLocaleString();
     await NewsService.post({ headline: L('NCI.News.ListingReview', { name: b.name, ticker }), tone: 'down', companyIds: [ticker] });
-    await this._mailHolders(b, L('NCI.Listing.Mail.ReviewSubject', { name: b.name }), [L('NCI.Listing.Mail.Review', { name: b.name, ticker, value, floor: Math.round(threshold * BUSINESS_DEFAULTS.listing.review.below).toLocaleString(), n: BUSINESS_DEFAULTS.listing.review.reports })]);
+    await this._mailHolders(b, L('NCI.Listing.Mail.ReviewSubject', { name: b.name }), [L('NCI.Listing.Mail.Review', { name: b.name, ticker, value, floor: Math.round(threshold * BUSINESS_DEFAULTS.listing.review.below).toLocaleString(), n: BUSINESS_DEFAULTS.listing.review.reports })], { from: await ContactService.exchange() });
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
   }
 
-  /** A mail to each of a company's shareholders: characters directly, a syndicate's active members each. */
-  async _mailHolders(b, subject, lines) {
+  /**
+   * A mail to each of a company's shareholders: characters directly, a syndicate's active members each. `from` is the
+   * contact it comes from (M3), or the market wire; `footer` is the rules' line after the sender's words.
+   */
+  async _mailHolders(b, subject, lines, opts = {}) {
     // An NPC's company has nobody to tell: the GM reads it on the Businesses tab (N1).
     if (b.npcRun) return;
     const ids = new Set();
@@ -249,11 +252,20 @@ class BusinessServiceImpl {
       const actor = game.actors.get(id);
       if (!actor) continue;
       try {
-        await MailService.fromWire(actor, { subject, lines });
+        await this._mailFrom(actor, { subject, lines, ...opts });
       } catch (error) {
         log.warn('Shareholder mail failed', error);
       }
     }
+  }
+
+  /** One mail to a character from a contact, or from the market wire when there is none or it can't be sent (M3). */
+  async _mailFrom(actor, { subject, lines, footer = '', from = null, anonymous = null, eddies = 0 }) {
+    if (from) {
+      const sent = await MailService.fromContact(from, actor, { subject, lines, footer, anonymous, eddies });
+      if (sent?.ok) return sent;
+    }
+    return MailService.fromWire(actor, { subject, lines, footer, eddies });
   }
 
   /**
@@ -930,18 +942,18 @@ class BusinessServiceImpl {
       if (mail) {
         try {
           // At an NPC's company or a corporation, the employer sends it (M2); at a player's business, the market wire.
-          const employer = await ContactService.employer(out.business).catch(() => null);
-          const send = employer ? (m) => MailService.fromContact(employer, actor, m) : (m) => MailService.fromWire(actor, m);
-          const result = await send({
+          const from = await ContactService.employer(out.business).catch(() => null) ?? await ContactService.business(out.business).catch(() => null);
+          const result = await this._mailFrom(actor, {
+            from,
             // Wage and overtime each on a line of their own, so a week with overtime says so.
             subject: L(overtime ? 'NCI.Staff.Payslip.SubjectOvertime' : 'NCI.Staff.Payslip.Subject', { name: out.business.name }),
             lines: [
               L('NCI.Staff.Payslip.Body', { name: out.business.name, post: L(`NCI.Staff.Post.${slip.post}`), wage: eb(slip.wage), paid: eb(wage) }),
               ...(overtime ? [L('NCI.Staff.Payslip.Overtime', { overtime: eb(overtime), shifts: slip.shifts || 1 })] : []),
               ...(bonus ? [L('NCI.Jobs.Payslip.Bonus', { bonus: eb(bonus), total: eb(paid) })] : []),
-              ...(paid ? [L(overtime ? 'NCI.Staff.Payslip.AttachedBoth' : 'NCI.Staff.Payslip.Attached', { paid: eb(paid), wage: eb(wage), overtime: eb(overtime) })] : []),
               ...(slip.owed ? [L('NCI.Staff.Payslip.Owed', { owed: eb(slip.owed) })] : []),
             ],
+            footer: paid ? L(overtime ? 'NCI.Staff.Payslip.AttachedBoth' : 'NCI.Staff.Payslip.Attached', { paid: eb(paid), wage: eb(wage), overtime: eb(overtime) }) : '',
             eddies: paid,
           });
           sent = !!result?.ok;
@@ -969,7 +981,7 @@ class BusinessServiceImpl {
       if (mail) {
         try {
           const terms = { name: out.business.name, amount: paid.amount.toLocaleString() };
-          sent = !!(await MailService.fromWire(actor, { subject: L('NCI.Living.Subject', terms), lines: [L('NCI.Living.Body', terms)], eddies: paid.amount }))?.ok;
+          sent = !!(await this._mailFrom(actor, { subject: L('NCI.Living.Subject', terms), lines: [L('NCI.Living.Body', terms)], footer: L('NCI.Living.Footer'), eddies: paid.amount, from: await ContactService.business(out.business) }))?.ok;
         } catch (error) {
           log.warn('Living costs mail failed', error);
         }
@@ -1249,7 +1261,7 @@ class BusinessServiceImpl {
       return;
     }
     const result = !e.believed ? 'Ignored' : e.scale === 0 ? 'Answered' : e.scale < 1 ? 'Halved' : 'Full';
-    await this._mailRoom(b, L('NCI.Press.Mail.Subject', { name: b.name }), [L(`NCI.Press.Mail.${result}`, { name: b.name, outlet: e.outlet })]);
+    await this._mailRoom(b, L('NCI.Press.Mail.Subject', { name: b.name }), [L(`NCI.Press.Mail.${result}`, { name: b.name, outlet: e.outlet })], { from: await ContactService.outlet(e.outlet).catch(() => null), footer: L(`NCI.Press.Mail.${result}Footer`) });
     if (ticker && e.percent) {
       const key = `press:${b.id}:${e.period}`;
       await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
@@ -1321,7 +1333,7 @@ class BusinessServiceImpl {
       if (!account || cash < escrow) {
         dropTakeover(b, day, 'no-funds');
         await BusinessRepository.save(b);
-        await this._mailAccount(t.bidderId, L('NCI.Takeover.Mail.UnfundedSubject', { name: b.name }), [L('NCI.Takeover.Mail.Unfunded', { name: b.name, escrow: escrow.toLocaleString() })]);
+        await this._mailAccount(t.bidderId, L('NCI.Takeover.Mail.UnfundedSubject', { name: b.name }), [L('NCI.Takeover.Mail.Unfunded', { name: b.name, escrow: escrow.toLocaleString() })], { from: await ContactService.exchange() });
         Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
         return { ok: false, reason: 'no-funds' };
       }
@@ -1334,8 +1346,8 @@ class BusinessServiceImpl {
       openTakeover(b, { day, reference: takeoverReference(b, MarketStore.getPublic().companies?.[ticker]?.price ?? 0) });
       await BusinessRepository.save(b);
       const terms = { name: b.name, ticker, bidder: t.bidderName, price: t.price.toLocaleString(), shares: t.shares.toLocaleString(), premium: Math.round(takeoverPremium(b.takeover) * 100), date: this._dayText(b.takeover.endDay) };
-      await this._mailHolders(b, L('NCI.Takeover.Mail.OpenSubject', terms), [L('NCI.Takeover.Mail.Open', terms)]);
-      await this._mailAccount(t.bidderId, L('NCI.Takeover.Mail.ApprovedSubject', terms), [L('NCI.Takeover.Mail.Approved', { ...terms, escrow: escrow.toLocaleString() })]);
+      await this._mailHolders(b, L('NCI.Takeover.Mail.OpenSubject', terms), [L('NCI.Takeover.Mail.Open', terms)], { from: await ContactService.exchange(), footer: L('NCI.Takeover.Mail.OpenFooter') });
+      await this._mailAccount(t.bidderId, L('NCI.Takeover.Mail.ApprovedSubject', terms), [L('NCI.Takeover.Mail.Approved', { ...terms, escrow: escrow.toLocaleString() })], { from: await ContactService.exchange() });
       if (isListed(b)) await NewsService.post({ headline: L('NCI.News.Takeover', terms), tone: 'up', companyIds: [ticker] });
       Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
       return { ok: true, business: b };
@@ -1352,7 +1364,7 @@ class BusinessServiceImpl {
       const t = b.takeover;
       dropTakeover(b, this.day());
       await BusinessRepository.save(b);
-      await this._mailAccount(t.bidderId, L('NCI.Takeover.Mail.RejectedSubject', { name: b.name }), [L('NCI.Takeover.Mail.Rejected', { name: b.name })]);
+      await this._mailAccount(t.bidderId, L('NCI.Takeover.Mail.RejectedSubject', { name: b.name }), [L('NCI.Takeover.Mail.Rejected', { name: b.name })], { from: await ContactService.exchange() });
       Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
       return { ok: true, business: b };
     });
@@ -1418,8 +1430,8 @@ class BusinessServiceImpl {
       await this._publishRegister(b);
       const terms = { name: b.name, ticker: ticker ?? '', bidder: t.bidderName, shares: done.acquired.toLocaleString(), price: t.price.toLocaleString(), refund: done.refund.toLocaleString() };
       const key = done.control ? 'Control' : 'Closed';
-      await this._mailHolders(b, L('NCI.Takeover.Mail.ClosedSubject', terms), [L(`NCI.Takeover.Mail.${key}`, terms)]);
-      await this._mailAccount(done.bidderId, L('NCI.Takeover.Mail.ClosedSubject', terms), [L(`NCI.Takeover.Mail.Bidder${key}`, terms)]);
+      await this._mailHolders(b, L('NCI.Takeover.Mail.ClosedSubject', terms), [L(`NCI.Takeover.Mail.${key}`, terms)], { from: await ContactService.exchange() });
+      await this._mailAccount(done.bidderId, L('NCI.Takeover.Mail.ClosedSubject', terms), [L(`NCI.Takeover.Mail.Bidder${key}`, terms)], { from: await ContactService.exchange() });
       if (done.control) await this._suggestReward(b, 'takeoverControl', [done.bidderId]);
       else if (t.defence) await this._suggestReward(b, 'takeoverFoughtOff');
       if (listed) await NewsService.post({ headline: L(done.control ? 'NCI.News.TakeoverControl' : 'NCI.News.TakeoverClosed', terms), tone: 'neutral', companyIds: [ticker] });
@@ -1550,7 +1562,7 @@ class BusinessServiceImpl {
                 permanent: 1, sourceKey: key, source: 'unmasked', meta: { businessId: b.id },
               })],
             }));
-            await this._mailAccount(holderId, L('NCI.Ownership.Mail.UnmaskedSubject', terms), [L('NCI.Ownership.Mail.Unmasked', terms)]);
+            await this._mailAccount(holderId, L('NCI.Ownership.Mail.UnmaskedSubject', terms), [L('NCI.Ownership.Mail.Unmasked', terms)], { from: await ContactService.ncpd(), footer: L('NCI.Ownership.Mail.UnmaskedFooter') });
             // A big enough holder found hiding brings the regulators to the company too (R1).
             if (share > BUSINESS_DEFAULTS.regulator.unmaskShare && openCase(b, { reason: 'unmasked', day }).ok) caseOpened = true;
             continue;
@@ -1603,7 +1615,7 @@ class BusinessServiceImpl {
 
   async _mailCaseOpened(b) {
     const terms = { name: b.name, date: this._dayText(b.regCase.endDay), why: L(`NCI.Regulator.Reason.${b.regCase.reason}`) };
-    await this._mailHolders(b, L('NCI.Regulator.Mail.OpenSubject', terms), [L('NCI.Regulator.Mail.Open', terms)]);
+    await this._mailHolders(b, L('NCI.Regulator.Mail.OpenSubject', terms), [L('NCI.Regulator.Mail.Open', terms)], { from: await ContactService.regulator(), footer: L('NCI.Regulator.Mail.OpenFooter') });
   }
 
   /**
@@ -1642,7 +1654,7 @@ class BusinessServiceImpl {
       loseCase(b, { day, exposure, fumble: r.band === 'fumble' });
     }
     await BusinessRepository.save(b);
-    await this._mailHolders(b, L('NCI.Regulator.Mail.AnsweredSubject', { name: b.name }), [L(r.success ? 'NCI.Regulator.Mail.Won' : 'NCI.Regulator.Mail.Lost', { name: b.name })]);
+    await this._mailHolders(b, L('NCI.Regulator.Mail.AnsweredSubject', { name: b.name }), [L(r.success ? 'NCI.Regulator.Mail.Won' : 'NCI.Regulator.Mail.Lost', { name: b.name })], { from: await ContactService.regulator() });
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
     return { ok: true, business: b, caseResult: { success: r.success, band: r.band } };
   }
@@ -1655,7 +1667,7 @@ class BusinessServiceImpl {
       const b = normalizeBusiness(structuredClone(stored));
       loseCase(b, { day, exposure: hidden[b.id]?.exposure ?? 0, silent: true });
       await BusinessRepository.save(b);
-      await this._mailHolders(b, L('NCI.Regulator.Mail.AnsweredSubject', { name: b.name }), [L('NCI.Regulator.Mail.Silent', { name: b.name })]);
+      await this._mailHolders(b, L('NCI.Regulator.Mail.AnsweredSubject', { name: b.name }), [L('NCI.Regulator.Mail.Silent', { name: b.name })], { from: await ContactService.regulator() });
       Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
     }
   }
@@ -1685,7 +1697,7 @@ class BusinessServiceImpl {
       const b = normalizeBusiness(structuredClone(stored));
       dropCase(b, this.day());
       await BusinessRepository.save(b);
-      await this._mailHolders(b, L('NCI.Regulator.Mail.AnsweredSubject', { name: b.name }), [L('NCI.Regulator.Mail.Dropped', { name: b.name })]);
+      await this._mailHolders(b, L('NCI.Regulator.Mail.AnsweredSubject', { name: b.name }), [L('NCI.Regulator.Mail.Dropped', { name: b.name })], { from: await ContactService.regulator() });
       Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
       return { ok: true, business: b };
     });
@@ -1704,7 +1716,7 @@ class BusinessServiceImpl {
       await this._suggestReward(b, 'caseLost');
       const terms = { name: b.name, ticker: b.company?.ticker ?? '', fine: done.fine.toLocaleString() };
       const more = done.stopped ? 'Stopped' : done.restated ? 'Restated' : null;
-      await this._mailHolders(b, L('NCI.Regulator.Mail.FinedSubject', terms), [L('NCI.Regulator.Mail.Fined', terms), ...(more ? [L(`NCI.Regulator.Mail.${more}`, terms)] : [])]);
+      await this._mailHolders(b, L('NCI.Regulator.Mail.FinedSubject', terms), [L('NCI.Regulator.Mail.Fined', terms), ...(more ? [L(`NCI.Regulator.Mail.${more}`, terms)] : [])], { from: await ContactService.regulator(), footer: L('NCI.Regulator.Mail.FinedFooter') });
       if (done.listed) await NewsService.post({ headline: L('NCI.News.CaseLost', terms), tone: 'down', companyIds: [b.company.ticker] });
       Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
       return { ok: true, business: b, ...done };
@@ -1766,14 +1778,15 @@ class BusinessServiceImpl {
       mine.peeled += 1;
       const holder = this._account(holderId);
       const found = target.reveals ? (target.reveals.kind === 'nominee' ? L('NCI.Ownership.Nominee', { broker: target.reveals.name }) : target.reveals.name) : (holder?.name ?? '?');
-      await this._mailAccount(actor.id, L('NCI.Ownership.Mail.FoundSubject', { name: company }), [L(target.reveals ? 'NCI.Ownership.Mail.FoundLayer' : 'NCI.Ownership.Mail.FoundHolder', { name: company, found })]);
+      const source = await ContactService.source();
+      await this._mailAccount(actor.id, L('NCI.Ownership.Mail.FoundSubject', { name: company }), [L(target.reveals ? 'NCI.Ownership.Mail.FoundLayer' : 'NCI.Ownership.Mail.FoundHolder', { name: company, found })], { from: source.id, anonymous: source.anonymous, ...(target.reveals ? { footer: L('NCI.Ownership.Mail.FoundFooter') } : {}) });
       // On the investigator too, keyed by the register row's layer, so their own windows show what they found.
       const known = unwrap(actor.getFlag(MODULE_ID, FLAGS.DISCOVERIES)) ?? {};
       await actor.setFlag(MODULE_ID, FLAGS.DISCOVERIES, [{ ...known, [request.ref]: [...(known[request.ref] ?? []), found].slice(0, 4) }]);
       // Something a Media could publish (F1c).
       if (isListed(stored)) await StoryService.grantEvidence(actor, { ticker: stored.company.ticker, name: stored.name, note: L('NCI.Story.NoteInvestigation', { name: stored.name, found }), source: 'investigation' });
     } else if (r.band === 'fumble') {
-      await this._mailAccount(holderId, L('NCI.Ownership.Mail.TippedSubject', { name: company }), [L('NCI.Ownership.Mail.Tipped', { name: company })]);
+      await this._mailAccount(holderId, L('NCI.Ownership.Mail.TippedSubject', { name: company }), [L('NCI.Ownership.Mail.Tipped', { name: company })], await this._fromSource());
     }
     entry.known = { ...(entry.known ?? {}), [actor.id]: { ...(entry.known?.[actor.id] ?? {}), [holderId]: mine } };
     await MarketStore.setBusinessesHidden({ ...MarketStore.getBusinessesHidden(), [stored.id]: { ...MarketStore.getBusinessesHidden()[stored.id], known: entry.known } });
@@ -1841,9 +1854,10 @@ class BusinessServiceImpl {
         if (finder && isListed(target)) await StoryService.grantEvidence(finder, { ticker: target.company.ticker, name: target.name, note: L('NCI.Story.NoteDiligence', { name: target.name }), source: 'diligence' });
       }
       // A raid on a back room (U1b): the owners hear, and it draws attention to each of them if it went badly.
-      if (e.type === 'bustWon') await this._mailRoom(b, L('NCI.BackRoom.RaidSubject', { name: b.name }), [L('NCI.BackRoom.RaidWon', { name: b.name })]);
+      if (e.type === 'bustWon') await this._mailRoom(b, L('NCI.BackRoom.RaidSubject', { name: b.name }), [L('NCI.BackRoom.RaidWon', { name: b.name })], { from: await ContactService.vice(), footer: L('NCI.BackRoom.RaidWonFooter') });
       if (e.type === 'bustLost') {
-        await this._mailRoom(b, L('NCI.BackRoom.RaidSubject', { name: b.name }), [L(e.shut ? (b.stage >= 2 ? 'NCI.BackRoom.RaidShutForGood' : 'NCI.BackRoom.RaidShut') : 'NCI.BackRoom.RaidLost', { name: b.name, seized: e.seized.toLocaleString(), fine: e.fine.toLocaleString() })]);
+        const raid = e.shut ? (b.stage >= 2 ? 'NCI.BackRoom.RaidShutForGood' : 'NCI.BackRoom.RaidShut') : 'NCI.BackRoom.RaidLost';
+        await this._mailRoom(b, L('NCI.BackRoom.RaidSubject', { name: b.name }), [L(raid, { name: b.name, seized: e.seized.toLocaleString(), fine: e.fine.toLocaleString() })], { from: await ContactService.vice(), footer: L(`${raid}Footer`) });
         // A listed company's raid is news (U1c).
         await this._scandal(b, e.heat ? BUSINESS_DEFAULTS.crime.scandal.raidLost : BUSINESS_DEFAULTS.crime.scandal.raidFailed, `raid:${this.day()}`);
         if (e.heat && HeatService.enabled()) {
@@ -1867,7 +1881,10 @@ class BusinessServiceImpl {
       }
       if (e.type === 'crimeScandal') await this._scandal(b, e.percent, e.key);
       if (e.type === 'pressPrinted' || e.type === 'pressResult') await this._pressEvent(b, e);
-      if (e.type === 'gangDealEnded') await this._mailRoom(b, L('NCI.BackRoom.DealSubject', { name: b.name }), [L('NCI.BackRoom.DealEnded', { gang: e.name, name: b.name })]);
+      if (e.type === 'gangDealEnded') {
+        const gang = e.factionId ? await ContactService.faction(e.factionId).catch(() => null) : null;
+        await this._mailRoom(b, L('NCI.BackRoom.DealSubject', { name: b.name }), [L(gang ? 'NCI.BackRoom.DealEndedMail' : 'NCI.BackRoom.DealEnded', { gang: e.name, name: b.name })], gang ? { from: gang, footer: L('NCI.BackRoom.DealEndedFooter', { gang: e.name, name: b.name }) } : {});
+      }
       if (e.type === 'campaignLands' || e.type === 'campaignCaught') moved = true;
       if (e.type !== 'factionSmear' || !isListed(b)) continue;
       const ticker = b.company.ticker;
@@ -1958,16 +1975,16 @@ class BusinessServiceImpl {
   }
 
   /** About a back room: every owner of a smaller business, but only the officers of a company, whose shareholders must not hear. */
-  async _mailRoom(b, subject, lines) {
+  async _mailRoom(b, subject, lines, opts = {}) {
     if (b.npcRun) return undefined;
-    if (b.stage < 2) return this._mailHolders(b, subject, lines);
-    for (const id of b.officers ?? []) await this._mailAccount(id, subject, lines);
+    if (b.stage < 2) return this._mailHolders(b, subject, lines, opts);
+    for (const id of b.officers ?? []) await this._mailAccount(id, subject, lines, opts);
     return undefined;
   }
 
   /** A scene's mail: a raid on the back room goes only where the back room is known. */
-  _sceneMail(b, event, subject, lines) {
-    return event?.kind === 'bust' || EVENTS[event?.kind]?.room ? this._mailRoom(b, subject, lines) : this._mailHolders(b, subject, lines);
+  _sceneMail(b, event, subject, lines, opts = {}) {
+    return event?.kind === 'bust' || EVENTS[event?.kind]?.room ? this._mailRoom(b, subject, lines, opts) : this._mailHolders(b, subject, lines, opts);
   }
 
   /** What the GM is told, and the owners, when a big event becomes a scene (X1). */
@@ -1975,7 +1992,9 @@ class BusinessServiceImpl {
     const { event } = b.scene;
     const hook = sceneHook(b, event);
     await ChatMessage.create({ content: `<p><strong>${escapeHtml(L('NCI.Scene.HookTitle', { name: b.name }))}</strong></p><p>${escapeHtml(hook)}</p>`, whisper: (ChatMessage.getWhisperRecipients?.('GM') ?? []).map((u) => u.id) });
-    await this._sceneMail(b, event, L('NCI.Scene.MailSubject', { name: b.name }), [L('NCI.Scene.Mail', { name: b.name, event: L(`NCI.Event.${event.kind}.Name`) })]);
+    const sender = eventSender(b, event);
+    const from = (sender ? await ContactService.forSender(b, sender).catch(() => null) : null) ?? await ContactService.business(b).catch(() => null);
+    await this._sceneMail(b, event, L('NCI.Scene.MailSubject', { name: b.name }), [L('NCI.Scene.Mail', { name: b.name })], { from, footer: L('NCI.Scene.MailFooter', { name: b.name, event: L(`NCI.Event.${event.kind}.Name`) }) });
   }
 
   /** The GM plays this week's big event out (X1). */
@@ -1998,7 +2017,7 @@ class BusinessServiceImpl {
       const done = settleScene(b, won, this.day());
       return done.ok ? { ok: true, business: b, events: [...done.events, { type: 'rewardMilestone', kind: won ? 'sceneWon' : 'sceneLost' }] } : done;
     });
-    if (out.ok) await this._sceneMail(out.business, event, L('NCI.Scene.MailSubject', { name }), [L(won ? 'NCI.Scene.MailWon' : 'NCI.Scene.MailLost', { name })]);
+    if (out.ok) await this._sceneMail(out.business, event, L('NCI.Scene.MailSubject', { name }), [L(won ? 'NCI.Scene.MailWon' : 'NCI.Scene.MailLost', { name })], { from: await ContactService.business(out.business).catch(() => null) });
     return out;
   }
 
@@ -2199,13 +2218,13 @@ class BusinessServiceImpl {
   }
 
   /** A mail to an account: a character directly, a syndicate's active members each. */
-  async _mailAccount(id, subject, lines) {
+  async _mailAccount(id, subject, lines, opts = {}) {
     const ids = game.actors.get(id) ? [id] : (SyndicateRepository.get(id)?.members ?? []).filter((m) => m.status === 'active').map((m) => m.actorId);
     for (const actorId of ids) {
       const actor = game.actors.get(actorId);
       if (!actor) continue;
       try {
-        await MailService.fromWire(actor, { subject, lines });
+        await this._mailFrom(actor, { subject, lines, ...opts });
       } catch (error) {
         log.warn('Takeover mail failed', error);
       }
@@ -2228,7 +2247,7 @@ class BusinessServiceImpl {
     for (const e of out.events) {
       if (e.type === 'administration') {
         const terms = { name: b.name, ticker: ticker ?? '', net: Math.round(e.net ?? 0).toLocaleString() };
-        await this._mailHolders(b, L('NCI.Insolvency.Mail.InSubject', terms), [L('NCI.Insolvency.Mail.In', terms)]);
+        await this._mailHolders(b, L('NCI.Insolvency.Mail.InSubject', terms), [L('NCI.Insolvency.Mail.In', terms)], { from: await ContactService.court(), footer: L('NCI.Insolvency.Mail.InFooter') });
         if (ticker) {
           const key = `administration:${b.id}:${this.day()}`;
           await TickService.updateControls((controls, { tick }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
@@ -2241,7 +2260,7 @@ class BusinessServiceImpl {
           await NewsService.post({ headline: L('NCI.News.Administration', terms), tone: 'down', companyIds: [ticker] });
         }
       } else if (e.type === 'administrationEnded') {
-        await this._mailHolders(b, L('NCI.Insolvency.Mail.OutSubject', { name: b.name }), [L('NCI.Insolvency.Mail.Out', { name: b.name })]);
+        await this._mailHolders(b, L('NCI.Insolvency.Mail.OutSubject', { name: b.name }), [L('NCI.Insolvency.Mail.Out', { name: b.name })], { from: await ContactService.court(), footer: L('NCI.Insolvency.Mail.OutFooter') });
         if (ticker) await NewsService.post({ headline: L('NCI.News.AdministrationEnded', { name: b.name, ticker }), tone: 'up', companyIds: [ticker] });
       }
     }
@@ -2280,7 +2299,7 @@ class BusinessServiceImpl {
         await NewsService.post({ headline: L('NCI.News.Restructured', { name: b.name, ticker }), tone: 'neutral', companyIds: [ticker] });
       }
       const terms = { name: b.name, shares: done.shares.toLocaleString(), debts: done.debts.toLocaleString(), paid: done.paid.toLocaleString() };
-      await this._mailHolders(b, L('NCI.Insolvency.Mail.RestructuredSubject', terms), [L('NCI.Insolvency.Mail.Restructured', terms)]);
+      await this._mailHolders(b, L('NCI.Insolvency.Mail.RestructuredSubject', terms), [L('NCI.Insolvency.Mail.Restructured', terms)], { from: await ContactService.court() });
       return { ok: true, ...done };
     });
   }
@@ -2328,7 +2347,7 @@ class BusinessServiceImpl {
         await NewsService.post({ headline: L('NCI.News.WoundUp', { name: b.name, ticker, perShare: done.perShare.toLocaleString() }), tone: 'down', companyIds: [ticker] });
       }
       const terms = { name: b.name, perShare: done.perShare.toLocaleString(), wages: Math.round(done.wages).toLocaleString(), loans: Math.round(done.loans).toLocaleString() };
-      await this._mailHolders(mailTo, L('NCI.Insolvency.Mail.WoundUpSubject', terms), [L(ticker ? 'NCI.Insolvency.Mail.WoundUpListed' : 'NCI.Insolvency.Mail.WoundUp', terms)]);
+      await this._mailHolders(mailTo, L('NCI.Insolvency.Mail.WoundUpSubject', terms), [L(ticker ? 'NCI.Insolvency.Mail.WoundUpListed' : 'NCI.Insolvency.Mail.WoundUp', terms)], { from: await ContactService.court() });
       return { ok: true, ...done };
     });
   }
@@ -2379,7 +2398,7 @@ class BusinessServiceImpl {
       const company = CompanyRepository.get(ticker);
       if (company) await CompanyRepository.save({ ...company, status: 'delisted' });
       await NewsService.post({ headline: L('NCI.News.PlayerDelisted', { name: b.name, ticker, price: price.toLocaleString() }), tone: 'down', companyIds: [ticker] });
-      await this._mailHolders(b, L('NCI.Listing.Mail.DelistedSubject', { name: b.name }), [L('NCI.Listing.Mail.Delisted', { name: b.name, ticker })]);
+      await this._mailHolders(b, L('NCI.Listing.Mail.DelistedSubject', { name: b.name }), [L('NCI.Listing.Mail.Delisted', { name: b.name, ticker })], { from: await ContactService.exchange(), footer: L('NCI.Listing.Mail.DelistedFooter') });
       Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
       return { ok: true, business: b, ...done };
     });
@@ -2440,10 +2459,10 @@ class BusinessServiceImpl {
     const subject = L('NCI.EventMail.Subject', { name: b.name, event: L(`NCI.Event.${event.kind}.Name`) });
     const lines = [
       L(`NCI.EventMail.Line.${event.kind}`, { name: b.name, staff, outlet: event.factionName ?? '' }),
-      L(EVENTS[event.kind]?.good ? 'NCI.EventMail.Offer' : 'NCI.EventMail.Answer'),
     ];
+    const footer = L(EVENTS[event.kind]?.good ? 'NCI.EventMail.Offer' : 'NCI.EventMail.Answer');
     for (const id of ids) {
-      const result = await MailService.fromContact(contactId, game.actors.get(id), { subject, lines });
+      const result = await MailService.fromContact(contactId, game.actors.get(id), { subject, lines, footer });
       if (!result?.ok) log.warn(`Event mail to ${id} failed: ${result?.error ?? 'no answer'}`);
     }
   }
@@ -2467,14 +2486,16 @@ class BusinessServiceImpl {
   }
 
   /** A mail about a job: from the employer's contact at an NPC's company or a corporation, or else the market wire (M2). */
-  async _mailJob(b, actorId, subject, lines) {
+  async _mailJob(b, actorId, subject, lines, footer = '') {
     const actor = game.actors.get(actorId);
     const contactId = actor ? await ContactService.employer(b).catch(() => null) : null;
-    if (contactId) {
-      const sent = await MailService.fromContact(contactId, actor, { subject, lines });
-      if (sent?.ok) return sent;
-    }
-    return this._mailAccount(actorId, subject, lines);
+    return this._mailAccount(actorId, subject, lines, { from: contactId, footer });
+  }
+
+  /** A masked source, for what a character hears (M3). */
+  async _fromSource() {
+    const source = await ContactService.source().catch(() => ({ id: null }));
+    return { from: source.id, anonymous: source.anonymous };
   }
 
   /** A partner has died or left the table: the others may buy the stake, or it goes to the heir. */

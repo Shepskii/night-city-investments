@@ -209,3 +209,65 @@ test('without Messenger nothing is made or sent, and nothing breaks', async () =
     game.nightcity = saved;
   }
 });
+
+// ── M3 step 1: the right sender, and the rules' part apart ──────────────────────
+
+test('the rules\' part of a mail comes after the sender\'s words, in italics', async () => {
+  const { html } = await import('../scripts/services/MailService.js');
+  assert.equal(html(['Hello', '', 'There'], 'Do this'), '<p>Hello</p><p>There</p><p><em>▸ Do this</em></p>');
+  assert.equal(html(['Hello']), '<p>Hello</p>');
+});
+
+test('a regulator\'s case comes from the Business Regulation Office, with what to do apart', async () => {
+  reset();
+  await BusinessService._mailCaseOpened(shop({ regCase: { endDay: 20000, reason: 'report' } }));
+  const office = contacts.find((c) => c.name === 'Business Regulation Office');
+  assert.ok(office);
+  assert.equal(sent[0].fromContactId, office.id);
+  assert.match(sent[0].body, /^<p>We have opened a case against Ripper Shack/);
+  assert.match(sent[0].body, /<em>▸ An officer answers from the Business window/);
+});
+
+test('a source is masked, and the GM keeps the contact to answer as', async () => {
+  reset();
+  await BusinessService._mailFrom(nova, { subject: 'Rumour', lines: ['Word is'], ...(await BusinessService._fromSource()) });
+  const source = contacts.find((c) => c.name === 'A source');
+  assert.equal(sent[0].fromContactId, source.id);
+  assert.deepEqual(sent[0].anonymous, { enabled: true, traceable: false, alias: 'A friend' });
+});
+
+test('a mail its sender can\'t send goes by the market wire instead', async () => {
+  reset();
+  const send = game.nightcity.messageService.sendMessage;
+  game.nightcity.messageService.sendMessage = async (m) => (m.fromContactId === 'c_gone' ? { success: false, error: 'no' } : send(m));
+  try {
+    await BusinessService._mailAccount(nova.id, 'Notice', ['Line'], { from: 'c_gone', footer: 'Rule' });
+  } finally {
+    game.nightcity.messageService.sendMessage = send;
+  }
+  assert.equal(sent.length, 1);
+  assert.equal(contacts.find((c) => c.id === sent[0].fromContactId).name, 'Night City Market Wire');
+  assert.match(sent[0].body, /▸ Rule/);
+});
+
+test('the new senders are made once each, and a raid on a back room comes from Vice', async () => {
+  const ids = [await ContactService.exchange(), await ContactService.court(), await ContactService.vice(), await ContactService.editor()];
+  assert.deepEqual(ids.map((id) => contacts.find((c) => c.id === id).name), ['Night City Exchange', 'Night City Insolvency Court', 'NCPD Vice', 'The News Desk']);
+  assert.equal(await ContactService.exchange(), ids[0]);
+  assert.equal(await ContactService.forSender(shop(), { kind: 'ncpd' }), ids[2]);
+  const shack = await ContactService.business(shop());
+  assert.equal(contacts.find((c) => c.id === shack).name, 'Ripper Shack');
+  const treasury = await ContactService.syndicate({ id: 'syn_1', name: 'The Crew' });
+  assert.equal(contacts.find((c) => c.id === treasury).name, 'The Crew Treasury');
+});
+
+test('every wording a service asks for by name is in the language file', async () => {
+  const { readdirSync } = await import('node:fs');
+  const dir = new URL('../scripts/services/', import.meta.url);
+  const missing = [];
+  for (const file of readdirSync(dir).filter((f) => f.endsWith('.js'))) {
+    const src = readFileSync(new URL(file, dir), 'utf8');
+    for (const [, key] of src.matchAll(/L\('(NCI\.[A-Za-z0-9.]+)'/g)) if (typeof lookup(key) !== 'string') missing.push(`${file}: ${key}`);
+  }
+  assert.deepEqual(missing, []);
+});

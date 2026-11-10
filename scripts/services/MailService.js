@@ -22,8 +22,12 @@ const days = (n) => L(n === 1 ? 'NCI.Mail.Days.one' : 'NCI.Mail.Days.many', { n 
 /** Requests that came in by mail, so the generic "order received" notice is not sent twice. */
 const mailKeys = new Set();
 
-/** HTML paragraphs from plain lines. Every line is escaped. */
-export const html = (lines) => lines.filter(Boolean).map((l) => `<p>${escapeHtml(l)}</p>`).join('');
+/**
+ * HTML paragraphs from plain lines. Every line is escaped. A footer is what the rules say rather than the sender (M3):
+ * what to do in the windows, or what changed in the game's terms, set apart in italics after the sender's words.
+ */
+export const html = (lines, footer = '') => lines.filter(Boolean).map((l) => `<p>${escapeHtml(l)}</p>`).join('')
+  + (footer ? `<p><em>▸ ${escapeHtml(footer)}</em></p>` : '');
 
 /** Display name and ticker for a stock or fund id. */
 export function assetLabel(assetId) {
@@ -70,23 +74,23 @@ export const MailService = {
   },
 
   /** A Messenger contact mails a character, or a syndicate's members: a faction, the city, an employer (M2). */
-  async fromContact(contactId, actor, { subject, lines, eddies = 0 }) {
+  async fromContact(contactId, actor, { subject, lines, footer = '', eddies = 0, anonymous = null }) {
     if (!contactId) return { ok: false, error: 'no-contact' };
-    return sendTo(actor, { fromContactId: contactId, subject, body: html(lines), eddies });
+    return sendTo(actor, { fromContactId: contactId, subject, body: html(lines, footer), eddies, ...(anonymous ? { anonymous } : {}) });
   },
 
   /** The market wire mails a client. */
-  async fromWire(actor, { subject, lines, eddies = 0 }) {
+  async fromWire(actor, { subject, lines, footer = '', eddies = 0 }) {
     const wire = await NcmAdapter.ensureWire();
     if (!wire) return { ok: false, error: 'no-wire' };
-    return sendTo(actor, { fromContactId: wire.id, subject, body: html(lines), eddies });
+    return sendTo(actor, { fromContactId: wire.id, subject, body: html(lines, footer), eddies });
   },
 
   /** The system contact NCPD Financial Crimes mails a client. */
-  async fromNcpd(actor, { subject, lines }) {
+  async fromNcpd(actor, { subject, lines, footer = '' }) {
     const ncpd = await NcmAdapter.ensureNcpd();
     if (!ncpd) return { ok: false, error: 'no-ncpd' };
-    return sendTo(actor, { fromContactId: ncpd.id, subject, body: html(lines) });
+    return sendTo(actor, { fromContactId: ncpd.id, subject, body: html(lines, footer) });
   },
 
   // ── Broker replies and notices ─────────────────────────────────────────────

@@ -17,6 +17,7 @@ import { FundRepository } from '../data/FundRepository.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
 import { MarketClock } from './MarketClockService.js';
 import { MailService } from './MailService.js';
+import { ContactService } from './ContactService.js';
 
 const DAY_MS = 86_400_000;
 const eb = (n) => Math.round(Number(n) || 0).toLocaleString();
@@ -64,7 +65,7 @@ export const SyndicateMail = {
    */
   build(s, events) {
     const mails = [];
-    const all = (subject, lines) => mails.push({ to: 'all', subject, lines });
+    const all = (subject, lines, footer = '') => mails.push({ to: 'all', subject, lines, footer });
     // A proposal the same change also settled (the proposer's units carried it at once) has nothing left to
     // vote on: its members hear only how it ended.
     const settled = new Set(events.filter((e) => e.type !== 'proposed' && /^proposal/.test(e.type)).map((e) => e.proposalId));
@@ -73,7 +74,7 @@ export const SyndicateMail = {
       switch (e.type) {
         case 'proposed':
           if (settled.has(e.proposalId)) break;
-          all(L('NCI.SyndicateMail.Proposed.Subject'), [text, L('NCI.SyndicateMail.Proposed.Body', { name: memberOf(s, e.proposal.by)?.name ?? '?', date: dayText(e.proposal.ends) })]);
+          all(L('NCI.SyndicateMail.Proposed.Subject'), [text, L('NCI.SyndicateMail.Proposed.Body', { name: memberOf(s, e.proposal.by)?.name ?? '?' })], L('NCI.SyndicateMail.Proposed.Footer', { date: dayText(e.proposal.ends) }));
           break;
         case 'proposalPassed':
           all(L('NCI.SyndicateMail.Passed.Subject'), [text, L(e.forced ? 'NCI.SyndicateMail.Passed.Forced' : 'NCI.SyndicateMail.Passed.Body')]);
@@ -113,10 +114,14 @@ export const SyndicateMail = {
     if (!this.enabled() || !events?.length) return;
     const s = SyndicateRepository.get(syndicateId);
     if (!s) return;
+    // The syndicate's treasury writes to its members (M3).
+    const treasury = await ContactService.syndicate(s).catch(() => null);
     for (const mail of this.build(s, events)) {
       try {
         const to = mail.to === 'all' ? SyndicateRepository.account(s.id) : game.actors.get(mail.to);
-        if (to) await MailService.fromWire(to, { subject: mail.subject, lines: mail.lines });
+        if (!to) continue;
+        const sent = treasury ? await MailService.fromContact(treasury, to, { subject: mail.subject, lines: mail.lines, footer: mail.footer ?? '' }) : null;
+        if (!sent?.ok) await MailService.fromWire(to, { subject: mail.subject, lines: mail.lines, footer: mail.footer ?? '' });
       } catch (error) {
         log.warn('Syndicate mail failed', error);
       }

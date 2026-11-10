@@ -56,7 +56,7 @@ export const JobService = {
 
   async _tell(application, company, hired, wage = 0) {
     const name = company.name;
-    await BusinessService._mailJob(company, application.actorId, L('NCI.Jobs.Subject', { name }), [hired ? L('NCI.Jobs.Hired', { name, post: postName(application.post), wage }) : L('NCI.Jobs.Turned', { name, post: postName(application.post) })]);
+    await BusinessService._mailJob(company, application.actorId, L('NCI.Jobs.Subject', { name }), [hired ? L('NCI.Jobs.Hired', { name, post: postName(application.post), wage }) : L('NCI.Jobs.Turned', { name, post: postName(application.post) })], L(hired ? 'NCI.Jobs.HiredFooter' : 'NCI.Jobs.TurnedFooter'));
   },
 
   /** A character applies. Runs in the GM's request queue. */
