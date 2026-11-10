@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  createNpcCompany, recordApplication, decideApplication, canShift, workShift, shiftLift, payShiftBonuses, shiftWeek, decidePromotion, standingOf, bossBand, shiftUses,
+  createNpcCompany, recordApplication, decideApplication, canShift, workShift, shiftLift, payShiftBonuses, shiftWeek, decidePromotion, standingOf, bossBand, shiftUses, shiftedIn, noteShiftDay,
   advanceBusiness, wageOf, postRate, promotedWage, BUSINESS_DEFAULTS as P,
 } from '../scripts/engine/index.js';
 
@@ -79,6 +79,21 @@ test('standing moves with the shift, and a missed week costs', () => {
   };
   for (const band of Object.keys(R.moves)) assert.equal(week(band), 50 + R.moves[band], band);
   assert.equal(week(null), 50 + R.skip);
+});
+
+test('a shift worked at another job that week costs nothing here', () => {
+  const { b, staff } = employed();
+  const { startDay, endDay } = b.period;
+  shiftWeek(b, 1, DAY, out(), P, { pc1: [startDay + 2] });
+  assert.equal(staff.standing, 50, 'excused');
+  const late = employed();
+  shiftWeek(late.b, 1, DAY, out(), P, { pc1: [late.b.period.endDay] });
+  assert.equal(late.staff.standing, 50 + R.skip, 'a shift after the week ended does not count');
+  assert.equal(shiftedIn({ pc1: [startDay] }, 'pc1', startDay, endDay), true);
+  assert.equal(shiftedIn({}, 'pc1', startDay, endDay), false);
+  let days = {};
+  for (let d = 0; d < 12; d++) days = noteShiftDay(days, 'pc1', d);
+  assert.deepEqual(days.pc1, [4, 5, 6, 7, 8, 9, 10, 11], 'the last few kept');
 });
 
 test('a part week, or one they were hired during, costs nothing', () => {

@@ -114,6 +114,13 @@ test('missed weeks warn and then sack with a week\'s pay, caught up if the calen
   assert.equal(out.events.filter((x) => x.type === 'payslip').length, 5, 'paid for each week worked');
 });
 
+test('a shift at another job excuses the week here, but earns nothing here', () => {
+  const { e, staff } = hired();
+  const out = closeEmployerWeeks(e, DAY + 7, P, { pc1: [DAY + 3] });
+  assert.equal(staff.standing, R.start);
+  assert.equal(out.events.find((x) => x.type === 'payslip').bonus, 0);
+});
+
 test('a long jump starts afresh from today', () => {
   const e = arasaka();
   const out = closeEmployerWeeks(e, DAY + 7 * (P.npc.corp.catchUp + 10));

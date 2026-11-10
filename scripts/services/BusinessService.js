@@ -1131,6 +1131,8 @@ class BusinessServiceImpl {
           exposure: hiddenEntry?.exposure ?? 0,
           press: this._pressRelations(business, factions, hiddenEntry),
           living: Object.fromEntries((business.covered ?? []).map((id) => [id, this.livingCostOf(id)])),
+          // A shift at any of a character's jobs excuses the week at the others (N3, N4).
+          shiftDays: JobService.shiftDays(),
         };
         const out = advanceBusiness(this.underworldOn() ? business : dropIllegalLine(business), day, { ...opts, traits: this.traitsOf(business.id), relations });
         if (!out.changed && !reread && !marked && !team.changed) continue;

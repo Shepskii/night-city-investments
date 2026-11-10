@@ -130,12 +130,13 @@ export function payShiftBonuses(b, day, p = BUSINESS_DEFAULTS) {
  * The week's close for the company's player employees: standing moves with the shift or the lack of one, the bottom
  * band brings a warning and then the sack with a week's pay, and a trusted employee is put up for promotion.
  */
-export function shiftWeek(b, part, day, out, p = BUSINESS_DEFAULTS) {
+export function shiftWeek(b, part, day, out, p = BUSINESS_DEFAULTS, shiftDays = {}) {
   if (!b.npcRun) return;
   for (const staff of activeStaff(b).filter((s) => s.source === 'pc' && s.actorId)) {
-    // A week they weren't there for the whole of costs nothing.
+    // A week they weren't there for the whole of costs nothing, nor one they worked their shift at another job.
     const newcomer = staff.hiredDay != null && staff.hiredDay > b.period.startDay;
-    const verdict = judgeWeek(staff, b.period.shifts?.[staff.actorId], part < 1 || newcomer, day, p);
+    const excused = part < 1 || newcomer || shiftedIn(shiftDays, staff.actorId, b.period.startDay, b.period.endDay);
+    const verdict = judgeWeek(staff, b.period.shifts?.[staff.actorId], excused, day, p);
     if (verdict === 'sack') {
       const fired = enactFire(b, staff.id, day, p);
       if (fired.ok) {
@@ -147,6 +148,16 @@ export function shiftWeek(b, part, day, out, p = BUSINESS_DEFAULTS) {
     }
   }
 }
+
+/**
+ * Whether a character worked a shift at any job in these days (the user's choice, 2026-11-10): one shift a week counts
+ * for all their jobs, so a second job doesn't lose standing for the week it couldn't have. `shiftDays` is each
+ * character's recent shift days.
+ */
+export const shiftedIn = (shiftDays, actorId, startDay, endDay) => (shiftDays?.[actorId] ?? []).some((d) => d >= startDay && d < endDay);
+
+/** A shift on `day` added to a character's recent shift days, the last few kept. */
+export const noteShiftDay = (shiftDays, actorId, day, keep = 8) => ({ ...shiftDays, [actorId]: [...(shiftDays[actorId] ?? []), day].slice(-keep) });
 
 /**
  * One employee's week with the boss, wherever they work: standing moves with the shift or the lack of one (none if the

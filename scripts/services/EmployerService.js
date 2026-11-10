@@ -186,6 +186,7 @@ export const EmployerService = {
     const check = await SkillAdapter.verifyLevers(actor, request, { dv: e.dv, use });
     if (!check.ok) return check;
     workEmployerShift(e, actor.id, check.result.band);
+    await JobService.noteShift(actor.id, day());
     await this._commit(e);
     return { ok: true };
   },
@@ -207,7 +208,7 @@ export const EmployerService = {
   async onTick() {
     if (!activeGM()) return;
     for (const e of EmployerRepository.all()) {
-      const out = closeEmployerWeeks(e, day());
+      const out = closeEmployerWeeks(e, day(), undefined, JobService.shiftDays());
       if (out.weeks) await this._commit(out.employer, out);
     }
   },

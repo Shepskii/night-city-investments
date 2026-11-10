@@ -6,8 +6,9 @@
  *              card, and waits on Pending unless the world accepts good rolls by itself.
  */
 
-import { BUSINESS_DEFAULTS, autoHires, boardEntry, canApply, canShift, decideApplication, decidePromotion, isEmployerId, normalizeBusiness, openRoles, promotedWage, recordApplication, shiftUses, stageDv, useKey, workShift } from '../engine/index.js';
-import { MODULE_ID, SETTINGS } from '../utils/constants.js';
+import { BUSINESS_DEFAULTS, autoHires, boardEntry, canApply, canShift, decideApplication, decidePromotion, isEmployerId, normalizeBusiness, noteShiftDay, openRoles, promotedWage, recordApplication, shiftUses, stageDv, useKey, workShift } from '../engine/index.js';
+import { MODULE_ID, FLAGS, SETTINGS } from '../utils/constants.js';
+import { MarketStore } from '../data/MarketStore.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
 import { L } from '../ui/format.js';
 import { BusinessService } from './BusinessService.js';
@@ -37,6 +38,15 @@ export const JobService = {
   /** Every application waiting for the GM. */
   waiting() {
     return [...BusinessRepository.all().flatMap((b) => (b.applications ?? []).map((a) => ({ business: b, application: a }))), ...EmployerService.waiting()];
+  },
+
+  /** Each character's recent shift days, at any job: a shift anywhere excuses the week at their other jobs. */
+  shiftDays() {
+    return MarketStore.readRecord(FLAGS.SHIFT_DAYS) ?? {};
+  },
+
+  noteShift(actorId, day) {
+    return MarketStore._writeRecord(FLAGS.SHIFT_DAYS, noteShiftDay(this.shiftDays(), actorId, day));
   },
 
   /** Whether this character has worked the week's one shift anywhere but `exceptId` (N3, N4). */
@@ -86,6 +96,7 @@ export const JobService = {
     const check = await SkillAdapter.verifyLevers(actor, request, { dv: stageDv(b.stage), use });
     if (!check.ok) return check;
     workShift(b, actor.id, check.result.band);
+    await this.noteShift(actor.id, BusinessService.day());
     await BusinessService._commit({ ok: true, business: b, wealth: {}, events: [] });
     return { ok: true, business: b };
   },

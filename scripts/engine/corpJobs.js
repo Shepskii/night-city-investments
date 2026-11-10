@@ -10,7 +10,7 @@
 import { ARCHETYPES, BUSINESS_DEFAULTS, POSTS } from './businessConfig.js';
 import { clamp, fail } from './businessRecord.js';
 import { postUses } from './businessStaff.js';
-import { bossBand, judgeWeek, standingOf } from './businessJobs.js';
+import { bossBand, judgeWeek, shiftedIn, standingOf } from './businessJobs.js';
 
 export const EMPLOYER_PREFIX = 'emp_';
 export const isEmployerId = (id) => typeof id === 'string' && id.startsWith(EMPLOYER_PREFIX);
@@ -204,7 +204,7 @@ export function decideEmployerPromotion(e, staffId, yes, day, p = BUSINESS_DEFAU
  * shift's bonus; standing moves as at an NPC's company, and one let go gets a week's pay.
  * @returns {{employer: object, events: object[], wealth: object, weeks: number}}
  */
-export function closeEmployerWeeks(e, day, p = BUSINESS_DEFAULTS) {
+export function closeEmployerWeeks(e, day, p = BUSINESS_DEFAULTS, shiftDays = {}) {
   const events = [];
   const wealth = {};
   let weeks = 0;
@@ -216,7 +216,7 @@ export function closeEmployerWeeks(e, day, p = BUSINESS_DEFAULTS) {
       const paid = Math.round((staff.wage * clamp(endDay - from, 0, WEEK)) / WEEK);
       const bonus = Math.round(staff.wage * (p.npc.shift.bonus[band] ?? 0));
       events.push({ type: 'payslip', actorId: staff.actorId, post: staff.post, wage: staff.wage, paid, bonus });
-      const verdict = judgeWeek(staff, band, from > startDay, endDay, p);
+      const verdict = judgeWeek(staff, band, from > startDay || shiftedIn(shiftDays, staff.actorId, startDay, endDay), endDay, p);
       if (verdict === 'sack') {
         e.staff = e.staff.filter((s) => s !== staff);
         wealth[staff.actorId] = (wealth[staff.actorId] ?? 0) + staff.wage;

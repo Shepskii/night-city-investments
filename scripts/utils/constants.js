@@ -112,6 +112,8 @@ export const FLAGS = Object.freeze({
   JOBS: 'jobs',
   /** On the GM-only control journal: employers at market corporations (N4), by id. */
   EMPLOYERS: 'employers',
+  /** On the GM-only control journal: each character's recent shift days, at any job (N3, N4). */
+  SHIFT_DAYS: 'shiftDays',
   /** On a syndicate's journal: its record, which its members can read. Written only by the GM. (Its account is the `portfolio` flag beside it.) */
   SYNDICATE: 'syndicate',
   /** On actors. Syndicate requests, written only by the owning player. */
