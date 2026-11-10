@@ -1479,7 +1479,8 @@ export function jobsContext(actor) {
   return jobsOf(actor).map((j) => ({
     businessId: j.businessId,
     name: j.businessName,
-    archetype: L(`NCI.Business.Archetype.${j.archetype}.Name`),
+    // A market corporation's job (N4) shows its ticker, not the kind the GM gave it for skills.
+    archetype: j.corp ? j.ticker : L(`NCI.Business.Archetype.${j.archetype}.Name`),
     post: postLabel(j.post),
     wage: whole(j.wage),
     offered: j.status === 'offered',

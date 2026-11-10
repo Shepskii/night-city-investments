@@ -22,13 +22,14 @@ import {
   makeWindow, addWindow, windowReady, auditWindow, applyAudit, currentHeat, heatTier, valuePortfolio, normalizeHeat, HEAT_TUNING,
   concealedHolders, BUSINESS_DEFAULTS,
   warningsFor, tierRank, planInvestigation, makePenalty, sanitizePenaltyEdits, applyFine, applyFreeze, applyBrokerDrop, PENALTY_TUNING,
-  applyHeatEffect, setCharacterHeat, setWarned, upsertPenalty, timeOf,
+  applyHeatEffect, setCharacterHeat, setWarned, upsertPenalty, timeOf, employeesOf,
 } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
 import { log, isActiveGM, L } from '../utils/helpers.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
+import { EmployerRepository } from '../data/EmployerRepository.js';
 import { BrokerRepository } from '../data/BrokerRepository.js';
 import { MarketClock } from './MarketClockService.js';
 import { MailService } from './MailService.js';
@@ -96,7 +97,8 @@ class HeatServiceImpl {
         closeTick: impact?.onsetTick ?? nowTick + Math.max(0, Math.floor(rec.delayDays ?? 1) - 1),
         openDate: rec.date ?? '',
         tipped,
-        runners,
+        // A market corporation's employees (N4) know what a gig on it means as well as those who ran it.
+        runners: [...runners, ...employeesOf(EmployerRepository.all(), rec.companyId)],
       });
       const heat = MarketStore.getHeat();
       if (heat.windows.some((w) => w.sourceKey === rec.sourceKey)) return null;
@@ -120,6 +122,17 @@ class HeatServiceImpl {
       }
       await MarketStore.setHeat(heat);
       Hooks.callAll(HOOKS.HEAT_CHANGED);
+    });
+  }
+
+  /** Someone just taken on at a market corporation (N4): on any window open on it, they count as having run the gig. */
+  noteRunner(companyId, actorId) {
+    if (!isActiveGM() || !this.enabled()) return Promise.resolve();
+    return this._queue.run(async () => {
+      const heat = MarketStore.getHeat();
+      const open = heat.windows.filter((w) => w.companyId === companyId && w.status === 'open' && !w.runners.includes(actorId));
+      if (!open.length) return;
+      await MarketStore.setHeat({ ...heat, windows: heat.windows.map((w) => (open.includes(w) ? { ...w, runners: [...w.runners, actorId] } : w)) });
     });
   }
 

@@ -110,6 +110,8 @@ export const FLAGS = Object.freeze({
   QUASHED: 'quashed',
   /** On actors. The jobs a character holds or is offered at player businesses (DESIGN §32). Written only by the GM. */
   JOBS: 'jobs',
+  /** On the GM-only control journal: employers at market corporations (N4), by id. */
+  EMPLOYERS: 'employers',
   /** On a syndicate's journal: its record, which its members can read. Written only by the GM. (Its account is the `portfolio` flag beside it.) */
   SYNDICATE: 'syndicate',
   /** On actors. Syndicate requests, written only by the owning player. */

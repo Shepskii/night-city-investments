@@ -115,6 +115,8 @@ The **Jobs** tab of the market window lists roles open at companies around the c
 
 At a company run by an NPC, **Work a shift** there once a week: one roll with your role's skills, and Luck if you like, for all your jobs together. A good shift earns a bonus on your payslip and pleases the boss; a poor one, or not turning up, doesn't. **Your jobs** shows how you stand. Fall too far and you'll be warned, then let go. Keep it up and you may be promoted with a raise.
 
+Some market corporations hire too, and their roles appear on the same **Jobs** tab with their ticker. A corporate job works the same way, with a shift a week, a bonus and standing, though the corporation sets the wage. Working for a corporation makes you an insider: trading its shares while a gig is about to move them draws as much heat as if you had run the gig yourself.
+
 ## If you're a Media: stories and rumours
 
 A company's market page has **Publish a story**: an exposé to push its price down, or a puff piece to push it up. Your Credibility rank sets how likely the public is to believe it and how far the price can move. Evidence items in your inventory help, and each works once. Holding shares in a company you write about draws heat.

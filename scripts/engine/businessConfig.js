@@ -518,6 +518,18 @@ export const BUSINESS_DEFAULTS = Object.freeze({
       raise: 0.1,
       afterPromotion: 60,
     }),
+    /**
+     * Jobs at a market corporation (N4): no cash and no weekly close of its own, so wages come from outside the game's
+     * economy. The GM sets each role's wage and how many; the application roll is against `dv`.
+     */
+    corp: Object.freeze({
+      dv: 17,
+      maxCount: 20,
+      maxWage: 100000,
+      posts: Object.freeze(['floor', 'manager', 'security', 'bookkeeper', 'sales', 'publicist', 'compliance']),
+      /** The weeks a corporation's week can catch up on at once, if the calendar jumps. */
+      catchUp: 52,
+    }),
   }),
   /** Reputation drifts this share of the way back to 50 each week; the Cost base creeps up. */
   reputationDrift: 0.03,

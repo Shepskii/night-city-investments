@@ -10,6 +10,7 @@ import { BusinessRepository } from '../data/BusinessRepository.js';
 import { BusinessService } from '../services/BusinessService.js';
 import { BusinessClient } from '../services/BusinessClient.js';
 import { JobService } from '../services/JobService.js';
+import { EmployerService } from '../services/EmployerService.js';
 import { BusinessWatcher } from '../services/BusinessWatcher.js';
 import { DistrictService } from '../services/DistrictService.js';
 
@@ -58,6 +59,7 @@ export function registerBusinessSystem(initializer) {
     if (isActiveGM()) {
       await JobService.publish();
       for (const business of BusinessRepository.all().filter((b) => b.npcRun && b.status === 'open')) await BusinessService._syncJobs(business);
+      await EmployerService.syncAll();
     }
   });
 

@@ -6,11 +6,12 @@
  *              card, and waits on Pending unless the world accepts good rolls by itself.
  */
 
-import { BUSINESS_DEFAULTS, autoHires, boardEntry, canApply, canShift, decideApplication, decidePromotion, normalizeBusiness, openRoles, recordApplication, shiftUses, stageDv, useKey, workShift } from '../engine/index.js';
+import { BUSINESS_DEFAULTS, autoHires, boardEntry, canApply, canShift, decideApplication, decidePromotion, isEmployerId, normalizeBusiness, openRoles, promotedWage, recordApplication, shiftUses, stageDv, useKey, workShift } from '../engine/index.js';
 import { MODULE_ID, SETTINGS } from '../utils/constants.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
 import { L } from '../ui/format.js';
 import { BusinessService } from './BusinessService.js';
+import { EmployerService } from './EmployerService.js';
 import { SkillAdapter } from './SkillAdapter.js';
 
 const activeGM = () => game.users.activeGM?.id === game.user.id;
@@ -22,17 +23,25 @@ export const JobService = {
     if (!activeGM()) return;
     const businesses = BusinessRepository.all().filter((b) => b.npcRun);
     const key = (b, actorId) => `${b.id}:${actorId}`;
+    // Market corporations' jobs (N4) sit on the same board.
+    const employers = EmployerService.all();
+    const all = [...businesses, ...employers];
     const board = {
-      companies: businesses.map((b) => boardEntry(b, game.actors.get(b.npcRun.ownerId)?.name ?? '')).filter(Boolean),
-      tried: Object.fromEntries(businesses.flatMap((b) => Object.entries(b.jobTries ?? {}).map(([actorId, day]) => [key(b, actorId), day]))),
-      waiting: Object.fromEntries(businesses.flatMap((b) => (b.applications ?? []).map((a) => [key(b, a.actorId), a.post]))),
+      companies: [...businesses.map((b) => boardEntry(b, game.actors.get(b.npcRun.ownerId)?.name ?? '')).filter(Boolean), ...EmployerService.boardEntries()],
+      tried: Object.fromEntries(all.flatMap((b) => Object.entries(b.jobTries ?? {}).map(([actorId, day]) => [key(b, actorId), day]))),
+      waiting: Object.fromEntries(all.flatMap((b) => (b.applications ?? []).map((a) => [key(b, a.actorId), a.post]))),
     };
     if (JSON.stringify(board) !== JSON.stringify(game.settings.get(MODULE_ID, SETTINGS.JOB_BOARD))) await game.settings.set(MODULE_ID, SETTINGS.JOB_BOARD, board);
   },
 
   /** Every application waiting for the GM. */
   waiting() {
-    return BusinessRepository.all().flatMap((b) => (b.applications ?? []).map((a) => ({ business: b, application: a })));
+    return [...BusinessRepository.all().flatMap((b) => (b.applications ?? []).map((a) => ({ business: b, application: a }))), ...EmployerService.waiting()];
+  },
+
+  /** Whether this character has worked the week's one shift anywhere but `exceptId` (N3, N4). */
+  shiftWorked(actorId, exceptId = null) {
+    return BusinessRepository.all().some((o) => o.id !== exceptId && o.npcRun && o.period?.shifts?.[actorId]) || EmployerService.shiftWorked(actorId, exceptId);
   },
 
   async _tell(application, company, hired, wage = 0) {
@@ -42,6 +51,7 @@ export const JobService = {
 
   /** A character applies. Runs in the GM's request queue. */
   async apply(actor, request) {
+    if (isEmployerId(request.companyId)) return EmployerService.apply(actor, request);
     const stored = BusinessRepository.get(request.companyId);
     if (!stored || !actor.hasPlayerOwner) return { ok: false, reason: 'job-closed' };
     const b = normalizeBusiness(structuredClone(stored));
@@ -64,12 +74,13 @@ export const JobService = {
 
   /** A player works the week's shift (N3). One a week in all, whatever jobs they hold. Runs in the GM's request queue. */
   async shift(actor, request) {
+    if (isEmployerId(request.companyId)) return EmployerService.shift(actor, request);
     const stored = BusinessRepository.get(request.companyId);
     if (!stored) return { ok: false, reason: 'job-closed' };
     const b = normalizeBusiness(structuredClone(stored));
     const can = canShift(b, actor.id);
     if (!can.ok) return can;
-    if (BusinessRepository.all().some((o) => o.id !== b.id && o.npcRun && o.period?.shifts?.[actor.id])) return { ok: false, reason: 'shift-done' };
+    if (this.shiftWorked(actor.id, b.id)) return { ok: false, reason: 'shift-done' };
     const use = shiftUses(b, can.staff).find((u) => useKey(u) === useKey(request.use ?? {})) ?? null;
     if (!use) return { ok: false, reason: 'bad-use' };
     const check = await SkillAdapter.verifyLevers(actor, request, { dv: stageDv(b.stage), use });
@@ -81,11 +92,15 @@ export const JobService = {
 
   /** Players at NPC companies who have earned a promotion, waiting for the GM. */
   promotions() {
-    return BusinessRepository.all().filter((b) => b.npcRun && b.status === 'open').flatMap((b) => (b.staff ?? []).filter((s) => s.promotion).map((staff) => ({ business: b, staff })));
+    return [
+      ...BusinessRepository.all().filter((b) => b.npcRun && b.status === 'open').flatMap((b) => (b.staff ?? []).filter((s) => s.promotion).map((staff) => ({ business: b, staff, raised: promotedWage(b, staff) }))),
+      ...EmployerService.promotions(),
+    ];
   },
 
   /** The GM's answer to a promotion. */
   promote(businessId, staffId, yes) {
+    if (isEmployerId(businessId)) return EmployerService.promote(businessId, staffId, yes);
     if (!activeGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
     return BusinessService._queue.run(async () => {
       const stored = BusinessRepository.get(businessId);
@@ -110,6 +125,7 @@ export const JobService = {
 
   /** The GM's answer on Pending. */
   decide(businessId, id, yes) {
+    if (isEmployerId(businessId)) return EmployerService.decide(businessId, id, yes);
     if (!activeGM()) return Promise.resolve({ ok: false, reason: 'not-gm' });
     return BusinessService._queue.run(async () => {
       const stored = BusinessRepository.get(businessId);

@@ -20,7 +20,7 @@ import {
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
   dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, answerNpcPartner, approvePress, spikePress, runPress, createNpcCompany, setNpcRun, cleanTicker, bossBand, standingOf, shiftUses, stageDv, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
   isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact, payListedDividend,
-  reviewListing, clearReview, delistCompany,
+  reviewListing, clearReview, delistCompany, isEmployerId,
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
   takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
   restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask,
@@ -39,6 +39,7 @@ import { FactionRepository } from '../data/FactionRepository.js';
 import { StoryService } from './StoryService.js';
 import { PressService } from './PressService.js';
 import { JobService } from './JobService.js';
+import { EmployerService } from './EmployerService.js';
 import { escapeHtml } from '../utils/text.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
@@ -541,6 +542,8 @@ class BusinessServiceImpl {
     // Applying for a job at an NPC's company (N2): the character can't read its record, and isn't a partner.
     if (request.type === 'jobApply') return this._receipt(actor, request, await JobService.apply(actor, request));
     if (request.type === 'shiftRoll') return this._receipt(actor, request, await JobService.shift(actor, request));
+    // A job at a market corporation (N4) has no business record behind it.
+    if (['acceptJob', 'declineJob', 'quitJob'].includes(request.type) && isEmployerId(request.businessId)) return this._receipt(actor, request, await EmployerService.answer(actor, request));
     const as = this._partnerFor(actor, request);
     if (!as.ok) return this._receipt(actor, request, as);
     // A takeover bid names its target by ticker, as the bidder knows it; they cannot read its record (B6b).
@@ -1139,6 +1142,8 @@ class BusinessServiceImpl {
       await this._layerFees();
       await this._concealment();
       await this._lapseCases();
+      // Market corporations' jobs close their weeks too (N4).
+      await EmployerService.onTick();
       await JobService.publish();
       return changed;
     });

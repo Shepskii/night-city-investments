@@ -31,6 +31,7 @@ export function jobBoardRows(actor) {
     return {
       businessId: c.businessId,
       name: c.name,
+      ticker: c.ticker ?? '',
       archetype: L(`NCI.Business.Archetype.${c.archetype}.Name`),
       location: c.location,
       owner: c.owner,

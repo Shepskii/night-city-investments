@@ -132,30 +132,39 @@ export function payShiftBonuses(b, day, p = BUSINESS_DEFAULTS) {
  */
 export function shiftWeek(b, part, day, out, p = BUSINESS_DEFAULTS) {
   if (!b.npcRun) return;
-  const r = p.npc.shift;
-  const floor = r.bands[0][0];
   for (const staff of activeStaff(b).filter((s) => s.source === 'pc' && s.actorId)) {
-    const band = b.period.shifts?.[staff.actorId];
     // A week they weren't there for the whole of costs nothing.
     const newcomer = staff.hiredDay != null && staff.hiredDay > b.period.startDay;
-    const move = band ? r.moves[band] ?? 0 : part < 1 || newcomer ? 0 : r.skip;
-    staff.standing = clamp(standingOf(staff, p) + move, 0, 100);
-    if (staff.standing < floor) {
-      if (staff.warned) {
-        const fired = enactFire(b, staff.id, day, p);
-        if (fired.ok) {
-          if (fired.paid) out.wealth[staff.actorId] = (out.wealth[staff.actorId] ?? 0) + fired.paid;
-          out.events.push({ type: 'shiftSacked', actorId: staff.actorId, paid: fired.paid });
-        }
-        continue;
+    const verdict = judgeWeek(staff, b.period.shifts?.[staff.actorId], part < 1 || newcomer, day, p);
+    if (verdict === 'sack') {
+      const fired = enactFire(b, staff.id, day, p);
+      if (fired.ok) {
+        if (fired.paid) out.wealth[staff.actorId] = (out.wealth[staff.actorId] ?? 0) + fired.paid;
+        out.events.push({ type: 'shiftSacked', actorId: staff.actorId, paid: fired.paid });
       }
-      staff.warned = true;
+    } else if (verdict === 'warn') {
       out.events.push({ type: 'shiftWarned', actorId: staff.actorId });
-    } else {
-      delete staff.warned;
     }
-    if (staff.standing >= r.promoteAt && !staff.promotion && (staff.promotedDay == null || day - staff.promotedDay >= r.promoteEvery)) staff.promotion = true;
   }
+}
+
+/**
+ * One employee's week with the boss, wherever they work: standing moves with the shift or the lack of one (none if the
+ * week is `excused`), the bottom band warns and then sacks, and trusted puts them up for promotion.
+ * @returns {'sack'|'warn'|null}
+ */
+export function judgeWeek(staff, band, excused, day, p = BUSINESS_DEFAULTS) {
+  const r = p.npc.shift;
+  const move = band ? r.moves[band] ?? 0 : excused ? 0 : r.skip;
+  staff.standing = clamp(standingOf(staff, p) + move, 0, 100);
+  if (staff.standing < r.bands[0][0]) {
+    if (staff.warned) return 'sack';
+    staff.warned = true;
+    return 'warn';
+  }
+  delete staff.warned;
+  if (staff.standing >= r.promoteAt && !staff.promotion && (staff.promotedDay == null || day - staff.promotedDay >= r.promoteEvery)) staff.promotion = true;
+  return null;
 }
 
 /** What a promotion would pay: a raise, and their own cap lifted by as much, so one at the cap is raised too. */
