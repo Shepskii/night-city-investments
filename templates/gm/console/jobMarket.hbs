@@ -25,7 +25,7 @@
     {{#if staff.length}}
     <table class="nci-market"><thead><tr><th>{{localize "NCI.GMBusiness.Corp.Who"}}</th><th>{{localize "NCI.GMBusiness.Corp.Post"}}</th><th>{{localize "NCI.GMBusiness.Corp.Wage"}}</th><th>{{localize "NCI.GMBusiness.Corp.Standing"}}</th><th></th></tr></thead><tbody>
       {{#each staff}}<tr><td>{{{who}}}</td><td>{{post}}</td><td>{{wage}}</td><td>{{standing}}</td>
-        <td class="nci-rowbtns"><button type="button" data-action="businessCorpDismiss" data-id="{{../id}}" data-staff="{{id}}"><i class="fas fa-person-walking-arrow-right"></i> {{dismissLabel}}</button></td></tr>{{/each}}
+        <td class="nci-rowbtns"><button type="button" class="nci-labelled" data-action="businessCorpDismiss" data-id="{{../id}}" data-staff="{{id}}"><i class="fas fa-person-walking-arrow-right"></i> {{dismissLabel}}</button></td></tr>{{/each}}
     </tbody></table>
     {{else}}<p class="nci-muted">{{localize "NCI.GMBusiness.Corp.NoStaff"}}</p>{{/if}}
     {{#if offer.characters.length}}{{#if offer.posts.length}}
