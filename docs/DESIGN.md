@@ -2293,7 +2293,7 @@ That is 11 kinds today and 23 new ones, 34 in all, giving each kind of business 
 
 **Parts, to be shown in turn as P1's were.** U2a: the profiles in the engine, and every kind's numbers, tested against the simulator. U2b: the new kinds, choosing one on the Projects tab with its profile in plain words, and a Connected room's faction. The guides follow.
 
-### 36.13 Press: stories against players (the user's choices, 2026-11-04 and 09; built, not yet released)
+### 36.13 Press: stories against players (the user's choices, 2026-11-04 and 09; released in v0.24.0)
 
 **Decided.**
 - **Characters** are driven by the worst standing of any business they run, plus their heat. They get no standing of their own.
@@ -2506,7 +2506,7 @@ A story about a character also costs the business they run with the worst standi
 
 **Tested live (2026-11-05, Cyberpunk Test, as a player).** The search measured on screen: nothing until typed, then only matches, with a tagged NPC found and an untagged one not, and who is invited below the results. A food stall founded with Clockwork invited at 5% sweat equity: the GM's Join at 1,000 eb, a failed setup roll and a retry, then units of 2,000 and 1,158 (63.3% and 36.7%). A week closed normally. Closing carried on the founder's vote alone, and of 2,137 eb the founder got 1,353 while Clockwork's 783 went nowhere, their sheet staying at 500 eb, with 1 eb lost to rounding. **In tests only:** a GM's real drag onto the form, and a founding sent to a syndicate's vote.
 
-### 36.17 NPC-owned companies, and jobs for player characters (the user's choices, 2026-11-09; built, not released)
+### 36.17 NPC-owned companies, and jobs for player characters (the user's choices, 2026-11-09; released in v0.24.0)
 
 **The idea.** Companies owned and run by the GM's NPCs, set up like player businesses, that player characters can work for.
 
@@ -2601,7 +2601,7 @@ A story about a character also costs the business they run with the worst standi
 | P1 | **Done (v0.21.0), see §36.10.** P1a workshops, item lists and the GM's tab, runs, the Maker post and the storeroom sheet; P1b shop sales, buying, handing over, consigning, stock in book value and closing; P1c fencing and illegal production through a back room. Also: one control height, and hand advances moving the calendar (§36.11) |
 | U2 | **Done (v0.21.1), see §36.12.** More back room kinds, each with a profile that changes how it plays |
 | U3 | **Done (v0.22.0), see §36.14.** Back room events and actions, one of each for every profile but Steady, with each kind telling them in its own words |
-| S1 | **Built, on main, not yet released, see §36.13.** Press: non-player companies run stories against player companies and characters, driven by standing and heat; rumours before print and **Run a story** |
-| N | **In progress, see §36.17.** NPC-owned companies that run themselves, a job board and weekly shifts for player characters, and jobs at market corporations. N0 (simulator) to N4 (market corporation jobs) are built and on local commits, not released |
+| S1 | **Done (v0.24.0), see §36.13.** Press: non-player companies run stories against player companies and characters, driven by standing and heat; rumours before print and **Run a story** |
+| N | **Done (v0.24.0), see §36.17.** NPC-owned companies that run themselves, a job board and weekly shifts for player characters, and jobs at market corporations (N0 to N4) |
 | M | **Proposed, see §36.4.** Further Night City Messenger integration, alongside each step |
 | Later | Short selling and margin, options |

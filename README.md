@@ -71,6 +71,12 @@ Or unzip a release into `Data/modules/night-city-investments`. Then enable **Nig
 ### Moving the market
 - **Campaigns.** A business can run a smear or a leak against a listed company, for a small dip in its price.
 - **Media stories.** A Media publishes an exposé or a puff piece, with Believability by Credibility rank as in the rules, backed by evidence shards. Medias also hear rumours by mail, or dig for them.
+- **The press bites back.** Corporations and media outlets run their own stories against player companies and characters, driven by faction standing and heat. A rumour comes first, and there is time to answer it.
+
+### Jobs
+- **NPC companies.** The GM can create businesses that NPCs own and run, on the same weekly loop as players' businesses. Players can look into who owns them.
+- **A job board.** Characters apply for posts at NPC companies and market corporations such as Biotechnica, with a skill roll setting the wage, or take a job the GM offers.
+- **A weekly shift.** One shift a week, at any of a character's jobs, earns a bonus and raises their performance. A missed week lowers it, and poor performance brings a warning and then the sack, while good performance brings a promotion. Wages come by payslip.
 
 ### Fronts
 - **Back rooms.** A shop or registered business can run something illegal behind the front, from 34 kinds across ten kinds of business, each playing to its own profile of risk and reward, with its own trouble and its own action: dirty cash, laundering, pay-offs, raids and informants, with gang deals on the side. At a chartered company it is the officers' secret, and companies have crime of their own.
