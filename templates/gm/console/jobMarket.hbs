@@ -1,0 +1,57 @@
+<div class="nci-block nci-form nci-corp-new">
+  <h3>{{localize "NCI.GMBusiness.Corp.Title"}}</h3>
+  <p class="nci-hint">{{localize "NCI.GMBusiness.Corp.Hint"}}</p>
+  {{#with jobMarket}}
+  {{#if companies.length}}
+  <div class="nci-grid">
+    <label>{{localize "NCI.GMBusiness.Corp.Company"}}<select name="corpCompany">{{#each companies}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+    <label>{{localize "NCI.GMBusiness.Corp.Kind"}}<select name="corpKind">{{#each kinds}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>{{localize "NCI.GMBusiness.Corp.Dv"}}<input type="number" name="corpDv" min="9" max="30" step="1" value="{{dv}}"></label>
+    <label>{{localize "NCI.GMBusiness.Corp.Location"}}<input type="text" name="corpLocation" maxlength="80"></label>
+  </div>
+  <p class="nci-hint">{{localize "NCI.GMBusiness.Corp.KindHint"}}</p>
+  {{#with form}}
+      <table class="nci-market nci-corp-roles"><thead><tr><th>{{localize "NCI.GMBusiness.Corp.Post"}}</th><th>{{localize "NCI.GMBusiness.Corp.Count"}}</th><th>{{localize "NCI.GMBusiness.Corp.Wage"}}</th></tr></thead><tbody>
+        {{#each roles}}<tr><td>{{label}}</td><td><input type="number" name="corpCount_{{post}}" min="0" max="20" step="1" value="{{count}}"></td><td><input type="number" name="corpWage_{{post}}" min="0" step="10" value="{{wage}}"></td></tr>{{/each}}
+      </tbody></table>
+  {{/with}}
+  <div class="nci-actions"><button type="button" data-action="businessCorpCreate"><i class="fas fa-briefcase"></i> {{localize "NCI.GMBusiness.Corp.Create"}}</button></div>
+  {{else}}<p class="nci-empty">{{localize "NCI.GMBusiness.Corp.NoCompanies"}}</p>{{/if}}
+
+  {{#each employers}}
+  <div class="nci-gig nci-bizentry nci-form">
+    <div class="nci-gigtop"><strong>{{name}}</strong> <span class="nci-muted">({{ticker}}) &middot; {{kindName}} &middot; DV {{dv}}</span>{{#if open}}<span class="nci-up">{{localize "NCI.GMBusiness.Corp.Hiring"}}</span>{{else}}<span class="nci-down">{{localize "NCI.GMBusiness.Corp.NotHiring"}}</span>{{/if}}</div>
+    {{#if gone}}<div class="nci-warn">{{localize "NCI.GMBusiness.Corp.Gone"}}</div>{{/if}}
+    {{#if staff.length}}
+    <table class="nci-market"><thead><tr><th>{{localize "NCI.GMBusiness.Corp.Who"}}</th><th>{{localize "NCI.GMBusiness.Corp.Post"}}</th><th>{{localize "NCI.GMBusiness.Corp.Wage"}}</th><th>{{localize "NCI.GMBusiness.Corp.Standing"}}</th><th></th></tr></thead><tbody>
+      {{#each staff}}<tr><td>{{{who}}}</td><td>{{post}}</td><td>{{wage}}</td><td>{{standing}}</td>
+        <td class="nci-rowbtns"><button type="button" data-action="businessCorpDismiss" data-id="{{../id}}" data-staff="{{id}}"><i class="fas fa-person-walking-arrow-right"></i> {{dismissLabel}}</button></td></tr>{{/each}}
+    </tbody></table>
+    {{else}}<p class="nci-muted">{{localize "NCI.GMBusiness.Corp.NoStaff"}}</p>{{/if}}
+    {{#if offer.characters.length}}{{#if offer.posts.length}}
+    <div class="nci-actions">
+      <label class="nci-inline">{{localize "NCI.GMBusiness.Corp.OfferTo"}} <select name="corpOfferActor">{{#each offer.characters}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+      <label class="nci-inline">{{localize "NCI.GMBusiness.Corp.As"}} <select name="corpOfferPost">{{#each offer.posts}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+      <button type="button" data-action="businessCorpOffer" data-id="{{id}}"><i class="fas fa-handshake"></i> {{localize "NCI.GMBusiness.Corp.Offer"}}</button>
+    </div>
+    {{/if}}{{/if}}
+    <details>
+      <summary>{{localize "NCI.GMBusiness.Corp.Edit"}}</summary>
+      <div class="nci-grid">
+        <label>{{localize "NCI.GMBusiness.Corp.Kind"}}<select name="corpKind">{{#each kinds}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+        <label>{{localize "NCI.GMBusiness.Corp.Dv"}}<input type="number" name="corpDv" min="9" max="30" step="1" value="{{dv}}"></label>
+        <label>{{localize "NCI.GMBusiness.Corp.Location"}}<input type="text" name="corpLocation" maxlength="80" value="{{location}}"></label>
+        <label class="nci-inline"><input type="checkbox" name="corpOpen" {{#if open}}checked{{/if}}> {{localize "NCI.GMBusiness.Corp.Hiring"}}</label>
+      </div>
+      <table class="nci-market nci-corp-roles"><thead><tr><th>{{localize "NCI.GMBusiness.Corp.Post"}}</th><th>{{localize "NCI.GMBusiness.Corp.Count"}}</th><th>{{localize "NCI.GMBusiness.Corp.Wage"}}</th></tr></thead><tbody>
+        {{#each roles}}<tr><td>{{label}}</td><td><input type="number" name="corpCount_{{post}}" min="0" max="20" step="1" value="{{count}}"></td><td><input type="number" name="corpWage_{{post}}" min="0" step="10" value="{{wage}}"></td></tr>{{/each}}
+      </tbody></table>
+      <div class="nci-actions">
+        <button type="button" data-action="businessCorpSave" data-id="{{id}}"><i class="fas fa-floppy-disk"></i> {{localize "NCI.GMBusiness.Corp.Save"}}</button>
+        <button type="button" data-action="businessCorpRemove" data-id="{{id}}"><i class="fas fa-trash"></i> {{localize "NCI.GMBusiness.Corp.Remove"}}</button>
+      </div>
+    </details>
+  </div>
+  {{/each}}
+  {{/with}}
+</div>

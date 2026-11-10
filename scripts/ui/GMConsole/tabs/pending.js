@@ -12,7 +12,7 @@ import { MarketStore } from '../../../data/MarketStore.js';
 import { SyndicateRepository } from '../../../data/SyndicateRepository.js';
 import { BusinessService } from '../../../services/BusinessService.js';
 import { HeatService } from '../../../services/HeatService.js';
-import { sceneCandidate } from '../../../engine/index.js';
+import { isEmployerId, sceneCandidate } from '../../../engine/index.js';
 import { penaltyText, context as heatContext } from './heat.js';
 import { context as gigContext } from './gigs.js';
 import { StoryService } from '../../../services/StoryService.js';
@@ -142,11 +142,12 @@ const pressRows = () => PressService.held().map((s) => row('events', s.name, 'pr
   buttons: [button('pressCharacterApprove', 'NCI.GMBusiness.PressApprove', yes, s.id), button('pressCharacterSpike', 'NCI.GMBusiness.PressSpike', no, s.id)],
 })));
 
-const jobRows = () => JobService.waiting().map(({ business: b, application: a }) => row('businesses', a.name, 'jobApplication', { name: b.name, post: L(`NCI.Staff.Post.${a.post}`), band: L(`NCI.Roll.Band.${a.band}`) }, () => ({
+const jobTab = (b) => (isEmployerId(b.id) ? 'jobMarket' : 'businesses');
+const jobRows = () => JobService.waiting().map(({ business: b, application: a }) => row(jobTab(b), a.name, 'jobApplication', { name: b.name, post: L(`NCI.Staff.Post.${a.post}`), band: L(`NCI.Roll.Band.${a.band}`) }, () => ({
   buttons: [button('businessJobAnswer', 'NCI.Jobs.Hire', yes, b.id, { reward: a.id, yes: 'true' }), button('businessJobAnswer', 'NCI.Jobs.TurnDown', no, b.id, { reward: a.id, yes: 'false' })],
 })));
 
-const promotionRows = () => JobService.promotions().map(({ business: b, staff: s, raised }) => row('businesses', s.name, 'promotion', { name: b.name, post: L(`NCI.Staff.Post.${s.post}`), wage: s.wage, raised }, () => ({
+const promotionRows = () => JobService.promotions().map(({ business: b, staff: s, raised }) => row(jobTab(b), s.name, 'promotion', { name: b.name, post: L(`NCI.Staff.Post.${s.post}`), wage: s.wage, raised }, () => ({
   buttons: [button('businessPromote', 'NCI.Jobs.Promote', yes, b.id, { reward: s.id, yes: 'true' }), button('businessPromote', 'NCI.Jobs.NotNow', no, b.id, { reward: s.id, yes: 'false' })],
 })));
 

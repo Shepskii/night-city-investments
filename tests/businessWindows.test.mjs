@@ -744,7 +744,9 @@ test('the console\'s tabs are in groups: a group goes to its last open tab, and 
     assert.ok(id === 'pending' ? subTabs.length === 0 : subTabs.some((t) => t.id === id && t.active), `${id} is in its group's row`);
     seen.add(id);
   }
-  assert.equal(seen.size, 14);
+  assert.equal(seen.size, 15);
+  const jobs = (() => { const a = new Apps.GMConsole(); a.tab = 'jobMarket'; return a._prepareContext(); })();
+  assert.deepEqual((await jobs).subTabs.map((t) => t.label), ['Businesses', 'Job Market', 'Syndicates', 'Heat'], 'Job Market under Players');
   assert.match(await renderConsole('actions'), />\s*Corp actions\s*</);
 });
 

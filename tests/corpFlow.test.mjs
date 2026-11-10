@@ -56,7 +56,7 @@ before(async () => {
     jobsOf: (await import('../scripts/services/BusinessClient.js')).jobsOf,
     jobsContext: (await import('../scripts/ui/Business/context.js')).jobsContext,
     jobBoardRows: (await import('../scripts/ui/applyJob.js')).jobBoardRows,
-    gmContext: (await import('../scripts/ui/GMConsole/tabs/businesses.js')).context,
+    gmContext: (await import('../scripts/ui/GMConsole/tabs/jobMarket.js')).context,
   };
 });
 
@@ -76,17 +76,17 @@ const rolled = async (type, payload, roll) => {
 };
 
 test('the GM sets up jobs at a market corporation, and they go on the board', async () => {
-  const before = S.gmContext().businesses.corp;
+  const before = S.gmContext().jobMarket;
   assert.deepEqual(before.companies.map((c) => c.value), ['BIO']);
   const done = await S.EmployerService.create({ companyId: 'BIO', archetype: 'clinic', dv: 13, location: 'Watson', roles: { floor: { count: 1, wage: 350 }, manager: { count: 0, wage: 500 } } });
   assert.equal(done.ok, true, done.reason);
   assert.equal((await S.EmployerService.create({ companyId: 'BIO', archetype: 'clinic', roles: { floor: { count: 1, wage: 1 } } })).reason, 'employer-exists');
   const rows = S.jobBoardRows(nova);
   assert.deepEqual(rows.map((r) => [r.name, r.ticker, r.post, r.wage]), [['Biotechnica', 'BIO', 'floor', '350']]);
-  const gm = render('templates/gm/console/businesses.hbs', S.gmContext());
+  const gm = render('templates/gm/console/jobMarket.hbs', S.gmContext());
   assert.match(text(gm), /Biotechnica \(BIO\)/);
   assert.match(gm, /data-action="businessCorpOffer"/);
-  assert.equal(S.gmContext().businesses.corp.companies.length, 0, 'one employer a company');
+  assert.equal(S.gmContext().jobMarket.companies.length, 0, 'one employer a company');
 });
 
 test('Nova applies with Paramedic, waits on Pending, and is hired', async () => {
@@ -95,6 +95,9 @@ test('Nova applies with Paramedic, waits on Pending, and is hired', async () => 
   const waiting = S.JobService.waiting();
   assert.equal(waiting.length, 1);
   assert.equal(waiting[0].business.id, employer().id);
+  const pendingTabs = (await import('../scripts/ui/GMConsole/tabs/pending.js')).waiting();
+  assert.equal(pendingTabs.jobMarket, 1, 'Pending opens the Job Market for it');
+  assert.equal(pendingTabs.businesses ?? 0, 0);
   const done = await S.JobService.decide(employer().id, waiting[0].application.id, true);
   assert.equal(done.ok, true, done.reason);
   const [job] = S.jobsOf(nova);

@@ -11,7 +11,7 @@ import {
   decideEmployerPromotion, dismissEmployee, employeesOf, employerBoardEntry, employerJob, employerUses, offerEmployerJob, promotedEmployerWage,
   recordApplication, updateEmployer, useKey, workEmployerShift,
 } from '../engine/index.js';
-import { MODULE_ID, FLAGS, SETTINGS } from '../utils/constants.js';
+import { MODULE_ID, FLAGS, HOOKS, SETTINGS } from '../utils/constants.js';
 import { isCharacter, log } from '../utils/helpers.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
 import { EmployerRepository } from '../data/EmployerRepository.js';
@@ -32,6 +32,7 @@ export const EmployerService = {
   /** Save, then everything that follows from it: the jobs on characters, the board, pay and mail. */
   async _commit(e, { events = [], wealth = {} } = {}) {
     await EmployerRepository.save(e);
+    Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { employerId: e.id });
     await this._sync(e);
     await JobService.publish();
     const out = { business: e, events };
@@ -86,6 +87,7 @@ export const EmployerService = {
       if (!e) return { ok: false, reason: 'no-employer' };
       const wealth = Object.fromEntries(e.staff.filter((s) => s.status === 'active').map((s) => [s.actorId, s.wage]));
       await EmployerRepository.remove(id);
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { employerId: id });
       await this._sync(e, true);
       await JobService.publish();
       await BusinessService._pay(wealth);

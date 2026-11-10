@@ -1118,7 +1118,7 @@
       "Group": { "pending": "Pending", "market": "Market", "players": "Players", "tools": "Tools" },
       "Tab": {
         "pending": "Pending", "market": "Market", "events": "Events", "actions": "Corp actions", "companies": "Companies",
-        "funds": "Funds", "brokers": "Brokers", "gigs": "Gigs", "heat": "Heat", "businesses": "Businesses", "factions": "Factions", "production": "Production", "syndicates": "Syndicates", "tools": "Audit"
+        "funds": "Funds", "brokers": "Brokers", "gigs": "Gigs", "heat": "Heat", "businesses": "Businesses", "jobMarket": "Job Market", "factions": "Factions", "production": "Production", "syndicates": "Syndicates", "tools": "Audit"
       },
       "FundsHint": "Funds pool several companies into one tradable unit. Their value follows the companies' prices. Players can only trade them through a broker.",
       "NewFund": "New fund",

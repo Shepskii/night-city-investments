@@ -21,17 +21,18 @@ import * as brokers from './tabs/brokers.js';
 import * as gigs from './tabs/gigs.js';
 import * as heat from './tabs/heat.js';
 import * as businesses from './tabs/businesses.js';
+import * as jobMarket from './tabs/jobMarket.js';
 import * as syndicates from './tabs/syndicates.js';
 import * as factions from './tabs/factions.js';
 import * as production from './tabs/production.js';
 import * as tools from './tabs/tools.js';
 
-const TABS = { pending, market, events, actions, brokers, businesses, syndicates, heat, gigs, companies, funds, factions, production, tools };
+const TABS = { pending, market, events, actions, brokers, businesses, jobMarket, syndicates, heat, gigs, companies, funds, factions, production, tools };
 /** The two rows of buttons: each group, and its tabs in display order. */
 const GROUPS = {
   pending: ['pending'],
   market: ['market', 'events', 'actions', 'brokers'],
-  players: ['businesses', 'syndicates', 'heat'],
+  players: ['businesses', 'jobMarket', 'syndicates', 'heat'],
   tools: ['gigs', 'companies', 'funds', 'factions', 'production', 'tools'],
 };
 const groupOf = (tab) => Object.keys(GROUPS).find((g) => GROUPS[g].includes(tab));
