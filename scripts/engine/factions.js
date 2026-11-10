@@ -25,6 +25,8 @@ export function normalizeFaction(input = {}) {
     ticker: text(input.ticker, 5).toUpperCase(),
     districts: [...new Set((Array.isArray(input.districts) ? input.districts : []).map((d) => text(d, 20)).filter((d) => isDistrict(d)))],
     aliases: (Array.isArray(input.aliases) ? input.aliases : []).map((a) => text(a, 60)).filter(Boolean),
+    // How its mail is worded (M3 step 2): one of its kind's styles, or blank for its default (orgVoice.js).
+    ...(input.voice ? { voice: text(input.voice, 20) } : {}),
   };
 }
 

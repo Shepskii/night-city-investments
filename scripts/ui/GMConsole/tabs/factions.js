@@ -4,7 +4,8 @@
  * @description Action handlers run with `this` set to the console window (F1a, DESIGN §36.3).
  */
 
-import { FACTION_KINDS } from '../../../engine/index.js';
+import { FACTION_KINDS, stylesFor } from '../../../engine/index.js';
+import { OrgMail } from '../../../services/OrgMail.js';
 import { FactionRepository } from '../../../data/FactionRepository.js';
 import { DistrictService } from '../../../services/DistrictService.js';
 import { ContactService } from '../../../services/ContactService.js';
@@ -19,7 +20,7 @@ const parseDistricts = (value) => String(value ?? '').split(/[\s,]+/).filter(Boo
 const rowFields = (target) => {
   const box = target.closest('[data-faction-row]');
   const value = (name) => box?.querySelector(`[name="${name}"]`)?.value ?? '';
-  return { name: value('name'), kind: value('kind'), ticker: value('ticker'), districts: parseDistricts(value('districts')) };
+  return { name: value('name'), kind: value('kind'), ticker: value('ticker'), districts: parseDistricts(value('districts')), ...(value('voice') ? { voice: value('voice') } : {}) };
 };
 
 async function onImport() {
@@ -88,6 +89,11 @@ export const actions = {
 export function context() {
   const factions = FactionRepository.list();
   const kinds = (kind) => FACTION_KINDS.map((k) => ({ value: k, label: L(`NCI.Faction.Kind.${k}`), selected: k === kind }));
+  // How its mail reads (M3 step 2): its kind's styles, with the one it has now picked.
+  const voices = (f) => {
+    const current = OrgMail.styleOf(f);
+    return stylesFor(f.kind).map((v) => ({ value: v, label: L(`NCI.Faction.Voice.${v}`), selected: v === current }));
+  };
   const senders = ContactService.senders();
   const contactName = (id) => (senders[`faction:${id}`] ? NcmAdapter.contact(senders[`faction:${id}`])?.name ?? '' : '');
   const messenger = NcmAdapter.available();
@@ -95,7 +101,7 @@ export function context() {
     factions: {
       messenger,
       contactNames: messenger ? [...new Set(NcmAdapter.allContacts().map((c) => c.name).filter(Boolean))].sort((a, b) => a.localeCompare(b)) : [],
-      rows: factions.map((f) => ({ ...f, districtText: f.districts.join(', '), kinds: kinds(f.kind), contactName: messenger ? contactName(f.id) : '' })),
+      rows: factions.map((f) => ({ ...f, districtText: f.districts.join(', '), kinds: kinds(f.kind), contactName: messenger ? contactName(f.id) : '', voices: voices(f) })),
       newKinds: kinds('gang'),
       districtIds: DistrictService.idList(),
       districts: DistrictService.rows(),

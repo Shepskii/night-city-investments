@@ -19,6 +19,7 @@ import { FactionRepository } from '../data/FactionRepository.js';
 import { L } from '../ui/format.js';
 import { BusinessService } from './BusinessService.js';
 import { ContactService } from './ContactService.js';
+import { OrgMail } from './OrgMail.js';
 import { HeatService } from './HeatService.js';
 import { NewsService } from './NewsService.js';
 import { SkillAdapter } from './SkillAdapter.js';
@@ -92,7 +93,7 @@ export const PressService = {
     await actor.setFlag(MODULE_ID, FLAGS.PRESS_NOTICE, notice);
     // The paper writes for their side of it (M3).
     const from = await ContactService.outlet(story.outlet).catch(() => null);
-    await BusinessService._mailAccount(story.actorId, L('NCI.Press.Char.Subject', { name: story.name }), [L(`NCI.Press.Char.Asks.${story.story}`), L('NCI.Press.Char.Told', { outlet: story.outlet, days: rules().character.answerDays })], { from, footer: L('NCI.Press.Char.Footer') });
+    await BusinessService._mailAccount(story.actorId, L('NCI.Press.Char.Subject', { name: story.name }), OrgMail.outlet(story.outlet, null, `charAsk_${story.story}`, { days: rules().character.answerDays }, ['charTold'])?.paragraphs ?? [L(`NCI.Press.Char.Asks.${story.story}`), L('NCI.Press.Char.Told', { outlet: story.outlet, days: rules().character.answerDays })], { from, footer: L('NCI.Press.Char.Footer') });
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, {});
   },
 
@@ -127,7 +128,7 @@ export const PressService = {
       }));
     }
     const result = !story.believed ? 'Ignored' : out.scale === 0 ? 'Answered' : out.scale < 1 ? 'Halved' : 'Full';
-    await BusinessService._mailAccount(story.actorId, L('NCI.Press.Char.ResultSubject'), [L(`NCI.Press.Char.${result}`, { outlet: story.outlet })], { from: await ContactService.outlet(story.outlet).catch(() => null), footer: L(`NCI.Press.Char.${result}Footer`) });
+    await BusinessService._mailAccount(story.actorId, L('NCI.Press.Char.ResultSubject'), OrgMail.outlet(story.outlet, null, `char${result}`)?.paragraphs ?? [L(`NCI.Press.Char.${result}`, { outlet: story.outlet })], { from: await ContactService.outlet(story.outlet).catch(() => null), footer: L(`NCI.Press.Char.${result}Footer`) });
     await actor?.unsetFlag(MODULE_ID, FLAGS.PRESS_NOTICE);
   },
 

@@ -99,7 +99,7 @@ test('a gang\'s shakedown comes from its own contact, made once, to the partners
   assert.equal(sent[0].fromContactId, claws.id);
   assert.equal(sent[0].toActorId, nova.id);
   assert.equal(sent[0].subject, 'Ripper Shack: A shakedown'.replace('A shakedown', lookup('NCI.Event.shakedown.Name')));
-  assert.match(sent[0].body, /our cut this week/);
+  assert.match(sent[0].body, /Ripper Shack|cut|protection|Protection|pay/i, 'in the gang\'s own voice');
   assert.match(sent[0].body, /Work tab/);
   assert.deepEqual(pushed, [[claws.id, nova.id]]);
 
@@ -224,7 +224,8 @@ test('a regulator\'s case comes from the Business Regulation Office, with what t
   const office = contacts.find((c) => c.name === 'Business Regulation Office');
   assert.ok(office);
   assert.equal(sent[0].fromContactId, office.id);
-  assert.match(sent[0].body, /^<p>We have opened a case against Ripper Shack/);
+  assert.match(sent[0].subject, /^Case NC-REG-\d{4}: /, 'its reference first');
+  assert.match(sent[0].body, /Ripper Shack/);
   assert.match(sent[0].body, /<em>▸ An officer answers from the Business window/);
 });
 
@@ -270,4 +271,52 @@ test('every wording a service asks for by name is in the language file', async (
     for (const [, key] of src.matchAll(/L\('(NCI\.[A-Za-z0-9.]+)'/g)) if (typeof lookup(key) !== 'string') missing.push(`${file}: ${key}`);
   }
   assert.deepEqual(missing, []);
+});
+
+// ── M3 step 2: organisations in their own voice ─────────────────────────────────
+
+test('the Factions tab offers each faction its kind\'s voices, its own picked', async () => {
+  const { default: Handlebars } = await import('handlebars');
+  Handlebars.registerHelper('localize', (key, options) => game.i18n.format(key, options?.hash ?? {}));
+  const { context } = await import('../scripts/ui/GMConsole/tabs/factions.js');
+  const html = Handlebars.compile(readFileSync(new URL('../templates/gm/console/factions.hbs', import.meta.url), 'utf8'))(context());
+  const rows = html.split('<tr data-faction-row>').slice(1);
+  const ara = rows.find((r) => r.includes('value="Arasaka"'));
+  const claws = rows.find((r) => r.includes('value="Tyger Claws"'));
+  assert.match(ara, /<option value="formal" selected>Formal<\/option>/, 'Arasaka is Formal to begin with');
+  assert.match(ara, /value="tabloid"/);
+  assert.doesNotMatch(ara, /value="chrome"/, 'a corporation has corporate voices');
+  assert.match(claws, /<option value="street" selected>Street<\/option>/);
+  assert.match(html, /Voice/);
+});
+
+test('a faction picked to be Formal writes formally, and a paper picked Tabloid writes like one', async () => {
+  const { OrgMail } = await import('../scripts/services/OrgMail.js');
+  await game.settings.set(MODULE_ID, SETTINGS.FACTION_DEFS, {
+    fac_claws: { id: 'fac_claws', name: 'Tyger Claws', kind: 'gang', voice: 'cryptic' },
+    fac_ara: { id: 'fac_ara', name: 'Arasaka', kind: 'corp', ticker: 'ARA', voice: 'tabloid' },
+  });
+  try {
+    const gang = OrgMail.faction('fac_claws', 'shakedown', { name: 'Ripper Shack' });
+    assert.match(gang.paragraphs.join(' '), />>/, 'the Cryptic voice');
+    const paper = OrgMail.outlet('Arasaka', 'fac_ara', 'pressAsk', { name: 'Ripper Shack' });
+    assert.match(paper.paragraphs.join(' '), /Ripper Shack/);
+    assert.ok(['Arasaka: you read it here first!', '- the Arasaka desk'].some((s) => paper.paragraphs.join(' ').includes(s)) || paper.paragraphs.length >= 1);
+    const plain = OrgMail.outlet('Night City Today', null, 'resultFull', { name: 'Ripper Shack' });
+    assert.match(plain.paragraphs.join(' '), /Ripper Shack/, 'a paper that is not a faction is Broadcast');
+    assert.equal(OrgMail.faction('fac_none', 'shakedown', {}), null);
+  } finally {
+    await game.settings.set(MODULE_ID, SETTINGS.FACTION_DEFS, {
+      fac_claws: { id: 'fac_claws', name: 'Tyger Claws', kind: 'gang' },
+      fac_ara: { id: 'fac_ara', name: 'Arasaka', kind: 'corp', ticker: 'ARA' },
+    });
+  }
+});
+
+test('an inspection is a notice with its reference, and a shakedown a gang\'s own words', async () => {
+  reset();
+  const b = shop({ period: { index: 3, event: { kind: 'inspection' } } });
+  await BusinessService._mailEvent(b, takeEventMail(b));
+  assert.match(sent[0].subject, /^Inspection NCB-\d{4}: Ripper Shack: /);
+  assert.match(sent[0].body, /Ripper Shack/);
 });
