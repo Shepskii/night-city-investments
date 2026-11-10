@@ -1788,8 +1788,9 @@ function startPeriod(b, index, startDay, weekday, seed, p, traits = null, relati
     b.collectors = false;
   } else if (b.grudge) {
     // A sullen employee who was let go comes back to make a point.
-    b.period.event = { kind: 'grudge' };
+    b.period.event = { kind: 'grudge', ...(b.grudgeFrom ? { formerStaffId: b.grudgeFrom } : {}) };
     b.grudge = false;
+    delete b.grudgeFrom;
   } else if (queued) {
     startHandPress(b, queued, b.period.startDay, p);
   } else if (event?.kind === 'press') {

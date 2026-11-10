@@ -470,6 +470,14 @@ export function registerSettings() {
     type: Boolean,
     default: true,
   });
+  s.register(MODULE_ID, SETTINGS.EVENT_MAIL, {
+    name: 'NCI.Settings.EventMail.Name',
+    hint: 'NCI.Settings.EventMail.Hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true,
+  });
   s.register(MODULE_ID, SETTINGS.ROOM_EVENTS, {
     name: 'NCI.Settings.RoomEvents.Name',
     hint: 'NCI.Settings.RoomEvents.Hint',

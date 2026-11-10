@@ -69,6 +69,12 @@ export const MailService = {
     return sendTo(actor, { fromContactId: brokerId, subject, body: html(paragraphs), eddies });
   },
 
+  /** A Messenger contact mails a character, or a syndicate's members: a faction, the city, an employer (M2). */
+  async fromContact(contactId, actor, { subject, lines, eddies = 0 }) {
+    if (!contactId) return { ok: false, error: 'no-contact' };
+    return sendTo(actor, { fromContactId: contactId, subject, body: html(lines), eddies });
+  },
+
   /** The market wire mails a client. */
   async fromWire(actor, { subject, lines, eddies = 0 }) {
     const wire = await NcmAdapter.ensureWire();

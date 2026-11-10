@@ -7,6 +7,8 @@
 import { FACTION_KINDS } from '../../../engine/index.js';
 import { FactionRepository } from '../../../data/FactionRepository.js';
 import { DistrictService } from '../../../services/DistrictService.js';
+import { ContactService } from '../../../services/ContactService.js';
+import { NcmAdapter } from '../../../integrations/NcmAdapter.js';
 import { L } from '../../format.js';
 import { confirm, report } from '../shared.js';
 
@@ -30,9 +32,33 @@ async function onAdd(event, target) {
   this.render();
 }
 
+/**
+ * The Messenger contact a faction's mail comes from (M2), by the name the GM typed: blank lets the first mail make one.
+ * @returns {Promise<boolean>} false for a name that isn't a contact
+ */
+async function saveContact(factionId, target) {
+  const name = String(target.closest('[data-faction-row]')?.querySelector('[name="contact"]')?.value ?? '').trim();
+  const key = `faction:${factionId}`;
+  const current = ContactService.linked(key);
+  if (!name) {
+    if (current) await ContactService.link(key, null);
+    return true;
+  }
+  if (current && NcmAdapter.contact(current)?.name === name) return true;
+  const contact = NcmAdapter.allContacts().find((c) => c.name === name);
+  if (!contact) {
+    ui.notifications.warn(L('NCI.Faction.ContactUnknown', { name }));
+    return false;
+  }
+  await ContactService.link(key, contact.id);
+  return true;
+}
+
 async function onSave(event, target) {
   const before = FactionRepository.get(target.dataset.id);
-  report(await FactionRepository.save({ ...before, ...rowFields(target), id: target.dataset.id }));
+  const saved = await FactionRepository.save({ ...before, ...rowFields(target), id: target.dataset.id });
+  if (saved?.ok && !(await saveContact(target.dataset.id, target))) return;
+  report(saved);
   this.render();
 }
 
@@ -62,9 +88,14 @@ export const actions = {
 export function context() {
   const factions = FactionRepository.list();
   const kinds = (kind) => FACTION_KINDS.map((k) => ({ value: k, label: L(`NCI.Faction.Kind.${k}`), selected: k === kind }));
+  const senders = ContactService.senders();
+  const contactName = (id) => (senders[`faction:${id}`] ? NcmAdapter.contact(senders[`faction:${id}`])?.name ?? '' : '');
+  const messenger = NcmAdapter.available();
   return {
     factions: {
-      rows: factions.map((f) => ({ ...f, districtText: f.districts.join(', '), kinds: kinds(f.kind) })),
+      messenger,
+      contactNames: messenger ? [...new Set(NcmAdapter.allContacts().map((c) => c.name).filter(Boolean))].sort((a, b) => a.localeCompare(b)) : [],
+      rows: factions.map((f) => ({ ...f, districtText: f.districts.join(', '), kinds: kinds(f.kind), contactName: messenger ? contactName(f.id) : '' })),
       newKinds: kinds('gang'),
       districtIds: DistrictService.idList(),
       districts: DistrictService.rows(),

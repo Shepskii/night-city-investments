@@ -1816,7 +1816,11 @@
       },
       "ShareContacts": {
         "Name": "Share contacts with players",
-        "Hint": "A character who picks a broker, or who founds a business with an NPC partner, gets that person in their Night City Messenger contacts."
+        "Hint": "A character who picks a broker, or who founds a business with an NPC partner, gets that person in their Night City Messenger contacts. So do those running a business, for its NPC staff and for whoever sends them an event, and an employee, for their employer."
+      },
+      "EventMail": {
+        "Name": "Business events by mail",
+        "Hint": "When a business's week brings trouble with someone behind it, such as a gang's shakedown, an inspection, a reporter or one of the staff, those who can answer it get a mail from them in Night City Messenger."
       },
       "PressFrequency": {
         "Name": "Stories in the press",
@@ -2007,6 +2011,38 @@
       "OffMap": "no longer on the map",
       "Save": "Save"
     },
+    "Contacts": {
+      "Notes": "Made by Night City Investments to send mail about businesses and jobs. You can rename it, give it a portrait, and answer as it.",
+      "Desk": "{name} News Desk",
+      "City": "Night City Inspections",
+      "CityOrg": "City of Night City",
+      "Collectors": "Collections",
+      "Hr": "{name} Human Resources"
+    },
+    "EventMail": {
+      "Subject": "{name}: {event}",
+      "Answer": "Answer it on the Work tab of the Business window before the week closes.",
+      "Offer": "It's on the Work tab of the Business window, if you want it, until the week closes.",
+      "Line": {
+        "shakedown": "Nice place, {name}. Be a shame if something happened to it. We'll be by for our cut this week.",
+        "sabotage": "Heard the equipment at {name} is playing up. Funny how that happens. Think about who your friends are.",
+        "smear": "People are hearing some interesting things about {name}. We thought you should hear it from us first.",
+        "raid": "Notice of inspection: following a report, officers will attend {name} this week. Have your licences and records ready.",
+        "inspection": "Notice of inspection: {name} is due an inspection this week. Have your licences and records ready.",
+        "press": "This is {outlet}. We're running a story about {name}, and wanted your comment before it prints.",
+        "bust": "NCPD has reason to believe the premises of {name} are being used for illegal activity. Officers will be attending.",
+        "collectors": "You missed a payment. Some friends of ours will be coming by {name} to talk about it.",
+        "grudge": "You shouldn't have let me go. See you around {name}.",
+        "roomFavour": "We need a favour from the back room at {name}. Don't make us ask twice.",
+        "roomBigOrder": "Got a big order for the back room at {name}. Good money, and you don't want to say no to us.",
+        "sickDay": "I'm not well enough to come in to {name} this week. Sorry.",
+        "payDispute": "We need to talk about pay at {name}. The staff aren't working for what we're getting.",
+        "poaching": "I've had an offer of another job, a better one. Thought you should know before I decide.",
+        "accident": "I've been hurt on the job at {name}. I'm going to need some help.",
+        "doubleBooked": "My other job wants me in this week as well, and I can't be in two places at once.",
+        "fullTimeOffer": "My other job has offered me full time. Give me a reason to stay at {name}."
+      }
+    },
     "Faction": {
       "Hint": "Corporations and gangs a business can stand well or badly with. Link a corporation to its ticker, and give a gang the districts it holds, so the businesses there see it.",
       "Import": "Import starter factions",
@@ -2022,6 +2058,9 @@
       "Remove": "Remove faction",
       "RemoveConfirm": "Remove {name}? Standing with it is kept out of sight, and comes back if it is added again with the same id.",
       "None": "No factions yet: import the starter list, or add your own.",
+      "Contact": "Messenger contact",
+      "ContactHint": "A faction's mail about a business comes from its Messenger contact. Leave it blank and one is made the first time the faction acts; type a contact's name to use one of your own.",
+      "ContactUnknown": "No Messenger contact is called {name}.",
       "StandingTitle": "Standing",
       "StandingHint": "Each business's true standing, from -100 to 100; its owners see only the band. It fades 2 points a week toward 0, and moves at most 15 in a week, apart from what you set by hand. A gig moves it only when its GM notes make it a contract, like [NCI contract: Charter Test Clinic].",
       "NoStanding": "No dealings yet.",

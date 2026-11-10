@@ -18,7 +18,7 @@ import { ProductionCatalog } from '../data/ProductionCatalog.js';
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
-  dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, answerNpcPartner, approvePress, spikePress, runPress, createNpcCompany, setNpcRun, cleanTicker, bossBand, standingOf, shiftUses, stageDv, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
+  takeEventMail, dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, answerNpcPartner, approvePress, spikePress, runPress, createNpcCompany, setNpcRun, cleanTicker, bossBand, standingOf, shiftUses, stageDv, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
   isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact, payListedDividend,
   reviewListing, clearReview, delistCompany, isEmployerId,
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
@@ -50,6 +50,7 @@ import { WealthAdapter } from './WealthAdapter.js';
 import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors, investorContacts, staffActors, jobsOf, isNpcActor } from './BusinessClient.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
 import { SyndicateCash } from './SyndicateCash.js';
+import { ContactService } from './ContactService.js';
 import { MailService } from './MailService.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { PortfolioService } from './PortfolioService.js';
@@ -686,6 +687,8 @@ class BusinessServiceImpl {
       const change = (out.events ?? []).reduce((a, e) => a + (e.exposure ?? 0), 0);
       out.business.backRoom.band = exposureBand(Math.max(0, (MarketStore.getBusinessesHidden()[out.business.id]?.exposure ?? 0) + change));
     }
+    // The week's event, to mail once from whoever is behind it (M2).
+    const eventMail = game.settings.get(MODULE_ID, SETTINGS.EVENT_MAIL) !== false ? takeEventMail(out.business) : null;
     await BusinessRepository.save(out.business);
     await this._moveItems(out);
     // The record is saved by now: trouble with the sheet must not stop the wages, Exposure and the rest.
@@ -698,6 +701,9 @@ class BusinessServiceImpl {
       await JobService.publish();
     }
     if (out.events?.some((e) => e.type === 'partnerJoined')) await this._shareNpcPartners(out.business).catch((error) => log.warn('Could not share NPC partners', error));
+    await this._shareStaff(out.business).catch((error) => log.warn('Could not share staff contacts', error));
+    await this._shareEmployer(out.business).catch((error) => log.warn('Could not share an employer contact', error));
+    if (eventMail) await this._mailEvent(out.business, eventMail).catch((error) => log.warn('Could not mail an event', error));
     await this._payslips(out);
     await this._livingCosts(out);
     await this._twoJobs(out);
@@ -923,7 +929,10 @@ class BusinessServiceImpl {
       let sent = false;
       if (mail) {
         try {
-          const result = await MailService.fromWire(actor, {
+          // At an NPC's company or a corporation, the employer sends it (M2); at a player's business, the market wire.
+          const employer = await ContactService.employer(out.business).catch(() => null);
+          const send = employer ? (m) => MailService.fromContact(employer, actor, m) : (m) => MailService.fromWire(actor, m);
+          const result = await send({
             // Wage and overtime each on a line of their own, so a week with overtime says so.
             subject: L(overtime ? 'NCI.Staff.Payslip.SubjectOvertime' : 'NCI.Staff.Payslip.Subject', { name: out.business.name }),
             lines: [
@@ -2400,6 +2409,72 @@ class BusinessServiceImpl {
       .map((x) => (x.actorId.startsWith('npc:contact:') ? x.actorId.slice('npc:contact:'.length) : NcmAdapter.contactForActor(x.actorRef)?.id)).filter(Boolean);
     const people = b.partners.filter((x) => !x.npc && x.status === 'active').map((x) => x.actorId);
     for (const contactId of npcs) for (const actorId of people) await NcmAdapter.pushContact(contactId, actorId);
+  }
+
+  /**
+   * Those who can answer a business's events, as characters: its partners, or a company's officers; a syndicate
+   * stands for its active members. An NPC's company has nobody.
+   */
+  _runnerIds(b) {
+    if (b.npcRun) return [];
+    const accounts = b.stage < 2 ? b.partners.filter((x) => !x.npc && x.status === 'active' && x.units > 0).map((x) => x.actorId) : (b.officers ?? []);
+    const ids = new Set();
+    for (const id of accounts) {
+      if (game.actors.get(id)) ids.add(id);
+      else for (const m of SyndicateRepository.get(id)?.members ?? []) if (m.status === 'active' && game.actors.get(m.actorId)) ids.add(m.actorId);
+    }
+    return [...ids];
+  }
+
+  /**
+   * The week's event, mailed from whoever is behind it to those who can answer it, who are given the sender as a
+   * contact so they can write back (M2). A back room's trouble goes to the same people, who are those who know of it.
+   */
+  async _mailEvent(b, { event, sender }) {
+    const ids = this._runnerIds(b);
+    if (!ids.length) return;
+    const contactId = await ContactService.forSender(b, sender);
+    if (!contactId) return;
+    await ContactService.share(contactId, ids);
+    const staff = event.staffId ? (b.staff ?? []).find((s) => s.id === event.staffId)?.name ?? '' : '';
+    const subject = L('NCI.EventMail.Subject', { name: b.name, event: L(`NCI.Event.${event.kind}.Name`) });
+    const lines = [
+      L(`NCI.EventMail.Line.${event.kind}`, { name: b.name, staff, outlet: event.factionName ?? '' }),
+      L(EVENTS[event.kind]?.good ? 'NCI.EventMail.Offer' : 'NCI.EventMail.Answer'),
+    ];
+    for (const id of ids) {
+      const result = await MailService.fromContact(contactId, game.actors.get(id), { subject, lines });
+      if (!result?.ok) log.warn(`Event mail to ${id} failed: ${result?.error ?? 'no answer'}`);
+    }
+  }
+
+  /** A business's NPC staff, given to those running it as contacts: a recruit gets one made (M2). */
+  async _shareStaff(b) {
+    if (b.npcRun || game.settings.get(MODULE_ID, SETTINGS.SHARE_CONTACTS) === false) return;
+    const ids = this._runnerIds(b);
+    if (!ids.length) return;
+    for (const staff of (b.staff ?? []).filter((s) => s.status === 'active' && s.source !== 'pc')) {
+      await ContactService.share(await ContactService.staff(b, staff), ids);
+    }
+  }
+
+  /** An NPC's company, given to the player characters it employs or offers a job as their employer's contact (M2). */
+  async _shareEmployer(b) {
+    if (!b.npcRun) return;
+    const ids = (b.staff ?? []).filter((s) => s.source === 'pc' && s.actorId).map((s) => s.actorId);
+    if (!ids.length) return;
+    await ContactService.share(await ContactService.employer(b), ids);
+  }
+
+  /** A mail about a job: from the employer's contact at an NPC's company or a corporation, or else the market wire (M2). */
+  async _mailJob(b, actorId, subject, lines) {
+    const actor = game.actors.get(actorId);
+    const contactId = actor ? await ContactService.employer(b).catch(() => null) : null;
+    if (contactId) {
+      const sent = await MailService.fromContact(contactId, actor, { subject, lines });
+      if (sent?.ok) return sent;
+    }
+    return this._mailAccount(actorId, subject, lines);
   }
 
   /** A partner has died or left the table: the others may buy the stake, or it goes to the heir. */

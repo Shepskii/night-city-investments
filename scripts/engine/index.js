@@ -34,6 +34,7 @@ export * from './businessPress.js';
 export * from './businessNpc.js';
 export * from './businessJobs.js';
 export * from './corpJobs.js';
+export * from './eventMail.js';
 export * from './businessStaff.js';
 export * from './businessPeople.js';
 export * from './businessRewards.js';

@@ -45,6 +45,7 @@ export const SETTINGS = Object.freeze({
   JOB_BOARD: 'jobBoard',
   JOB_AUTO: 'jobAutoHire',
   SHARE_CONTACTS: 'shareContacts',
+  EVENT_MAIL: 'eventMail',
   DATE_FORMAT: 'dateFormat',
   PRODUCTION_CATALOG: 'productionCatalog',
   FUND_DEFS: 'fundDefs',
@@ -114,6 +115,8 @@ export const FLAGS = Object.freeze({
   EMPLOYERS: 'employers',
   /** On the GM-only control journal: each character's recent shift days, at any job (N3, N4). */
   SHIFT_DAYS: 'shiftDays',
+  /** On the GM-only control journal: the Messenger contacts events and jobs are sent from, and who each was shared with (M2). */
+  NCM_CONTACTS: 'ncmContacts',
   /** On a syndicate's journal: its record, which its members can read. Written only by the GM. (Its account is the `portfolio` flag beside it.) */
   SYNDICATE: 'syndicate',
   /** On actors. Syndicate requests, written only by the owning player. */

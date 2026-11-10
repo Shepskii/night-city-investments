@@ -518,6 +518,17 @@ test('firing: a caught thief gets no severance, a corp plant brings Exposure, a 
   assert.equal(next.business.grudge, false);
 });
 
+test('a grudge remembers who holds it, so its mail can come from them', () => {
+  const held = Array.from({ length: 16 }, (_, i) => apply(withStaff(clinic(), recruit(`g${i}`, 'floor', { loyalty: 10 })), { type: 'propose', businessId: 'b1', kind: 'fire', staffId: `stf_g${i}` }, MED).business)
+    .find((b) => b.grudge);
+  assert.match(held.grudgeFrom, /^stf_g/);
+  const c = normalizeBusiness(held);
+  const next = advanceBusiness(c, c.period.endDay, { weekday: MONDAY, seed: 'test' }).business;
+  assert.equal(next.period.event.kind, 'grudge');
+  assert.equal(next.period.event.formerStaffId, held.grudgeFrom);
+  assert.equal(next.grudgeFrom, undefined);
+});
+
 test('a corp plant reports in each week: Exposure for the GM', () => {
   const out = closeWeek(withStaff(clinic({ stage: 2 }), recruit('p')), { traits: { p: 'corpPlant' } });
   assert.equal(out.events.find((e) => e.type === 'plant').exposure, st.traits.plantExposure);

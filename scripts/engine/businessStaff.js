@@ -385,7 +385,11 @@ export function enactFire(b, staffId, day, p = BUSINESS_DEFAULTS, { traits = nul
   if (staff.source === 'team') b.teamLost = { ...(b.teamLost ?? {}), [staff.leader]: (b.teamLost?.[staff.leader] ?? 0) + 1 };
   addLedger(b, { day, kind: 'fired', amount: -paid, staffName: staff.name }, p);
   if (staff.status === 'active' && hasLoyalty(staff) && staff.loyalty < p.staff.loyalty.quitBelow
-    && createRng(seed, 'grudge', b.id, staff.id, day).chance(p.staff.events.grudge)) b.grudge = true;
+    && createRng(seed, 'grudge', b.id, staff.id, day).chance(p.staff.events.grudge)) {
+    b.grudge = true;
+    // Who it is, so their mail can come from them (M2).
+    b.grudgeFrom = staff.id;
+  }
   const exposure = ['corpPlant', 'informant'].includes(traitOf(traits, staff)) ? p.staff.traits.plantFired : 0;
   return { ok: true, paid, actorId: staff.source === 'pc' ? staff.actorId : null, exposure };
 }

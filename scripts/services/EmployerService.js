@@ -17,6 +17,7 @@ import { CompanyRepository } from '../data/CompanyRepository.js';
 import { EmployerRepository } from '../data/EmployerRepository.js';
 import { L } from '../ui/format.js';
 import { jobsOf } from './BusinessClient.js';
+import { ContactService } from './ContactService.js';
 import { BusinessService } from './BusinessService.js';
 import { HeatService } from './HeatService.js';
 import { JobService } from './JobService.js';
@@ -35,6 +36,9 @@ export const EmployerService = {
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { employerId: e.id });
     await this._sync(e);
     await JobService.publish();
+    // Those it employs or offers a job get its HR as a contact (M2).
+    const people = e.staff.map((s) => s.actorId).filter(Boolean);
+    if (people.length) await ContactService.share(await ContactService.employer(e), people).catch((error) => log.warn('Could not share an employer contact', error));
     const out = { business: e, events };
     await BusinessService._payslips(out);
     await BusinessService._pay(wealth);
@@ -122,7 +126,7 @@ export const EmployerService = {
   },
 
   _mailSacked(e, actorId, paid) {
-    return BusinessService._mailAccount(actorId, L('NCI.Jobs.JobSubject', { name: e.name }), [L('NCI.Jobs.Sacked', { name: e.name, paid })]).catch((error) => log.warn('Mail failed', error));
+    return BusinessService._mailJob(e, actorId, L('NCI.Jobs.JobSubject', { name: e.name }), [L('NCI.Jobs.Sacked', { name: e.name, paid })]).catch((error) => log.warn('Mail failed', error));
   },
 
   decide(id, applicationId, yes) {
@@ -145,7 +149,7 @@ export const EmployerService = {
       const done = decideEmployerPromotion(e, staffId, yes, day());
       if (!done.ok) return done;
       await this._commit(e);
-      if (yes) await BusinessService._mailAccount(done.staff.actorId, L('NCI.Jobs.JobSubject', { name: e.name }), [L('NCI.Jobs.Promoted', { name: e.name, wage: done.staff.wage })]);
+      if (yes) await BusinessService._mailJob(e, done.staff.actorId, L('NCI.Jobs.JobSubject', { name: e.name }), [L('NCI.Jobs.Promoted', { name: e.name, wage: done.staff.wage })]);
       return { ok: true };
     });
   },

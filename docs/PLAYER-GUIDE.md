@@ -111,6 +111,8 @@ A syndicate can found, join or invest in a player business. Its officers act for
 
 ## Looking for work
 
+Mail about a job at an NPC's company or a corporation, payslips included, comes from your employer: the company's owner, or a corporation's Human Resources, who also goes into your Messenger contacts.
+
 The **Jobs** tab of the market window lists roles open at companies around the city, with a rough wage. **Apply** is one roll with your own skill, and you can try each company once a week. If you pass, the GM decides, and you'll hear by mail; if you're taken on you start at once, and a better roll earns a better wage, up to half as much again as the wage shown. Your job then shows on **Your jobs**, a tab under **Overview** in the Business window, with any job you hold at another player's business. You can quit at any time.
 
 At a company run by an NPC, **Work a shift** there once a week: one roll with your role's skills, and Luck if you like, for all your jobs together. Only the job you work it at earns the bonus and the rise in performance, but the others don't hold that week against you. A good shift earns a bonus on your payslip and raises your **performance**; a poor one, or not turning up, lowers it. **Your jobs** shows your performance at each job. Fall too far and you'll be warned, then let go. Keep it up and you may be promoted with a raise.
@@ -168,7 +170,7 @@ A business week closes on the weekday your GM chose.
 
 - **Actions:** a side business has one action slot a week, a registered business two, and a company three. A side business can Work the shop, Promote, Source supplies, Fix the place up, or Keep it safe. A partner takes the slot and rolls.
 - **Help:** partners who do not take a slot can make a complementary check for +1 on it.
-- **Events:** a week may bring an event (a shakedown, a breakdown, a rival, an inspection, a big order, a staff problem). A partner answers it with a slot and a roll, or lets it cost the week.
+- **Events:** a week may bring an event (a shakedown, a breakdown, a rival, an inspection, a big order, a staff problem). A partner answers it with a slot and a roll, or lets it cost the week. When someone is behind it, such as a gang, the city's inspectors, a reporter, NCPD or one of your staff, they also mail you in Night City Messenger, and you can write back.
 - **The close:** takings go into the business's **cash**, and upkeep, wages and loan payments come out. The **Reports** tab keeps a digest of each week; click one for its cashbook.
 - **Draws:** each partner may draw their share of last week's profit.
 - **Standing:** Reputation, Capacity, Cost base and (once registered) Compliance move with your results, and the Overview tab charts them.
@@ -223,6 +225,7 @@ A business can take on staff: one at a side business, three for registered, eigh
 - **Pay:** a weekly wage that follows their skill, offered at 80–150% of the going rate. Partners can call any employee in for one of the week's rolls, for overtime.
 - **Loyalty** (NPCs): paid weeks, good months, bonuses, training and share grants raise it. Missed wages, extra shifts, pay cuts and refused raises lower it. Sullen staff steal and quit; devoted staff try harder.
 - **Manage** an employee for pay, bonuses, moving role, **training** (a course, or mentoring by a more skilled partner who rolls Education) and letting them go.
+- **In your contacts:** NPC staff go into the Messenger contacts of those running the business, so you can write to them.
 - **Share grants:** at a company, the shareholders can grant an employee shares, which vest after 12 weeks.
 - **An Exec's team:** an Exec partner can bring their Teamwork team onto the staff: one member each at ranks 3, 5 and 9. Name new members, or drag NPC actors into the Hire window. They are unpaid and leave with the Exec, but they answer to their own Loyalty, 1d6 + 1 to start. Each week they save with 1d6 under it, and one who fails won't work that week. A week with nothing done for them costs 1 Loyalty: thank them, give them a perk or a paid week off on the Employee window. At 0 or below they sell you out and go, and replacing one starts at Loyalty 1 with 200 eb of hiring fees.
 

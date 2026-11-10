@@ -118,6 +118,7 @@ export function normalizeBusiness(raw) {
     collectors: b.collectors === true,
     /** A sullen employee was let go: they may come back to make trouble next week (E2). */
     grudge: b.grudge === true,
+    ...(b.grudge === true && b.grudgeFrom ? { grudgeFrom: String(b.grudgeFrom) } : {}),
     /** Gigs run for the business, newest last, and next week's takings change from them. */
     gigs: b.gigs ?? [],
     boost: Number(b.boost ?? 0),
