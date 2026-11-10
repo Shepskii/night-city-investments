@@ -70,6 +70,7 @@
 import { fenceCheck, fenceWeek, makesThings, buyStock, clearStock, consignStock, handOffer, handStock, produceCheck, productionWeek, salesWeek, setLine, takeBackStock } from './businessProduction.js';
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from './businessEvents.js';
+import { eventOrigin } from './eventMail.js';
 import { drawPress, placePress, lapsePress, printPress, pressFallout, startHandPress } from './businessPress.js';
 import { npcWeek, npcDraw } from './businessNpc.js';
 import { shiftLift, payShiftBonuses, shiftWeek } from './businessJobs.js';
@@ -1979,7 +1980,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
     ...(sales.sold ? { stock: sales } : {}),
     ...(fenced ? { fenced } : {}),
     ...(room ? { room: { earned: room.earned, ...(room.supply ? { supply: room.supply } : {}), laundered: room.laundered, paid: room.paid, low: room.low, ...(room.cut ? { cut: room.cut } : {}), ...(room.unpaid ? { unpaid: true } : {}), ...(room.informant ? { informant: room.informant } : {}) } } : {}),
-    ...(event ? { event: { kind: event.kind, outcome: event.outcome, band: event.band, change: event.change, ...(b.period.event?.factionName ? { faction: b.period.event.factionName } : {}), ...(eventCost ? { cost: eventCost } : {}) } } : {}),
+    ...(event ? { event: { kind: event.kind, outcome: event.outcome, band: event.band, change: event.change, ...(b.period.event?.factionName ? { faction: b.period.event.factionName } : {}), ...(eventCost ? { cost: eventCost } : {}), ...eventOrigin(b, event) } } : {}),
     ...(notes.length ? { staff: notes } : {}),
     ...(boost ? { boost } : {}),
     actions: b.period.slots.map((s) => ({ action: s.action, by: s.by, band: s.band, ...(s.staff ? { staff: true } : {}), ...(s.illegal ? { illegal: true } : {}) })),

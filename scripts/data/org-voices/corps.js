@@ -37,6 +37,16 @@ export const CORP_VOICES = Object.freeze({
       'A large requirement has arisen. {gang} expects your back room to meet it.',
       'Volume, discretion and speed. {gang} pays well for all three.',
     ] },
+    answer: {
+      stopped: ["{gang} acknowledges your response. The matter is closed.", "Your conduct has been noted, favourably.", "The correction has been accepted."],
+      halved: ["Your response was insufficient. {gang} expects more.", "Partial compliance is noted.", "The matter is not fully resolved."],
+      full: ["Your silence was unwise. {name} has paid the price.", "{gang} expected a response. None came.", "The consequences were yours to avoid."],
+    },
+    bigOrderAnswer: {
+      stopped: ["{gang} is satisfied with the delivery.", "Executed with discretion. Thank you.", "Your service is noted."],
+      halved: ["The delivery was flawed. {gang} is displeased.", "Unsatisfactory execution.", "Discretion was lacking."],
+      full: ["Your refusal has been noted by {gang}.", "{gang} will look elsewhere.", "An opportunity declined."],
+    },
   },
 
   militarist: {
@@ -71,6 +81,16 @@ export const CORP_VOICES = Object.freeze({
       'Supply order, priority one. {gang} expects volume and silence.',
       'Large procurement through your back room at {name}. Deliver on schedule.',
     ] },
+    answer: {
+      stopped: ["Target held. {gang} withdraws, for now.", "Your counter-operation succeeded. Noted.", "Engagement over. You held."],
+      halved: ["Partial damage inflicted on {name}. Mission partly complete.", "You blunted the attack. Not fully.", "Objective half achieved."],
+      full: ["No resistance from {name}. Mission accomplished.", "Total effect achieved.", "Target down."],
+    },
+    bigOrderAnswer: {
+      stopped: ["Consignment received. Good work.", "Delivery on schedule. Mission success.", "Supply chain intact."],
+      halved: ["Consignment compromised.", "Delivery below standard.", "Supply failure noted."],
+      full: ["Requisition refused. Noted.", "Non-compliance logged.", "{gang} will source elsewhere."],
+    },
   },
 
   wellness: {
@@ -105,6 +125,16 @@ export const CORP_VOICES = Object.freeze({
       'We need quite a lot, very quietly, from your back room. Let\'s grow together!',
       'A big order, a big thank-you payment. Wellness all round.',
     ] },
+    answer: {
+      stopped: ["We heard your response, and we respect it. Healing begins!", "Thank you for engaging with our concerns.", "Great communication, {name}!"],
+      halved: ["We appreciate you trying, but concerns remain.", "A good start! There is more to do.", "Some healing, some hurt."],
+      full: ["We gave you every chance to respond. Wellness requires engagement.", "Your silence spoke volumes, {name}.", "Unhealthy choices have consequences."],
+    },
+    bigOrderAnswer: {
+      stopped: ["Order fulfilled! Thank you, partner!", "Amazing collaboration!", "You made our quarter!"],
+      halved: ["The order had some issues. Let us grow from this.", "Not quite what we hoped.", "A learning experience!"],
+      full: ["We are sad you declined. Our door stays open, for now.", "Maybe next time!", "We will find another partner."],
+    },
   },
 
   legal: {
@@ -144,6 +174,16 @@ export const CORP_VOICES = Object.freeze({
       'The arrangement between {gang} and {name} is at an end.',
       '{gang} withdraws from {name}, retaining its investment.',
     ] },
+    answer: {
+      stopped: ["{gang} notes your response. No further action is contemplated at this time.", "Your reply has been received and the matter closed.", "Your position has been noted."],
+      halved: ["Your response did not fully address our concerns.", "The matter is partially resolved.", "{gang} reserves its position."],
+      full: ["In the absence of a response, the matter proceeded.", "No reply was received from {name}.", "{gang} considers the matter concluded, to your cost."],
+    },
+    bigOrderAnswer: {
+      stopped: ["The transaction completed satisfactorily.", "Delivery accepted.", "Terms fulfilled."],
+      halved: ["The transaction did not meet the agreed standard.", "Delivery deficient.", "Terms partly unfulfilled."],
+      full: ["Your declining of our proposal is noted.", "Offer withdrawn.", "No transaction took place."],
+    },
   },
 
   slick: {
@@ -178,5 +218,15 @@ export const CORP_VOICES = Object.freeze({
       "{gang} needs product at scale, quietly. Your back room is our go-to.",
       "Let's do something big together. Really big. Really quiet.",
     ] },
+    answer: {
+      stopped: ["Okay, your comeback was fire. Campaign over.", "You out-marketed us. Respect!", "Nice spin, {name}!"],
+      halved: ["Your response did okay. Engagement is still on our side.", "Mixed reviews!", "Half the damage. Not bad."],
+      full: ["No response? The campaign went viral. Sorry not sorry!", "Total win for us, {name}.", "You ghosted us, and it cost you."],
+    },
+    bigOrderAnswer: {
+      stopped: ["Order smashed it! Thanks!", "Big win!", "You're our MVP."],
+      halved: ["Order had some problems...", "Not our best collab.", "Meh."],
+      full: ["You said no? Okay, bye!", "Our loss. Or yours.", "Unsubscribed."],
+    },
   },
 });

@@ -18,7 +18,7 @@ import { ProductionCatalog } from '../data/ProductionCatalog.js';
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
-  takeEventMail, eventSender, dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, answerNpcPartner, approvePress, spikePress, runPress, createNpcCompany, setNpcRun, cleanTicker, bossBand, standingOf, shiftUses, stageDv, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
+  takeEventMail, eventSender, eventAnswer, dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, answerNpcPartner, approvePress, spikePress, runPress, createNpcCompany, setNpcRun, cleanTicker, bossBand, standingOf, shiftUses, stageDv, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
   isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact, payListedDividend,
   reviewListing, clearReview, delistCompany, isEmployerId,
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
@@ -721,6 +721,8 @@ class BusinessServiceImpl {
     if (out.events?.some((e) => e.type === 'partnerJoined')) await this._shareNpcPartners(out.business).catch((error) => log.warn('Could not share NPC partners', error));
     await this._shareStaff(out.business).catch((error) => log.warn('Could not share staff contacts', error));
     await this._shareEmployer(out.business).catch((error) => log.warn('Could not share an employer contact', error));
+    // Last week's event answered by whoever was behind it, before this week's arrives (M3 step 4).
+    await this._mailAnswers(out).catch((error) => log.warn('Could not mail an answer', error));
     if (eventMail) await this._mailEvent(out.business, eventMail).catch((error) => log.warn('Could not mail an event', error));
     await this._mailStaffNotes(out).catch((error) => log.warn('Could not mail a staff note', error));
     await this._payslips(out);
@@ -2480,6 +2482,31 @@ class BusinessServiceImpl {
     for (const id of ids) {
       const result = await MailService.fromContact(contactId, game.actors.get(id), { subject, lines, footer });
       if (!result?.ok) log.warn(`Event mail to ${id} failed: ${result?.error ?? 'no answer'}`);
+    }
+  }
+
+  /**
+   * Once a week's event has settled, whoever was behind it writes back to those running the business, in their own
+   * voice, from the contact the event came from: stopped, halved, in full, or a shakedown beaten off by force (M3 step
+   * 4, the user's choices). Off with Business events by mail.
+   */
+  async _mailAnswers(out) {
+    const b = out.business;
+    if (b.npcRun || game.settings.get(MODULE_ID, SETTINGS.EVENT_MAIL) === false) return;
+    const ids = this._runnerIds(b);
+    if (!ids.length) return;
+    for (const digest of out.events.filter((e) => e.type === 'periodClosed').map((e) => e.digest)) {
+      const answer = eventAnswer(b, digest);
+      if (!answer) continue;
+      const voiced = OrgMail.answer(b, answer, digest.index) ?? PeopleMail.answer(b, answer);
+      if (!voiced) continue;
+      const from = await ContactService.forSender(b, answer.sender);
+      if (!from) continue;
+      const subject = `${L('NCI.EventMail.Re')} ${OrgMail.subject(L('NCI.EventMail.Subject', { name: b.name, event: L(`NCI.Event.${answer.event.kind}.Name`) }), voiced)}`;
+      const big = answer.event.kind === 'roomBigOrder';
+      const footer = L(`NCI.EventMail.Result.${big ? `big${answer.tone[0].toUpperCase()}${answer.tone.slice(1)}` : answer.tone}`, { gang: answer.event.factionName ?? '' });
+      await ContactService.share(from, ids);
+      for (const id of ids) await MailService.fromContact(from, game.actors.get(id), { subject, lines: voiced.paragraphs, footer });
     }
   }
 

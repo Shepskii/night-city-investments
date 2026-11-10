@@ -24,8 +24,8 @@ export const OrgMail = {
   },
 
   /** An official sender's mail; `key` keeps the same reference for the same matter. */
-  official(sender, kind, data, key) {
-    return orgMail({ voices: OFFICIALS, style: sender, kind, data: { ...data, ref: refNumber(`${sender}:${key}`) } });
+  official(sender, kind, data, key, tones = []) {
+    return orgMail({ voices: OFFICIALS, style: sender, kind, tones, data: { ...data, ref: refNumber(`${sender}:${key}`) } });
   },
 
   /** A faction's style. */
@@ -47,6 +47,20 @@ export const OrgMail = {
     const f = byId?.name === name ? byId : FactionRepository.list().find((x) => x.name === name) ?? null;
     const style = f ? outletStyle(f, sectorOf(f)) : 'broadcast';
     return orgMail({ voices: OUTLET_VOICES, style, fallback: 'broadcast', kind, also, data: { outlet: name, ...data } });
+  },
+
+  /**
+   * An organisation's answer once its event has settled (M3 step 4), or null for a person. `index` is the closed
+   * week's, so an official answer keeps the reference its notice had.
+   */
+  answer(b, { event, sender, tone }, index) {
+    const data = { name: b.name };
+    switch (sender?.kind) {
+      case 'faction': return this.faction(sender.factionId, event.kind === 'roomBigOrder' ? 'bigOrderAnswer' : 'answer', data, [tone]);
+      case 'city': return this.official('city', event.kind === 'raid' ? 'raidAnswer' : 'inspectionAnswer', data, `${b.id}:${index}`, [tone]);
+      case 'collectors': return this.official('collections', 'collectorsAnswer', data, b.id, [tone]);
+      default: return null;
+    }
   },
 
   /** The week's event from an organisation, or null for a person (the staff speak for themselves). */

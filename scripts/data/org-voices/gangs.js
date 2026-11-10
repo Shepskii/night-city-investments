@@ -64,6 +64,17 @@ export const GANG_VOICES = Object.freeze({
       'You have lost our trust. The deal is dissolved, and our stake goes with it.',
       'We withdraw from {name}. Do not seek us out.',
     ] },
+    answer: {
+      stopped: ["You handled this with dignity. We respect that, for now.", "The matter at {name} is settled. We will remember your composure.", "Well met. {gang} will not trouble {name} further this week."],
+      halved: ["You paid part of what was owed. The rest is a debt of honour.", "A partial courtesy from {name}. Partial courtesy earns partial forgiveness.", "You met us halfway. We expect more next time."],
+      full: ["You chose to ignore us. {name} has paid for that choice.", "Silence is an answer. Yours has cost you.", "We came, and {name} did not receive us. That was unwise."],
+      force: ["You raised a hand against {gang}. That will not be forgotten.", "Our people were turned away by force at {name}. There will be a reckoning.", "You won today. Honour demands we meet again."],
+    },
+    bigOrderAnswer: {
+      stopped: ["The order was handled with discretion. {gang} is pleased.", "Well done. Your back room has earned our regard.", "Delivered as promised. We will remember it."],
+      halved: ["The order was handled poorly. We expected better of {name}.", "Sloppy work. It has drawn eyes we would rather it had not.", "A disappointment. Do not repeat it."],
+      full: ["You declined our order. We will find another supplier, and remember.", "Your refusal is noted.", "Another time, perhaps. Or perhaps not."],
+    },
   },
 
   street: {
@@ -125,6 +136,17 @@ export const GANG_VOICES = Object.freeze({
       "We're done with {name}. Our money stays ours.",
       "Deal's dead. You know why.",
     ] },
+    answer: {
+      stopped: ["Fine. You got lucky this time, {name}.", "Alright, we're square. For now.", "You handled it. Respect."],
+      halved: ["Half a payment is half a problem. We'll be back for the rest.", "You did something. Not enough.", "Could have gone worse for you. Next time it will."],
+      full: ["Ignored us, huh? Hope it was worth what it cost.", "You did nothing. We noticed.", "Told you so, {name}."],
+      force: ["You think beating our guys makes you tough? We'll see.", "You put hands on our crew. Big mistake.", "Round one to {name}. There's always a round two."],
+    },
+    bigOrderAnswer: {
+      stopped: ["Job's done, money's good. Nice work.", "Clean. We'll use you again.", "Smooth. Real smooth."],
+      halved: ["You botched it. Now everyone's looking.", "Sloppy. Real sloppy.", "That was a mess, {name}."],
+      full: ["You passed? Your loss.", "Fine, we'll find someone else.", "Shoulda said yes."],
+    },
   },
 
   chrome: {
@@ -186,6 +208,17 @@ export const GANG_VOICES = Object.freeze({
       "We're done with {name}. Our cash stays with the chrome.",
       'No more deal. {name} is just meat again.',
     ] },
+    answer: {
+      stopped: ["LUCKY, {name}. Lucky meat.", "Fine. FINE. We go now.", "You got away clean. This time."],
+      halved: ["HALF? We wanted ALL of it.", "Not enough, meat. We'll take the rest later.", "Some pain, not enough pain."],
+      full: ["You ignored the chrome. The chrome hurt you. Simple.", "HAHA. You did nothing. We did plenty.", "{name} bled. We liked it."],
+      force: ["YOU FOUGHT US?? We are coming back with MORE CHROME.", "You broke our boys. We will break more of yours.", "Good fight, meat. Next one you lose."],
+    },
+    bigOrderAnswer: {
+      stopped: ["GOOD PRODUCT. The chrome is happy.", "Job done. You live. Good.", "Delivered. We like you a little now."],
+      halved: ["BAD BATCH. We are angry.", "You messed it up, meat.", "Garbage. Do better."],
+      full: ["YOU SAID NO? Rude.", "No? Fine. We remember everything.", "Your loss, meat."],
+    },
   },
 
   zealot: {
@@ -247,6 +280,17 @@ export const GANG_VOICES = Object.freeze({
       'Our covenant with {name} is broken, and our offering withdrawn.',
       '{name} is cast out. Do not seek us.',
     ] },
+    answer: {
+      stopped: ["You have shown some virtue, {name}. Be grateful for our mercy.", "Your penance is accepted, for now.", "The faithful are satisfied this week."],
+      halved: ["A half-hearted penance. Your sins remain.", "You gave something. Salvation needs more.", "Partial contrition. Partial grace."],
+      full: ["You refused the faithful, and suffered for it. As it must be.", "Your silence condemned you.", "The unrepentant pay in full."],
+      force: ["You raised violence against the righteous. You will burn for it.", "Our martyrs will be avenged, {name}.", "Sinner. You struck the faithful. We will return."],
+    },
+    bigOrderAnswer: {
+      stopped: ["The work is done. The cause thanks you.", "Your offering serves the faithful.", "Well done, sinner. Well done."],
+      halved: ["Your work was flawed, as are you.", "Poorly done. The cause is not served by sloppiness.", "A tainted offering."],
+      full: ["You refused the cause. It will be remembered.", "Your refusal is a sin.", "You have chosen corruption."],
+    },
   },
 
   patriot: {
@@ -308,6 +352,17 @@ export const GANG_VOICES = Object.freeze({
       'We\'re pulling out of {name}. Disloyalty has a cost.',
       'Deal\'s finished. Don\'t come crying to us.',
     ] },
+    answer: {
+      stopped: ["Dues settled. Good citizen.", "You did right by the neighbourhood, {name}.", "We're square. Keep it that way."],
+      halved: ["Short on your dues, citizen. We'll collect the rest.", "Half your share. Not good enough.", "You owe the neighbourhood more than that."],
+      full: ["You turned your back on the neighbourhood. It cost you.", "No dues, no protection. You found out.", "Disloyal. And now you've paid for it."],
+      force: ["You fought our patrol. That makes you an enemy of these streets.", "You raised arms against us, {name}. We won't forget.", "Traitor. The unit remembers."],
+    },
+    bigOrderAnswer: {
+      stopped: ["Requisition filled. Good work, citizen.", "The neighbourhood thanks you.", "Delivered right. Respect."],
+      halved: ["You fouled up the order, citizen.", "Sloppy. Not up to standard.", "That was a mess."],
+      full: ["You refused to serve. Noted.", "Not a team player, {name}.", "We asked. You said no. We remember."],
+    },
   },
 
   glam: {
@@ -369,6 +424,17 @@ export const GANG_VOICES = Object.freeze({
       'Cancelled! {name} is off the show, and our investment comes with us.',
       "We've moved on from {name}, darling. No refunds.",
     ] },
+    answer: {
+      stopped: ["Ooh, you handled that like a pro, darling. Ratings loved it.", "Fine, you win this episode.", "Well played, superstar."],
+      halved: ["Half the show, half the fun. We want more, darling.", "A so-so performance, {name}.", "Mid. Do better next week."],
+      full: ["You ignored us? Bad for ratings, worse for you.", "Your episode was a disaster, darling. We loved it.", "Total flop, {name}."],
+      force: ["You hurt our cast! The fans are FURIOUS.", "Violence on camera? You'll pay for that ratings spike.", "You made our crew look bad. That's unforgivable, darling."],
+    },
+    bigOrderAnswer: {
+      stopped: ["The party was a HIT. Thanks, superstar!", "Perfect delivery, darling.", "Five stars!"],
+      halved: ["The product was meh. The party suffered.", "Bad reviews, darling.", "Not your best work."],
+      full: ["You said no? How boring.", "Cancelled, darling. Your loss.", "Fine, we'll find a better supplier."],
+    },
   },
 
   cryptic: {
@@ -430,6 +496,17 @@ export const GANG_VOICES = Object.freeze({
       '>> {name} // trust revoked. funds withdrawn. do not ping us.',
       '>> link severed.',
     ] },
+    answer: {
+      stopped: [">> resolved. {name} clean this cycle.", ">> you patched it. noted.", ">> ok. disconnecting."],
+      halved: [">> partial compliance. balance outstanding.", ">> half the payload. we keep the rest of your data.", ">> incomplete. we return."],
+      full: [">> no response. we executed anyway.", ">> {name} ignored the signal. consequence delivered.", ">> silence logged. cost applied."],
+      force: [">> you burned our runners. we have your address. we have everything.", ">> hostile action logged. retaliation queued.", ">> you hit back. bad move."],
+    },
+    bigOrderAnswer: {
+      stopped: [">> delivery confirmed. payment sent. no trace.", ">> clean run. good.", ">> handshake complete."],
+      halved: [">> corrupted delivery. trace risk elevated.", ">> sloppy run, {name}.", ">> errors in the job."],
+      full: [">> request declined. logged.", ">> you said no. we remember the no.", ">> handshake refused."],
+    },
   },
 
   oldMoney: {
@@ -491,5 +568,16 @@ export const GANG_VOICES = Object.freeze({
       '{name} has lost its charm. We withdraw, and our investment with us.',
       'Adieu, {name}.',
     ] },
+    answer: {
+      stopped: ["How gracious of you, my dear. We are satisfied.", "A well-handled evening. Bravo.", "You managed us beautifully. Until next time."],
+      halved: ["Half a tribute? How very common.", "You made an effort, darling. A modest one.", "Not quite enough, my dear."],
+      full: ["You ignored us, and suffered for it. How tragic. How amusing.", "Such bad manners, {name}. Such a costly evening.", "The curtain fell on you, darling."],
+      force: ["You struck our company? How vulgar. We shall repay you in kind.", "Violence, my dear? We never forget an insult.", "You have made an enemy of the night."],
+    },
+    bigOrderAnswer: {
+      stopped: ["A delightful delivery, darling. We are charmed.", "Exquisite work.", "The party was divine, thanks to you."],
+      halved: ["Rather disappointing, my dear.", "Not up to our standards.", "A clumsy little effort."],
+      full: ["You refused us? How very dull.", "We shall find someone more accommodating.", "Such a pity, {name}."],
+    },
   },
 });

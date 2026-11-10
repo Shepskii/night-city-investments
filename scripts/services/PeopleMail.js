@@ -46,6 +46,23 @@ export const PeopleMail = {
     });
   },
 
+  /**
+   * A person's answer once their event has settled (M3 step 4): an employee by their mood, or a former employee's
+   * grudge. One who has since left writes sullen.
+   */
+  answer(b, { event, sender, tone }) {
+    if (sender?.kind === 'formerStaff') {
+      // A former employee's name is gone with their record, so no greeting or sign-off that would need it.
+      return peopleMail({ frames: {}, lines: STAFF_LINES, personality: personalityOf(sender.staffId), kind: `grudge_${tone === 'force' ? 'stopped' : tone}`, data: { name: b.name, staff: '' } });
+    }
+    if (sender?.kind !== 'staff') return null;
+    const staff = (b.staff ?? []).find((s) => s.id === sender.staffId);
+    return peopleMail({
+      frames: STAFF_FRAMES, lines: STAFF_LINES, personality: personalityOf(sender.staffId, sheetPersonality(staff?.actorId)), kind: `answer_${tone === 'force' ? 'stopped' : tone}`,
+      tone: staff ? moodOf(loyaltyBand(staff.loyalty ?? 50)) : 'sullen', data: { name: b.name, staff: staff?.name ?? '' },
+    });
+  },
+
   /** A corporation's HR style: its faction's, by ticker, among the styles HR has; Legal otherwise. */
   hrStyle(e) {
     const f = FactionRepository.list().find((x) => x.kind === 'corp' && x.ticker && x.ticker === e.ticker);

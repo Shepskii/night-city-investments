@@ -173,6 +173,16 @@ export const OFFICIALS = Object.freeze({
       'Acting on information received, the Inspectorate will examine {name} this week. A full review of licences and records is required.',
       'A complaint has been lodged concerning {name}. Inspectors will attend this week; all records must be available.',
     ] },
+    inspectionAnswer: {
+      stopped: ["Inspection complete: {name} meets its licence conditions.", "No breaches were found at {name}.", "The inspection of {name} is closed with no further action."],
+      halved: ["Inspection complete: minor breaches found at {name}. A notice follows.", "{name} was found partly compliant.", "Some conditions were not met at {name}."],
+      full: ["Inspection complete: {name} is in breach of its licence conditions.", "Serious breaches were recorded at {name}.", "{name} failed inspection."],
+    },
+    raidAnswer: {
+      stopped: ["The inspection prompted by a report found nothing actionable at {name}.", "The complaint against {name} is not upheld.", "No breach found at {name}. The report is closed."],
+      halved: ["The report against {name} is partly upheld.", "Some irregularities were found at {name}.", "Minor breaches recorded at {name}."],
+      full: ["The report against {name} is upheld. Breaches recorded.", "{name} was found in breach following the report.", "The complaint against {name} is upheld in full."],
+    },
   },
 
   collections: {
@@ -182,5 +192,10 @@ export const OFFICIALS = Object.freeze({
       "Your payment didn't arrive. We're sending someone round to {name} to see why.",
       'Late is late. Expect company at {name} this week.',
     ] },
+    collectorsAnswer: {
+      stopped: ["We had a nice chat. Keep your payments on time.", "Understanding reached. Pay on time.", "We're square. Don't be late again."],
+      halved: ["Some understanding was reached. Not enough.", "Our friends made their point. Partly.", "You'll pay the rest."],
+      full: ["Our friends made their point. Pay on time.", "That was a lesson. Learn it.", "Next time we won't be so gentle."],
+    },
   },
 });

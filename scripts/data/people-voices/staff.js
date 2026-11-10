@@ -157,4 +157,28 @@ export const STAFF_LINES = Object.freeze({
     "I've moved on. Better money elsewhere.",
     "Took the offer. No hard feelings. Mostly.",
   ] },
+  answer_stopped: {
+    devoted: ["Thanks for sorting that out, boss. I owe you one.", "You had my back. I won't forget it.", "That means a lot. Thank you."],
+    content: ["Thanks for dealing with that.", "Appreciated.", "Good, that sorted it."],
+    sullen: ["About time someone did something.", "Fine. Thanks, I guess.", "Didn't expect that from you."],
+  },
+  answer_halved: {
+    devoted: ["You tried, I know. It helped a bit.", "Not perfect, but thanks for trying.", "Could have been worse. Thanks."],
+    content: ["That half helped.", "Could have gone better.", "Something, at least."],
+    sullen: ["Half-hearted. Like everything here.", "Is that it?", "Typical. Not enough."],
+  },
+  answer_full: {
+    devoted: ["I guess you were busy. It's okay.", "Nobody helped. I'll manage.", "Bit disappointed, honestly."],
+    content: ["Nobody did anything. Noted.", "Guess I'm on my own.", "Thanks for nothing."],
+    sullen: ["You didn't even try. Figures.", "You don't care. I see that now.", "Remember this when I quit."],
+  },
+  grudge_stopped: {
+    lines: ["Fine. You win this round.", "Your people stopped me. This time.", "You got lucky."],
+  },
+  grudge_halved: {
+    lines: ["That was just a taste.", "I made my point. Some of it.", "Not done with you."],
+  },
+  grudge_full: {
+    lines: ["Bet you regret firing me now.", "That was for letting me go.", "We're even. Almost."],
+  },
 });

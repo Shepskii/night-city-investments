@@ -170,7 +170,7 @@ A business week closes on the weekday your GM chose.
 
 - **Actions:** a side business has one action slot a week, a registered business two, and a company three. A side business can Work the shop, Promote, Source supplies, Fix the place up, or Keep it safe. A partner takes the slot and rolls.
 - **Help:** partners who do not take a slot can make a complementary check for +1 on it.
-- **Events:** a week may bring an event (a shakedown, a breakdown, a rival, an inspection, a big order, a staff problem). A partner answers it with a slot and a roll, or lets it cost the week. When someone is behind it, such as a gang, the city's inspectors, a reporter, NCPD or one of your staff, they also mail you in Night City Messenger, and you can write back.
+- **Events:** a week may bring an event (a shakedown, a breakdown, a rival, an inspection, a big order, a staff problem). A partner answers it with a slot and a roll, or lets it cost the week. When someone is behind it, such as a gang, the city's inspectors, a reporter, NCPD or one of your staff, they also mail you in Night City Messenger, and you can write back. When the week closes, they write again about how it went.
 - **The close:** takings go into the business's **cash**, and upkeep, wages and loan payments come out. The **Reports** tab keeps a digest of each week; click one for its cashbook.
 - **Draws:** each partner may draw their share of last week's profit.
 - **Standing:** Reputation, Capacity, Cost base and (once registered) Compliance move with your results, and the Overview tab charts them.

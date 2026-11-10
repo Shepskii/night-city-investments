@@ -2037,6 +2037,16 @@
       "Subject": "{name}: {event}",
       "Answer": "Answer it on the Work tab of the Business window before the week closes.",
       "Offer": "Take it up from the Work tab of the Business window before the week closes.",
+      "Re": "Re:",
+      "Result": {
+        "stopped": "Dealt with: it cost the business nothing.",
+        "halved": "Half dealt with: it cost the business half what it might have.",
+        "full": "Not dealt with: it cost the business in full.",
+        "force": "Beaten off by force: it cost the business nothing, but {gang} won't forget it.",
+        "bigStopped": "The job went well, and the back room was paid in dirty cash.",
+        "bigHalved": "The job went badly, and drew attention.",
+        "bigFull": "You let the offer pass, and nothing came of it."
+      },
       "Line": {
         "shakedown": "Nice place, {name}. Be a shame if something happened to it. We'll be by for our cut this week.",
         "sabotage": "Heard the equipment at {name} is playing up. Funny how that happens. Think about who your friends are.",

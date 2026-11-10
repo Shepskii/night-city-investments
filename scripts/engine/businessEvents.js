@@ -77,7 +77,7 @@ export function factionFallout(b, settled, p = BUSINESS_DEFAULTS) {
 const FORCE = [ABILITIES.combatAwareness, ABILITIES.backup].map((a) => `ability:${a.ability}`);
 
 /** Whether this week's answer was by force: a fighting ability, or security staff. */
-function byForce(b) {
+export function byForce(b) {
   const answer = b.period.slots.find((s) => s.action === 'respond');
   return !!answer && (FORCE.includes(answer.use) || (b.staff ?? []).find((s) => s.id === answer.by)?.post === 'security');
 }

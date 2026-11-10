@@ -518,6 +518,16 @@ test('firing: a caught thief gets no severance, a corp plant brings Exposure, a 
   assert.equal(next.business.grudge, false);
 });
 
+test('the week\'s digest keeps who was behind its event, so they can answer once it settles (M3 step 4)', () => {
+  const gang = closeWeek(clinic(), { event: { kind: 'shakedown', factionId: 'gang_x', factionName: 'The X' } }).business.digests.at(-1).event;
+  assert.equal(gang.factionId, 'gang_x');
+  assert.equal(gang.faction, 'The X');
+  assert.equal(gang.force, undefined, 'not answered, so not by force');
+  const b = withStaff(clinic(), recruit('s'));
+  const sick = closeWeek(b, { event: { kind: 'sickDay', staffId: 'stf_s' } }).business.digests.at(-1).event;
+  assert.equal(sick.staffId, 'stf_s');
+});
+
 test('a grudge remembers who holds it, so its mail can come from them', () => {
   const held = Array.from({ length: 16 }, (_, i) => apply(withStaff(clinic(), recruit(`g${i}`, 'floor', { loyalty: 10 })), { type: 'propose', businessId: 'b1', kind: 'fire', staffId: `stf_g${i}` }, MED).business)
     .find((b) => b.grudge);

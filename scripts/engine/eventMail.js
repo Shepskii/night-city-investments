@@ -7,6 +7,7 @@
  */
 
 import { EVENTS } from './businessConfig.js';
+import { byForce } from './businessEvents.js';
 
 /** A faction's moves that it makes known itself. */
 const FACTION_KINDS = Object.freeze(['shakedown', 'sabotage', 'smear']);
@@ -47,4 +48,51 @@ export function takeEventMail(b) {
   event.mailed = true;
   const sender = eventSender(b, event);
   return sender ? { event, sender } : null;
+}
+
+/** Events whose result already has its own mail: a story (the paper) and a raid on a back room (Vice). */
+const OWN_RESULT = Object.freeze(['press', 'bust']);
+
+/**
+ * Who was behind the week's event, kept on its digest so they can answer once it is settled (M3 step 4), and
+ * whether a shakedown was beaten off by force.
+ * @param {object} b - the business, its period still the one closing
+ * @param {{outcome: string}} settled
+ */
+export function eventOrigin(b, settled) {
+  const e = b.period?.event;
+  if (!e) return {};
+  return {
+    ...(e.factionId ? { factionId: e.factionId } : {}),
+    ...(e.staffId ? { staffId: e.staffId } : {}),
+    ...(e.formerStaffId ? { formerStaffId: e.formerStaffId } : {}),
+    ...(e.kind === 'shakedown' && settled?.outcome === 'answered' && e.factionId && byForce(b) ? { force: true } : {}),
+  };
+}
+
+/** How an event ended, for its sender's answer: stopped, halved, full, or a shakedown beaten off by force. */
+export function answerTone(digestEvent) {
+  if (digestEvent.force) return 'force';
+  if (['answered', 'covered', 'windfall'].includes(digestEvent.outcome)) return 'stopped';
+  return digestEvent.outcome === 'failed' ? 'halved' : 'full';
+}
+
+/**
+ * The answer a week's settled event calls for, from its digest: its sender and how it ended, or null when nobody
+ * was behind it or its result has a mail of its own (M3 step 4, the user's choice: everyone with a sender answers,
+ * whether or not anyone did anything).
+ * @returns {{event: object, sender: object, tone: string}|null}
+ */
+export function eventAnswer(b, digest) {
+  const d = digest?.event;
+  if (!d || OWN_RESULT.includes(d.kind) || b?.npcRun) return null;
+  const event = {
+    kind: d.kind,
+    ...(d.factionId ? { factionId: d.factionId } : {}),
+    ...(d.faction ? { factionName: d.faction } : {}),
+    ...(d.staffId ? { staffId: d.staffId } : {}),
+    ...(d.formerStaffId ? { formerStaffId: d.formerStaffId } : {}),
+  };
+  const sender = eventSender(b, event);
+  return sender ? { event, sender, tone: answerTone(d) } : null;
 }

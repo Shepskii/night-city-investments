@@ -365,3 +365,55 @@ test('job mail comes in the employer\'s voice: a corporation\'s HR, an NPC owner
   await BusinessService._mailJob(shop(), nova.id, 'Your job', ['plain'], '', { kind: 'promoted', data: { wage: 300 } });
   assert.match(sent[0].body, /plain/, 'a player\'s business keeps the plain words');
 });
+
+// ── M3 step 4: the sender answers once the event has settled ────────────────────
+
+const settled = (b, event, index = 5) => ({ business: b, events: [{ type: 'periodClosed', digest: { index, event } }] });
+
+test('how an event ended: stopped, halved, in full, or beaten off by force; a story and a raid answer for themselves', async () => {
+  const { answerTone, eventAnswer } = await import('../scripts/engine/index.js');
+  assert.deepEqual(['answered', 'covered', 'windfall', 'failed', 'unanswered', 'fumbled', 'missed'].map((outcome) => answerTone({ outcome })), ['stopped', 'stopped', 'stopped', 'halved', 'full', 'full', 'full']);
+  assert.equal(answerTone({ outcome: 'answered', force: true }), 'force');
+  assert.equal(eventAnswer(shop(), { event: { kind: 'press', outcome: 'answered', factionId: 'fac_ara', faction: 'Arasaka' } }), null);
+  assert.equal(eventAnswer(shop(), { event: { kind: 'bust', outcome: 'answered' } }), null);
+  assert.equal(eventAnswer(shop(), { event: { kind: 'breakdown', outcome: 'failed' } }), null, 'nobody behind it');
+  assert.equal(eventAnswer(shop({ npcRun: { ownerId: rook.id } }), { event: { kind: 'inspection', outcome: 'failed' } }), null);
+  assert.deepEqual(eventAnswer(shop(), { event: { kind: 'shakedown', outcome: 'unanswered', factionId: 'fac_claws', faction: 'Tyger Claws' } }).tone, 'full', 'ignored, it still answers');
+});
+
+test('a gang beaten off by force writes back that it won\'t forget, from its own contact', async () => {
+  reset();
+  await BusinessService._mailAnswers(settled(shop(), { kind: 'shakedown', outcome: 'answered', factionId: 'fac_claws', faction: 'Tyger Claws', force: true }));
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].fromContactId, ContactService.linked('faction:fac_claws'), 'the gang\'s contact');
+  assert.match(sent[0].subject, /^Re: Ripper Shack: /);
+  assert.match(sent[0].body, /▸ Beaten off by force: it cost the business nothing, but Tyger Claws won(&#39;|')t forget it\./);
+});
+
+test('an inspection\'s result keeps its notice\'s reference; an employee thanks or grumbles by mood', async () => {
+  const { OrgMail } = await import('../scripts/services/OrgMail.js');
+  const b = shop({ period: { index: 5, event: { kind: 'inspection' } } });
+  const notice = OrgMail.event(b, b.period.event, { kind: 'city' });
+  reset();
+  await BusinessService._mailAnswers(settled(shop(), { kind: 'inspection', outcome: 'failed' }, 5));
+  assert.equal(sent[0].subject, `Re: ${notice.ref}: Ripper Shack: ${lookup('NCI.Event.inspection.Name')}`);
+  assert.match(sent[0].body, /▸ Half dealt with/);
+  reset();
+  await BusinessService._mailAnswers(settled(shop({ staff: [{ id: 'stf_r1', name: 'Dex', source: 'recruit', post: 'floor', status: 'active', loyalty: 10 }] }), { kind: 'sickDay', outcome: 'unanswered', staffId: 'stf_r1' }));
+  assert.equal(contacts.find((c) => c.id === sent[0].fromContactId).name, 'Dex');
+  assert.match(sent[0].body, /▸ Not dealt with/);
+});
+
+test('a big order answered tells how the job went; answers stay quiet with event mail off', async () => {
+  reset();
+  await BusinessService._mailAnswers(settled(shop({ backRoom: { factionId: 'fac_claws' } }), { kind: 'roomBigOrder', outcome: 'unanswered' }));
+  assert.match(sent[0].body, /▸ You let the offer pass/);
+  await game.settings.set(MODULE_ID, SETTINGS.EVENT_MAIL, false);
+  try {
+    reset();
+    await BusinessService._mailAnswers(settled(shop(), { kind: 'inspection', outcome: 'answered' }));
+    assert.equal(sent.length, 0);
+  } finally {
+    await game.settings.set(MODULE_ID, SETTINGS.EVENT_MAIL, true);
+  }
+});

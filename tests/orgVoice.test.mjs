@@ -63,8 +63,8 @@ const TOKENS = {
   court: { in: ['name', 'net'], out: ['name'], restructured: ['name', 'debts', 'paid', 'shares'], woundUp: ['name', 'wages', 'loans', 'perShare'], woundUpListed: ['name', 'wages', 'loans', 'perShare'] },
   vice: { bust: ['name'], won: ['name'], lost: ['name', 'seized', 'fine'], shut: ['name', 'seized', 'fine'] },
   financialCrimes: { unmasked: ['pct', 'name', 'ticker', 'fine'] },
-  city: { inspection: ['name'], raid: ['name'] },
-  collections: { collectors: ['name'] },
+  city: { inspection: ['name'], raid: ['name'], inspectionAnswer: ['name'], raidAnswer: ['name'] },
+  collections: { collectors: ['name'], collectorsAnswer: ['name'] },
 };
 const tokensOf = (line) => [...String(line).matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
 function checkPools(label, style, allowed) {
@@ -105,6 +105,18 @@ test('every style answers every move its kind of sender makes, three ways', () =
   const outletKinds = ['pressAsk', 'charTold', ...['Ignored', 'Answered', 'Halved', 'Full'].flatMap((r) => [`result${r}`, `char${r}`]), ...angles.map((a) => `charAsk_${a}`)];
   for (const style of OUTLET_STYLES) for (const kind of outletKinds) assert.ok(OUTLET_VOICES[style]?.[kind]?.lines?.length, `${style}.${kind}`);
   for (const [sender, kinds] of Object.entries(TOKENS).filter(([s]) => OFFICIALS[s])) {
-    for (const kind of Object.keys(kinds)) assert.ok(OFFICIALS[sender][kind]?.lines?.length >= 3, `${sender}.${kind}`);
+    for (const kind of Object.keys(kinds).filter((k) => !k.endsWith('Answer'))) assert.ok(OFFICIALS[sender][kind]?.lines?.length >= 3, `${sender}.${kind}`);
+  }
+  // Step 4: every sender answers each way an event can end.
+  const ends = ['stopped', 'halved', 'full'];
+  for (const style of GANG_STYLES) {
+    for (const tone of [...ends, 'force']) assert.ok(GANG_VOICES[style].answer?.[tone]?.length >= 3, `${style}.answer.${tone}`);
+    for (const tone of ends) assert.ok(GANG_VOICES[style].bigOrderAnswer?.[tone]?.length >= 3, `${style}.bigOrderAnswer.${tone}`);
+  }
+  for (const style of CORP_STYLES.filter((s) => !OUTLET_STYLES.includes(s))) {
+    for (const kind of ['answer', 'bigOrderAnswer']) for (const tone of ends) assert.ok(CORP_VOICES[style][kind]?.[tone]?.length >= 3, `${style}.${kind}.${tone}`);
+  }
+  for (const [sender, kind] of [['city', 'inspectionAnswer'], ['city', 'raidAnswer'], ['collections', 'collectorsAnswer']]) {
+    for (const tone of ends) assert.ok(OFFICIALS[sender][kind]?.[tone]?.length >= 3, `${sender}.${kind}.${tone}`);
   }
 });
