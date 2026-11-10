@@ -117,7 +117,8 @@
       </tr>
       {{/each}}
     </tbody></table>
-    <p class="nci-hint">{{localize "NCI.Staff.JobsHint"}}</p>
+    {{#if jobsHint.shifts}}<p class="nci-hint">{{localize "NCI.Staff.JobsHintShift"}}</p>{{/if}}
+    {{#if jobsHint.partners}}<p class="nci-hint">{{localize "NCI.Staff.JobsHint"}}</p>{{/if}}
     {{else}}<p class="nci-empty">{{localize "NCI.Jobs.NoJobs"}}</p>{{/if}}
   </div>
   {{else}}

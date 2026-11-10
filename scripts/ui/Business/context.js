@@ -1488,6 +1488,8 @@ export function jobsContext(actor) {
     owed: j.owed ? L('NCI.Staff.Owed', { amount: whole(j.owed) }) : '',
     overtime: j.overtime ? L('NCI.Staff.OvertimeDue', { amount: whole(j.overtime) }) : '',
     // Rolls a partner asked of them (E3).
+    // A job with a weekly shift: an NPC's company or a market corporation, offered or held.
+    shifts: !!(j.boss || j.corp || j.npc),
     asks: (j.asks ?? []).map((a) => ({ id: a.id, text: L('NCI.Staff.Asked', { what: a.what, name: a.by, pay: whole(a.pay) }) })),
     // At an NPC's company (N3): where they stand, and this week's shift. One shift a week across all their jobs.
     boss: j.boss ? {

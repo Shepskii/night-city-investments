@@ -1016,6 +1016,8 @@ export class BusinessApp extends BaseApplication {
     if (!this.actor) return { ...context, noActor: true };
     // The jobs this character holds or is offered at other people's businesses (DESIGN §32), on their own tab.
     context.jobs = jobs;
+    // A hint for each kind of job held: with a weekly shift (an NPC's company or a corporation), or a player's business.
+    context.jobsHint = { shifts: jobs.some((j) => j.shifts), partners: jobs.some((j) => !j.shifts) };
     if (!business) return { ...context, start: startContext(this) };
     return { ...context, business: shown };
   }

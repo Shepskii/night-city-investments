@@ -106,6 +106,8 @@ test('Nova applies with Paramedic, waits on Pending, and is hired', async () => 
   const shown = S.jobsContext(nova)[0];
   assert.equal(shown.archetype, 'BIO', 'Your jobs shows the ticker');
   assert.equal(shown.boss.canWork, true);
+  assert.equal(shown.shifts, true, 'the shift hint, not the partners one');
+  assert.equal(shown.boss.standing, 'Performance: reliable');
   assert.deepEqual(S.jobBoardRows(nova), [], 'the role is filled');
   const gm = render('templates/gm/console/jobMarket.hbs', S.gmContext());
   assert.match(gm, /class="nci-labelled" data-action="businessCorpDismiss"/, 'Let go is labelled, so it is not squeezed to an icon width');

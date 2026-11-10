@@ -130,6 +130,8 @@ test('the partners hire a player character, who accepts from their own window an
   assertClean(job, 'job offer');
   assert.match(text(job), /Your jobs/);
   assert.match(text(job), /Back Room/);
+  assert.match(text(job), /partners may call you in for overtime/, 'the hint for a job at a player business');
+  assert.doesNotMatch(text(job), /raises your performance/, 'and not the shift hint');
   assert.match(job, /data-action="acceptJob"/);
   // The offer also waits on the Pending tab, and its button answers it.
   const { pendingRows } = await import('../scripts/ui/Business/pending.js');

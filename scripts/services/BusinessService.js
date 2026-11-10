@@ -1044,7 +1044,7 @@ class BusinessServiceImpl {
       const kept = jobsOf(actor).filter((j) => j.businessId !== business.id);
       const staff = business.status === 'open' ? (business.staff ?? []).find((s) => s.actorId === actor.id) : null;
       const jobs = staff ? [...kept, {
-        businessId: business.id, businessName: business.name, archetype: business.archetype, stage: business.stage,
+        businessId: business.id, businessName: business.name, archetype: business.archetype, stage: business.stage, ...(business.npcRun ? { npc: true } : {}),
         staffId: staff.id, post: staff.post, status: staff.status, wage: staff.wage, hiredDay: staff.hiredDay, owed: staff.owed,
         // Overtime worked this week, paid with the next payslip (E3).
         overtime: business.period?.pcOvertime?.[actor.id] ?? 0,
