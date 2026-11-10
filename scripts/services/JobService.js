@@ -94,7 +94,7 @@ export const JobService = {
       const done = decidePromotion(b, staffId, yes, BusinessService.day());
       if (!done.ok) return done;
       await BusinessService._commit({ ok: true, business: b, wealth: {}, events: [] });
-      if (yes) await BusinessService._mailAccount(done.staff.actorId, L('NCI.Jobs.Subject', { name: b.name }), [L('NCI.Jobs.Promoted', { name: b.name, wage: done.staff.wage })]);
+      if (yes) await BusinessService._mailAccount(done.staff.actorId, L('NCI.Jobs.JobSubject', { name: b.name }), [L('NCI.Jobs.Promoted', { name: b.name, wage: done.staff.wage })]);
       return { ok: true };
     });
   },
@@ -103,8 +103,8 @@ export const JobService = {
   async onEvents(out) {
     const b = out.business;
     for (const e of out.events ?? []) {
-      if (e.type === 'shiftWarned') await BusinessService._mailAccount(e.actorId, L('NCI.Jobs.Subject', { name: b.name }), [L('NCI.Jobs.WarnedMail', { name: b.name })]);
-      if (e.type === 'shiftSacked') await BusinessService._mailAccount(e.actorId, L('NCI.Jobs.Subject', { name: b.name }), [L('NCI.Jobs.Sacked', { name: b.name, paid: e.paid ?? 0 })]);
+      if (e.type === 'shiftWarned') await BusinessService._mailAccount(e.actorId, L('NCI.Jobs.JobSubject', { name: b.name }), [L('NCI.Jobs.WarnedMail', { name: b.name })]);
+      if (e.type === 'shiftSacked') await BusinessService._mailAccount(e.actorId, L('NCI.Jobs.JobSubject', { name: b.name }), [L('NCI.Jobs.Sacked', { name: b.name, paid: e.paid ?? 0 })]);
     }
   },
 

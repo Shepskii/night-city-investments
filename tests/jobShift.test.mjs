@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   createNpcCompany, recordApplication, decideApplication, canShift, workShift, shiftLift, payShiftBonuses, shiftWeek, decidePromotion, standingOf, bossBand, shiftUses,
-  advanceBusiness, BUSINESS_DEFAULTS as P,
+  advanceBusiness, wageOf, postRate, promotedWage, BUSINESS_DEFAULTS as P,
 } from '../scripts/engine/index.js';
 
 const DAY = 20003;
@@ -140,6 +140,26 @@ test('trusted brings a promotion for the GM, then a raise or not now', () => {
   assert.equal(staff.pct, Math.round((before + R.raise) * 100) / 100, 'not now: no raise');
 });
 
+test('a promotion at the wage cap lifts the cap: one at the top is raised too', () => {
+  const { b, staff } = employed();
+  staff.pct = 5;
+  staff.wage = wageOf(b, staff);
+  const guide = postRate(staff.post, P.npc.jobs.guideBase, b.stage);
+  assert.equal(staff.wage, Math.round(guide * P.npc.jobs.wageCap), 'at the cap');
+  staff.promotion = true;
+  const promised = promotedWage(b, staff);
+  decidePromotion(b, staff.id, true, DAY);
+  assert.equal(staff.promotions, 1);
+  assert.equal(staff.wage, Math.round(guide * (P.npc.jobs.wageCap + R.raise)));
+  assert.equal(staff.wage, promised, 'Pending shows what Promote pays');
+  staff.promotion = true;
+  decidePromotion(b, staff.id, true, DAY + R.promoteEvery);
+  assert.equal(staff.wage, Math.round(guide * (P.npc.jobs.wageCap + 2 * R.raise)), 'and again');
+  staff.promotion = true;
+  decidePromotion(b, staff.id, false, DAY + 2 * R.promoteEvery);
+  assert.equal(staff.promotions, 2, 'not now: no step up');
+});
+
 test('a player business has no shifts', () => {
   const { b, staff } = employed();
   b.npcRun = null;
@@ -162,7 +182,7 @@ test('every word is there', () => {
   const lang = JSON.parse(readFileSync(new URL('../lang/en.json', import.meta.url))).NCI;
   for (const [, band] of R.bands) assert.ok(lang.Jobs.Standing[band], band);
   for (const k of ['shift-done', 'no-promotion']) assert.ok(lang.Business.Reason[k], k);
-  for (const k of ['Work', 'ShiftTitle', 'ShiftHint', 'ShiftDone', 'StandingLine', 'Warned', 'WarnedMail', 'Sacked', 'Promoted', 'Promote', 'NotNow']) assert.ok(lang.Jobs[k], k);
+  for (const k of ['Work', 'ShiftTitle', 'ShiftHint', 'ShiftDone', 'StandingLine', 'Warned', 'WarnedMail', 'Sacked', 'Promoted', 'Promote', 'NotNow', 'JobSubject']) assert.ok(lang.Jobs[k], k);
   assert.ok(lang.Jobs.Payslip.Bonus);
   assert.ok(lang.Jobs.NoJobs && lang.Business.Tab.jobs, 'the Jobs tab');
   assert.ok(lang.Business.Done.shiftRoll);

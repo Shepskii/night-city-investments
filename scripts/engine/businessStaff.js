@@ -173,8 +173,8 @@ export function wageOf(b, staff, p = BUSINESS_DEFAULTS) {
   // An Exec's team takes no wage (E3).
   if (staff.source === 'team') return 0;
   const wage = Math.round(postRate(staff.post, postBase(staff, staff.post, archetypeOf(b), p), b.stage, p) * (staff.pct ?? 1));
-  // An NPC's company won't pay a player character past a limit, however good they are (N2).
-  if (b.npcRun && staff.source === 'pc') return Math.min(wage, Math.round(postRate(staff.post, p.npc.jobs.guideBase, b.stage, p) * p.npc.jobs.wageCap));
+  // An NPC's company won't pay a player character past a limit, however good they are (N2); each promotion lifts their own limit (N3).
+  if (b.npcRun && staff.source === 'pc') return Math.min(wage, Math.round(postRate(staff.post, p.npc.jobs.guideBase, b.stage, p) * (p.npc.jobs.wageCap + p.npc.shift.raise * (staff.promotions ?? 0))));
   return wage;
 }
 

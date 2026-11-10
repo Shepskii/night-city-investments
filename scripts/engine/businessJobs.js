@@ -158,7 +158,10 @@ export function shiftWeek(b, part, day, out, p = BUSINESS_DEFAULTS) {
   }
 }
 
-/** The GM's answer to a promotion: a raise, under the cap, and a fresh start; or not now, and asked again later. */
+/** What a promotion would pay: a raise, and their own cap lifted by as much, so one at the cap is raised too. */
+export const promotedWage = (b, staff, p = BUSINESS_DEFAULTS) => wageOf(b, { ...staff, pct: Math.round((staff.pct + p.npc.shift.raise) * 100) / 100, promotions: (staff.promotions ?? 0) + 1 }, p);
+
+/** The GM's answer to a promotion: a raise, with the cap lifted by as much, and a fresh start; or not now, and asked again later. */
 export function decidePromotion(b, staffId, yes, day, p = BUSINESS_DEFAULTS) {
   const staff = activeStaff(b).find((s) => s.id === staffId);
   if (!staff?.promotion) return fail('no-promotion');
@@ -166,6 +169,7 @@ export function decidePromotion(b, staffId, yes, day, p = BUSINESS_DEFAULTS) {
   staff.promotedDay = day;
   if (yes) {
     staff.pct = Math.round((staff.pct + p.npc.shift.raise) * 100) / 100;
+    staff.promotions = (staff.promotions ?? 0) + 1;
     staff.standing = p.npc.shift.afterPromotion;
     staff.wage = wageOf(b, staff, p);
   }

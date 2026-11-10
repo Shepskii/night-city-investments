@@ -175,6 +175,7 @@ export function normalizeBusiness(raw) {
       ...(x.warned ? { warned: true } : {}),
       ...(x.promotion ? { promotion: true } : {}),
       ...(x.promotedDay != null ? { promotedDay: int(x.promotedDay) } : {}),
+      ...(x.promotions ? { promotions: int(x.promotions) } : {}),
       // E3 share grants: one vesting, and the share of the company vested so far.
       ...(x.grant ? { grant: { share: Number(x.grant.share), grantedDay: int(x.grant.grantedDay), vestDay: int(x.grant.vestDay) } } : {}),
       ...(x.vested ? { vested: Number(x.vested) } : {}),
