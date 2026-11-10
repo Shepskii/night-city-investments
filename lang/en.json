@@ -2029,6 +2029,10 @@
       "Regulator": "Business Regulation Office",
       "Exchange": "Night City Exchange"
     },
+    "StaffMail": {
+      "Subject": { "asks": "{staff}: about my pay", "quit": "{staff} has quit {name}", "walked": "{staff} has walked out of {name}", "unpaid": "{staff} has left {name} unpaid", "poached": "{staff} has left {name} for another job" },
+      "Footer": { "asks": "Answer from the Staff tab: Manage {staff}, and raise their pay or leave it.", "quit": "{staff} has left {name}.", "walked": "{staff} has left {name}.", "unpaid": "{staff} left over wages owed.", "poached": "{staff} has taken a job elsewhere." }
+    },
     "EventMail": {
       "Subject": "{name}: {event}",
       "Answer": "Answer it on the Work tab of the Business window before the week closes.",
@@ -4156,6 +4160,7 @@
       "ApplicantTerms": "Asks {wage} eb a week ({pct}% of the going rate, {rate} eb). Waits until {date}.",
       "NoApplicants": "No applicants waiting for this role.",
       "CloseHire": "Close",
+      "Personality": { "shy": "Shy", "rebellious": "Rebellious", "arrogant": "Arrogant", "moody": "Moody", "picky": "Picky", "stable": "Stable", "silly": "Silly", "sneaky": "Sneaky", "intellectual": "Intellectual", "friendly": "Friendly" },
       "LoyaltyLabel": "Loyalty",
       "Loyalty": {
         "sullen": "Sullen",

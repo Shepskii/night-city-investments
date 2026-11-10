@@ -52,6 +52,7 @@ import { SyndicateRepository } from '../data/SyndicateRepository.js';
 import { SyndicateCash } from './SyndicateCash.js';
 import { ContactService } from './ContactService.js';
 import { OrgMail } from './OrgMail.js';
+import { PeopleMail } from './PeopleMail.js';
 import { MailService } from './MailService.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { PortfolioService } from './PortfolioService.js';
@@ -66,6 +67,9 @@ const RESULTS_CAP = 40;
 /** Requests that may bring gear: the items are looked up here, never taken from the request. */
 const GEAR_REQUESTS = ['found', 'join', 'contribute', 'consign'];
 const WEALTH_REASON = 'Night City Investments: business';
+
+/** What an employee writes about as the week closes: asking for a raise, and the ways of leaving (M3 step 3). */
+const STAFF_NOTE_KINDS = Object.freeze(['asks', 'quit', 'walked', 'unpaid', 'poached']);
 
 class BusinessServiceImpl {
   constructor() {
@@ -718,6 +722,7 @@ class BusinessServiceImpl {
     await this._shareStaff(out.business).catch((error) => log.warn('Could not share staff contacts', error));
     await this._shareEmployer(out.business).catch((error) => log.warn('Could not share an employer contact', error));
     if (eventMail) await this._mailEvent(out.business, eventMail).catch((error) => log.warn('Could not mail an event', error));
+    await this._mailStaffNotes(out).catch((error) => log.warn('Could not mail a staff note', error));
     await this._payslips(out);
     await this._livingCosts(out);
     await this._twoJobs(out);
@@ -945,16 +950,19 @@ class BusinessServiceImpl {
         try {
           // At an NPC's company or a corporation, the employer sends it (M2); at a player's business, the market wire.
           const from = await ContactService.employer(out.business).catch(() => null) ?? await ContactService.business(out.business).catch(() => null);
+          // Wage and overtime each on a line of their own, so a week with overtime says so.
+          const figures = [
+            L('NCI.Staff.Payslip.Body', { name: out.business.name, post: L(`NCI.Staff.Post.${slip.post}`), wage: eb(slip.wage), paid: eb(wage) }),
+            ...(overtime ? [L('NCI.Staff.Payslip.Overtime', { overtime: eb(overtime), shifts: slip.shifts || 1 })] : []),
+            ...(bonus ? [L('NCI.Jobs.Payslip.Bonus', { bonus: eb(bonus), total: eb(paid) })] : []),
+            ...(slip.owed ? [L('NCI.Staff.Payslip.Owed', { owed: eb(slip.owed) })] : []),
+          ];
+          // At an NPC's company or a corporation, a note from the employer by how the week went (M3 step 3).
+          const voiced = PeopleMail.employer(out.business, 'payslip', {}, { band: PeopleMail.bandOf(out.business, slip.actorId), after: figures });
           const result = await this._mailFrom(actor, {
             from,
-            // Wage and overtime each on a line of their own, so a week with overtime says so.
             subject: L(overtime ? 'NCI.Staff.Payslip.SubjectOvertime' : 'NCI.Staff.Payslip.Subject', { name: out.business.name }),
-            lines: [
-              L('NCI.Staff.Payslip.Body', { name: out.business.name, post: L(`NCI.Staff.Post.${slip.post}`), wage: eb(slip.wage), paid: eb(wage) }),
-              ...(overtime ? [L('NCI.Staff.Payslip.Overtime', { overtime: eb(overtime), shifts: slip.shifts || 1 })] : []),
-              ...(bonus ? [L('NCI.Jobs.Payslip.Bonus', { bonus: eb(bonus), total: eb(paid) })] : []),
-              ...(slip.owed ? [L('NCI.Staff.Payslip.Owed', { owed: eb(slip.owed) })] : []),
-            ],
+            lines: voiced?.paragraphs ?? figures,
             footer: paid ? L(overtime ? 'NCI.Staff.Payslip.AttachedBoth' : 'NCI.Staff.Payslip.Attached', { paid: eb(paid), wage: eb(wage), overtime: eb(overtime) }) : '',
             eddies: paid,
           });
@@ -2462,7 +2470,8 @@ class BusinessServiceImpl {
     await ContactService.share(contactId, ids);
     const staff = event.staffId ? (b.staff ?? []).find((s) => s.id === event.staffId)?.name ?? '' : '';
     // An organisation writes in its own voice (M3 step 2); the staff keep theirs for now.
-    const voiced = OrgMail.event(b, event, sender);
+    const voiced = OrgMail.event(b, event, sender)
+      ?? (sender.kind === 'staff' ? PeopleMail.staffEvent(b, event, (b.staff ?? []).find((s) => s.id === sender.staffId)) : null);
     const subject = OrgMail.subject(L('NCI.EventMail.Subject', { name: b.name, event: L(`NCI.Event.${event.kind}.Name`) }), voiced);
     const lines = voiced?.paragraphs ?? [
       L(`NCI.EventMail.Line.${event.kind}`, { name: b.name, staff, outlet: event.factionName ?? '' }),
@@ -2471,6 +2480,31 @@ class BusinessServiceImpl {
     for (const id of ids) {
       const result = await MailService.fromContact(contactId, game.actors.get(id), { subject, lines, footer });
       if (!result?.ok) log.warn(`Event mail to ${id} failed: ${result?.error ?? 'no answer'}`);
+    }
+  }
+
+  /**
+   * An employee asking for a raise, or leaving, writes to those running the business as the week closes (M3 step 3):
+   * from their own contact, which a leaver keeps if they were given one. Off with Business events by mail.
+   */
+  async _mailStaffNotes(out) {
+    const b = out.business;
+    if (b.npcRun || game.settings.get(MODULE_ID, SETTINGS.EVENT_MAIL) === false) return;
+    const notes = out.events.filter((e) => e.type === 'periodClosed').flatMap((e) => e.digest?.staff ?? []).filter((n) => STAFF_NOTE_KINDS.includes(n.kind));
+    if (!notes.length) return;
+    const ids = this._runnerIds(b);
+    if (!ids.length) return;
+    for (const note of notes) {
+      const staff = (b.staff ?? []).find((s) => s.id === note.staffId);
+      const from = staff ? await ContactService.staff(b, staff) : await ContactService.formerStaff(b, note.staffId);
+      if (!from) continue;
+      const voiced = PeopleMail.staffNote(b, note);
+      if (!voiced) continue;
+      const terms = { staff: note.name ?? staff?.name ?? '', name: b.name };
+      await ContactService.share(from, ids);
+      for (const id of ids) {
+        await MailService.fromContact(from, game.actors.get(id), { subject: L(`NCI.StaffMail.Subject.${note.kind}`, terms), lines: voiced.paragraphs, footer: L(`NCI.StaffMail.Footer.${note.kind}`, terms) });
+      }
     }
   }
 
@@ -2493,10 +2527,12 @@ class BusinessServiceImpl {
   }
 
   /** A mail about a job: from the employer's contact at an NPC's company or a corporation, or else the market wire (M2). */
-  async _mailJob(b, actorId, subject, lines, footer = '') {
+  async _mailJob(b, actorId, subject, lines, footer = '', voice = null) {
     const actor = game.actors.get(actorId);
     const contactId = actor ? await ContactService.employer(b).catch(() => null) : null;
-    return this._mailAccount(actorId, subject, lines, { from: contactId, footer });
+    // The employer in their own voice (M3 step 3): an NPC owner by Personality, a corporation's HR in its style.
+    const voiced = voice ? PeopleMail.employer(b, voice.kind, voice.data ?? {}) : null;
+    return this._mailAccount(actorId, subject, voiced?.paragraphs ?? lines, { from: contactId, footer });
   }
 
   /**

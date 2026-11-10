@@ -126,7 +126,7 @@ export const EmployerService = {
   },
 
   _mailSacked(e, actorId, paid) {
-    return BusinessService._mailJob(e, actorId, L('NCI.Jobs.JobSubject', { name: e.name }), [L('NCI.Jobs.Sacked', { name: e.name, paid })]).catch((error) => log.warn('Mail failed', error));
+    return BusinessService._mailJob(e, actorId, L('NCI.Jobs.JobSubject', { name: e.name }), [L('NCI.Jobs.Sacked', { name: e.name, paid })], '', { kind: 'sacked', data: { paid } }).catch((error) => log.warn('Mail failed', error));
   },
 
   decide(id, applicationId, yes) {
@@ -149,7 +149,7 @@ export const EmployerService = {
       const done = decideEmployerPromotion(e, staffId, yes, day());
       if (!done.ok) return done;
       await this._commit(e);
-      if (yes) await BusinessService._mailJob(e, done.staff.actorId, L('NCI.Jobs.JobSubject', { name: e.name }), [L('NCI.Jobs.Promoted', { name: e.name, wage: done.staff.wage })]);
+      if (yes) await BusinessService._mailJob(e, done.staff.actorId, L('NCI.Jobs.JobSubject', { name: e.name }), [L('NCI.Jobs.Promoted', { name: e.name, wage: done.staff.wage })], '', { kind: 'promoted', data: { wage: done.staff.wage } });
       return { ok: true };
     });
   },

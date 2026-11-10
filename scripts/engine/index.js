@@ -36,6 +36,7 @@ export * from './businessJobs.js';
 export * from './corpJobs.js';
 export * from './eventMail.js';
 export * from './orgVoice.js';
+export * from './peopleVoice.js';
 export * from './businessStaff.js';
 export * from './businessPeople.js';
 export * from './businessRewards.js';

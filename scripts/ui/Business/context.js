@@ -14,7 +14,7 @@ import {
   openLoans, bankCheck, angelCheck, averageProfit, freeCash, CHARTER_PARTS, charterRollCheck, charterPaid, quoteRange, charterSector,
   actionIdsFor, reportCheck, canRun, officersOf, infoCheck, giftFor, factionEffects, campaignWait, isBigEvent, supplyCut, actionFor, ROOM_ACTIONS, PROFILE_ACTIONS, roomCheck, roomKinds, openRoom, payOffCost, CRIME_ACTIONS, dealCut, SECRET_ACTIONS, SECRET_LEDGER,
   POST_IDS, POSTS, levelOf, postBest, staffBase, postRate, askingWage, postOpen, postOffered, recruitCheck, archetypeOf,
-  hasLoyalty, loyaltyBand, teamRefuses, onTimeOff, teamCareCheck, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
+  hasLoyalty, loyaltyBand, personalityOf, teamRefuses, onTimeOff, teamCareCheck, staffOf, vetCheck, bonusCheck, wageOf, postBase, trainingSkill, trainCheck, useKey, asksFor, askCheck, grantedShare, holderActorId, teamCheck, teamSize, teamOf, ABILITIES,
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
   capitalOf, issueOptions, rightsLeft, tenderRoom, capitalRollCheck, defenceCheck, takeoverPremium, sellableQty, debtsOf, solvency,
   masksOf, outerMask, layerCheck, layerFees, holdingValue, concealedHolders, caseAnswerCheck, turfFactions,
@@ -1243,6 +1243,8 @@ function staffContext(business, actor, canAct) {
         owed: s.owed ? L('NCI.Staff.Owed', { amount: whole(s.owed) }) : '',
         loyalty: loyaltyText(s),
         loyaltyBand: loyaltyColour(s),
+        // How they write (M3 step 3): their sheet's Personality, or the one a recruit was given.
+        personality: hasLoyalty(s) && s.source !== 'team' ? L(`NCI.Staff.Personality.${personalityOf(s.id, s.actorId ? game.actors?.get?.(s.actorId)?.system?.lifepath?.personality : null)}`) : '',
         notes: staffNotes(business, s),
         canManage: canAct && s.status === 'active',
         canFire: canAct && s.status === 'offered' && !pending('fire'),

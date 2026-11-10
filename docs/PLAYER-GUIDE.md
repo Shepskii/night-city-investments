@@ -225,7 +225,7 @@ A business can take on staff: one at a side business, three for registered, eigh
 - **Pay:** a weekly wage that follows their skill, offered at 80–150% of the going rate. Partners can call any employee in for one of the week's rolls, for overtime.
 - **Loyalty** (NPCs): paid weeks, good months, bonuses, training and share grants raise it. Missed wages, extra shifts, pay cuts and refused raises lower it. Sullen staff steal and quit; devoted staff try harder.
 - **Manage** an employee for pay, bonuses, moving role, **training** (a course, or mentoring by a more skilled partner who rolls Education) and letting them go.
-- **In your contacts:** NPC staff go into the Messenger contacts of those running the business, so you can write to them.
+- **In your contacts:** NPC staff go into the Messenger contacts of those running the business, so you can write to them. Each has a Personality, shown on the Staff tab, and writes the way they feel: they'll mail you when something happens to them, when they want a raise, and when they leave.
 - **Share grants:** at a company, the shareholders can grant an employee shares, which vest after 12 weeks.
 - **An Exec's team:** an Exec partner can bring their Teamwork team onto the staff: one member each at ranks 3, 5 and 9. Name new members, or drag NPC actors into the Hire window. They are unpaid and leave with the Exec, but they answer to their own Loyalty, 1d6 + 1 to start. Each week they save with 1d6 under it, and one who fails won't work that week. A week with nothing done for them costs 1 Loyalty: thank them, give them a perk or a paid week off on the Employee window. At 0 or below they sell you out and go, and replacing one starts at Loyalty 1 with 200 eb of hiring fees.
 

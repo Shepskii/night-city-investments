@@ -118,7 +118,7 @@ test('at a company the officers hear of it, and a staff event comes from the emp
   const dex = contacts.find((c) => c.name === 'Dex');
   assert.ok(dex, 'a recruit gets a contact');
   assert.deepEqual(sent.map((m) => [m.fromContactId, m.toActorId]), [[dex.id, rook.id]], 'the officer, not the shareholder');
-  assert.match(sent[0].body, /not well enough/);
+  assert.match(sent[0].body, /Ripper Shack/, 'in their own words: a devoted employee names the place');
 });
 
 test('a grudge comes from the employee who was let go, if they had a contact', async () => {
@@ -319,4 +319,49 @@ test('an inspection is a notice with its reference, and a shakedown a gang\'s ow
   await BusinessService._mailEvent(b, takeEventMail(b));
   assert.match(sent[0].subject, /^Inspection NCB-\d{4}: Ripper Shack: /);
   assert.match(sent[0].body, /Ripper Shack/);
+});
+
+// ── M3 step 3: people in their own voice ────────────────────────────────────────
+
+const closed = (b, notes) => ({ business: b, events: [{ type: 'periodClosed', digest: { staff: notes } }] });
+
+test('an employee asking for a raise writes to the partners, with what to do apart', async () => {
+  reset();
+  await BusinessService._mailStaffNotes(closed(shop(), [{ kind: 'asks', staffId: 'stf_r1', name: 'Dex' }, { kind: 'trained', staffId: 'stf_r1', name: 'Dex' }]));
+  const dex = contacts.find((c) => c.name === 'Dex');
+  assert.equal(sent.length, 1, 'only the moments that are mailed');
+  assert.equal(sent[0].fromContactId, dex.id);
+  assert.equal(sent[0].subject, 'Dex: about my pay');
+  assert.match(sent[0].body, /raise|pay|worth|more/i);
+  assert.match(sent[0].body, /▸ Answer from the Staff tab: Manage Dex/);
+});
+
+test('one who walks out says so from the contact they had; one who never had one sends nothing', async () => {
+  reset();
+  await BusinessService._mailStaffNotes(closed(shop({ staff: [] }), [{ kind: 'walked', staffId: 'stf_r1', name: 'Dex' }, { kind: 'quit', staffId: 'stf_ghost', name: 'Ghost' }]));
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].subject, 'Dex has walked out of Ripper Shack');
+  await game.settings.set(MODULE_ID, SETTINGS.EVENT_MAIL, false);
+  try {
+    reset();
+    await BusinessService._mailStaffNotes(closed(shop(), [{ kind: 'asks', staffId: 'stf_r1', name: 'Dex' }]));
+    assert.equal(sent.length, 0, 'off with Business events by mail');
+  } finally {
+    await game.settings.set(MODULE_ID, SETTINGS.EVENT_MAIL, true);
+  }
+});
+
+test('job mail comes in the employer\'s voice: a corporation\'s HR, an NPC owner by Personality', async () => {
+  reset();
+  await BusinessService._mailJob({ id: 'emp_bio', name: 'Biotechnica', ticker: 'BIO' }, nova.id, 'Your application', ['plain'], 'See Your jobs', { kind: 'hired', data: { post: 'Floor', wage: 202 } });
+  assert.match(sent[0].body, /Floor/);
+  assert.match(sent[0].body, /202 eb/);
+  assert.match(sent[0].body, /Biotechnica/);
+  assert.doesNotMatch(sent[0].body, /plain/);
+  reset();
+  await BusinessService._mailJob({ id: 'bus_clinic', name: 'Clinic', npcRun: { ownerId: rook.id } }, nova.id, 'Your job', ['plain'], '', { kind: 'sacked', data: { paid: 162 } });
+  assert.match(sent[0].body, /162 eb/);
+  reset();
+  await BusinessService._mailJob(shop(), nova.id, 'Your job', ['plain'], '', { kind: 'promoted', data: { wage: 300 } });
+  assert.match(sent[0].body, /plain/, 'a player\'s business keeps the plain words');
 });

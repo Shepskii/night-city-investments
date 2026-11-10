@@ -617,7 +617,7 @@
       <tbody>
         {{#each rows}}
         <tr>
-          <td><strong>{{{who}}}</strong> <span class="nci-muted">{{source}}</span><div class="nci-muted">{{status}}</div>{{#if owed}}<div class="nci-warn">{{owed}}</div>{{/if}}{{#each notes}}<div class="nci-warn">{{this}}</div>{{/each}}</td>
+          <td><strong>{{{who}}}</strong> <span class="nci-muted">{{source}}</span>{{#if personality}} <span class="nci-muted">&middot; {{personality}}</span>{{/if}}<div class="nci-muted">{{status}}</div>{{#if owed}}<div class="nci-warn">{{owed}}</div>{{/if}}{{#each notes}}<div class="nci-warn">{{this}}</div>{{/each}}</td>
           <td>{{post}} <span class="nci-muted">{{level}}</span></td>
           <td>{{skill}} <strong>{{base}}</strong></td>
           <td>{{#if loyalty}}<span class="nci-loyal nci-loyal-{{loyaltyBand}}">{{loyalty}}</span>{{else}}<span class="nci-muted">&mdash;</span>{{/if}}</td>
