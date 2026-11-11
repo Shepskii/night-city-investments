@@ -429,6 +429,9 @@
 .nci-app .nci-proposal .nci-actions { margin: 8px 0 2px; }
 .nci-app .nci-days { width: 64px; }
 .nci-app .nci-rowbtns { white-space: nowrap; text-align: right; }
+.nci-app .nci-title-edit { display: flex; gap: 4px; margin-top: 2px; max-width: 320px; }
+.nci-app .nci-title-edit input { flex: 1; min-width: 0; }
+.nci-app .nci-title-edit button { width: var(--nci-control-height); padding: 0; flex: none; }
 .nci-app .nci-rowbtns button { width: var(--nci-control-height); padding: 0; }
 .nci-app .nci-rowbtns button.nci-labelled { width: auto; padding: 0 8px; }
 .nci-app .nci-rowbtns button.nci-tradebtn { width: 44px; }

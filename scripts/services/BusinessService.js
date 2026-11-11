@@ -18,7 +18,7 @@ import { ProductionCatalog } from '../data/ProductionCatalog.js';
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
-  takeEventMail, eventSender, eventAnswer, dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, answerNpcPartner, answerNpcInvestor, approvePress, spikePress, runPress, createNpcCompany, setNpcRun, cleanTicker, bossBand, standingOf, shiftUses, stageDv, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
+  takeEventMail, eventSender, eventAnswer, dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, answerNpcPartner, answerNpcInvestor, setPartnerTitle, approvePress, spikePress, runPress, createNpcCompany, setNpcRun, cleanTicker, bossBand, standingOf, shiftUses, stageDv, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
   isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact, payListedDividend,
   reviewListing, clearReview, delistCompany, isEmployerId,
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
@@ -2450,6 +2450,15 @@ class BusinessServiceImpl {
       }
       const done = answerNpcPartner(copy, partnerId, { yes, cash }, this.day());
       return done.ok ? { ok: true, business: copy, wealth: {}, events: yes ? [{ type: 'partnerJoined' }] : [] } : done;
+    });
+  }
+
+  /** The GM gives a holder a job title, or clears it. */
+  setPartnerTitle(id, actorId, title) {
+    return this._gm(id, (b) => {
+      const copy = normalizeBusiness(structuredClone(b));
+      const done = setPartnerTitle(copy, actorId, title);
+      return done.ok ? { ok: true, business: copy, wealth: {}, events: [] } : done;
     });
   }
 

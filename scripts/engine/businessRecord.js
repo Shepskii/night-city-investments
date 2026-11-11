@@ -80,6 +80,8 @@ export function normalizeBusiness(raw) {
       ...(p.npc ? { npc: true } : {}),
       ...(p.market ? { market: true } : {}),
       ...(p.actorRef ? { actorRef: String(p.actorRef) } : {}),
+      // A job title the owners or the GM gave them, shown on the cap table.
+      ...(p.title ? { title: String(p.title) } : {}),
       // Shares an employee was granted (E3): how many of the holder's units came that way.
       ...(p.grant ? { grant: true, grantUnits: int(p.grantUnits ?? p.units) } : {}),
     })),

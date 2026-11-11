@@ -86,6 +86,7 @@ export class BusinessApp extends BaseApplication {
       helpRoll: BusinessApp._onHelpRoll,
       draw: BusinessApp._onDraw,
       setHeir: BusinessApp._onSetHeir,
+      setTitle: BusinessApp._onSetTitle,
       leave: BusinessApp._onLeave,
       buyout: BusinessApp._onBuyout,
       proposeClose: BusinessApp._onProposeClose,
@@ -573,6 +574,18 @@ export class BusinessApp extends BaseApplication {
 
   static _onDraw(event, target) {
     return this._send('draw', { amount: amount(target, 'amount') });
+  }
+
+  /** A holder's job title: an owner asks for it, and a GM sets it at once, whoever they are acting as. */
+  static async _onSetTitle(event, target) {
+    const title = target.closest('.nci-title-edit')?.querySelector('[name="title"]')?.value ?? '';
+    if (!game.user.isGM) return this._send('setTitle', { actorId: target.dataset.id, title });
+    const business = this.business;
+    if (!business) return null;
+    const { BusinessService } = await import('../../services/BusinessService.js');
+    const out = await BusinessService.setPartnerTitle(business.id, target.dataset.id, title);
+    if (!out.ok) ui.notifications.warn(L('NCI.Business.Refused', { reason: L(`NCI.Business.Reason.${out.reason}`) }));
+    return out;
   }
 
   static _onSetHeir(event, target) {

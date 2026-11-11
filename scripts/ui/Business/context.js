@@ -135,6 +135,13 @@ export function holderWho(business, p, viewerId = null, { truth = false } = {}) 
   return escapeHtml(withDiscoveries(maskLabel(mask), game.actors.get(viewerId), mask.ref));
 }
 
+/** Whether a holder is a player's character, an NPC or a syndicate, for the cap table; nothing for the float or the receivers. */
+export function holderKind(business, p) {
+  if (p.market || p.creditors || p.actorId === 'npc:creditors') return '';
+  if (SyndicateRepository.get(p.actorId)) return L('NCI.Business.HolderKind.syndicate');
+  return L(`NCI.Business.HolderKind.${game.actors.get(holderActorId(business, p))?.hasPlayerOwner ? 'player' : 'npc'}`);
+}
+
 /**
  * A name in the window's running text (proposals, the ledger, who took a slot). A hidden holder (B6d)
  * goes by their outer layer here for everyone: only the cap table and the GM Console say more.
@@ -1649,11 +1656,16 @@ function partnersContext(business, actor) {
   const sweat = business.agreement.sweat;
   // A hidden holder's row (B6d) gives nothing away to other shareholders: no money in, heir or office.
   const maskedFor = (p) => !!outerMask(business, p.actorId) && actor?.id !== p.actorId;
+  // The owners, or the GM, may give anyone on the table a job title.
+  const titles = business.status !== 'closed' && (game.user.isGM || canAct);
   return {
     rows: business.partners.filter((p) => p.status !== 'declined').map((p) => ({
       masked: maskedFor(p),
       actorId: p.actorId,
       name: p.name,
+      kind: holderKind(business, p),
+      title: p.title ?? '',
+      canTitle: titles && !p.market && p.actorId !== 'npc:creditors',
       // The shares the market holds after a listing (B5b) are shown as the public float.
       who: holderWho(business, p, actor?.id),
       // A hidden holder another shareholder can investigate (B6d).
@@ -1679,7 +1691,7 @@ function partnersContext(business, actor) {
         && !business.proposals.some((x) => x.kind === 'elect'),
       canDismiss: business.stage >= 2 && canAct && open && officersOf(business).includes(p.actorId) && officersOf(business).length > 1
         && !business.proposals.some((x) => x.kind === 'dismiss'),
-    })).map((row) => (row.masked ? { ...row, put: '', gear: '', heir: '', officer: '', leaving: '', canElect: false, canDismiss: false } : row)),
+    })).map((row) => (row.masked ? { ...row, put: '', gear: '', heir: '', officer: '', leaving: '', kind: '', title: '', canTitle: false, canElect: false, canDismiss: false } : row)),
     unitValue: units > 0 ? LT(business, 'NCI.Business.UnitValue', { value: value.toFixed(2) }) : '',
     isCompany: business.stage >= 2,
     agreement: [

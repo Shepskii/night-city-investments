@@ -2009,6 +2009,21 @@ test('an NPC invited to invest in a running business waits on the GM, and joins 
     assert.ok(offered, 'the investor list is shown');
     assert.match(offered, new RegExp(fix.id), 'with the other characters');
     assert.doesNotMatch(offered, new RegExp(banker.id), 'but no longer the NPC');
+
+    // The cap table says who is a player and who an NPC, and holds a job title for each.
+    const rowOf = (page, name) => page.match(new RegExp(`<tr>\\s*<td><strong>[^]*?${name}[^]*?</tr>`))?.[0] ?? '';
+    assert.match(text(rowOf(html, 'Investee Ivy')), /\(Player\)/);
+    assert.match(text(rowOf(html, 'Banker Bo')), /\(NPC\)/);
+    assert.match(rowOf(html, 'Banker Bo'), /name="title"[^>]*value=""/, 'an empty title to fill in');
+    assert.equal((await S.BusinessService.setPartnerTitle(b().id, joined.actorId, '  Silent backer  ')).ok, true);
+    assert.equal(b().partners.find((x) => x.actorRef === banker.id).title, 'Silent backer');
+    await send(owner, 'setTitle', { businessId: b().id, actorId: owner.id, title: 'Managing partner' });
+    assert.equal(b().partners.find((x) => x.actorId === owner.id).title, 'Managing partner', 'an owner sets one by request');
+    const titled = await renderBusiness(window);
+    assert.match(rowOf(titled, 'Banker Bo'), /value="Silent backer"/);
+    assert.equal((await S.BusinessService.setPartnerTitle(b().id, joined.actorId, '')).ok, true);
+    assert.equal('title' in b().partners.find((x) => x.actorRef === banker.id), false, 'and an empty one clears it');
+    assert.equal((await S.BusinessService.setPartnerTitle(b().id, 'nobody', 'x')).ok, false, 'only for a holder');
   } finally {
     game.nightcity = nightcityBefore;
     for (const x of S.BusinessRepository.all().filter((y) => !before.includes(y.id))) await S.BusinessRepository.remove?.(x.id);

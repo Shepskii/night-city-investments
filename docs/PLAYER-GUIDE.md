@@ -318,6 +318,7 @@ Illegal goods and fencing are in [Part 3](#illegal-goods-and-fencing).
 ### Partners, heirs and closing
 
 - **Decisions** on the Partners tab: most need a majority of units; closing and stepping up need everyone.
+- **The table of owners** says beside each name whether they are a player's character, an NPC or a syndicate. Any partner with a vote can give anyone on it a **job title**, such as *Managing partner*: type it in under their name and save. Leave it empty to clear it.
 - **Name an heir** for your stake.
 - **Leaving:** the other partners may buy your units at book value within 14 days; after that they pass to your heir, or lapse.
 - **Closing** needs every partner; the money and gear are shared out. A business whose cash stays below zero for two losing weeks closes anyway.

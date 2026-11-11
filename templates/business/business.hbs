@@ -800,7 +800,9 @@
       <tbody>
         {{#each rows}}
         <tr>
-          <td><strong>{{{who}}}</strong> <span class="nci-muted">{{status}}{{#if voting}} &middot; {{voting}}{{/if}}{{#if officer}} &middot; {{officer}}{{/if}}</span>
+          <td><strong>{{{who}}}</strong> <span class="nci-muted">{{status}}{{#if voting}} &middot; {{voting}}{{/if}}{{#if officer}} &middot; {{officer}}{{/if}}</span>{{#if kind}} <span class="nci-muted">({{kind}})</span>{{/if}}
+            {{#if canTitle}}<div class="nci-title-edit"><input type="text" name="title" maxlength="40" value="{{title}}" placeholder="{{localize "NCI.Business.JobTitle"}}" aria-label="{{localize "NCI.Business.JobTitle"}}"><button type="button" data-action="setTitle" data-id="{{actorId}}" data-tooltip="{{localize "NCI.Business.SaveTitle"}}" aria-label="{{localize "NCI.Business.SaveTitle"}}"><i class="fas fa-save"></i></button></div>
+            {{else if title}}<div><em>{{title}}</em></div>{{/if}}
             {{#if put}}<div class="nci-muted">{{put}}{{#if gear}} &middot; {{gear}}{{/if}}</div>{{/if}}
             {{#if heir}}<div class="nci-muted">{{heir}}</div>{{/if}}
             {{#if covered}}<div class="nci-muted">{{covered}}</div>{{/if}}

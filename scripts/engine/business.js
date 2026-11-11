@@ -130,7 +130,7 @@ export {
 };
 
 export const BUSINESS_REQUESTS = Object.freeze([
-  'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'leave', 'buyout',
+  'found', 'join', 'decline', 'contribute', 'withdraw', 'setupRoll', 'action', 'assist', 'draw', 'setHeir', 'setTitle', 'leave', 'buyout',
   'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'takeDirty', 'lieLow', 'gangDealOfficer', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll', 'prospectusRoll',
   'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant', 'askStaff', 'cancelAsk', 'addTeam', 'teamCare',
   'rightsTake', 'sellBack', 'issueRoll', 'buybackRoll', 'bid', 'tender', 'defenceRoll', 'hideRoll', 'dropLayer',
@@ -704,6 +704,13 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       me.heirId = heirOf(request.heirId, actor.id, ctx);
       if (request.heirId && !me.heirId) return fail('bad-heir');
       break;
+    case 'setTitle': {
+      // Any owner may give a holder a job title, or clear it; the GM can too, by the service.
+      if (me?.status !== 'active' || !me.voting) return fail('not-partner');
+      const done = setPartnerTitle(b, String(request.actorId ?? ''), request.title);
+      if (!done.ok) return done;
+      break;
+    }
     case 'leave':
       if (b.status !== 'open') return fail('not-open');
       if (me?.status !== 'active') return fail('not-partner');
@@ -1164,6 +1171,17 @@ function found(request, actor, day, ctx, p) {
   });
   addLedger(business, { day, kind: 'founded', amount: money.cash, actorId: actor.id, gear: gearValue(business.partners[0]) }, p);
   return { ok: true, business };
+}
+
+/** A holder's job title, free text up to 40 characters; an empty one clears it. Not for the float or the receivers. */
+export function setPartnerTitle(b, actorId, title) {
+  if (b.status === 'closed') return fail('not-open');
+  const x = partnerOf(b, actorId);
+  if (!x || x.market || x.actorId === 'npc:creditors' || x.status === 'declined') return fail('not-partner');
+  const t = text(title, 40);
+  if (t) x.title = t;
+  else delete x.title;
+  return { ok: true };
 }
 
 /**
