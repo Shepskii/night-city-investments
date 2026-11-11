@@ -2002,7 +2002,7 @@ What can and can't move to v2 (all of it is behind `NcmAdapter`, except the mark
 
 **Paused 2026-11-11, at the user's word, and resumed with step 4.** Still to do: step 5 (the syndicate treasury's voice, the Exchange's, and a newswire style for headlines).
 
-**What NCM's v2 would need for this module to move:** tags (with alias and organization) in contact summaries, and a tag lookup players may make without GM notes; eddies on `messages.send`; a GM read of a whole message; sign-in state in `networks.status()`; making a data shard. NCM is another author's module: these are requests, not changes made here. Its API.md also names an `INTEGRATION.md` that isn't in its `docs` folder.
+**What NCM's v2 would need for this module to move:** tags (with alias and organization) in contact summaries, and a tag lookup players may make without GM notes; eddies on `messages.send`; a GM read of a whole message; sign-in state in `networks.status()`; making a data shard. NCM is another author's module: these are requests, not changes made here. Its API.md also names an `INTEGRATION.md` that isn't in its `docs` folder. The full list, with the toast preview's raw HTML found in M3, is written for Messenger's author in [MESSENGER-REQUESTS.md](MESSENGER-REQUESTS.md).
 
 
 ### 36.5 Phasing
