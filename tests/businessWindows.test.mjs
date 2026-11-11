@@ -2021,6 +2021,7 @@ test('an NPC invited to invest in a running business waits on the GM, and joins 
     assert.equal(b().partners.find((x) => x.actorId === owner.id).title, 'Managing partner', 'an owner sets one by request');
     const titled = await renderBusiness(window);
     assert.match(rowOf(titled, 'Banker Bo'), /value="Silent backer"/);
+    assert.match(rowOf(titled, 'Banker Bo'), /class="nci-title"><em>Silent backer<\/em>/, 'shown once saved, to the one who set it too');
     assert.equal((await S.BusinessService.setPartnerTitle(b().id, joined.actorId, '')).ok, true);
     assert.equal('title' in b().partners.find((x) => x.actorRef === banker.id), false, 'and an empty one clears it');
     assert.equal((await S.BusinessService.setPartnerTitle(b().id, 'nobody', 'x')).ok, false, 'only for a holder');

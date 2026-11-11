@@ -361,6 +361,12 @@ test('job mail comes in the employer\'s voice: a corporation\'s HR, an NPC owner
   reset();
   await BusinessService._mailJob({ id: 'bus_clinic', name: 'Clinic', npcRun: { ownerId: rook.id } }, nova.id, 'Your job', ['plain'], '', { kind: 'sacked', data: { paid: 162 } });
   assert.match(sent[0].body, /162 eb/);
+  assert.doesNotMatch(sent[0].body, /— /, 'no title, no signature line');
+  reset();
+  // An owner with a job title on the cap table signs with it, last, escaped like the rest.
+  const titled = { id: 'bus_clinic', name: 'Clinic', npcRun: { ownerId: rook.id }, partners: [{ actorId: rook.id, title: 'Chief <Medic>' }] };
+  await BusinessService._mailJob(titled, nova.id, 'Your job', ['plain'], '', { kind: 'sacked', data: { paid: 162 } });
+  assert.match(sent[0].body, /<p>— Chief &lt;Medic&gt;, Clinic<\/p>$/);
   reset();
   await BusinessService._mailJob(shop(), nova.id, 'Your job', ['plain'], '', { kind: 'promoted', data: { wage: 300 } });
   assert.match(sent[0].body, /plain/, 'a player\'s business keeps the plain words');

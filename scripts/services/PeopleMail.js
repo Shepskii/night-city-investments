@@ -14,6 +14,9 @@ import { FactionRepository } from '../data/FactionRepository.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
 
 /** The Personality written on an actor's sheet, if it has one. */
+/** How a person mailing for a business signs it, under their sign-off: their job title on its cap table, and the business. */
+const signature = (title, name) => `— ${title}, ${name}`;
+
 const sheetPersonality = (actorId) => (actorId ? game.actors?.get?.(actorId)?.system?.lifepath?.personality ?? null : null);
 
 export const PeopleMail = {
@@ -83,7 +86,11 @@ export const PeopleMail = {
     const ownerId = b?.npcRun?.ownerId;
     if (!ownerId) return null;
     // An owner with no Personality on their sheet is Stable (the user's choice).
-    return peopleMail({ frames: OWNER_FRAMES, lines: OWNER_LINES, personality: resolvePersonality(sheetPersonality(ownerId)) ?? 'stable', kind, tone: band, data: { name: b.name, ...data }, after });
+    const mail = peopleMail({ frames: OWNER_FRAMES, lines: OWNER_LINES, personality: resolvePersonality(sheetPersonality(ownerId)) ?? 'stable', kind, tone: band, data: { name: b.name, ...data }, after });
+    // The owner signs with the job title they have on the cap table, if they have one.
+    const title = (b.partners ?? []).find((p) => p.actorId === ownerId)?.title;
+    if (mail && title) mail.paragraphs.push(signature(title, b.name));
+    return mail;
   },
 
   /** An employee's performance band at an NPC's company or a corporation, by their character. */

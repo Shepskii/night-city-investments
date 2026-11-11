@@ -584,7 +584,8 @@ export class BusinessApp extends BaseApplication {
     if (!business) return null;
     const { BusinessService } = await import('../../services/BusinessService.js');
     const out = await BusinessService.setPartnerTitle(business.id, target.dataset.id, title);
-    if (!out.ok) ui.notifications.warn(L('NCI.Business.Refused', { reason: L(`NCI.Business.Reason.${out.reason}`) }));
+    if (out.ok) ui.notifications.info(L('NCI.Business.Done.setTitle'));
+    else ui.notifications.warn(L('NCI.Business.Refused', { reason: L(`NCI.Business.Reason.${out.reason}`) }));
     return out;
   }
 
