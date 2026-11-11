@@ -36,8 +36,8 @@ export const TREASURY = Object.freeze({
         'Carried by order, not by ballot: {what}. It is being carried out.',
       ],
       unanimous: [
-        'Carried without a single dissent: {what}.',
-        'Every member voted for it: {what}. The treasury will proceed.',
+        'Carried with every unit in favour: {what}.',
+        'Not one unit against: {what}. The treasury will proceed.',
       ],
       close: [
         'Carried, narrowly: {what}. A bare majority of the units said yes.',
