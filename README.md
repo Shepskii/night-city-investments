@@ -88,7 +88,8 @@ Or unzip a release into `Data/modules/night-city-investments`. Then enable **Nig
 - **Colour themes.** With Pneuma's Visual Tools installed, each player can have the windows match its skins and colours.
 
 ### Character ties
-- **Mail from whoever is behind it.** With Night City Messenger, a gang's shakedown, an inspection, a reporter or one of your staff mails you about the week's trouble, and you can write back. NPC staff and employers go into your contacts.
+- **Mail from whoever is behind it.** With Night City Messenger, a gang's shakedown, an inspection, a reporter or one of your staff mails you about the week's trouble, and you can write back. They answer again once the week settles. NPC staff and employers go into your contacts.
+- **Mail in character.** Gangs, corporations, papers, officials and staff each write in their own voice, by style, Personality and mood. The Exchange, the regulator, the courts, NCPD and a syndicate's treasury send their own mail, and headlines arrive as newswire copy.
 - **Crew Tools downtime.** With Pneuma's Crew Tools active, project days and extra time spend a character's downtime, so business work competes with everything else they could do.
 - **REP and Improvement Points.** A business's big moments, good and bad, suggest awards for the GM to apply, change or dismiss.
 - **Living costs.** Partners can vote for the business to pay a partner's Housing and Lifestyle each month.
