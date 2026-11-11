@@ -13,6 +13,7 @@ import { CompanyRepository } from '../data/CompanyRepository.js';
 import { FundRepository } from '../data/FundRepository.js';
 import { BrokerRepository } from '../data/BrokerRepository.js';
 import { NcmAdapter } from '../integrations/NcmAdapter.js';
+import { OrgMail } from './OrgMail.js';
 import { L } from '../utils/helpers.js';
 
 const eb = (n) => Math.round(n).toLocaleString();
@@ -294,8 +295,9 @@ export const MailService = {
     };
   },
 
+  /** A headline, filed in the Market Wire's newswire style (M3 step 5). */
   headline(item) {
-    return { subject: item.headline, lines: [item.headline] };
+    return { subject: item.headline, lines: OrgMail.headline(item) ?? [item.headline] };
   },
 
   /** A gig's market headline sent by a broker, with their rumour-style lead-in. */

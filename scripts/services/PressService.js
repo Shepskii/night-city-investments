@@ -101,7 +101,7 @@ export const PressService = {
     const die = (await SkillAdapter.rollOne()).value;
     printCharacterPress(story, die);
     const name = story.story === 'hidden' ? story.stake.name : story.name;
-    await NewsService.post({ headline: story.headline ?? L(`NCI.Press.Headline.${story.story}`, { name, outlet: story.outlet }), tone: 'down', companyIds: story.story === 'hidden' ? [story.stake.ticker] : [] });
+    await NewsService.post({ headline: story.headline ?? L(`NCI.Press.Headline.${story.story}`, { name, outlet: story.outlet }), tone: 'down', companyIds: story.story === 'hidden' ? [story.stake.ticker] : [], source: 'story' });
   },
 
   /** The week is up: what it did lands, and the character hears how it went. */

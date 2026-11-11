@@ -9,6 +9,7 @@
  */
 
 import { pickLine, fillLine } from './brokerVoice.js';
+import { activeMembers, syndicateUnits } from './syndicate.js';
 
 /** A gang's styles (the user's choice, 2026-11-11). */
 export const GANG_STYLES = Object.freeze(['formal', 'street', 'chrome', 'zealot', 'patriot', 'glam', 'cryptic', 'oldMoney']);
@@ -61,6 +62,54 @@ export function eventTones(b, event) {
   if (isRepeat(b, event)) tones.push('repeat');
   if (event?.factionId && b?.standings?.[event.factionId] === 'hostile') tones.push('hostile');
   return tones;
+}
+
+/**
+ * The Exchange's tones for a mail (M3 step 5), most specific first. For a listing review: `again` (a review was
+ * cleared before) and `deep` (worth under half the floor); a delisting: `borrowed`; an offer: `generous` or `thin`,
+ * its `premium` against `all` and `half`, the bars at which NPC holders tender all or half (fractions); a close:
+ * `nothing` (no shares bought) and `defended` (the officers rolled a defence).
+ */
+export function exchangeTones(kind, f = {}) {
+  switch (kind) {
+    case 'review': return [f.again && 'again', f.deep && 'deep'].filter(Boolean);
+    case 'delisted': return f.borrowed ? ['borrowed'] : [];
+    case 'open':
+    case 'approved':
+      if (f.premium >= f.all) return ['generous'];
+      return f.premium < f.half ? ['thin'] : [];
+    case 'closed':
+    case 'bidderClosed': return [f.acquired === 0 && 'nothing', f.defended && 'defended'].filter(Boolean);
+    case 'control':
+    case 'bidderControl': return f.defended ? ['defended'] : [];
+    default: return [];
+  }
+}
+
+/** What a syndicate's motion is about, for the treasury's line (M3 step 5). */
+export function motionTones(proposal) {
+  const kind = proposal?.kind;
+  if (kind === 'dissolve') return ['dissolve'];
+  if (['trade', 'business', 'limit'].includes(kind)) return ['money'];
+  return ['admit', 'remove', 'role'].includes(kind) ? ['people'] : [];
+}
+
+/**
+ * How a syndicate's vote went, for the treasury's line (M3 step 5): `forced` when the GM settled it, `unanimous` when
+ * every unit (or member, with no units) said yes, `close` when the winning side held 60% or less.
+ * @param {object} s - the syndicate, after the vote
+ * @param {{type: string, forced?: boolean, proposal?: object}} e - a `proposalPassed` or `proposalFailed` event
+ */
+export function voteTones(s, e) {
+  if (e?.forced) return ['forced'];
+  const members = activeMembers(s);
+  const units = syndicateUnits(s);
+  const all = units > 0 ? units : members.length;
+  if (!all || !e?.proposal) return [];
+  const yes = e.type === 'proposalPassed';
+  const side = members.filter((m) => e.proposal.votes?.[m.actorId] === yes).reduce((a, m) => a + (units > 0 ? m.units : 1), 0) / all;
+  if (yes && side >= 1) return ['unanimous'];
+  return side <= 0.6 ? ['close'] : [];
 }
 
 /** A short reference number that stays the same for the same matter. */

@@ -91,6 +91,7 @@ export const MarketControlService = {
         headline: headline.trim(),
         tone: pct > 0 ? 'up' : 'down',
         companyIds: parsed.type === 'company' ? [parsed.id] : [],
+        source: 'gm',
       });
     }
     return true;

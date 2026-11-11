@@ -142,7 +142,7 @@ All **GM**. Useful from macros and scripts.
 | `api.gm.dividends` | `declareSpecial(companyId, perShare)` |
 | `api.gm.businessDirectory` | `()`: each business as the street sees it, for a map: `{ id, name, status, district, location, kind, stage, ticker }`. No money, staff or back room. |
 | `api.gm.ipo` | `listNow(companyId)` |
-| `api.gm.news` | `post({ headline, tone, companyIds })` |
+| `api.gm.news` | `post({ headline, tone, companyIds, source })`. `source` (`'gm'` by default, or `'gig'`, `'story'` or `'filing'`) picks the Market Wire's copy when the headline is mailed; it is not kept in the feed. |
 | `api.gm.undo` | `available()`, `undo()` |
 | `api.gm.preview` | `run(scenario, days)` |
 | `api.gm.funds` | `save(input)`, `importStarter()`, `liquidate(id)` |

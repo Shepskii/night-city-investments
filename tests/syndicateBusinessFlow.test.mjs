@@ -179,6 +179,25 @@ test('a proposal carried the moment it is made: no "vote on this" mail, only how
   assert.ok(open.some((t) => t.includes('Proposed.Subject')), 'a proposal still open is announced');
 });
 
+test('the treasury writes in its own voice, with the motion number kept from tabling to outcome (M3 step 5)', async () => {
+  const { SyndicateMail } = await import('../scripts/services/SyndicateMail.js');
+  const { TREASURY } = await import('../scripts/data/org-voices/treasury.js');
+  const t = TREASURY.treasury;
+  const s = syndicate();
+  const proposal = { id: 'p_voice', kind: 'limit', by: fix.id, ends: S.BusinessService.day() + 7, amount: 8000, votes: { [fix.id]: true } };
+  const [opened] = SyndicateMail.build(s, [{ type: 'proposed', proposalId: 'p_voice', proposal }]);
+  const [forced] = SyndicateMail.build(s, [{ type: 'proposalPassed', proposalId: 'p_voice', proposal, forced: true }]);
+  assert.match(opened.subject, /^NCI\.SyndicateMail\.Motion \{"ref":"\d{4}"\}: /, 'a motion number in the subject');
+  assert.equal(opened.subject.split(': ')[0], forced.subject.split(': ')[0], 'the same motion, the same number');
+  assert.equal(opened.lines.length, 3, 'greeting, line, sign-off');
+  assert.ok(t.greetings.some((g) => g.replace('{syndicate}', s.name) === opened.lines[0]), opened.lines[0]);
+  assert.match(opened.lines[1], new RegExp(`${fix.name}`), 'names who tabled it');
+  assert.match(opened.footer, /Proposed\.Footer/, 'what to do stays in the footer');
+  assert.match(forced.footer, /Passed\.Forced/, 'what the GM did is for the footer');  const [redeemed] = SyndicateMail.build(s, [{ type: 'redeemed', actorId: med.id, units: 5, amount: 1200 }]);
+  assert.match(redeemed.lines.join(' '), /1,200 eb/);
+  assert.ok(!/Motion/.test(redeemed.subject), 'a redemption is not a motion');
+});
+
 test('business payments count against the officer day limit as well as orders', async () => {
   const spent = (await import('../scripts/engine/index.js')).spentToday(syndicate(), med.id, S.BusinessService.day());
   assert.ok(spent >= 3000, `the clinic's 3,000 eb counted: ${spent}`);

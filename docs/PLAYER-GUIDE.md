@@ -101,7 +101,7 @@ A syndicate is a crew's shared brokerage account.
 **Running it**
 
 - **Officers** trade the syndicate's account from the terminal: in the character list, pick "*syndicate* (as *character*)". Each officer has a **daily limit** for orders and business payments.
-- Anything over the limit becomes a **proposal**, decided by a vote of units, as are admitting or removing members, making officers, changing the limit, and dissolving. Proposals last 7 days.
+- Anything over the limit becomes a **proposal**, decided by a vote of units, as are admitting or removing members, making officers, changing the limit, and dissolving. Proposals last 7 days. The syndicate's **Treasury** mails the members when one is tabled and when it is settled, under the same motion number.
 - Members get Messenger mail when proposals open and are decided, and when redemptions are paid.
 - **Heat is shared:** the syndicate counts as knowing whatever any member knows.
 

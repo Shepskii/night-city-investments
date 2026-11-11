@@ -64,7 +64,8 @@ export function registerMarketSystem(initializer) {
       controls: MarketControlService,
       corporateActions: CorporateActionService,
       dividends: DividendService,
-      news: NewsService,
+      // News posted through the API is the GM's own, for the wire's copy (M3 step 5), unless it says otherwise.
+      news: { post: (o = {}) => NewsService.post({ source: 'gm', ...o }) },
       ipo: IpoService,
       undo: UndoService,
       preview: PreviewService,

@@ -7,13 +7,16 @@
  *              caller keeps its plain wording.
  */
 
-import { orgMail, factionStyle, outletStyle, eventTones, refNumber } from '../engine/index.js';
+import { orgMail, factionStyle, outletStyle, eventTones, refNumber, fillLine } from '../engine/index.js';
 import { OFFICIALS } from '../data/org-voices/officials.js';
 import { GANG_VOICES } from '../data/org-voices/gangs.js';
 import { CORP_VOICES } from '../data/org-voices/corps.js';
 import { OUTLET_VOICES } from '../data/org-voices/outlets.js';
+import { TREASURY } from '../data/org-voices/treasury.js';
+import { NEWSWIRE } from '../data/org-voices/newswire.js';
 import { FactionRepository } from '../data/FactionRepository.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
+import { FundRepository } from '../data/FundRepository.js';
 
 const sectorOf = (f) => (f?.ticker ? CompanyRepository.all().find((c) => c.ticker === f.ticker)?.sector ?? null : null);
 
@@ -26,6 +29,26 @@ export const OrgMail = {
   /** An official sender's mail; `key` keeps the same reference for the same matter. */
   official(sender, kind, data, key, tones = []) {
     return orgMail({ voices: OFFICIALS, style: sender, kind, tones, data: { ...data, ref: refNumber(`${sender}:${key}`) } });
+  },
+
+  /** A syndicate treasury's mail (M3 step 5): one voice, by the motion and the vote. */
+  treasury(kind, tones, data) {
+    return orgMail({ voices: TREASURY, style: 'treasury', kind, tones, data });
+  },
+
+  /**
+   * A headline as the Market Wire files it (M3 step 5): a dateline with the headline, a line of wire copy by what it
+   * came from and its tone, and a sign-off. News about no one company is the market's.
+   * @returns {string[]|null} paragraphs
+   */
+  headline(item) {
+    const id = item?.companyIds?.[0];
+    const company = id ? CompanyRepository.get(id) ?? FundRepository.get(id) : null;
+    const kind = !company ? 'market' : ['gig', 'story', 'gm'].includes(item.source) ? item.source : 'filing';
+    const mail = orgMail({ voices: NEWSWIRE, style: 'wire', kind, tones: [item.tone], data: { name: company?.name ?? '', ticker: company?.ticker ?? '' } });
+    if (!mail) return null;
+    const { dated, undated } = NEWSWIRE.wire.dateline;
+    return [fillLine(item.date ? dated : undated, { date: item.date, headline: item.headline }), ...mail.paragraphs];
   },
 
   /** A faction's style. */

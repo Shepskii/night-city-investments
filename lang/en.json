@@ -1891,6 +1891,7 @@
       }
     },
     "SyndicateMail": {
+      "Motion": "Motion {ref}",
       "Proposed": {
         "Subject": "New proposal to vote on",
         "Body": "Proposed by {name}.",

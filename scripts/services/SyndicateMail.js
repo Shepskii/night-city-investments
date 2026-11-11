@@ -5,10 +5,11 @@
  *              its outcome (passed, turned down, lapsed, vetoed, or passed but impossible), a trade or
  *              business payment the members agreed that then failed, and the syndicate being wound up.
  *              A member hears alone about their own redemption being paid. The mail comes from the
- *              market wire. A world setting turns it off. Also words a proposal for the windows.
+ *              syndicate's treasury, in its voice (M3 step 5), with a motion's number in the subject, or from
+ *              the market wire without Messenger. A world setting turns it off. Also words a proposal for the windows.
  */
 
-import { memberOf } from '../engine/index.js';
+import { memberOf, motionTones, voteTones, refNumber } from '../engine/index.js';
 import { MODULE_ID, SETTINGS } from '../utils/constants.js';
 import { L, log } from '../utils/helpers.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
@@ -18,6 +19,7 @@ import { SyndicateRepository } from '../data/SyndicateRepository.js';
 import { MarketClock } from './MarketClockService.js';
 import { MailService } from './MailService.js';
 import { ContactService } from './ContactService.js';
+import { OrgMail } from './OrgMail.js';
 
 const DAY_MS = 86_400_000;
 const eb = (n) => Math.round(Number(n) || 0).toLocaleString();
@@ -66,41 +68,54 @@ export const SyndicateMail = {
   build(s, events) {
     const mails = [];
     const all = (subject, lines, footer = '') => mails.push({ to: 'all', subject, lines, footer });
+    // The treasury's words, or the plain ones if it has none; a motion keeps its number from tabling to outcome.
+    const voiced = (kind, tones, data, plain) => OrgMail.treasury(kind, tones, { syndicate: s.name, ...data })?.paragraphs ?? plain;
+    const motion = (e, subject) => (e.proposalId ? `${L('NCI.SyndicateMail.Motion', { ref: refNumber(`motion:${s.id}:${e.proposalId}`) })}: ${subject}` : subject);
     // A proposal the same change also settled (the proposer's units carried it at once) has nothing left to
     // vote on: its members hear only how it ended.
     const settled = new Set(events.filter((e) => e.type !== 'proposed' && /^proposal/.test(e.type)).map((e) => e.proposalId));
     for (const e of events) {
       const text = e.proposal ? describeProposal(s, e.proposal) : '';
       switch (e.type) {
-        case 'proposed':
+        case 'proposed': {
           if (settled.has(e.proposalId)) break;
-          all(L('NCI.SyndicateMail.Proposed.Subject'), [text, L('NCI.SyndicateMail.Proposed.Body', { name: memberOf(s, e.proposal.by)?.name ?? '?' })], L('NCI.SyndicateMail.Proposed.Footer', { date: dayText(e.proposal.ends) }));
+          const by = memberOf(s, e.proposal.by)?.name ?? '?';
+          const date = dayText(e.proposal.ends);
+          all(motion(e, L('NCI.SyndicateMail.Proposed.Subject')), voiced('proposed', motionTones(e.proposal), { what: text, by, date }, [text, L('NCI.SyndicateMail.Proposed.Body', { name: by })]), L('NCI.SyndicateMail.Proposed.Footer', { date }));
           break;
+        }
         case 'proposalPassed':
-          all(L('NCI.SyndicateMail.Passed.Subject'), [text, L(e.forced ? 'NCI.SyndicateMail.Passed.Forced' : 'NCI.SyndicateMail.Passed.Body')]);
+          // What the GM did is the rules' business, so it goes in the footer.
+          all(motion(e, L('NCI.SyndicateMail.Passed.Subject')), voiced('passed', voteTones(s, e), { what: text }, [text, L('NCI.SyndicateMail.Passed.Body')]), e.forced ? L('NCI.SyndicateMail.Passed.Forced') : '');
           break;
         case 'proposalFailed':
-          all(L('NCI.SyndicateMail.Failed.Subject'), [text, L('NCI.SyndicateMail.Failed.Body')]);
+          all(motion(e, L('NCI.SyndicateMail.Failed.Subject')), voiced('failed', voteTones(s, e), { what: text }, [text, L('NCI.SyndicateMail.Failed.Body')]));
           break;
         case 'proposalLapsed':
-          all(L('NCI.SyndicateMail.Lapsed.Subject'), [text, L('NCI.SyndicateMail.Lapsed.Body')]);
+          all(motion(e, L('NCI.SyndicateMail.Lapsed.Subject')), voiced('lapsed', [], { what: text }, [text, L('NCI.SyndicateMail.Lapsed.Body')]));
           break;
         case 'proposalVetoed':
-          all(L('NCI.SyndicateMail.Vetoed.Subject'), [text, L('NCI.SyndicateMail.Vetoed.Body')]);
+          all(motion(e, L('NCI.SyndicateMail.Vetoed.Subject')), voiced('vetoed', [], { what: text }, [text]), L('NCI.SyndicateMail.Vetoed.Body'));
           break;
-        case 'proposalVoid':
-          all(L('NCI.SyndicateMail.Void.Subject'), [text, L('NCI.SyndicateMail.Void.Body', { reason: reasonText(e.reason) })]);
+        case 'proposalVoid': {
+          const reason = reasonText(e.reason);
+          all(motion(e, L('NCI.SyndicateMail.Void.Subject')), voiced('void', [], { what: text, reason }, [text, L('NCI.SyndicateMail.Void.Body', { reason })]));
           break;
-        case 'agreedFailed':
-          all(L('NCI.SyndicateMail.AgreedFailed.Subject'), [e.text ?? '', L('NCI.SyndicateMail.AgreedFailed.Body', { reason: reasonText(e.reason) })]);
+        }
+        case 'agreedFailed': {
+          const reason = reasonText(e.reason);
+          all(L('NCI.SyndicateMail.AgreedFailed.Subject'), voiced('agreedFailed', [], { what: e.text ?? '', reason }, [e.text ?? '', L('NCI.SyndicateMail.AgreedFailed.Body', { reason })]));
           break;
-        case 'redeemed':
-          mails.push({ to: e.actorId, subject: `${s.name}: ${L('NCI.SyndicateMail.Redeemed.Subject')}`, lines: [L('NCI.SyndicateMail.Redeemed.Body', { units: units(e.units), name: s.name, amount: eb(e.amount) })] });
+        }
+        case 'redeemed': {
+          const terms = { units: units(e.units), name: s.name, amount: eb(e.amount) };
+          mails.push({ to: e.actorId, subject: `${s.name}: ${L('NCI.SyndicateMail.Redeemed.Subject')}`, lines: voiced('redeemed', [], terms, [L('NCI.SyndicateMail.Redeemed.Body', terms)]) });
           break;
+        }
         case 'dissolved':
           // Closed, it has no active members left: tell those who were members at the end.
           for (const actorId of e.actorIds ?? []) {
-            mails.push({ to: actorId, subject: `${s.name}: ${L('NCI.SyndicateMail.Dissolved.Subject')}`, lines: [L('NCI.SyndicateMail.Dissolved.Body')] });
+            mails.push({ to: actorId, subject: `${s.name}: ${L('NCI.SyndicateMail.Dissolved.Subject')}`, lines: voiced('dissolved', [], {}, [L('NCI.SyndicateMail.Dissolved.Body')]) });
           }
           break;
         default:

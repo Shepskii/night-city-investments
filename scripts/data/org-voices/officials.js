@@ -8,26 +8,62 @@ export const OFFICIALS = Object.freeze({
   exchange: {
     ref: 'NCX Notice {ref}',
     signoffs: ['Listings Desk, Night City Exchange', 'Night City Exchange, Market Operations', 'NCX Listings and Disclosure'],
-    review: { lines: [
-      'Notice is given that {name} ({ticker}) has closed below the {floor} eb listing floor for {n} consecutive reports, at a market value of {value} eb. The listing is under review and may be withdrawn, with the company taken private.',
-      '{name} ({ticker}) is valued at {value} eb, under the {floor} eb floor for {n} reports running. The Exchange has opened a review of its listing; delisting is one possible outcome.',
-      'Listing review opened: {name} ({ticker}). Market value {value} eb against a floor of {floor} eb, for {n} reports in a row. A decision on its continued listing will follow.',
-    ] },
-    delisted: { lines: [
-      '{name} ({ticker}) has been removed from the Exchange. The company has repurchased its public float.',
-      'Delisting complete: {name} ({ticker}). Its public shares have been bought back by the company, and trading has ended.',
-      'With effect from today, {name} ({ticker}) is no longer listed. The company has taken its float back in-house.',
-    ] },
-    open: { lines: [
-      'A tender offer has been registered for {name}: {bidder} offers {price} eb a share for up to {shares} shares, a {premium}% premium, open until {date}.',
-      'Tender offer, {name}. Bidder: {bidder}. Price: {price} eb a share, a {premium}% premium. Maximum: {shares} shares. Closes: {date}.',
-      '{bidder} has made a tender offer for {name} at {price} eb a share ({premium}% over market), for up to {shares} shares. Holders may tender until {date}.',
-    ] },
-    approved: { lines: [
-      'Your tender offer for {name} is registered: {price} eb a share for up to {shares} shares, open until {date}. {escrow} eb has been placed in escrow from your brokerage balance.',
-      'Offer accepted for registration. {name}: {price} eb a share, up to {shares} shares, until {date}. Escrow of {escrow} eb is held from your brokerage balance.',
-      'The Exchange has opened your bid for {name} at {price} eb a share, for up to {shares} shares, closing {date}. {escrow} eb is held in escrow against it.',
-    ] },
+    review: {
+      again: [
+        '{name} ({ticker}) is under review again: its market value of {value} eb has been below the {floor} eb floor for {n} reports since the last review was cleared. The Exchange will not extend its patience indefinitely.',
+        'A second listing review, {name} ({ticker}). Market value {value} eb, floor {floor} eb, {n} reports below it. The previous review was closed in the company\'s favour; this one may not be.',
+      ],
+      deep: [
+        '{name} ({ticker}) is valued at {value} eb, far below the {floor} eb listing floor, for {n} reports running. The listing is under review, and the gap is wide.',
+        'Listing review opened: {name} ({ticker}), at {value} eb against a {floor} eb floor for {n} reports. At this distance from the floor, delisting is a real prospect.',
+      ],
+      lines: [
+        'Notice is given that {name} ({ticker}) has closed below the {floor} eb listing floor for {n} consecutive reports, at a market value of {value} eb. The listing is under review and may be withdrawn, with the company taken private.',
+        '{name} ({ticker}) is valued at {value} eb, under the {floor} eb floor for {n} reports running. The Exchange has opened a review of its listing; delisting is one possible outcome.',
+        'Listing review opened: {name} ({ticker}). Market value {value} eb against a floor of {floor} eb, for {n} reports in a row. A decision on its continued listing will follow.',
+      ],
+    },
+    delisted: {
+      borrowed: [
+        '{name} ({ticker}) has been removed from the Exchange. The company bought back its public float, partly with borrowed money.',
+        'Delisting complete: {name} ({ticker}). The buyback of its float was financed in part by a loan, and trading has ended.',
+      ],
+      lines: [
+        '{name} ({ticker}) has been removed from the Exchange. The company has repurchased its public float.',
+        'Delisting complete: {name} ({ticker}). Its public shares have been bought back by the company, and trading has ended.',
+        'With effect from today, {name} ({ticker}) is no longer listed. The company has taken its float back in-house.',
+      ],
+    },
+    open: {
+      generous: [
+        'A tender offer has been registered for {name}: {bidder} offers {price} eb a share for up to {shares} shares, open until {date}. At a {premium}% premium, the market is likely to find it attractive.',
+        'Tender offer, {name}. Bidder: {bidder}. Price: {price} eb a share, a substantial {premium}% premium. Maximum: {shares} shares. Closes: {date}.',
+      ],
+      thin: [
+        'A tender offer has been registered for {name}: {bidder} offers {price} eb a share for up to {shares} shares, until {date}. The premium is a thin {premium}%.',
+        'Tender offer, {name}. Bidder: {bidder}. Price: {price} eb a share, only {premium}% over the reference. Maximum: {shares} shares. Closes: {date}.',
+      ],
+      lines: [
+        'A tender offer has been registered for {name}: {bidder} offers {price} eb a share for up to {shares} shares, a {premium}% premium, open until {date}.',
+        'Tender offer, {name}. Bidder: {bidder}. Price: {price} eb a share, a {premium}% premium. Maximum: {shares} shares. Closes: {date}.',
+        '{bidder} has made a tender offer for {name} at {price} eb a share ({premium}% over market), for up to {shares} shares. Holders may tender until {date}.',
+      ],
+    },
+    approved: {
+      generous: [
+        'Your tender offer for {name} is registered: {price} eb a share for up to {shares} shares, open until {date}. {escrow} eb is in escrow. A {premium}% premium should draw sellers.',
+        'Offer accepted for registration. {name}: {price} eb a share, a {premium}% premium, up to {shares} shares, until {date}. Escrow of {escrow} eb is held from your brokerage balance.',
+      ],
+      thin: [
+        'Your tender offer for {name} is registered: {price} eb a share for up to {shares} shares, until {date}, with {escrow} eb in escrow. At {premium}% over the reference, holders may not be tempted.',
+        'Offer accepted for registration. {name}: {price} eb a share, up to {shares} shares, until {date}. Escrow: {escrow} eb. The Exchange notes the premium is only {premium}%.',
+      ],
+      lines: [
+        'Your tender offer for {name} is registered: {price} eb a share for up to {shares} shares, open until {date}. {escrow} eb has been placed in escrow from your brokerage balance.',
+        'Offer accepted for registration. {name}: {price} eb a share, up to {shares} shares, until {date}. Escrow of {escrow} eb is held from your brokerage balance.',
+        'The Exchange has opened your bid for {name} at {price} eb a share, for up to {shares} shares, closing {date}. {escrow} eb is held in escrow against it.',
+      ],
+    },
     unfunded: { lines: [
       'Your bid for {name} has lapsed: your brokerage balance could not cover the {escrow} eb escrow it requires.',
       'Bid lapsed, {name}. Required escrow of {escrow} eb was not available in your brokerage balance.',
@@ -38,26 +74,58 @@ export const OFFICIALS = Object.freeze({
       'Your tender offer for {name} has been refused registration.',
       'Bid refused: {name}. The Exchange will not open your offer.',
     ] },
-    closed: { lines: [
-      "{bidder}'s offer for {name} has closed: {shares} shares bought at {price} eb. Anything you tendered has been paid into your brokerage balance.",
-      'Tender offer closed, {name}. {bidder} acquired {shares} shares at {price} eb each. Proceeds for shares you tendered are in your brokerage balance.',
-      "The offer for {name} is complete. {bidder} bought {shares} shares at {price} eb; your tendered shares, if any, have been settled to your brokerage balance.",
-    ] },
-    control: { lines: [
-      "{bidder}'s offer for {name} has closed: {shares} shares bought at {price} eb, and {bidder} now controls the company. Anything you tendered has been paid into your brokerage balance.",
-      'Change of control, {name}. {bidder} acquired {shares} shares at {price} eb and now holds control. Proceeds for shares you tendered are in your brokerage balance.',
-      'The offer for {name} is complete, and control has passed to {bidder}, who bought {shares} shares at {price} eb. Your tendered shares, if any, have been settled to your brokerage balance.',
-    ] },
-    bidderClosed: { lines: [
-      'Your offer for {name} has closed: you bought {shares} shares at {price} eb. {refund} eb of the escrow has been returned to your brokerage balance.',
-      'Offer settled, {name}. Acquired: {shares} shares at {price} eb. Escrow returned: {refund} eb.',
-      'Your tender offer for {name} is complete, with {shares} shares bought at {price} eb each. The unused {refund} eb of escrow is back in your brokerage balance.',
-    ] },
-    bidderControl: { lines: [
-      'Your offer for {name} has closed: you bought {shares} shares at {price} eb and now control the company. {refund} eb of the escrow has been returned to your brokerage balance.',
-      'Change of control, {name}: you acquired {shares} shares at {price} eb and hold control. Escrow returned: {refund} eb.',
-      'Your offer for {name} is complete. With {shares} shares bought at {price} eb, control is yours. The unused {refund} eb of escrow is back in your brokerage balance.',
-    ] },
+    closed: {
+      nothing: [
+        "{bidder}'s offer for {name} has closed with no shares bought. Any shares you tendered remain yours.",
+        'Tender offer closed, {name}: {bidder} acquired no shares. Nothing has changed hands.',
+      ],
+      defended: [
+        "{bidder}'s offer for {name} has closed short of control, after the company's officers resisted it: {shares} shares bought at {price} eb. Anything you tendered has been paid into your brokerage balance.",
+        'Tender offer closed, {name}. Against the board\'s opposition, {bidder} acquired {shares} shares at {price} eb, not enough for control. Proceeds for shares you tendered are in your brokerage balance.',
+      ],
+      lines: [
+        "{bidder}'s offer for {name} has closed: {shares} shares bought at {price} eb. Anything you tendered has been paid into your brokerage balance.",
+        'Tender offer closed, {name}. {bidder} acquired {shares} shares at {price} eb each. Proceeds for shares you tendered are in your brokerage balance.',
+        "The offer for {name} is complete. {bidder} bought {shares} shares at {price} eb; your tendered shares, if any, have been settled to your brokerage balance.",
+      ],
+    },
+    control: {
+      defended: [
+        "{bidder}'s offer for {name} has closed, and despite the officers' defence, {bidder} now controls the company with {shares} shares bought at {price} eb. Anything you tendered has been paid into your brokerage balance.",
+        'Change of control, {name}, over the opposition of its officers. {bidder} acquired {shares} shares at {price} eb. Proceeds for shares you tendered are in your brokerage balance.',
+      ],
+      lines: [
+        "{bidder}'s offer for {name} has closed: {shares} shares bought at {price} eb, and {bidder} now controls the company. Anything you tendered has been paid into your brokerage balance.",
+        'Change of control, {name}. {bidder} acquired {shares} shares at {price} eb and now holds control. Proceeds for shares you tendered are in your brokerage balance.',
+        'The offer for {name} is complete, and control has passed to {bidder}, who bought {shares} shares at {price} eb. Your tendered shares, if any, have been settled to your brokerage balance.',
+      ],
+    },
+    bidderClosed: {
+      nothing: [
+        'Your offer for {name} has closed with no shares tendered. The full {refund} eb escrow has been returned to your brokerage balance.',
+        'Offer closed, {name}: no shares acquired. Escrow returned in full: {refund} eb.',
+      ],
+      defended: [
+        "Your offer for {name} has closed short of control after the company's officers fought it: you bought {shares} shares at {price} eb. {refund} eb of the escrow has been returned to your brokerage balance.",
+        'Offer settled against the target\'s defence, {name}. Acquired: {shares} shares at {price} eb. Escrow returned: {refund} eb.',
+      ],
+      lines: [
+        'Your offer for {name} has closed: you bought {shares} shares at {price} eb. {refund} eb of the escrow has been returned to your brokerage balance.',
+        'Offer settled, {name}. Acquired: {shares} shares at {price} eb. Escrow returned: {refund} eb.',
+        'Your tender offer for {name} is complete, with {shares} shares bought at {price} eb each. The unused {refund} eb of escrow is back in your brokerage balance.',
+      ],
+    },
+    bidderControl: {
+      defended: [
+        "Your offer for {name} has closed, and despite its officers' defence, you bought {shares} shares at {price} eb and now control the company. {refund} eb of the escrow has been returned to your brokerage balance.",
+        'Change of control, {name}, against the board\'s opposition: you acquired {shares} shares at {price} eb and hold control. Escrow returned: {refund} eb.',
+      ],
+      lines: [
+        'Your offer for {name} has closed: you bought {shares} shares at {price} eb and now control the company. {refund} eb of the escrow has been returned to your brokerage balance.',
+        'Change of control, {name}: you acquired {shares} shares at {price} eb and hold control. Escrow returned: {refund} eb.',
+        'Your offer for {name} is complete. With {shares} shares bought at {price} eb, control is yours. The unused {refund} eb of escrow is back in your brokerage balance.',
+      ],
+    },
   },
 
   regulator: {

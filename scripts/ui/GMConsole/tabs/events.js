@@ -35,6 +35,7 @@ async function onPostNews(event, target) {
     headline: field(target, 'newsHeadline') ?? '',
     tone: field(target, 'newsTone'),
     companyIds: company ? [company] : [],
+    source: 'gm',
   });
   report(!!item);
 }

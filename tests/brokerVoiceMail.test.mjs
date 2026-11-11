@@ -188,3 +188,25 @@ test('notifications sent through a broker are voiced too', async () => {
   assert.ok(BROKER_VOICES.sneaky.greetings.includes(p[0]), p[0]);
   assert.ok(BROKER_VOICES.sneaky.signoffs.includes(p.at(-1)));
 });
+
+test('a headline is filed in the newswire style: dateline, copy by its source and tone, sign-off (M3 step 5)', async () => {
+  const { NEWSWIRE } = await import('../scripts/data/org-voices/newswire.js');
+  const { CompanyRepository } = await import('../scripts/data/CompanyRepository.js');
+  const company = { name: 'Test Corp', ticker: 'TST' };
+  const get = CompanyRepository.get;
+  CompanyRepository.get = (id) => (id === 'TST' ? company : get.call(CompanyRepository, id));
+  const w = NEWSWIRE.wire;
+  const filled = (kind, tone) => w[kind][tone].map((l) => fillLine(l, { name: company.name, ticker: company.ticker }));
+  const filing = Mail.headline({ headline: 'Big news', tone: 'up', date: '3 May 2045', companyIds: [company.ticker] });
+  assert.equal(filing.subject, 'Big news');
+  assert.equal(filing.lines[0], 'NIGHT CITY, 3 May 2045. Big news');
+  assert.ok(filled('filing', 'up').includes(filing.lines[1]), filing.lines[1]);
+  assert.ok(w.signoffs.includes(filing.lines.at(-1)));
+  const story = Mail.headline({ headline: 'Exposed', tone: 'down', date: 'today', companyIds: [company.ticker], source: 'story' });
+  assert.ok(filled('story', 'down').includes(story.lines[1]), story.lines[1]);
+  const market = Mail.headline({ headline: 'Trading halted', tone: 'neutral' });
+  assert.equal(market.lines[0], 'NIGHT CITY. Trading halted', 'no date, no date in the dateline');
+  assert.ok(w.market.lines.includes(market.lines[1]), 'news about no one company is the market\'s');
+  assert.equal(market.voice, undefined, 'still no broker voice');
+  CompanyRepository.get = get;
+});

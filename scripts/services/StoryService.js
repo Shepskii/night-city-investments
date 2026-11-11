@@ -216,6 +216,7 @@ export const StoryService = {
       headline: headline ? L('NCI.News.StoryBy', { media, headline }) : L(up ? 'NCI.News.StoryPuff' : 'NCI.News.StoryExpose', { media, name, ticker }),
       tone: up ? 'up' : 'down',
       companyIds: [ticker],
+      source: 'story',
     });
     await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
       ...controls,

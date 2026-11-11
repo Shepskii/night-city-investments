@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { installFakeFoundry } from './helpers/fakeFoundry.mjs';
 import { fillLine } from '../scripts/engine/index.js';
 import { BROKER_VOICES } from '../scripts/data/broker-voices.js';
+import { escapeHtml } from '../scripts/utils/text.js';
 
 const env = installFakeFoundry({ actors: [['Alice', 90000, true], ['Bob', 90000, true], ['Fixer', 0, false]] });
 const [alice, bob] = env.actors;
@@ -407,7 +408,14 @@ test('a gig headline mailed to an opted-in player comes from their broker; ordin
 
   assert.ok(got(bob).length >= 1);
   assert.ok(got(bob).every((m) => m.fromContactId !== broker.id), 'Bob has no broker, so they come from the wire');
-  assert.ok(got(bob).every((m) => /^<p>[^<]*<\/p>$/.test(m.body)), 'plain, unvoiced');
+  // Filed in the wire's newswire style (M3 step 5): a dateline with the headline, the street's copy and a sign-off.
+  const { NEWSWIRE } = await import('../scripts/data/org-voices/newswire.js');
+  for (const m of got(bob)) {
+    const p = [...m.body.matchAll(/<p>(.*?)<\/p>/g)].map((x) => x[1]);
+    assert.ok(p[0].startsWith('NIGHT CITY') && p[0].includes(escapeHtml(m.subject)), p[0]);
+    assert.ok(NEWSWIRE.wire.signoffs.includes(p.at(-1)), p.at(-1));
+    assert.equal(p.length, 3, 'dateline, wire copy, sign-off; no broker voice');
+  }
 
   const beforeNews = sent.length;
   await S.NewsService.post({ headline: 'Trading resumes across the market.', tone: 'neutral' });

@@ -22,7 +22,7 @@ import {
   isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact, payListedDividend,
   reviewListing, clearReview, delistCompany, isEmployerId,
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
-  takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, sellableQty, consumeLotsFifo, committedCash,
+  takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, exchangeTones, sellableQty, consumeLotsFifo, committedCash,
   restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask,
   concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget, scandalHit, investigationCost, spendDays,
   moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene, ABILITIES, backupWait, quashEffect, exposureBand, canRun,
@@ -238,7 +238,9 @@ class BusinessServiceImpl {
     const value = Math.round(marketCap).toLocaleString();
     await NewsService.post({ headline: L('NCI.News.ListingReview', { name: b.name, ticker }), tone: 'down', companyIds: [ticker] });
     const review = { name: b.name, ticker, value, floor: Math.round(threshold * BUSINESS_DEFAULTS.listing.review.below).toLocaleString(), n: BUSINESS_DEFAULTS.listing.review.reports };
-    await this._mailHolders(b, ...this._official('exchange', 'review', review, b.id, L('NCI.Listing.Mail.ReviewSubject', { name: b.name }), [L('NCI.Listing.Mail.Review', review)]), { from: await ContactService.exchange() });
+    // M3 step 5: a second review, or one far under the floor, reads differently.
+    const reviewTones = exchangeTones('review', { again: (b.ledger ?? []).some((e) => e.kind === 'reviewCleared'), deep: marketCap < threshold * BUSINESS_DEFAULTS.listing.review.below * 0.5 });
+    await this._mailHolders(b, ...this._official('exchange', 'review', review, b.id, L('NCI.Listing.Mail.ReviewSubject', { name: b.name }), [L('NCI.Listing.Mail.Review', review)], reviewTones), { from: await ContactService.exchange() });
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
   }
 
@@ -1269,7 +1271,7 @@ class BusinessServiceImpl {
     const ticker = isListed(b) ? b.company.ticker : null;
     const companyIds = ticker ? [ticker] : [];
     if (e.type === 'pressPrinted') {
-      await NewsService.post({ headline: e.headline ?? L(`NCI.Press.Headline.${e.story}`, { name: b.name, outlet: e.outlet }), tone: 'down', companyIds });
+      await NewsService.post({ headline: e.headline ?? L(`NCI.Press.Headline.${e.story}`, { name: b.name, outlet: e.outlet }), tone: 'down', companyIds, source: 'story' });
       return;
     }
     const result = !e.believed ? 'Ignored' : e.scale === 0 ? 'Answered' : e.scale < 1 ? 'Halved' : 'Full';
@@ -1359,8 +1361,10 @@ class BusinessServiceImpl {
       openTakeover(b, { day, reference: takeoverReference(b, MarketStore.getPublic().companies?.[ticker]?.price ?? 0) });
       await BusinessRepository.save(b);
       const terms = { name: b.name, ticker, bidder: t.bidderName, price: t.price.toLocaleString(), shares: t.shares.toLocaleString(), premium: Math.round(takeoverPremium(b.takeover) * 100), date: this._dayText(b.takeover.endDay) };
-      await this._mailHolders(b, ...this._official('exchange', 'open', terms, `takeover:${b.id}`, L('NCI.Takeover.Mail.OpenSubject', terms), [L('NCI.Takeover.Mail.Open', terms)]), { from: await ContactService.exchange(), footer: L('NCI.Takeover.Mail.OpenFooter') });
-      await this._mailAccount(t.bidderId, ...this._official('exchange', 'approved', { ...terms, escrow: escrow.toLocaleString() }, `takeover:${b.id}`, L('NCI.Takeover.Mail.ApprovedSubject', terms), [L('NCI.Takeover.Mail.Approved', { ...terms, escrow: escrow.toLocaleString() })]), { from: await ContactService.exchange() });
+      // M3 step 5: a premium the float takes in full is generous, one it won't take at all thin.
+      const offerTones = exchangeTones('open', { premium: takeoverPremium(b.takeover), ...BUSINESS_DEFAULTS.takeover.accept });
+      await this._mailHolders(b, ...this._official('exchange', 'open', terms, `takeover:${b.id}`, L('NCI.Takeover.Mail.OpenSubject', terms), [L('NCI.Takeover.Mail.Open', terms)], offerTones), { from: await ContactService.exchange(), footer: L('NCI.Takeover.Mail.OpenFooter') });
+      await this._mailAccount(t.bidderId, ...this._official('exchange', 'approved', { ...terms, escrow: escrow.toLocaleString() }, `takeover:${b.id}`, L('NCI.Takeover.Mail.ApprovedSubject', terms), [L('NCI.Takeover.Mail.Approved', { ...terms, escrow: escrow.toLocaleString() })], offerTones), { from: await ContactService.exchange() });
       if (isListed(b)) await NewsService.post({ headline: L('NCI.News.Takeover', terms), tone: 'up', companyIds: [ticker] });
       Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
       return { ok: true, business: b };
@@ -1443,8 +1447,10 @@ class BusinessServiceImpl {
       await this._publishRegister(b);
       const terms = { name: b.name, ticker: ticker ?? '', bidder: t.bidderName, shares: done.acquired.toLocaleString(), price: t.price.toLocaleString(), refund: done.refund.toLocaleString() };
       const key = done.control ? 'Control' : 'Closed';
-      await this._mailHolders(b, ...this._official('exchange', key === 'Control' ? 'control' : 'closed', terms, `takeover:${b.id}`, L('NCI.Takeover.Mail.ClosedSubject', terms), [L(`NCI.Takeover.Mail.${key}`, terms)]), { from: await ContactService.exchange() });
-      await this._mailAccount(done.bidderId, ...this._official('exchange', key === 'Control' ? 'bidderControl' : 'bidderClosed', terms, `takeover:${b.id}`, L('NCI.Takeover.Mail.ClosedSubject', terms), [L(`NCI.Takeover.Mail.Bidder${key}`, terms)]), { from: await ContactService.exchange() });
+      // M3 step 5: an offer that bought nothing, or met the officers' defence, reads differently.
+      const closeFacts = { acquired: done.acquired, defended: !!t.defence };
+      await this._mailHolders(b, ...this._official('exchange', key === 'Control' ? 'control' : 'closed', terms, `takeover:${b.id}`, L('NCI.Takeover.Mail.ClosedSubject', terms), [L(`NCI.Takeover.Mail.${key}`, terms)], exchangeTones(key === 'Control' ? 'control' : 'closed', closeFacts)), { from: await ContactService.exchange() });
+      await this._mailAccount(done.bidderId, ...this._official('exchange', key === 'Control' ? 'bidderControl' : 'bidderClosed', terms, `takeover:${b.id}`, L('NCI.Takeover.Mail.ClosedSubject', terms), [L(`NCI.Takeover.Mail.Bidder${key}`, terms)], exchangeTones(key === 'Control' ? 'bidderControl' : 'bidderClosed', closeFacts)), { from: await ContactService.exchange() });
       if (done.control) await this._suggestReward(b, 'takeoverControl', [done.bidderId]);
       else if (t.defence) await this._suggestReward(b, 'takeoverFoughtOff');
       if (listed) await NewsService.post({ headline: L(done.control ? 'NCI.News.TakeoverControl' : 'NCI.News.TakeoverClosed', terms), tone: 'neutral', companyIds: [ticker] });
@@ -1904,7 +1910,7 @@ class BusinessServiceImpl {
       if (e.type !== 'factionSmear' || !isListed(b)) continue;
       const ticker = b.company.ticker;
       const key = `smear:${b.id}:${e.period}`;
-      await NewsService.post({ headline: L('NCI.News.Smeared', { name: b.name, ticker }), tone: 'down', companyIds: [ticker] });
+      await NewsService.post({ headline: L('NCI.News.Smeared', { name: b.name, ticker }), tone: 'down', companyIds: [ticker], source: 'story' });
       await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
         ...controls,
         impacts: [...controls.impacts, makeImpact({
@@ -1923,7 +1929,7 @@ class BusinessServiceImpl {
     const ticker = b.company.ticker;
     const key = `scandal:${b.id}:${tag}`;
     const delay = BUSINESS_DEFAULTS.ownership.scandal.delayDays;
-    await NewsService.post({ headline: L('NCI.News.Scandal', { name: b.name, ticker }), tone: 'down', companyIds: [ticker] });
+    await NewsService.post({ headline: L('NCI.News.Scandal', { name: b.name, ticker }), tone: 'down', companyIds: [ticker], source: 'story' });
     await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
       ...controls,
       impacts: [...controls.impacts, makeImpact({
@@ -1954,7 +1960,7 @@ class BusinessServiceImpl {
     const blackOps = kind === 'blackOps';
     const key = `campaign:${b.id}:${day}`;
     const amount = percentToAmount(percent);
-    await NewsService.post({ headline: L(blackOps ? 'NCI.News.BlackOps' : kind === 'leak' ? 'NCI.News.Leaked' : 'NCI.News.Smeared', { name, ticker }), tone: 'down', companyIds: [ticker] });
+    await NewsService.post({ headline: L(blackOps ? 'NCI.News.BlackOps' : kind === 'leak' ? 'NCI.News.Leaked' : 'NCI.News.Smeared', { name, ticker }), tone: 'down', companyIds: [ticker], source: 'story' });
     await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
       ...controls,
       impacts: [...controls.impacts, makeImpact({
@@ -2413,7 +2419,7 @@ class BusinessServiceImpl {
       const company = CompanyRepository.get(ticker);
       if (company) await CompanyRepository.save({ ...company, status: 'delisted' });
       await NewsService.post({ headline: L('NCI.News.PlayerDelisted', { name: b.name, ticker, price: price.toLocaleString() }), tone: 'down', companyIds: [ticker] });
-      await this._mailHolders(b, ...this._official('exchange', 'delisted', { name: b.name, ticker }, b.id, L('NCI.Listing.Mail.DelistedSubject', { name: b.name }), [L('NCI.Listing.Mail.Delisted', { name: b.name, ticker })]), { from: await ContactService.exchange(), footer: L('NCI.Listing.Mail.DelistedFooter') });
+      await this._mailHolders(b, ...this._official('exchange', 'delisted', { name: b.name, ticker }, b.id, L('NCI.Listing.Mail.DelistedSubject', { name: b.name }), [L('NCI.Listing.Mail.Delisted', { name: b.name, ticker })], exchangeTones('delisted', { borrowed: done.borrowed > 0 })), { from: await ContactService.exchange(), footer: L('NCI.Listing.Mail.DelistedFooter') });
       Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
       return { ok: true, business: b, ...done };
     });
@@ -2566,8 +2572,8 @@ class BusinessServiceImpl {
    * An official sender's subject and lines in its own voice, with its reference (M3 step 2), or the plain ones.
    * @returns {[string, string[]]} to spread into a mail call
    */
-  _official(sender, kind, data, key, subject, lines) {
-    const mail = OrgMail.official(sender, kind, data, key);
+  _official(sender, kind, data, key, subject, lines, tones = []) {
+    const mail = OrgMail.official(sender, kind, data, key, tones);
     return mail ? [OrgMail.subject(subject, mail), mail.paragraphs] : [subject, lines];
   }
 
