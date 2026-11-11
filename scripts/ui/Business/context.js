@@ -1090,7 +1090,8 @@ function investorsContext(business, actor, canAct) {
   const pending = (kind) => business.proposals.some((x) => x.kind === kind);
   const angel = business.approved.angel;
   const check = actor ? angelCheck(business, actor.id, day) : null;
-  const taken = new Set(business.partners.filter((x) => ['invited', 'active', 'leaving'].includes(x.status)).map((x) => x.actorId));
+  // An NPC partner is under an `npc:` id, with its actor beside it.
+  const taken = new Set(business.partners.filter((x) => ['invited', 'active', 'leaving'].includes(x.status)).flatMap((x) => [x.actorId, x.actorRef]));
   return {
     registered,
     later: registered ? '' : L('NCI.Business.InvestorsLater'),

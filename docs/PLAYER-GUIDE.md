@@ -311,7 +311,7 @@ Illegal goods and fencing are in [Part 3](#illegal-goods-and-fencing).
 
 - **A fixer's loan:** quick, small and dear; agreed by a majority.
 - **A bank loan:** for a registered business, after a roll; the result sets how much and at what rate.
-- **An investor:** a character, a contact or a syndicate the partners invite to buy in at a price.
+- **An investor:** a character, a contact or a syndicate the partners invite to buy in at a price. Your GM answers for an NPC, which holds its units without a vote.
 - **An angel:** found with an opposed pitch roll.
 - **Top-ups:** any partner can add cash, which buys no new units.
 

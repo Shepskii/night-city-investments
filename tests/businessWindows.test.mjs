@@ -1971,6 +1971,51 @@ test('an NPC can be invited to found a business: the GM answers, off its sheet, 
   }
 });
 
+test('an NPC invited to invest in a running business waits on the GM, and joins off its sheet with no vote', async () => {
+  const owner = new med.constructor('Investee Ivy', 10000);
+  const banker = new med.constructor('Banker Bo', 300, false);
+  banker.testUserPermission = () => false;
+  env.actors.push(owner, banker);
+  game.actors.push(owner, banker);
+  const nightcityBefore = game.nightcity;
+  game.nightcity = { ...nightcityBefore, masterContactService: { ...nightcityBefore?.masterContactService, filterByTag: (tag) => (tag === 'investor' ? [{ id: 'cb', name: 'Banker Bo', tags: ['investor'], actorId: banker.id }] : []), getAll: () => [] } };
+  const before = S.BusinessRepository.all().map((b) => b.id);
+  try {
+    await send(owner, 'found', { name: 'Invest Place', archetype: 'foodStall', cash: 2000, invite: [] });
+    const b = () => S.BusinessRepository.all().find((x) => x.name === 'Invest Place');
+    const { newPeriod } = await import('../scripts/engine/businessRecord.js');
+    const day = S.BusinessService.day();
+    await S.BusinessRepository.save({ ...b(), status: 'open', stage: 1, escrow: 0, till: 2000, assets: 2000, opened: day, period: newPeriod(1, day, S.BusinessService.weekday()), partners: b().partners.map((p) => ({ ...p, units: 2000 })) });
+    await send(owner, 'propose', { businessId: b().id, kind: 'investor', actorId: banker.id, amount: 1000, price: 1 });
+    const invited = b().partners.find((x) => x.actorRef === banker.id);
+    assert.deepEqual([invited?.actorId, invited?.status, invited?.npc, invited?.voting], [`npc:${banker.id}`, 'invited', true, false]);
+
+    const pending = await renderConsole('pending');
+    assertClean(pending, 'GM pending');
+    assert.match(text(pending), /Answer for Banker Bo: invited to invest 1,000 eb at 1\.00 eb a unit/);
+    assert.doesNotMatch(pending, /name="npcCash"/, 'the partners set the amount');
+
+    assert.equal((await S.BusinessService.answerNpcPartner(b().id, owner.id, true)).ok, false, 'not a player character');
+    assert.equal((await S.BusinessService.answerNpcPartner(b().id, invited.actorId, true)).ok, true);
+    const joined = b().partners.find((x) => x.actorRef === banker.id);
+    assert.deepEqual([joined.status, joined.units, joined.voting, b().till], ['active', 1000, false, 3000]);
+    assert.equal(banker.system.wealth.value, 300, 'nothing comes off its sheet');
+    assert.doesNotMatch(text(await renderConsole('pending')), /Answer for Banker Bo/);
+    const window = windowFor(owner, 'partners');
+    window.businessId = b().id;
+    const html = await renderBusiness(window);
+    assertClean(html, 'after the NPC joined');
+    const offered = html.match(/name="investor"[\s\S]*?<\/select>/)?.[0];
+    assert.ok(offered, 'the investor list is shown');
+    assert.match(offered, new RegExp(fix.id), 'with the other characters');
+    assert.doesNotMatch(offered, new RegExp(banker.id), 'but no longer the NPC');
+  } finally {
+    game.nightcity = nightcityBefore;
+    for (const x of S.BusinessRepository.all().filter((y) => !before.includes(y.id))) await S.BusinessRepository.remove?.(x.id);
+    for (const list of [env.actors, game.actors]) list.splice(list.indexOf(owner), 2);
+  }
+});
+
 test('the invite section: search finds NPCs tagged investor, a GM can drag, and refusals come before any request', async () => {
   const npc = new med.constructor('Dragged Dana', 0, false);
   const pile = new med.constructor('Loot', 0, false);

@@ -2843,6 +2843,7 @@
         "promotion": "Promotion",
         "offer": "Job offer",
         "npcPartner": "NPC partner",
+        "npcInvestor": "NPC investor",
         "reward": "REP and IP",
         "stockMoved": "Storeroom",
         "syndicate": "New syndicate"
@@ -2870,6 +2871,7 @@
         "promotion": "Has earned a promotion as {post} at {name}, now on {wage} eb a week: {raised} eb if promoted, or not now",
         "offer": "Answer for {name}: a job offer as {post}",
         "npcPartner": "Answer for {name}: invited to found this business as a silent partner",
+        "npcInvestor": "Answer for {name}: invited to invest {amount} eb at {price} eb a unit, as a silent partner",
         "reward": "{what}: apply, change or dismiss",
         "stockMoved": "{count} × {name} left the storeroom by hand: what became of them?",
         "syndicate": "Approve or reject the new syndicate"

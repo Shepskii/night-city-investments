@@ -82,7 +82,7 @@ import { supplyCut, runSupply, runVenue, backupWait } from './businessRoles.js';
 import { ROOM_ACTIONS, kindProfile, roomCheck, roomKinds, roomWeek, takeDirty, openRoom, roomBust, bustFallout, roomEvent, roomEventFallout, turnInformant, informants, dealCut, runDealRoll, takeDeal, endDeal } from './businessFronts.js';
 import { normalizeName, gigTags } from './gigImpact.js';
 import {
-  fixerOffer, takeFixerLoan, bankCheck, applyBankRoll, repayLoan, payLoans, investorOffer, inviteInvestor, acceptInvestment,
+  fixerOffer, takeFixerLoan, bankCheck, applyBankRoll, repayLoan, payLoans, investorOffer, inviteInvestor, answerNpcInvestor, acceptInvestment,
   angelCheck, findAngel, applyAngelRoll, openLoans, averageProfit,
 } from './businessFinance.js';
 import {
@@ -122,7 +122,7 @@ import { layerCheck, addLayer, dropLayers } from './businessOwnership.js';
 
 export { daysLeft, spendDays, activeProject, expansionOffer, milestones, stepUpCheck, projectOffer, PROJECT_KINDS };
 export { upgradesOf, protectionFactor, breakInFactor, reputationBaseline } from './businessGrowth.js';
-export { fixerOffer, bankCheck, angelCheck, openLoans, averageProfit };
+export { fixerOffer, bankCheck, angelCheck, openLoans, averageProfit, answerNpcInvestor };
 
 export {
   BUSINESS_SCHEMA, BUSINESS_STATUS, weekdayOf, nextBoundary, normalizeBusiness, archetypeOf, holders, voters,
@@ -1594,7 +1594,8 @@ function enact(b, proposal, day, p, ctx, out) {
       b.approved = { ...b.approved, bankLoan: true };
       return { ok: true };
     case 'investor':
-      inviteInvestor(b, proposal.terms, ctx.actors ?? {});
+      // An NPC goes in as a silent partner the GM answers for (DESIGN §36.16).
+      inviteInvestor(b, proposal.terms, ctx.actors ?? {}, ctx.teamActors ?? {});
       return { ok: true };
     case 'elect':
     case 'dismiss':

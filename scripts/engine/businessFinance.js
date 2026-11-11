@@ -134,8 +134,8 @@ export function payLoans(b, day, p = BUSINESS_DEFAULTS) {
 export function investorOffer(b, { actorId, amount, price }, actors = {}, p = BUSINESS_DEFAULTS) {
   if (b.stage < p.investors.minStage) return fail('not-registered');
   if (!actorId || !(actorId in actors)) return fail('bad-partner');
-  const existing = partnerOf(b, actorId);
-  if (existing && ['invited', 'active', 'leaving'].includes(existing.status)) return fail('already-partner');
+  const existing = [partnerOf(b, actorId), partnerOf(b, `npc:${actorId}`)].find((x) => x && ['invited', 'active', 'leaving'].includes(x.status));
+  if (existing) return fail('already-partner');
   const cash = Math.floor(Number(amount) || 0);
   const perUnit = Number(price) > 0 ? Math.round(Number(price) * 100) / 100 : Math.round(unitValue(b) * 100) / 100;
   if (cash < 100) return fail('bad-amount');
@@ -143,12 +143,40 @@ export function investorOffer(b, { actorId, amount, price }, actors = {}, p = BU
   return { ok: true, actorId, amount: cash, price: perUnit };
 }
 
-/** Once every partner has agreed, the character is invited to buy in on those terms. */
-export function inviteInvestor(b, terms, actors) {
-  const existing = partnerOf(b, terms.actorId);
-  const entry = { actorId: terms.actorId, name: actors[terms.actorId] ?? terms.actorId, status: 'invited', cash: 0, gear: [], units: 0, voting: true, heirId: null, leavingSince: null, offer: { amount: terms.amount, price: terms.price } };
+/**
+ * Once every partner has agreed, the character is invited to buy in on those terms. An NPC (one of `npcs`, by actor
+ * id) is invited as a silent partner under an `npc:` id, as at a founding, and the GM answers for it (`answerNpcInvestor`).
+ */
+export function inviteInvestor(b, terms, actors, npcs = {}) {
+  const npc = terms.actorId in npcs;
+  const actorId = npc ? `npc:${terms.actorId}` : terms.actorId;
+  const existing = partnerOf(b, actorId);
+  const entry = {
+    actorId, ...(npc ? { actorRef: terms.actorId, npc: true } : {}), name: actors[terms.actorId] ?? npcs[terms.actorId] ?? terms.actorId,
+    status: 'invited', cash: 0, gear: [], units: 0, voting: !npc, heirId: null, leavingSince: null, offer: { amount: terms.amount, price: terms.price },
+  };
   if (existing) Object.assign(existing, entry);
   else b.partners.push(entry);
+}
+
+/**
+ * The GM answers for an NPC invited to invest in a running business. It buys in on the terms the partners agreed, with
+ * money that comes off no sheet, and holds its units without a vote. An NPC invited before this, under its own actor
+ * id and with a vote, becomes a silent partner as it joins.
+ * @param {object} b - the business, changed in place
+ * @param {string} partnerId - `npc:<actor id>`, or an older invitation's actor id
+ */
+export function answerNpcInvestor(b, partnerId, yes, day, p = BUSINESS_DEFAULTS) {
+  if (b.status !== 'open') return fail('not-open');
+  const x = b.partners.find((y) => y.actorId === partnerId && y.status === 'invited' && y.offer);
+  if (!x) return fail('not-invited');
+  if (!yes) {
+    x.status = 'declined';
+    delete x.offer;
+    return { ok: true };
+  }
+  if (!x.npc) Object.assign(x, { actorRef: x.actorId, actorId: `npc:${x.actorId}`, npc: true, voting: false });
+  return acceptInvestment(b, x, Infinity, day, p);
 }
 
 /** The invited character pays in and receives new units at the agreed price. The money goes into the till. */

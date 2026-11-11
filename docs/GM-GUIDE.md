@@ -135,6 +135,8 @@ People write in their own voice too. An NPC on the staff writes by the **Persona
 
 **NPC partners:** a player can invite an NPC when founding a business, by searching for them on the form. The search finds Night City Messenger contacts tagged `investor`. The tag can sit among others, such as `Investor Broker` or `investor; fixer`. Players can search by the NPC's name, the contact's name or its alias. A contact with no linked actor can be a partner by its name alone. One linked to a player's character is found as that character. One linked to anything other than a character or mook can't be a partner: in your search it shows greyed out with the reason. You can also drag any NPC onto the form yourself. What you enter comes off no sheet, and what they earn doesn't reach their sheet either: their stake is off-screen money. They hold units but have no vote and take no actions, so they can't hold up a decision.
 
+**NPC investors:** a registered business can also invite an NPC whose contact is tagged `investor` or `broker` to invest, in its **Investors** section; this is how an NPC company takes another NPC's money. Once the partners agree, the invitation waits on your Pending tab: **Join** buys in on the amount and price the partners set, and **Decline** turns it down. As with a founding partner, the money comes off no sheet, and the NPC holds its units without a vote.
+
 **NPC staff:** tag an NPC's Night City Messenger contact `staff` or `employee` to make them hireable. An NPC actor (not a player's character) can also join an Exec's team.
 
 **Gigs for a player's business:** a gig whose client is a player business changes its Reputation and takings once approved in the Gigs tab.

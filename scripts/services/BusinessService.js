@@ -18,7 +18,7 @@ import { ProductionCatalog } from '../data/ProductionCatalog.js';
 import {
   applyBusinessRequest, advanceBusiness, approveBusiness, rejectBusiness, markLeaving, rollSpec, dayIndex, ROLL_REQUESTS, PROCESSED_CAP,
   applyBusinessGig, planBusinessGig, itemGear, isOfficer, limitLeft, approveBusinessCharter, rejectBusinessCharter, diligenceView,
-  takeEventMail, eventSender, eventAnswer, dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, answerNpcPartner, approvePress, spikePress, runPress, createNpcCompany, setNpcRun, cleanTicker, bossBand, standingOf, shiftUses, stageDv, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
+  takeEventMail, eventSender, eventAnswer, dropIllegalLine, raiseStockQuery, settleStockQuery, STAFF_USES, useKey, refreshStaffBases, answerJob, answerNpcPartner, answerNpcInvestor, approvePress, spikePress, runPress, createNpcCompany, setNpcRun, cleanTicker, bossBand, standingOf, shiftUses, stageDv, normalizeBusiness, traitOf, proposalOutcome, asksFor, EVENTS, markElsewhere, BUSINESS_DEFAULTS, refreshTeams, approveBusinessListing, rejectBusinessListing,
   isListed, listingCompany, scheduleListing, completeListing, syncListedHolders, heldQty, timeOf, earningsTarget, earningsAmount, makeImpact, payListedDividend,
   reviewListing, clearReview, delistCompany, isEmployerId,
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
@@ -2434,10 +2434,20 @@ class BusinessServiceImpl {
     });
   }
 
-  /** The GM answers a founding invitation for an NPC, and says what it puts in. */
+  /**
+   * The GM answers for an NPC invited to found a business, and says what it puts in; or for an NPC invited to invest in
+   * a running one, which buys in on the agreed terms. Either way the money comes off no sheet.
+   */
   answerNpcPartner(id, partnerId, yes, cash = 0) {
     return this._gm(id, (b) => {
       const copy = normalizeBusiness(structuredClone(b));
+      if (copy.status === 'open') {
+        // An older invitation is under the NPC's own actor id: never a player's character or a syndicate.
+        const x = copy.partners.find((y) => y.actorId === partnerId);
+        if (x && !x.npc && !isNpcActor(game.actors.get(x.actorId))) return { ok: false, reason: 'not-invited' };
+        const done = answerNpcInvestor(copy, partnerId, yes, this.day());
+        return done.ok ? { ok: true, business: copy, wealth: {}, events: yes ? [{ type: 'partnerJoined' }] : [] } : done;
+      }
       const done = answerNpcPartner(copy, partnerId, { yes, cash }, this.day());
       return done.ok ? { ok: true, business: copy, wealth: {}, events: yes ? [{ type: 'partnerJoined' }] : [] } : done;
     });

@@ -119,6 +119,39 @@ test('a character buys in on terms every partner agreed', () => {
   assert.equal(poor.reason, 'insufficient-funds');
 });
 
+test('an NPC invited to invest is a silent partner the GM answers for, off its sheet', async () => {
+  const { answerNpcInvestor } = await import('../scripts/engine/index.js');
+  const npcCtx = { context: { actors: { ...ACTORS, sam: 'Silent Sam' }, teamActors: { sam: 'Silent Sam' } } };
+  let b = apply(clinic(1), { type: 'propose', businessId: 'b1', kind: 'investor', actorId: 'sam', amount: 1000, price: 2 }, MED, npcCtx).business;
+  b = apply(b, { type: 'vote', businessId: 'b1', proposalId: b.proposals[0].id, yes: true }, FIX, npcCtx).business;
+  const invited = b.partners.find((x) => x.actorRef === 'sam');
+  assert.deepEqual([invited.actorId, invited.status, invited.npc, invited.voting, invited.offer], ['npc:sam', 'invited', true, false, { amount: 1000, price: 2 }]);
+  assert.equal(apply(b, { type: 'propose', businessId: 'b1', kind: 'investor', actorId: 'sam', amount: 500 }, MED, { ...npcCtx, expect: false }).reason, 'already-partner');
+
+  const joined = structuredClone(b);
+  const till = joined.till;
+  assert.equal(answerNpcInvestor(joined, 'med', true, DAY).reason, 'not-invited', 'only an invited investor');
+  assert.equal(answerNpcInvestor(joined, 'npc:sam', true, DAY).ok, true);
+  const sam = joined.partners.find((x) => x.actorId === 'npc:sam');
+  assert.deepEqual([sam.status, sam.units, sam.cash, sam.voting, 'offer' in sam], ['active', 500, 1000, false, false]);
+  assert.equal(joined.till, till + 1000, 'the money goes into the cash');
+  assert.equal(joined.ledger.at(-1).kind, 'investment');
+  assert.ok(shareOf(joined, 'npc:sam') > 0, 'and holds units');
+
+  const declined = structuredClone(b);
+  assert.equal(answerNpcInvestor(declined, 'npc:sam', false, DAY).ok, true);
+  assert.equal(declined.partners.find((x) => x.actorId === 'npc:sam').status, 'declined');
+  assert.equal(apply(declined, { type: 'propose', businessId: 'b1', kind: 'investor', actorId: 'sam', amount: 500 }, MED, npcCtx).ok, true, 'and can be asked again');
+  assert.equal(answerNpcInvestor({ ...structuredClone(b), status: 'forming' }, 'npc:sam', true, DAY).reason, 'not-open');
+
+  // An invitation made before this, under the NPC's own id and with a vote, joins as a silent partner.
+  const older = apply(clinic(1), { type: 'propose', businessId: 'b1', kind: 'investor', actorId: 'sam', amount: 1000, price: 2 }, MED, { context: { actors: { ...ACTORS, sam: 'Silent Sam' } } }).business;
+  const old = apply(older, { type: 'vote', businessId: 'b1', proposalId: older.proposals[0].id, yes: true }, FIX, { context: { actors: { ...ACTORS, sam: 'Silent Sam' } } }).business;
+  assert.deepEqual([old.partners.find((x) => x.actorId === 'sam').voting], [true]);
+  assert.equal(answerNpcInvestor(old, 'sam', true, DAY).ok, true);
+  assert.deepEqual(['npc:sam', 'sam', true, false], ((x) => [x.actorId, x.actorRef, x.npc, x.voting])(old.partners.find((x) => x.actorRef === 'sam')));
+});
+
 test('only a character the service allows can be proposed as an investor', () => {
   const out = apply(clinic(1), { type: 'propose', businessId: 'b1', kind: 'investor', actorId: 'solo', amount: 1000 }, MED, { expect: false, context: { investors: ['med', 'fix'] } });
   assert.equal(out.reason, 'not-investor');

@@ -18,6 +18,7 @@ import { context as gigContext } from './gigs.js';
 import { StoryService } from '../../../services/StoryService.js';
 import { PressService } from '../../../services/PressService.js';
 import { JobService } from '../../../services/JobService.js';
+import { isNpcActor } from '../../../services/BusinessClient.js';
 
 /** `controls`, built only when the tab is drawn, gives a row's `{fields, buttons}`; the counts on the tab buttons need none. */
 const row = (tab, item, need, params, controls) => ({ tab, type: L(`NCI.Pending.Kind.${need}`), item, needed: L(`NCI.Pending.Need.${need}`, params), controls });
@@ -96,8 +97,17 @@ function businessRows() {
       ...(b.staff ?? []).filter((s) => s.status === 'offered' && s.source === 'npc')
         .map((s) => need('offer', { name: s.name, post: L(`NCI.Staff.Post.${s.post}`) },
           act('businessStaffAnswer', 'StaffAccept', 'fa-handshake', { staff: s.id, yes: 'true' }), act('businessStaffAnswer', 'StaffDecline', no, { staff: s.id, yes: 'false' }))),
+      // An NPC invited to invest: the GM answers, on the terms the partners agreed. An older invitation is under the
+      // NPC's own actor id.
+      ...b.partners.filter((x) => x.status === 'invited' && x.offer && (x.npc || isNpcActor(game.actors.get(x.actorId))))
+        .map((x) => row('businesses', b.name, 'npcInvestor', { name: x.name, amount: x.offer.amount.toLocaleString(), price: x.offer.price.toFixed(2) }, () => ({
+          buttons: [
+            act('businessNpcPartner', 'NpcAccept', 'fa-handshake', { staff: x.actorId, yes: 'true' }),
+            act('businessNpcPartner', 'NpcDecline', no, { staff: x.actorId, yes: 'false' }),
+          ],
+        }))),
       // An NPC invited to found it: the GM answers, and says what it puts in (DESIGN §36.16).
-      ...b.partners.filter((x) => x.npc && x.status === 'invited').map((x) => row('businesses', b.name, 'npcPartner', { name: x.name }, () => ({
+      ...b.partners.filter((x) => x.npc && x.status === 'invited' && !x.offer).map((x) => row('businesses', b.name, 'npcPartner', { name: x.name }, () => ({
         fields: [numberField('npcCash', L('NCI.GMBusiness.NpcPuts'), 0, { min: 0, step: 100 })],
         buttons: [
           act('businessNpcPartner', 'NpcAccept', 'fa-handshake', { staff: x.actorId, yes: 'true' }),
