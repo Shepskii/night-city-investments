@@ -140,7 +140,7 @@ All **GM**. Useful from macros and scripts.
 | `api.gm.controls` | `addBias({ target, value, days, decay })`, `removeBias(id)`, `forceRegime(regime, days)`, `clearRegime()`, `setVolatility(multiplier)`, `setHalt(halted)`, `addShock({ target, percent, delayDays, persistence, headline })`, `removeImpact(id)`, `addGlide({ companyId, target, days, noise })`, `removeGlide(id)`, `targetOptions()` |
 | `api.gm.corporateActions` | `split(companyId, ratio)`, `buyout(companyId, price)`, `delist(companyId)`, `bankrupt(companyId)`, `setPrice(companyId, price)` |
 | `api.gm.dividends` | `declareSpecial(companyId, perShare)` |
-| `api.gm.businessDirectory` | `()`: each business as the street sees it, for a map: `{ id, name, status, district, location, kind, stage, ticker }`. No money, staff or back room. |
+| `api.gm.businessDirectory` | `()`: each business as the street sees it, for a map: `{ id, name, status, district, location, kind, stage, ticker, owners, npc }`. `owners` is the names of those known to run it (a company's officers, or else the partners with a vote), never a hidden holder or a silent partner; `npc` is true for an NPC's company. No money, staff or back room. |
 | `api.gm.ipo` | `listNow(companyId)` |
 | `api.gm.news` | `post({ headline, tone, companyIds, source })`. `source` (`'gm'` by default, or `'gig'`, `'story'` or `'filing'`) picks the Market Wire's copy when the headline is mailed; it is not kept in the feed. |
 | `api.gm.undo` | `available()`, `undo()` |

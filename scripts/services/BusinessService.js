@@ -23,7 +23,7 @@ import {
   reviewListing, clearReview, delistCompany, isEmployerId,
   buybackDay, settleOffering, dailySellCap, ipoDemand, allocationRatio, settleIpoOrders, normalizePortfolio,
   takeoverReference, openTakeover, dropTakeover, settleTakeover, takeoverPremium, exchangeTones, sellableQty, consumeLotsFifo, committedCash,
-  restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask,
+  restructure, windUp, holdingValue, layerFees, layerFeesDue, dropLayers, pruneMasks, outerMask, officersOf, voters,
   concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget, scandalHit, investigationCost, spendDays,
   moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene, ABILITIES, backupWait, quashEffect, exposureBand, canRun,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
@@ -2663,6 +2663,9 @@ class BusinessServiceImpl {
       kind: L(`NCI.Business.Archetype.${b.archetype}.Name`),
       stage: L(`NCI.Business.Stage.${b.listing?.status === 'listed' ? 3 : b.stage}`),
       ticker: b.company?.ticker ?? '',
+      // Who runs it, as the street knows: names only (a map shows them on the pin).
+      owners: publicOwners(b),
+      npc: !!b.npcRun,
     }));
   }
 
@@ -2670,6 +2673,15 @@ class BusinessServiceImpl {
     const hidden = MarketStore.getBusinessesHidden();
     return BusinessRepository.all().map((b) => ({ business: b, hidden: hidden[b.id] ?? { exposure: 0 } }));
   }
+}
+
+/**
+ * Who the street knows runs a business, by name: a company's officers, or else the partners with a vote (an NPC
+ * company's owner among them). Never a hidden holder, the market's float, the receivers or a silent partner.
+ */
+export function publicOwners(b) {
+  const ids = b.stage >= 2 ? officersOf(b) : voters(b).map((x) => x.actorId);
+  return [...new Set(ids.filter((id) => !outerMask(b, id)).map((id) => b.partners.find((x) => x.actorId === id)?.name).filter(Boolean))];
 }
 
 /** A big event as a hook for the GM to play out (X1). */

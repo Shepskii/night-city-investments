@@ -94,7 +94,7 @@ Or unzip a release into `Data/modules/night-city-investments`. Then enable **Nig
 - **REP and Improvement Points.** A business's big moments, good and bad, suggest awards for the GM to apply, change or dismiss.
 - **Living costs.** Partners can vote for the business to pay a partner's Housing and Lifestyle each month.
 - **An Exec's team.** Team sizes and Loyalty follow the rulebook: look after them, or they sell you out.
-- **On the map.** With the Night City Map bridge, each open business gets a pin the GM can move, edit or delete.
+- **On the map.** With the Night City Map bridge, each open business gets a pin the GM can move, edit or delete, in a Player businesses or NPC companies category, and a player business's pin names who runs it.
 
 ### Roles and scenes
 - **Role actions.** A Nomad's supply contract cuts running costs, a Rockerboy's gig lifts takings and Reputation, and a Lawman's Backup answers raids and cases and can call in a favour against their own heat.

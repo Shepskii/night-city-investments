@@ -1280,13 +1280,24 @@ test('the directory (B7e) tells a map what the street can see, and nothing behin
   try {
     await S.BusinessRepository.save({ ...b, district: 'watson', location: 'Above the noodle bar', backRoom: { kind: 'ripping', status: 'open', dirty: 900, band: 'high' } });
     const row = S.BusinessService.directory().find((x) => x.id === b.id);
-    assert.deepEqual(Object.keys(row).sort(), ['district', 'id', 'kind', 'location', 'name', 'stage', 'status', 'ticker']);
+    assert.deepEqual(Object.keys(row).sort(), ['district', 'id', 'kind', 'location', 'name', 'npc', 'owners', 'stage', 'status', 'ticker']);
+    assert.deepEqual(row.owners, b.partners.filter((x) => x.voting !== false && ['active', 'leaving'].includes(x.status)).map((x) => x.name), 'the partners with a vote');
+    assert.equal(row.npc, false);
     assert.equal(row.district, 'watson');
     assert.doesNotMatch(JSON.stringify(row), /ripping|dirty|Black-market|till/);
     assert.doesNotMatch(row.kind + row.stage, /NCI\./);
   } finally {
     await S.BusinessRepository.save(saved);
   }
+});
+
+test('the directory names only owners the street knows: officers or voting partners, never a hidden or silent holder', async () => {
+  const { publicOwners } = await import('../scripts/services/BusinessService.js');
+  const p = (actorId, name, extra = {}) => ({ actorId, name, status: 'active', cash: 0, gear: [], units: 100, voting: true, ...extra });
+  const shop = { stage: 1, partners: [p('a', 'Ann'), p('npc:s', 'Silent Sam', { voting: false, npc: true }), p('b', 'Bea', { status: 'leaving' }), p('c', 'Cy', { status: 'declined' }), p('h', 'Hidden Hal')], masks: { h: [{ kind: 'nominee', ref: 'x1' }] } };
+  assert.deepEqual(publicOwners(shop), ['Ann', 'Bea']);
+  const company = { stage: 2, officers: ['b'], partners: [p('a', 'Ann'), p('b', 'Bea'), p('npc:market', '', { voting: false, market: true })] };
+  assert.deepEqual(publicOwners(company), ['Bea'], 'a company by its officers');
 });
 
 test('production (P1a): a Production tab for those running the shop, a line to set, and a storeroom sheet of real items', async () => {
