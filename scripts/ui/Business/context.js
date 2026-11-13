@@ -34,7 +34,7 @@ import { MarketClock } from '../../services/MarketClockService.js';
 import { L, whole, signed } from '../format.js';
 import { weeklyBars, balanceLine } from '../components/chart.js';
 import { actorLink } from '../actorLink.js';
-import { isCharacter } from '../../utils/helpers.js';
+import { isCharacter, eventName } from '../../utils/helpers.js';
 import { withDiscoveries } from '../investigate.js';
 import { escapeHtml } from '../../utils/text.js';
 
@@ -813,6 +813,9 @@ function infoContext(business, runs) {
   };
 }
 
+/** A gang's own kinds of story (G1). */
+const GANG_STORIES = Object.freeze(['keepAway', 'snitch', 'friendly']);
+
 /** This week's event, if there is one, and whether it can still be answered. */
 function eventContext(business, canAct, free) {
   const event = business.period.event;
@@ -820,8 +823,10 @@ function eventContext(business, canAct, free) {
   const def = EVENTS[event.kind];
   const answer = business.period.slots.find((s) => s.action === 'respond');
   const uses = eventUses(business, event.kind).map((u) => (u.kind === 'ability' ? u.ability : u.skill) + (u.dvAdd ? ` (DV +${u.dvAdd})` : ''));
+  // A gang's turf warning, tip and good word have their own names and terms (G1).
+  const gangKind = event.kind === 'press' && GANG_STORIES.includes(event.story) ? event.story : null;
   return {
-    name: roomEventName(business, event.kind) ?? L(`NCI.Event.${event.kind}.Name`),
+    name: gangKind ? L(`NCI.Press.Name.${gangKind}`) : roomEventName(business, event.kind) ?? L(`NCI.Event.${event.kind}.Name`),
     // A staff event names the employee it is about (E2).
     hint: event.kind === 'press' ? L(`NCI.Press.Angle.${event.story}`) : L(`NCI.Event.${event.kind}.Hint`, { name: event.staffId ? staffOf(business, event.staffId)?.name ?? '' : '' }),
     // A faction's event says whose it is; force beats a gang's shakedown, at a price (F1b).
@@ -832,8 +837,8 @@ function eventContext(business, canAct, free) {
     security: def.security ? L('NCI.Business.SecurityNote') : '',
     // The GM may play a big one out at the table instead (X1).
     maybeScene: !answer && isBigEvent(event) ? L('NCI.Business.MaybeScene') : '',
-    canAnswer: canAct && free && !answer,
-    ifNot: event.kind === 'press' ? L('NCI.Event.press.IfNot') : event.kind === 'bust' ? L('NCI.BackRoom.RaidIfNot') : def.room ? L(`NCI.Event.${event.kind}.IfNot`) : def.staff ? L(`NCI.Event.${event.kind}.IfNot`, { name: event.staffId ? staffOf(business, event.staffId)?.name ?? '' : '' }) : def.good ? L('NCI.Business.WindfallIfNot') : L('NCI.Business.EventIfNot'),
+    canAnswer: canAct && free && !answer && gangKind !== 'friendly',
+    ifNot: gangKind ? L(`NCI.Press.IfNot.${gangKind}`) : event.kind === 'press' ? L('NCI.Event.press.IfNot') : event.kind === 'bust' ? L('NCI.BackRoom.RaidIfNot') : def.room ? L(`NCI.Event.${event.kind}.IfNot`) : def.staff ? L(`NCI.Event.${event.kind}.IfNot`, { name: event.staffId ? staffOf(business, event.staffId)?.name ?? '' : '' }) : def.good ? L('NCI.Business.WindfallIfNot') : L('NCI.Business.EventIfNot'),
   };
 }
 
@@ -1424,7 +1429,7 @@ function onCallContext(business, s, account, runs) {
   if (s.source !== 'pc') return null;
   const asks = asksFor(business, s.id);
   const label = (r) => (r.type === 'action' ? L('NCI.Staff.AskSlot', { action: L(`NCI.Business.Action.${r.action}.Name`) })
-    : r.type === 'respond' ? L('NCI.Staff.AskRespond', { event: business.period.event ? L(`NCI.Event.${business.period.event.kind}.Name`) : '' })
+    : r.type === 'respond' ? L('NCI.Staff.AskRespond', { event: business.period.event ? eventName(business.period.event) : '' })
       : L('NCI.Staff.AskHelp', { action: L(`NCI.Business.Action.${r.forAction}.Name`) }));
   const day = BusinessClient.day();
   const could = (roll) => runs && askCheck(business, s.id, roll).ok

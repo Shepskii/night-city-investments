@@ -17,6 +17,7 @@ import { NEWSWIRE } from '../data/org-voices/newswire.js';
 import { FactionRepository } from '../data/FactionRepository.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
 import { FundRepository } from '../data/FundRepository.js';
+import { L } from '../utils/helpers.js';
 
 const sectorOf = (f) => (f?.ticker ? CompanyRepository.all().find((c) => c.ticker === f.ticker)?.sector ?? null : null);
 
@@ -64,6 +65,17 @@ export const OrgMail = {
     return orgMail({ voices: corp ? CORP_VOICES : GANG_VOICES, style: this.styleOf(f), fallback: corp ? 'legal' : 'street', kind, tones, data: { gang: f.name, ...data } });
   },
 
+  /** A gang's street paper (G1): the name the GM gave it, or one from the gang's style. */
+  paperOf(f) {
+    if (!f) return '';
+    return f.paper || L(`NCI.Press.Street.${this.styleOf(f)}`, { gang: f.name });
+  },
+
+  /** A street paper's mail (G1), in its own voice, falling back on the tabloid's. */
+  street(name, kind, data = {}, also = []) {
+    return orgMail({ voices: OUTLET_VOICES, style: 'street', fallback: 'tabloid', kind, also, data: { outlet: name, ...data } });
+  },
+
   /** A paper's mail: in the style of the faction it is, if it is one, and Broadcast otherwise. */
   outlet(name, factionId, kind, data = {}, also = []) {
     const byId = factionId ? FactionRepository.get(factionId) : null;
@@ -92,7 +104,11 @@ export const OrgMail = {
     const week = `${b.id}:${b.period?.index ?? ''}`;
     switch (sender?.kind) {
       case 'faction': return this.faction(sender.factionId, event.kind, data, eventTones(b, { ...event, factionId: sender.factionId }));
-      case 'outlet': return this.outlet(sender.name, sender.factionId ?? null, 'pressAsk', data);
+      case 'outlet': {
+        // A gang's turf warning and good word have their own lines (G1).
+        const kind = event.story === 'keepAway' ? 'keepAwayAsk' : event.story === 'friendly' ? 'friendlyNote' : 'pressAsk';
+        return sender.street ? this.street(sender.name, kind, data) : this.outlet(sender.name, sender.factionId ?? null, kind, data);
+      }
       case 'city': return this.official('city', event.kind === 'raid' ? 'raid' : 'inspection', data, week);
       case 'ncpd': return this.official('vice', 'bust', data, b.id);
       case 'collectors': return this.official('collections', 'collectors', data, b.id);

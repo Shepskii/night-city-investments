@@ -55,12 +55,18 @@ export const PressService = {
   _background(actor) {
     const hidden = MarketStore.getBusinessesHidden();
     const corps = FactionRepository.list().filter((f) => f.kind === 'corp');
+    const gangs = FactionRepository.list().filter((f) => f.kind === 'gang');
     const runs = runBy(actor.id);
     let worst = null;
     for (const b of runs) {
       for (const f of corps) {
         const value = hidden[b.id]?.standing?.[f.id]?.value ?? 0;
         if (!worst || value < worst.value) worst = { id: f.id, name: f.name, value, businessId: b.id };
+      }
+      // A gang on the turf of a business they run (G1).
+      for (const f of gangs.filter((g) => b.district && (g.districts ?? []).includes(b.district))) {
+        const value = hidden[b.id]?.standing?.[f.id]?.value ?? 0;
+        if (!worst || value < worst.value) worst = { id: f.id, name: f.name, value, businessId: b.id, gang: true, outlet: OrgMail.paperOf(f) };
       }
     }
     const stake = BusinessRepository.all().filter((b) => b.status === 'open').flatMap((b) => concealedHolders(b).filter((h) => h.holderId === actor.id).map(() => ({ ticker: b.company.ticker, name: b.name })))[0] ?? null;
@@ -91,9 +97,10 @@ export const PressService = {
     if (!actor) return;
     const notice = { id: story.id, story: story.story, outlet: story.outlet, deadline: story.deadline };
     await actor.setFlag(MODULE_ID, FLAGS.PRESS_NOTICE, notice);
-    // The paper writes for their side of it (M3).
-    const from = await ContactService.outlet(story.outlet).catch(() => null);
-    await BusinessService._mailAccount(story.actorId, L('NCI.Press.Char.Subject', { name: story.name }), OrgMail.outlet(story.outlet, null, `charAsk_${story.story}`, { days: rules().character.answerDays }, ['charTold'])?.paragraphs ?? [L(`NCI.Press.Char.Asks.${story.story}`), L('NCI.Press.Char.Told', { outlet: story.outlet, days: rules().character.answerDays })], { from, footer: L('NCI.Press.Char.Footer') });
+    // The paper writes for their side of it (M3); a gang's street paper in its own voice (G1).
+    const from = await ContactService.outlet(story.outlet, story.factionId ?? null, !!story.street).catch(() => null);
+    const said = story.street ? OrgMail.street(story.outlet, `charAsk_${story.story}`, { days: rules().character.answerDays }, ['charTold']) : OrgMail.outlet(story.outlet, null, `charAsk_${story.story}`, { days: rules().character.answerDays }, ['charTold']);
+    await BusinessService._mailAccount(story.actorId, L('NCI.Press.Char.Subject', { name: story.name }), said?.paragraphs ?? [L(`NCI.Press.Char.Asks.${story.story}`), L('NCI.Press.Char.Told', { outlet: story.outlet, days: rules().character.answerDays })], { from, footer: L('NCI.Press.Char.Footer') });
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, {});
   },
 
@@ -128,7 +135,8 @@ export const PressService = {
       }));
     }
     const result = !story.believed ? 'Ignored' : out.scale === 0 ? 'Answered' : out.scale < 1 ? 'Halved' : 'Full';
-    await BusinessService._mailAccount(story.actorId, L('NCI.Press.Char.ResultSubject'), OrgMail.outlet(story.outlet, null, `char${result}`)?.paragraphs ?? [L(`NCI.Press.Char.${result}`, { outlet: story.outlet })], { from: await ContactService.outlet(story.outlet).catch(() => null), footer: L(`NCI.Press.Char.${result}Footer`) });
+    const said = story.street ? OrgMail.street(story.outlet, `char${result}`) : OrgMail.outlet(story.outlet, null, `char${result}`);
+    await BusinessService._mailAccount(story.actorId, L('NCI.Press.Char.ResultSubject'), said?.paragraphs ?? [L(`NCI.Press.Char.${result}`, { outlet: story.outlet })], { from: await ContactService.outlet(story.outlet, story.factionId ?? null, !!story.street).catch(() => null), footer: L(`NCI.Press.Char.${result}Footer`) });
     await actor?.unsetFlag(MODULE_ID, FLAGS.PRESS_NOTICE);
   },
 
@@ -208,10 +216,12 @@ export const PressService = {
     return {
       businesses: BusinessRepository.all().filter((b) => b.status === 'open').map((b) => ({ value: `b:${b.id}`, label: b.name })),
       characters: characters().map((a) => ({ value: `a:${a.id}`, label: a.name })),
-      businessKinds: name('business', Object.keys(rules().kinds)),
+      businessKinds: name('business', [...Object.keys(rules().kinds), 'keepAway', 'snitch', 'friendly']),
       characterKinds: name('character', Object.keys(rules().character.kinds)),
       corps: FactionRepository.list().filter((f) => f.kind === 'corp').map((f) => ({ value: `f:${f.id}`, label: f.name })),
       media: CompanyRepository.all().filter((c) => c.sector === 'media').map((c) => ({ value: `m:${c.ticker}`, label: c.name })),
+      // Gangs' street papers (G1).
+      streets: FactionRepository.list().filter((f) => f.kind === 'gang').map((f) => ({ value: `g:${f.id}`, label: OrgMail.paperOf(f) })),
     };
   },
 
@@ -221,6 +231,10 @@ export const PressService = {
     if (type === 'f') {
       const faction = FactionRepository.list().find((f) => f.id === id && f.kind === 'corp');
       return faction ? { name: faction.name, rank: rules().rank.own, factionId: faction.id } : null;
+    }
+    if (type === 'g') {
+      const gang = FactionRepository.list().find((f) => f.id === id && f.kind === 'gang');
+      return gang ? { name: OrgMail.paperOf(gang), rank: rules().gang.rank, factionId: gang.id, gang: true, street: true, gangName: gang.name } : null;
     }
     const company = type === 'm' ? CompanyRepository.all().find((c) => c.ticker === id && c.sector === 'media') : null;
     return company ? { name: company.name, rank: rules().rank.media } : null;
@@ -238,8 +252,12 @@ export const PressService = {
     if (!paper) return { ok: false, reason: 'press-no-outlet' };
     const force = believed === 'yes' ? true : believed === 'no' ? false : null;
     if (type === 'b') {
-      if (!rules().kinds[story]) return { ok: false, reason: 'press-bad-kind' };
-      if (story === 'crime' && !BusinessService.underworldOn()) return { ok: false, reason: 'press-no-underworld' };
+      const gangKind = ['keepAway', 'snitch', 'friendly'].includes(story);
+      if (!rules().kinds[story] && !gangKind) return { ok: false, reason: 'press-bad-kind' };
+      if ((story === 'crime' || story === 'snitch') && !BusinessService.underworldOn()) return { ok: false, reason: 'press-no-underworld' };
+      // A gang's own kinds come from a gang's street paper (G1); a tip needs a back room to tip off.
+      if (gangKind && !paper.gang) return { ok: false, reason: 'press-gang-kind' };
+      if (story === 'snitch' && BusinessRepository.get(id)?.backRoom?.status !== 'open') return { ok: false, reason: 'press-no-room' };
       const done = await BusinessService.runPress(id, handPress({ story, outlet: paper, headline: textOf(headline), believed: force }));
       if (!done.ok) return done;
       Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: id });

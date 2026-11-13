@@ -95,9 +95,10 @@ export const ContactService = {
     return this.ensure(`faction:${f.id}`, () => this._make({ name: f.name, organization: f.name, email: address(f.name, f.kind === 'corp' ? 'corp' : 'net'), type: 'organization' }));
   },
 
-  /** The paper that prints a story: the faction, if it is one, or a news desk of its own. */
-  outlet(name, factionId = null) {
+  /** The paper that prints a story: the faction, if it is one, or a news desk of its own. A gang's street paper is itself (G1). */
+  outlet(name, factionId = null, street = false) {
     const f = factionId ? FactionRepository.get(factionId) : null;
+    if (street) return this.ensure(`outlet:${name}`, () => this._make({ name, organization: f?.name ?? name, email: address(name, 'net', 'word') }));
     if (f && f.name === name) return this.faction(f.id);
     const named = FactionRepository.list().find((x) => x.name === name);
     if (named) return this.faction(named.id);
@@ -199,7 +200,8 @@ export const ContactService = {
   forSender(b, sender) {
     switch (sender?.kind) {
       case 'faction': return this.faction(sender.factionId);
-      case 'outlet': return this.outlet(sender.name, sender.factionId ?? null);
+      case 'outlet': return this.outlet(sender.name, sender.factionId ?? null, !!sender.street);
+      case 'source': return this.source().then((s) => s.id);
       case 'city': return this.city();
       case 'ncpd': return this.vice();
       case 'collectors': return this.collectors();

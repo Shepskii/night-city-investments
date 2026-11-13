@@ -71,7 +71,7 @@ import { fenceCheck, fenceWeek, makesThings, buyStock, clearStock, consignStock,
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from './businessEvents.js';
 import { eventOrigin } from './eventMail.js';
-import { drawPress, placePress, lapsePress, printPress, pressFallout, startHandPress } from './businessPress.js';
+import { drawPress, placePress, lapsePress, printPress, pressFallout, startHandPress, keepAwayCut } from './businessPress.js';
 import { npcWeek, npcDraw } from './businessNpc.js';
 import { shiftLift, payShiftBonuses, shiftWeek } from './businessJobs.js';
 import { createRng } from './rng.js';
@@ -309,6 +309,8 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     const event = b.period.event;
     if (!event || !EVENTS[event.kind]) return fail('no-event');
     if (b.period.slots.some((s) => s.action === 'respond')) return fail('event-answered');
+    // A gang's good word needs no answer (G1).
+    if (event.kind === 'press' && event.story === 'friendly') return fail('nothing-to-answer');
     if (b.period.slots.length >= (p.stages[b.stage]?.slots ?? 1)) return fail('no-slot');
     // A staff event's own employee (the one off sick, caught stealing, being poached...) cannot answer it.
     if (use?.kind === 'staff' && event.staffId && use.staffId === event.staffId) return fail('staff-involved');
@@ -1905,7 +1907,10 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   const part = Math.min(1, (b.period.endDay - b.period.startDay) / 7);
   const district = districtOf(b.district);
   // Gigs run for the business since last week move this week's takings, once.
-  const base = Math.round(arch.takings * b.state.capacity * traffic(b.state.reputation) * district.traffic * workMult * (1 + b.boost) * part);
+  // A gang warning customers off its turf (G1).
+  const kept = keepAwayCut(b);
+  const base = Math.round(arch.takings * b.state.capacity * traffic(b.state.reputation) * district.traffic * workMult * (1 + b.boost) * (1 - kept) * part);
+  if (b.keepAway && b.period.index >= b.keepAway.until) b.keepAway = null;
   const boost = b.boost;
   b.boost = 0;
   // A short week can close before a story's print day.
@@ -1999,7 +2004,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
     ...(sales.sold ? { stock: sales } : {}),
     ...(fenced ? { fenced } : {}),
     ...(room ? { room: { earned: room.earned, ...(room.supply ? { supply: room.supply } : {}), laundered: room.laundered, paid: room.paid, low: room.low, ...(room.cut ? { cut: room.cut } : {}), ...(room.unpaid ? { unpaid: true } : {}), ...(room.informant ? { informant: room.informant } : {}) } } : {}),
-    ...(event ? { event: { kind: event.kind, outcome: event.outcome, band: event.band, change: event.change, ...(b.period.event?.factionName ? { faction: b.period.event.factionName } : {}), ...(eventCost ? { cost: eventCost } : {}), ...eventOrigin(b, event) } } : {}),
+    ...(event ? { event: { kind: event.kind, outcome: event.outcome, band: event.band, change: event.change, ...(b.period.event?.story ? { story: b.period.event.story } : {}), ...(b.period.event?.factionName ? { faction: b.period.event.factionName } : {}), ...(eventCost ? { cost: eventCost } : {}), ...eventOrigin(b, event) } } : {}),
     ...(notes.length ? { staff: notes } : {}),
     ...(boost ? { boost } : {}),
     actions: b.period.slots.map((s) => ({ action: s.action, by: s.by, band: s.band, ...(s.staff ? { staff: true } : {}), ...(s.illegal ? { illegal: true } : {}) })),

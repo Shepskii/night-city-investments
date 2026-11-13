@@ -10,7 +10,7 @@
 
   {{#if rows.length}}
   <table class="nci-market">
-    <thead><tr><th>{{localize "NCI.Faction.Name"}}</th><th>{{localize "NCI.Faction.KindLabel"}}</th><th>{{localize "NCI.Faction.Ticker"}}</th><th>{{localize "NCI.Faction.Districts"}}</th><th>{{localize "NCI.Faction.VoiceLabel"}}</th>{{#if messenger}}<th>{{localize "NCI.Faction.Contact"}}</th>{{/if}}<th></th></tr></thead>
+    <thead><tr><th>{{localize "NCI.Faction.Name"}}</th><th>{{localize "NCI.Faction.KindLabel"}}</th><th>{{localize "NCI.Faction.Ticker"}}</th><th>{{localize "NCI.Faction.Districts"}}</th><th>{{localize "NCI.Faction.VoiceLabel"}}</th><th>{{localize "NCI.Faction.PressLabel"}}</th>{{#if messenger}}<th>{{localize "NCI.Faction.Contact"}}</th>{{/if}}<th></th></tr></thead>
     <tbody>
       {{#each rows}}
       <tr data-faction-row>
@@ -19,6 +19,8 @@
         <td><input type="text" name="ticker" value="{{ticker}}" maxlength="5" class="nci-days"></td>
         <td><input type="text" name="districts" value="{{districtText}}"></td>
         <td><select name="voice">{{#each voices}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></td>
+        <td>{{#with press}}<input type="text" name="paper" value="{{paper}}" placeholder="{{placeholder}}" maxlength="60">
+          <select name="media">{{#each media}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>{{/with}}</td>
         {{#if ../messenger}}<td><input type="text" name="contact" value="{{contactName}}" list="nci-faction-contacts" maxlength="80"></td>{{/if}}
         <td class="nci-rowbtns">
           <button type="button" data-action="factionSave" data-id="{{id}}" title="{{localize 'NCI.Faction.Save'}}"><i class="fas fa-save"></i></button>
@@ -32,6 +34,7 @@
   {{else}}<p class="nci-empty">{{localize "NCI.Faction.None"}}</p>{{/if}}
   <p class="nci-hint">{{localize "NCI.Faction.DistrictHint" ids=districtIds}}</p>
   <p class="nci-hint">{{localize "NCI.Faction.VoiceHint"}}</p>
+  <p class="nci-hint">{{localize "NCI.Faction.PressHint"}}</p>
   {{#if messenger}}<p class="nci-hint">{{localize "NCI.Faction.ContactHint"}}</p>{{/if}}
 </div>
 {{#if districts.length}}

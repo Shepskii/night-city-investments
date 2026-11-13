@@ -78,4 +78,40 @@ export const OUTLET_VOICES = Object.freeze({
     charHalved: { lines: ['Most of our story about you stuck. Your answer helped a bit.', 'Readers believed most of it.', 'Your statement saved you some face. Some.'] },
     charFull: { lines: ['Everybody believed our story about you. Every word.', 'It stuck, chummer. All of it.', 'Front page, fully believed. Ouch.'] },
   },
+  // A gang's street paper (G1): screamsheets, graffiti boards and pirate radio. Anything it lacks comes from tabloid.
+  street: {
+    greetings: ['', 'Word on the street:', 'Listen up.'],
+    signoffs: ['- {outlet}', '{outlet}. Read it, pass it on.', ''],
+    pressAsk: { lines: [
+      "{outlet} is putting {name} on the wall this week. Got something to say? Say it now.",
+      "Word about {name} is going up on every board in the neighbourhood. You want your side in it, talk.",
+      "{outlet} has a story on {name}. It hits the street in days, with you or without you.",
+    ] },
+    keepAwayAsk: { lines: [
+      "{outlet} is telling the neighbourhood to stay away from {name}. Customers listen to us round here.",
+      "Every board on the block is going to say the same thing: don't go to {name}. Unless you change our mind.",
+      "{name} is off-limits, as far as {outlet} is concerned. Your customers are going to hear it.",
+    ] },
+    friendlyNote: { lines: [
+      "{outlet} put out good word on {name} this week. Friends look after friends.",
+      "The street is hearing good things about {name}, courtesy of {outlet}. No charge.",
+      "{outlet} told the neighbourhood {name} is the place to go. Consider it a favour.",
+    ] },
+    resultIgnored: { lines: ['Nobody on the street bought the word on {name}.', 'The {name} story got painted over before anyone read it.', 'The block shrugged at the {name} story.'] },
+    resultAnswered: { lines: ['The street heard us about {name}, then it heard you. Fair play.', 'You talked the block round on {name}. This time.', 'Our word on {name} landed, and you knocked it down.'] },
+    resultHalved: { lines: ['The word on {name} stuck, some of it.', 'You took the edge off the {name} story. Only the edge.', 'Half the block still believes what we said about {name}.'] },
+    resultFull: { lines: ['The whole block believes what we said about {name}.', 'The word on {name} stuck, every bit of it.', 'Ask anyone on the street about {name}. They heard us.'] },
+    charAsk_dirty: { lines: ['The street wants to know how you got so lucky with your trades.', 'People are asking who feeds you your tips. So are we.'] },
+    charAsk_smear: { lines: ["We've got a story about you going up on the boards. True or not.", "Your face is going on the wall this week."] },
+    charAsk_hidden: { lines: ['We know whose money is behind a certain company. So will the street.', 'Your hidden stake is about to be the talk of the block.'] },
+    charTold: { lines: [
+      'It goes up in {days} days. Talk to us before then if you want your side heard.',
+      'You have {days} days, then the whole neighbourhood reads it.',
+      '{days} days. After that it is on every board on the block.',
+    ] },
+    charIgnored: { lines: ['Nobody on the street believed it. Lucky you.', 'The story about you got painted over.', 'The block did not care.'] },
+    charAnswered: { lines: ['The street heard your side and moved on.', 'You talked your way out of that one.', 'Your answer knocked our story down.'] },
+    charHalved: { lines: ['Some of it stuck to you.', 'Half the block still believes it.', 'You took the edge off it. Only the edge.'] },
+    charFull: { lines: ['The whole block believes it.', 'It stuck to you, every word.', 'Ask anyone round here. They heard.'] },
+  },
 });

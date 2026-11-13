@@ -14,7 +14,7 @@ import {
 } from '../engine/index.js';
 import { createRng } from '../engine/rng.js';
 import { FLAGS } from '../utils/constants.js';
-import { L, log, isActiveGM, isCharacter } from '../utils/helpers.js';
+import { L, log, isActiveGM, isCharacter, eventName } from '../utils/helpers.js';
 import { MarketStore } from '../data/MarketStore.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
@@ -164,7 +164,7 @@ export const ReminderService = {
       subject: L('NCI.WeekMail.Subject', { name: b.name, date: MarketClock.displayDate(digest.endDay * 86400000) }),
       lines: [
         L('NCI.WeekMail.Figures', { takings: eb(digest.takings), upkeep: eb(digest.upkeep), more, other, result: L(profit < 0 ? 'NCI.WeekMail.Loss' : 'NCI.WeekMail.Profit'), profit: eb(Math.abs(profit)), till: eb(digest.till) }),
-        digest.event?.kind ? L('NCI.WeekMail.Event', { event: L(`NCI.Event.${digest.event.kind}.Name`) }) : '',
+        digest.event?.kind ? L('NCI.WeekMail.Event', { event: eventName(digest.event) }) : '',
         items.length ? L('NCI.WeekMail.Waiting', { items: items.join('; ') }) : L('NCI.WeekMail.Nothing'),
       ].filter(Boolean),
       footer: L('NCI.WeekMail.Footer'),

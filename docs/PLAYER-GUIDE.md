@@ -182,6 +182,8 @@ Your GM may decide to play a big event out with you, such as a raid or a hostile
 
 A reporter asking questions means a corporation with a grudge is running a story about you. It prints three days into the week, and the public may not believe it, but you won't know until the week closes. Answer it as you would any event: a pass stops the harm and a failure halves it. Depending on what it says, a story that sticks can cost Reputation, attract attention to your back room, or move your share price if you're listed. You'll get a mail saying how it went.
 
+Gangs have their say too, through their own street papers, but only about a business on their turf. A hostile gang can print the same kinds of story (they're believed less and barely touch a share price), warn the neighbourhood to **keep away** (takings down 10% for two weeks; answer it as a story, or face the gang down with Brawling, Tactics or Backup), or **talk to NCPD Vice** about your back room. You hear that last one from a friend; answer it with Streetwise, Bribery, Persuasion or Backup, or next week's raid is twice as likely. A friendly or allied gang may put out **good word** about a business doing well: Reputation goes up at the close, with nothing to answer.
+
 A story can name you, too, if you've drawn the wrong kind of attention lately. You'll get a mail and an **Answer** on your Pending tab, with seven days to roll Persuasion, Composition, Bribery or Credibility. Stay silent and a story that sticks costs you in full: more heat, and some Reputation for your business.
 
 ### The roll dialog

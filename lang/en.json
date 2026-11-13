@@ -2167,6 +2167,9 @@
       "ContactHint": "A faction's mail about a business comes from its Messenger contact. Leave it blank and one is made the first time the faction acts; type a contact's name to use one of your own.",
       "ContactUnknown": "No Messenger contact is called {name}.",
       "VoiceLabel": "Voice",
+      "PressLabel": "Street paper",
+      "MediaNone": "Its own paper only",
+      "PressHint": "A gang prints stories through its street paper, named here or from its voice. Pick a media company for a hostile gang to take its stories to instead.",
       "VoiceHint": "The voice a faction writes in, for its mail about a business. A gang may be Formal, Street, Chrome-mad, Zealot, Patriot, Glam, Cryptic or Old money; a corporation Formal, Militarist, Wellness PR, Legal or Slick marketing, or Broadcast news or Tabloid for a paper. Each starter faction has one to begin with.",
       "Voice": { "formal": "Formal", "street": "Street", "chrome": "Chrome-mad", "zealot": "Zealot", "patriot": "Patriot", "glam": "Glam", "cryptic": "Cryptic", "oldMoney": "Old money", "militarist": "Militarist", "wellness": "Wellness PR", "legal": "Legal", "slick": "Slick marketing", "broadcast": "Broadcast news", "tabloid": "Tabloid" },
       "StandingTitle": "Standing",
@@ -2793,7 +2796,10 @@
         "Button": "Run a story",
         "Now": "The story is running.",
         "Next": "This week already has an event, so the story will be next week's.",
+        "Streets": "Street papers (gangs)",
         "Reason": {
+          "press-gang-kind": "A turf warning, a tip to Vice or good word comes only from a gang's street paper.",
+          "press-no-room": "A tip to Vice needs an open back room.",
           "press-queued": "That business already has a story waiting for next week.",
           "press-busy": "That character already has a story running.",
           "press-no-stake": "That character has no concealed stake in a listed company.",
@@ -2806,14 +2812,20 @@
           "no-target": "Choose who the story is about."
         }
       },
-      "Story": { "money": "money trouble", "crime": "a crime expose", "service": "bad service", "smear": "a smear", "dirty": "dirty dealing", "hidden": "a hidden stake" },
+      "Story": { "money": "money trouble", "crime": "a crime expose", "service": "bad service", "smear": "a smear", "dirty": "dirty dealing", "hidden": "a hidden stake",
+        "keepAway": "a turf warning",
+        "snitch": "a tip to NCPD Vice",
+        "friendly": "good word on the street" },
       "Angle": {
         "money": "A reporter is calling round about your finances, and someone is talking.",
         "crime": "A reporter has been watching who comes and goes, and wants a comment on what goes on here.",
         "service": "A reporter is collecting complaints from your customers.",
         "smear": "A reporter has an ugly story about you and doesn't seem to care if it's true.",
         "dirty": "A reporter has been asking who tipped you off, and how you've done so well out of it.",
-        "hidden": "A reporter has been following the money behind a company you'd rather not be linked to."
+        "hidden": "A reporter has been following the money behind a company you'd rather not be linked to.",
+        "keepAway": "The gang's street paper is telling the neighbourhood to stay away from you. Customers listen.",
+        "snitch": "Word is someone has been talking to NCPD Vice about what goes on in your back room.",
+        "friendly": "A friendly gang's street paper is putting out good word about you. Nothing to do: it lands at the close."
       },
       "Headline": {
         "money": "{outlet}: is {name} running out of money?",
@@ -2821,7 +2833,10 @@
         "service": "{outlet}: customers speak out against {name}",
         "smear": "{outlet}: the shocking truth about {name}",
         "dirty": "{outlet}: who is {name} really working for?",
-        "hidden": "{outlet}: who is hiding behind {name}?"
+        "hidden": "{outlet}: who is hiding behind {name}?",
+        "keepAway": "{outlet}: stay away from {name}",
+        "snitch": "{outlet}: a word to Vice about {name}",
+        "friendly": "{outlet}: {name} is the place to go"
       },
       "Why": {
         "money": "It has lost money lately or its compliance is poor.",
@@ -2830,7 +2845,41 @@
         "smear": "Nothing true is needed: it's harder to believe.",
         "smearCharacter": "Nothing true is needed: it's harder to believe.",
         "dirty": "Their heat has been noticed or higher lately.",
-        "hidden": "They hold a concealed stake in a listed company. The headline names the company, not them."
+        "hidden": "They hold a concealed stake in a listed company. The headline names the company, not them.",
+        "keepAway": "The gang is hostile and the business is on its turf.",
+        "snitch": "It has an open back room with Exposure low or higher. Nothing prints: if it isn't answered, next week's raid chance doubles.",
+        "friendly": "The gang is friendly or allied, and the business is doing well."
+      },
+      "Name": {
+        "keepAway": "A gang's turf warning",
+        "snitch": "Someone talked to Vice",
+        "friendly": "Good word on the street"
+      },
+      "IfNot": {
+        "keepAway": "If the street believes it and it goes unanswered, takings fall by 10% for two weeks; answered badly, by 5%. Answer it as a story, or face the gang down.",
+        "snitch": "If it goes unanswered, or is answered badly, NCPD Vice is twice as likely to raid the back room next week. A pass means the tip went nowhere.",
+        "friendly": "Nothing to answer: Reputation goes up when the week closes."
+      },
+      "Street": {
+        "formal": "The {gang} Circular",
+        "street": "{gang} Street Sheet",
+        "chrome": "{gang} Pirate Feed",
+        "zealot": "The {gang} Broadside",
+        "patriot": "The {gang} Bulletin",
+        "glam": "{gang} Buzz",
+        "cryptic": "{gang} Signal",
+        "oldMoney": "The {gang} Gazette"
+      },
+      "Gang": {
+        "SnitchMail": "Thought you should know: someone from {gang} has been talking to NCPD Vice about {name}. About what goes on in the back.",
+        "SnitchSubject": "{name}: about that word to Vice",
+        "SnitchLanded": "The tip about {name} reached Vice. They'll be looking harder at the place.",
+        "SnitchLandedFooter": "Next week's raid chance on the back room is doubled.",
+        "SnitchStopped": "The word about {name} went nowhere. Vice isn't interested, for now.",
+        "SnitchStoppedFooter": "Nothing changes.",
+        "FriendlyFooter": "Nothing to do: Reputation goes up when the week closes.",
+        "KeepAwayFooter": "Takings are down {pct}% for the next {weeks} weeks.",
+        "Tipped": "This office acted on a tip from the street."
       },
       "Mail": {
         "Subject": "The story about {name}",
@@ -3924,6 +3973,7 @@
         "void": "Agreed, but it could not be done: {reason}"
       },
       "Reason": {
+        "nothing-to-answer": "There is nothing to answer: good word lands by itself.",
         "no-stock": "that is no longer in stock",
         "syndicate-no-items": "a syndicate has no sheet to hold items",
         "no-workshop": "the business has no workshop yet",

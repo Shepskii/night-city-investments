@@ -12,6 +12,7 @@ import { BUSINESS_DEFAULTS } from './businessConfig.js';
 import { fail, clamp } from './businessRecord.js';
 import { createRng } from './rng.js';
 import { exposureBand } from './businessCompany.js';
+import { openRoom } from './businessFronts.js';
 import { hostileChance, standingBand } from './factions.js';
 import { believability, storyPercent, STORY_RULES } from './stories.js';
 import { heatTier } from './heat.js';
@@ -22,6 +23,11 @@ import { bandPassed } from './rolls.js';
  * (`force`): believed, it moves the price by the middle of the outlet's range.
  */
 function judgeStory(story, die, p) {
+  // Word to NCPD, and a gang's good word, are not for the public to judge (G1).
+  if (UNPRINTED.includes(story.story)) {
+    Object.assign(story, { printed: true, believed: true, percent: 0 });
+    return;
+  }
   const smear = story.story === 'smear';
   const target = Math.max(0, believability(story.rank, smear ? 0 : 1) - (smear ? p.press.smearPenalty : 0));
   story.printed = true;
@@ -66,13 +72,17 @@ export function pressChance(worst, hasTruth, frequency = 1, p = BUSINESS_DEFAULT
  */
 export function drawPress(b, seed = 'nci', p = BUSINESS_DEFAULTS, relations = null) {
   const press = relations?.press;
-  if (!press?.corps?.length) return null;
+  // Gangs draw only on businesses on their turf (G1).
+  const gangs = (press?.gangs ?? []).filter((g) => g.turf);
+  if (!press?.corps?.length && !gangs.length) return null;
   const day = b.period.startDay;
   if (spansLimit(day, [b.press?.lastDay, press.sharedLastDay], p)) return null;
-  const worst = [...press.corps].sort((x, y) => x.value - y.value)[0];
+  const worst = [...(press.corps ?? [])].sort((x, y) => x.value - y.value)[0] ?? null;
+  const worstGang = [...gangs].sort((x, y) => x.value - y.value)[0] ?? null;
   const truths = pressTruths(b, { exposure: relations.exposure ?? 0, underworld: press.underworld !== false }, p);
+  if (worstGang && (!worst || worstGang.value < worst.value)) return drawGangPress(b, worstGang, truths, seed, p, relations) ?? friendlyPress(b, gangs, seed, p, relations);
   const rng = createRng(seed, 'business-press', b.id, b.period.index);
-  if (!rng.chance(pressChance(worst.value, truths.length > 0, press.frequency, p))) return null;
+  if (!rng.chance(pressChance(worst.value, truths.length > 0, press.frequency, p))) return friendlyPress(b, gangs, seed, p, relations);
   const story = truths.length && !rng.chance(p.press.smearShare) ? truths[rng.int(0, truths.length - 1)] : 'smear';
   // A hostile corporation goes to a media company if the world has one; otherwise it prints it itself.
   const media = standingBand(worst.value, p) === 'hostile' && press.media?.length ? press.media[rng.int(0, press.media.length - 1)] : null;
@@ -88,10 +98,84 @@ export function drawPress(b, seed = 'nci', p = BUSINESS_DEFAULTS, relations = nu
   };
 }
 
-/** Put a drawn story in place: waiting for the GM if approval is on, and as the week's event if not. */
+/** A gang's own kinds of story, which nobody prints for the public to judge. */
+const UNPRINTED = Object.freeze(['snitch', 'friendly']);
+
+/** What a gang could put about: the true stories, a turf warning when it is hostile, and a tip to Vice about a back room. */
+export function gangTruths(b, gang, truths, { exposure = 0, underworld = true } = {}, p = BUSINESS_DEFAULTS) {
+  const out = [...truths];
+  if (standingBand(gang.value, p) === 'hostile') out.push('keepAway');
+  const order = p.info.exposureBands.map(([, band]) => band);
+  if (underworld && openRoom(b) && order.indexOf(exposureBand(exposure, p)) >= order.indexOf(p.press.gang.kinds.snitch.exposure)) out.push('snitch');
+  return out;
+}
+
+/** The weekly chance of a gang's story: a hostile gang's as a hostile corporation's, a wary or neutral one's at a share. */
+export function gangPressChance(value, hasTruth, frequency = 1, p = BUSINESS_DEFAULTS) {
+  const share = standingBand(value, p) === 'hostile' ? 1 : p.press.gang.share;
+  return Math.min(1, pressChance(value, hasTruth, 1, p) * share * frequency);
+}
+
+/** A gang's story: through its street paper, or the media company it uses when it is hostile (G1). */
+function drawGangPress(b, gang, truths, seed, p, relations) {
+  const press = relations.press;
+  const pool = gangTruths(b, gang, truths, { exposure: relations.exposure ?? 0, underworld: press.underworld !== false }, p);
+  const rng = createRng(seed, 'business-press-gang', b.id, b.period.index);
+  if (!rng.chance(gangPressChance(gang.value, pool.length > 0, press.frequency, p))) return null;
+  const story = pool.length && !rng.chance(p.press.smearShare) ? pool[rng.int(0, pool.length - 1)] : 'smear';
+  const media = standingBand(gang.value, p) === 'hostile' && gang.media && !UNPRINTED.includes(story) && story !== 'keepAway' ? gang.media : null;
+  return {
+    kind: 'press',
+    story,
+    grudge: gang.name,
+    factionId: gang.id,
+    factionName: media ?? gang.outlet ?? gang.name,
+    rank: media ? p.press.rank.media : p.press.gang.rank,
+    printDay: b.period.startDay + p.press.printDays,
+    truths: pool,
+    gang: true,
+    ...(media ? {} : { street: true }),
+  };
+}
+
+/** A friendly or allied gang puts out good word for a business on its turf that is doing well (G1). No answer is needed. */
+function friendlyPress(b, gangs, seed, p, relations) {
+  const rules = p.press.gang.friendly;
+  const doingWell = b.state.reputation >= rules.reputation && b.digests.slice(-rules.weeks).reduce((a, d) => a + (d.profit ?? 0), 0) > 0;
+  if (!doingWell) return null;
+  const best = [...gangs].filter((g) => ['friendly', 'allied'].includes(standingBand(g.value, p))).sort((x, y) => y.value - x.value)[0];
+  if (!best) return null;
+  const band = standingBand(best.value, p);
+  const rng = createRng(seed, 'business-press-friendly', b.id, b.period.index);
+  if (!rng.chance(Math.min(1, rules[band] * (relations.press.frequency ?? 1)))) return null;
+  return {
+    kind: 'press',
+    story: 'friendly',
+    grudge: null,
+    factionId: best.id,
+    factionName: best.outlet ?? best.name,
+    gangName: best.name,
+    rank: p.press.gang.rank,
+    printDay: b.period.startDay + p.press.printDays,
+    truths: [],
+    gang: true,
+    street: true,
+    force: true,
+    ...(band === 'allied' ? { allied: true } : {}),
+  };
+}
+
+/** Put a drawn story in place: waiting for the GM if approval is on, and as the week's event if not. Good word never waits. */
 export function placePress(b, event, approval) {
-  b.press = { ...(b.press ?? {}), lastDay: b.period.startDay, held: approval ? event : null };
-  if (!approval) b.period.event = event;
+  const held = approval && event.story !== 'friendly';
+  b.press = { ...(b.press ?? {}), lastDay: b.period.startDay, held: held ? event : null };
+  if (!held) b.period.event = event;
+}
+
+/** What a gang's turf warning takes off the takings this week (G1): from the week after it landed, for its weeks. */
+export function keepAwayCut(b) {
+  const k = b.keepAway;
+  return k && b.period && b.period.index >= k.from && b.period.index <= k.until ? k.cut : 0;
 }
 
 /** The GM lets a waiting story run, with the headline they want. It becomes this week's event. */
@@ -126,6 +210,10 @@ export function handPress({ story, outlet, headline = '', believed = null }) {
     rank: outlet.rank,
     truths: [],
     byHand: true,
+    // A gang's street paper (G1); its good word is always believed.
+    ...(outlet.gang ? { gang: true, grudge: story === 'friendly' ? null : outlet.gangName ?? null } : {}),
+    ...(outlet.street ? { street: true } : {}),
+    ...(story === 'friendly' ? { force: true, gangName: outlet.gangName ?? null } : {}),
     ...(headline ? { headline } : {}),
     ...(believed == null ? {} : { force: believed }),
   };
@@ -167,7 +255,7 @@ export function printPress(b, day, seed, out, p = BUSINESS_DEFAULTS, force = fal
   const event = b.period?.event;
   if (event?.kind !== 'press' || event.printed || (!force && day < event.printDay)) return false;
   judgeStory(event, createRng(seed, 'press-print', b.id, b.period.index).int(1, 10), p);
-  out.events.push({ type: 'pressPrinted', story: event.story, outlet: event.factionName, headline: event.headline ?? null });
+  if (!UNPRINTED.includes(event.story)) out.events.push({ type: 'pressPrinted', story: event.story, outlet: event.factionName, headline: event.headline ?? null, ...(event.street ? { street: true } : {}) });
   return true;
 }
 
@@ -176,9 +264,16 @@ export function pressFallout(b, settled, p = BUSINESS_DEFAULTS) {
   const event = b.period.event;
   if (event?.kind !== 'press' || !settled) return [];
   const scale = !event.believed || settled.outcome === 'answered' ? 0 : settled.outcome === 'failed' ? 0.5 : 1;
-  const rules = p.press.kinds[event.story];
-  if (rules.reputation && scale) b.state.reputation = clamp(b.state.reputation + rules.reputation * scale, 0, 100);
-  const percent = scale ? (rules.price ? event.percent : rules.pricePercent ?? 0) * scale : 0;
+  const gang = !!event.gang;
+  const rules = (gang ? p.press.gang.kinds[event.story] : null) ?? p.press.kinds[event.story];
+  const reputation = event.story === 'friendly' && event.allied ? rules.allied : rules.reputation;
+  if (reputation && scale) b.state.reputation = clamp(b.state.reputation + reputation * scale, 0, 100);
+  let percent = scale ? (rules.price ? event.percent : rules.pricePercent ?? 0) * scale : 0;
+  // A street paper barely reaches the market (G1).
+  if (gang && event.street && percent) percent = Math.sign(percent) * Math.min(Math.abs(percent), p.press.gang.priceCap);
+  // A turf warning keeps customers away for the weeks after; a tip makes next week's raid likelier.
+  if (event.story === 'keepAway' && scale) b.keepAway = { cut: rules.cut * scale, from: b.period.index + 1, until: b.period.index + rules.weeks };
+  if (event.story === 'snitch' && scale && openRoom(b)) b.backRoom = { ...b.backRoom, tipped: b.period.index + 1 };
   return [{
     type: 'pressResult',
     story: event.story,
@@ -188,6 +283,8 @@ export function pressFallout(b, settled, p = BUSINESS_DEFAULTS) {
     outcome: settled.outcome,
     percent,
     period: b.period.index,
+    ...(gang ? { gang: true, factionId: event.factionId ?? null } : {}),
+    ...(event.street ? { street: true } : {}),
     ...(rules.exposure && scale ? { exposure: rules.exposure * scale } : {}),
     regCase: !!rules.regCase && scale === 1 && event.rank >= STORY_RULES.caseRank && b.stage >= 1,
   }];
@@ -228,7 +325,8 @@ export const spansLimit = (day, days, p = BUSINESS_DEFAULTS) => days.some((d) =>
  * @returns {object|null}
  */
 export function drawCharacterPress({ id, actorId, name, day, truths, worst = null, businessId = null, stake = null, media = [], rng }, p = BUSINESS_DEFAULTS) {
-  const useMedia = media.length && (!worst || standingBand(worst.value, p) === 'hostile');
+  // A gang prints through its own street paper, never a media company (G1).
+  const useMedia = media.length && !worst?.gang && (!worst || standingBand(worst.value, p) === 'hostile');
   if (!useMedia && !worst) return null;
   const chosen = useMedia ? media[rng.int(0, media.length - 1)] : null;
   const story = truths.length && !rng.chance(p.press.smearShare) ? truths[rng.int(0, truths.length - 1)] : 'smear';
@@ -239,9 +337,10 @@ export function drawCharacterPress({ id, actorId, name, day, truths, worst = nul
     day,
     status: 'held',
     story,
-    outlet: chosen?.name ?? worst.name,
+    outlet: chosen?.name ?? (worst.gang ? worst.outlet : worst.name),
     grudge: worst?.name ?? null,
-    rank: chosen ? p.press.rank.media : p.press.rank.own,
+    rank: chosen ? p.press.rank.media : worst.gang ? p.press.gang.rank : p.press.rank.own,
+    ...(!chosen && worst?.gang ? { gang: true, street: true, factionId: worst.id } : {}),
     businessId,
     ...(story === 'hidden' ? { stake } : {}),
   };
@@ -260,6 +359,7 @@ export function answerCharacterPress(story, band) {
 export function settleCharacterPress(story, p = BUSINESS_DEFAULTS) {
   const rules = p.press.character.kinds[story.story];
   const scale = !story.believed || (story.answer && bandPassed(story.answer)) ? 0 : story.answer && story.answer !== 'fumble' ? 0.5 : 1;
-  const heat = (story.rank >= STORY_RULES.caseRank ? rules.heatMedia ?? rules.heat : rules.heat) * scale;
+  // A street paper's story about a character draws half the heat (G1).
+  const heat = (story.rank >= STORY_RULES.caseRank ? rules.heatMedia ?? rules.heat : rules.heat) * scale * (story.gang ? 0.5 : 1);
   return { scale, heat, reputation: rules.reputation * scale, percent: scale && rules.priceShare ? story.percent * rules.priceShare * scale : 0 };
 }

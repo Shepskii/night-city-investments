@@ -31,7 +31,7 @@ import {
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { NcmAdapter } from '../integrations/NcmAdapter.js';
-import { L, log, isActiveGM, isCharacter, isItemPile, unwrap } from '../utils/helpers.js';
+import { L, log, isActiveGM, isCharacter, isItemPile, unwrap, eventName } from '../utils/helpers.js';
 import { SerialQueue } from '../utils/queue.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
 import { CompanyRepository } from '../data/CompanyRepository.js';
@@ -1213,6 +1213,11 @@ class BusinessServiceImpl {
       underworld: this.underworldOn(),
       sharedLastDay: PressService.sharedLastDay(business),
       corps: factions.filter((f) => f.kind === 'corp').map((f) => ({ id: f.id, name: f.name, value: hiddenEntry?.standing?.[f.id]?.value ?? 0 })),
+      // Gangs on the business's turf, each with its street paper and any media company it uses (G1).
+      gangs: factions.filter((f) => f.kind === 'gang').map((f) => ({
+        id: f.id, name: f.name, value: hiddenEntry?.standing?.[f.id]?.value ?? 0, turf: !!business.district && (f.districts ?? []).includes(business.district),
+        outlet: OrgMail.paperOf(f), media: f.media ? CompanyRepository.all().find((c) => c.ticker === f.media && c.sector === 'media' && c.ticker !== business.company?.ticker)?.name ?? null : null,
+      })),
       media: CompanyRepository.all().filter((c) => c.sector === 'media' && c.ticker !== business.company?.ticker).map((c) => ({ name: c.name, ticker: c.ticker })),
     };
   }
@@ -1278,8 +1283,15 @@ class BusinessServiceImpl {
       return;
     }
     const result = !e.believed ? 'Ignored' : e.scale === 0 ? 'Answered' : e.scale < 1 ? 'Halved' : 'Full';
-    const said = OrgMail.outlet(e.outlet, null, `result${result}`, { name: b.name });
-    await this._mailRoom(b, L('NCI.Press.Mail.Subject', { name: b.name }), said?.paragraphs ?? [L(`NCI.Press.Mail.${result}`, { name: b.name, outlet: e.outlet })], { from: await ContactService.outlet(e.outlet).catch(() => null), footer: L(`NCI.Press.Mail.${result}Footer`) });
+    if (e.story === 'snitch') {
+      // Whoever passed on the tip says whether it reached Vice (G1).
+      const source = await this._fromSource();
+      await this._mailRoom(b, L('NCI.Press.Gang.SnitchSubject', { name: b.name }), [L(`NCI.Press.Gang.Snitch${e.scale ? 'Landed' : 'Stopped'}`, { name: b.name })], { from: source.from, anonymous: source.anonymous, footer: L(`NCI.Press.Gang.Snitch${e.scale ? 'Landed' : 'Stopped'}Footer`) });
+    } else if (e.story !== 'friendly') {
+      const said = e.street ? OrgMail.street(e.outlet, `result${result}`, { name: b.name }) : OrgMail.outlet(e.outlet, null, `result${result}`, { name: b.name });
+      const footer = e.story === 'keepAway' && e.scale ? L('NCI.Press.Gang.KeepAwayFooter', { pct: Math.round(BUSINESS_DEFAULTS.press.gang.kinds.keepAway.cut * e.scale * 100), weeks: BUSINESS_DEFAULTS.press.gang.kinds.keepAway.weeks }) : L(`NCI.Press.Mail.${result}Footer`);
+      await this._mailRoom(b, L('NCI.Press.Mail.Subject', { name: b.name }), said?.paragraphs ?? [L(`NCI.Press.Mail.${result}`, { name: b.name, outlet: e.outlet })], { from: await ContactService.outlet(e.outlet, e.factionId ?? null, !!e.street).catch(() => null), footer });
+    }
     if (ticker && e.percent) {
       const key = `press:${b.id}:${e.period}`;
       await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
@@ -2497,18 +2509,25 @@ class BusinessServiceImpl {
     if (!ids.length) return;
     const contactId = await ContactService.forSender(b, sender);
     if (!contactId) return;
-    await ContactService.share(contactId, ids);
+    // Someone passing on a gang's tip stays masked, and isn't given out (G1).
+    const masked = sender.kind === 'source';
+    if (!masked) await ContactService.share(contactId, ids);
     const staff = event.staffId ? (b.staff ?? []).find((s) => s.id === event.staffId)?.name ?? '' : '';
     // An organisation writes in its own voice (M3 step 2); the staff keep theirs for now.
     const voiced = OrgMail.event(b, event, sender)
       ?? (sender.kind === 'staff' ? PeopleMail.staffEvent(b, event, (b.staff ?? []).find((s) => s.id === sender.staffId)) : null);
-    const subject = OrgMail.subject(L('NCI.EventMail.Subject', { name: b.name, event: L(`NCI.Event.${event.kind}.Name`) }), voiced);
-    const lines = voiced?.paragraphs ?? [
-      L(`NCI.EventMail.Line.${event.kind}`, { name: b.name, staff, outlet: event.factionName ?? '' }),
-    ];
-    const footer = L(EVENTS[event.kind]?.good ? 'NCI.EventMail.Offer' : 'NCI.EventMail.Answer');
+    const subject = OrgMail.subject(L('NCI.EventMail.Subject', { name: b.name, event: eventName(event) }), voiced);
+    const story = event.kind === 'press' ? event.story : null;
+    const lines = [...(voiced?.paragraphs ?? [])];
+    if (!lines.length) lines.push(...[
+      story === 'snitch' ? L('NCI.Press.Gang.SnitchMail', { name: b.name, gang: event.grudge ?? '' }) : L(`NCI.EventMail.Line.${event.kind}`, { name: b.name, staff, outlet: event.factionName ?? '' }),
+    ]);
+    // Vice acting on a gang's tip says so (G1).
+    if (event.kind === 'bust' && event.tipped) lines.push(L('NCI.Press.Gang.Tipped'));
+    const footer = story === 'friendly' ? L('NCI.Press.Gang.FriendlyFooter') : L(EVENTS[event.kind]?.good ? 'NCI.EventMail.Offer' : 'NCI.EventMail.Answer');
+    const anonymous = masked ? { alias: L('NCI.Contacts.SourceAlias') } : null;
     for (const id of ids) {
-      const result = await MailService.fromContact(contactId, game.actors.get(id), { subject, lines, footer });
+      const result = await MailService.fromContact(contactId, game.actors.get(id), { subject, lines, footer, anonymous });
       if (!result?.ok) log.warn(`Event mail to ${id} failed: ${result?.error ?? 'no answer'}`);
     }
   }

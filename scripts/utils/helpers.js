@@ -21,6 +21,9 @@ export const log = {
 /** Localise a key, formatting it when there is data to fill in. */
 export const L = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 
+/** A week's event by name: a gang's turf warning, tip and good word have their own (G1). */
+export const eventName = (event) => (event?.kind === 'press' && ['keepAway', 'snitch', 'friendly'].includes(event.story) ? L(`NCI.Press.Name.${event.story}`) : L(`NCI.Event.${event?.kind}.Name`));
+
 /**
  * A record saved in the one-write form (wrapped in a one-element array, so a save replaces it rather
  * than merging into it), or an older unwrapped one.

@@ -223,7 +223,10 @@ export function raidChance(b, exposure, traits = null, p = BUSINESS_DEFAULTS) {
 /** A raid on the back room this week, or none. It comes in place of what the week would have drawn. */
 export function roomBust(b, seed = 'nci', p = BUSINESS_DEFAULTS, relations = null, traits = null) {
   if (!openRoom(b) || relations?.exposure == null) return null;
-  return createRng(seed, 'business-bust', b.id, b.period.index).chance(raidChance(b, relations.exposure, traits, p)) ? { kind: 'bust' } : null;
+  // A gang told NCPD Vice about it last week (G1).
+  const tipped = b.backRoom.tipped === b.period.index;
+  const chance = raidChance(b, relations.exposure, traits, p) * (tipped ? p.press.gang.kinds.snitch.raid : 1);
+  return createRng(seed, 'business-bust', b.id, b.period.index).chance(chance) ? { kind: 'bust', ...(tipped ? { tipped: true } : {}) } : null;
 }
 
 /**

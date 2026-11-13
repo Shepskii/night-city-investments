@@ -71,6 +71,7 @@
     <label>{{localize "NCI.Press.Run.Outlet"}}<select name="pressOutlet">
       {{#if pressRun.media.length}}<optgroup label="{{localize 'NCI.Press.Run.Media'}}">{{#each pressRun.media}}<option value="{{value}}">{{label}}</option>{{/each}}</optgroup>{{/if}}
       {{#if pressRun.corps.length}}<optgroup label="{{localize 'NCI.Press.Run.Corps'}}">{{#each pressRun.corps}}<option value="{{value}}">{{label}}</option>{{/each}}</optgroup>{{/if}}
+      {{#if pressRun.streets.length}}<optgroup label="{{localize 'NCI.Press.Run.Streets'}}">{{#each pressRun.streets}}<option value="{{value}}">{{label}}</option>{{/each}}</optgroup>{{/if}}
     </select></label>
     <label>{{localize "NCI.Press.Run.Believed"}}<select name="pressBelieved">
       <option value="">{{localize "NCI.Press.Run.Roll"}}</option>

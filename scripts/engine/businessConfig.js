@@ -842,6 +842,36 @@ export const BUSINESS_DEFAULTS = Object.freeze({
       service: Object.freeze({ reputation: -5 }),
       smear: Object.freeze({ reputation: -3, pricePercent: -2 }),
     }),
+    /**
+     * Gangs in the press (G1, DESIGN §36.18). A gang prints through a street paper of its own at `rank`, moving a
+     * listed price by at most `priceCap` percent. It draws on businesses on its turf: a hostile gang as a hostile
+     * corporation, a wary or neutral one at `share` of a corporation's chance. A friendly or allied gang puts out good
+     * word (`friendly`) for a business doing well: a profit over the last `weeks` and Reputation of `reputation` or more.
+     * Its kinds: the corporations' with smaller effects, `keepAway` (takings down by `cut` for `weeks`, halved if
+     * answered badly), `snitch` (the next week's raid chance times `raid`; needs a back room at `exposure` or worse),
+     * and `friendly` (Reputation up, needing no answer). `uses` are the extra ways to answer a gang's own kinds.
+     * `heat` is what a gang's story about a character adds (S1b).
+     */
+    gang: Object.freeze({
+      rank: 3,
+      priceCap: 1,
+      share: 0.5,
+      friendly: Object.freeze({ friendly: 0.02, allied: 0.04, weeks: 4, reputation: 50 }),
+      kinds: Object.freeze({
+        money: Object.freeze({ reputation: -2, price: true }),
+        crime: Object.freeze({ reputation: -3, exposure: 5, price: true }),
+        service: Object.freeze({ reputation: -5 }),
+        smear: Object.freeze({ reputation: -2, pricePercent: -1 }),
+        keepAway: Object.freeze({ cut: 0.1, weeks: 2 }),
+        snitch: Object.freeze({ raid: 2, exposure: 'low' }),
+        friendly: Object.freeze({ reputation: 2, allied: 3 }),
+      }),
+      uses: Object.freeze({
+        keepAway: Object.freeze([S.brawling, S.tactics, A.backup]),
+        snitch: Object.freeze([S.streetwise, S.bribery, S.persuasion, A.backup]),
+      }),
+      heat: 5,
+    }),
   }),
   /**
    * Regulators (R1, DESIGN §36.7): the chance of a case at each monthly report, by Exposure band; `notice`

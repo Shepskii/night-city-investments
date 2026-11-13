@@ -22,7 +22,9 @@ export function eventSender(b, event) {
   const kind = event?.kind;
   if (!kind || !EVENTS[kind]) return null;
   // The paper that prints it, never the corporation that may be behind it.
-  if (kind === 'press') return event.factionName ? { kind: 'outlet', name: event.factionName, ...(event.factionId ? { factionId: event.factionId } : {}) } : null;
+  // A tip to NCPD Vice is passed on by someone who heard it (G1); a street paper writes as itself.
+  if (kind === 'press' && event.story === 'snitch') return { kind: 'source' };
+  if (kind === 'press') return event.factionName ? { kind: 'outlet', name: event.factionName, ...(event.factionId ? { factionId: event.factionId } : {}), ...(event.street ? { street: true } : {}) } : null;
   // A faction's raid is the inspectors it tipped off, so the city sends it.
   if (kind === 'raid' || kind === 'inspection') return { kind: 'city' };
   if (kind === 'bust') return { kind: 'ncpd' };

@@ -10,6 +10,7 @@ import { FactionRepository } from '../../../data/FactionRepository.js';
 import { DistrictService } from '../../../services/DistrictService.js';
 import { ContactService } from '../../../services/ContactService.js';
 import { NcmAdapter } from '../../../integrations/NcmAdapter.js';
+import { CompanyRepository } from '../../../data/CompanyRepository.js';
 import { L } from '../../format.js';
 import { confirm, report } from '../shared.js';
 
@@ -20,7 +21,11 @@ const parseDistricts = (value) => String(value ?? '').split(/[\s,]+/).filter(Boo
 const rowFields = (target) => {
   const box = target.closest('[data-faction-row]');
   const value = (name) => box?.querySelector(`[name="${name}"]`)?.value ?? '';
-  return { name: value('name'), kind: value('kind'), ticker: value('ticker'), districts: parseDistricts(value('districts')), ...(value('voice') ? { voice: value('voice') } : {}) };
+  return {
+    name: value('name'), kind: value('kind'), ticker: value('ticker'), districts: parseDistricts(value('districts')), ...(value('voice') ? { voice: value('voice') } : {}),
+    // A gang's street paper (G1).
+    paper: value('paper'), media: value('media'),
+  };
 };
 
 async function onImport() {
@@ -97,11 +102,18 @@ export function context() {
   const senders = ContactService.senders();
   const contactName = (id) => (senders[`faction:${id}`] ? NcmAdapter.contact(senders[`faction:${id}`])?.name ?? '' : '');
   const messenger = NcmAdapter.available();
+  // A gang's street paper, and the media company a hostile gang may use instead (G1).
+  const mediaCos = CompanyRepository.all().filter((c) => c.sector === 'media');
+  const press = (f) => (f.kind !== 'gang' ? null : {
+    paper: f.paper ?? '',
+    placeholder: OrgMail.paperOf({ ...f, paper: '' }),
+    media: [{ value: '', label: L('NCI.Faction.MediaNone'), selected: !f.media }, ...mediaCos.map((c) => ({ value: c.ticker, label: c.name, selected: c.ticker === f.media }))],
+  });
   return {
     factions: {
       messenger,
       contactNames: messenger ? [...new Set(NcmAdapter.allContacts().map((c) => c.name).filter(Boolean))].sort((a, b) => a.localeCompare(b)) : [],
-      rows: factions.map((f) => ({ ...f, districtText: f.districts.join(', '), kinds: kinds(f.kind), contactName: messenger ? contactName(f.id) : '', voices: voices(f) })),
+      rows: factions.map((f) => ({ ...f, districtText: f.districts.join(', '), kinds: kinds(f.kind), contactName: messenger ? contactName(f.id) : '', voices: voices(f), press: press(f) })),
       newKinds: kinds('gang'),
       districtIds: DistrictService.idList(),
       districts: DistrictService.rows(),

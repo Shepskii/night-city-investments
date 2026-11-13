@@ -27,6 +27,9 @@ export function normalizeFaction(input = {}) {
     aliases: (Array.isArray(input.aliases) ? input.aliases : []).map((a) => text(a, 60)).filter(Boolean),
     // How its mail is worded (M3 step 2): one of its kind's styles, or blank for its default (orgVoice.js).
     ...(input.voice ? { voice: text(input.voice, 20) } : {}),
+    // A gang's street paper (G1): its name, blank for one from its style, and a media company's ticker it may use.
+    ...(input.paper ? { paper: text(input.paper, 60) } : {}),
+    ...(input.media ? { media: text(input.media, 5).toUpperCase() } : {}),
   };
 }
 

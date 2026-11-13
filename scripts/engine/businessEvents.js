@@ -89,7 +89,11 @@ export function eventUses(b, kind) {
   const seen = new Set();
   // A back room's own trouble is answered with what that room rolls (U3).
   const own = e.room ? BACK_ROOMS[b.archetype]?.[b.backRoom?.kind]?.uses ?? [] : [];
-  return [...(e.trade ? archetypeOf(b)?.trade ?? [] : []), ...own, ...e.uses].filter((u) => {
+  // A gang's turf warning can also be faced down; its tip to Vice is answered on the street (G1).
+  const story = kind === 'press' && b.period?.event?.kind === 'press' ? b.period.event.story : null;
+  const gangUses = story ? BUSINESS_DEFAULTS.press.gang.uses[story] ?? [] : [];
+  const base = story === 'snitch' ? [] : e.uses;
+  return [...(e.trade ? archetypeOf(b)?.trade ?? [] : []), ...own, ...base, ...gangUses].filter((u) => {
     const key = u.kind === 'ability' ? `a:${u.ability}` : `s:${u.skill}`;
     if (seen.has(key)) return false;
     seen.add(key);
