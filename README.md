@@ -1,5 +1,9 @@
 # Night City Investments
 
+![Foundry v12](https://img.shields.io/badge/Foundry-v12-informational)
+![System](https://img.shields.io/badge/system-cyberpunk--red--core-e5233d)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
+
 A living stock market for Cyberpunk RED in Foundry VTT. Characters trade corporate shares and funds through brokers or a CorpNet terminal, pool money in syndicates, and build their own businesses from a back-alley side hustle into a listed company. The GM steers the market, and gigs from Night City Map can move share prices.
 
 ## Requirements
