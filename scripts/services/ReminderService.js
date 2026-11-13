@@ -65,7 +65,11 @@ export const ReminderService = {
       switch (from.kind) {
         case 'business': return { id: await ContactService.business(b), alias: b?.name ?? '' };
         case 'syndicate': return { id: await ContactService.syndicate(s), alias: L('NCI.Contacts.Treasury', { name: s?.name ?? '' }) };
-        case 'outlet': return { id: from.name ? await ContactService.outlet(from.name, from.factionId ?? null) : null, alias: from.name || L('NCI.Contacts.Editor') };
+        case 'outlet': return { id: from.name ? await ContactService.outlet(from.name, from.factionId ?? null, !!from.street) : null, alias: from.name || L('NCI.Contacts.Editor') };
+        case 'source': {
+          const source = await ContactService.source();
+          return { id: source.id, alias: source.anonymous?.alias ?? '', anonymous: source.anonymous };
+        }
         case 'regulator': return { id: await ContactService.regulator(), alias: L('NCI.Contacts.Regulator') };
         case 'exchange': return { id: await ContactService.exchange(), alias: L('NCI.Contacts.Exchange') };
         case 'staff': {
@@ -121,7 +125,7 @@ export const ReminderService = {
         const actor = game.actors.get(id);
         if (!actor) continue;
         try {
-          const result = await NotificationService.deliver(actor, 'reminders', spec, from);
+          const result = await NotificationService.deliver(actor, 'reminders', from.anonymous ? { ...spec, anonymous: from.anonymous } : spec, from);
           if (result?.ok && !result.skipped) count++;
         } catch (error) {
           log.warn(`Reminder to ${actor.name} failed`, error);

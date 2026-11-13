@@ -55,8 +55,11 @@ export function businessReminders(b, day, p = BUSINESS_DEFAULTS) {
   if (period && dueSoon(period.endDay, day)) {
     const event = period.event;
     const answered = (period.slots ?? []).some((s) => s.action === 'respond');
-    if (event?.kind === 'press' && !answered) {
-      out.push({ key: `press:${b.id}:${period.index}`, kind: 'press', to: 'runners', from: { kind: 'outlet', name: event.factionName ?? '', factionId: event.factionId ?? null }, deadline: period.endDay, data: { name, outlet: event.factionName ?? '' } });
+    // A gang's good word needs no answer; its tip to Vice is chased by whoever passed it on (G1).
+    if (event?.kind === 'press' && !answered && event.story === 'snitch') {
+      out.push({ key: `press:${b.id}:${period.index}`, kind: 'snitch', to: 'runners', from: { kind: 'source' }, deadline: period.endDay, data: { name, gang: event.grudge ?? '' } });
+    } else if (event?.kind === 'press' && !answered && event.story !== 'friendly') {
+      out.push({ key: `press:${b.id}:${period.index}`, kind: 'press', to: 'runners', from: { kind: 'outlet', name: event.factionName ?? '', factionId: event.factionId ?? null, ...(event.street ? { street: true } : {}) }, deadline: period.endDay, data: { name, outlet: event.factionName ?? '' } });
     }
     const slots = p.stages[b.stage]?.slots ?? 1;
     const left = slots - (period.slots ?? []).length;

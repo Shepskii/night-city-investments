@@ -170,7 +170,7 @@ test('the Notifications choices: the weekly mail is opt-in, reminders and advert
 });
 
 test('every reminder kind has its words', () => {
-  for (const kind of ['vote', 'syndicateVote', 'press', 'characterPress', 'case', 'slots', 'raise', 'charter', 'takeover', 'cash']) {
+  for (const kind of ['vote', 'syndicateVote', 'press', 'snitch', 'characterPress', 'case', 'slots', 'raise', 'charter', 'takeover', 'cash']) {
     for (const part of ['Subject', 'Line', 'Footer']) assert.equal(typeof lookup(`NCI.Remind.${part}.${kind}`), 'string', `${part}.${kind}`);
   }
   for (let n = 1; n <= 4; n++) for (const part of ['Subject', 'Line']) assert.equal(typeof lookup(`NCI.Ads.${part}.${n}`), 'string');
@@ -217,4 +217,14 @@ test('the weekly mail\'s figures add up to the profit, and the cash to the rest'
   const digest = { endDay: DAY, takings: 1000, upkeep: 400, wages: 300, paid: 250, interest: 30, repaid: 200, stock: { margin: 120 }, event: { kind: 'accident', cost: 50 }, profit: 300, opening: 1000, till: 1100 };
   const [figures] = ReminderService.weekMail(b, digest, nova.id).lines;
   assert.equal(figures, 'Takings 1,000 eb, upkeep 400 eb, shop sales 120 eb over cost, wages 300 eb, loan interest 30 eb, a bill of 50 eb, other costs 40 eb: a profit of 300 eb. Other money out this week: 200 eb, such as loan repayments, draws, living costs or money put in; the cashbook lists each. Cash now 1,100 eb.');
+});
+
+test('a gang\'s good word sends no reminder; its tip to Vice is chased by the source', () => {
+  const week = (story) => shop({ stage: 1, period: { index: 3, startDay: DAY - 6, endDay: DAY + 1, slots: [{ action: 'work' }, { action: 'promote' }], event: { kind: 'press', story, gang: true, street: true, grudge: 'Tyger Claws', factionName: 'Claws Sheet' } } });
+  assert.deepEqual(businessReminders(week('friendly'), DAY), []);
+  const [tip] = businessReminders(week('snitch'), DAY);
+  assert.equal(tip.kind, 'snitch');
+  assert.deepEqual(tip.from, { kind: 'source' });
+  const [away] = businessReminders(week('keepAway'), DAY);
+  assert.deepEqual(away.from, { kind: 'outlet', name: 'Claws Sheet', factionId: null, street: true });
 });
