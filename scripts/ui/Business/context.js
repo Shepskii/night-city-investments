@@ -831,8 +831,8 @@ function eventContext(business, canAct, free) {
     hint: event.kind === 'press' ? L(`NCI.Press.Angle.${event.story}`) : L(`NCI.Event.${event.kind}.Hint`, { name: event.staffId ? staffOf(business, event.staffId)?.name ?? '' : '' }),
     // A faction's event says whose it is; force beats a gang's shakedown, at a price (F1b).
     from: event.factionName ? L(event.kind === 'shakedown' ? 'NCI.Event.FromGang' : 'NCI.Event.From', { faction: event.factionName }) : '',
-    good: !!def.good,
-    uses: L('NCI.Business.AnswerWith', { skills: uses.join(', ') }),
+    good: !!def.good || gangKind === 'friendly',
+    uses: gangKind === 'friendly' ? '' : L('NCI.Business.AnswerWith', { skills: uses.join(', ') }),
     answered: answer ? L('NCI.Business.TakenBy', { name: nameOf(business, answer.by), band: L(`NCI.Roll.Band.${answer.band}`) }) : '',
     security: def.security ? L('NCI.Business.SecurityNote') : '',
     // The GM may play a big one out at the table instead (X1).
