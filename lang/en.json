@@ -982,8 +982,8 @@
       "Subject": {
         "vote": "{name}: a vote closes tomorrow",
         "syndicateVote": "{name}: a vote closes tomorrow",
-        "press": "{name}: our deadline is tomorrow",
-        "characterPress": "Our deadline is tomorrow",
+        "press": "{name}: last chance to comment",
+        "characterPress": "Last chance to comment",
         "case": "{name}: your answer is due tomorrow",
         "slots": "{name}: the week closes tomorrow",
         "raise": "{name}: about that raise",
@@ -994,8 +994,8 @@
       "Line": {
         "vote": "A proposal for {name} is still waiting on your vote, and it closes tomorrow.",
         "syndicateVote": "A motion before {name} is still waiting on your vote, and it closes tomorrow.",
-        "press": "We still have no comment from {name}, and the story goes to print with or without one. Tomorrow is the last day to give us your side.",
-        "characterPress": "We still have no comment from you on our story, {name}. Tomorrow is the last day to give us your side.",
+        "press": "Our story on {name} is out, and we still have no comment from you. Tomorrow is the last day to give us your side before it settles.",
+        "characterPress": "Our story about you is out, {name}, and we still have no comment from you. Tomorrow is the last day to give us your side before it settles.",
         "case": "This office has had no answer from {name} on the case before it. The answer is due tomorrow; after that, the case is decided on what we have.",
         "slots": "The week at {name} closes tomorrow, and its action slots are not all used: {left} left of {slots}.",
         "raise": "I asked about a raise, and I'm still waiting to hear. The month ends tomorrow.",
