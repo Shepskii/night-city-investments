@@ -17,7 +17,7 @@ You work from two windows, both opened from the scene controls:
 - The **Market Terminal** (the chart icon in the first group) is for everything in Part 1.
 - The **Business** window (the shop icon) is for everything in Parts 2 and 3.
 
-**Colours:** with Pneuma's Visual Tools installed, the **Colour theme** module setting can match its skin: Dark, Light, Pneuma Dark, Pneuma Light or Pneuma Hub, and any Colorize colours. It is your own choice, and it starts on Night City red.
+**Colours:** with Pneuma's Visual Tools installed, the **Colour theme** module setting can match its skin: Dark, Light, Pneuma Dark, Pneuma Light or Pneuma Hub, and any Colorize colours. It is your own choice. It starts on matching, so a skin you turn on in Visual Tools shows here too; choose Night City red to keep this module red.
 
 ---
 

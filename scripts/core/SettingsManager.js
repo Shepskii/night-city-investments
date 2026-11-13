@@ -5,7 +5,7 @@
 
 import { DATE_FORMATS, setExtraDistricts } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
-import { THEMES, applyTheme, visualToolsActive } from './theme.js';
+import { DEFAULT_THEME, THEMES, applyTheme, visualToolsActive } from './theme.js';
 
 const CREW_TOOLS_ID = 'pneuma-crewtools';
 
@@ -359,7 +359,7 @@ export function registerSettings() {
     scope: 'client',
     config: visualToolsActive(),
     type: String,
-    default: THEMES.nightCity,
+    default: DEFAULT_THEME,
     choices: {
       [THEMES.nightCity]: 'NCI.Settings.Theme.NightCity',
       [THEMES.visualTools]: 'NCI.Settings.Theme.VisualTools',

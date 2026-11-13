@@ -10,6 +10,8 @@ import { MODULE_ID, SETTINGS } from '../utils/constants.js';
 
 export const VISUAL_TOOLS_ID = 'pneuma-visualtools';
 export const THEMES = Object.freeze({ nightCity: 'nightCity', visualTools: 'visualTools' });
+/** Matching by default: it only shows while a Visual Tools skin or Colorize is on, so a player has nothing more to set. */
+export const DEFAULT_THEME = THEMES.visualTools;
 
 export const visualToolsActive = () => !!game.modules?.get(VISUAL_TOOLS_ID)?.active;
 

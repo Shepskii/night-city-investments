@@ -1845,7 +1845,7 @@
       },
       "Theme": {
         "Name": "Colour theme",
-        "Hint": "Your own choice, for this module's windows and ticker. Matching uses whichever skin and colours you have set in Pneuma's Visual Tools, and stays red if you have none active.",
+        "Hint": "Your own choice, for this module's windows and ticker. Matching, the default, follows whichever skin and colours you have on in Pneuma's Visual Tools, and stays red while you have none. Choose Night City red to keep it red with a skin on.",
         "NightCity": "Night City red",
         "VisualTools": "Match Pneuma's Visual Tools"
       },

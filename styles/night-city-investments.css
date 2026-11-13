@@ -71,6 +71,9 @@
   /* The tabs. */
   --nci-tab-text: #d8d8d8;
   --nci-tab-on: #ff8a96;
+  /* A folder tab that is not open. */
+  --nci-tab-off: var(--nci-row);
+  --nci-tab-off-text: var(--nci-tab-text);
   --nci-count-bg: rgba(255, 42, 68, 0.22);
   --nci-count-text: #ffb3bc;
 
@@ -305,7 +308,8 @@
 .nci-app .nci-tabs.nci-groups button {
   margin-bottom: 0;
   padding: 8px 20px 8px 14px;
-  background: var(--nci-row) !important;
+  background: var(--nci-tab-off) !important;
+  color: var(--nci-tab-off-text) !important;
   border: 0;
   clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
   font: 700 15px/1.2 'Rajdhani', 'Segoe UI', sans-serif;
@@ -315,7 +319,7 @@
 .nci-app .nci-tabs.nci-groups button.active { background: var(--nci-active) !important; color: var(--nci-on-accent) !important; }
 .nci-app .nci-tabs.nci-subtabs button { padding: 7px 13px; font-size: 13px; }
 /* Starting a new business is not a folder. */
-.nci-app .nci-tabs.nci-groups button.nci-tab-new { background: none !important; clip-path: none; font-size: 13px; }
+.nci-app .nci-tabs.nci-groups button.nci-tab-new { background: none !important; color: var(--nci-up) !important; clip-path: none; font-size: 13px; }
 .nci-app .nci-actor { margin-left: auto; max-width: 220px; }
 /* The Business window's pickers, kept together at the right of the tab bar as the market window's is. */
 .nci-app .nci-tabs .nci-pickers { display: flex; gap: 6px; margin-left: auto; flex: 0 0 auto; }
@@ -574,6 +578,11 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) :is(.nci-app, .nci-tic
   --nci-row-hover: color-mix(in srgb, var(--nci-accent) 25%, var(--nci-row));
   --nci-tab-text: var(--nci-text);
   --nci-tab-on: var(--nci-label);
+  /* Folder tabs and table headings as the skin draws a sheet's: its closed-tab and heading colours. */
+  --nci-tab-off: var(--cpr-background-tab-inactive, var(--nci-row));
+  --nci-tab-off-text: var(--cpr-text-tab-normal, var(--nci-text));
+  --nci-head-bg: var(--cpr-background-header, var(--nci-accent-bg));
+  --nci-head-text: var(--cpr-text-header, var(--nci-label));
   --nci-count-bg: color-mix(in srgb, var(--nci-accent) 22%, transparent);
   --nci-count-text: var(--nci-label);
   --nci-glass: color-mix(in srgb, var(--nci-window) 88%, transparent);
@@ -606,7 +615,8 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) :is(.nci-app, .nci-tic
   --nci-cell-good: color-mix(in srgb, var(--nci-up) 60%, var(--nci-window));
 }
 /* Foundry's own dark table header and black text shadows, which only suit a dark window. */
-html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .application.nci-app table thead { background: var(--nci-accent-bg); }
+html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .application.nci-app table thead { background: var(--nci-head-bg); }
+html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .application.nci-app table thead th { color: var(--nci-head-text); }
 html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .nci-app :is(h1, h2, h3, h4, th) { text-shadow: none; }
 
 /* The workshop's item list says what each item takes, so it needs the room (P1a). */

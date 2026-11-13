@@ -29,6 +29,22 @@ test('matching reads what Visual Tools publishes, and only applies with a skin o
   for (const name of ['--pvt-custom-main', '--pvt-base-accent', '--cpr-background-window', '--cpr-text-normal', '--cpr-text-chat-success', '--cpr-text-chat-failure', '--cpr-background-tab-active']) assert.ok(matched.includes(`var(${name}`), name);
 });
 
+test('closed folder tabs and table headings take the skin\'s own colours, as a sheet does', () => {
+  for (const name of ['--cpr-background-tab-inactive', '--cpr-text-tab-normal', '--cpr-background-header', '--cpr-text-header']) assert.ok(matched.includes(`var(${name}`), name);
+  assert.match(css, /\.nci-tabs\.nci-groups button \{[^}]*background: var\(--nci-tab-off\) !important;[^}]*color: var\(--nci-tab-off-text\) !important;/);
+  assert.match(css, /table thead \{ background: var\(--nci-head-bg\); \}/);
+  assert.match(css, /table thead th \{ color: var\(--nci-head-text\); \}/);
+  // The folder tabs' colour must not take the green from starting a new business.
+  assert.match(css, /\.nci-groups button\.nci-tab-new \{[^}]*color: var\(--nci-up\) !important;/);
+});
+
+test('matching is the default, so a player with a skin on needs no second setting', async () => {
+  const { DEFAULT_THEME, THEMES } = await import('../scripts/core/theme.js');
+  assert.equal(DEFAULT_THEME, THEMES.visualTools);
+  const settings = readFileSync(fileURLToPath(new URL('../scripts/core/SettingsManager.js', import.meta.url)), 'utf8');
+  assert.match(settings, /SETTINGS\.THEME, \{[\s\S]*?default: DEFAULT_THEME,/);
+});
+
 test('the setting: the class follows the choice, and needs the module', async () => {
   const { applyTheme, matchesVisualTools, THEMES } = await import('../scripts/core/theme.js');
   const toggled = [];
