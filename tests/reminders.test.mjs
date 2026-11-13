@@ -49,7 +49,7 @@ before(async () => {
 
 const DAY = 100;
 const shop = (over = {}) => normalizeBusiness({
-  id: 'bus_shack', name: 'Ripper Shack', status: 'open', stage: 0, archetype: 'clinic', location: 'Watson', officers: [], till: 500,
+  id: 'bus_shack', name: 'Ripper Shack', status: 'open', stage: 0, archetype: 'clinic', location: 'Kabuki back room', officers: [], till: 500,
   partners: [{ actorId: nova.id, status: 'active', units: 60, voting: true }, { actorId: rook.id, status: 'active', units: 40, voting: true }],
   staff: [], proposals: [],
   period: { index: 3, startDay: DAY - 6, endDay: DAY + 1, slots: [{ action: 'work', by: nova.id }], event: null },
@@ -186,7 +186,7 @@ test('the service: a reminder goes once, from the business, by each character\'s
   assert.equal(sent[0].toActorId, nova.id);
   assert.equal(sent[0].fromContactId, contacts.find((c) => c.name === 'Ripper Shack').id);
   assert.match(sent[0].subject, /Ripper Shack: the week closes tomorrow/);
-  assert.match(sent[0].body, /2 of 2 action slots/);
+  assert.match(sent[0].body, /2 left of 2/);
   assert.equal(await ReminderService.onTick(), 0, 'not twice');
   assert.equal(sent.length, 1);
 });
@@ -195,16 +195,17 @@ test('the service: the week by mail for those who asked, and an advert to everyo
   sent.length = 0;
   ReminderService.day = () => DAY;
   await nova.setFlag(MODULE_ID, FLAGS.PREFS, { notify: { business: 'mail' } });
-  const b = shop({ id: 'bus_ad', name: 'Ad Shack' });
-  const digest = { index: 3, startDay: DAY - 7, endDay: DAY, takings: 900, upkeep: 300, profit: 600, till: 1500, actions: [{ action: 'promote', band: 'exceptional' }], event: { kind: 'inspection' } };
+  const b = shop({ id: 'bus_ad', name: 'Ad Shack', district: 'watson' });
+  const digest = { index: 3, startDay: DAY - 7, endDay: DAY, takings: 900, upkeep: 300, paid: 200, profit: 400, till: 1500, actions: [{ action: 'promote', band: 'exceptional' }], event: { kind: 'inspection' } };
   await ReminderService.afterCommit(b, [{ type: 'periodClosed', digest }]);
   const week = sent.filter((m) => /the week to/.test(m.subject));
   assert.deepEqual(week.map((m) => m.toActorId), [nova.id], 'only the runner who asked');
-  assert.match(week[0].body, /Takings 900 eb, upkeep 300 eb: a profit of 600 eb\. Cash now 1,500 eb\./);
+  assert.match(week[0].body, /Takings 900 eb, upkeep 300 eb, wages 200 eb: a profit of 400 eb\. Cash now 1,500 eb\./);
   assert.match(week[0].body, /Nothing is waiting on you/);
   const ads = sent.filter((m) => !/the week to/.test(m.subject));
   assert.deepEqual(ads.map((m) => m.toActorId), [vex.id], 'not those who run it');
-  assert.match(ads[0].body, /Watson/);
+  assert.match(ads[0].body, /Watson/, 'the district, not the business own note');
+  assert.doesNotMatch(ads[0].body, /back room/);
   sent.length = 0;
   await ReminderService.afterCommit(b, [{ type: 'periodClosed', digest }]);
   assert.equal(sent.filter((m) => !/the week to/.test(m.subject)).length, 0, 'one advert in four weeks');

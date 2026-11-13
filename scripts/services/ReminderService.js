@@ -20,6 +20,7 @@ import { BusinessRepository } from '../data/BusinessRepository.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
 import { MarketClock } from './MarketClockService.js';
 import { ContactService } from './ContactService.js';
+import { DistrictService } from './DistrictService.js';
 import { MailService } from './MailService.js';
 import { NotificationService } from './NotificationService.js';
 
@@ -142,10 +143,13 @@ export const ReminderService = {
       w.regCase ? L('NCI.WeekMail.Case') : '',
     ].filter(Boolean);
     const profit = digest.profit ?? 0;
+    // Wages and loan payments come out too, so the figures add up to the profit.
+    const loans = (digest.interest ?? 0) + (digest.repaid ?? 0);
+    const more = (digest.paid ? L('NCI.WeekMail.Wages', { n: eb(digest.paid) }) : '') + (loans ? L('NCI.WeekMail.Loans', { n: eb(loans) }) : '');
     return {
       subject: L('NCI.WeekMail.Subject', { name: b.name, date: MarketClock.displayDate(digest.endDay * 86400000) }),
       lines: [
-        L('NCI.WeekMail.Figures', { takings: eb(digest.takings), upkeep: eb(digest.upkeep), result: L(profit < 0 ? 'NCI.WeekMail.Loss' : 'NCI.WeekMail.Profit'), profit: eb(Math.abs(profit)), till: eb(digest.till) }),
+        L('NCI.WeekMail.Figures', { takings: eb(digest.takings), upkeep: eb(digest.upkeep), more, result: L(profit < 0 ? 'NCI.WeekMail.Loss' : 'NCI.WeekMail.Profit'), profit: eb(Math.abs(profit)), till: eb(digest.till) }),
         digest.event?.kind ? L('NCI.WeekMail.Event', { event: L(`NCI.Event.${digest.event.kind}.Name`) }) : '',
         items.length ? L('NCI.WeekMail.Waiting', { items: items.join('; ') }) : L('NCI.WeekMail.Nothing'),
       ].filter(Boolean),
@@ -178,7 +182,8 @@ export const ReminderService = {
   adWords(b, reason, day) {
     const n = createRng('nci-ad', b.id, day).int(1, AD_VARIANTS);
     const kind = archetypeOf(b) ? L(`NCI.Business.Archetype.${b.archetype}.Name`) : '';
-    const data = { name: b.name, location: b.location || L('NCI.Ads.Anywhere'), kind: kind.toLowerCase() };
+    // The district, as the street knows it: the business's own location may be a note such as a back room.
+    const data = { name: b.name, location: (b.district && DistrictService.name(b.district)) || L('NCI.Ads.Anywhere'), kind: kind.toLowerCase() };
     return {
       subject: L(`NCI.Ads.Subject.${n}`, data),
       lines: [L(`NCI.Ads.Line.${n}`, data), reason === 'storefront' ? L('NCI.Ads.Storefront') : ''].filter(Boolean),
