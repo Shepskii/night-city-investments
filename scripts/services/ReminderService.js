@@ -146,10 +146,13 @@ export const ReminderService = {
     // Wages and loan payments come out too, so the figures add up to the profit.
     const loans = (digest.interest ?? 0) + (digest.repaid ?? 0);
     const more = (digest.paid ? L('NCI.WeekMail.Wages', { n: eb(digest.paid) }) : '') + (loans ? L('NCI.WeekMail.Loans', { n: eb(loans) }) : '');
+    // Money that moved outside the week's sums (draws, living costs, top-ups), so the cash adds up.
+    const rest = digest.opening != null ? Math.round(digest.till - digest.opening - profit) : 0;
+    const other = rest ? L('NCI.WeekMail.Other', { dir: L(rest < 0 ? 'NCI.WeekMail.Out' : 'NCI.WeekMail.In'), n: eb(Math.abs(rest)) }) : '';
     return {
       subject: L('NCI.WeekMail.Subject', { name: b.name, date: MarketClock.displayDate(digest.endDay * 86400000) }),
       lines: [
-        L('NCI.WeekMail.Figures', { takings: eb(digest.takings), upkeep: eb(digest.upkeep), more, result: L(profit < 0 ? 'NCI.WeekMail.Loss' : 'NCI.WeekMail.Profit'), profit: eb(Math.abs(profit)), till: eb(digest.till) }),
+        L('NCI.WeekMail.Figures', { takings: eb(digest.takings), upkeep: eb(digest.upkeep), more, other, result: L(profit < 0 ? 'NCI.WeekMail.Loss' : 'NCI.WeekMail.Profit'), profit: eb(Math.abs(profit)), till: eb(digest.till) }),
         digest.event?.kind ? L('NCI.WeekMail.Event', { event: L(`NCI.Event.${digest.event.kind}.Name`) }) : '',
         items.length ? L('NCI.WeekMail.Waiting', { items: items.join('; ') }) : L('NCI.WeekMail.Nothing'),
       ].filter(Boolean),

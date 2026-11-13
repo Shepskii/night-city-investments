@@ -1018,7 +1018,10 @@
     },
     "WeekMail": {
       "Subject": "{name}: the week to {date}",
-      "Figures": "Takings {takings} eb, upkeep {upkeep} eb{more}: a {result} of {profit} eb. Cash now {till} eb.",
+      "Figures": "Takings {takings} eb, upkeep {upkeep} eb{more}: a {result} of {profit} eb.{other} Cash now {till} eb.",
+      "Other": " Other money {dir} this week: {n} eb, such as draws, living costs or money put in.",
+      "In": "in",
+      "Out": "out",
       "Wages": ", wages {n} eb",
       "Loans": ", loan payments {n} eb",
       "Profit": "profit",

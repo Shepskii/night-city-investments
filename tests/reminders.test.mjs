@@ -196,11 +196,11 @@ test('the service: the week by mail for those who asked, and an advert to everyo
   ReminderService.day = () => DAY;
   await nova.setFlag(MODULE_ID, FLAGS.PREFS, { notify: { business: 'mail' } });
   const b = shop({ id: 'bus_ad', name: 'Ad Shack', district: 'watson' });
-  const digest = { index: 3, startDay: DAY - 7, endDay: DAY, takings: 900, upkeep: 300, paid: 200, profit: 400, till: 1500, actions: [{ action: 'promote', band: 'exceptional' }], event: { kind: 'inspection' } };
+  const digest = { index: 3, startDay: DAY - 7, endDay: DAY, takings: 900, upkeep: 300, paid: 200, profit: 400, opening: 2200, till: 1500, actions: [{ action: 'promote', band: 'exceptional' }], event: { kind: 'inspection' } };
   await ReminderService.afterCommit(b, [{ type: 'periodClosed', digest }]);
   const week = sent.filter((m) => /the week to/.test(m.subject));
   assert.deepEqual(week.map((m) => m.toActorId), [nova.id], 'only the runner who asked');
-  assert.match(week[0].body, /Takings 900 eb, upkeep 300 eb, wages 200 eb: a profit of 400 eb\. Cash now 1,500 eb\./);
+  assert.match(week[0].body, /Takings 900 eb, upkeep 300 eb, wages 200 eb: a profit of 400 eb\. Other money out this week: 1,100 eb, such as draws, living costs or money put in\. Cash now 1,500 eb\./);
   assert.match(week[0].body, /Nothing is waiting on you/);
   const ads = sent.filter((m) => !/the week to/.test(m.subject));
   assert.deepEqual(ads.map((m) => m.toActorId), [vex.id], 'not those who run it');
