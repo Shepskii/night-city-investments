@@ -2607,6 +2607,78 @@ A story about a character also costs the business they run with the worst standi
 
 **Not simulated.** Hostile corporations, press, raids and back rooms; Shady's real risk, as the Exposure from shortcuts has no consequence in this run, so its profit flatters it; Luck on shifts; and a real company's cash needs.
 
+### 36.18 G1 Gangs in the press: the plan (the user's choices, 2026-11-13; not built)
+
+**Decided.** Gangs get their own outlets, a new **street tier** at rank 3: pirate screamsheets, graffiti boards and street radio. A gang's story can be any of the existing kinds, a **snitch** to NCPD Vice, a **keep away** warning on its turf, or **friendly press** from an allied gang.
+
+**What exists to build on.** S1's weekly draw (`drawPress`, `pressChance`, `pressTruths`) reads the worst standing with a *corporation* only, and a gang's hostility shows as shakedowns and sabotage (F1b). Gangs already have turf (`turfFactions`, the districts on the Factions tab), per-business standing, voices in eight styles (M3), and contacts. A raid on a back room is drawn from its Exposure (U1b). The 28-day limit, GM approval, **Let it run** and **Spike it**, the answer roll, the print day, Believability (`rollStory` by rank) and the mail from the outlet all stay as they are.
+
+**Who prints.** A gang has no press of its own, so each gang is given a street outlet the first time it needs one, named from its style (*Claws Street Sheet*, *Maelstrom Pirate Feed*), with its own contact; the GM can rename it on the Factions tab. Rank 3: Believability about 2 in 10, a price move of at most 1% and only for a listed company, and never a regulator's case. A gang allied with a market media company may use that company instead (rank 6), for a story about a business on its turf.
+
+**When a gang draws a story.** In the same weekly check as a corporation's, for businesses on the gang's turf (its districts; a business with no district is on nobody's turf). The worst of the corporations and the gangs draws, as now. Starting chances, for the simulator: a hostile gang as a hostile corporation's, wary at half a corporation's, and **friendly press** at 2% a week from a friendly gang and 4% from an allied one, only when the business is doing well (a profit in the last four weeks and Reputation 50 or more). A story still takes the week's event slot, and the 28 days count for every kind.
+
+**What a gang's story says.**
+
+| Kind | When it's true | Effect if believed and not answered | Notes |
+|---|---|---|---|
+| Smear | Always | Reputation -2 (a corporation's is -3) | The tabloid lie: harder to believe |
+| Crime exposé | Exposure moderate or higher, or a recent raid | Reputation -3, Exposure +5; no regulator's case | Rank 3 can't open one |
+| Money trouble, poor service | As now | As now, with rank 3's smaller price move | |
+| **Keep away** (new) | A hostile gang, on its turf | Takings -10% for two weeks (-5% if answered badly); no price move | The street hears it, not the market |
+| **Snitch** (new) | The business has a back room with Exposure low or higher | No headline: next week's raid chance doubled, and Vice's mail names a tip | Answered as now; a pass means the tip went nowhere |
+| **Friendly press** (new) | A friendly or allied gang | Reputation +2, or +3 when allied | Needs no answer; mailed by the gang as a favour |
+| Dirty dealing, about a character | Heat noticed or higher, and a business they run on the gang's turf | Heat +5 (half a corporation's) | The character's own check, as S1b |
+
+**The GM.** On Pending as now, with the gang named as the grudge and its street outlet as the paper. **Run a story** on Market > Events gets the street tier and the three new kinds. The frequency setting covers gangs too.
+
+**Parts.** G1a: street outlets, the gang draw and the existing kinds at rank 3, with the press simulator extended to gangs. G1b: keep away, snitch and friendly press. G1c: street-paper voices in the eight gang styles, the outlet name on the Factions tab, and the guides.
+
+**To decide before building:** whether the owners see a snitch at all (my recommendation: yes, as word that someone talked, so it can be answered), and the starting numbers once the simulator has run.
+
+### 36.19 C1 Market contracts for production: the plan (the user's choices, 2026-11-13; not built)
+
+**Decided.** A market corporation can order goods from a player workshop. Offers are drawn, and wait on Pending for the GM; the GM can also write one by hand on the Production tab.
+
+**What exists to build on.** P1's workshop (benches 1, 2 or 4), item lists by kind of business, runs at the Fabrication table's DVs and times, stock on the record and the storeroom sheet, shop sales at 70% and fencing at 90%. Market corporations have sectors, factions with standing, and HR contacts (N4). A kind of business already has a sector (`charterSector`). A gig's small price move (`makeImpact`) and standing from a contract gig (F1a).
+
+**The offer.** At each month's close, a business with a workshop may be offered one contract by a corporation in a sector that buys what it makes: a gun shop's by arms and security, a clinic's by biotech and health, a garage's by transport, an info shop's by tech, a boutique's by consumer, a Media's by media. Starting chances: neutral 10%, friendly 20%, allied 30%; wary or hostile, none. The terms come from what the workshop can make:
+- **The item:** one from the business's item list, at or under its top tier, and legal.
+- **How many:** two to four weeks of its benches' output, at most `runMax` a run.
+- **The price:** the full market price a unit (the shop gets 70%), plus 10% if every unit is excellent quality.
+- **The deadline:** four weeks. **An advance** of 25% into the cash when it is signed.
+
+**Accepting.** The offer reaches the runners by mail from the corporation (its HR contact and voice, M3) and shows on the Production tab. Taking it is a vote, by the rule for spending (majority); turning it down, or letting it lapse after seven days, costs nothing.
+
+**Making and delivering.** Runs made while a contract is open fill it first, then go to stock; stock of the same item can be put towards it. When the count is reached it is delivered at the next close: the rest of the price into the cash, standing +5 with the corporation, and, if it is listed, a small lift in its price, as a small gig's. **Late or short:** at the deadline, what has been made is paid for at the shop's 70% with the advance counted against it, standing -5, and Reputation -2. A run that leaves it short says so in the week's mail.
+
+**The GM.** Pending gets each drawn offer, for **Offer it** (terms editable) or **Drop it**. The Production tab gets **Write a contract**: a corporation, item, count, price and deadline. A world setting, **Contracts for workshops**: Off, Rare or Normal, Normal by default.
+
+**Parts.** C1a: the offer and its terms, the GM's Pending row and Production tab form, and the vote. C1b: filling and delivering, the money and standing, the price lift, and the mail. C1c: the guides and a live test.
+
+**To decide before building:** whether gangs can order illegal goods through a back room on the same terms (paid in dirty cash), and whether a company (stage 2) can hold two contracts at once.
+
+### 36.20 X2 Rivalry against NPCs and the GM: the plan (the user's choices, 2026-11-13; not built)
+
+**Decided.** Rivalry between players is dropped: private share deals, NET runs and moves between players' businesses won't be built. Its four features are kept, aimed at NPC-owned companies (N1), market corporations and NPC investors, and as tools for the GM to turn on the players.
+
+**X2a NET runs.**
+- *Players against NPCs.* A Netrunner runs against an NPC company or a market corporation, from the Business window or the heat panel, once a week, for a business day or 100 eb of legwork. First an opposed roll, Interface + 1d10 against the target's NET (an NPC company by stage, a corporation by size), since a full Messenger network with ICE waits on Messenger (§36.4, MESSENGER-REQUESTS §6). A pass brings back a **data shard** in Messenger. From a corporation it says what its next report or news will be: insider knowledge (heat if traded, as for gig runners) and evidence for a Media's story. From an NPC company it is the real ledger: cash, Exposure band and who really owns it, evidence for a Lawman's investigation (X2d). A failure is traced: heat +5 and standing -10 with the target. A fumble is also an ICE hit, for the GM to play.
+- *The GM against players.* A new event, **a breach**, from a hostile corporation or gang, answered by a Netrunner partner or employee (Interface) or helped by a security project. Lost, the ledger leaks: the next press story about the business is true (money trouble or crime), or a hidden holder is unmasked, as an NCPD audit would.
+
+**X2b Moves against NPC rivals.**
+- *Players against NPC companies.* Two new weekly actions aimed at a named NPC company: **Poach** one of its employees (Persuasion or Bribery against their Loyalty; a pass hires them at their wage plus 10%) and **Sabotage** (Stealth or Basic Tech against its security; a pass cuts its next week's takings by 20% and dents its Reputation, with Exposure +5 for you; a fumble costs standing with its owner's faction). Shown only when there is an NPC company to aim at.
+- *The GM against players.* On the Businesses tab, **Make a move** for an NPC company against a player business: poach (an opposed roll against the employee's Loyalty, mailed from the rival), sabotage (as the week's event, from the rival), or a story through a press outlet (S1 by hand). An NPC company's profile could gain an *aggressive* trait that makes these moves now and then, with GM approval as for the press.
+
+**X2c Deals with NPC investors.**
+- *An NPC buys in.* A business doing well (a profit four weeks running) may get an offer from an NPC investor (a Messenger contact tagged investor): new units for cash, or one partner's stake at a premium. The GM approves on Pending; the partners vote, or the selling partner says yes. The investor becomes a silent NPC partner, as in v0.25.1.
+- *A player buys from an NPC.* **Make an offer** to an NPC partner or the receivers for their units, or for a block of a listed company's float off the market (outside the daily cap, at a premium of at least 10%). The GM answers on Pending, as for NPC investors today.
+
+**X2d Lawman investigations.** A Lawman's **Open an investigation**, on the heat panel, against an NPC company or a market corporation: Backup against DV 15 for an NPC company up to 21 for a big corporation, 500 eb, once in 28 days. Evidence from a NET run or a Media story adds +2. A pass opens a regulator's case against an NPC company (R1, run by the GM) or, for a corporation, a price drop of 2 to 6% with a headline, and standing -15 with it. A fumble: the corporation runs a story about the character (S1b), and heat +10.
+
+**Order.** X2d and X2a share evidence, so: X2d, X2a, X2b, then X2c. Each part can be its own release.
+
+**To decide before building:** the NET run's numbers (DV by target, heat), whether an *aggressive* NPC company moves by itself or only when the GM says, and how big an NPC investor's offer can be.
+
 ## 37. Roadmap
 
 | Phase | Deliverable |
@@ -2633,7 +2705,7 @@ A story about a character also costs the business they run with the worst standi
 | R1 | **Done (v0.16.0), see §36.7.** Regulators: Exposure opens cases, by a monthly chance and by triggers, that an officer fights with an opposed roll; fines wait for the GM |
 | R2 | **Done (v0.16.0), see §36.7.** Role abilities: a player rolls rank + 9 in business rolls, as staff do |
 | F1 | **Done (v0.17.0), see §36.3 and §36.7.** Faction standing with corps and gangs, moved by gigs and business actions; smear campaigns through the impact pipeline; Media rumours and published stories moving prices; after R1 |
-| X1 | **Part done (v0.18.0), see §36.7:** big events as scenes, and more for Lawmen, Nomads and Rockerboys. **Still proposed:** player rivalry: private share deals, Netrunner runs on a company's NET, poaching and sabotage; after F1 |
+| X1 | **Done (v0.18.0), see §36.7:** big events as scenes, and more for Lawmen, Nomads and Rockerboys. Rivalry between players is dropped (the user, 2026-11-13); its features against NPCs are X2 |
 | B7 | **Done (v0.20.0), see §36.9.** B7a Teamwork against the rulebook, B7b Crew Tools downtime, B7c REP and IP, B7d living costs and B7e businesses on Night City Map, with the bridge at 0.3.0 |
 | U1 | **Done (v0.19.0), see §36.1 and §36.8.** Fronts: back rooms, dirty cash and laundering, raids, gang relationships, back-room staff; after F1 and B6 |
 | UI | **Done (v0.19.0), see §36.8.** The Market Terminal and Business window in folders and tabs, Pending for GM and players, Exposure as a bar, tickers in news, a colour theme matching Pneuma's Visual Tools |
@@ -2643,4 +2715,7 @@ A story about a character also costs the business they run with the worst standi
 | S1 | **Done (v0.24.0), see §36.13.** Press: non-player companies run stories against player companies and characters, driven by standing and heat; rumours before print and **Run a story** |
 | N | **Done (v0.24.0), see §36.17.** NPC-owned companies that run themselves, a job board and weekly shifts for player characters, and jobs at market corporations (N0 to N4) |
 | M | **Part done, see §36.4.** M1 contacts pushed to players (v0.23.0); M2 events by mail, and staff and employers as contacts (v0.25.0). M3 mail in character (v0.25.0): the right senders with the rules apart, organisations' and people's voices, answers, and the treasury, the Exchange by context and newswire headlines. v0.25.1: NPC investors answered by the GM, and the cap table's player or NPC note and job titles (§36.16). v0.25.2: owners on business pins, for the bridge's 0.4.0 categories (§36.9). M4: the weekly mail, reminders and adverts, as Notifications. Still proposed: a business's own inbox, underworld shards, company networks |
+| G1 | **Planned, see §36.18.** Gangs in the press: street outlets at rank 3, the existing kinds, snitching, keep away and friendly press |
+| C1 | **Planned, see §36.19.** Market contracts for production: drawn monthly by sector and standing, GM approval, an advance, delivery and penalties |
+| X2 | **Planned, see §36.20.** Rivalry against NPCs and the GM: NET runs, moves against NPC companies, deals with NPC investors, Lawman investigations |
 | Later | Short selling and margin, options |
