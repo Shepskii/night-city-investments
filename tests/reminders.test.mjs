@@ -196,11 +196,11 @@ test('the service: the week by mail for those who asked, and an advert to everyo
   ReminderService.day = () => DAY;
   await nova.setFlag(MODULE_ID, FLAGS.PREFS, { notify: { business: 'mail' } });
   const b = shop({ id: 'bus_ad', name: 'Ad Shack', district: 'watson' });
-  const digest = { index: 3, startDay: DAY - 7, endDay: DAY, takings: 900, upkeep: 300, paid: 200, profit: 400, opening: 2200, till: 1500, actions: [{ action: 'promote', band: 'exceptional' }], event: { kind: 'inspection' } };
+  const digest = { index: 3, startDay: DAY - 7, endDay: DAY, takings: 900, upkeep: 300, paid: 150, wages: 200, owed: 50, profit: 400, opening: 2200, till: 1500, actions: [{ action: 'promote', band: 'exceptional' }], event: { kind: 'inspection' } };
   await ReminderService.afterCommit(b, [{ type: 'periodClosed', digest }]);
   const week = sent.filter((m) => /the week to/.test(m.subject));
   assert.deepEqual(week.map((m) => m.toActorId), [nova.id], 'only the runner who asked');
-  assert.match(week[0].body, /Takings 900 eb, upkeep 300 eb, wages 200 eb: a profit of 400 eb\. Other money out this week: 1,100 eb, such as draws, living costs or money put in\. Cash now 1,500 eb\./);
+  assert.match(week[0].body, /Takings 900 eb, upkeep 300 eb, wages 200 eb: a profit of 400 eb\. Other money out this week: 1,100 eb, such as loan repayments, draws, living costs or money put in; the cashbook lists each\. Cash now 1,500 eb\./);
   assert.match(week[0].body, /Nothing is waiting on you/);
   const ads = sent.filter((m) => !/the week to/.test(m.subject));
   assert.deepEqual(ads.map((m) => m.toActorId), [vex.id], 'not those who run it');
@@ -209,4 +209,12 @@ test('the service: the week by mail for those who asked, and an advert to everyo
   sent.length = 0;
   await ReminderService.afterCommit(b, [{ type: 'periodClosed', digest }]);
   assert.equal(sent.filter((m) => !/the week to/.test(m.subject)).length, 0, 'one advert in four weeks');
+});
+
+test('the weekly mail\'s figures add up to the profit, and the cash to the rest', () => {
+  const b = shop();
+  // 1,000 + 120 - 400 - 300 - 30 - 50 - 40 (a shift bonus) = 300; the cash also lost a 200 eb repayment.
+  const digest = { endDay: DAY, takings: 1000, upkeep: 400, wages: 300, paid: 250, interest: 30, repaid: 200, stock: { margin: 120 }, event: { kind: 'accident', cost: 50 }, profit: 300, opening: 1000, till: 1100 };
+  const [figures] = ReminderService.weekMail(b, digest, nova.id).lines;
+  assert.equal(figures, 'Takings 1,000 eb, upkeep 400 eb, shop sales 120 eb over cost, wages 300 eb, loan interest 30 eb, a bill of 50 eb, other costs 40 eb: a profit of 300 eb. Other money out this week: 200 eb, such as loan repayments, draws, living costs or money put in; the cashbook lists each. Cash now 1,100 eb.');
 });

@@ -143,9 +143,20 @@ export const ReminderService = {
       w.regCase ? L('NCI.WeekMail.Case') : '',
     ].filter(Boolean);
     const profit = digest.profit ?? 0;
-    // Wages and loan payments come out too, so the figures add up to the profit.
-    const loans = (digest.interest ?? 0) + (digest.repaid ?? 0);
-    const more = (digest.paid ? L('NCI.WeekMail.Wages', { n: eb(digest.paid) }) : '') + (loans ? L('NCI.WeekMail.Loans', { n: eb(loans) }) : '');
+    // Everything the profit counts, so the figures add up to it: the shop's margin on stock, wages due, loan
+    // interest, an event's bill, and anything else (shift bonuses) as other costs.
+    const margin = digest.stock?.margin ?? 0;
+    const wages = digest.wages ?? 0;
+    const interest = digest.interest ?? 0;
+    const bill = digest.event?.cost ?? 0;
+    const sundry = Math.round((digest.takings ?? 0) + margin - (digest.upkeep ?? 0) - wages - interest - bill - profit);
+    const more = [
+      margin ? L('NCI.WeekMail.Sales', { n: eb(margin) }) : '',
+      wages ? L('NCI.WeekMail.Wages', { n: eb(wages) }) : '',
+      interest ? L('NCI.WeekMail.Loans', { n: eb(interest) }) : '',
+      bill ? L('NCI.WeekMail.Bill', { n: eb(bill) }) : '',
+      sundry > 0 ? L('NCI.WeekMail.Sundry', { n: eb(sundry) }) : '',
+    ].join('');
     // Money that moved outside the week's sums (draws, living costs, top-ups), so the cash adds up.
     const rest = digest.opening != null ? Math.round(digest.till - digest.opening - profit) : 0;
     const other = rest ? L('NCI.WeekMail.Other', { dir: L(rest < 0 ? 'NCI.WeekMail.Out' : 'NCI.WeekMail.In'), n: eb(Math.abs(rest)) }) : '';
