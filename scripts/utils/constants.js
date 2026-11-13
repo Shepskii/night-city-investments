@@ -117,6 +117,8 @@ export const FLAGS = Object.freeze({
   SHIFT_DAYS: 'shiftDays',
   /** On the GM-only control journal: the Messenger contacts events and jobs are sent from, and who each was shared with (M2). */
   NCM_CONTACTS: 'ncmContacts',
+  /** On the GM-only control journal: the reminders already sent, by key, and each business's last advert (M). */
+  BUSINESS_MAIL: 'businessMail',
   /** On a syndicate's journal: its record, which its members can read. Written only by the GM. (Its account is the `portfolio` flag beside it.) */
   SYNDICATE: 'syndicate',
   /** On actors. Syndicate requests, written only by the owning player. */

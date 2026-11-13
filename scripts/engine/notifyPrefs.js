@@ -4,7 +4,7 @@
  * @description What a player has opted in to hear about, and how. Pure; no Foundry globals.
  */
 
-export const NOTIFY_CATEGORIES = ['fills', 'dividends', 'alerts', 'statements', 'movers', 'tips', 'headlines', 'digest'];
+export const NOTIFY_CATEGORIES = ['fills', 'dividends', 'alerts', 'statements', 'movers', 'tips', 'headlines', 'digest', 'business', 'reminders', 'junk'];
 export const NOTIFY_CHANNELS = ['mail', 'chat', 'off'];
 /** The "holdings movers" notice goes out when a holding moves at least this much (percent) in a day. */
 export const MOVER_DEFAULT_PCT = 5;
@@ -12,10 +12,11 @@ export const MOVER_RANGE = { min: 1, max: 50 };
 
 /**
  * Order confirmations, dividends and the price alerts a player set themselves are on by default;
- * monthly statements, holdings movers, headlines and the digest are opt-in.
+ * monthly statements, holdings movers, headlines and the digest are opt-in. Of the business mail (M), the weekly
+ * mail is opt-in; reminders a day before a deadline, and other businesses' adverts, are on.
  */
 export const NOTIFY_DEFAULTS = Object.freeze({
-  fills: 'mail', dividends: 'mail', alerts: 'mail', statements: 'off', movers: 'off', tips: 'off', headlines: 'off', digest: 'off',
+  fills: 'mail', dividends: 'mail', alerts: 'mail', statements: 'off', movers: 'off', tips: 'off', headlines: 'off', digest: 'off', business: 'off', reminders: 'mail', junk: 'mail',
 });
 
 /** A player's chosen movers threshold, clamped to a sensible range. */

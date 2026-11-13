@@ -22,6 +22,7 @@ import { NotificationService } from '../services/NotificationService.js';
 import { StatementService } from '../services/StatementService.js';
 import { BusinessService } from '../services/BusinessService.js';
 import { SyndicateService } from '../services/SyndicateService.js';
+import { ReminderService } from '../services/ReminderService.js';
 
 /** In order. `data` is the `priceTick` hook's payload. */
 const STEPS = [
@@ -42,6 +43,8 @@ const STEPS = [
   ['Statements', () => StatementService.onTick()],
   // Player businesses close their weeks on the market's date; nothing above depends on them.
   ['Businesses', () => BusinessService.onTick()],
+  // After the weeks have closed, so a reminder never asks about a week that has just ended (M).
+  ['Reminders', () => ReminderService.onTick()],
 ];
 
 export const TickSequence = {

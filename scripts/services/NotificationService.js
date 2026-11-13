@@ -55,6 +55,35 @@ export const NotificationService = {
   },
 
   /**
+   * Deliver a business notice (M) by the channel the character chose: mail from a contact, falling back to the market
+   * wire if it can't be sent, or a private chat message under the sender's name.
+   * @param {Actor} actor
+   * @param {'business'|'reminders'|'junk'} category
+   * @param {{subject: string, lines: string[], footer?: string}} spec
+   * @param {{id?: string|null, alias?: string}|null} from - the contact it comes from, and the name chat shows
+   */
+  async deliver(actor, category, spec, from = null) {
+    const channel = this.prefs(actor)[category];
+    if (channel === 'off') return { ok: true, skipped: true };
+    if (channel === 'chat') {
+      if (typeof ChatMessage === 'undefined') return { ok: false };
+      await ChatMessage.create({
+        whisper: this._recipients(actor),
+        speaker: { alias: from?.alias || 'Market Wire' },
+        content: `<div class="nci-chat"><strong>${html([spec.subject])}</strong>${html(spec.lines, spec.footer ?? '')}</div>`,
+      });
+      return { ok: true };
+    }
+    if (from?.id) {
+      const sent = await MailService.fromContact(from.id, actor, spec);
+      if (sent?.ok) return sent;
+    }
+    const sent = await MailService.fromWire(actor, spec);
+    if (!sent.ok) log.warn(`Notification mail to ${actor.name} failed: ${sent.error}`);
+    return sent;
+  },
+
+  /**
    * Portfolio events and request results: broker-handled orders get confirmations.
    * Orders placed by mail already got a reply, so their "received" notice is skipped.
    */

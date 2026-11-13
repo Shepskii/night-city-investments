@@ -51,6 +51,7 @@ import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors, in
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
 import { SyndicateCash } from './SyndicateCash.js';
 import { ContactService } from './ContactService.js';
+import { ReminderService } from './ReminderService.js';
 import { OrgMail } from './OrgMail.js';
 import { PeopleMail } from './PeopleMail.js';
 import { MailService } from './MailService.js';
@@ -727,6 +728,8 @@ class BusinessServiceImpl {
     await this._mailAnswers(out).catch((error) => log.warn('Could not mail an answer', error));
     if (eventMail) await this._mailEvent(out.business, eventMail).catch((error) => log.warn('Could not mail an event', error));
     await this._mailStaffNotes(out).catch((error) => log.warn('Could not mail a staff note', error));
+    // The week by mail to runners who asked for it, and an advert if the business has earned one (M).
+    await ReminderService.afterCommit(out.business, out.events ?? []).catch((error) => log.warn('Could not send the weekly mail', error));
     await this._payslips(out);
     await this._livingCosts(out);
     await this._twoJobs(out);

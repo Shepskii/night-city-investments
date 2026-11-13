@@ -978,6 +978,75 @@
       "roll-invalid": "That roll could not be read. Roll again.",
       "roll-unverified": "That roll could not be confirmed. Try again."
     },
+    "Remind": {
+      "Subject": {
+        "vote": "{name}: a vote closes tomorrow",
+        "syndicateVote": "{name}: a vote closes tomorrow",
+        "press": "{name}: our deadline is tomorrow",
+        "characterPress": "Our deadline is tomorrow",
+        "case": "{name}: your answer is due tomorrow",
+        "slots": "{name}: the week closes tomorrow",
+        "raise": "{name}: about that raise",
+        "charter": "{name}: the charter's funding closes tomorrow",
+        "takeover": "{name}: the tender offer closes tomorrow",
+        "cash": "{name}: the books for tomorrow's close"
+      },
+      "Line": {
+        "vote": "A proposal for {name} is still waiting on your vote, and it closes tomorrow.",
+        "syndicateVote": "A motion before {name} is still waiting on your vote, and it closes tomorrow.",
+        "press": "We still have no comment from {name}, and the story goes to print with or without one. Tomorrow is the last day to give us your side.",
+        "characterPress": "We still have no comment from you on our story, {name}. Tomorrow is the last day to give us your side.",
+        "case": "This office has had no answer from {name} on the case before it. The answer is due tomorrow; after that, the case is decided on what we have.",
+        "slots": "The week closes tomorrow with {left} of {slots} action slots at {name} unused.",
+        "raise": "I asked about a raise, and I'm still waiting to hear. The month ends tomorrow.",
+        "charter": "The charter's funding window for {name} closes tomorrow. Anything still short by then and the charter is refused.",
+        "takeover": "The tender offer from {bidder} for shares in {name}, at {price} eb a share, closes tomorrow. You have not tendered any shares.",
+        "cash": "{name} has {till} eb in cash, and tomorrow's close is due to pay {loans} eb on loans and {wages} eb in wages: {total} eb in all."
+      },
+      "Footer": {
+        "vote": "Vote in the Business window, under Decisions on the Partners tab.",
+        "syndicateVote": "Vote on the syndicate's page in the Market Terminal.",
+        "press": "Answer it in the Business window before the week closes; silence means it lands in full.",
+        "characterPress": "Answer it in the Business window, on its Pending tab, before tomorrow; silence means it lands in full.",
+        "case": "Answer it in the Business window before tomorrow; a case with no answer is lost.",
+        "slots": "Unused slots are lost when the week closes.",
+        "raise": "Answer it on the Staff tab (Manage) before the month's end, or they take it as a no and their Loyalty drops.",
+        "charter": "Put money in from the Business window before tomorrow.",
+        "takeover": "Tender in the Business window, in the Takeover section, if you want to sell.",
+        "cash": "The week's takings come in first, so this may be covered. If not, a missed loan payment brings a late fee, and wages left unpaid are owed."
+      }
+    },
+    "WeekMail": {
+      "Subject": "{name}: the week to {date}",
+      "Figures": "Takings {takings} eb, upkeep {upkeep} eb: a {result} of {profit} eb. Cash now {till} eb.",
+      "Profit": "profit",
+      "Loss": "loss",
+      "Event": "This week: {event}.",
+      "Waiting": "Waiting on you: {items}.",
+      "Votes": "{n} vote(s) not yet cast",
+      "Raises": "a raise asked for by {names}",
+      "Applicants": "{n} applicant(s) to look at",
+      "Case": "the regulator's case to answer",
+      "Nothing": "Nothing is waiting on you.",
+      "Footer": "The cashbook in the Business window has every eddie in and out. Turn this mail off under Notifications in the Market Terminal."
+    },
+    "Ads": {
+      "Subject": {
+        "1": "{name}: now open in {location}",
+        "2": "Have you tried {name}?",
+        "3": "{name} wants your business",
+        "4": "Your neighbourhood {kind}: {name}"
+      },
+      "Line": {
+        "1": "Night City never sleeps, and neither does {name}. Find us in {location}.",
+        "2": "Choombas know: when you need a {kind}, there's only one name worth remembering. {name}, {location}.",
+        "3": "Tired of being ripped off? {name} gives you a fair deal and no questions. {location}.",
+        "4": "Word on the street is {name} is the place to be. Come see why. {location}."
+      },
+      "Storefront": "Our new storefront is open. Walk in, look around, tell your friends.",
+      "Footer": "An advert. Turn these off under Notifications in the Market Terminal (Adverts from businesses).",
+      "Anywhere": "Night City"
+    },
     "Notify": {
       "Deposited": "Deposit complete: {amount}.",
       "Withdrawn": "Withdrawal complete: {amount}.",
@@ -1005,7 +1074,7 @@
       "StatementRequested": "Statement requested. It will arrive by mail.",
       "Title": "Notifications",
       "MoverPct": "Count a holding as a big mover at (% a day)",
-      "Hint": "Choose how you hear about market activity. Mail arrives in Night City Messenger. Withdrawals paid through a broker are always mailed, because they carry the money.",
+      "Hint": "Choose how you hear about market activity and the businesses you run. Mail arrives in Night City Messenger. Withdrawals paid through a broker are always mailed, because they carry the money.",
       "Category": {
         "fills": "Order results",
         "dividends": "Dividends",
@@ -1014,7 +1083,10 @@
         "movers": "Big movers in your holdings",
         "tips": "Rumours about companies you hold or watch",
         "headlines": "Market headlines",
-        "digest": "Daily portfolio digest"
+        "digest": "Daily portfolio digest",
+        "business": "Weekly mail from the businesses you run",
+        "reminders": "Reminders a day before a deadline",
+        "junk": "Adverts from businesses"
       },
       "Channel": { "mail": "Mail", "chat": "Chat", "off": "Off" }
     },
@@ -1871,11 +1943,11 @@
       },
       "StaffMail": {
         "Name": "Payslips by Messenger",
-        "Hint": "Send a player character who works for a player business a Night City Messenger payslip from the market wire each week, with their wage attached to claim and anything still owed. Off (or with no Messenger), wages go straight to their sheet."
+        "Hint": "Send a player character who works for a business a Night City Messenger payslip each week, from the business itself or, at an NPC's company or a corporation, from their employer, with their wage attached to claim and anything still owed. Living costs a business pays come the same way. Off (or with no Messenger), wages go straight to their sheet."
       },
       "SyndicateMail": {
         "Name": "Mail syndicate members",
-        "Hint": "Send members a Night City Messenger mail from the market wire when a proposal opens and when it passes, fails or lapses, when an agreed payment fails, when their redemption is paid, and when the syndicate is wound up."
+        "Hint": "Send members a Night City Messenger mail from the syndicate's treasury when a proposal opens and when it passes, fails or lapses, when an agreed payment fails, when their redemption is paid, and when the syndicate is wound up."
       },
       "SyndicateApproval": {
         "Name": "New syndicates need GM approval",

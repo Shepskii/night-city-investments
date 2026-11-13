@@ -57,6 +57,7 @@ export * from './funds.js';
 export * from './withdrawals.js';
 export * from './brokerMail.js';
 export * from './notifyPrefs.js';
+export * from './reminders.js';
 export * from './corporateActions.js';
 export * from './marketControls.js';
 export * from './preview.js';

@@ -85,7 +85,10 @@ A limit or stop that the price reached during a run of ticks fills even if the p
 
 - **Price alerts** (Settings folder): be told when a stock or fund rises above or falls below a price, or moves by a set percentage in a day. Once or repeating.
 - **Statements:** press **Send me a statement**, or mail `STATEMENT` to your broker. Monthly statements are opt-in.
-- **Notifications** (Settings folder): choose, per category, mail, chat or off: order results, dividends, price alerts, the monthly statement, big movers, rumours, market headlines and a daily digest.
+- **Notifications** (Settings folder): choose, per category, mail, chat or off: order results, dividends, price alerts, the monthly statement, big movers, rumours, market headlines and a daily digest. Three are about businesses:
+  - **Weekly mail from the businesses you run** (off until you turn it on): the week's takings, upkeep, profit and cash, its event, and what is waiting on you (votes, raises asked for, applicants, a regulator's case), from the business itself.
+  - **Reminders a day before a deadline** (on): a vote you haven't cast, a story or a regulator's case not yet answered, a week closing with action slots unused, a raise asked for, a charter's funding, a tender offer you haven't answered, and cash short of the loans and wages due at the close. Each comes once, from whoever owns the deadline: the business, the paper, the regulator, the employee, the Exchange or a syndicate's treasury.
+  - **Adverts from businesses** (on): other players' businesses advertise after a strong Promote or when a storefront opens, at most once in four weeks each. Flavour only.
 - **Ticker strip:** a per-user setting that shows a price strip at the top of your screen.
 
 ## Syndicates
