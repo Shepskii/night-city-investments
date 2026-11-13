@@ -1037,7 +1037,7 @@
     },
     "Ads": {
       "Subject": {
-        "1": "{name}: now open in {location}",
+        "1": "{name}: open late in {location}",
         "2": "Have you tried {name}?",
         "3": "{name} wants your business",
         "4": "Your neighbourhood {kind}: {name}"
