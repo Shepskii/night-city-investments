@@ -568,6 +568,8 @@ class BusinessServiceImpl {
     if (['acceptJob', 'declineJob', 'quitJob'].includes(request.type) && isEmployerId(request.businessId)) return this._receipt(actor, request, await EmployerService.answer(actor, request));
     const as = this._partnerFor(actor, request);
     if (!as.ok) return this._receipt(actor, request, as);
+    // Only a player's character, or a syndicate, founds a business here; an NPC's company is made on the GM Console.
+    if (request.type === 'found' && !as.syndicate && !actor.hasPlayerOwner) return this._receipt(actor, request, { ok: false, reason: 'npc-founder' });
     // A takeover bid names its target by ticker, as the bidder knows it; they cannot read its record (B6b).
     if (request.type === 'bid' && !request.businessId) {
       const ticker = String(request.ticker ?? '').trim().toUpperCase();

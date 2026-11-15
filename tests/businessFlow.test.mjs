@@ -60,6 +60,19 @@ const send = async (actor, type, payload) => {
   return lastResult(actor);
 };
 
+test("an NPC can't found a business through the window's request: the GM makes NPCs' companies", async () => {
+  solo.hasPlayerOwner = false;
+  try {
+    const r = await send(solo, 'found', { name: 'NPC Shop', archetype: 'clinic', location: 'Watson', cash: 100 });
+    assert.equal(r.ok, false);
+    assert.equal(r.reason, 'npc-founder');
+    assert.equal(BusinessRepository.all().length, 0);
+    assert.equal(wealth(solo), 3000, 'nothing taken');
+  } finally {
+    solo.hasPlayerOwner = true;
+  }
+});
+
 test('the Medtech founds a clinic and invites the Fixer', async () => {
   const r = await send(med, 'found', { name: 'Back Room', archetype: 'clinic', location: 'Watson', cash: 1000, gear: [{ uuid: kit.uuid }], invite: [fix.id] });
   assert.equal(r.ok, true, r.reason);

@@ -37,9 +37,9 @@
   {{/inline}}
   <nav class="nci-tabs nci-groups">
     {{#each folders}}<button type="button" data-action="switchTab" data-group="{{id}}" class="{{#if active}}active{{/if}}">{{label}}{{#if count}} <span class="nci-count">{{count}}</span>{{/if}}</button>{{/each}}
-    {{#if business}}
+    {{#if business}}{{#if canFound}}
     <button type="button" class="nci-tab-new" data-action="startNew" title="{{localize 'NCI.Business.StartHint'}}">+ {{localize "NCI.Business.Start"}}</button>
-    {{/if}}
+    {{/if}}{{/if}}
     <div class="nci-pickers">
       {{#if picker.businesses.length}}
       <select name="businessId" title="{{localize 'NCI.Business.Which'}}">
@@ -179,6 +179,7 @@
     </footer>
   </div>
   {{/if}}
+  {{#if noFounding}}<p class="nci-hint">{{noFounding}}</p>{{/if}}
 
   {{#with business}}
   <header class="nci-bizhead">

@@ -3373,6 +3373,7 @@
       "Which": "Business",
       "Start": "Start a business",
       "StartHint": "Found another business with this character.",
+      "NoFounding": "NPCs don't start businesses here. To give an NPC a company, use the New NPC company form on the GM Console's Businesses tab.",
       "Disabled": "Player businesses are turned off in the module settings.",
       "NoCharacter": "You have no character to run a business with.",
       "StartIntro": "A side business needs no charter: a stall, a garage bay, a back-room clinic. Put in what eddies and gear you have, invite any partners, and once everyone has answered, any partner makes the setup roll.",
@@ -3977,6 +3978,7 @@
       },
       "Reason": {
         "nothing-to-answer": "There is nothing to answer: good word lands by itself.",
+        "npc-founder": "Only a player's character or a syndicate can start a business here. Make an NPC's company with the New NPC company form on the GM Console's Businesses tab.",
         "no-stock": "that is no longer in stock",
         "syndicate-no-items": "a syndicate has no sheet to hold items",
         "no-workshop": "the business has no workshop yet",

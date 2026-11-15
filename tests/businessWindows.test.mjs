@@ -1152,6 +1152,26 @@ test('with no business, the window has only the Pending and Overview folders', a
   }
 });
 
+test('an NPC gets no Start a business: the window points the GM to the New NPC company form', async () => {
+  const businesses = S.BusinessRepository.all;
+  S.BusinessRepository.all = () => [];
+  const owned = med.hasPlayerOwner;
+  try {
+    med.hasPlayerOwner = false;
+    const html = await renderBusiness(windowFor(med, 'overview'));
+    assert.doesNotMatch(html, /data-action="found"/);
+    assert.match(html, /New NPC company form/);
+  } finally {
+    med.hasPlayerOwner = owned;
+    S.BusinessRepository.all = businesses;
+  }
+  const { canFound } = await import('../scripts/ui/Business/BusinessApp.js');
+  assert.equal(canFound({ hasPlayerOwner: true }), true);
+  assert.equal(canFound({ isSyndicate: true }), true, "a syndicate's officers are players'");
+  assert.equal(canFound({ hasPlayerOwner: false }), false);
+  assert.equal(canFound(null), false);
+});
+
 test('REP and IP (B7c): a milestone suggests them to the GM, for those running it; nothing reaches a sheet until applied', async () => {
   const { rewardChange, rewardMatters, rewardRunners, REWARDS } = await import('../scripts/engine/businessRewards.js');
   // The rulebook's rule: REP only if higher, a bad deed included; IP on top.

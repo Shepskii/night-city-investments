@@ -9,6 +9,9 @@
 import { ProductionCatalog } from '../../data/ProductionCatalog.js';
 import { BUSINESS_DEFAULTS, itemGear, partnerOf, limitLeft, canRun } from '../../engine/index.js';
 import { isCharacter } from '../../utils/helpers.js';
+
+/** Whether this account may start a business from the window: a player's character, or a syndicate (its officers are players'). */
+export const canFound = (actor) => !!actor && (!!actor.isSyndicate || !!actor.hasPlayerOwner);
 import { SyndicateRepository } from '../../data/SyndicateRepository.js';
 import { MODULE_ID, HOOKS } from '../../utils/constants.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
@@ -490,6 +493,7 @@ export class BusinessApp extends BaseApplication {
   }
 
   static _onStartNew() {
+    if (!canFound(this.actor)) return ui.notifications.warn(L('NCI.Business.Reason.npc-founder'));
     this.tab = 'overview';
     this.starting = true;
     this.render();
@@ -507,6 +511,7 @@ export class BusinessApp extends BaseApplication {
 
   static async _onFound(event, target) {
     if (!this.actor) return;
+    if (!canFound(this.actor)) return ui.notifications.warn(L('NCI.Business.Reason.npc-founder'));
     const invite = this.inviteDrafts.map((x) => x.id);
     const sweatPct = amount(target, 'sweatPct');
     const request = {
@@ -1032,7 +1037,9 @@ export class BusinessApp extends BaseApplication {
     context.jobs = jobs;
     // A hint for each kind of job held: with a weekly shift (an NPC's company or a corporation), or a player's business.
     context.jobsHint = { shifts: jobs.some((j) => j.shifts), partners: jobs.some((j) => !j.shifts) };
-    if (!business) return { ...context, start: startContext(this) };
+    // An NPC can't found a business here: an NPC's company is made on the GM Console's Businesses tab.
+    context.canFound = canFound(this.actor);
+    if (!business) return { ...context, ...(context.canFound ? { start: startContext(this) } : { noFounding: L('NCI.Business.NoFounding') }) };
     return { ...context, business: shown };
   }
 }
