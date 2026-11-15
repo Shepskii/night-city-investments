@@ -2723,7 +2723,7 @@ A story about a character also costs the business they run with the worst standi
 | S1 | **Done (v0.24.0), see §36.13.** Press: non-player companies run stories against player companies and characters, driven by standing and heat; rumours before print and **Run a story** |
 | N | **Done (v0.24.0), see §36.17.** NPC-owned companies that run themselves, a job board and weekly shifts for player characters, and jobs at market corporations (N0 to N4) |
 | M | **Part done, see §36.4.** M1 contacts pushed to players (v0.23.0); M2 events by mail, and staff and employers as contacts (v0.25.0). M3 mail in character (v0.25.0): the right senders with the rules apart, organisations' and people's voices, answers, and the treasury, the Exchange by context and newswire headlines. v0.25.1: NPC investors answered by the GM, and the cap table's player or NPC note and job titles (§36.16). v0.25.2: owners on business pins, for the bridge's 0.4.0 categories (§36.9). M4 (v0.26.0): the weekly mail, reminders and adverts, as Notifications. Still proposed: a business's own inbox, underworld shards, company networks |
-| G1 | **Built for v0.26.0, see §36.18.** Gangs in the press: street papers at rank 3, the existing kinds, tips to Vice, turf warnings and good word |
+| G1 | **Done (v0.26.0), see §36.18.** Gangs in the press: street papers at rank 3, the existing kinds, tips to Vice, turf warnings and good word |
 | C1 | **Planned, see §36.19.** Market contracts for production: drawn monthly by sector and standing, GM approval, an advance, delivery and penalties |
 | X2 | **Planned, see §36.20.** Rivalry against NPCs and the GM: NET runs, moves against NPC companies, deals with NPC investors, Lawman investigations |
 | Later | Short selling and margin, options |
