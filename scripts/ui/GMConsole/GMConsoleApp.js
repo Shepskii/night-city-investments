@@ -4,7 +4,6 @@
  * @description Each tab's actions and data live in ./tabs; only the open tab's data is built.
  */
 
-import { matchInvites } from '../Business/BusinessApp.js';
 import { ProductionCatalog } from '../../data/ProductionCatalog.js';
 import { MODULE_ID, HOOKS } from '../../utils/constants.js';
 import { PreviewService } from '../../services/PreviewService.js';
@@ -16,6 +15,7 @@ import * as market from './tabs/market.js';
 import * as events from './tabs/events.js';
 import * as actions from './tabs/actions.js';
 import * as companies from './tabs/companies.js';
+import * as npcBusinesses from './tabs/npcBusinesses.js';
 import * as funds from './tabs/funds.js';
 import * as brokers from './tabs/brokers.js';
 import * as gigs from './tabs/gigs.js';
@@ -27,13 +27,13 @@ import * as factions from './tabs/factions.js';
 import * as production from './tabs/production.js';
 import * as tools from './tabs/tools.js';
 
-const TABS = { pending, market, events, actions, brokers, businesses, jobMarket, syndicates, heat, gigs, companies, funds, factions, production, tools };
+const TABS = { pending, market, events, actions, brokers, businesses, jobMarket, syndicates, heat, gigs, companies, npcBusinesses, funds, factions, production, tools };
 /** The two rows of buttons: each group, and its tabs in display order. */
 const GROUPS = {
   pending: ['pending'],
   market: ['market', 'events', 'actions', 'brokers'],
   players: ['businesses', 'jobMarket', 'syndicates', 'heat'],
-  tools: ['gigs', 'companies', 'funds', 'factions', 'production', 'tools'],
+  tools: ['gigs', 'companies', 'npcBusinesses', 'funds', 'factions', 'production', 'tools'],
 };
 const groupOf = (tab) => Object.keys(GROUPS).find((g) => GROUPS[g].includes(tab));
 const PARTIALS = `modules/${MODULE_ID}/templates/gm/console`;
@@ -52,7 +52,7 @@ export class GMConsoleApp extends BaseApplication {
   static PARTS = {
     body: {
       template: `modules/${MODULE_ID}/templates/gm/console.hbs`,
-      templates: [...Object.keys(TABS), 'preview'].map((t) => `${PARTIALS}/${t}.hbs`),
+      templates: [...Object.keys(TABS), 'preview', 'business-entry'].map((t) => `${PARTIALS}/${t}.hbs`),
     },
   };
 
@@ -137,35 +137,6 @@ export class GMConsoleApp extends BaseApplication {
   // ── Context ────────────────────────────────────────────────────────────────
 
   /** The Production tab's archetype picker and drop box (P1a), which are not clicks. */
-  /** The New NPC company form: find the owner by typing, as a world can hold hundreds of NPCs (N1). */
-  _ownerSearch(root) {
-    const search = root.querySelector('[name="npcOwnerSearch"]');
-    if (!search) return;
-    const owner = root.querySelector('[name="npcOwner"]');
-    const options = [...root.querySelectorAll('[data-npc-owner]')];
-    const names = options.map((o) => o.dataset.name);
-    const show = (shown) => options.forEach((o, i) => { o.style.display = shown.has(i) ? '' : 'none'; });
-    const pick = (o) => {
-      owner.value = o.dataset.id;
-      search.value = o.dataset.name;
-      show(new Set());
-    };
-    search.addEventListener('input', () => {
-      owner.value = '';
-      show(new Set(matchInvites(search.value, names)));
-    });
-    search.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter') return;
-      event.preventDefault();
-      const first = options.find((o) => o.style.display !== 'none');
-      if (first) pick(first);
-    });
-    options.forEach((o) => o.addEventListener('click', (event) => {
-      event.preventDefault();
-      pick(o);
-    }));
-  }
-
   async _onRender(context, options) {
     await super._onRender(context, options);
     const root = this.element;
@@ -178,7 +149,6 @@ export class GMConsoleApp extends BaseApplication {
       this.contractBusiness = event.target.value;
       this.render();
     });
-    this._ownerSearch(root);
     root.querySelector('[data-production-drop]')?.addEventListener('drop', (event) => {
       event.preventDefault();
       try {

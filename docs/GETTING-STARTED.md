@@ -37,7 +37,7 @@ Each window can also be given a key in Configure Controls, and the GM Console's 
 ### The market (about five minutes)
 
 1. **Open the GM Console.**
-2. **Companies tab: Import starter corporations.** This adds twenty Cyberpunk RED corporations as journal entries in a "Night City Investments" folder. Edit or delete any of them, or press New company. The journal text is the public description.
+2. **Market Companies tab: Import starter corporations.** This adds twenty Cyberpunk RED corporations as journal entries in a "Night City Investments" folder. Edit or delete any of them, or press New company. The journal text is the public description.
 3. **Funds tab: Import starter funds.** This adds six pooled funds: two indexes, two sector funds, a managed fund and a themed one.
 4. **Brokers tab: add at least one broker.** Make a character a broker, or tag a Night City Messenger contact. A broker's Accounting skill sets how fast and how cheap they are, and a character with a Personality on their sheet writes in that voice.
 5. **Check the settings** below, especially the market clock and the business week.

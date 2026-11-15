@@ -1,26 +1,4 @@
-<div class="nci-block nci-form">
-  <h3>{{localize "NCI.GMBusiness.Npc.Title"}}</h3>
-  <p class="nci-hint">{{localize "NCI.GMBusiness.Npc.Hint"}}</p>
-  <div class="nci-grid">
-    <label>{{localize "NCI.GMBusiness.Npc.Name"}}<input type="text" name="npcName" maxlength="60"></label>
-    <label>{{localize "NCI.GMBusiness.Npc.Archetype"}}<select name="npcArchetype">{{#each npcForm.archetypes}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
-    <label>{{localize "NCI.GMBusiness.Npc.Owner"}}<input type="search" name="npcOwnerSearch" autocomplete="off" placeholder="{{localize 'NCI.GMBusiness.Npc.OwnerSearch'}}"><input type="hidden" name="npcOwner">
-      <span class="nci-invite-results">{{#each npcForm.owners}}<button type="button" style="display: none" data-npc-owner data-id="{{value}}" data-name="{{label}}">{{label}}</button>{{/each}}</span></label>
-    <label>{{localize "NCI.GMBusiness.Npc.OwnerLevel"}}<select name="npcLevel">{{#each npcForm.levels}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <label>{{localize "NCI.GMBusiness.Npc.StageLabel"}}<select name="npcStage">{{#each npcForm.stages}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <label>{{localize "NCI.GMBusiness.Npc.ProfileLabel"}}<select name="npcProfile">{{#each npcForm.profiles}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <label>{{localize "NCI.GMBusiness.Npc.Cash"}}<input type="number" name="npcCash" min="100" step="100" value="5000"></label>
-    <label>{{localize "NCI.GMBusiness.Npc.Ticker"}}<input type="text" name="npcTicker" maxlength="5"></label>
-    <label>{{localize "NCI.GMBusiness.Npc.District"}}<select name="npcDistrict">{{#each npcForm.districts}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
-    <label>{{localize "NCI.GMBusiness.Npc.Location"}}<input type="text" name="npcLocation" maxlength="80"></label>
-  </div>
-  <div class="nci-actions"><button type="button" data-action="businessNpcCreate"><i class="fas fa-building"></i> {{localize "NCI.GMBusiness.Npc.Create"}}</button></div>
-</div>
-
-<hr class="nci-rule">
-
 <div class="nci-block">
-  <h3>{{localize "NCI.GMConsole.MarketCompanies"}}</h3>
   <p class="nci-hint">{{localize "NCI.GMConsole.MarketCompaniesHint"}}</p>
   <div class="nci-actions">
     <button type="button" data-action="newCompany"><i class="fas fa-plus"></i> {{localize "NCI.GMConsole.NewCompany"}}</button>

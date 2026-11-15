@@ -13,7 +13,7 @@ import { BusinessApp } from '../../Business/BusinessApp.js';
 import { dayText, LT, holderWho, factionTerms, districtOptions, archetypeOptions } from '../../Business/context.js';
 import { isNpcActor } from '../../../services/BusinessClient.js';
 import { L, whole } from '../../format.js';
-import { confirm, field, report } from '../shared.js';
+import { confirm, report } from '../shared.js';
 import { actorLink } from '../../actorLink.js';
 import { rewardRow } from './pending.js';
 import { escapeHtml } from '../../../utils/text.js';
@@ -181,18 +181,6 @@ async function onNpcPartner(event, target) {
   report(await BusinessService.answerNpcPartner(target.dataset.id, target.dataset.staff, target.dataset.yes === 'true', cash));
 }
 
-/** The GM creates an NPC's company from the form (N1). */
-async function onNpcCreate(event, target) {
-  const read = (name) => field(target, name) ?? '';
-  const done = await BusinessService.createNpcCompany({
-    name: read('npcName'), archetype: read('npcArchetype'), district: read('npcDistrict'), location: read('npcLocation'), ownerId: read('npcOwner'),
-    stage: read('npcStage'), level: read('npcLevel'), profile: read('npcProfile'), cash: read('npcCash'), ticker: read('npcTicker'),
-  });
-  if (done.ok) return ui.notifications.info(L('NCI.GMBusiness.Npc.Created', { name: done.business.name }));
-  const key = `NCI.GMBusiness.Npc.Reason.${done.reason}`;
-  return ui.notifications.warn(game.i18n.has(key) ? L(key) : L('NCI.GMConsole.ActionFailed'));
-}
-
 /** How an NPC's company is run, as set on its entry. */
 async function onNpcSave(event, target) {
   const box = target.closest('.nci-gig');
@@ -244,7 +232,6 @@ export const actions = {
   businessPartnerLeaves: onPartnerLeaves,
   businessRemove: onRemove,
   businessOpen: onOpen,
-  businessNpcCreate: onNpcCreate,
   businessNpcSave: onNpcSave,
   businessJobAnswer: onJobAnswer,
   businessPromote: onPromote,
@@ -271,7 +258,7 @@ export const actions = {
 
 const npcOptions = (group, set, selected) => Object.keys(set).map((value) => ({ value, label: L(`NCI.GMBusiness.Npc.${group}.${value}`), selected: value === selected }));
 
-/** The New NPC company form, shown on the Companies tab: an NPC owner is any character or mook no player owns. */
+/** The New NPC business window's choices: an NPC owner is any character or mook no player owns. */
 export const npcForm = () => ({
   archetypes: archetypeOptions(),
   districts: districtOptions(),
@@ -432,8 +419,13 @@ export function context() {
       pending: rows.filter((r) => r.isPending),
       // Suggested REP and IP wait with the rest, a closed business's too.
       rewards: rows.flatMap((r) => r.rewards),
-      active: rows.filter((r) => !r.isPending && !r.closed),
-      closed: rows.filter((r) => r.closed),
+      // NPCs' companies have a tab of their own (NPC Businesses).
+      active: rows.filter((r) => !r.isPending && !r.closed && !r.npc),
+      closed: rows.filter((r) => r.closed && !r.npc),
+      npc: {
+        active: rows.filter((r) => !r.closed && r.npc),
+        closed: rows.filter((r) => r.closed && r.npc),
+      },
     },
   };
 }

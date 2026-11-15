@@ -1,0 +1,28 @@
+<div class="nci-block">
+  <h3>{{localize "NCI.GMBusiness.Npc.TabTitle"}}</h3>
+  <p class="nci-hint">{{localize "NCI.GMBusiness.Npc.TabHint"}}</p>
+  {{#unless npcBusinesses.enabled}}<p class="nci-warn">{{localize "NCI.Business.Disabled"}}</p>{{/unless}}
+  <div class="nci-actions">
+    <button type="button" data-action="npcBusinessNew"><i class="fas fa-plus"></i> {{localize "NCI.GMBusiness.Npc.New"}}</button>
+  </div>
+</div>
+
+<hr class="nci-rule">
+
+<div class="nci-block">
+  {{#each npcBusinesses.active}}
+  {{> "modules/night-city-investments/templates/gm/console/business-entry.hbs"}}
+  {{else}}<p class="nci-empty">{{localize "NCI.GMBusiness.Npc.None"}}</p>{{/each}}
+</div>
+
+{{#if npcBusinesses.closed.length}}
+<div class="nci-block">
+  <h3>{{localize "NCI.GMBusiness.ClosedTitle"}}</h3>
+  <table class="nci-market"><tbody>
+    {{#each npcBusinesses.closed}}
+    <tr><td><strong>{{name}}</strong> <span class="nci-muted">{{archetype}}</span></td><td class="nci-muted">{{closed}}</td>
+      <td class="nci-rowbtns"><button type="button" data-action="businessRemove" data-id="{{id}}" title="{{localize 'NCI.GMBusiness.Remove'}}"><i class="fas fa-trash"></i></button></td></tr>
+    {{/each}}
+  </tbody></table>
+</div>
+{{/if}}

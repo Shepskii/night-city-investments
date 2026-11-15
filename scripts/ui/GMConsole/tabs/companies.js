@@ -1,5 +1,5 @@
 /**
- * GM Console companies tab: the New NPC company form (N1), then the market's company list, the editor and IPO listings.
+ * GM Console Market Companies tab: the market's company list, the editor and IPO listings.
  * @file scripts/ui/GMConsole/tabs/companies.js
  * @description Action handlers run with `this` set to the console window.
  */
@@ -13,7 +13,6 @@ import { ImportService } from '../../../services/ImportService.js';
 import { IpoService } from '../../../services/IpoService.js';
 import { CompanyEditorApp } from '../../CompanyEditor/CompanyEditorApp.js';
 import { confirm, report } from '../shared.js';
-import { npcForm } from './businesses.js';
 
 function onNew() {
   CompanyEditorApp.edit(null);
@@ -58,7 +57,6 @@ export function context() {
     return st.state === 'due' ? L('NCI.Ipo.ListingToday') : L(st.state === 'window' ? 'NCI.Ipo.WindowOpen' : 'NCI.Ipo.ListsOn', { n: st.daysToList, date: MarketClock.showDate(c.ipo.date) });
   };
   return {
-    npcForm: npcForm(),
     companies: CompanyRepository.all({ includeUnlisted: true }).map((c) => ({
       id: c.id,
       ticker: c.ticker,

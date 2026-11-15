@@ -67,7 +67,9 @@ const heatRows = () => HeatService.snapshot().penalties.filter((p) => p.status =
 
 function businessRows() {
   return BusinessService.snapshot().filter(({ business: b }) => b.status !== 'closed').flatMap(({ business: b }) => {
-    const need = (kind, params, ...buttons) => row('businesses', b.name, kind, params, () => ({ buttons }));
+    // An NPC's company's decisions open its own tab.
+    const home = b.npcRun ? 'npcBusinesses' : 'businesses';
+    const need = (kind, params, ...buttons) => row(home, b.name, kind, params, () => ({ buttons }));
     const act = (action, label, icon, extra) => button(action, `NCI.GMBusiness.${label}`, icon, b.id, extra);
     return [
       b.status === 'pending' && need('approval', undefined, act('businessApprove', 'Approve', yes), act('businessReject', 'Reject', no)),
@@ -76,19 +78,19 @@ function businessRows() {
       b.listing?.review && need('delisting', undefined, act('businessDelist', 'Delist', 'fa-ban'), act('businessGiveTime', 'GiveTime', 'fa-hourglass-half')),
       b.takeover?.status === 'awaiting' && need('takeover', { bidder: b.takeover.bidderName }, act('businessTakeoverApprove', 'TakeoverApprove', yes), act('businessTakeoverReject', 'TakeoverReject', no)),
       b.administration && need('administration', undefined, act('businessRestructure', 'Restructure', 'fa-scale-balanced'), act('businessWindUp', 'WindUp', 'fa-skull')),
-      b.regCase?.status === 'lost' && row('businesses', b.name, 'case', undefined, () => ({
+      b.regCase?.status === 'lost' && row(home, b.name, 'case', undefined, () => ({
         fields: [numberField('caseFine', L('NCI.GMBusiness.CaseFine'), b.regCase.fine ?? 0, { min: 0, step: 100 })],
         buttons: [act('businessCaseFine', 'CaseApprove', 'fa-gavel'), act('businessCaseDrop', 'CaseDrop', no)],
       })),
       b.campaign?.status === 'awaiting' && need('campaign', { name: b.campaign.name }, act('businessCampaignApprove', 'CampaignApprove', yes), act('businessCampaignReject', 'CampaignReject', no)),
-      b.press?.held && row('businesses', b.name, 'press', {
+      b.press?.held && row(home, b.name, 'press', {
         story: L(`NCI.Press.Story.${b.press.held.story}`), outlet: b.press.held.factionName, grudge: b.press.held.grudge, why: L(b.press.held.story === 'smear' ? 'NCI.Press.Why.smear' : `NCI.Press.Why.${b.press.held.story}`),
       }, () => ({
         fields: [{ type: 'text', name: 'pressHeadline', label: L('NCI.GMBusiness.PressHeadline'), value: L(`NCI.Press.Headline.${b.press.held.story}`, { name: b.name, outlet: b.press.held.factionName }) }],
         buttons: [act('businessPressApprove', 'PressApprove', yes), act('businessPressSpike', 'PressSpike', no)],
       })),
       // A corporation's order for the workshop (C1): the GM offers it, changing the terms if they like, or drops it.
-      ...(b.contracts ?? []).filter((c) => c.status === 'held').map((c) => row('businesses', b.name, 'contract', {
+      ...(b.contracts ?? []).filter((c) => c.status === 'held').map((c) => row(home, b.name, 'contract', {
         corp: c.corp.name, count: c.count, item: c.item.name, total: Math.round(c.total).toLocaleString(), weeks: c.weeks,
       }, () => ({
         fields: [
@@ -111,14 +113,14 @@ function businessRows() {
       // An NPC invited to invest: the GM answers, on the terms the partners agreed. An older invitation is under the
       // NPC's own actor id.
       ...b.partners.filter((x) => x.status === 'invited' && x.offer && (x.npc || isNpcActor(game.actors.get(x.actorId))))
-        .map((x) => row('businesses', b.name, 'npcInvestor', { name: x.name, amount: x.offer.amount.toLocaleString(), price: x.offer.price.toFixed(2) }, () => ({
+        .map((x) => row(home, b.name, 'npcInvestor', { name: x.name, amount: x.offer.amount.toLocaleString(), price: x.offer.price.toFixed(2) }, () => ({
           buttons: [
             act('businessNpcPartner', 'NpcAccept', 'fa-handshake', { staff: x.actorId, yes: 'true' }),
             act('businessNpcPartner', 'NpcDecline', no, { staff: x.actorId, yes: 'false' }),
           ],
         }))),
       // An NPC invited to found it: the GM answers, and says what it puts in (DESIGN §36.16).
-      ...b.partners.filter((x) => x.npc && x.status === 'invited' && !x.offer).map((x) => row('businesses', b.name, 'npcPartner', { name: x.name }, () => ({
+      ...b.partners.filter((x) => x.npc && x.status === 'invited' && !x.offer).map((x) => row(home, b.name, 'npcPartner', { name: x.name }, () => ({
         fields: [numberField('npcCash', L('NCI.GMBusiness.NpcPuts'), 0, { min: 0, step: 100 })],
         buttons: [
           act('businessNpcPartner', 'NpcAccept', 'fa-handshake', { staff: x.actorId, yes: 'true' }),

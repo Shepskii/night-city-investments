@@ -744,7 +744,7 @@ test('the console\'s tabs are in groups: a group goes to its last open tab, and 
     assert.ok(id === 'pending' ? subTabs.length === 0 : subTabs.some((t) => t.id === id && t.active), `${id} is in its group's row`);
     seen.add(id);
   }
-  assert.equal(seen.size, 15);
+  assert.equal(seen.size, 16);
   const jobs = (() => { const a = new Apps.GMConsole(); a.tab = 'jobMarket'; return a._prepareContext(); })();
   assert.deepEqual((await jobs).subTabs.map((t) => t.label), ['Businesses', 'Job Market', 'Syndicates', 'Heat'], 'Job Market under Players');
   assert.match(await renderConsole('actions'), />\s*Corp actions\s*</);
@@ -1152,7 +1152,7 @@ test('with no business, the window has only the Pending and Overview folders', a
   }
 });
 
-test('an NPC gets no Start a business: the window points the GM to the New NPC company form', async () => {
+test('an NPC gets no Start a business: the window points the GM to New NPC business', async () => {
   const businesses = S.BusinessRepository.all;
   S.BusinessRepository.all = () => [];
   const owned = med.hasPlayerOwner;
@@ -1160,7 +1160,7 @@ test('an NPC gets no Start a business: the window points the GM to the New NPC c
     med.hasPlayerOwner = false;
     const html = await renderBusiness(windowFor(med, 'overview'));
     assert.doesNotMatch(html, /data-action="found"/);
-    assert.match(html, /New NPC company form/);
+    assert.match(html, /New NPC business on the GM Console&#x27;s NPC Businesses tab|New NPC business on the GM Console's NPC Businesses tab/);
   } finally {
     med.hasPlayerOwner = owned;
     S.BusinessRepository.all = businesses;
@@ -1172,15 +1172,47 @@ test('an NPC gets no Start a business: the window points the GM to the New NPC c
   assert.equal(canFound(null), false);
 });
 
-test('the New NPC company form sits at the top of the Companies tab, above a rule and the market companies; the Businesses tab no longer has it', async () => {
-  const html = await renderConsole('companies');
-  assertClean(html, 'companies tab');
-  const form = html.indexOf('data-action="businessNpcCreate"');
-  const rule = html.indexOf('class="nci-rule"');
-  const market = html.indexOf('data-action="newCompany"');
-  assert.ok(form > -1 && form < rule && rule < market, 'form, then the rule, then the company buttons');
-  assert.match(html, /name="npcOwnerSearch"/);
-  assert.doesNotMatch(await renderConsole('businesses'), /businessNpcCreate/);
+test('NPC Businesses (Tools): a New NPC business button opening its own window, and NPCs\' companies, marked, moved off Businesses', async () => {
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  try {
+    const market = await renderConsole('companies');
+    assertClean(market, 'the Market Companies tab');
+    assert.doesNotMatch(market, /npcOwnerSearch|businessNpcCreate/, 'the form has gone from Market Companies');
+    assert.match(market, /data-action="newCompany"/);
+    assert.match(market, />Market Companies</, 'renamed');
+
+    const empty = await renderConsole('npcBusinesses');
+    assertClean(empty, 'an empty NPC Businesses tab');
+    assert.match(empty, /data-action="npcBusinessNew"/);
+    assert.match(text(empty), /No NPC businesses yet/);
+    const button = empty.indexOf('data-action="npcBusinessNew"');
+    assert.ok(button > -1 && button < empty.indexOf('class="nci-rule"'), 'the button first, above the list');
+    assert.match(empty, /data-tab="npcBusinesses"[^>]*>NPC Businesses/);
+    assert.ok(empty.indexOf('data-tab="companies"') < empty.indexOf('data-tab="npcBusinesses"') && empty.indexOf('data-tab="npcBusinesses"') < empty.indexOf('data-tab="funds"'), 'after Market Companies');
+
+    // An NPC's company shows here, marked, and not on Businesses.
+    await S.BusinessRepository.save({ ...b, status: 'open', npcRun: { ownerId: med.id, level: 'skilled', profile: 'steady', auto: true } });
+    const npc = await renderConsole('npcBusinesses');
+    assertClean(npc, 'an NPC business');
+    assert.match(npc, new RegExp(`${b.name} <span class="nci-badge nci-npcbadge">NPC business</span>`), "marked as an NPC's");
+    assert.match(npc, /name="npcRunProfile"/, 'how it is run');
+    assert.doesNotMatch(await renderConsole('businesses'), new RegExp(`data-action="businessOpen" data-id="${b.id}"`));
+    // A player's business stays on Businesses, with no mark.
+    await S.BusinessRepository.save({ ...b, status: 'open', npcRun: null });
+    const players = await renderConsole('businesses');
+    assert.match(players, new RegExp(`data-action="businessOpen" data-id="${b.id}"`));
+    assert.doesNotMatch(players, /nci-npcbadge/);
+
+    // The window: the same fields as the old form, and the owner search.
+    const { NpcCompanyApp } = await import('../scripts/ui/NpcCompany/NpcCompanyApp.js');
+    const form = render('templates/gm/npc-company.hbs', await new NpcCompanyApp()._prepareContext());
+    assertClean(form, 'the New NPC business window');
+    for (const name of ['npcName', 'npcArchetype', 'npcOwnerSearch', 'npcOwner', 'npcLevel', 'npcStage', 'npcProfile', 'npcCash', 'npcTicker', 'npcDistrict', 'npcLocation']) assert.match(form, new RegExp(`name="${name}"`));
+    assert.match(form, /type="submit"/);
+  } finally {
+    await S.BusinessRepository.save(saved);
+  }
 });
 
 test('REP and IP (B7c): a milestone suggests them to the GM, for those running it; nothing reaches a sheet until applied', async () => {

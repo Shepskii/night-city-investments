@@ -30,7 +30,8 @@ Open it from the scene controls (sliders icon). The top row of buttons picks a g
 | | Syndicates | Each syndicate's account and members, with your buttons at the foot: approving it, passing or vetoing its proposals |
 | | Heat | Insider-trading heat, penalties, watch windows and audits, and each business's Exposure |
 | **Tools** | Gigs | Gig impacts from Night City Map: approval and client mapping |
-| | Companies | Creating, editing, importing and launching companies (IPOs) |
+| | Market Companies | Creating, editing, importing and launching market companies (IPOs) |
+| | NPC Businesses | Making NPCs' companies, and each one's state and how it's run |
 | | Funds | Creating, editing, importing and closing funds |
 | | Factions | The list of corporations and gangs |
 | | Production | What each kind of business can make, and which items are illegal |
@@ -200,7 +201,7 @@ Players can hide their shareholdings behind layers (a broker's nominee, then she
 
 With Pneuma's Crew Tools active, **Business days come from Crew Tools downtime** is on by default: extra time, project days and mentoring spend a character's downtime, with no weekly allowance. NPCs have no downtime, so when you act as an NPC, at their company or another, they keep the 3 business days a week. Award days as usual, and open Downtime once for each character, or they have none to spend. Each spend shows in their Downtime Log as "NCI: business: what it was for". You can check it there: a player owns that log, as they do their chat cards. An investigation's legwork becomes money. Turn the setting off for the 3 business days a week without Crew Tools' involvement.
 
-**NPC companies.** **New NPC company**, at the top of the Companies tab (in the Tools group), makes a company owned and run by one of your NPCs. Choose its kind, an NPC owner and their skill, a stage, how it's run and its starting cash; a company at the top stage also needs a ticker. It opens at once, and a registered business or company comes with some staff already hired, leaving roles open. Each week it runs itself when the week closes, answering its own events. To step in, press **Open** on its entry and act as the owner: it leaves alone whatever you did and fills in only what's left. Untick **Runs itself** to run a company entirely by hand. Each week its profit is paid out to the owner and leaves the game, as long as it keeps about eight weeks of costs in cash, so what you start it with stays in. The profile only makes a difference from the registered stage up, because a side business has one action a week and that is work. This form is the only way to give an NPC a business: the Business window's **Start a business** is for player characters and syndicates, and is not offered to an NPC.
+**NPC companies.** These have a tab of their own, **NPC Businesses** in the Tools group, and aren't listed here. **New NPC business**, the button at the top of that tab, opens a window to make a company owned and run by one of your NPCs. Choose its kind, an NPC owner and their skill, a stage, how it's run and its starting cash; a company at the top stage also needs a ticker. It opens at once, and a registered business or company comes with some staff already hired, leaving roles open. Each week it runs itself when the week closes, answering its own events. To step in, press **Open** on its entry on the NPC Businesses tab and act as the owner: it leaves alone whatever you did and fills in only what's left. Untick **Runs itself** to run a company entirely by hand. Each week its profit is paid out to the owner and leaves the game, as long as it keeps about eight weeks of costs in cash, so what you start it with stays in. The profile only makes a difference from the registered stage up, because a side business has one action a week and that is work. This window is the only way to give an NPC a business: the Business window's **Start a business** is for player characters and syndicates, and is not offered to an NPC.
 
 **The job board.** Open roles at an NPC's registered business or company appear to players on the **Jobs** tab of the market window. A character applies with one roll, once a week per company. A failed roll is turned down automatically, and a pass waits on **Pending** for you to hire or turn down, unless **Hire good job applicants automatically** is on, which takes a solid roll or better at once. To offer someone a job yourself, open the company as its owner and use **Hire** on the Staff tab: the player gets an offer to accept. A side business doesn't advertise, but you can still offer a job there.
 
@@ -254,12 +255,14 @@ A contract tag naming no open business waits on the Gigs tab with a warning, sin
 
 Private businesses, gangs and unknown clients have no share price, so only the other effects apply. A gang as a freelance gig's client asks for no mapping: only its target's price moves, and with no target the gig is simply recorded. The approval card lists every party before you approve.
 
-### Companies tab
-
-**New NPC company** comes first: the form for an NPC's business (see the Businesses tab, above). Below the line are the market's companies.
+### Market Companies tab
 
 Create, edit, delete or import companies. Each has a sector, volatility, beta, liquidity, a dividend policy and optional aliases (for matching gig clients). Tick **automatic split** to split when the price passes a threshold.
 **Launch a company later** with an IPO: untick Listed, set a listing date, an offer price, a subscription window and an optional share cap. Players subscribe from the Market tab; oversubscription fills pro rata. **List now** launches it early.
+
+### NPC Businesses tab
+
+**New NPC business** at the top opens a window for a new NPC's company (see **NPC companies** under the Businesses tab, above, for how one runs). Below the line, each NPC's company shows as a player's business does on the Businesses tab, marked **NPC business**, with how it's run: its profile, the owner's skill and **Runs itself**. Its decisions on Pending open this tab. Closed ones are listed at the foot, to remove.
 
 ### Funds tab
 
