@@ -1172,6 +1172,17 @@ test('an NPC gets no Start a business: the window points the GM to the New NPC c
   assert.equal(canFound(null), false);
 });
 
+test('the New NPC company form sits at the top of the Companies tab, above a rule and the market companies; the Businesses tab no longer has it', async () => {
+  const html = await renderConsole('companies');
+  assertClean(html, 'companies tab');
+  const form = html.indexOf('data-action="businessNpcCreate"');
+  const rule = html.indexOf('class="nci-rule"');
+  const market = html.indexOf('data-action="newCompany"');
+  assert.ok(form > -1 && form < rule && rule < market, 'form, then the rule, then the company buttons');
+  assert.match(html, /name="npcOwnerSearch"/);
+  assert.doesNotMatch(await renderConsole('businesses'), /businessNpcCreate/);
+});
+
 test('REP and IP (B7c): a milestone suggests them to the GM, for those running it; nothing reaches a sheet until applied', async () => {
   const { rewardChange, rewardMatters, rewardRunners, REWARDS } = await import('../scripts/engine/businessRewards.js');
   // The rulebook's rule: REP only if higher, a bad deed included; IP on top.

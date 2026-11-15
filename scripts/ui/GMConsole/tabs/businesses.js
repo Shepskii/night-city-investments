@@ -258,8 +258,8 @@ export const actions = {
 
 const npcOptions = (group, set, selected) => Object.keys(set).map((value) => ({ value, label: L(`NCI.GMBusiness.Npc.${group}.${value}`), selected: value === selected }));
 
-/** The new company form: an NPC owner is any character or mook no player owns. */
-const npcForm = () => ({
+/** The New NPC company form, shown on the Companies tab: an NPC owner is any character or mook no player owns. */
+export const npcForm = () => ({
   archetypes: archetypeOptions(),
   districts: districtOptions(),
   owners: game.actors.filter(isNpcActor).map((a) => ({ value: a.id, label: a.name })).sort((x, y) => x.label.localeCompare(y.label)),
@@ -416,7 +416,6 @@ export function context() {
   return {
     businesses: {
       enabled: BusinessService.enabled(),
-      npcForm: npcForm(),
       pending: rows.filter((r) => r.isPending),
       // Suggested REP and IP wait with the rest, a closed business's too.
       rewards: rows.flatMap((r) => r.rewards),
