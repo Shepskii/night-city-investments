@@ -539,6 +539,9 @@
 /* The fields on a Pending row, label and input side by side, as they are on the GM's. */
 .nci-app .nci-pending .nci-form label.nci-inline { flex-direction: row; align-items: center; gap: 8px; margin: 0; }
 .nci-app .nci-pending .nci-form label.nci-inline input { width: 90px !important; }
+/* A number box on a decision's row (a fine, REP, IP, a count) stays small, so the row keeps to one line beside its buttons. */
+.nci-app .nci-pending .nci-actions label.nci-inline input[type="number"] { width: 90px !important; }
+.nci-app .nci-pending .nci-actions button, .nci-app .nci-pending label.nci-inline { white-space: nowrap; }
 
 /* A business's entry on the GM Console: its name first, and the GM's buttons at the foot. */
 .nci-app .nci-bizhead { border-bottom: 1px solid var(--nci-accent-dim); padding-bottom: 6px; margin-bottom: 6px; }
