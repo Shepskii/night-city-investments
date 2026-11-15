@@ -3593,7 +3593,7 @@
         "fenced": "Stock fenced for {sold} eb",
         "stockSales": "Stock sold for {sold} eb: the profit, after what it cost",
         "stockCostBack": "Stock sold: what it cost, back in the cash",
-        "contractSettle": "{name}'s order: what its items cost, back in the cash, less the advance already paid",
+        "contractSettle": "{name}'s order: materials paid for in earlier weeks, less the advance received at signing",
         "stockBought": "{name} bought {count} × {itemName} from stock",
         "contractAdvance": "Advance from {name} on {count} × {itemName}",
         "contractDelivered": "{count} × {itemName} delivered to {name}",
