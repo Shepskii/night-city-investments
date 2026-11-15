@@ -1292,7 +1292,13 @@ test('the directory (B7e) tells a map what the street can see, and nothing behin
 });
 
 test('the directory names only owners the street knows: officers or voting partners, never a hidden or silent holder', async () => {
-  const { publicOwners } = await import('../scripts/services/BusinessService.js');
+  const { publicOwners, playerHeld } = await import('../scripts/services/BusinessService.js');
+  // An NPC's business for a map: none of its partners is a player's character (or a syndicate).
+  const players = game.actors.filter((a) => a.hasPlayerOwner);
+  assert.ok(players.length, 'the test world has player characters');
+  assert.equal(playerHeld({ partners: [{ actorId: players[0].id, status: 'active' }] }), true);
+  assert.equal(playerHeld({ partners: [{ actorId: 'npc:contact:x', status: 'active', npc: true }, { actorId: 'nobody', status: 'active' }] }), false);
+  assert.equal(playerHeld({ partners: [{ actorId: players[0].id, status: 'declined' }] }), false, 'a declined invitation holds nothing');
   const p = (actorId, name, extra = {}) => ({ actorId, name, status: 'active', cash: 0, gear: [], units: 100, voting: true, ...extra });
   const shop = { stage: 1, partners: [p('a', 'Ann'), p('npc:s', 'Silent Sam', { voting: false, npc: true }), p('b', 'Bea', { status: 'leaving' }), p('c', 'Cy', { status: 'declined' }), p('h', 'Hidden Hal')], masks: { h: [{ kind: 'nominee', ref: 'x1' }] } };
   assert.deepEqual(publicOwners(shop), ['Ann', 'Bea']);

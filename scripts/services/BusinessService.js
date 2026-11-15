@@ -2687,7 +2687,9 @@ class BusinessServiceImpl {
       ticker: b.company?.ticker ?? '',
       // Who runs it, as the street knows: names only (a map shows them on the pin).
       owners: publicOwners(b),
-      npc: !!b.npcRun,
+      // An NPC's: one run by an NPC (N1), or one no player character or syndicate holds a stake in, such as a business
+      // the GM founded for an NPC from the Business window.
+      npc: !!b.npcRun || !playerHeld(b),
     }));
   }
 
@@ -2695,6 +2697,12 @@ class BusinessServiceImpl {
     const hidden = MarketStore.getBusinessesHidden();
     return BusinessRepository.all().map((b) => ({ business: b, hidden: hidden[b.id] ?? { exposure: 0 } }));
   }
+}
+
+/** Whether a player character, or a syndicate (whose members are players'), holds a stake in a business. */
+export function playerHeld(b) {
+  return b.partners.some((x) => ['active', 'leaving'].includes(x.status) && !x.npc && !x.market
+    && (!!SyndicateRepository.get(x.actorId) || !!game.actors.get(x.actorId)?.hasPlayerOwner));
 }
 
 /**
