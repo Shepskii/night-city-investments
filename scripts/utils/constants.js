@@ -41,6 +41,7 @@ export const SETTINGS = Object.freeze({
   DISTRICT_DEFS: 'districtDefs',
   ROOM_EVENTS: 'roomEventFrequency',
   PRESS_FREQUENCY: 'pressFrequency',
+  CONTRACTS: 'contractFrequency',
   PRESS_APPROVAL: 'pressApproval',
   JOB_BOARD: 'jobBoard',
   JOB_AUTO: 'jobAutoHire',

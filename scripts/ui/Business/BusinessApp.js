@@ -97,6 +97,7 @@ export class BusinessApp extends BaseApplication {
       proposeProject: BusinessApp._onProposeProject,
       setLine: BusinessApp._onSetLine,
       buyStock: BusinessApp._onBuyStock,
+      contractStock: BusinessApp._onContractStock,
       handStock: BusinessApp._onHandStock,
       takeBackStock: BusinessApp._onTakeBackStock,
       consignStock: BusinessApp._onConsignStock,
@@ -631,6 +632,12 @@ export class BusinessApp extends BaseApplication {
   static _onBuyStock(event, target) {
     const row = target.closest('tr');
     return this._send('buyStock', { uuid: target.dataset.uuid, count: Number(row?.querySelector('[name="stockCount"]')?.value) || 1 });
+  }
+
+  /** Put stock of the item towards a corporation's order (C1). */
+  static _onContractStock(event, target) {
+    const row = target.closest('.nci-hirerow');
+    return this._send('contractStock', { contractId: target.dataset.id, count: Number(row?.querySelector('[name="contractCount"]')?.value) || 1 });
   }
 
   /** Propose giving stock to a partner, for nothing. */

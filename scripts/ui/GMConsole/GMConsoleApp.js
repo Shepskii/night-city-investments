@@ -173,6 +173,11 @@ export class GMConsoleApp extends BaseApplication {
       this.productionArchetype = event.target.value;
       this.render();
     });
+    // Write a contract (C1): the item list is the chosen business's.
+    root.querySelector('[data-contract-business]')?.addEventListener('change', (event) => {
+      this.contractBusiness = event.target.value;
+      this.render();
+    });
     this._ownerSearch(root);
     root.querySelector('[data-production-drop]')?.addEventListener('drop', (event) => {
       event.preventDefault();

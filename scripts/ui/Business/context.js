@@ -6,7 +6,7 @@
 import { DistrictService } from '../../services/DistrictService.js';
 import { ProductionCatalog } from '../../data/ProductionCatalog.js';
 import {
-  ARCHETYPES, ACTION_IDS, partnerOf, holders, totalUnits, unitValue, shareOf, bookValue, drawAllowance, fundingShortfall,
+  ARCHETYPES, ACTION_IDS, contractOf, stockFor, partnerOf, holders, totalUnits, unitValue, shareOf, bookValue, drawAllowance, fundingShortfall,
   stateBands, lastDigest, gearValue, rollSpec, BUSINESS_DEFAULTS,
   daysLeft, activeProject, milestones, stepUpCheck, PROPOSAL_RULES, EVENTS, eventUses,
   projectOffer, PROJECT_KINDS, upgradesOf, protectionFactor, headcountOf,
@@ -535,6 +535,41 @@ function salesNote(business) {
 }
 
 /** The Production tab (P1a): the benches, the line, any run going, and what is on the shelves. */
+/** A contract's terms, for the window's wording (C1). */
+function contractWords(c) {
+  if (!c) return { corp: '', item: '', count: '', total: '', advance: '', weeks: '', made: '', date: '' };
+  return {
+    corp: c.corp.name, item: c.item.name, count: c.count, made: c.made ?? 0, total: whole(c.total), advance: whole(c.advance), unit: whole(c.unit), weeks: c.weeks ?? 4,
+    date: c.due != null ? dayText(c.due) : '', expires: c.expires != null ? dayText(c.expires) : '', paid: whole(c.paid ?? 0),
+  };
+}
+
+/** The workshop's contracts (C1): offers waiting for the vote, those open, and the last few settled. */
+function contractsContext(business, actor, canAct) {
+  const all = business.contracts ?? [];
+  const runs = canAct && canRun(business, actor.id) && !!partnerOf(business, actor.id)?.voting;
+  const shown = all.filter((c) => c.status !== 'held');
+  if (!shown.length) return null;
+  return {
+    rows: shown.slice().reverse().map((c) => {
+      const words = contractWords(c);
+      const can = c.status === 'open' && runs ? stockFor(business, c.id) : null;
+      return {
+        id: c.id,
+        title: L('NCI.Contract.Title', words),
+        status: L(`NCI.Contract.Status.${c.status}`, words),
+        open: c.status === 'open',
+        pct: Math.round((c.made / Math.max(1, c.count)) * 100),
+        progress: L('NCI.Contract.Progress', words),
+        terms: L('NCI.Contract.Terms', words),
+        canStock: !!can?.ok,
+        stockMax: can?.ok ? can.most : 0,
+        stockHint: can?.ok ? L('NCI.Contract.StockHint', { n: can.most, item: c.item.name }) : '',
+      };
+    }),
+  };
+}
+
 function productionContext(business, actor, canAct) {
   const runs = canAct && canRun(business, actor.id);
   const P = BUSINESS_DEFAULTS.production;
@@ -593,6 +628,7 @@ function productionContext(business, actor, canAct) {
     canConsign: !isSyndicatePick,
     storeCap: L('NCI.Production.StoreCap', { loose: looseStock(business), cap: P.storeCap[business.stage] ?? 0 }),
     // Only those who may look are told it is there: a company's may hold its officers' secret.
+    contracts: contractsContext(business, actor, canAct),
     hasStoreroom: !!game.actors.find((a) => a.getFlag?.(MODULE_ID, 'stockFor') === business.id && (game.user.isGM || a.testUserPermission?.(game.user, 'OBSERVER'))),
   };
 }
@@ -872,7 +908,7 @@ function weekMoney(digests, i) {
 }
 
 /** Ledger entries the week's close writes; the cashbook shows them from the digest instead. */
-const AT_CLOSE = new Set(['takings', 'upkeep', 'wages', 'medical', 'stockSales']);
+const AT_CLOSE = new Set(['takings', 'upkeep', 'wages', 'medical', 'stockSales', 'contractDelivered', 'contractLate']);
 /** Entries made while the business was being set up, into the money held for it rather than its cash. */
 const FORMING = new Set(['founded', 'contribution', 'setupLoss', 'refund']);
 
@@ -898,6 +934,8 @@ export function cashbookContext(business, index, officer = true) {
     line(L('NCI.Cashbook.Takings'), gross, d.boost ? row.gig : ''),
     ...(change > 0 ? [event] : []),
     ...(d.stock?.margin ? [line(L('NCI.Cashbook.StockMargin'), d.stock.margin, L('NCI.Cashbook.StockSold', { sold: whole(d.stock.sold) }))] : []),
+    // Corporations' orders settled this week (C1), over what their items cost.
+    ...(d.contracts?.margin ? [line(L('NCI.Cashbook.ContractMargin'), d.contracts.margin, [...d.contracts.done, ...d.contracts.late].map((c) => c.corp).join(', '))] : []),
   ];
   const upkeep = d.costs
     ? ['running', 'rent', 'licence', 'protection'].filter((k) => d.costs[k]).map((k) => line(L(`NCI.Cashbook.Cost.${k}`), -d.costs[k]))
@@ -909,7 +947,7 @@ export function cashbookContext(business, index, officer = true) {
     ...(d.wages ? [line(L('NCI.Cashbook.Wages'), -d.wages, d.owed ? L('NCI.Cashbook.Owed', { owed: whole(d.owed) }) : '')] : []),
     ...(d.interest ? [line(L('NCI.Cashbook.Interest'), -d.interest)] : []),
   ];
-  const totalIn = gross + Math.max(change, 0) + (d.stock?.margin ?? 0);
+  const totalIn = gross + Math.max(change, 0) + (d.stock?.margin ?? 0) + (d.contracts?.margin ?? 0);
   const totalOut = Math.max(-change, 0) + d.upkeep + (d.event?.cost ?? 0) + (d.wages ?? 0) + (d.interest ?? 0);
   // An entry made before entries were marked with their week is placed by its date (setting-up entries left out).
   const inWeek = (e) => (e.week != null ? e.week === d.index : e.day >= d.startDay && e.day <= d.endDay && !FORMING.has(e.kind));
@@ -918,7 +956,7 @@ export function cashbookContext(business, index, officer = true) {
   const money = weekMoney(business.digests, at);
   const listed = (d.event?.cost ?? 0) + (d.interest ?? 0) + (d.repaid ?? 0);
   // What stock made over its cost is in the profit already, not among the other money.
-  const unlisted = money.other == null ? 0 : money.other + listed - (d.stock?.margin ?? 0) - others.reduce((a, e) => a + e.amount, 0);
+  const unlisted = money.other == null ? 0 : money.other + listed - (d.stock?.margin ?? 0) - (d.contracts?.margin ?? 0) - others.reduce((a, e) => a + e.amount, 0);
   return {
     business: business.name,
     week: row.week,
@@ -1085,7 +1123,7 @@ function digestRow(business, d, i, officer = true) {
     event: d.event ? L(`NCI.Business.EventOutcome.${d.event.outcome}`, { event: L(`NCI.Event.${eventKind}.Name`), change: signed(d.event.change) })
       + (d.event.cost ? ` ${L('NCI.Staff.DigestMedical', { cost: whole(d.event.cost) })}` : '') : '',
     // What happened to the staff: someone off sick, hurt, poached, caught, quitting, asking for a raise (E2).
-    people: (d.staff ?? []).map((n) => L(`NCI.Staff.Note.${n.kind}`, { name: n.name, rival: n.rival ?? '' })).join(' '),
+    people: (d.staff ?? []).map((n) => L(`NCI.Staff.Note.${n.kind}`, { name: n.name, rival: n.rival ?? '', corp: n.corp ?? '' })).join(' '),
     gig: d.boost ? L('NCI.Business.DigestGig', { pct: signed(Math.round(d.boost * 100)) }) : '',
     // The wages have their own column; the note is only for what is still owed.
     wages: d.owed ? L('NCI.Staff.DigestOwed', { wages: whole(d.wages ?? 0), owed: whole(d.owed ?? 0) }) : '',
@@ -1731,6 +1769,8 @@ function partnersContext(business, actor) {
         budget: proposal.terms?.budget != null ? whole(proposal.terms.budget) : '',
         project: proposal.terms?.room ? L('NCI.BackRoom.ProjectName', { kind: L(`NCI.BackRoom.Kind.${proposal.terms.room}`) }) : proposal.terms?.project ? L(`NCI.Project.Kind.${proposal.terms.project}`) : '',
         cost: proposal.terms?.cost != null ? whole(proposal.terms.cost) : '',
+        // A corporation's order (C1).
+        ...(proposal.kind === 'contract' ? contractWords(contractOf(business, proposal.terms?.contractId)) : {}),
       }),
       rule: LT(business, `NCI.Business.Rule.${PROPOSAL_RULES[proposal.kind]}`, { date: dayText(proposal.expires ?? proposal.day) }),
       // Each voter, linked to their character, and how they voted.

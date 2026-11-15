@@ -72,6 +72,7 @@ export const ReminderService = {
         }
         case 'regulator': return { id: await ContactService.regulator(), alias: L('NCI.Contacts.Regulator') };
         case 'exchange': return { id: await ContactService.exchange(), alias: L('NCI.Contacts.Exchange') };
+        case 'buyer': return { id: await ContactService.buyer(from.corp), alias: from.corp?.name ?? '' };
         case 'staff': {
           const staff = (b?.staff ?? []).find((x) => x.id === from.staffId);
           return { id: staff ? await ContactService.staff(b, staff) : null, alias: staff?.name ?? b?.name ?? '' };
@@ -150,12 +151,14 @@ export const ReminderService = {
     // Everything the profit counts, so the figures add up to it: the shop's margin on stock, wages due, loan
     // interest, an event's bill, and anything else (shift bonuses) as other costs.
     const margin = digest.stock?.margin ?? 0;
+    const orders = digest.contracts?.margin ?? 0;
     const wages = digest.wages ?? 0;
     const interest = digest.interest ?? 0;
     const bill = digest.event?.cost ?? 0;
-    const sundry = Math.round((digest.takings ?? 0) + margin - (digest.upkeep ?? 0) - wages - interest - bill - profit);
+    const sundry = Math.round((digest.takings ?? 0) + margin + orders - (digest.upkeep ?? 0) - wages - interest - bill - profit);
     const more = [
       margin ? L('NCI.WeekMail.Sales', { n: eb(margin) }) : '',
+      orders ? L(orders < 0 ? 'NCI.WeekMail.OrdersLoss' : 'NCI.WeekMail.Orders', { n: eb(Math.abs(orders)) }) : '',
       wages ? L('NCI.WeekMail.Wages', { n: eb(wages) }) : '',
       interest ? L('NCI.WeekMail.Loans', { n: eb(interest) }) : '',
       bill ? L('NCI.WeekMail.Bill', { n: eb(bill) }) : '',
@@ -169,6 +172,10 @@ export const ReminderService = {
       lines: [
         L('NCI.WeekMail.Figures', { takings: eb(digest.takings), upkeep: eb(digest.upkeep), more, other, result: L(profit < 0 ? 'NCI.WeekMail.Loss' : 'NCI.WeekMail.Profit'), profit: eb(Math.abs(profit)), till: eb(digest.till) }),
         digest.event?.kind ? L('NCI.WeekMail.Event', { event: eventName(digest.event) }) : '',
+        // Corporations' orders (C1): those settled this week, and how far along the rest are.
+        ...(digest.contracts?.done ?? []).map((c) => L('NCI.WeekMail.ContractDone', { corp: c.corp, item: c.item, count: c.count, paid: eb(c.paid) })),
+        ...(digest.contracts?.late ?? []).map((c) => L('NCI.WeekMail.ContractLate', { corp: c.corp, item: c.item, count: c.count, made: c.made, paid: eb(c.paid) })),
+        ...(b.contracts ?? []).filter((c) => c.status === 'open').map((c) => L(c.made < c.count ? 'NCI.WeekMail.ContractShort' : 'NCI.WeekMail.ContractOpen', { corp: c.corp.name, item: c.item.name, count: c.count, made: c.made, date: MarketClock.displayDate(c.due * 86400000) })),
         items.length ? L('NCI.WeekMail.Waiting', { items: items.join('; ') }) : L('NCI.WeekMail.Nothing'),
       ].filter(Boolean),
       footer: L('NCI.WeekMail.Footer'),

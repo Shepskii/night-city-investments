@@ -196,6 +196,16 @@ export const ContactService = {
     return owner ? this.ensure(`owner:${ownerId}`, () => this._make({ name: owner.name, actorId: owner.id, organization: b.name, portrait: owner.img ?? null })) : null;
   },
 
+  /**
+   * A corporation ordering from a workshop (C1): the corporation itself if it is a faction, or its procurement desk.
+   * @param {{id: string, name: string, ticker?: string, factionId?: string|null}} corp - as a contract has it
+   */
+  buyer(corp) {
+    if (corp?.factionId && FactionRepository.get(corp.factionId)) return this.faction(corp.factionId);
+    if (!corp?.name) return Promise.resolve(null);
+    return this.ensure(`buyer:${corp.id || corp.name}`, () => this._make({ name: L('NCI.Contacts.Procurement', { name: corp.name }), organization: corp.name, email: address(corp.ticker || corp.name, 'corp', 'procurement'), type: 'organization' }));
+  },
+
   /** The contact an event's sender sends from (see `eventSender`). */
   forSender(b, sender) {
     switch (sender?.kind) {

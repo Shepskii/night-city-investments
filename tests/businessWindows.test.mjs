@@ -1395,6 +1395,76 @@ test('production (P1a): a Production tab for those running the shop, a line to s
   }
 });
 
+test('market contracts (C1): written by the GM, voted on, filled from stock; a drawn one waits on Pending', async () => {
+  const { ProductionCatalog } = await import('../scripts/data/ProductionCatalog.js');
+  const { CompanyRepository } = await import('../scripts/data/CompanyRepository.js');
+  const { MODULE_ID, SETTINGS } = await import('../scripts/utils/constants.js');
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const savedCatalog = game.settings.get(MODULE_ID, SETTINGS.PRODUCTION_CATALOG);
+  const fromUuidBefore = globalThis.fromUuid;
+  const listAll = CompanyRepository.all;
+  globalThis.fromUuid = async () => ({ documentName: 'Item', uuid: 'Item.scanner', name: 'Medscanner', type: 'gear', img: '', system: { price: { market: 100 } } });
+  CompanyRepository.all = () => [{ id: 'BTC', ticker: 'BTC', name: 'Biotechnica', sector: 'biotech', status: 'active', listed: true }];
+  try {
+    assert.ok((await ProductionCatalog.add('clinic', 'Item.scanner')).ok);
+    await S.BusinessRepository.save({
+      ...b, status: 'open', stage: 1, company: null, officers: [], listing: null, charter: null, takeover: null, administration: null, regCase: null, npcRun: null,
+      proposals: [], upgrades: { workshop: [1] }, production: { line: null, run: null }, stock: [], contracts: [], till: 5000,
+    });
+    const form = await renderConsole('production');
+    assertClean(form, 'the write a contract form');
+    assert.match(form, /data-action="productionWriteContract"/);
+    assert.match(text(form), /BTC — Biotechnica/);
+
+    assert.equal((await S.BusinessService.writeContract(b.id, { companyId: 'BTC', uuid: 'Item.nothing', count: 5 })).reason, 'bad-line');
+    const written = await S.BusinessService.writeContract(b.id, { companyId: 'BTC', uuid: 'Item.scanner', count: 5, weeks: 3 });
+    assert.equal(written.ok, true, written.reason);
+    const c = S.BusinessRepository.all()[0].contracts[0];
+    assert.equal(c.status, 'offered');
+    assert.equal(c.total, 500, 'the market price unless the GM sets one');
+    const offered = text(await renderBusiness(windowFor(med, 'production')));
+    assert.match(offered, /Biotechnica: 5 × Medscanner/);
+    assert.match(offered, /Waiting for the vote/);
+    assert.match(text(await renderBusiness(windowFor(med, 'partners'))), /Biotechnica offers an order: 5 × Medscanner at 100 eb each, 500 eb in all, due 3 weeks after signing, with 125 eb up front/);
+    assert.match(text(await renderConsole('production')), /Medscanner.*0 \/ 5/s, 'the GM sees it on the Production tab');
+
+    await send(med, 'vote', { businessId: b.id, proposalId: c.id, yes: true });
+    await send(fix, 'vote', { businessId: b.id, proposalId: c.id, yes: true });
+    const signed = S.BusinessRepository.all()[0];
+    assert.equal(signed.contracts[0].status, 'open');
+    assert.equal(signed.till, 5000 + 125, 'the advance is in the cash');
+
+    await S.BusinessRepository.save({ ...signed, stock: [{ uuid: 'Item.scanner', name: 'Medscanner', type: 'gear', img: '', price: 100, cost: 50, count: 3, illegal: false }] });
+    const stocked = await renderBusiness(windowFor(med, 'production'));
+    assertClean(stocked, 'an open contract with stock to put towards it');
+    assert.match(stocked, /data-action="contractStock"/);
+    assert.match(text(stocked), /3 × Medscanner on the shelves can go towards it/);
+    await send(med, 'contractStock', { businessId: b.id, contractId: c.id, count: 3 });
+    assert.equal(S.BusinessRepository.all()[0].contracts[0].made, 3);
+    assert.equal(S.BusinessRepository.all()[0].stock.length, 0);
+
+    // A drawn offer waits on Pending, where the GM can change its terms.
+    const now = S.BusinessRepository.all()[0];
+    await S.BusinessRepository.save({ ...now, contracts: [], proposals: [] });
+    const drawn = { id: 'ct_drawn', status: 'held', corp: { id: 'BTC', name: 'Biotechnica', ticker: 'BTC', factionId: null, listed: true }, item: { uuid: 'Item.scanner', name: 'Medscanner', type: 'gear', img: '', price: 100 }, count: 20, made: 0, cost: 0, unit: 100, total: 2000, advance: 500, drawnDay: 0, weeks: 4 };
+    await S.BusinessRepository.save({ ...S.BusinessRepository.all()[0], contracts: [drawn] });
+    const pending = await renderConsole('pending');
+    assertClean(pending, 'a drawn contract on Pending');
+    assert.match(text(pending), /Biotechnica would order 20 × Medscanner for 2,000 eb/);
+    assert.match(pending, /data-action="businessContractOffer"/);
+    assert.match(text(await renderBusiness(windowFor(med, 'production'))), /^(?![\s\S]*Biotechnica: 20)/, 'players never see it until it is offered');
+    assert.equal((await S.BusinessService.offerContract(b.id, 'ct_drawn', { count: 10 })).ok, true);
+    const put = S.BusinessRepository.all()[0].contracts[0];
+    assert.deepEqual([put.status, put.count, put.total], ['offered', 10, 1000]);
+  } finally {
+    globalThis.fromUuid = fromUuidBefore;
+    CompanyRepository.all = listAll;
+    await game.settings.set(MODULE_ID, SETTINGS.PRODUCTION_CATALOG, savedCatalog);
+    await S.BusinessRepository.save(saved);
+  }
+});
+
 test('the Production tab for the GM: lists by business type, removes and restores, marks illegal', async () => {
   const { ProductionCatalog } = await import('../scripts/data/ProductionCatalog.js');
   const { MODULE_ID, SETTINGS } = await import('../scripts/utils/constants.js');

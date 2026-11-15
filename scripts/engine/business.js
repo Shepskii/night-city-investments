@@ -29,6 +29,7 @@
  *   { key, type: 'buyStock', businessId, uuid, count }           buy stock for your own sheet (P1b)
  *   { key, type: 'consign', businessId, gear: [{uuid}] }         put items from your sheet in the shop (P1b)
  *   { key, type: 'takeBack', businessId, uuid }                  take a consignment back (P1b)
+ *   { key, type: 'contractStock', businessId, contractId, count } put stock towards a corporation's order (C1)
  *   { key, type: 'vote', businessId, proposalId, yes }
  *
  * `use` is how the roll was made: `{kind: 'skill', skill, stat}`, `{kind: 'ability', ability}` or
@@ -67,6 +68,7 @@
  * hidden state; a result's `traits` are new ones for the service to keep there, never on the record.
  */
 
+import { drawContract, signContract, endOffer, contractsWeek, stockToContract } from './businessContracts.js';
 import { fenceCheck, fenceWeek, makesThings, buyStock, clearStock, consignStock, handOffer, handStock, produceCheck, productionWeek, salesWeek, setLine, takeBackStock } from './businessProduction.js';
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from './businessEvents.js';
@@ -134,7 +136,7 @@ export const BUSINESS_REQUESTS = Object.freeze([
   'propose', 'proposeClose', 'vote', 'stepUpRoll', 'addDays', 'respond', 'takeDirty', 'lieLow', 'gangDealOfficer', 'loanRoll', 'angelRoll', 'repayLoan', 'charterRoll', 'charterFund', 'reportRoll', 'auditRoll', 'diligenceRoll', 'prospectusRoll',
   'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant', 'askStaff', 'cancelAsk', 'addTeam', 'teamCare',
   'rightsTake', 'sellBack', 'issueRoll', 'buybackRoll', 'bid', 'tender', 'defenceRoll', 'hideRoll', 'dropLayer',
-  'setLine', 'buyStock', 'consign', 'takeBack',
+  'setLine', 'buyStock', 'consign', 'takeBack', 'contractStock',
 ]);
 
 /** Item types that are not things a business can own. */
@@ -189,6 +191,8 @@ export const PROPOSAL_RULES = Object.freeze({
   issue: 'majority', buyback: 'majority',
   // A gang's deal on the back room (U1c).
   gangDeal: 'majority', endGangDeal: 'majority',
+  // A corporation's order for the workshop (C1): a spending decision.
+  contract: 'majority',
 });
 
 // ── What a roll needs ────────────────────────────────────────────────────────
@@ -576,6 +580,14 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (me?.status !== 'active' || (b.stage >= 2 && !canRun(b, actor.id))) return fail('not-officer');
       const bought = buyStock(b, actor, String(request.uuid ?? ''), request.count, day, out, p);
       if (!bought.ok) return bought;
+      break;
+    }
+    case 'contractStock': {
+      // Stock of the item towards a corporation's order (C1): a partner with a vote, or at a company, an officer.
+      if (b.status !== 'open') return fail('not-open');
+      if (me?.status !== 'active' || !me.voting || (b.stage >= 2 && !canRun(b, actor.id))) return fail('not-partner');
+      const put = stockToContract(b, String(request.contractId ?? ''), request.count, out);
+      if (!put.ok) return put;
       break;
     }
     case 'consign': {
@@ -1558,6 +1570,8 @@ function settleProposals(b, day, out, p, ctx = {}) {
     b.proposals = b.proposals.filter((x) => x !== proposal);
     if (failed) {
       out.events.push({ type: 'proposalFailed', kind: proposal.kind });
+      // A corporation's offer turned down (C1).
+      if (proposal.kind === 'contract' && endOffer(b, proposal.terms?.contractId, 'declined')) out.events.push({ type: 'contractDeclined', contractId: proposal.terms.contractId });
       continue;
     }
     out.events.push({ type: 'proposalPassed', kind: proposal.kind });
@@ -1633,6 +1647,11 @@ function enact(b, proposal, day, p, ctx, out) {
     }
     case 'handStock':
       return handStock(b, proposal.terms, day, out, p);
+    case 'contract': {
+      const signed = signContract(b, proposal.terms.contractId, day, p);
+      if (signed.ok) out.events.push({ type: 'contractSigned', contractId: signed.contract.id });
+      return signed;
+    }
     case 'coverLiving':
       b.covered = [...new Set([...(b.covered ?? []), proposal.terms.actorId])];
       return { ok: true };
@@ -1743,6 +1762,8 @@ export function advanceBusiness(business, day, { weekday = 1, growthRate = 1, ac
   if (lapsed.length) {
     b.proposals = b.proposals.filter((x) => !lapsed.includes(x));
     out.events.push(...lapsed.map((x) => ({ type: 'proposalLapsed', kind: x.kind })));
+    // A corporation's offer nobody voted through in time (C1).
+    for (const x of lapsed.filter((y) => y.kind === 'contract')) if (endOffer(b, x.terms?.contractId, 'lapsed')) out.events.push({ type: 'contractLapsed', contractId: x.terms.contractId });
     changed = true;
   }
 
@@ -1924,6 +1945,8 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   // What goes out the back goes first (P1c), then what is left is sold over the counter (P1b).
   const fenced = fenceWeek(b, takings, b.period.endDay, out, p);
   const sales = salesWeek(b, takings, b.period.endDay, out, p);
+  // Corporations' orders delivered, or settled at their deadline (C1).
+  const contracts = contractsWeek(b, b.period.endDay, out, p);
   // What went on behind the shop this week (U1a).
   const room = roomWeek(b, takings, part, p, traits);
   if (room?.exposure) out.events.push({ type: 'backRoomWeek', exposure: room.exposure });
@@ -1965,7 +1988,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
     });
   }
   const loans = payLoans(b, b.period.endDay, p);
-  const profit = takings + sales.margin - upkeep - eventCost - wages.wages - bonusTotal - loans.interest;
+  const profit = takings + sales.margin + contracts.margin - upkeep - eventCost - wages.wages - bonusTotal - loans.interest;
   b.till -= loans.interest + loans.principal;
   const ownerDraw = npcDraw(b, upkeep + wages.wages, profit, part, b.period.endDay, p);
   shiftWeek(b, part, b.period.endDay, out, p, relations?.shiftDays ?? {});
@@ -1973,6 +1996,9 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   // The staff's week: loyalty, raises asked for at a month's end, and who has had enough (E2).
   const monthEnd = b.period.index % p.report.weeks === 0;
   if (monthEnd) payLiving(b, relations?.living ?? {}, b.period.endDay, out, p);
+  // A corporation may offer the workshop an order, for the GM to look at first (C1).
+  const drawn = monthEnd ? drawContract(b, relations?.contracts, seed, b.period.endDay, p) : null;
+  if (drawn) out.events.push({ type: 'contractDrawn', contractId: drawn.id });
   const monthProfit = profit + b.digests.slice(-(p.report.weeks - 1)).reduce((a, d) => a + d.profit, 0);
   const unanswered = !!event && !EVENTS[event.kind]?.good && event.outcome === 'unanswered';
   const people = loyaltyWeek(b, { monthEnd, monthProfit, unanswered, traits, seed, day: b.period.endDay }, p);
@@ -2002,6 +2028,7 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
     worked: !!work,
     ...(ownerDraw ? { ownerDraw } : {}),
     ...(sales.sold ? { stock: sales } : {}),
+    ...(contracts.done.length || contracts.late.length ? { contracts } : {}),
     ...(fenced ? { fenced } : {}),
     ...(room ? { room: { earned: room.earned, ...(room.supply ? { supply: room.supply } : {}), laundered: room.laundered, paid: room.paid, low: room.low, ...(room.cut ? { cut: room.cut } : {}), ...(room.unpaid ? { unpaid: true } : {}), ...(room.informant ? { informant: room.informant } : {}) } } : {}),
     ...(event ? { event: { kind: event.kind, outcome: event.outcome, band: event.band, change: event.change, ...(b.period.event?.story ? { story: b.period.event.story } : {}), ...(b.period.event?.factionName ? { faction: b.period.event.factionName } : {}), ...(eventCost ? { cost: eventCost } : {}), ...eventOrigin(b, event) } } : {}),

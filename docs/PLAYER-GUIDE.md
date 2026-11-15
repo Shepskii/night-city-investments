@@ -308,6 +308,17 @@ Stock is listed on the Production tab. **Open the storeroom** to see the real it
 
 **If the business closes,** its stock goes into the payout at what it cost, rather than at the reduced value gear gets, along with anything on the benches. Consigned items go back to their owners, and the storeroom is cleared.
 
+### Contracts
+
+A market corporation may order goods from your workshop, at a month's close, if it's in a sector that buys what you make: arms and security from a gun shop, biotech and health from a clinic, transport from a garage, tech from an info shop, consumer goods from a boutique, bar or food stall, and media from a Media. Your standing with it sets the chance: 10% a month at neutral, 20% at friendly and 30% at allied, and none at wary or hostile. Your GM sees each offer first, and may write orders of their own.
+
+- **The order:** a legal item from your list that your workshop can make, two to four weeks of the benches' output, at the full market price each, due four weeks after signing. A quarter of the price is paid up front.
+- **Taking it** is a majority vote, under Decisions on the Partners tab, within seven days. The buyer mails you the terms. Turning it down, or letting it lapse, costs nothing.
+- **Filling it:** runs of the item go to the order before the shelves, and **From stock** on the Production tab puts what's on the shelves towards it.
+- **Delivered** at the close once all are made: the rest of the price into the cash, and your standing with the buyer goes up. A listed buyer's share price lifts a little.
+- **Late or short:** at the deadline, what you made is paid at the shop's price (70%), with the advance counted against it, so making nothing means paying the advance back. Standing with the buyer falls, and Reputation drops by 2.
+- **How many:** one order at a time, or two for a chartered company. The order's progress and the day it's due are on the Production tab and in the weekly mail.
+
 Illegal goods and fencing are in [Part 3](#illegal-goods-and-fencing).
 
 ## Money and ownership

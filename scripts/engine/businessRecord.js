@@ -223,6 +223,8 @@ export function normalizeBusiness(raw) {
     production: { line: b.production?.line ?? null, run: b.production?.run ?? null, allowance: b.production?.allowance ?? 0 },
     stock: b.stock ?? [],
     stockQueries: b.stockQueries ?? [],
+    // Market contracts (C1): drawn and waiting for the GM, offered, open, and the last few finished.
+    contracts: b.contracts ?? [],
     // Standing with factions (F1a): the band for each faction met. The number is in the GM's hidden state.
     standings: b.standings ?? {},
     // Hidden ownership (B6d): each holder's layers, innermost first; their strengths are GM-only.

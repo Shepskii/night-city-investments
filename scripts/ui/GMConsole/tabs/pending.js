@@ -87,6 +87,17 @@ function businessRows() {
         fields: [{ type: 'text', name: 'pressHeadline', label: L('NCI.GMBusiness.PressHeadline'), value: L(`NCI.Press.Headline.${b.press.held.story}`, { name: b.name, outlet: b.press.held.factionName }) }],
         buttons: [act('businessPressApprove', 'PressApprove', yes), act('businessPressSpike', 'PressSpike', no)],
       })),
+      // A corporation's order for the workshop (C1): the GM offers it, changing the terms if they like, or drops it.
+      ...(b.contracts ?? []).filter((c) => c.status === 'held').map((c) => row('businesses', b.name, 'contract', {
+        corp: c.corp.name, count: c.count, item: c.item.name, total: Math.round(c.total).toLocaleString(), weeks: c.weeks,
+      }, () => ({
+        fields: [
+          numberField('contractCount', L('NCI.Contract.Count'), c.count, { min: 1, step: 1 }),
+          numberField('contractUnit', L('NCI.Contract.Unit'), c.unit, { min: 1, step: 1 }),
+          numberField('contractWeeks', L('NCI.Contract.Weeks'), c.weeks, { min: 1, max: 12, step: 1 }),
+        ],
+        buttons: [act('businessContractOffer', 'ContractOffer', yes, { reward: c.id }), act('businessContractDrop', 'ContractDrop', no, { reward: c.id })],
+      }))),
       b.backRoom?.status === 'pending' && need('backRoom', { kind: L(`NCI.BackRoom.Kind.${b.backRoom.kind}`) }, act('businessRoomApprove', 'RoomApprove', yes), act('businessRoomReject', 'RoomReject', no)),
       sceneCandidate(b) && !b.npcRun?.auto && need('scene', { event: L(`NCI.Event.${b.period.event.kind}.Name`) }, act('businessSceneRun', 'SceneRun', 'fa-masks-theater')),
       b.scene && need('sceneOpen', { event: L(`NCI.Event.${b.scene.event.kind}.Name`) }, act('businessSceneWon', 'SceneWon', yes), act('businessSceneLost', 'SceneLost', no), act('businessSceneRoll', 'SceneRoll', 'fa-dice-d10')),

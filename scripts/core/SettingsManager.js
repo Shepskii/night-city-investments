@@ -496,6 +496,16 @@ export function registerSettings() {
     choices: { off: 'NCI.Settings.PressFrequency.Off', rare: 'NCI.Settings.RoomEvents.Rare', normal: 'NCI.Settings.RoomEvents.Normal', often: 'NCI.Settings.RoomEvents.Often' },
     default: 'normal',
   });
+  // Market corporations' orders for workshops (C1): drawn at each month's close, for the GM to offer or drop.
+  s.register(MODULE_ID, SETTINGS.CONTRACTS, {
+    name: 'NCI.Settings.Contracts.Name',
+    hint: 'NCI.Settings.Contracts.Hint',
+    scope: 'world',
+    config: true,
+    type: String,
+    choices: { off: 'NCI.Settings.Contracts.Off', rare: 'NCI.Settings.RoomEvents.Rare', normal: 'NCI.Settings.RoomEvents.Normal' },
+    default: 'normal',
+  });
   s.register(MODULE_ID, SETTINGS.PRESS_APPROVAL, {
     name: 'NCI.Settings.PressApproval.Name',
     hint: 'NCI.Settings.PressApproval.Hint',

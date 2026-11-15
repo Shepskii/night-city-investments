@@ -376,6 +376,29 @@
     <p class="nci-empty">{{localize "NCI.Production.NoWorkshop"}}</p>
     {{/if}}
   </div>
+  {{#with contracts}}
+  <div class="nci-block nci-form">
+    <h3>{{localize "NCI.Contract.Heading"}}</h3>
+    <p class="nci-hint">{{localize "NCI.Contract.Hint"}}</p>
+    {{#each rows}}
+    <div class="nci-gig">
+      <div class="nci-gigtop"><strong>{{title}}</strong><span class="nci-muted">{{status}}</span></div>
+      <p class="nci-muted">{{terms}}</p>
+      {{#if open}}
+      <div class="nci-progress" title="{{progress}}"><span style="width: {{pct}}%"></span></div>
+      <p>{{progress}}</p>
+      {{#if canStock}}
+      <div class="nci-hirerow">
+        <span class="nci-muted">{{stockHint}}</span>
+        <label>{{localize "NCI.Production.Count"}} <input type="number" name="contractCount" min="1" max="{{stockMax}}" step="1" value="{{stockMax}}"></label>
+        <button type="button" data-action="contractStock" data-id="{{id}}"><i class="fas fa-truck-ramp-box"></i> {{localize "NCI.Contract.FromStock"}}</button>
+      </div>
+      {{/if}}
+      {{/if}}
+    </div>
+    {{/each}}
+  </div>
+  {{/with}}
   {{/with}}
   {{#with week}}{{#if productionActions.length}}<div class="nci-block">{{> weekActions rows=productionActions}}</div>{{/if}}{{/with}}
   {{#with production}}

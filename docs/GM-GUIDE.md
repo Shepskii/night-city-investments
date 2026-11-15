@@ -40,7 +40,7 @@ A tab shows how many decisions are waiting on it as a small number beside its na
 
 ## Pending
 
-One list of everything waiting for you, across every tab, each row with its type: a new business, a charter, a gig, a heat penalty, a story, suggested REP and IP. Fields and buttons on the row let you act from there. What each decision means is under its tab below.
+One list of everything waiting for you, across every tab, each row with its type: a new business, a charter, a gig, a heat penalty, a story, a corporation's order for a workshop, suggested REP and IP. Fields and buttons on the row let you act from there. What each decision means is under its tab below.
 
 ## Market group
 
@@ -298,6 +298,8 @@ Businesses with a workshop make real items from the system's compendiums, by the
 **The lists.** Tools > Production shows what each kind of business can make, with each item's price category and DV. The defaults come from the core compendiums, by item type, with a short list of named gear for bars, food stalls, media and garages. Drop an item from any compendium or the Items directory into the box to add it, or take one off with the trash button; **Put back** restores a default. Stage limits still apply: up to Premium for a side business, Very Expensive once registered, and Luxury for a company. Couriers and security firms make nothing, and can't build a workshop even if you add items for them.
 
 **Illegal items.** **Mark illegal** applies wherever the item is made. It then needs an open back room to make, or a company's officers, and only a fence will take it. Nothing is illegal until you mark it, so decide what counts in your game. A line already set on the item follows your mark from its next run, but stock already made stays legal. With the **Underworld content** setting off, nobody can make illegal items, and any illegal line stops at once, with a note in that business's digest. A run already on the benches finishes, and goods already made can still go to a fence.
+
+**Market contracts.** At each month's close, a market corporation may offer a player's workshop an order (the player guide has the rules). Each offer waits on **Pending**: change how many, the price each or the weeks to deliver, then **Offer it** to the partners, with mail from the buyer, or **Drop it**, and they never hear of it. Below the lists, **Write a contract** makes one by hand: a business, a corporation, an item off its list, how many, a price each (blank for the market price) and the weeks to deliver. It goes straight to the partners. The table under it shows every contract waiting, offered or open. The buyer is any trading market company that isn't a player's. A corporation that is also a faction gains or loses standing as the order is delivered or runs late; one that isn't still pays and sends mail, but has no standing to move. **Contracts for workshops** (world setting: Off, Rare or Normal; Normal by default) sets how often offers come. Off leaves only the ones you write. NPCs' companies are never offered one.
 
 **Storeroom sheets.** Each business's stock gets a container actor called "Stock — *business*", in a **Night City Investments** actor folder. Those running the business can look at it, but can't drag from it or buy from it. Its cart icon still shows, and clicking it gives a permission warning. The business's record holds the money, and the sheet follows the record:
 

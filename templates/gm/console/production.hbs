@@ -40,4 +40,37 @@
   </table>
   {{/if}}
 </div>
+<hr class="nci-rule">
+
+<div class="nci-block nci-form" data-contract-form>
+  <h3>{{localize "NCI.Contract.GMHeading"}}</h3>
+  <p class="nci-hint">{{localize "NCI.Contract.GMHint"}}</p>
+  {{#with contract}}
+  {{#if businesses.length}}
+  <div class="nci-grid">
+    <label>{{localize "NCI.Contract.Business"}}<select name="contractBusiness" data-contract-business>{{#each businesses}}<option value="{{value}}"{{#if selected}} selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>{{localize "NCI.Contract.Corp"}}<select name="contractCorp">{{#each corps}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+    <label>{{localize "NCI.Contract.Item"}}<select name="contractItem">{{#each items}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+    <label>{{localize "NCI.Contract.Count"}}<input type="number" name="contractCount" min="1" step="1" value="10"></label>
+    <label>{{localize "NCI.Contract.Unit"}}<input type="number" name="contractUnit" min="1" step="1" placeholder="{{localize 'NCI.Contract.UnitMarket'}}"></label>
+    <label>{{localize "NCI.Contract.Weeks"}}<input type="number" name="contractWeeks" min="1" max="12" step="1" value="{{weeks}}"></label>
+  </div>
+  {{#if full}}<p class="nci-warn">{{full}}</p>{{/if}}
+  <div class="nci-actions"><button type="button" data-action="productionWriteContract"><i class="fas fa-file-signature"></i> {{localize "NCI.Contract.Write"}}</button></div>
+  {{else}}
+  <p class="nci-empty">{{none}}</p>
+  {{/if}}
+  {{/with}}
+
+  {{#if contracts.length}}
+  <table class="nci-market">
+    <thead><tr><th>{{localize "NCI.Contract.Business"}}</th><th>{{localize "NCI.Contract.Corp"}}</th><th>{{localize "NCI.Contract.Item"}}</th><th>{{localize "NCI.Contract.Made"}}</th><th class="num">{{localize "NCI.Contract.Total"}}</th><th>{{localize "NCI.Contract.State"}}</th></tr></thead>
+    <tbody>
+      {{#each contracts}}
+      <tr><td>{{business}}</td><td>{{corp}}</td><td>{{item}}</td><td>{{progress}}</td><td class="num">{{total}} eb</td><td class="nci-muted">{{status}}</td></tr>
+      {{/each}}
+    </tbody>
+  </table>
+  {{/if}}
+</div>
 {{/with}}

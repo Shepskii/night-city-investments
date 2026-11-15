@@ -90,6 +90,17 @@ async function onPressApprove(event, target) {
   report(await BusinessService.approvePress(target.dataset.id, target.closest('tr')?.querySelector('[name="pressHeadline"]')?.value ?? ''));
 }
 
+/** The GM offers a corporation's drawn order to the partners, on the terms in its row (C1). */
+async function onContractOffer(event, target) {
+  const box = target.closest('tr, .nci-gig');
+  const read = (name) => box?.querySelector(`[name="${name}"]`)?.value ?? '';
+  report(await BusinessService.offerContract(target.dataset.id, target.dataset.reward, { count: read('contractCount'), unit: read('contractUnit'), weeks: read('contractWeeks') }));
+}
+
+async function onContractDrop(event, target) {
+  report(await BusinessService.dropContract(target.dataset.id, target.dataset.reward));
+}
+
 async function onPressSpike(event, target) {
   report(await BusinessService.spikePress(target.dataset.id));
 }
@@ -247,6 +258,8 @@ export const actions = {
   businessCampaignApprove: onCampaignApprove,
   businessPressApprove: onPressApprove,
   businessPressSpike: onPressSpike,
+  businessContractOffer: onContractOffer,
+  businessContractDrop: onContractDrop,
   businessRoomApprove: onRoomApprove,
   businessRoomReject: onRoomReject,
   businessSceneRun: onSceneRun,

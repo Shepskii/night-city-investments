@@ -70,6 +70,10 @@ export function businessReminders(b, day, p = BUSINESS_DEFAULTS) {
         out.push({ key: `raise:${b.id}:${s.id}:${s.ask.day}`, kind: 'raise', to: 'runners', from: { kind: 'staff', staffId: s.id }, deadline: period.endDay, data: { name, staff: s.name, pct: Math.round(s.ask.pct * 100) } });
       }
     }
+    // A corporation's order settled at this close, short of its count (C1): the buyer chases it.
+    for (const c of (b.contracts ?? []).filter((x) => x.status === 'open' && x.due != null && x.due <= period.endDay && x.made < x.count)) {
+      out.push({ key: `contract:${b.id}:${c.id}`, kind: 'contract', to: 'runners', from: { kind: 'buyer', corp: c.corp }, deadline: period.endDay, data: { name, corp: c.corp.name, item: c.item.name, made: c.made, count: c.count } });
+    }
     const due = dueAtClose(b);
     if (due.total > 0 && b.till < due.total) {
       out.push({ key: `cash:${b.id}:${period.index}`, kind: 'cash', to: 'runners', from: { kind: 'business' }, deadline: period.endDay, data: { name, till: b.till, loans: due.loans, wages: due.wages, total: due.total } });

@@ -17,6 +17,7 @@
 import { BUSINESS_DEFAULTS } from './businessConfig.js';
 import { addLedger, fail, stateBands, text } from './businessRecord.js';
 import { approachOf } from './rolls.js';
+import { fillContracts } from './businessContracts.js';
 
 /** Item types with an `amount`, which stack as one item on a sheet; anything else is one item each. */
 export const STACKING_TYPES = Object.freeze(['ammo', 'clothing', 'drug', 'gear']);
@@ -199,10 +200,13 @@ export function productionWeek(b, day, out, p = BUSINESS_DEFAULTS) {
   if (!run) return;
   run.left -= benchesOf(b, p) * p.production.benchDays * part;
   if (run.left > 1e-6) return;
-  addStock(b, run);
   b.production.run = null;
-  note('madeStock', `${run.count} × ${run.name}`, run.illegal);
-  out.events.push({ type: 'stockMade', item: { uuid: run.uuid, type: run.type }, count: run.count });
+  // An open contract for the item takes what it needs first (C1); the rest goes on the shelves.
+  const left = fillContracts(b, run);
+  if (left < 1) return;
+  addStock(b, { ...run, count: left });
+  note('madeStock', `${left} × ${run.name}`, run.illegal);
+  out.events.push({ type: 'stockMade', item: { uuid: run.uuid, type: run.type }, count: left });
 }
 
 /**

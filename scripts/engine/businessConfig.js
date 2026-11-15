@@ -413,6 +413,32 @@ export const BUSINESS_DEFAULTS = Object.freeze({
       foodStall: Object.freeze([{ type: 'gear', names: ['Kibble Pack', 'MRE', 'Food Stick'] }]),
     }),
   }),
+  /**
+   * Market contracts (C1, DESIGN §36.19): a corporation orders goods from a workshop. `sectors` says which
+   * corporations buy from each kind of business; `chance` is a month's chance of an offer by standing band (none when
+   * wary or hostile), times the world setting's `frequency`. The order is `weeks` of the benches' output, due
+   * `dueDays` after signing, with `advance` of the price up front; an offer waits `offerDays` for the partners' vote.
+   * A company may hold `most[2]`. Delivered, standing moves by `standing.done` and a listed buyer's price by `lift`%;
+   * late or short, what was made is paid at the shop's price, standing moves by `standing.late` and Reputation by `reputation`.
+   */
+  contracts: Object.freeze({
+    sectors: Object.freeze({
+      gunShop: Object.freeze(['arms', 'security']), clinic: Object.freeze(['biotech', 'health']), garage: Object.freeze(['transport']),
+      infoShop: Object.freeze(['tech']), boutique: Object.freeze(['consumer']), media: Object.freeze(['media']),
+      bar: Object.freeze(['consumer']), foodStall: Object.freeze(['consumer']),
+    }),
+    chance: Object.freeze({ neutral: 0.1, friendly: 0.2, allied: 0.3 }),
+    frequency: Object.freeze({ off: 0, rare: 0.5, normal: 1 }),
+    weeks: Object.freeze([2, 4]),
+    dueDays: 28,
+    offerDays: 7,
+    advance: 0.25,
+    most: Object.freeze([1, 1, 2]),
+    standing: Object.freeze({ done: 5, late: -5 }),
+    reputation: -2,
+    lift: 0.5,
+    keep: 6,
+  }),
   /** Side business to registered business (DESIGN §27.0). Bureaucracy, or Local Expert or Persuasion at DV +2. */
   registration: Object.freeze({
     // Reputation drifts back toward 50 and events knock it down, so the bar is near that baseline, not on it.

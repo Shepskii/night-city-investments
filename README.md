@@ -70,6 +70,7 @@ Or unzip a release into `Data/modules/night-city-investments`. Then enable **Nig
 - **Workshops.** Most kinds of business can build benches and make real items from the system's compendiums, by the rulebook's Fabrication table: its DVs, its times and its materials costs.
 - **A storeroom you can see.** What you make sits on a sheet of real items that those running the business can look at, with the money kept on the business's record. Hire a Maker to run the line when no partner does.
 - **Selling it.** The shop sells stock each week up to a limit set by takings and Reputation. Partners can buy at cost, vote to hand items over, or consign their own for a cut.
+- **Market contracts.** Corporations in the right sector order goods from a workshop, more often the better it stands with them. The GM sees each offer first, the partners vote, and a quarter comes up front. Deliver on time for the rest of the price and the buyer's goodwill; late or short costs standing and Reputation.
 - **The black market.** With a back room, or quietly at a company, make goods the GM has marked illegal and sell them through a fence for dirty cash. They stay off the books, add Exposure, and a raid can seize them.
 
 ### Moving the market

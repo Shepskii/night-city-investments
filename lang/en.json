@@ -978,6 +978,63 @@
       "roll-invalid": "That roll could not be read. Roll again.",
       "roll-unverified": "That roll could not be confirmed. Try again."
     },
+    "Contract": {
+      "Heading": "Contracts",
+      "Hint": "Orders from market corporations. The partners vote on an offer as on spending. Signed, the advance goes into the cash; runs of the item fill the order before the shelves, and stock can go towards it. Delivered at the close once the count is made, for the rest of the price and the buyer's goodwill. At the deadline, what was made is paid at the shop's price, less the advance, and standing and Reputation fall.",
+      "Title": "{corp}: {count} × {item}",
+      "Terms": "{total} eb ({unit} eb each), {advance} eb of it up front; due {weeks} weeks after signing.",
+      "Progress": "{made} of {count} made",
+      "StockHint": "{n} × {item} on the shelves can go towards it.",
+      "FromStock": "From stock",
+      "Status": {
+        "held": "Waiting for the GM",
+        "offered": "Waiting for the vote, until {expires}",
+        "open": "Due by {date}",
+        "done": "Delivered: {paid} eb",
+        "late": "Settled late: {made} of {count}, {paid} eb",
+        "declined": "Turned down",
+        "lapsed": "Lapsed before the vote"
+      },
+      "GMHeading": "Market contracts",
+      "GMHint": "Write a corporation's order for a player's workshop. It goes straight to the partners' vote, with the buyer's mail. Offers drawn at a month's close wait on Pending instead. The price each is the item's market price unless you set one.",
+      "Business": "Business",
+      "Corp": "Corporation",
+      "Item": "Item",
+      "Count": "How many",
+      "Unit": "Price each (eb)",
+      "UnitMarket": "Market price",
+      "Weeks": "Weeks to deliver",
+      "Made": "Made",
+      "Total": "Price",
+      "State": "Where it stands",
+      "Write": "Write the contract",
+      "Written": "The contract is with the partners.",
+      "NoWorkshops": "No player business has a workshop yet.",
+      "Full": "{name} already has as many orders as it can take ({n}).",
+      "Reason": {
+        "no-business": "There's no such business.",
+        "no-corp": "Choose a corporation.",
+        "bad-line": "That item isn't on the business's list, or is too dear for its workshop.",
+        "illegal-line": "Corporations don't order illegal goods.",
+        "bad-amount": "How many must be at least 1.",
+        "contract-limit": "The business already has as many orders as it can take.",
+        "no-workshop": "The business has no workshop, or is an NPC's."
+      },
+      "Mail": {
+        "offerSubject": "{corp}: an order for {name}",
+        "offer": "{corp} would like {count} × {item} from {name}'s workshop: {unit} eb each, {total} eb in all, delivered within {weeks} weeks of signing. We pay {advance} eb up front when you sign, and the rest on delivery.",
+        "offerFooter": "The partners vote on it in the Business window, under Decisions on the Partners tab, by {expires}. Turning it down costs nothing.",
+        "signedSubject": "{corp}: order signed",
+        "signed": "Thank you. The advance of {advance} eb is in {name}'s cash. We expect {count} × {item} by {date}.",
+        "signedFooter": "Runs of the item fill the order before the shelves, and stock can go towards it from the Production tab.",
+        "doneSubject": "{corp}: order delivered",
+        "done": "All {count} × {item} received from {name}: {paid} eb in all, the advance included, and the rest is in your cash. We'll remember it.",
+        "doneFooter": "A delivery on time stands well with the buyer.",
+        "lateSubject": "{corp}: order late",
+        "late": "The deadline for {count} × {item} has passed with {made} delivered. We pay the shop's price for what came, {paid} eb, with the advance counted against it.",
+        "lateFooter": "Standing with the buyer falls, and the word gets around: Reputation -2."
+      }
+    },
     "Remind": {
       "Subject": {
         "vote": "{name}: a vote closes tomorrow",
@@ -990,6 +1047,7 @@
         "raise": "{name}: about that raise",
         "charter": "{name}: the charter's funding closes tomorrow",
         "takeover": "{name}: the tender offer closes tomorrow",
+        "contract": "{corp}: about our order from {name}",
         "cash": "{name}: the books for tomorrow's close"
       },
       "Line": {
@@ -1003,6 +1061,7 @@
         "raise": "I asked about a raise, and I'm still waiting to hear. The month ends tomorrow.",
         "charter": "The charter's funding window for {name} closes tomorrow. Anything still short by then and the charter is refused.",
         "takeover": "The tender offer from {bidder} for shares in {name}, at {price} eb a share, closes tomorrow. You have not tendered any shares.",
+        "contract": "Our order for {count} × {item} from {name} is due at tomorrow's close, and we have {made} of them. Whatever isn't made by then, we won't take: what has come is paid at the shop's price, and the advance counted against it.",
         "cash": "{name} has {till} eb in cash, and tomorrow's close is due to pay {loans} eb on loans and {wages} eb in wages: {total} eb in all."
       },
       "Footer": {
@@ -1016,6 +1075,7 @@
         "raise": "Answer it on the Staff tab (Manage) before the month's end, or they take it as a no and their Loyalty drops.",
         "charter": "Put money in from the Business window before tomorrow.",
         "takeover": "Tender in the Business window, in the Takeover section, if you want to sell.",
+        "contract": "Put stock towards it on the Production tab, if you have the item on the shelves.",
         "cash": "The week's takings come in first, so this may be covered. If not, a missed loan payment brings a late fee, and wages left unpaid are owed."
       }
     },
@@ -1026,6 +1086,12 @@
       "In": "in",
       "Out": "out",
       "Sales": ", shop sales {n} eb over cost",
+      "Orders": ", corporate orders {n} eb over cost",
+      "OrdersLoss": ", corporate orders {n} eb under cost",
+      "ContractDone": "{corp} took delivery of {count} × {item}: {paid} eb in all, the advance included.",
+      "ContractLate": "{corp}'s order ran out with {made} of {count} × {item} made: {paid} eb for what came, less the advance.",
+      "ContractShort": "{corp}'s order: {made} of {count} × {item} made, due by {date}.",
+      "ContractOpen": "{corp}'s order: all {count} × {item} made, for delivery at the next close.",
       "Wages": ", wages {n} eb",
       "Loans": ", loan interest {n} eb",
       "Bill": ", a bill of {n} eb",
@@ -1907,6 +1973,11 @@
         "Name": "Business events by mail",
         "Hint": "When a business's week brings trouble with someone behind it, such as a gang's shakedown, an inspection, a reporter or one of the staff, those who can answer it get a mail from them in Night City Messenger."
       },
+      "Contracts": {
+        "Name": "Contracts for workshops",
+        "Hint": "How often market corporations offer a player's workshop an order, at a month's close. Each offer waits on the GM Console's Pending tab, to offer to the partners or drop. Off: only the contracts you write on the Production tab.",
+        "Off": "Off"
+      },
       "PressFrequency": {
         "Name": "Stories in the press",
         "Hint": "How often corporations with a grudge run stories against player businesses. Off keeps the older smear events instead.",
@@ -2106,6 +2177,7 @@
       "CityOrg": "City of Night City",
       "Collectors": "Collections",
       "Hr": "{name} Human Resources",
+      "Procurement": "{name} Procurement",
       "Treasury": "{name} Treasury",
       "SourceAlias": "A friend",
       "Source": "A source",
@@ -2574,6 +2646,7 @@
     },
     "Cashbook": {
       "StockMargin": "Stock sold, over its cost",
+      "ContractMargin": "Corporate orders, over their cost",
       "StockSold": "{sold} eb across the counter",
       "Title": "{name}: cashbook, week {n}",
       "Open": "Open this week's cashbook",
@@ -2980,6 +3053,7 @@
         "npcInvestor": "NPC investor",
         "reward": "REP and IP",
         "stockMoved": "Storeroom",
+        "contract": "Contract",
         "syndicate": "New syndicate"
       },
       "Need": {
@@ -3008,6 +3082,7 @@
         "npcInvestor": "Answer for {name}: invited to invest {amount} eb at {price} eb a unit, as a silent partner",
         "reward": "{what}: apply, change or dismiss",
         "stockMoved": "{count} × {name} left the storeroom by hand: what became of them?",
+        "contract": "{corp} would order {count} × {item} for {total} eb, due {weeks} weeks after signing. Offer it to the partners, with any changes, or drop it",
         "syndicate": "Approve or reject the new syndicate"
       }
     },
@@ -3134,6 +3209,8 @@
       "CampaignApprove": "Let the campaign run",
       "PressApprove": "Let it run",
       "PressSpike": "Spike it",
+      "ContractOffer": "Offer it",
+      "ContractDrop": "Drop it",
       "PressHeadline": "Headline",
       "CampaignReject": "Stop the campaign",
       "StaffOffer": "{name}, an NPC, is offered a job as {post} at {wage} eb a week. Answer for them.",
@@ -3516,7 +3593,11 @@
         "fenced": "Stock fenced for {sold} eb",
         "stockSales": "Stock sold for {sold} eb: the profit, after what it cost",
         "stockCostBack": "Stock sold: what it cost, back in the cash",
+        "contractSettle": "{name}'s order: what its items cost, back in the cash, less the advance already paid",
         "stockBought": "{name} bought {count} × {itemName} from stock",
+        "contractAdvance": "Advance from {name} on {count} × {itemName}",
+        "contractDelivered": "{count} × {itemName} delivered to {name}",
+        "contractLate": "{count} × {itemName} settled late with {name}",
         "stockHanded": "{count} × {itemName} given to {name}",
         "stockConsigned": "{name} consigned {itemName}",
         "stockReturned": "{name} took back {itemName}",
@@ -3775,6 +3856,7 @@
         "dismiss": "{name} proposes dismissing an officer.",
         "hire": "{name} proposes hiring {who} as {post}.",
         "handStock": "{name} proposes giving {who} {count} × {item} from stock, for nothing.",
+        "contract": "{corp} offers an order: {count} × {item} at {unit} eb each, {total} eb in all, due {weeks} weeks after signing, with {advance} eb up front.",
         "coverLiving": "{name} proposes the business pays {who}'s Housing and Lifestyle, {cost} eb a month as it stands.",
         "stopLiving": "{name} proposes the business stops paying {who}'s Housing and Lifestyle.",
         "fire": "{name} proposes letting {who} go.",
@@ -3887,6 +3969,7 @@
         "jobApply": "Your application is in. You'll hear by mail.",
         "shiftRoll": "Your shift is done. You'll see how it went on your payslip.",
         "buyStock": "Bought: it is on your sheet.",
+        "contractStock": "Put towards the order.",
         "consign": "Your items are in the shop.",
         "takeBack": "It is back on your sheet.",
         "setLine": "The workshop's line is set.",
@@ -3965,6 +4048,7 @@
         "dismiss": "Agreed: the officer is dismissed.",
         "hire": "Agreed: the hire goes ahead.",
         "handStock": "Agreed: the items go to them.",
+        "contract": "Agreed: the order is signed, and the advance is in the cash.",
         "coverLiving": "Agreed: the business will pay their Housing and Lifestyle each month.",
         "stopLiving": "Agreed: the business no longer pays their Housing and Lifestyle.",
         "hired": "Agreed: hired, starting now.",
@@ -3994,6 +4078,9 @@
         "bad-line": "this business cannot make that",
         "line-too-dear": "that is beyond what the business can make at this stage",
         "store-full": "the storeroom is full",
+        "no-contract": "that order is no longer open",
+        "contract-full": "the order already has all it needs",
+        "contract-limit": "the business already has as many orders as it can take",
         "bad-use": "that skill does not fit this roll",
         "not-forming": "the business is no longer being set up",
         "not-partner": "this character is not a partner who can do that",
@@ -4396,6 +4483,7 @@
         "teamBetrayed": "{name} of the Exec's team sold them out and left.",
         "livingShort": "The cash could not cover {name}'s Housing and Lifestyle this month.",
         "madeStock": "{name} came off the benches.",
+        "contractFilled": "{name} came off the benches for {corp}'s order.",
         "weekRestarted": "The calendar went back, so this week ran from the new date.",
         "lineStopped": "The line on {name} stopped: illegal goods are switched off in this game.",
         "soldStock": "{name} sold from stock.",

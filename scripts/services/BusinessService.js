@@ -27,7 +27,7 @@ import {
   concealedHolders, auditConcealment, unmask, createRng, holderByRef, investigationTarget, scandalHit, investigationCost, spendDays,
   moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene, ABILITIES, backupWait, quashEffect, exposureBand, canRun,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
-  STACKING_TYPES,
+  STACKING_TYPES, offerContract, dropContract, writeContract, contractOf, takesContracts,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { NcmAdapter } from '../integrations/NcmAdapter.js';
@@ -741,6 +741,7 @@ class BusinessServiceImpl {
     await this._ownershipEvents(out);
     await this._standingWeek(out);
     await this._factionEvents(out);
+    await this._contractEvents(out).catch((error) => log.warn('Could not send a contract mail', error));
     await this._regulatorEvents(out);
     await this._publishRegister(out.business);
     await this._afterReports(out);
@@ -1155,6 +1156,8 @@ class BusinessServiceImpl {
       const day = this.day();
       const opts = { weekday: this.weekday(), growthRate: this.growthRate(), actors: this.actors(), seed: this.seed() };
       const factions = FactionRepository.withSectors();
+      // What the workshops make, for the corporations' orders (C1).
+      await ProductionCatalog.load().catch((error) => log.warn('Could not read the production lists', error));
       let changed = 0;
       for (const stored of BusinessRepository.all().filter((b) => b.status === 'open')) {
         // Employees' skills are read again from their sheets before the week is counted.
@@ -1170,6 +1173,7 @@ class BusinessServiceImpl {
           ...factionEffects(business, factions, hiddenEntry?.standing ?? {}),
           exposure: hiddenEntry?.exposure ?? 0,
           press: this._pressRelations(business, factions, hiddenEntry),
+          contracts: this._contractRelations(business, factions, hiddenEntry),
           living: Object.fromEntries((business.covered ?? []).map((id) => [id, this.livingCostOf(id)])),
           // A shift at any of a character's jobs excuses the week at the others (N3, N4).
           shiftDays: JobService.shiftDays(),
@@ -1222,6 +1226,96 @@ class BusinessServiceImpl {
       })),
       media: CompanyRepository.all().filter((c) => c.sector === 'media' && c.ticker !== business.company?.ticker).map((c) => ({ name: c.name, ticker: c.ticker })),
     };
+  }
+
+  /**
+   * Who might order from this workshop, and what it makes, or null with contracts off (C1): the market's corporations,
+   * not the players' own companies, each with the business's standing if it is a faction.
+   */
+  _contractRelations(business, factions, hiddenEntry) {
+    const frequency = BUSINESS_DEFAULTS.contracts.frequency[game.settings.get(MODULE_ID, SETTINGS.CONTRACTS)] ?? 0;
+    if (!frequency || !takesContracts(business)) return null;
+    return { frequency, corps: this.contractCorps(factions, hiddenEntry), items: ProductionCatalog.list(business.archetype) };
+  }
+
+  /** The market's corporations that can order goods: trading, and not a player's company. */
+  contractCorps(factions = FactionRepository.withSectors(), hiddenEntry = null) {
+    const players = new Set(BusinessRepository.all().map((b) => b.company?.ticker).filter(Boolean));
+    return CompanyRepository.all({ includeUnlisted: true }).filter((c) => c.status === 'active' && !players.has(c.ticker)).map((c) => {
+      const faction = factions.find((f) => f.kind === 'corp' && f.ticker === c.ticker) ?? null;
+      return { id: c.id, name: c.name, ticker: c.ticker, sector: c.sector, listed: !!c.listed, factionId: faction?.id ?? null, value: faction ? hiddenEntry?.standing?.[faction.id]?.value ?? 0 : 0 };
+    });
+  }
+
+  /** The GM puts a drawn contract to the partners, with any changes to its terms (C1). */
+  async offerContract(id, contractId, edits = {}) {
+    const done = await this._gm(id, (b) => {
+      const copy = normalizeBusiness(structuredClone(b));
+      const offered = offerContract(copy, contractId, edits, this.day());
+      return offered.ok ? { ok: true, business: copy, wealth: {}, events: [] } : offered;
+    });
+    if (done.ok) await this._mailContract(done.business, contractOf(done.business, contractId), 'offer').catch((error) => log.warn('Could not mail a contract', error));
+    return done;
+  }
+
+  /** The GM drops a drawn contract (C1). */
+  dropContract(id, contractId) {
+    return this._gm(id, (b) => {
+      const copy = normalizeBusiness(structuredClone(b));
+      const dropped = dropContract(copy, contractId);
+      return dropped.ok ? { ok: true, business: copy, wealth: {}, events: [] } : dropped;
+    });
+  }
+
+  /** The GM writes a contract by hand (C1): a corporation, an item off the business's list, the count, the price and the weeks. */
+  async writeContract(id, { companyId, uuid, count, unit, weeks } = {}) {
+    const stored = BusinessRepository.get(id);
+    if (!stored) return { ok: false, reason: 'no-business' };
+    const corp = this.contractCorps().find((c) => c.id === companyId) ?? null;
+    if (!corp) return { ok: false, reason: 'no-corp' };
+    const item = ProductionCatalog.find(stored.archetype, uuid);
+    if (!item) return { ok: false, reason: 'bad-line' };
+    let contractId = null;
+    const done = await this._gm(id, (b) => {
+      const copy = normalizeBusiness(structuredClone(b));
+      const written = writeContract(copy, { corp, item, count, unit: Number(unit) > 0 ? Number(unit) : item.price, weeks }, this.day());
+      if (!written.ok) return written;
+      contractId = written.contract.id;
+      return { ok: true, business: copy, wealth: {}, events: [] };
+    });
+    if (done.ok) await this._mailContract(done.business, contractOf(done.business, contractId), 'offer').catch((error) => log.warn('Could not mail a contract', error));
+    return done;
+  }
+
+  /** A contract's mail to those running the business, from the buyer (C1). */
+  async _mailContract(b, c, kind) {
+    if (!b || !c || b.npcRun) return;
+    const data = {
+      name: b.name, corp: c.corp.name, item: c.item.name, count: c.count, made: c.made ?? 0, total: Math.round(c.total).toLocaleString(), advance: Math.round(c.advance).toLocaleString(),
+      unit: Math.round(c.unit).toLocaleString(), weeks: c.weeks ?? 4, paid: Math.round(c.paid ?? 0).toLocaleString(), date: c.due != null ? this._dayText(c.due) : '', expires: c.expires != null ? this._dayText(c.expires) : '',
+    };
+    const from = await ContactService.buyer(c.corp).catch(() => null);
+    await this._mailRoom(b, L(`NCI.Contract.Mail.${kind}Subject`, data), [L(`NCI.Contract.Mail.${kind}`, data)], { ...(from ? { from } : {}), footer: L(`NCI.Contract.Mail.${kind}Footer`, data) });
+  }
+
+  /** What a contract's week did (C1): the buyer's mail, and a listed buyer's price lifted by a delivery. */
+  async _contractEvents(out) {
+    const b = out.business;
+    for (const e of out.events ?? []) {
+      if (e.type === 'contractSigned') await this._mailContract(b, contractOf(b, e.contractId), 'signed');
+      if (e.type !== 'contractDone' && e.type !== 'contractLate') continue;
+      await this._mailContract(b, contractOf(b, e.contract.id) ?? { ...e.contract, corp: { name: e.contract.corp, ticker: e.contract.ticker, factionId: e.contract.factionId }, item: { name: e.contract.item } }, e.type === 'contractDone' ? 'done' : 'late');
+      const company = e.type === 'contractDone' && e.contract.listed ? CompanyRepository.all().find((c) => c.ticker === e.contract.ticker) : null;
+      if (!company) continue;
+      const key = `contract:${e.contract.id}`;
+      await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
+        ...controls,
+        impacts: [...controls.impacts, makeImpact({
+          id: `imp_${key.replace(/[^a-zA-Z0-9_]/g, '_')}`, target: { type: 'company', id: company.ticker }, amount: percentToAmount(BUSINESS_DEFAULTS.contracts.lift), onsetTick: now + 1,
+          permanent: 1, sourceKey: key, source: 'contract', meta: { businessId: b.id, percent: BUSINESS_DEFAULTS.contracts.lift },
+        })],
+      }));
+    }
   }
 
   /** The GM lets a waiting story run, and it becomes this week's event (S1). */
