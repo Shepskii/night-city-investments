@@ -198,7 +198,7 @@ export class RollDialogApp extends BaseApplication {
       bonus: !!levers.bonus,
       extraAvailable,
       extra: !!levers.extra,
-      extraNote: extraAvailable && CrewToolsAdapter.active() ? L('NCI.Downtime.ExtraNote') : '',
+      extraNote: extraAvailable && CrewToolsAdapter.appliesTo(this.account) ? L('NCI.Downtime.ExtraNote') : '',
       dv: preview.dv,
       chance: pct(preview.chance),
       // A 1 is a fumble roll and a 10 adds a die, so "or more" only reads true between them.

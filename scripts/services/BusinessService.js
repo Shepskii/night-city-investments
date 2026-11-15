@@ -597,9 +597,9 @@ class BusinessServiceImpl {
       request = { ...request, targetId: target.id };
     }
 
-    // With Crew Tools, no weekly days: only what this request's spend, found in the character's log, pays for (B7b).
-    const params = CrewToolsAdapter.gmParams();
-    if (business && request.downtime && CrewToolsAdapter.active()) {
+    // With Crew Tools, no weekly days: only what this request's spend, found in the character's log, pays for (B7b). An NPC keeps the week's.
+    const params = CrewToolsAdapter.gmParams(actor);
+    if (business && request.downtime && CrewToolsAdapter.appliesTo(actor)) {
       const spent = CrewToolsAdapter.verify(actor.id, request.downtime);
       if (!spent || (business.downtimeUsed ?? []).includes(spent.id)) return this._receipt(actor, request, { ok: false, reason: 'no-downtime' });
       spendDays(business, as.partner.id, -spent.days);

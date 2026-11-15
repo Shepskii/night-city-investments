@@ -698,7 +698,7 @@ export class BusinessApp extends BaseApplication {
   static async _onAddDays(event, target) {
     const days = amount(target, 'days');
     // With Crew Tools, the days come out of downtime first, and only what the project still needs (B7b).
-    if (CrewToolsAdapter.active() && days > 0) {
+    if (CrewToolsAdapter.appliesTo(this.actor) && days > 0) {
       const project = this.business?.projects.find((x) => x.id === target.dataset.id);
       const needed = project ? Math.min(days, project.daysNeeded - project.days) : 0;
       if (needed < 1) return null;

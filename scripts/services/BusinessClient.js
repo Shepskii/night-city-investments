@@ -173,7 +173,7 @@ class BusinessClientImpl {
     // With Crew Tools, the days this roll takes are spent from downtime first, so one that cannot be paid for is never rolled (B7b).
     const days = (levers.extra && spec.extraAvailable ? 1 : 0) + (request.type === 'trainRoll' ? BUSINESS_DEFAULTS.staff.training.mentorDays : 0);
     let downtime = null;
-    if (CrewToolsAdapter.active() && days > 0) {
+    if (CrewToolsAdapter.appliesTo(actor) && days > 0) {
       downtime = await CrewToolsAdapter.spend(actor, days, L('NCI.Downtime.Reason', { name: business.name, what: title }));
       if (!downtime) return null;
     }

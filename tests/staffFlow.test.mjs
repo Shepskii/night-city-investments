@@ -787,6 +787,25 @@ test('Crew Tools downtime (B7b): project days and extra time come from a charact
     assert.match(text(await renderBusiness(windowFor(med, 'week'))), /a GM has to open Crew Tools/);
     log.accounts = [{ actorId: med.id }];
 
+    // An NPC has no downtime: the GM acting as one, at an NPC's company, keeps the week's days.
+    const owned = med.hasPlayerOwner;
+    try {
+      med.hasPlayerOwner = false;
+      await S.BusinessRepository.save({ ...business(), projects: business().projects.map((x) => (x.id === pid ? { ...x, status: 'active', days: 0 } : x)), period: { ...business().period, days: {} } });
+      const before = log.events.length;
+      assert.equal(CrewToolsAdapter.appliesTo(med), false);
+      assert.equal(CrewToolsAdapter.params(med, business()), BUSINESS_DEFAULTS);
+      assert.match(text(await renderBusiness(windowFor(med, 'week'))), /3 business day\(s\) left this week/);
+      await clickAdd(2);
+      await processed();
+      assert.equal(project().days, 2, 'from the weekly allowance');
+      assert.equal(log.events.length, before, 'no downtime is spent');
+      assert.equal(daysLeft(business(), med.id), 1);
+    } finally {
+      med.hasPlayerOwner = owned;
+    }
+    assert.equal(CrewToolsAdapter.appliesTo({ isSyndicate: true }), true, "a syndicate's officer spends their own downtime");
+
     // Switched off, the weekly allowance is back, Crew Tools or no.
     await game.settings.set(MODULE_ID, SETTINGS.CREW_DOWNTIME, false);
     assert.equal(CrewToolsAdapter.active(), false);

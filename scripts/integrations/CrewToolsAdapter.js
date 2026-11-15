@@ -36,6 +36,14 @@ export const CrewToolsAdapter = {
     return this.present() && game.settings.get(MODULE_ID, SETTINGS.CREW_DOWNTIME) !== false;
   },
 
+  /**
+   * Whether this account's business days come from downtime: a player's character, or a syndicate (its officer's days).
+   * An NPC has no downtime, so the GM acting as one keeps the weekly allowance.
+   */
+  appliesTo(account) {
+    return this.active() && !!(account?.isSyndicate || account?.hasPlayerOwner);
+  },
+
   /** Whether a GM has opened Downtime for this character: Crew Tools refuses until then. */
   prepared(characterId) {
     return !!stateOf(characterId)?.accounts?.some((a) => a.actorId === characterId);
@@ -52,14 +60,14 @@ export const CrewToolsAdapter = {
    * Its days already used this week are added back, so that what is left comes to their balance. Unchanged without it.
    */
   params(account, business) {
-    if (!this.active()) return BUSINESS_DEFAULTS;
+    if (!this.appliesTo(account)) return BUSINESS_DEFAULTS;
     const used = business?.period?.days?.[account?.id] ?? 0;
     return { ...BUSINESS_DEFAULTS, businessDays: used + this.balance(ownerOf(account)?.id) };
   },
 
-  /** The engine's rules on the GM's side: no days at all, but what a request's verified spend credits it. */
-  gmParams() {
-    return this.active() ? { ...BUSINESS_DEFAULTS, businessDays: 0 } : BUSINESS_DEFAULTS;
+  /** The engine's rules on the GM's side: no days at all, but what a request's verified spend credits it. An NPC keeps the week's. */
+  gmParams(account) {
+    return this.appliesTo(account ?? { hasPlayerOwner: true }) ? { ...BUSINESS_DEFAULTS, businessDays: 0 } : BUSINESS_DEFAULTS;
   },
 
   /**

@@ -326,8 +326,8 @@ function projectsContext(business, actor, canAct) {
   const crew = (p) => Object.entries(p.crew ?? {}).map(([id, n]) => `${nameOf(business, id)} ${n}`).join(', ');
   const name = (kind) => L(`NCI.Project.Kind.${kind}`);
   return {
-    daysFree: canAct ? (CrewToolsAdapter.active() ? L('NCI.Downtime.DaysFree', { free: left }) : L('NCI.Project.DaysFree', { free: left, total })) : '',
-    addHint: CrewToolsAdapter.active() ? L('NCI.Downtime.AddHint') : L('NCI.Project.AddHint'),
+    daysFree: canAct ? (CrewToolsAdapter.appliesTo(actor) ? L('NCI.Downtime.DaysFree', { free: left }) : L('NCI.Project.DaysFree', { free: left, total })) : '',
+    addHint: CrewToolsAdapter.appliesTo(actor) ? L('NCI.Downtime.AddHint') : L('NCI.Project.AddHint'),
     noDays: canAct && left <= 0,
     capacity: {
       text: L('NCI.Project.Capacity', { now: business.state.capacity.toFixed(2), cap: cap.toFixed(2) }),
@@ -628,7 +628,7 @@ const daysFor = (business, account) => daysLeft(business, account.id, CrewToolsA
 
 /** What the week's note says about them. A GM has to open Downtime once for a character before they have any there. */
 function daysLine(business, account) {
-  if (!CrewToolsAdapter.active()) return L('NCI.Business.DaysLeft', { n: daysLeft(business, account.id) });
+  if (!CrewToolsAdapter.appliesTo(account)) return L('NCI.Business.DaysLeft', { n: daysLeft(business, account.id) });
   return CrewToolsAdapter.prepared(ownerOf(account)?.id) ? L('NCI.Downtime.DaysLeft', { n: daysFor(business, account) }) : L('NCI.Downtime.NotPrepared');
 }
 
