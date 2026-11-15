@@ -15,7 +15,7 @@ import { isNpcActor } from '../../../services/BusinessClient.js';
 import { L, whole } from '../../format.js';
 import { confirm, report } from '../shared.js';
 import { actorLink } from '../../actorLink.js';
-import { rewardRow } from './pending.js';
+import { rewardRow, businessNeeds } from './pending.js';
 import { escapeHtml } from '../../../utils/text.js';
 
 async function onApprove(event, target) {
@@ -297,6 +297,10 @@ function standingRows(b, hidden, factions) {
 export function context() {
   const factions = FactionRepository.list();
   const factionOptions = factions.map((f) => ({ value: f.id, label: f.name }));
+  // What waits on the GM, for the top of each business tab and for each business's own Needs you strip.
+  const needs = { players: businessNeeds('businesses'), npc: businessNeeds('npcBusinesses') };
+  // In a business's own strip its name goes without saying; a person's (an award, an applicant) doesn't.
+  const needsOf = (b) => [...needs.players, ...needs.npc].filter((n) => n.businessId === b.id).map((n) => ({ ...n, who: n.item !== b.name ? n.item : '' }));
   const rows = BusinessService.snapshot().map(({ business: b, hidden }) => {
     const units = totalUnits(b);
     return {
@@ -305,6 +309,7 @@ export function context() {
       archetype: L(`NCI.Business.Archetype.${b.archetype}.Name`),
       status: L(`NCI.Business.Status.${b.status}`),
       isPending: b.status === 'pending',
+      needs: needsOf(b),
       // Owned and run by an NPC (N1).
       npc: b.npcRun ? {
         label: L(b.npcRun.auto ? 'NCI.GMBusiness.Npc.Runs' : 'NCI.GMBusiness.Npc.Held', { name: game.actors.get(b.npcRun.ownerId)?.name ?? '?' }),
@@ -416,6 +421,7 @@ export function context() {
   return {
     businesses: {
       enabled: BusinessService.enabled(),
+      needs: needs.players,
       pending: rows.filter((r) => r.isPending),
       // Suggested REP and IP wait with the rest, a closed business's too.
       rewards: rows.flatMap((r) => r.rewards),
@@ -423,6 +429,7 @@ export function context() {
       active: rows.filter((r) => !r.isPending && !r.closed && !r.npc),
       closed: rows.filter((r) => r.closed && !r.npc),
       npc: {
+        needs: needs.npc,
         active: rows.filter((r) => !r.closed && r.npc),
         closed: rows.filter((r) => r.closed && r.npc),
       },

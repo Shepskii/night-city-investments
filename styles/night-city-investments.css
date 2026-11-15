@@ -357,6 +357,10 @@
 .nci-app .nci-console label.nci-check { flex-direction: row; align-items: center; gap: 6px; }
 
 .nci-app .nci-block { margin-bottom: 16px; }
+/* What waits on the GM: a tab's Waiting for you, and a business's Needs you strip. */
+.nci-app .nci-needs h3 { color: var(--nci-warn, #ffb347); }
+.nci-app .nci-needsbox { margin: 6px 0 8px; padding: 6px 8px; border-left: 3px solid var(--nci-warn, #ffb347); background: color-mix(in srgb, var(--nci-warn, #ffb347) 10%, transparent); }
+.nci-app .nci-needs-title { color: var(--nci-warn, #ffb347); font-weight: bold; margin-bottom: 4px; }
 .nci-app hr.nci-rule { border: 0; border-top: 1px solid var(--nci-accent-dim); margin: 20px 0 16px; }
 .nci-app .nci-heatbar { display: inline-block; width: 90px; height: 8px; background: var(--nci-line); border: 1px solid var(--nci-accent-dim); vertical-align: middle; }
 .nci-app .nci-heatfill { display: block; height: 100%; background: var(--nci-up); }

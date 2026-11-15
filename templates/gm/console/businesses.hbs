@@ -5,8 +5,11 @@
   <p class="nci-hint">{{localize "NCI.Faction.StandingHint"}}</p>
 </div>
 
+{{> "modules/night-city-investments/templates/gm/console/needs.hbs" rows=businesses.needs}}
+
+{{#if businesses.pending.length}}
 <div class="nci-block">
-  <h3>{{localize "NCI.GMBusiness.Waiting"}}</h3>
+  <h3>{{localize "NCI.GMBusiness.NewWaiting"}}</h3>
   {{#each businesses.pending}}
   <div class="nci-gig nci-bizentry">
     <div class="nci-bizhead">
@@ -28,17 +31,9 @@
       <button type="button" data-action="businessReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMBusiness.Reject"}}</button>
     </div>
   </div>
-  {{else}}{{#unless businesses.rewards.length}}<p class="nci-empty">{{localize "NCI.GMBusiness.NoneWaiting"}}</p>{{/unless}}{{/each}}
-  {{#if businesses.rewards.length}}
-  <table class="nci-market nci-pending nci-rewards">
-    <thead><tr><th>{{localize "NCI.Reward.Title"}}</th><th></th><th></th></tr></thead>
-    <tbody>{{#each businesses.rewards}}<tr><td>{{item}}</td><td class="nci-muted">{{needed}}</td><td class="nci-rowactions"><div class="nci-actions">
-      {{#each fields}}<label class="nci-inline">{{label}} <input type="number" name="{{name}}" value="{{value}}" class="nci-days"></label>{{/each}}
-      {{#each buttons}}<button type="button" data-action="{{action}}" data-id="{{id}}" data-reward="{{reward}}"><i class="fas {{icon}}"></i> {{label}}</button>{{/each}}
-    </div></td></tr>{{/each}}</tbody>
-  </table>
-  {{/if}}
+  {{/each}}
 </div>
+{{/if}}
 
 <div class="nci-block">
   <h3>{{localize "NCI.GMBusiness.Running"}}</h3>

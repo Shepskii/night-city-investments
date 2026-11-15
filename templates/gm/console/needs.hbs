@@ -1,0 +1,16 @@
+{{!-- A business tab's decisions waiting on the GM, at its top: the Pending tab's rows for this tab. --}}
+<div class="nci-block nci-needs">
+  <h3><i class="fas fa-bell"></i> {{localize "NCI.GMBusiness.NeedsTitle"}}{{#if rows.length}} <span class="nci-count">{{rows.length}}</span>{{/if}}</h3>
+  {{#if rows.length}}
+  <table class="nci-market nci-pending">
+    <thead><tr><th>{{localize "NCI.Pending.Type"}}</th><th>{{localize "NCI.Pending.Item"}}</th><th>{{localize "NCI.Pending.Needed"}}</th><th>{{localize "NCI.Pending.Action"}}</th></tr></thead>
+    <tbody>
+      {{#each rows}}
+      <tr><td>{{type}}</td><td>{{item}}</td><td class="nci-muted">{{needed}}</td><td class="nci-rowactions">{{> "modules/night-city-investments/templates/gm/console/pending-controls.hbs"}}</td></tr>
+      {{/each}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="nci-empty">{{localize "NCI.GMBusiness.NeedsNone"}}</p>
+  {{/if}}
+</div>

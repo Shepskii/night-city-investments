@@ -127,7 +127,7 @@ function businessRows() {
           act('businessNpcPartner', 'NpcDecline', no, { staff: x.actorId, yes: 'false' }),
         ],
       }))),
-    ].filter(Boolean);
+    ].filter(Boolean).map((r) => ({ ...r, businessId: b.id }));
   });
 }
 
@@ -149,7 +149,7 @@ export function rewardRow(businessName, businessId, r) {
 // A wound-up business's suggestions still wait, though it is closed.
 const rewardRows = () => BusinessService.snapshot().flatMap(({ business: b, hidden }) => (hidden.rewards ?? []).map((r) => {
   const { item, needed, controls } = rewardRow(b.name, b.id, r);
-  return { tab: 'businesses', type: L('NCI.Pending.Kind.reward'), item, needed, controls };
+  return { tab: b.npcRun ? 'npcBusinesses' : 'businesses', businessId: b.id, type: L('NCI.Pending.Kind.reward'), item, needed, controls };
 }));
 
 const syndicateRows = () => SyndicateRepository.all().filter((s) => s.status === 'pending').map((s) => row('syndicates', s.name, 'syndicate', undefined, () => ({
@@ -165,14 +165,14 @@ const pressRows = () => PressService.held().map((s) => row('events', s.name, 'pr
   buttons: [button('pressCharacterApprove', 'NCI.GMBusiness.PressApprove', yes, s.id), button('pressCharacterSpike', 'NCI.GMBusiness.PressSpike', no, s.id)],
 })));
 
-const jobTab = (b) => (isEmployerId(b.id) ? 'jobMarket' : 'businesses');
-const jobRows = () => JobService.waiting().map(({ business: b, application: a }) => row(jobTab(b), a.name, 'jobApplication', { name: b.name, post: L(`NCI.Staff.Post.${a.post}`), band: L(`NCI.Roll.Band.${a.band}`) }, () => ({
+const jobTab = (b) => (isEmployerId(b.id) ? 'jobMarket' : b.npcRun ? 'npcBusinesses' : 'businesses');
+const jobRows = () => JobService.waiting().map(({ business: b, application: a }) => ({ ...row(jobTab(b), a.name, 'jobApplication', { name: b.name, post: L(`NCI.Staff.Post.${a.post}`), band: L(`NCI.Roll.Band.${a.band}`) }, () => ({
   buttons: [button('businessJobAnswer', 'NCI.Jobs.Hire', yes, b.id, { reward: a.id, yes: 'true' }), button('businessJobAnswer', 'NCI.Jobs.TurnDown', no, b.id, { reward: a.id, yes: 'false' })],
-})));
+})), businessId: b.id }));
 
-const promotionRows = () => JobService.promotions().map(({ business: b, staff: s, raised }) => row(jobTab(b), s.name, 'promotion', { name: b.name, post: L(`NCI.Staff.Post.${s.post}`), wage: s.wage, raised }, () => ({
+const promotionRows = () => JobService.promotions().map(({ business: b, staff: s, raised }) => ({ ...row(jobTab(b), s.name, 'promotion', { name: b.name, post: L(`NCI.Staff.Post.${s.post}`), wage: s.wage, raised }, () => ({
   buttons: [button('businessPromote', 'NCI.Jobs.Promote', yes, b.id, { reward: s.id, yes: 'true' }), button('businessPromote', 'NCI.Jobs.NotNow', no, b.id, { reward: s.id, yes: 'false' })],
-})));
+})), businessId: b.id }));
 
 const rows = () => [...storyRows(), ...pressRows(), ...jobRows(), ...promotionRows(), ...businessRows(), ...rewardRows(), ...syndicateRows(), ...heatRows(), ...gigRows()];
 
@@ -182,6 +182,15 @@ export function waiting() {
   const counts = { pending: all.length };
   for (const { tab } of all) counts[tab] = (counts[tab] ?? 0) + 1;
   return counts;
+}
+
+/**
+ * The decisions waiting on one of the business tabs (Businesses, NPC Businesses), with their fields and buttons, for the
+ * tab's own Waiting for you section and for each business's Needs you strip.
+ */
+export function businessNeeds(tab) {
+  const all = [...jobRows(), ...promotionRows(), ...businessRows(), ...rewardRows()].filter((r) => r.tab === tab);
+  return all.map(({ controls, ...r }) => ({ ...r, fields: [], buttons: [], ...controls?.({}) }));
 }
 
 export const actions = {};

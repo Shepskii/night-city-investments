@@ -3181,6 +3181,10 @@
           "not-npc": "That business isn't run by an NPC."
         }
       },
+      "NeedsTitle": "Waiting for you",
+      "NeedsNone": "Nothing is waiting on you here.",
+      "NeedsYou": "Needs you",
+      "NewWaiting": "New businesses waiting to open",
       "Running": "Setting up and open",
       "NoneRunning": "No player business yet.",
       "Leaves": "Partner leaves",

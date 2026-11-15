@@ -601,11 +601,14 @@ test('the Pending tab has a row for each decision waiting, and the tab buttons c
     assert.equal(tabButton(players, 'businesses'), 'Businesses 8');
     assert.equal(tabButton(players, 'heat'), 'Heat 1');
     assert.equal(tabButton(await renderConsole('gigs'), 'gigs'), 'Gigs 3');
-    // Every GM button on an entry but Open, at the top, comes after its tables, and an offer's words are with its buttons.
-    const entry = players.split('<div class="nci-gig nci-bizentry">').find((x) => x.includes('businessRestructure'));
-    assert.ok(entry.indexOf('data-action="businessOpen"') < entry.indexOf('<table'), 'Open is at the top');
-    assert.ok(entry.lastIndexOf('</table>') < entry.replace('data-action="businessOpen"', '').indexOf('data-action='), 'the other buttons are at the foot');
-    assert.ok(entry.indexOf('Nix') > entry.indexOf('nci-gmbuttons'));
+    // The decisions are at the top of the tab, and again in each business's Needs you strip, under Open and above its tables.
+    assert.ok(players.indexOf('nci-needs"') < players.indexOf('<div class="nci-gig nci-bizentry">'), 'Waiting for you comes first');
+    const entry = players.split('<div class="nci-gig nci-bizentry">').slice(1).find((x) => x.includes('businessRestructure'));
+    assert.ok(entry.indexOf('data-action="businessOpen"') < entry.indexOf('nci-needsbox'), 'Open is at the top');
+    const strip = entry.slice(entry.indexOf('nci-needsbox'), entry.indexOf('<div class="nci-gmstats">') > -1 ? entry.indexOf('<div class="nci-gmstats">') : undefined);
+    for (const action of ['businessRestructure', 'businessCampaignApprove', 'businessStaffAnswer']) assert.match(strip, new RegExp(`data-action="${action}"`), `${action} needs the GM`);
+    assert.ok(strip.includes('Nix'), 'an offer names who it is for');
+    assert.doesNotMatch(entry.slice(entry.indexOf('nci-gmbuttons')), /businessRestructure|businessCampaignApprove/, 'and not again at the foot');
     assert.match(entry, /A smear against Arasaka \(ARA\)/);
     assert.match(entry, /data-action="businessCampaignApprove"/);
     assert.equal(html.match(/<tr class="nci-row" data-action="switchTab"/g).length, 12);
@@ -1186,6 +1189,7 @@ test('NPC Businesses (Tools): a New NPC business button opening its own window, 
     assertClean(empty, 'an empty NPC Businesses tab');
     assert.match(empty, /data-action="npcBusinessNew"/);
     assert.match(text(empty), /No NPC businesses yet/);
+    assert.match(text(empty), /Waiting for you Nothing is waiting on you here/, 'its own decisions section');
     const button = empty.indexOf('data-action="npcBusinessNew"');
     assert.ok(button > -1 && button < empty.indexOf('class="nci-rule"'), 'the button first, above the list');
     assert.match(empty, /data-tab="npcBusinesses"[^>]*>NPC Businesses/);
@@ -1258,7 +1262,7 @@ test('REP and IP (B7c): a milestone suggests them to the GM, for those running i
     assert.match(pending, /name="rewardIp" value="10"/);
     const entry = await renderConsole('businesses');
     assertClean(entry, 'an entry with a suggestion');
-    assert.match(text(entry), /REP and IP suggested/);
+    assert.match(text(entry), /Waiting for you/);
     assert.match(entry, /data-action="businessRewardDismiss"/);
 
     // Applied as the GM set it, with the sheet's own log saying what for.
@@ -1808,10 +1812,9 @@ test('GM fixes: Pending lists each row\'s type with no button to its tab, Exposu
 
     const console = await renderConsole('businesses');
     assertClean(console, 'businesses with REP and IP waiting');
-    const waiting = console.indexOf('NCI.GMBusiness.Waiting') > -1 ? console.indexOf('NCI.GMBusiness.Waiting') : console.indexOf('Waiting for GM');
-    assert.ok(console.indexOf('data-action="businessRewardApply"') > waiting);
+    assert.ok(console.indexOf('data-action="businessRewardApply"') > console.indexOf('Waiting for you'));
     const entry = console.split('<div class="nci-gig nci-bizentry">').slice(1).join('');
-    assert.doesNotMatch(entry, /data-action="businessRewardApply"/, 'not inside the company');
+    assert.match(entry, /<strong>Medtech<\/strong>: A scene won at Back Room/, 'and in the strip, naming who it is for');
 
     await S.BusinessService.setExposure(b.id, 40);
     assert.equal(MarketStore.getBusinessesHidden()[b.id].exposure, 40);
@@ -1869,7 +1872,7 @@ test('REP and IP on the GM\'s Businesses tab are laid out as Pending\'s rows', a
     await S.BusinessRepository.save({ ...b, status: 'open' });
     await S.BusinessService._suggestReward(S.BusinessRepository.all()[0], 'sceneWon', [med.id]);
     const html = await renderConsole('businesses');
-    assert.match(html, /<table class="nci-market nci-pending nci-rewards">/);
+    assert.match(html, /<div class="nci-block nci-needs">[\s\S]*<table class="nci-market nci-pending">/);
     assert.match(html, /<td class="nci-rowactions"><div class="nci-actions">/);
   } finally {
     await MarketStore.setBusinessesHidden(hiddenBefore);

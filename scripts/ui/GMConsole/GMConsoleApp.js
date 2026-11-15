@@ -52,7 +52,7 @@ export class GMConsoleApp extends BaseApplication {
   static PARTS = {
     body: {
       template: `modules/${MODULE_ID}/templates/gm/console.hbs`,
-      templates: [...Object.keys(TABS), 'preview', 'business-entry'].map((t) => `${PARTIALS}/${t}.hbs`),
+      templates: [...Object.keys(TABS), 'preview', 'business-entry', 'needs', 'pending-controls'].map((t) => `${PARTIALS}/${t}.hbs`),
     },
   };
 
