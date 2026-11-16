@@ -143,7 +143,7 @@ A Lawman can also turn the badge on others: **Open an investigation**, on the Po
 - **The DV:** 15 for an NPC's business. A corporation is harder the bigger it is: 17, 19 or 21, shown beside its name.
 - **Evidence:** if anyone has published a story about the target in the last four weeks, it counts as evidence, +2 to your roll.
 - **Against an NPC's business:** a pass hands the regulators enough for a case against it.
-- **Against a corporation:** a pass puts the investigation in the news, and its price falls a couple of days later: 2%, or 4% on a strong roll and 6% on an exceptional one. The corporation won't forget: any business you hold a stake in loses standing with it. You know the drop is coming, so trading on it draws insider heat.
+- **Against a corporation:** a pass puts the investigation in the news, and its price falls the next day: 2%, or 4% on a strong roll and 6% on an exceptional one. The corporation won't forget: any business you hold a stake in loses standing with it. You know the drop is coming, so trading on it draws insider heat.
 - **A fumble:** heat, and a smear about you in the press, from the corporation itself or, for an NPC's business, a media company. You can answer it as you would any story about you.
 
 ---
