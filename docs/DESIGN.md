@@ -2643,7 +2643,7 @@ A story about a character also costs the business they run with the worst standi
 - **Left out:** street-paper voices per gang style (one street voice serves every gang).
 - **Live test (2026-11-13, test world, as Pat with the GM running stories by hand):** a turf warning from *The Tyger Claws Circular* on Splice Chrome Clinic reached the runners from the paper's own contact, showed on the Work tab with Brawling, Tactics and Backup, printed its headline, landed unanswered, and cut the next week's takings from 946 to 851 eb. Good word from the same paper went in without approval, needed no answer and raised Reputation by 2. The Factions tab's Street paper column was checked by the user. Fixes from it: the press reminder's wording (the story has always printed by then), good word's card (good news, no skills listed) and no reminder for it, and a tip's reminder from the masked source. Not seen live: a tip to Vice (the only open back room is the user's own bar), a gang's story about a character, and a hostile gang's media company.
 
-### 36.19 C1 Market contracts for production: the plan (the user's choices, 2026-11-13; not built)
+### 36.19 C1 Market contracts for production: the plan (the user's choices, 2026-11-13; built in v0.27.0)
 
 **Decided.** A market corporation can order goods from a player workshop. Offers are drawn, and wait on Pending for the GM; the GM can also write one by hand on the Production tab.
 
@@ -2730,6 +2730,6 @@ A story about a character also costs the business they run with the worst standi
 | N | **Done (v0.24.0), see §36.17.** NPC-owned companies that run themselves, a job board and weekly shifts for player characters, and jobs at market corporations (N0 to N4) |
 | M | **Part done, see §36.4.** M1 contacts pushed to players (v0.23.0); M2 events by mail, and staff and employers as contacts (v0.25.0). M3 mail in character (v0.25.0): the right senders with the rules apart, organisations' and people's voices, answers, and the treasury, the Exchange by context and newswire headlines. v0.25.1: NPC investors answered by the GM, and the cap table's player or NPC note and job titles (§36.16). v0.25.2: owners on business pins, for the bridge's 0.4.0 categories (§36.9). M4 (v0.26.0): the weekly mail, reminders and adverts, as Notifications. Still proposed: a business's own inbox, underworld shards, company networks |
 | G1 | **Done (v0.26.0), see §36.18.** Gangs in the press: street papers at rank 3, the existing kinds, tips to Vice, turf warnings and good word |
-| C1 | **Built and tested live, release held (0.27.0), see §36.19.** Market contracts for production: drawn monthly by sector and standing, GM approval, an advance, delivery and penalties |
+| C1 | **Done (v0.27.0), see §36.19.** Market contracts for production: drawn monthly by sector and standing, GM approval, an advance, delivery and penalties |
 | X2 | **Planned, see §36.20.** Rivalry against NPCs and the GM: NET runs, moves against NPC companies, deals with NPC investors, Lawman investigations |
 | Later | Short selling and margin, options |
