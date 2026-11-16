@@ -158,6 +158,7 @@ A Netrunner can **Make a NET run** from the same place, on the Portfolio tab's *
 - **Evidence:** a shard is evidence about its target, for a Lawman's investigation or a Media's story, and is used up by whichever uses it.
 - **A failure:** you're traced. Heat +5, and any business you hold a stake in loses standing with the target, if it's a faction.
 - **A fumble:** traced, and you hit ICE: the GM has something for you.
+- **A real run (with NET Architect):** a target marked **[map]** can be run for real on the GM's NET Architect map. Pick it and choose **Jack in for real** or the quick roll. The GM is asked to start it. A real run costs nothing, and the data shard you bring out of its node counts +4 as evidence, not +2. Leave without the shard and the run failed; fail or get compromised at any node and you're traced, as above. It still uses your week's run.
 
 ---
 

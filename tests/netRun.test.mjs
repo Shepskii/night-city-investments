@@ -158,3 +158,78 @@ test('a Netrunner runs: an NPC ledger or a corporation\'s pipeline as a shard; a
     await cass.unsetFlag(MODULE_ID, FLAGS.INQUIRED);
   }
 });
+
+// ── A real run on NET Architect (X2a) ────────────────────────────────────────
+
+test('a real run: the shard decides a pass, a failed node a trace; its shard counts for more', () => {
+  const rules = E.BUSINESS_DEFAULTS.roles.netRun;
+  assert.deepEqual(E.liveRunOutcome({ shard: true }), { outcome: 'success', traced: false, heat: 0, standing: 0 });
+  assert.deepEqual(E.liveRunOutcome({ shard: false, failed: 1 }), { outcome: 'failure', traced: true, heat: rules.heat, standing: rules.standing });
+  assert.equal(E.liveRunOutcome({ shard: true, compromised: 2 }).traced, true);
+  assert.equal(E.evidenceWeight({ bonus: rules.liveEvidence }), 4);
+  assert.equal(E.evidenceWeight({}), E.BUSINESS_DEFAULTS.roles.inquiry.evidence);
+  assert.equal(E.inquiryTarget(19, 4), 15);
+  assert.equal(E.inquiryTarget(19, true), 17);
+  assert.equal(E.evidenceMatches({ live: true, ticker: 'MIL' }, { ticker: 'MIL' }), false, 'a shard still on its node is no one\'s evidence');
+});
+
+test('a shard taken in a real run is filled in as of then; jack-out settles the run the Netrunner asked for', async () => {
+  const { BusinessService, StoryService, HeatService, BusinessRepository } = S;
+  const { MODULE_ID, FLAGS } = await import('../scripts/utils/constants.js');
+  env.store.set('heatEnabled', true);
+  const restore = globalThis.fromUuid;
+  globalThis.fromUuid = async (uuid) => (uuid === `Actor.${cass.id}` ? cass : restore?.(uuid));
+  try {
+    // NET Architect copies the item, flags and all, and marks where it came from.
+    const [item] = await cass.createEmbeddedDocuments('Item', [{
+      name: 'Data shard: Nina Noodles', type: 'gear', system: { description: { value: '' } },
+      flags: { [MODULE_ID]: { [FLAGS.EVIDENCE]: { live: true, kind: 'npc', businessId: 'bus_npcshop', ticker: null, name: 'Nina Noodles', used: false } }, 'cpr-net-architect': { lootClaim: 'sess1:node:att' } },
+    }]);
+    item.update = async function (d) {
+      for (const [path, value] of Object.entries(d)) {
+        const keys = path.split('.');
+        let at = this;
+        for (const k of keys.slice(0, -1)) at = (at[k] ??= {});
+        at[keys.at(-1)] = value;
+      }
+    };
+    await BusinessService.fillLiveShard(item);
+    const flag = item.flags[MODULE_ID][FLAGS.EVIDENCE];
+    assert.equal(flag.live, false);
+    assert.equal(flag.bonus, 4);
+    assert.match(flag.note, /Nina 100%/);
+    assert.ok(StoryService.evidenceFor(cass, { ticker: null, businessId: 'bus_npcshop' }).includes(item), 'now evidence about the business');
+
+    // Jack-out of the run Cass asked for: a pass, traced by a failed node.
+    await cass.setFlag(MODULE_ID, FLAGS.NET_RUN_LIVE, { target: { kind: 'npc', id: 'bus_npcshop', name: 'Nina Noodles', ticker: null }, architectureId: 'arch1', day: 1 });
+    await HeatService.setHeat(cass.id, 10);
+    const result = await BusinessService.settleLiveRun({ id: 'sess1', architectureId: 'arch1', runner: { actorUuid: `Actor.${cass.id}` }, failedNodeIds: ['n2'], compromisedNodeIds: [] });
+    assert.equal(result.outcome, 'success');
+    assert.equal(result.traced, true);
+    assert.equal(HeatService.heatOf(cass.id), 10 + E.BUSINESS_DEFAULTS.roles.netRun.heat);
+    assert.equal(cass.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE), undefined, 'settled once');
+    assert.equal(await BusinessService.settleLiveRun({ id: 'sess2', architectureId: 'arch1', runner: { actorUuid: `Actor.${cass.id}` } }), null, 'a run NCI was not asked for is left alone');
+
+    // The real run's shard counts 4 in an investigation.
+    const { SkillAdapter } = S;
+    const baseFor = SkillAdapter.baseFor;
+    const verifyLevers = SkillAdapter.verifyLevers;
+    const dvs = [];
+    SkillAdapter.baseFor = (actor, use) => (use.ability === 'Backup' && actor.id === cass.id ? { base: 4, name: 'Backup', parts: 'Backup 4' } : baseFor.call(SkillAdapter, actor, use));
+    SkillAdapter.verifyLevers = async (actor, request, { dv }) => { dvs.push(dv); return { ok: true, result: { band: 'failure' } }; };
+    try {
+      await cass.unsetFlag(MODULE_ID, FLAGS.INQUIRED);
+      await BusinessService._inquire(cass, { key: `i${Math.random()}`, target: 'b:bus_npcshop' });
+      assert.equal(dvs.at(-1), E.BUSINESS_DEFAULTS.roles.inquiry.dv.npc - 4);
+      assert.equal(StoryService.evidenceFlag(item).used, true);
+    } finally {
+      SkillAdapter.baseFor = baseFor;
+      SkillAdapter.verifyLevers = verifyLevers;
+      await cass.unsetFlag(MODULE_ID, FLAGS.INQUIRED);
+    }
+    assert.ok(BusinessRepository.get('bus_npcshop'));
+  } finally {
+    globalThis.fromUuid = restore;
+    env.store.set('heatEnabled', false);
+  }
+});

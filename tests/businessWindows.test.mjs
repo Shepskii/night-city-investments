@@ -744,10 +744,12 @@ test('the console\'s tabs are in groups: a group goes to its last open tab, and 
     const context = (() => { const a = new Apps.GMConsole(); a.tab = id; return a._prepareContext(); })();
     const { groups, subTabs } = await context;
     assert.equal(groups.filter((g) => g.active).length, 1, id);
-    assert.ok(id === 'pending' ? subTabs.length === 0 : subTabs.some((t) => t.id === id && t.active), `${id} is in its group's row`);
+    // NET runs is offered only with NET Architect there (X2a), which this world hasn't.
+    if (id === 'netRuns') assert.ok(!subTabs.some((t) => t.id === id), 'NET runs is hidden without NET Architect');
+    else assert.ok(id === 'pending' ? subTabs.length === 0 : subTabs.some((t) => t.id === id && t.active), `${id} is in its group's row`);
     seen.add(id);
   }
-  assert.equal(seen.size, 16);
+  assert.equal(seen.size, 17);
   const jobs = (() => { const a = new Apps.GMConsole(); a.tab = 'jobMarket'; return a._prepareContext(); })();
   assert.deepEqual((await jobs).subTabs.map((t) => t.label), ['Businesses', 'Job Market', 'Syndicates', 'Heat'], 'Job Market under Players');
   assert.match(await renderConsole('actions'), />\s*Corp actions\s*</);

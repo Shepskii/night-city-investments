@@ -55,7 +55,9 @@ export const BusinessWatcher = {
     // A Netrunner's NET run (X2a).
     else if (result.ok && result.netRun) {
       const { outcome, kind, name } = result.netRun;
-      ui.notifications.info(L(`NCI.Heat.Action.netRun.Result.${outcome === 'success' ? kind : outcome}`, { name }));
+      // A real run asked for (X2a): the GM is setting it up.
+      if (outcome === 'asked') ui.notifications.info(L('NCI.NetRunLive.Asked', { name }));
+      else ui.notifications.info(L(`NCI.Heat.Action.netRun.Result.${outcome === 'success' ? kind : outcome}`, { name }));
     }
     else if (result.ok && result.rumour) ui.notifications.info(L(result.rumour.found ? 'NCI.Rumour.Found' : 'NCI.Rumour.Nothing'));
     else if (result.ok && result.story) ui.notifications.info(L(!result.story.believed ? 'NCI.Story.NotBelieved' : result.story.waiting ? 'NCI.Story.BelievedWaiting' : 'NCI.Story.Believed', { die: result.story.die, target: result.story.target }));

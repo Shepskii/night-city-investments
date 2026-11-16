@@ -28,7 +28,7 @@ import {
   moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene, ABILITIES, backupWait, quashEffect, exposureBand, canRun,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
   STACKING_TYPES, offerContract, dropContract, writeContract, contractOf, takesContracts,
-  inquiryWait, inquiryDv, inquiryTarget, inquiryEffect, hasEvidence, netRunWait, netRunDv, netRunEffect, RUMOUR_LEVELS, STORY_RULES,
+  inquiryWait, inquiryDv, inquiryTarget, inquiryEffect, hasEvidence, netRunWait, netRunDv, netRunEffect, liveRunOutcome, evidenceWeight, RUMOUR_LEVELS, STORY_RULES,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { NcmAdapter } from '../integrations/NcmAdapter.js';
@@ -46,6 +46,7 @@ import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
 import { SkillAdapter } from './SkillAdapter.js';
 import { CrewToolsAdapter } from '../integrations/CrewToolsAdapter.js';
+import { NetArchitectAdapter } from '../integrations/NetArchitectAdapter.js';
 import { REWARDS, rewardRunners, rewardChange, rewardMatters } from '../engine/businessRewards.js';
 import { WealthAdapter } from './WealthAdapter.js';
 import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors, investorContacts, staffActors, jobsOf, isNpcActor } from './BusinessClient.js';
@@ -561,6 +562,8 @@ class BusinessServiceImpl {
     if (request.type === 'inquiryRoll') return this._receipt(actor, request, await this._inquire(actor, request));
     // A Netrunner's NET run (X2a), the same way.
     if (request.type === 'netRunRoll') return this._receipt(actor, request, await this._netRun(actor, request));
+    // Or a real one on NET Architect, which the GM is asked to start.
+    if (request.type === 'netRunLive') return this._receipt(actor, request, await this._netRunLive(actor, request));
     if (!this.enabled()) return this._receipt(actor, request, { ok: false, reason: 'disabled' });
     // Looking behind a hidden holding (B6d) reads only the GM's hidden state and changes no business.
     if (request.type === 'investigate') return this._receipt(actor, request, await this._investigate(actor, request));
@@ -2123,13 +2126,16 @@ class BusinessServiceImpl {
     const corps = CompanyRepository.all().filter((c) => c.status === 'active' && c.listed !== false && !players.has(c.ticker))
       .map((c) => ({ ticker: c.ticker, name: c.name, cap: (pub[c.ticker]?.price ?? 0) * (c.sharesOutstanding ?? 0) }));
     const npc = this.enabled() ? BusinessRepository.all().filter((b) => b.status === 'open' && (b.npcRun || !playerHeld(b))) : [];
+    // Whether a real run on NET Architect can be made on it (X2a): only the GM sees which map.
+    const on = NetArchitectAdapter.active();
+    const live = (target) => on && !!NetArchitectAdapter.linkOf(target);
     return {
       // Each with a Lawman's DV and a Netrunner's (`netDv`, X2a).
       npc: npc.map((b) => ({
-        id: b.id, name: b.name, ticker: b.company?.ticker ?? null, dv: inquiryDv({ kind: 'npc' }), netDv: netRunDv({ kind: 'npc', stage: b.stage }),
+        id: b.id, name: b.name, ticker: b.company?.ticker ?? null, dv: inquiryDv({ kind: 'npc' }), netDv: netRunDv({ kind: 'npc', stage: b.stage }), live: live({ kind: 'npc', id: b.id }),
       })).sort((a, b) => a.name.localeCompare(b.name)),
       corps: corps.map((c) => ({
-        ticker: c.ticker, name: c.name, dv: inquiryDv({ kind: 'corp', ticker: c.ticker }, corps), netDv: netRunDv({ kind: 'corp', ticker: c.ticker }, corps),
+        ticker: c.ticker, name: c.name, dv: inquiryDv({ kind: 'corp', ticker: c.ticker }, corps), netDv: netRunDv({ kind: 'corp', ticker: c.ticker }, corps), live: live({ kind: 'corp', ticker: c.ticker }),
       })).sort((a, b) => a.name.localeCompare(b.name)),
     };
   }
@@ -2152,9 +2158,13 @@ class BusinessServiceImpl {
     if (!found) return { ok: false, reason: 'no-target' };
     const target = kind === 'b' ? { kind: 'npc', id, name: found.name, ticker: found.ticker } : { kind: 'corp', ticker: id, name: found.name };
     // Evidence: a story about it lately, or a data shard about it (X2a), which the investigation uses up.
-    const [shard] = StoryService.evidenceFor(actor, { ticker: target.ticker, businessId: target.id ?? null });
-    const evidence = hasEvidence(MarketStore.getStories().recent, target.ticker, day) || !!shard;
-    const check = await SkillAdapter.verifyLevers(actor, request, { dv: inquiryTarget(found.dv, evidence), use: ABILITIES.backup });
+    // The strongest shard is the one used: a real run's counts for more (X2a on NET Architect).
+    const weightOf = (item) => evidenceWeight(StoryService.evidenceFlag(item));
+    const [shard] = StoryService.evidenceFor(actor, { ticker: target.ticker, businessId: target.id ?? null }).sort((a, b) => weightOf(b) - weightOf(a));
+    const story = hasEvidence(MarketStore.getStories().recent, target.ticker, day);
+    const weight = Math.max(story ? rules.evidence : 0, shard ? weightOf(shard) : 0);
+    const evidence = weight > 0;
+    const check = await SkillAdapter.verifyLevers(actor, request, { dv: inquiryTarget(found.dv, weight), use: ABILITIES.backup });
     if (!check.ok) return check;
     if (shard) await StoryService.useEvidence(shard);
     await WealthAdapter.set(actor, wealth - rules.cost, L('NCI.Heat.Action.inquiry.Name'));
@@ -2211,6 +2221,15 @@ class BusinessServiceImpl {
 
   /** What a NET run brings back (X2a): a corporation's coming moves, or an NPC business's real ledger, as a shard. */
   async _netRunShard(actor, target) {
+    const lines = await this._shardLines(actor, target);
+    await StoryService.grantEvidence(actor, {
+      ticker: target.ticker ?? null, businessId: target.kind === 'npc' ? target.id : null, name: target.name, source: 'netrun',
+      note: lines.join('\n'), from: L('NCI.Heat.Action.netRun.Shard.from'),
+    });
+  }
+
+  /** A shard's lines, as of now; a corporation's tips the runner on what it says. */
+  async _shardLines(actor, target) {
     const lines = [];
     if (target.kind === 'corp') {
       const sources = StoryService.rumourSources(target.ticker).filter((s) => s.kind === 'move' || s.kind === 'press');
@@ -2232,10 +2251,131 @@ class BusinessServiceImpl {
         owners: owners.map((p) => `${game.actors?.get?.(p.actorId)?.name ?? p.name ?? '?'} ${Math.round((p.units / total) * 100)}%`).join(', ') || '-',
       }));
     }
-    await StoryService.grantEvidence(actor, {
-      ticker: target.ticker ?? null, businessId: target.kind === 'npc' ? target.id : null, name: target.name, source: 'netrun',
-      note: lines.join('\n'), from: L('NCI.Heat.Action.netRun.Shard.from'),
+    return lines;
+  }
+
+  // ── A real NET run on CPR NET Architect (X2a) ─────────────────────────────────
+
+  /** A target as a NET run names it ('b:<id>' or 'c:<ticker>'), from the published list, or null. */
+  _runTarget(value) {
+    const [kind, id] = String(value ?? '').split(':');
+    const targets = this.inquiryTargets();
+    const found = kind === 'b' ? targets.npc.find((t) => t.id === id) : kind === 'c' ? targets.corps.find((t) => t.ticker === id) : null;
+    if (!found) return null;
+    return kind === 'b' ? { kind: 'npc', id, name: found.name, ticker: found.ticker, live: found.live } : { kind: 'corp', ticker: id, name: found.name, live: found.live };
+  }
+
+  /**
+   * A Netrunner asks for a real run on the target's map. Checked here; the GM is then asked, outside the queue, and the
+   * run starts on NET Architect if they say yes. Nothing is spent until it starts, and then only the week's run.
+   */
+  async _netRunLive(actor, request) {
+    if (!(SkillAdapter.baseFor(actor, ABILITIES.interface).base > 0)) return { ok: false, reason: 'not-netrunner' };
+    if (!NetArchitectAdapter.active()) return { ok: false, reason: 'netrun-no-live' };
+    if (netRunWait(actor.getFlag(MODULE_ID, FLAGS.NET_RUN), this.day()) > 0) return { ok: false, reason: 'netrun-wait' };
+    const target = this._runTarget(request.target);
+    if (!target) return { ok: false, reason: 'no-target' };
+    const architectureId = NetArchitectAdapter.linkOf(target);
+    if (!architectureId) return { ok: false, reason: 'netrun-no-live' };
+    if (NetArchitectAdapter.busy()) return { ok: false, reason: 'netrun-busy' };
+    // The question waits on the GM; the queue does not.
+    setTimeout(() => this._offerLiveRun(actor, target, architectureId, request.userId ?? null).catch((error) => log.error('Starting a NET run failed', error)), 0);
+    return { ok: true, netRun: { outcome: 'asked', kind: target.kind, name: target.name } };
+  }
+
+  /** The GM says whether to start the run now; started, the week's run is spent and the run is remembered for jack-out. */
+  async _offerLiveRun(actor, target, architectureId, userId) {
+    await NetArchitectAdapter.load();
+    const architecture = NetArchitectAdapter.architectures().find((a) => a.id === architectureId);
+    const yes = await foundry.applications.api.DialogV2.confirm({
+      window: { title: L('NCI.NetRunLive.AskTitle'), icon: 'fas fa-network-wired' },
+      content: `<p>${L('NCI.NetRunLive.Ask', { actor: escapeHtml(actor.name), name: escapeHtml(target.name), map: escapeHtml(architecture?.name ?? architectureId) })}</p>`,
+      rejectClose: false,
     });
+    if (!yes) return this._tellRunner(actor, L('NCI.NetRunLive.Refused', { name: target.name }));
+    if (!NetArchitectAdapter.isAuthority()) {
+      ui.notifications.warn(L('NCI.NetRunLive.NotAuthority'));
+      return this._tellRunner(actor, L('NCI.NetRunLive.Failed', { name: target.name }));
+    }
+    try {
+      await NetArchitectAdapter.start(architectureId, actor, userId);
+    } catch (error) {
+      ui.notifications.error(error.message);
+      return this._tellRunner(actor, L('NCI.NetRunLive.Failed', { name: target.name }));
+    }
+    await actor.setFlag(MODULE_ID, FLAGS.NET_RUN, this.day());
+    await actor.setFlag(MODULE_ID, FLAGS.NET_RUN_LIVE, { target, architectureId, day: this.day() });
+    Hooks.callAll(HOOKS.BUSINESSES_CHANGED, {});
+    return undefined;
+  }
+
+  /** A line to the runner's players, and the GM, in chat. */
+  _tellRunner(actor, text) {
+    const owners = Array.from(game.users ?? []).filter((u) => u.isGM || actor.testUserPermission?.(u, 'OWNER')).map((u) => u.id);
+    return ChatMessage.create({ content: `<p>${escapeHtml(text)}</p>`, whisper: owners, speaker: { alias: L('NCI.Heat.Action.netRun.Shard.from') } });
+  }
+
+  /**
+   * GM only: a data shard for a target, as a world Item to attach to a node in NET Architect's editor. Players can see
+   * it (NET Architect lets a runner take only what they can see). Whoever takes it gets it filled in as of then.
+   */
+  async makeLiveShard(key) {
+    if (!game.user.isGM) return { ok: false, reason: 'not-gm' };
+    const target = this._runTarget(key);
+    if (!target) return { ok: false, reason: 'no-target' };
+    const types = game.system?.documentTypes?.Item;
+    const list = Array.isArray(types) ? types : Object.keys(types ?? {});
+    const [item] = await Item.createDocuments([{
+      name: L('NCI.NetRunLive.ShardName', { name: target.name }),
+      type: list.includes('gear') ? 'gear' : list[0] ?? 'gear',
+      img: 'icons/commodities/tech/circuit-board-green.webp',
+      ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.LIMITED },
+      system: { description: { value: `<p>${escapeHtml(L('NCI.NetRunLive.ShardBlank', { name: target.name }))}</p>` } },
+      flags: { [MODULE_ID]: { [FLAGS.EVIDENCE]: { live: true, kind: target.kind, ticker: target.ticker ?? null, businessId: target.kind === 'npc' ? target.id : null, name: target.name, used: false } } },
+    }]);
+    return { ok: !!item, item };
+  }
+
+  /** A data shard taken in a run (createItem on the actor): fill it in as of now, with a real run's weight. */
+  async fillLiveShard(item) {
+    const flag = StoryService.evidenceFlag(item);
+    const actor = item?.parent;
+    if (!flag?.live || actor?.documentName !== 'Actor') return;
+    const target = flag.kind === 'npc' ? { kind: 'npc', id: flag.businessId, name: flag.name, ticker: flag.ticker } : { kind: 'corp', ticker: flag.ticker, name: flag.name };
+    const lines = await this._shardLines(actor, target);
+    const note = lines.join('\n');
+    await item.update({
+      name: L('NCI.Story.ShardName', { name: target.name }),
+      'system.description.value': lines.map((line) => `<p>${escapeHtml(line)}</p>`).join(''),
+      [`flags.${MODULE_ID}.${FLAGS.EVIDENCE}`]: {
+        ticker: target.ticker ?? null, ...(target.kind === 'npc' ? { businessId: target.id } : {}), name: target.name, note,
+        source: 'netarchitect', bonus: BUSINESS_DEFAULTS.roles.netRun.liveEvidence, used: false, live: false, day: this.day(),
+      },
+    });
+    await StoryService.toMessenger(item, { actor, name: target.name, note, from: L('NCI.Heat.Action.netRun.Shard.from') });
+  }
+
+  /**
+   * A run on NET Architect has ended (its jack-out hook). If it was one a Netrunner asked for through NCI, settle it: a
+   * pass if the shard about the target came out with them, traced if any node was failed or compromised.
+   */
+  async settleLiveRun(session) {
+    const actor = session?.runner?.actorUuid ? await fromUuid(session.runner.actorUuid).catch(() => null) : null;
+    const asked = actor?.getFlag?.(MODULE_ID, FLAGS.NET_RUN_LIVE);
+    if (!asked || asked.architectureId !== session.architectureId) return null;
+    await actor.unsetFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
+    const { target } = asked;
+    const about = { ticker: target.ticker ?? null, businessId: target.kind === 'npc' ? target.id : null };
+    const shard = [...(actor.items ?? [])].some((item) => NetArchitectAdapter.takenIn(item, session.id) && StoryService.evidenceFor(actor, about).includes(item));
+    const result = liveRunOutcome({ shard, failed: session.failedNodeIds?.length ?? 0, compromised: session.compromisedNodeIds?.length ?? 0 });
+    if (result.heat && HeatService.enabled()) await HeatService.setHeat(actor.id, HeatService.heatOf(actor.id) + result.heat);
+    if (result.standing && target.ticker) {
+      for (const b of BusinessRepository.all().filter((x) => x.status === 'open' && x.partners.some((p) => p.actorId === actor.id && p.status === 'active'))) {
+        await this._campaignStanding(b, target.ticker, result.standing);
+      }
+    }
+    await this._tellRunner(actor, L(`NCI.NetRunLive.Result.${result.outcome}${result.traced ? 'Traced' : ''}`, { name: target.name }));
+    return result;
   }
 
   /** A case on an NPC's business from an investigation (X2d). Nobody answers it, so it comes to the GM. */

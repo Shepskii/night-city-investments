@@ -53,6 +53,11 @@ export const StoryService = {
     return [...(actor?.items ?? [])].filter((item) => evidenceMatches(flagOf(item), target));
   },
 
+  /** A piece of evidence's flag, or null. */
+  evidenceFlag(item) {
+    return flagOf(item);
+  },
+
   /** GM only: mark a piece of evidence used. */
   async useEvidence(item) {
     if (item) await item.setFlag(MODULE_ID, FLAGS.EVIDENCE, { ...flagOf(item), used: true });
@@ -81,17 +86,20 @@ export const StoryService = {
       console.warn('night-city-investments | could not create evidence', error);
       return { ok: false, reason: 'no-evidence-item' };
     }
-    // Readable through Night City Messenger, where that is active; it works without.
-    const messenger = game.nightcity?.messenger;
-    if (item && messenger?.convertToDataShard) {
-      try {
-        const done = await messenger.convertToDataShard(item);
-        if (done?.success !== false) await messenger.addShardMessage?.(item, { from: from ?? L('NCI.Story.ShardFrom'), to: actor.name, subject: L('NCI.Story.ShardName', { name }), body: note });
-      } catch (error) {
-        console.warn('night-city-investments | could not make a Messenger shard of evidence', error);
-      }
-    }
+    if (item) await this.toMessenger(item, { actor, name, note, from });
     return { ok: true, item };
+  },
+
+  /** Readable through Night City Messenger, where that is active; it works without. */
+  async toMessenger(item, { actor, name, note, from = null }) {
+    const messenger = game.nightcity?.messenger;
+    if (!messenger?.convertToDataShard) return;
+    try {
+      const done = await messenger.convertToDataShard(item);
+      if (done?.success !== false) await messenger.addShardMessage?.(item, { from: from ?? L('NCI.Story.ShardFrom'), to: actor.name, subject: L('NCI.Story.ShardName', { name }), body: note });
+    } catch (error) {
+      console.warn('night-city-investments | could not make a Messenger shard of evidence', error);
+    }
   },
 
   /** What there is to hear now, on one company or all: stories about to print, queued price moves not yet showing, and hidden holdings. */

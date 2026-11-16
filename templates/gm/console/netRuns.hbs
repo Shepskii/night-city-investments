@@ -1,0 +1,25 @@
+{{#with netRuns}}
+<div class="nci-block">
+  <p class="nci-hint">{{localize "NCI.NetRunLive.TabHint"}}</p>
+  {{#unless on}}<p class="nci-warn">{{localize "NCI.NetRunLive.Off"}}</p>{{/unless}}
+  {{#if noMaps}}<p class="nci-warn">{{localize "NCI.NetRunLive.NoMaps"}}</p>{{/if}}
+  <div class="nci-actions"><button type="button" data-action="netReload"><i class="fas fa-rotate"></i> {{localize "NCI.NetRunLive.Reload"}}</button></div>
+  <table class="nci-market">
+    <thead><tr><th>{{localize "NCI.NetRunLive.Col.target"}}</th><th>{{localize "NCI.NetRunLive.Col.kind"}}</th><th class="num">{{localize "NCI.NetRunLive.Col.dv"}}</th><th>{{localize "NCI.NetRunLive.Col.map"}}</th><th></th></tr></thead>
+    <tbody>
+      {{#each rows}}
+      <tr>
+        <td><strong>{{name}}</strong>{{#if missing}} <span class="nci-warn">{{localize "NCI.NetRunLive.Missing"}}</span>{{/if}}</td>
+        <td class="nci-muted">{{kind}}</td>
+        <td class="num">{{dv}}</td>
+        <td><select name="netArch">{{#each options}}<option value="{{value}}"{{#if selected}} selected{{/if}}>{{label}}</option>{{/each}}</select></td>
+        <td class="nci-rowbtns">
+          <button type="button" class="nci-labelled" data-action="netLink" data-key="{{key}}"><i class="fas fa-link"></i> {{localize "NCI.NetRunLive.Save"}}</button>
+          {{#if linked}}<button type="button" class="nci-labelled" data-action="netShard" data-key="{{key}}"><i class="fas fa-microchip"></i> {{localize "NCI.NetRunLive.MakeShard"}}</button>{{/if}}
+        </td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>
+{{/with}}

@@ -32,10 +32,11 @@ export function netRunWait(actor) {
 
 /** The target picker's options, grouped, each with its DV. */
 function targetOptions({ npc, corps }) {
-  const option = (value, name, dv) => `<option value="${escapeHtml(value)}">${escapeHtml(name)} (${escapeHtml(L('NCI.Heat.Action.inquiry.Dv', { dv }))})</option>`;
+  // A target with a map on NET Architect says so (X2a).
+  const option = (value, name, dv, live) => `<option value="${escapeHtml(value)}">${escapeHtml(name)} (${escapeHtml(L('NCI.Heat.Action.inquiry.Dv', { dv }))})${live ? ` ${escapeHtml(L('NCI.NetRunLive.HasMap'))}` : ''}</option>`;
   const group = (label, rows) => (rows.length ? `<optgroup label="${escapeHtml(label)}">${rows.join('')}</optgroup>` : '');
-  return group(L('NCI.Heat.Action.inquiry.Npc'), npc.map((t) => option(`b:${t.id}`, t.name, t.dv)))
-    + group(L('NCI.Heat.Action.inquiry.Corps'), corps.map((t) => option(`c:${t.ticker}`, `${t.name} (${t.ticker})`, t.dv)));
+  return group(L('NCI.Heat.Action.inquiry.Npc'), npc.map((t) => option(`b:${t.id}`, t.name, t.dv, t.live)))
+    + group(L('NCI.Heat.Action.inquiry.Corps'), corps.map((t) => option(`c:${t.ticker}`, `${t.name} (${t.ticker})`, t.dv, t.live)));
 }
 
 /** @param {Actor} actor - the Netrunner */
@@ -43,8 +44,10 @@ export async function netRunRoll(actor) {
   const { cost } = BUSINESS_DEFAULTS.roles.netRun;
   if (!(SkillAdapter.baseFor(actor, ABILITIES.interface).base > 0)) return ui.notifications.warn(L('NCI.Business.Reason.not-netrunner'));
   if (netRunWait(actor) > 0) return ui.notifications.warn(L('NCI.Business.Reason.netrun-wait'));
-  if (WealthAdapter.get(actor) < cost) return ui.notifications.warn(L('NCI.Business.Reason.insufficient-funds'));
   const targets = netRunTargets();
+  // A real run costs nothing, so only a world with no maps needs the money up front.
+  const anyLive = [...targets.npc, ...targets.corps].some((t) => t.live);
+  if (!anyLive && WealthAdapter.get(actor) < cost) return ui.notifications.warn(L('NCI.Business.Reason.insufficient-funds'));
   if (!targets.npc.length && !targets.corps.length) return ui.notifications.warn(L('NCI.Heat.Action.netRun.None'));
   const title = L('NCI.Heat.Action.netRun.Name');
   const luckLeft = SkillAdapter.luck(actor);
@@ -68,6 +71,21 @@ export async function netRunRoll(actor) {
   const [kind, id] = picked.target.split(':');
   const chosen = kind === 'b' ? targets.npc.find((t) => t.id === id) : targets.corps.find((t) => t.ticker === id);
   if (!chosen) return null;
+  // With a map, the player chooses: a real run (free, a stronger shard) or the quick roll.
+  if (chosen.live) {
+    const how = await foundry.applications.api.DialogV2.wait({
+      window: { title: `${title}: ${chosen.name}`, icon: 'fas fa-network-wired' },
+      content: `<p>${L('NCI.NetRunLive.Choose', { name: escapeHtml(chosen.name) })}</p>`,
+      rejectClose: false,
+      buttons: [
+        { action: 'live', label: L('NCI.NetRunLive.Real'), icon: 'fas fa-network-wired', default: true },
+        { action: 'quick', label: L('NCI.NetRunLive.Quick', { cost }), icon: 'fas fa-dice-d10' },
+      ],
+    });
+    if (how === 'live') return BusinessClient.submit(actor, 'netRunLive', { target: picked.target, userId: game.user.id });
+    if (how !== 'quick') return null;
+  }
+  if (WealthAdapter.get(actor) < cost) return ui.notifications.warn(L('NCI.Business.Reason.insufficient-funds'));
   const { messageId } = await SkillAdapter.leverCheck(actor, { dv: chosen.dv, title: `${title}: ${chosen.name}`, use: ABILITIES.interface, levers: { luck: picked.luck } });
   if (!messageId) return null;
   return BusinessClient.submit(actor, 'netRunRoll', { use: ABILITIES.interface, rollId: messageId, target: picked.target });

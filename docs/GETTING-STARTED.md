@@ -112,6 +112,7 @@ In both the in-world modes the market only moves when in-world time passes, so a
 | Business growth rate | 1 | How fast businesses build Reputation and Capacity; 1.5 suits a campaign that wants them to grow sooner. |
 | Payslips by Messenger | On | A player character who works for a player business gets a weekly payslip mail with their wage attached to claim. Off pays it straight to their sheet. |
 | Listing threshold (eb) | 500,000 | The market valuation a chartered company must hold on three monthly reports before it can apply to list. Lower it to let companies list sooner. |
+| Real NET runs on NET Architect | Off | Needs CPR NET Architect. On: a target linked to an architecture on Tools > NET runs can be run for real; the Netrunner chooses that or the quick roll. A real run is free and its data shard counts +4 as evidence. |
 | Business days come from Crew Tools downtime | On | Needs Crew Tools. On: extra time, project days and mentoring spend a character's downtime, with no weekly allowance. Off: 3 business days a week for each voting partner. |
 | Underworld content | On | Lets a business open a back room and make illegal items, and a company commit crime. Off: nothing new opens, and illegal lines stop. A back room already open keeps running, and goods already made can still be fenced. |
 | Share contacts with players | On | A character who picks a broker, or founds a business with an NPC partner, gets that person in their Night City Messenger contacts. Contacts already shared stay if you turn it off. |

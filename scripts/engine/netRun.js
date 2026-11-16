@@ -23,6 +23,20 @@ export function netRunDv(target, corps = [], p = BUSINESS_DEFAULTS) {
   return dv.corp[corpTier(corps, target.ticker)];
 }
 
+/** How much a piece of evidence adds to an investigation: its own weight (a real run's shard), or the usual. */
+export const evidenceWeight = (flag, p = BUSINESS_DEFAULTS) => (Number.isFinite(flag?.bonus) ? flag.bonus : p.roles.inquiry.evidence);
+
+/**
+ * How a real run ended (X2a on NET Architect): a pass if the shard about the target came out with the runner, traced
+ * if any node was failed or compromised on the way.
+ * @returns {{outcome: 'success'|'failure', traced: boolean, heat: number, standing: number}}
+ */
+export function liveRunOutcome({ shard, failed = 0, compromised = 0 }, p = BUSINESS_DEFAULTS) {
+  const rules = p.roles.netRun;
+  const traced = failed + compromised > 0;
+  return { outcome: shard ? 'success' : 'failure', traced, heat: traced ? rules.heat : 0, standing: traced ? rules.standing : 0 };
+}
+
 /**
  * What the roll does.
  * @returns {{outcome: 'success'|'failure'|'fumble', shard: boolean, heat: number, standing: number, ice: boolean}}
@@ -40,7 +54,8 @@ export function netRunEffect(band, p = BUSINESS_DEFAULTS) {
  * @param {{ticker?: string|null, businessId?: string|null, used?: boolean}} flag
  */
 export function evidenceMatches(flag, { ticker = null, businessId = null } = {}) {
-  if (!flag || flag.used) return false;
+  // A shard still waiting on a node (a live template) is no one's evidence yet.
+  if (!flag || flag.used || flag.live) return false;
   if (businessId && flag.businessId === businessId) return true;
   return !!ticker && flag.ticker === ticker;
 }

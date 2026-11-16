@@ -661,7 +661,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
    * band and moves `standing` with it for the Lawman's businesses; a fumble adds `heat` and a smear about them.
    * A Netrunner's NET run (X2a) costs `cost` eb of legwork, once in `days`: Interface against `dv.npc` by an NPC
    * business's stage, or `dv.corp` by a corporation's size. A pass brings back a data shard; a failure is traced,
-   * `heat` and `standing` with the target for the Netrunner's businesses; a fumble is an ICE hit as well.
+   * `heat` and `standing` with the target for the Netrunner's businesses; a fumble is an ICE hit as well. A real run
+   * on NET Architect costs nothing, and its shard counts `liveEvidence` to an investigation.
    */
   roles: Object.freeze({
     supply: Object.freeze({ weeks: 4, maxCut: 0.1, cut: byBand([0, 0, 0.03, 0.05, 0.08, 0.1]), shipment: Object.freeze([200, 500, 1500]) }),
@@ -676,6 +677,8 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     netRun: Object.freeze({
       cost: 100, days: 7, heat: 5, standing: -10,
       dv: Object.freeze({ npc: Object.freeze([15, 17, 19]), corp: Object.freeze([17, 19, 21]) }),
+      // A real run on NET Architect is free, and its shard is stronger evidence (the user's choice).
+      liveEvidence: 4,
     }),
   }),
   /**

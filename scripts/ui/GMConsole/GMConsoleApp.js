@@ -25,15 +25,17 @@ import * as jobMarket from './tabs/jobMarket.js';
 import * as syndicates from './tabs/syndicates.js';
 import * as factions from './tabs/factions.js';
 import * as production from './tabs/production.js';
+import * as netRuns from './tabs/netRuns.js';
+import { NetArchitectAdapter } from '../../integrations/NetArchitectAdapter.js';
 import * as tools from './tabs/tools.js';
 
-const TABS = { pending, market, events, actions, brokers, businesses, jobMarket, syndicates, heat, gigs, companies, npcBusinesses, funds, factions, production, tools };
+const TABS = { pending, market, events, actions, brokers, businesses, jobMarket, syndicates, heat, gigs, companies, npcBusinesses, funds, factions, production, netRuns, tools };
 /** The two rows of buttons: each group, and its tabs in display order. */
 const GROUPS = {
   pending: ['pending'],
   market: ['market', 'events', 'actions', 'brokers'],
   players: ['businesses', 'jobMarket', 'syndicates', 'heat'],
-  tools: ['gigs', 'companies', 'npcBusinesses', 'funds', 'factions', 'production', 'tools'],
+  tools: ['gigs', 'companies', 'npcBusinesses', 'funds', 'factions', 'production', 'netRuns', 'tools'],
 };
 const groupOf = (tab) => Object.keys(GROUPS).find((g) => GROUPS[g].includes(tab));
 const PARTIALS = `modules/${MODULE_ID}/templates/gm/console`;
@@ -174,7 +176,8 @@ export class GMConsoleApp extends BaseApplication {
         active: g === group,
       })),
       // A group of one has no second row.
-      subTabs: GROUPS[group].length > 1 ? GROUPS[group].map((t) => tabs.find((x) => x.id === t)) : [],
+      // NET runs only with NET Architect there (X2a).
+      subTabs: GROUPS[group].length > 1 ? GROUPS[group].filter((t) => t !== 'netRuns' || NetArchitectAdapter.present()).map((t) => tabs.find((x) => x.id === t)) : [],
       activeGM: game.user.id === game.users.activeGM?.id,
     };
     for (const t of Object.keys(TABS)) context[`is${t[0].toUpperCase()}${t.slice(1)}`] = t === this.tab;

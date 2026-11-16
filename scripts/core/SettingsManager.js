@@ -6,6 +6,7 @@
 import { DATE_FORMATS, setExtraDistricts } from '../engine/index.js';
 import { MODULE_ID, SETTINGS, HOOKS } from '../utils/constants.js';
 import { DEFAULT_THEME, THEMES, applyTheme, visualToolsActive } from './theme.js';
+import { NET_ARCHITECT_ID } from '../integrations/NetArchitectAdapter.js';
 
 const CREW_TOOLS_ID = 'pneuma-crewtools';
 
@@ -349,6 +350,25 @@ export function registerSettings() {
     config: !!game.modules?.get(CREW_TOOLS_ID)?.active,
     type: Boolean,
     default: true,
+    onChange: notifyBusinessesChanged,
+  });
+
+  // Real NET runs on CPR NET Architect (X2a): offered only with that module there, off until the GM turns it on.
+  s.register(MODULE_ID, SETTINGS.NET_ARCHITECT, {
+    name: 'NCI.Settings.NetArchitect.Name',
+    hint: 'NCI.Settings.NetArchitect.Hint',
+    scope: 'world',
+    config: !!game.modules?.get(NET_ARCHITECT_ID)?.active,
+    type: Boolean,
+    default: false,
+    onChange: notifyBusinessesChanged,
+  });
+  // Which architecture each target runs on, as the GM links them on the NET runs tab.
+  s.register(MODULE_ID, SETTINGS.NET_ARCH_LINKS, {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {},
     onChange: notifyBusinessesChanged,
   });
 

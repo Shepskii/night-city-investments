@@ -38,8 +38,9 @@ export function hasEvidence(recent, ticker, day, p = BUSINESS_DEFAULTS) {
   return (recent ?? []).some((s) => s.ticker === ticker && day - s.day >= 0 && day - s.day < p.roles.inquiry.evidenceDays);
 }
 
-/** The DV the roll is resolved against: evidence adds to the roll, which is the same as taking it off the DV. */
-export const inquiryTarget = (dv, evidence, p = BUSINESS_DEFAULTS) => dv - (evidence ? p.roles.inquiry.evidence : 0);
+/** The DV the roll is resolved against: evidence adds to the roll, which is the same as taking it off the DV. `evidence` is
+ * true for the usual amount, or how much (a real NET run's shard counts for more). */
+export const inquiryTarget = (dv, evidence, p = BUSINESS_DEFAULTS) => dv - (evidence === true ? p.roles.inquiry.evidence : Math.max(0, Number(evidence) || 0));
 
 /**
  * What the roll does.

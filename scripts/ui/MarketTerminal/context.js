@@ -98,14 +98,16 @@ export function heatContext(actor, portfolio, tick) {
     const targets = netRunTargets();
     const anyone = targets.npc.length + targets.corps.length > 0;
     const dvs = [...targets.npc, ...targets.corps].map((t) => t.dv);
+    const canPay = WealthAdapter.get(actor) >= run.cost || [...targets.npc, ...targets.corps].some((t) => t.live);
     actions.push({
       id: 'netRun',
       name: L('NCI.Heat.Action.netRun.Name'),
       desc: L('NCI.Heat.Action.netRun.Desc'),
       skill: L('NCI.Heat.Panel.Skill', { skill: ABILITIES.interface.ability, total: SkillAdapter.rollBase(actor, ABILITIES.interface).base, dv: dvs.length ? `${Math.min(...dvs)}-${Math.max(...dvs)}` : '-' }),
-      cost: L('NCI.Heat.Panel.Cost', { cost: run.cost.toLocaleString() }),
-      status: !anyone ? L('NCI.Heat.Action.netRun.None') : runLeft > 0 ? L('NCI.Heat.Panel.ReadyIn', { n: runLeft }) : WealthAdapter.get(actor) < run.cost ? L('NCI.Heat.Panel.TooPoorSheet') : L('NCI.Heat.Panel.Ready'),
-      canUse: anyone && runLeft === 0 && WealthAdapter.get(actor) >= run.cost,
+      cost: [...targets.npc, ...targets.corps].some((t) => t.live) ? L('NCI.NetRunLive.CostOr', { cost: run.cost.toLocaleString() }) : L('NCI.Heat.Panel.Cost', { cost: run.cost.toLocaleString() }),
+      // A real run on NET Architect is free (X2a), so with any map to run on, money doesn't hold it back.
+      status: !anyone ? L('NCI.Heat.Action.netRun.None') : runLeft > 0 ? L('NCI.Heat.Panel.ReadyIn', { n: runLeft }) : !canPay ? L('NCI.Heat.Panel.TooPoorSheet') : L('NCI.Heat.Panel.Ready'),
+      canUse: anyone && runLeft === 0 && canPay,
     });
   }
   // Before any warning, the panel's heading says whose work it is.

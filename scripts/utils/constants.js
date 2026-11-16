@@ -44,6 +44,8 @@ export const SETTINGS = Object.freeze({
   CONTRACTS: 'contractFrequency',
   PRESS_APPROVAL: 'pressApproval',
   JOB_BOARD: 'jobBoard',
+  NET_ARCHITECT: 'netArchitectRuns',
+  NET_ARCH_LINKS: 'netArchitectLinks',
   JOB_AUTO: 'jobAutoHire',
   SHARE_CONTACTS: 'shareContacts',
   EVENT_MAIL: 'eventMail',
@@ -112,6 +114,7 @@ export const FLAGS = Object.freeze({
   QUASHED: 'quashed',
   INQUIRED: 'inquired',
   NET_RUN: 'netRun',
+  NET_RUN_LIVE: 'netRunLive',
   /** On actors. The jobs a character holds or is offered at player businesses (DESIGN §32). Written only by the GM. */
   JOBS: 'jobs',
   /** On the GM-only control journal: employers at market corporations (N4), by id. */

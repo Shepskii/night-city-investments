@@ -13,6 +13,7 @@ import { JobService } from '../services/JobService.js';
 import { EmployerService } from '../services/EmployerService.js';
 import { BusinessWatcher } from '../services/BusinessWatcher.js';
 import { DistrictService } from '../services/DistrictService.js';
+import { NetArchitectAdapter } from '../integrations/NetArchitectAdapter.js';
 
 export function registerBusinessSystem(initializer) {
   initializer.register('init', 41, 'Business hooks', () => {
@@ -61,6 +62,20 @@ export function registerBusinessSystem(initializer) {
       for (const business of BusinessRepository.all().filter((b) => b.npcRun && b.status === 'open')) await BusinessService._syncJobs(business);
       await EmployerService.syncAll();
     }
+  });
+
+  // Real NET runs on CPR NET Architect (X2a): its own GM client fills a taken shard and settles a run at jack-out.
+  initializer.register('ready', 49, 'NET Architect', () => {
+    if (!NetArchitectAdapter.present()) return;
+    const here = () => game.user?.isGM && NetArchitectAdapter.isAuthority();
+    Hooks.on('createItem', (item) => {
+      if (!here() || !item?.parent || !item.flags?.[MODULE_ID]?.[FLAGS.EVIDENCE]?.live) return;
+      BusinessService._queue.run(() => BusinessService.fillLiveShard(item)).catch((error) => console.error('night-city-investments | filling a data shard failed', error));
+    });
+    Hooks.on('cprNetArchitectJackOut', (session) => {
+      if (!here()) return;
+      BusinessService._queue.run(() => BusinessService.settleLiveRun(session)).catch((error) => console.error('night-city-investments | settling a NET run failed', error));
+    });
   });
 
   initializer.register('ready', 48, 'Business API', () => {
