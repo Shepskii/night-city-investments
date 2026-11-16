@@ -13,7 +13,7 @@ import { EVENTS, ABILITIES, BUSINESS_DEFAULTS, BACK_ROOMS, districtOf } from './
 import { archetypeOf, clamp } from './businessRecord.js';
 import { bandPassed } from './rolls.js';
 import { staffEventWeight, staffEventTarget, settleStaffEvent } from './businessPeople.js';
-import { breakInFactor } from './businessGrowth.js';
+import { breakInFactor, upgradesOf } from './businessGrowth.js';
 import { hostileChance } from './factions.js';
 
 /** How likely an event is this week: the base chance, the district's risk, and less once registered. */
@@ -54,11 +54,32 @@ export function hostileAct(b, seed = 'nci', p = BUSINESS_DEFAULTS, relations = n
   const rng = createRng(seed, 'business-hostile', b.id, b.period.index);
   if (!rng.chance(hostileChance(worst.value, p))) return null;
   const staffId = staffEventTarget(b, 'poaching', rng, p);
-  const kinds = [worst.kind === 'gang' ? 'sabotage' : 'smear', 'raid', ...(staffId ? ['poaching'] : [])];
+  // Either can breach the business's systems (X2a).
+  const kinds = [worst.kind === 'gang' ? 'sabotage' : 'smear', 'raid', 'breach', ...(staffId ? ['poaching'] : [])];
   const kind = kinds[rng.int(0, kinds.length - 1)];
   // With stories in the press on (S1), they do a corporation's smearing, so this act does not happen. The others stay as likely.
   if (kind === 'smear' && relations?.press) return null;
   return { kind, factionId: worst.id, factionName: worst.name, ...(kind === 'poaching' ? { staffId } : {}) };
+}
+
+/** The DV to answer a breach (X2a): the stage's, less one for each security upgrade. */
+export const breachDv = (b, stageDvValue) => Math.max(0, stageDvValue - (upgradesOf(b).security ?? 0));
+
+/**
+ * The GM starts a breach on a business (X2a): this week if it has no event yet, or next week's if it has.
+ * @param {{id: string, name: string}} faction - who is behind it
+ * @returns {{ok: boolean, when?: 'now'|'next', reason?: string}}
+ */
+export function runBreach(b, faction) {
+  if (b.status !== 'open' || !b.period) return { ok: false, reason: 'not-open' };
+  const event = { kind: 'breach', factionId: faction.id, factionName: faction.name, byHand: true };
+  if (b.period.event) {
+    if (b.breachQueued) return { ok: false, reason: 'breach-queued' };
+    b.breachQueued = event;
+    return { ok: true, when: 'next' };
+  }
+  b.period.event = event;
+  return { ok: true, when: 'now' };
 }
 
 /** What a faction's event leaves behind when the week closes, for the GM's service: standing, Exposure, the price. */
@@ -71,6 +92,8 @@ export function factionFallout(b, settled, p = BUSINESS_DEFAULTS) {
   if (event.kind === 'shakedown' && settled.outcome === 'answered' && byForce(b)) return [{ type: 'factionMove', factionId: event.factionId, amount: rules.force }];
   if (event.kind === 'raid' && lost) return [{ type: 'factionRaid', factionId: event.factionId, exposure: Math.ceil(rules.raidExposure * scale) }];
   if (event.kind === 'smear' && lost) return [{ type: 'factionSmear', factionId: event.factionId, amount: rules.smear * scale, period: b.period.index }];
+  // A breach not stopped leaks the ledger (X2a): the GM's service unmasks a hidden holder, or the press gets the truth.
+  if (event.kind === 'breach' && lost) return [{ type: 'factionBreach', factionId: event.factionId, period: b.period.index }];
   return [];
 }
 

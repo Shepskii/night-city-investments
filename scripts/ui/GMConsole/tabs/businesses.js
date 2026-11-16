@@ -45,6 +45,15 @@ async function onListingReject(event, target) {
   report(await BusinessService.rejectListing(target.dataset.id));
 }
 
+/** A breach on a player's business from a corporation or gang (X2a): this week, or next if this one has its event. */
+async function onBreach(event, target) {
+  const factionId = target.closest('.nci-actions')?.querySelector('[name="breachFaction"]')?.value;
+  const out = await BusinessService.runBreach(target.dataset.id, factionId);
+  if (!out.ok) return report(out);
+  ui.notifications.info(L(out.business?.breachQueued ? 'NCI.Breach.GMNext' : 'NCI.Breach.GMNow', { name: out.business?.name ?? '' }));
+  return this.render();
+}
+
 async function onCaseOpen(event, target) {
   report(await BusinessService.openCaseByHand(target.dataset.id));
 }
@@ -223,6 +232,7 @@ export const actions = {
   businessTakeoverApprove: onTakeoverApprove,
   businessRestructure: onRestructure,
   businessCaseOpen: onCaseOpen,
+  businessBreach: onBreach,
   businessCaseDrop: onCaseDrop,
   businessCaseFine: onCaseFine,
   businessWindUp: onWindUp,
@@ -406,6 +416,8 @@ export function context() {
       // Standing (F1a): the numbers, which players only see as bands, and setting one by hand.
       standing: b.status === 'open' ? standingRows(b, hidden, factions) : [],
       factionOptions: b.status === 'open' ? factionOptions : [],
+      // A breach (X2a) is a move against a player's business, by a corporation or a gang.
+      breachOptions: b.status === 'open' && !b.npcRun ? factions.filter((f) => f.kind === 'corp' || f.kind === 'gang').map((f) => ({ value: f.id, label: f.name })) : [],
       factionTerms: b.status === 'open' ? factionTerms(b) : '',
       applicants: (b.candidates ?? []).length ? L('NCI.GMBusiness.Applicants', {
         list: b.candidates.map((c) => L('NCI.GMBusiness.ApplicantOne', {

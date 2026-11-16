@@ -28,7 +28,7 @@ import {
   moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene, ABILITIES, backupWait, quashEffect, exposureBand, canRun,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
   STACKING_TYPES, offerContract, dropContract, writeContract, contractOf, takesContracts,
-  inquiryWait, inquiryDv, inquiryTarget, inquiryEffect, hasEvidence, netRunWait, netRunDv, netRunEffect, liveRunOutcome, evidenceWeight, RUMOUR_LEVELS, STORY_RULES,
+  inquiryWait, inquiryDv, inquiryTarget, inquiryEffect, hasEvidence, pressTruths, handPress, runBreach, netRunWait, netRunDv, netRunEffect, liveRunOutcome, evidenceWeight, RUMOUR_LEVELS, STORY_RULES,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { NcmAdapter } from '../integrations/NcmAdapter.js';
@@ -1676,35 +1676,8 @@ class BusinessServiceImpl {
           const look = auditConcealment(entry.layers?.[holderId] ?? [], HeatService.heatOf(holderId) ?? 0, random ?? (() => rng.next()));
           if (look.unmasked) {
             b ??= normalizeBusiness(structuredClone(stored));
-            const price = MarketStore.getPublic().companies?.[b.company.ticker]?.price ?? 0;
-            const fine = Math.round(holdingValue(b, holderId, price) * P.fine);
-            unmask(b, holderId);
-            delete entry.layers?.[holderId];
             delete timers[holderId];
-            const account = this._account(holderId);
-            if (account && PortfolioRepository.hasPortfolio(account) && fine > 0) {
-              const tick = timeOf(MarketStore.getPublic());
-              await PortfolioService.transformActor(account, (p) => {
-                const paid = Math.min(fine, Math.max(0, p.cash ?? 0));
-                return { portfolio: { ...p, cash: (p.cash ?? 0) - paid, ledger: [...(p.ledger ?? []), { ts: tick, kind: 'concealmentFine', amount: -paid, ref: b.id }] }, changed: true };
-              });
-            }
-            const name = account?.name ?? '';
-            const terms = { name: b.name, ticker: b.company.ticker, holder: name, pct: Math.round(share * 1000) / 10, fine: fine.toLocaleString() };
-            await NewsService.post({ headline: L('NCI.News.Unmasked', terms), tone: 'down', companyIds: [b.company.ticker] });
-            await this._suggestReward(b, 'unmasked', [holderId]);
-            // The scandal weighs on the stock from the next day, more for a bigger hidden stake.
-            const key = `unmask:${b.id}:${holderId}:${day}`;
-            await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
-              ...controls,
-              impacts: [...controls.impacts, makeImpact({
-                id: `imp_unmask_${b.id}_${day}`, target: { type: 'company', id: b.company.ticker }, amount: scandalHit(share), onsetTick: now + P.scandal.delayDays,
-                permanent: 1, sourceKey: key, source: 'unmasked', meta: { businessId: b.id },
-              })],
-            }));
-            await this._mailAccount(holderId, ...this._official('financialCrimes', 'unmasked', terms, `${holderId}:${b.id}`, L('NCI.Ownership.Mail.UnmaskedSubject', terms), [L('NCI.Ownership.Mail.Unmasked', terms)]), { from: await ContactService.ncpd(), footer: L('NCI.Ownership.Mail.UnmaskedFooter') });
-            // A big enough holder found hiding brings the regulators to the company too (R1).
-            if (share > BUSINESS_DEFAULTS.regulator.unmaskShare && openCase(b, { reason: 'unmasked', day }).ok) caseOpened = true;
+            if (await this._unmaskHolder(b, entry, holderId, share, day)) caseOpened = true;
             continue;
           }
         }
@@ -1719,6 +1692,86 @@ class BusinessServiceImpl {
         Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
       }
     }
+  }
+
+  /**
+   * A hidden holder is unmasked (B6d), as an NCPD audit does it, or a breach's leak (X2a): the holding shows on the
+   * register, a fine from the holder's brokerage balance, a headline, a dip in the price, NCPD's mail, and for a big
+   * enough holder a regulator's case. Changes `b` and the hidden `entry`, which the caller saves.
+   * @returns {Promise<boolean>} whether a case was opened
+   */
+  async _unmaskHolder(b, entry, holderId, share, day) {
+    const P = BUSINESS_DEFAULTS.ownership;
+    const price = MarketStore.getPublic().companies?.[b.company.ticker]?.price ?? 0;
+    const fine = Math.round(holdingValue(b, holderId, price) * P.fine);
+    unmask(b, holderId);
+    delete entry.layers?.[holderId];
+    delete entry.concealment?.[holderId];
+    const account = this._account(holderId);
+    if (account && PortfolioRepository.hasPortfolio(account) && fine > 0) {
+      const tick = timeOf(MarketStore.getPublic());
+      await PortfolioService.transformActor(account, (p) => {
+        const paid = Math.min(fine, Math.max(0, p.cash ?? 0));
+        return { portfolio: { ...p, cash: (p.cash ?? 0) - paid, ledger: [...(p.ledger ?? []), { ts: tick, kind: 'concealmentFine', amount: -paid, ref: b.id }] }, changed: true };
+      });
+    }
+    const name = account?.name ?? '';
+    const terms = { name: b.name, ticker: b.company.ticker, holder: name, pct: Math.round(share * 1000) / 10, fine: fine.toLocaleString() };
+    await NewsService.post({ headline: L('NCI.News.Unmasked', terms), tone: 'down', companyIds: [b.company.ticker] });
+    await this._suggestReward(b, 'unmasked', [holderId]);
+    // The scandal weighs on the stock from the next day, more for a bigger hidden stake.
+    const key = `unmask:${b.id}:${holderId}:${day}`;
+    await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
+      ...controls,
+      impacts: [...controls.impacts, makeImpact({
+        id: `imp_unmask_${b.id}_${day}`, target: { type: 'company', id: b.company.ticker }, amount: scandalHit(share), onsetTick: now + P.scandal.delayDays,
+        permanent: 1, sourceKey: key, source: 'unmasked', meta: { businessId: b.id },
+      })],
+    }));
+    await this._mailAccount(holderId, ...this._official('financialCrimes', 'unmasked', terms, `${holderId}:${b.id}`, L('NCI.Ownership.Mail.UnmaskedSubject', terms), [L('NCI.Ownership.Mail.Unmasked', terms)]), { from: await ContactService.ncpd(), footer: L('NCI.Ownership.Mail.UnmaskedFooter') });
+    // A big enough holder found hiding brings the regulators to the company too (R1).
+    return share > BUSINESS_DEFAULTS.regulator.unmaskShare && openCase(b, { reason: 'unmasked', day }).ok;
+  }
+
+  /**
+   * A breach was not stopped (X2a): the ledger leaks. The biggest hidden holder is unmasked if there is one; if not, the
+   * breacher's press runs the truth next week (money trouble or crime, whichever is true), if any. Changes `b`, which
+   * the caller saves.
+   * @returns {Promise<'unmasked'|'story'|'nothing'>}
+   */
+  async _breachLeak(b, factionId) {
+    const day = this.day();
+    const faction = FactionRepository.list().find((f) => f.id === factionId);
+    const [holder] = concealedHolders(b).sort((x, y) => y.share - x.share);
+    let leaked = 'nothing';
+    if (holder) {
+      const hidden = MarketStore.getBusinessesHidden();
+      const entry = structuredClone(hidden[b.id] ?? { exposure: 0 });
+      const caseOpened = await this._unmaskHolder(b, entry, holder.holderId, holder.share, day);
+      await MarketStore.setBusinessesHidden({ ...MarketStore.getBusinessesHidden(), [b.id]: entry });
+      await this._publishRegister(b);
+      if (caseOpened) await this._mailCaseOpened(b);
+      leaked = 'unmasked';
+    } else if (faction) {
+      const exposure = MarketStore.getBusinessesHidden()[b.id]?.exposure ?? 0;
+      const truths = pressTruths(b, { exposure, underworld: this.underworldOn() }).filter((k) => k === 'crime' || k === 'money');
+      const story = truths.includes('crime') ? 'crime' : truths[0];
+      const outlet = story ? PressService._outlet(`${faction.kind === 'gang' ? 'g' : 'f'}:${faction.id}`) : null;
+      if (outlet && runPress(b, handPress({ story, outlet }), day).ok) leaked = 'story';
+    }
+    await this._mailHolders(b, L('NCI.Breach.LeakSubject', { name: b.name }), [L(`NCI.Breach.Leak.${leaked}`, { name: b.name, faction: faction?.name ?? '' })]);
+    return leaked;
+  }
+
+  /** GM only: a breach on a business from a faction, now or next week (X2a). */
+  runBreach(id, factionId) {
+    const faction = FactionRepository.list().find((f) => f.id === factionId && (f.kind === 'corp' || f.kind === 'gang'));
+    if (!faction) return Promise.resolve({ ok: false, reason: 'breach-no-faction' });
+    return this._gm(id, (b) => {
+      const copy = normalizeBusiness(structuredClone(b));
+      const done = runBreach(copy, faction);
+      return done.ok ? { ok: true, business: copy, wealth: {}, events: [], when: done.when } : done;
+    });
   }
 
   /**
@@ -2028,6 +2081,11 @@ class BusinessServiceImpl {
         await this._mailRoom(b, L('NCI.BackRoom.DealSubject', { name: b.name }), OrgMail.faction(e.factionId, 'dealEnded', { name: b.name })?.paragraphs ?? [L(gang ? 'NCI.BackRoom.DealEndedMail' : 'NCI.BackRoom.DealEnded', { gang: e.name, name: b.name })], gang ? { from: gang, footer: L('NCI.BackRoom.DealEndedFooter', { gang: e.name, name: b.name }) } : {});
       }
       if (e.type === 'campaignLands' || e.type === 'campaignCaught') moved = true;
+      // A breach not stopped leaks the ledger (X2a).
+      if (e.type === 'factionBreach') {
+        await this._breachLeak(b, e.factionId);
+        continue;
+      }
       if (e.type !== 'factionSmear' || !isListed(b)) continue;
       const ticker = b.company.ticker;
       const key = `smear:${b.id}:${e.period}`;

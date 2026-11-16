@@ -71,7 +71,7 @@
 import { drawContract, signContract, endOffer, contractsWeek, stockToContract } from './businessContracts.js';
 import { fenceCheck, fenceWeek, makesThings, buyStock, clearStock, consignStock, handOffer, handStock, produceCheck, productionWeek, salesWeek, setLine, takeBackStock } from './businessProduction.js';
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
-import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout } from './businessEvents.js';
+import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout, breachDv } from './businessEvents.js';
 import { eventOrigin } from './eventMail.js';
 import { drawPress, placePress, lapsePress, printPress, pressFallout, startHandPress, keepAwayCut } from './businessPress.js';
 import { npcWeek, npcDraw } from './businessNpc.js';
@@ -320,7 +320,9 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     if (use?.kind === 'staff' && event.staffId && use.staffId === event.staffId) return fail('staff-involved');
     // A Lawman's Backup answers a raid once a month (X1).
     const uses = eventUses(b, event.kind).filter((u) => !(['raid', 'bust'].includes(event.kind) && u.ability === 'Backup' && backupWait(b, day, p) > 0));
-    return allowed(uses, use, { dv: stageDv(b.stage, p), allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b, traits });
+    // A breach is easier to stop behind better security (X2a).
+    const dv = event.kind === 'breach' ? breachDv(b, stageDv(b.stage, p)) : stageDv(b.stage, p);
+    return allowed(uses, use, { dv, allowHire: true, bonusAvailable: false, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
 
   if (request.type === 'action') {
@@ -1824,7 +1826,10 @@ function startPeriod(b, index, startDay, weekday, seed, p, traits = null, relati
   lapsePress(b);
   // One the GM ran by hand in a week that was busy comes first, and waits if collectors or a grudge take this one.
   const queued = !b.collectors && !b.grudge ? b.press?.queued ?? null : null;
-  const event = queued ?? roomBust(b, seed, p, relations, traits) ?? drawPress(b, seed, p, relations) ?? hostileAct(b, seed, p, relations) ?? roomEvent(b, seed, p, relations) ?? drawEvent(b, seed, p, traits, relations);
+  // Then a breach the GM started in a busy week (X2a).
+  const breach = !queued && !b.collectors && !b.grudge ? b.breachQueued ?? null : null;
+  if (breach) b.breachQueued = null;
+  const event = queued ?? breach ?? roomBust(b, seed, p, relations, traits) ?? drawPress(b, seed, p, relations) ?? hostileAct(b, seed, p, relations) ?? roomEvent(b, seed, p, relations) ?? drawEvent(b, seed, p, traits, relations);
   if (b.collectors) {
     // A missed payment to a fixer: the collectors come in place of whatever else the week held.
     b.period.event = { kind: 'collectors' };

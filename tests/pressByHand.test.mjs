@@ -98,5 +98,5 @@ test('every level of a press rumour and every refusal has words', () => {
 test('startPeriod takes a waiting story first, and leaves it to collectors or a grudge', () => {
   const src = readFileSync(new URL('../scripts/engine/business.js', import.meta.url), 'utf8');
   assert.match(src, /const queued = !b\.collectors && !b\.grudge \? b\.press\?\.queued \?\? null : null;/);
-  assert.match(src, /const event = queued \?\? roomBust/);
+  assert.match(src, /const event = queued \?\? breach \?\? roomBust/, 'then a breach the GM queued (X2a)');
 });

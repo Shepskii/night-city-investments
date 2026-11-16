@@ -1251,6 +1251,11 @@ export const EVENTS = Object.freeze({
   sabotage: Object.freeze({ weight: 0, security: true, uses: [S.basicTech, S.tactics, A.combatAwareness, A.maker], hit: Object.freeze({ capacity: -0.05 }) }),
   smear: Object.freeze({ weight: 0, uses: [S.persuasion, S.composition, A.credibility, A.charismaticImpact], hit: Object.freeze({ reputation: -3 }) }),
   raid: Object.freeze({ weight: 0, uses: [S.bureaucracy, S.persuasion, S.tactics, A.backup], hit: Object.freeze({ compliance: -8 }) }),
+  /**
+   * Never drawn at random: a breach of the business's systems (X2a), a hostile faction's act or the GM's. A Netrunner
+   * answers it, or Electronics at DV +2; each security upgrade takes 1 off its DV. Lost, the ledger leaks.
+   */
+  breach: Object.freeze({ weight: 0, uses: [A.interface, Object.freeze({ ...S.electronics, dvAdd: 2 })], hit: Object.freeze({}) }),
   /** Never drawn at random: a story in the press (S1). What it does is `press.kinds`, by what it says. */
   press: Object.freeze({ weight: 0, press: true, uses: [S.persuasion, S.composition, A.credibility, A.charismaticImpact], hit: Object.freeze({}) }),
   /** Never drawn at random: a raid on a back room, by its Exposure (U1b). */

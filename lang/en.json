@@ -3345,6 +3345,7 @@
       "bust": { "Name": "A raid on the back room", "Hint": "They've come for what's behind the shop, and they aren't leaving without a look." },
       "press": { "Name": "A reporter asking questions", "IfNot": "If the story is believed and goes unanswered, it costs you in full. Answering well stops it, and answering badly halves it." },
       "smear": { "Name": "A smear campaign", "Hint": "Ugly stories about the business are doing the rounds, and someone is paying for them." },
+      "breach": { "Name": "A breach", "Hint": "Someone is inside your systems, going through the books. A Netrunner can throw them out (Interface), or anyone good with Electronics/Security Tech, at DV +2; better security makes it easier. If they get away with the ledger, whatever you're hiding comes out." },
       "raid": { "Name": "A tipped-off raid", "Hint": "Inspectors are on the way, and they seem to know exactly where to look." },
       "shakedown": { "Name": "A shakedown", "Hint": "A gang wants protection money on top of what you already pay." },
       "theft": { "Name": "A break-in", "Hint": "Someone has been through the stock overnight, and they will be back." },
@@ -3367,6 +3368,18 @@
       "talkingShop": { "Name": "Talking shop", "Hint": "{name} has been talking about this place at their other job.", "IfNot": "If nobody finds out what was said, the other business learns how this one stands. Caught well, you learn about them instead." }
     },
     "Weekday": { "0": "Sunday", "1": "Monday", "2": "Tuesday", "3": "Wednesday", "4": "Thursday", "5": "Friday", "6": "Saturday" },
+    "Breach": {
+      "GMRun": "Start a breach",
+      "GMHint": "A corporation or gang breaches this business's systems: this week's event if it has none yet, or next week's. Lost, the ledger leaks: the biggest hidden holder is unmasked, or the breacher's press runs the truth next week (money trouble or crime).",
+      "GMNow": "A breach is this week's event at {name}.",
+      "GMNext": "A breach will be next week's event at {name}.",
+      "LeakSubject": "{name}: the breach",
+      "Leak": {
+        "unmasked": "Whoever was in {name}'s systems got the ledger, and the names behind it. NCPD Financial Crimes has it now too.",
+        "story": "Whoever was in {name}'s systems got the ledger. Expect to read about it: {faction} has a story coming next week.",
+        "nothing": "Whoever was in {name}'s systems got the ledger, but there was nothing in it they could use."
+      }
+    },
     "NetRunLive": {
       "HasMap": "[map]",
       "Choose": "{name} has a NET Architect map. Jack in for real (free, and the data shard you bring out counts for more as evidence), or make the quick roll?",
@@ -4222,6 +4235,8 @@
         "netrun-wait": "you have made a NET run too recently",
         "netrun-no-live": "that target has no NET Architect map to run on",
         "netrun-busy": "another NET run is going on; wait for it to end",
+        "breach-queued": "a breach is already waiting for next week",
+        "breach-no-faction": "choose a corporation or gang",
         "not-netrunner": "that takes the Netrunner role's Interface",
         "backup-wait": "Backup has answered for this business too recently",
         "heat-off": "insider heat is switched off",

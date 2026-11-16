@@ -368,6 +368,53 @@ test('concealment: a hidden holder over 5% adds Exposure (and heat, when tracked
   await S.BusinessService._saveHidden({ business: business(), events: [] });
 });
 
+test('a breach not stopped leaks the ledger (X2a): the biggest hidden holder is unmasked; with none, the breacher prints the truth next week', async () => {
+  const { FactionRepository } = await import('../scripts/data/FactionRepository.js');
+  await FactionRepository.importStarter();
+  const day = S.BusinessService.day();
+  const b = E.normalizeBusiness(structuredClone(business()));
+  S.BusinessService._syncHolders(b);
+  b.masks = { [alice.id]: [{ kind: 'nominee', name: 'Vex', day, lastFee: day }] };
+  await S.BusinessRepository.save(b);
+  const hidden = S.MarketStore.getBusinessesHidden();
+  await S.MarketStore.setBusinessesHidden({ ...hidden, bus_play: { ...(hidden.bus_play ?? {}), layers: { [alice.id]: [30] } } });
+  const cashBefore = portfolio(alice).cash;
+
+  // Hidden: unmasked as NCPD would, fined, in the news, with a dip in the price.
+  const copy = E.normalizeBusiness(structuredClone(business()));
+  assert.equal(await S.BusinessService._breachLeak(copy, 'corp_bio'), 'unmasked');
+  await S.BusinessRepository.save(copy);
+  await settle();
+  assert.equal(business().masks[alice.id], undefined, 'unmasked');
+  assert.ok(portfolio(alice).cash < cashBefore, 'fined');
+  assert.ok(S.MarketStore.getControls().impacts.some((i) => i.source === 'unmasked' && i.sourceKey.startsWith('unmask:bus_play')));
+  assert.equal(S.MarketStore.getBusinessesHidden().bus_play.layers?.[alice.id], undefined, 'its layers gone');
+
+  // Nobody hidden, and a losing week on the books: the breacher's press has money trouble for next week.
+  const next = E.normalizeBusiness(structuredClone(business()));
+  next.regCase = null;
+  next.digests = [...(next.digests ?? []), { index: 99, profit: -500 }];
+  next.period = { ...next.period, event: { kind: 'breach', factionId: 'corp_bio', factionName: 'Biotechnica' } };
+  next.press = null;
+  assert.equal(await S.BusinessService._breachLeak(next, 'corp_bio'), 'story');
+  assert.equal(next.press.queued.story, 'money');
+  assert.equal(next.press.queued.factionId, 'corp_bio');
+
+  // Nothing true to tell: nothing leaks.
+  const clean = E.normalizeBusiness(structuredClone(business()));
+  clean.digests = [];
+  clean.state = { ...clean.state, compliance: 80, reputation: 80 };
+  clean.period = { ...clean.period, event: { kind: 'breach', factionId: 'corp_bio' } };
+  clean.press = null;
+  const exposureNow = S.MarketStore.getBusinessesHidden().bus_play?.exposure;
+  await S.MarketStore.setBusinessesHidden({ ...S.MarketStore.getBusinessesHidden(), bus_play: { ...S.MarketStore.getBusinessesHidden().bus_play, exposure: 0 } });
+  assert.equal(await S.BusinessService._breachLeak(clean, 'corp_bio'), 'nothing');
+  assert.equal(clean.press?.queued ?? null, null);
+  await S.MarketStore.setBusinessesHidden({ ...S.MarketStore.getBusinessesHidden(), bus_play: { ...S.MarketStore.getBusinessesHidden().bus_play, exposure: exposureNow ?? 0 } });
+  await S.BusinessRepository.save({ ...business(), masks: {}, regCase: null });
+  await S.BusinessService._saveHidden({ business: business(), events: [] });
+});
+
 test('an investigation by ticker: a roll against a hidden total peels one layer at a time, once a week, telling only the investigator', async () => {
   const { SkillAdapter } = await import('../scripts/services/SkillAdapter.js');
   const { BusinessClient } = await import('../scripts/services/BusinessClient.js');

@@ -203,10 +203,10 @@ test('a hostile faction may act, at most 15% of weeks, and names itself; no host
   const acts = (faction) => Array.from({ length: 2000 }, (_, i) => hostileAct(week(i), 'test', BUSINESS_DEFAULTS, { hostile: [faction] })).filter(Boolean);
   const corp = acts({ id: 'tti', name: 'Trauma Team', kind: 'corp', value: -100 });
   assert.ok(corp.length > 220 && corp.length < 380, `about 15%: ${corp.length}`);
-  assert.deepEqual([...new Set(corp.map((a) => a.kind))].sort(), ['raid', 'smear'], 'no staff to poach');
+  assert.deepEqual([...new Set(corp.map((a) => a.kind))].sort(), ['breach', 'raid', 'smear'], 'no staff to poach');
   assert.equal(corp[0].factionName, 'Trauma Team');
   const gang = acts({ id: 'mael', name: 'Maelstrom', kind: 'gang', value: -100 });
-  assert.deepEqual([...new Set(gang.map((a) => a.kind))].sort(), ['raid', 'sabotage']);
+  assert.deepEqual([...new Set(gang.map((a) => a.kind))].sort(), ['breach', 'raid', 'sabotage']);
 
   const plain = Array.from({ length: 200 }, (_, i) => drawEvent(week(i), 'test')?.kind ?? null);
   const quiet = { cost: 1, protection: 1, shakedown: 1, gangs: [], hostile: [] };
@@ -255,7 +255,7 @@ test('closing real weeks brings a hostile faction\'s acts and names the gang in 
   const hostile = weeks({ ...quiet, hostile: [{ id: 'mael', name: 'Maelstrom', kind: 'gang', value: -100 }] });
   const acts = hostile.filter((e) => e?.factionId === 'mael');
   assert.ok(acts.length > 3, `a hostile faction acts in real weeks: ${acts.length}`);
-  assert.ok(acts.every((e) => ['sabotage', 'raid', 'poaching', 'shakedown'].includes(e.kind) && e.factionName === 'Maelstrom'));
+  assert.ok(acts.every((e) => ['sabotage', 'raid', 'breach', 'poaching', 'shakedown'].includes(e.kind) && e.factionName === 'Maelstrom'));
 
   const turf = weeks({ ...quiet, gangs: [{ id: 'claws', name: 'Tyger Claws' }] }).filter((e) => e?.kind === 'shakedown');
   assert.ok(turf.length > 0 && turf.every((e) => e.factionName === 'Tyger Claws'), 'a shakedown names the gang');
@@ -938,4 +938,34 @@ test('at a company, only officers take dirty cash and settle a deal, without a v
 
   assert.equal(projectOffer(company(['med'], { status: 'shut' }), 'backRoom').reason, 'not-at-company', 'for good');
   assert.equal(projectOffer(withRoom({ status: 'shut' }), 'backRoom').ok, true, 'a shop can build again');
+});
+
+// ── A breach (X2a) ───────────────────────────────────────────────────────────
+
+test('a breach: the GM starts one now or next week; a Netrunner answers it, Electronics at +2, easier behind security; lost, it leaks', async () => {
+  const { runBreach, breachDv, stageDv } = await import('../scripts/engine/index.js');
+  const b = shop();
+  const faction = { id: 'arasaka', name: 'Arasaka' };
+  assert.deepEqual(runBreach(b, faction), { ok: true, when: 'now' });
+  assert.equal(b.period.event.kind, 'breach');
+  assert.equal(b.period.event.factionName, 'Arasaka');
+  assert.deepEqual(runBreach(b, faction), { ok: true, when: 'next' }, 'a busy week: next week');
+  assert.equal(b.breachQueued.kind, 'breach');
+  assert.equal(runBreach(b, faction).reason, 'breach-queued');
+  assert.equal(normalizeBusiness(structuredClone(b)).breachQueued.factionId, 'arasaka', 'kept on the record');
+
+  // Answering it: the stage's DV for a Netrunner, +2 with Electronics, less one for each security upgrade.
+  const dv = stageDv(b.stage);
+  assert.equal(rollSpec(b, { type: 'respond', use: ABILITIES.interface }, 'med', { day: DAY }).dv, dv);
+  assert.equal(rollSpec(b, { type: 'respond', use: SKILLS.electronics }, 'med', { day: DAY }).dv, dv + 2);
+  assert.equal(rollSpec(b, { type: 'respond', use: SKILLS.persuasion }, 'med', { day: DAY }).reason, 'bad-use');
+  b.upgrades = { ...(b.upgrades ?? {}), security: 2 };
+  assert.equal(breachDv(b, dv), dv - 2);
+  assert.equal(rollSpec(b, { type: 'respond', use: ABILITIES.interface }, 'med', { day: DAY }).dv, dv - 2);
+
+  // Lost, the ledger leaks; stopped, nothing.
+  b.period.event = { kind: 'breach', factionId: 'arasaka', factionName: 'Arasaka' };
+  assert.deepEqual(factionFallout(b, { outcome: 'unanswered' }), [{ type: 'factionBreach', factionId: 'arasaka', period: b.period.index }]);
+  assert.equal(factionFallout(b, { outcome: 'failed' }).length, 1);
+  assert.deepEqual(factionFallout(b, { outcome: 'answered' }), []);
 });

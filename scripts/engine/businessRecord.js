@@ -134,6 +134,8 @@ export function normalizeBusiness(raw) {
     reports: b.reports ?? [],
     /** Stories in the press (S1): the day of the last one drawn, and one waiting for the GM. */
     press: b.press ?? null,
+    /** A breach the GM started in a busy week (X2a), for the next: `{kind: 'breach', factionId, factionName, byHand}`. */
+    breachQueued: b.breachQueued ?? null,
     /** Owned and run by an NPC (N1): `{ ownerId, level, profile, auto }`. */
     npcRun: b.npcRun ?? null,
     /** The job board (N2): applications waiting for the GM, and the day each character last tried. */

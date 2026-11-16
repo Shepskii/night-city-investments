@@ -73,6 +73,12 @@
       <button type="button" data-action="businessSetStanding" data-id="{{id}}"><i class="fas fa-handshake"></i> {{localize "NCI.Faction.SetStanding"}}</button>
     </div>
     {{/if}}
+    {{#if breachOptions.length}}
+    <div class="nci-actions">
+      <select name="breachFaction" title="{{localize 'NCI.Breach.GMHint'}}">{{#each breachOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+      <button type="button" data-action="businessBreach" data-id="{{id}}" title="{{localize 'NCI.Breach.GMHint'}}"><i class="fas fa-user-secret"></i> {{localize "NCI.Breach.GMRun"}}</button>
+    </div>
+    {{/if}}
     {{#if isOpen}}{{#if leavers.length}}
     <div class="nci-actions">
       <select name="leaver">{{#each leavers}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
