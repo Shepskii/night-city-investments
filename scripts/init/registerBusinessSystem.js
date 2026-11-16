@@ -13,7 +13,7 @@ import { JobService } from '../services/JobService.js';
 import { EmployerService } from '../services/EmployerService.js';
 import { BusinessWatcher } from '../services/BusinessWatcher.js';
 import { DistrictService } from '../services/DistrictService.js';
-import { NetArchitectAdapter } from '../integrations/NetArchitectAdapter.js';
+import { NetArchitectAdapter, NET_ARCHITECT_ID } from '../integrations/NetArchitectAdapter.js';
 
 export function registerBusinessSystem(initializer) {
   initializer.register('init', 41, 'Business hooks', () => {
@@ -64,7 +64,7 @@ export function registerBusinessSystem(initializer) {
     }
   });
 
-  // Real NET runs on CPR NET Architect (X2a): its own GM client fills a taken shard and settles a run at jack-out.
+  // Real NET runs on CPR NET Architect (X2a): its own GM client fills a taken shard, and follows and settles a run.
   initializer.register('ready', 49, 'NET Architect', () => {
     if (!NetArchitectAdapter.present()) return;
     const here = () => game.user?.isGM && NetArchitectAdapter.isAuthority();
@@ -72,9 +72,15 @@ export function registerBusinessSystem(initializer) {
       if (!here() || !item?.parent || !item.flags?.[MODULE_ID]?.[FLAGS.EVIDENCE]?.live) return;
       BusinessService._queue.run(() => BusinessService.fillLiveShard(item)).catch((error) => console.error('night-city-investments | filling a data shard failed', error));
     });
-    Hooks.on('cprNetArchitectJackOut', (session) => {
-      if (!here()) return;
-      BusinessService._queue.run(() => BusinessService.settleLiveRun(session)).catch((error) => console.error('night-city-investments | settling a NET run failed', error));
+    // NET Architect keeps its session as a flag on a journal entry in its own compendium; every save says how a run
+    // stands, and its end saves null. A player's jack-out has no hook of its own.
+    const watch = (session) => BusinessService._queue.run(() => BusinessService.watchLiveRuns(session)).catch((error) => console.error('night-city-investments | following a NET run failed', error));
+    Hooks.on('updateJournalEntry', (doc, changes) => {
+      if (!here() || doc.pack !== `world.${NET_ARCHITECT_ID}` || !foundry.utils.hasProperty(changes, `flags.${NET_ARCHITECT_ID}.session`)) return;
+      watch(doc.getFlag(NET_ARCHITECT_ID, 'session') ?? null);
+    });
+    Hooks.on('cprNetArchitectJackOut', () => {
+      if (here()) watch(null);
     });
   });
 

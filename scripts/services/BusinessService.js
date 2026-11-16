@@ -2304,7 +2304,13 @@ class BusinessServiceImpl {
       return this._tellRunner(actor, L('NCI.NetRunLive.Failed', { name: target.name }));
     }
     await actor.setFlag(MODULE_ID, FLAGS.NET_RUN, this.day());
-    await actor.setFlag(MODULE_ID, FLAGS.NET_RUN_LIVE, { target, architectureId, day: this.day() });
+    let sessionId = null;
+    try {
+      sessionId = NetArchitectAdapter.api()?.getActiveSession?.()?.id ?? null;
+    } catch {
+      sessionId = null;
+    }
+    await actor.setFlag(MODULE_ID, FLAGS.NET_RUN_LIVE, { target, architectureId, day: this.day(), sessionId, failed: [], compromised: [] });
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, {});
     return undefined;
   }
@@ -2356,18 +2362,42 @@ class BusinessServiceImpl {
   }
 
   /**
-   * A run on NET Architect has ended (its jack-out hook). If it was one a Netrunner asked for through NCI, settle it: a
-   * pass if the shard about the target came out with them, traced if any node was failed or compromised.
+   * NET Architect has saved its session (or ended it: null). A player's jack-out only drops them from the session, which
+   * then forgets who they were, and NET Architect says nothing until the GM ends the run; so NCI follows each run it was
+   * asked for as it goes, keeping the session and the nodes failed or compromised, and settles it when the runner is
+   * no longer in it or the run is over.
    */
-  async settleLiveRun(session) {
-    const actor = session?.runner?.actorUuid ? await fromUuid(session.runner.actorUuid).catch(() => null) : null;
-    const asked = actor?.getFlag?.(MODULE_ID, FLAGS.NET_RUN_LIVE);
-    if (!asked || asked.architectureId !== session.architectureId) return null;
+  async watchLiveRuns(session) {
+    const results = [];
+    for (const actor of Array.from(game.actors ?? []).filter((a) => a.getFlag?.(MODULE_ID, FLAGS.NET_RUN_LIVE))) {
+      const asked = actor.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
+      const inRun = session && session.architectureId === asked.architectureId
+        ? [{ runner: session.runner, failedNodeIds: session.failedNodeIds }, ...Object.values(session.runners ?? {})].find((r) => r?.runner?.actorUuid === actor.uuid)
+        : null;
+      if (inRun && (!asked.sessionId || asked.sessionId === session.id)) {
+        const failed = [...new Set([...(asked.failed ?? []), ...(inRun.failedNodeIds ?? [])])];
+        const compromised = [...new Set([...(asked.compromised ?? []), ...(session.compromisedNodeIds ?? [])])];
+        if (asked.sessionId !== session.id || failed.length !== (asked.failed ?? []).length || compromised.length !== (asked.compromised ?? []).length) {
+          await actor.setFlag(MODULE_ID, FLAGS.NET_RUN_LIVE, { ...asked, sessionId: session.id, failed, compromised });
+        }
+      } else {
+        // Out of the run it started in, or the run is over: settled, with what was seen of it.
+        results.push(await this._settleLive(actor, asked));
+      }
+    }
+    return results;
+  }
+
+  /**
+   * A run NCI was asked for is over for its runner: a pass if the shard about the target came out with them, traced if
+   * any node was failed or compromised on the way.
+   */
+  async _settleLive(actor, asked) {
     await actor.unsetFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
     const { target } = asked;
     const about = { ticker: target.ticker ?? null, businessId: target.kind === 'npc' ? target.id : null };
-    const shard = [...(actor.items ?? [])].some((item) => NetArchitectAdapter.takenIn(item, session.id) && StoryService.evidenceFor(actor, about).includes(item));
-    const result = liveRunOutcome({ shard, failed: session.failedNodeIds?.length ?? 0, compromised: session.compromisedNodeIds?.length ?? 0 });
+    const shard = [...(actor.items ?? [])].some((item) => NetArchitectAdapter.takenIn(item, asked.sessionId) && StoryService.evidenceFor(actor, about).includes(item));
+    const result = liveRunOutcome({ shard, failed: asked.failed?.length ?? 0, compromised: asked.compromised?.length ?? 0 });
     if (result.heat && HeatService.enabled()) await HeatService.setHeat(actor.id, HeatService.heatOf(actor.id) + result.heat);
     if (result.standing && target.ticker) {
       for (const b of BusinessRepository.all().filter((x) => x.status === 'open' && x.partners.some((p) => p.actorId === actor.id && p.status === 'active'))) {

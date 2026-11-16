@@ -200,15 +200,21 @@ test('a shard taken in a real run is filled in as of then; jack-out settles the 
     assert.match(flag.note, /Nina 100%/);
     assert.ok(StoryService.evidenceFor(cass, { ticker: null, businessId: 'bus_npcshop' }).includes(item), 'now evidence about the business');
 
-    // Jack-out of the run Cass asked for: a pass, traced by a failed node.
+    // The run Cass asked for, followed as NET Architect saves it: in it, a failed node, then jacked out (dropped from it).
+    cass.uuid = `Actor.${cass.id}`;
     await cass.setFlag(MODULE_ID, FLAGS.NET_RUN_LIVE, { target: { kind: 'npc', id: 'bus_npcshop', name: 'Nina Noodles', ticker: null }, architectureId: 'arch1', day: 1 });
     await HeatService.setHeat(cass.id, 10);
-    const result = await BusinessService.settleLiveRun({ id: 'sess1', architectureId: 'arch1', runner: { actorUuid: `Actor.${cass.id}` }, failedNodeIds: ['n2'], compromisedNodeIds: [] });
+    const runner = { userId: 'u1', actorUuid: cass.uuid };
+    assert.deepEqual(await BusinessService.watchLiveRuns({ id: 'sess1', architectureId: 'arch1', runner, failedNodeIds: [], runners: { u1: { runner, failedNodeIds: [] } } }), []);
+    assert.deepEqual(await BusinessService.watchLiveRuns({ id: 'sess1', architectureId: 'arch1', runner, failedNodeIds: ['n2'], runners: { u1: { runner, failedNodeIds: ['n2'] } } }), []);
+    assert.deepEqual(cass.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE).failed, ['n2'], 'the failed node is remembered');
+    const idle = { id: 'sess1', architectureId: 'arch1', status: 'idle', runner: { userId: null, actorUuid: null }, failedNodeIds: [], runners: {} };
+    const [result] = await BusinessService.watchLiveRuns(idle);
     assert.equal(result.outcome, 'success');
     assert.equal(result.traced, true);
     assert.equal(HeatService.heatOf(cass.id), 10 + E.BUSINESS_DEFAULTS.roles.netRun.heat);
     assert.equal(cass.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE), undefined, 'settled once');
-    assert.equal(await BusinessService.settleLiveRun({ id: 'sess2', architectureId: 'arch1', runner: { actorUuid: `Actor.${cass.id}` } }), null, 'a run NCI was not asked for is left alone');
+    assert.deepEqual(await BusinessService.watchLiveRuns(null), [], 'nothing left to settle');
 
     // The real run's shard counts 4 in an investigation.
     const { SkillAdapter } = S;
