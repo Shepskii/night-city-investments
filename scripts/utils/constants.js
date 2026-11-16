@@ -111,6 +111,7 @@ export const FLAGS = Object.freeze({
   INVESTIGATED: 'investigated',
   QUASHED: 'quashed',
   INQUIRED: 'inquired',
+  NET_RUN: 'netRun',
   /** On actors. The jobs a character holds or is offered at player businesses (DESIGN §32). Written only by the GM. */
   JOBS: 'jobs',
   /** On the GM-only control journal: employers at market corporations (N4), by id. */

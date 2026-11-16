@@ -606,6 +606,13 @@ test('the terminal shows the cover-your-tracks panel only to a warned player, wi
     assert.deepEqual(buttons(html).map((b) => b.id), ['inquiry']);
     await PortfolioRepository.save(alice, { ...base, cash: 10000, heatAware: true, frozenUntilTick: 0, heatCooldowns: { mask: 0, books: 0, front: 0, bribe: 0 } });
     assert.deepEqual(buttons(await view()).map((b) => b.id), ['mask', 'books', 'front', 'bribe', 'quash', 'inquiry'], 'once warned, the lot');
+    // A Netrunner likewise sees a NET run (X2a).
+    SkillAdapter.baseFor = (actor, use) => (use.ability === 'Interface' ? { base: 4, name: 'Interface', parts: 'Interface 4' } : baseFor.call(SkillAdapter, actor, use));
+    await PortfolioRepository.save(alice, { ...base, heatAware: false, frozenUntilTick: 0, brokerBans: { c_1: 0 } });
+    html = await view();
+    t = text(html);
+    assert.ok(t.includes('The NET') && t.includes('Make a NET run'), 'a Netrunner sees the NET');
+    assert.deepEqual(buttons(html).map((b) => b.id), ['netRun']);
   } finally {
     SkillAdapter.baseFor = baseFor;
   }

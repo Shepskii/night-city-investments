@@ -28,7 +28,7 @@ import {
   moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene, ABILITIES, backupWait, quashEffect, exposureBand, canRun,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
   STACKING_TYPES, offerContract, dropContract, writeContract, contractOf, takesContracts,
-  inquiryWait, inquiryDv, inquiryTarget, inquiryEffect, hasEvidence, STORY_RULES,
+  inquiryWait, inquiryDv, inquiryTarget, inquiryEffect, hasEvidence, netRunWait, netRunDv, netRunEffect, RUMOUR_LEVELS, STORY_RULES,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { NcmAdapter } from '../integrations/NcmAdapter.js';
@@ -559,6 +559,8 @@ class BusinessServiceImpl {
     if (request.type === 'quashRoll') return this._receipt(actor, request, await this._quash(actor, request));
     // A Lawman's investigation (X2d): a market corporation needs no player businesses; an NPC's business is checked in it.
     if (request.type === 'inquiryRoll') return this._receipt(actor, request, await this._inquire(actor, request));
+    // A Netrunner's NET run (X2a), the same way.
+    if (request.type === 'netRunRoll') return this._receipt(actor, request, await this._netRun(actor, request));
     if (!this.enabled()) return this._receipt(actor, request, { ok: false, reason: 'disabled' });
     // Looking behind a hidden holding (B6d) reads only the GM's hidden state and changes no business.
     if (request.type === 'investigate') return this._receipt(actor, request, await this._investigate(actor, request));
@@ -1144,6 +1146,7 @@ class BusinessServiceImpl {
     if (out.rumour) result.rumour = out.rumour;
     if (out.quash) result.quash = out.quash;
     if (out.inquiry) result.inquiry = out.inquiry;
+    if (out.netRun) result.netRun = out.netRun;
     await actor.setFlag(MODULE_ID, FLAGS.BUSINESS_RECEIPTS, [{
       processed: [...r.processed, request.key].slice(-PROCESSED_CAP),
       results: [...r.results, result].slice(-RESULTS_CAP),
@@ -2121,8 +2124,13 @@ class BusinessServiceImpl {
       .map((c) => ({ ticker: c.ticker, name: c.name, cap: (pub[c.ticker]?.price ?? 0) * (c.sharesOutstanding ?? 0) }));
     const npc = this.enabled() ? BusinessRepository.all().filter((b) => b.status === 'open' && (b.npcRun || !playerHeld(b))) : [];
     return {
-      npc: npc.map((b) => ({ id: b.id, name: b.name, ticker: b.company?.ticker ?? null, dv: inquiryDv({ kind: 'npc' }) })).sort((a, b) => a.name.localeCompare(b.name)),
-      corps: corps.map((c) => ({ ticker: c.ticker, name: c.name, dv: inquiryDv({ kind: 'corp', ticker: c.ticker }, corps) })).sort((a, b) => a.name.localeCompare(b.name)),
+      // Each with a Lawman's DV and a Netrunner's (`netDv`, X2a).
+      npc: npc.map((b) => ({
+        id: b.id, name: b.name, ticker: b.company?.ticker ?? null, dv: inquiryDv({ kind: 'npc' }), netDv: netRunDv({ kind: 'npc', stage: b.stage }),
+      })).sort((a, b) => a.name.localeCompare(b.name)),
+      corps: corps.map((c) => ({
+        ticker: c.ticker, name: c.name, dv: inquiryDv({ kind: 'corp', ticker: c.ticker }, corps), netDv: netRunDv({ kind: 'corp', ticker: c.ticker }, corps),
+      })).sort((a, b) => a.name.localeCompare(b.name)),
     };
   }
 
@@ -2143,9 +2151,12 @@ class BusinessServiceImpl {
     const found = kind === 'b' ? targets.npc.find((t) => t.id === id) : kind === 'c' ? targets.corps.find((t) => t.ticker === id) : null;
     if (!found) return { ok: false, reason: 'no-target' };
     const target = kind === 'b' ? { kind: 'npc', id, name: found.name, ticker: found.ticker } : { kind: 'corp', ticker: id, name: found.name };
-    const evidence = hasEvidence(MarketStore.getStories().recent, target.ticker, day);
+    // Evidence: a story about it lately, or a data shard about it (X2a), which the investigation uses up.
+    const [shard] = StoryService.evidenceFor(actor, { ticker: target.ticker, businessId: target.id ?? null });
+    const evidence = hasEvidence(MarketStore.getStories().recent, target.ticker, day) || !!shard;
     const check = await SkillAdapter.verifyLevers(actor, request, { dv: inquiryTarget(found.dv, evidence), use: ABILITIES.backup });
     if (!check.ok) return check;
+    if (shard) await StoryService.useEvidence(shard);
     await WealthAdapter.set(actor, wealth - rules.cost, L('NCI.Heat.Action.inquiry.Name'));
     await actor.setFlag(MODULE_ID, FLAGS.INQUIRED, day);
     const effect = inquiryEffect(check.result.band, target);
@@ -2158,6 +2169,73 @@ class BusinessServiceImpl {
       await PressService.smearInvestigator(actor, paper);
     }
     return { ok: true, inquiry: { outcome: effect.outcome, kind: target.kind, name: target.name, evidence, percent: Math.abs(effect.percent) } };
+  }
+
+  /**
+   * A Netrunner's NET run (X2a): Interface against the target's DV, for legwork money whatever comes of it, once a
+   * week. A pass brings back a data shard; a failure is traced (heat, and standing with the target for the
+   * Netrunner's businesses); a fumble is an ICE hit as well, for the GM to play.
+   */
+  async _netRun(actor, request) {
+    const rules = BUSINESS_DEFAULTS.roles.netRun;
+    if (!(SkillAdapter.baseFor(actor, ABILITIES.interface).base > 0)) return { ok: false, reason: 'not-netrunner' };
+    const day = this.day();
+    if (netRunWait(actor.getFlag(MODULE_ID, FLAGS.NET_RUN), day) > 0) return { ok: false, reason: 'netrun-wait' };
+    const wealth = WealthAdapter.get(actor);
+    if (wealth < rules.cost) return { ok: false, reason: 'insufficient-funds' };
+    const [kind, id] = String(request.target ?? '').split(':');
+    const targets = this.inquiryTargets();
+    const found = kind === 'b' ? targets.npc.find((t) => t.id === id) : kind === 'c' ? targets.corps.find((t) => t.ticker === id) : null;
+    if (!found) return { ok: false, reason: 'no-target' };
+    const target = kind === 'b' ? { kind: 'npc', id, name: found.name, ticker: found.ticker } : { kind: 'corp', ticker: id, name: found.name };
+    const check = await SkillAdapter.verifyLevers(actor, request, { dv: found.netDv, use: ABILITIES.interface });
+    if (!check.ok) return check;
+    await WealthAdapter.set(actor, wealth - rules.cost, L('NCI.Heat.Action.netRun.Name'));
+    await actor.setFlag(MODULE_ID, FLAGS.NET_RUN, day);
+    const effect = netRunEffect(check.result.band);
+    if (effect.shard) await this._netRunShard(actor, target);
+    if (effect.heat && HeatService.enabled()) await HeatService.setHeat(actor.id, HeatService.heatOf(actor.id) + effect.heat);
+    if (effect.standing && target.ticker) {
+      for (const b of BusinessRepository.all().filter((x) => x.status === 'open' && x.partners.some((p) => p.actorId === actor.id && p.status === 'active'))) {
+        await this._campaignStanding(b, target.ticker, effect.standing);
+      }
+    }
+    if (effect.ice) {
+      await ChatMessage.create({
+        content: `<p><strong>${escapeHtml(L('NCI.Heat.Action.netRun.IceTitle'))}</strong></p><p>${escapeHtml(L('NCI.Heat.Action.netRun.IceHook', { actor: actor.name, name: target.name }))}</p>`,
+        whisper: (ChatMessage.getWhisperRecipients?.('GM') ?? []).map((u) => u.id),
+      });
+    }
+    return { ok: true, netRun: { outcome: effect.outcome, kind: target.kind, name: target.name } };
+  }
+
+  /** What a NET run brings back (X2a): a corporation's coming moves, or an NPC business's real ledger, as a shard. */
+  async _netRunShard(actor, target) {
+    const lines = [];
+    if (target.kind === 'corp') {
+      const sources = StoryService.rumourSources(target.ticker).filter((s) => s.kind === 'move' || s.kind === 'press');
+      for (const source of sources) lines.push(StoryService._rumourText(source, RUMOUR_LEVELS.length - 1));
+      if (!lines.length) lines.push(L('NCI.Heat.Action.netRun.Shard.quiet', { name: target.name }));
+      // They know now: trading on what the shard says is insider dealing.
+      for (const source of sources) {
+        if (source.kind === 'press') await StoryService._watchPress(source, actor.id);
+        await HeatService.noteTipped(source.sourceKey, actor.id);
+      }
+    } else {
+      const b = BusinessRepository.get(target.id);
+      const exposure = MarketStore.getBusinessesHidden()[target.id]?.exposure ?? 0;
+      const owners = (b?.partners ?? []).filter((p) => p.status === 'active' && p.units > 0);
+      const total = owners.reduce((sum, p) => sum + p.units, 0) || 1;
+      lines.push(L('NCI.Heat.Action.netRun.Shard.cash', { cash: Math.round(b?.till ?? 0).toLocaleString() }));
+      lines.push(L('NCI.Heat.Action.netRun.Shard.exposure', { band: L(`NCI.Company.Exposure.${exposureBand(exposure)}`) }));
+      lines.push(L('NCI.Heat.Action.netRun.Shard.owners', {
+        owners: owners.map((p) => `${game.actors?.get?.(p.actorId)?.name ?? p.name ?? '?'} ${Math.round((p.units / total) * 100)}%`).join(', ') || '-',
+      }));
+    }
+    await StoryService.grantEvidence(actor, {
+      ticker: target.ticker ?? null, businessId: target.kind === 'npc' ? target.id : null, name: target.name, source: 'netrun',
+      note: lines.join('\n'), from: L('NCI.Heat.Action.netRun.Shard.from'),
+    });
   }
 
   /** A case on an NPC's business from an investigation (X2d). Nobody answers it, so it comes to the GM. */

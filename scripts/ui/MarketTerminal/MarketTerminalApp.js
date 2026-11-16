@@ -30,6 +30,7 @@ import { publishStory, digRumours } from '../publishStory.js';
 import { NcmAdapter } from '../../integrations/NcmAdapter.js';
 import { quashRoll } from '../quash.js';
 import { inquiryRoll } from '../inquiry.js';
+import { netRunRoll } from '../netRun.js';
 import { StoryService } from '../../services/StoryService.js';
 import { SyndicateClient } from '../../services/SyndicateClient.js';
 import { accountFor, tradingAccounts, ownerOf } from '../accounts.js';
@@ -340,6 +341,8 @@ export class MarketTerminalApp extends BaseApplication {
     if (target.dataset.id === 'quash') return quashRoll(this.actor);
     // As is a Lawman's investigation (X2d).
     if (target.dataset.id === 'inquiry') return inquiryRoll(this.actor);
+    // And a Netrunner's NET run (X2a).
+    if (target.dataset.id === 'netRun') return netRunRoll(this.actor);
     await PortfolioClient.heatAction(this.actor, target.dataset.id);
   }
 

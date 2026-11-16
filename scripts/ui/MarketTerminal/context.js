@@ -20,6 +20,7 @@ import { SkillAdapter } from '../../services/SkillAdapter.js';
 import { WealthAdapter } from '../../services/WealthAdapter.js';
 import { quashWait } from '../quash.js';
 import { inquiryWait, inquiryTargets } from '../inquiry.js';
+import { netRunWait, netRunTargets } from '../netRun.js';
 import { sparkline, lineChart } from '../components/chart.js';
 import { L, money, whole, pct, trendClass } from '../format.js';
 
@@ -86,12 +87,32 @@ export function heatContext(actor, portfolio, tick) {
       canUse: anyone && inquiryLeft === 0 && WealthAdapter.get(actor) >= inquiry.cost,
     });
   }
+  // Any Netrunner can make a NET run against the same targets (X2a), warned or not, likewise.
+  const netrunner = on && !actor?.isSyndicate && SkillAdapter.baseFor(actor, ABILITIES.interface).base > 0;
+  if (netrunner) {
+    const run = BUSINESS_DEFAULTS.roles.netRun;
+    const runLeft = netRunWait(actor);
+    const targets = netRunTargets();
+    const anyone = targets.npc.length + targets.corps.length > 0;
+    const dvs = [...targets.npc, ...targets.corps].map((t) => t.dv);
+    actions.push({
+      id: 'netRun',
+      name: L('NCI.Heat.Action.netRun.Name'),
+      desc: L('NCI.Heat.Action.netRun.Desc'),
+      skill: L('NCI.Heat.Panel.Skill', { skill: ABILITIES.interface.ability, total: SkillAdapter.rollBase(actor, ABILITIES.interface).base, dv: dvs.length ? `${Math.min(...dvs)}-${Math.max(...dvs)}` : '-' }),
+      cost: L('NCI.Heat.Panel.Cost', { cost: run.cost.toLocaleString() }),
+      status: !anyone ? L('NCI.Heat.Action.netRun.None') : runLeft > 0 ? L('NCI.Heat.Panel.ReadyIn', { n: runLeft }) : WealthAdapter.get(actor) < run.cost ? L('NCI.Heat.Panel.TooPoorSheet') : L('NCI.Heat.Panel.Ready'),
+      canUse: anyone && runLeft === 0 && WealthAdapter.get(actor) >= run.cost,
+    });
+  }
+  // Before any warning, the panel's heading says whose work it is.
+  const roleTitle = lawman && netrunner ? 'Both' : netrunner ? 'Netrunner' : 'Lawman';
 
   return {
-    // An unwarned Lawman sees the panel with only the investigation, under its own heading.
-    show: show || lawman,
-    title: L(show ? 'NCI.Heat.Panel.Title' : 'NCI.Heat.Panel.LawmanTitle'),
-    intro: L(show ? 'NCI.Heat.Panel.Intro' : 'NCI.Heat.Panel.LawmanIntro'),
+    // An unwarned Lawman or Netrunner sees the panel with only their own actions, under its own heading.
+    show: show || lawman || netrunner,
+    title: L(show ? 'NCI.Heat.Panel.Title' : `NCI.Heat.Panel.${roleTitle}Title`),
+    intro: L(show ? 'NCI.Heat.Panel.Intro' : `NCI.Heat.Panel.${roleTitle}Intro`),
     actions,
     frozen: frozen ? L('NCI.Heat.Panel.Frozen', { until: Math.ceil(portfolio.frozenUntilTick - 1e-6) }) : '',
     banned: bans.length ? L('NCI.Heat.Panel.BrokerBan', { until: Math.ceil(Math.max(...bans) - 1e-6) }) : '',

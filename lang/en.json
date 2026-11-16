@@ -1669,6 +1669,10 @@
         "Intro": "People have noticed how you trade. You can try to make it go away, but each try takes a skill roll and costs money whether it works or not, and cannot be repeated for a while. A bribe that is refused makes things worse.",
         "LawmanTitle": "The badge",
         "LawmanIntro": "You carry a badge, and the market is full of people who'd rather you didn't look at them.",
+        "NetrunnerTitle": "The NET",
+        "NetrunnerIntro": "Every company keeps its secrets on a server somewhere, and you know the way in.",
+        "BothTitle": "The badge and the NET",
+        "BothIntro": "You carry a badge and a cyberdeck, and the market is full of people who'd rather you used neither.",
         "Skill": "{skill} {total} against DV {dv}",
         "Cost": "{cost} eb",
         "Ready": "Ready",
@@ -1711,6 +1715,27 @@
             "failure": "The investigation into {name} goes nowhere.",
             "fumble": "The investigation into {name} blows up in your face. Expect your name in the press, and more heat.",
             "evidence": "Your evidence helped."
+          }
+        },
+        "netRun": {
+          "Name": "Make a NET run",
+          "Desc": "Interface, and a way in. Run against an NPC's business, for its real ledger, or a market corporation, for what's coming its way. A pass brings back a data shard: evidence for a Lawman's investigation or a Media's story, and trading on what it tells you counts as insider dealing. The legwork costs the same whatever comes of it, and you can run once a week. If you fail you're traced (more heat, and your businesses lose standing with the target); fumble and you hit ICE.",
+          "Target": "What to run against",
+          "None": "There is nothing to run against.",
+          "IceTitle": "ICE hit",
+          "IceHook": "{actor} fumbled a NET run against {name} and hit its ICE. Play it out as you see fit.",
+          "Result": {
+            "npc": "You're in and out of {name}'s books. The data shard is in your gear.",
+            "corp": "You're in and out of {name}'s servers. The data shard is in your gear.",
+            "failure": "{name}'s security traces you before you get anything. Expect more heat.",
+            "fumble": "You hit {name}'s ICE on the way in. They've traced you, and the GM has something for you."
+          },
+          "Shard": {
+            "from": "NET run",
+            "quiet": "Nothing in {name}'s pipeline: no news or moves coming that you could find.",
+            "cash": "Cash in hand: {cash} eb.",
+            "exposure": "Exposure: {band}.",
+            "owners": "Who really owns it: {owners}."
           }
         },
         "mask": { "Name": "Mask the pattern", "Desc": "Run offsetting trades so the pattern is harder to read. Cheap, and you can do it often, but it only takes a little off." },
@@ -4151,6 +4176,8 @@
         "not-lawman": "that takes the Lawman role's Backup",
         "quash-wait": "you have called in a favour too recently",
         "inquiry-wait": "you have opened an investigation too recently",
+        "netrun-wait": "you have made a NET run too recently",
+        "not-netrunner": "that takes the Netrunner role's Interface",
         "backup-wait": "Backup has answered for this business too recently",
         "heat-off": "insider heat is switched off",
         "rumour-wait": "you have dug for rumours too recently",

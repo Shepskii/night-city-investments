@@ -145,6 +145,19 @@ A Lawman can also turn the badge on others: **Open an investigation**, on the Po
 - **Against an NPC's business:** a pass hands the regulators enough for a case against it.
 - **Against a corporation:** a pass puts the investigation in the news, and its price falls the next day: 2%, or 4% on a strong roll and 6% on an exceptional one. The corporation won't forget: any business you hold a stake in loses standing with it. You know the drop is coming, so trading on it draws insider heat.
 - **A fumble:** heat, and a smear about you in the press, from the corporation itself or, for an NPC's business, a media company. You can answer it as you would any story about you.
+- **Evidence from a NET run:** a data shard about the target counts too, and the investigation uses it up whatever the roll.
+
+### Make a NET run (Netrunners)
+
+A Netrunner can **Make a NET run** from the same place, on the Portfolio tab's **Brokerage** page whenever insider heat is in play (under **The NET** if nobody has warned you about your own trading yet). Pick an NPC's business or a market corporation and roll Interface. The legwork costs 100 eb from your own pocket whatever comes of it, and you can run once a week.
+
+- **The DV:** an NPC's business by its size: 15 for a stall, 17 for a shop, 19 for a chartered company. A corporation by its size among the market's corporations: 17, 19 or 21.
+- **A pass** brings back a **data shard**, in your gear (and in Messenger, if your table uses it):
+  - from a corporation, what's coming its way: news about to break and price moves on the way, or that there's nothing. Trading on it counts as insider dealing, as for a gig's runners.
+  - from an NPC's business, its real ledger: the cash it holds, its Exposure, and who really owns it.
+- **Evidence:** a shard is evidence about its target, for a Lawman's investigation or a Media's story, and is used up by whichever uses it.
+- **A failure:** you're traced. Heat +5, and any business you hold a stake in loses standing with the target, if it's a faction.
+- **A fumble:** traced, and you hit ICE: the GM has something for you.
 
 ---
 

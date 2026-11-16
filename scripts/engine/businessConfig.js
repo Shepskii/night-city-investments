@@ -659,6 +659,9 @@ export const BUSINESS_DEFAULTS = Object.freeze({
    * for a market corporation `dv.corp` by its size among them (smallest third first). A story about the target in the
    * last `evidenceDays` adds `evidence` to the roll. A pass against a corporation drops its price by `drop` percent by
    * band and moves `standing` with it for the Lawman's businesses; a fumble adds `heat` and a smear about them.
+   * A Netrunner's NET run (X2a) costs `cost` eb of legwork, once in `days`: Interface against `dv.npc` by an NPC
+   * business's stage, or `dv.corp` by a corporation's size. A pass brings back a data shard; a failure is traced,
+   * `heat` and `standing` with the target for the Netrunner's businesses; a fumble is an ICE hit as well.
    */
   roles: Object.freeze({
     supply: Object.freeze({ weeks: 4, maxCut: 0.1, cut: byBand([0, 0, 0.03, 0.05, 0.08, 0.1]), shipment: Object.freeze([200, 500, 1500]) }),
@@ -669,6 +672,10 @@ export const BUSINESS_DEFAULTS = Object.freeze({
       cost: 500, days: 28, evidence: 2, evidenceDays: 28, standing: -15, heat: 10,
       dv: Object.freeze({ npc: 15, corp: Object.freeze([17, 19, 21]) }),
       drop: byBand([0, 0, 2, 2, 4, 6]),
+    }),
+    netRun: Object.freeze({
+      cost: 100, days: 7, heat: 5, standing: -10,
+      dv: Object.freeze({ npc: Object.freeze([15, 17, 19]), corp: Object.freeze([17, 19, 21]) }),
     }),
   }),
   /**

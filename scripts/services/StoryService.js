@@ -8,7 +8,7 @@
  */
 
 import {
-  ABILITIES, SKILLS, STORY_RULES, RUMOUR_LEVELS, percentToAmount, makeImpact, storyCheck, rollStory, rumourLevel, freshRumours, concealedHolders, useKey,
+  ABILITIES, SKILLS, STORY_RULES, RUMOUR_LEVELS, evidenceMatches, percentToAmount, makeImpact, storyCheck, rollStory, rumourLevel, freshRumours, concealedHolders, useKey,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { MarketStore } from '../data/MarketStore.js';
@@ -16,6 +16,7 @@ import { CompanyRepository } from '../data/CompanyRepository.js';
 import { BusinessRepository } from '../data/BusinessRepository.js';
 import { PortfolioRepository } from '../data/PortfolioRepository.js';
 import { L } from '../ui/format.js';
+import { escapeHtml } from '../utils/text.js';
 import { BusinessService } from './BusinessService.js';
 import { ContactService } from './ContactService.js';
 import { HeatService } from './HeatService.js';
@@ -47,13 +48,23 @@ export const StoryService = {
     });
   },
 
+  /** The character's unused evidence about a target (X2a): by its ticker, or an unlisted business by its id. */
+  evidenceFor(actor, target) {
+    return [...(actor?.items ?? [])].filter((item) => evidenceMatches(flagOf(item), target));
+  },
+
+  /** GM only: mark a piece of evidence used. */
+  async useEvidence(item) {
+    if (item) await item.setFlag(MODULE_ID, FLAGS.EVIDENCE, { ...flagOf(item), used: true });
+  },
+
   /** A character's Credibility rank. */
   rankOf(actor) {
     return actor && !actor.isSyndicate ? SkillAdapter.baseFor(actor, ABILITIES.credibility).base : 0;
   },
 
   /** GM only: put a piece of evidence about a company in a character's inventory. */
-  async grantEvidence(actor, { ticker, name, note, source = 'gm' }) {
+  async grantEvidence(actor, { ticker, name, note, source = 'gm', businessId = null, from = null }) {
     if (!game.user.isGM || !actor) return { ok: false, reason: 'not-gm' };
     let item;
     try {
@@ -61,8 +72,9 @@ export const StoryService = {
         name: L('NCI.Story.ShardName', { name }),
         type: itemType(),
         img: 'icons/commodities/tech/circuit-board-green.webp',
-        system: { description: { value: note } },
-        flags: { [MODULE_ID]: { [FLAGS.EVIDENCE]: { ticker, name, note, source, used: false, day: BusinessService.day() } } },
+        // A shard can run to several lines (X2a): a paragraph each.
+        system: { description: { value: String(note ?? '').split('\n').map((line) => `<p>${escapeHtml(line)}</p>`).join('') } },
+        flags: { [MODULE_ID]: { [FLAGS.EVIDENCE]: { ticker, ...(businessId ? { businessId } : {}), name, note, source, used: false, day: BusinessService.day() } } },
       }]);
     } catch (error) {
       // Whatever found it (an investigation, say) still stands.
@@ -74,7 +86,7 @@ export const StoryService = {
     if (item && messenger?.convertToDataShard) {
       try {
         const done = await messenger.convertToDataShard(item);
-        if (done?.success !== false) await messenger.addShardMessage?.(item, { from: L('NCI.Story.ShardFrom'), to: actor.name, subject: L('NCI.Story.ShardName', { name }), body: note });
+        if (done?.success !== false) await messenger.addShardMessage?.(item, { from: from ?? L('NCI.Story.ShardFrom'), to: actor.name, subject: L('NCI.Story.ShardName', { name }), body: note });
       } catch (error) {
         console.warn('night-city-investments | could not make a Messenger shard of evidence', error);
       }

@@ -52,6 +52,11 @@ export const BusinessWatcher = {
       const said = L(`NCI.Heat.Action.inquiry.Result.${outcome === 'success' ? kind : outcome}`, { name, percent });
       ui.notifications.info(evidence ? `${said} ${L('NCI.Heat.Action.inquiry.Result.evidence')}` : said);
     }
+    // A Netrunner's NET run (X2a).
+    else if (result.ok && result.netRun) {
+      const { outcome, kind, name } = result.netRun;
+      ui.notifications.info(L(`NCI.Heat.Action.netRun.Result.${outcome === 'success' ? kind : outcome}`, { name }));
+    }
     else if (result.ok && result.rumour) ui.notifications.info(L(result.rumour.found ? 'NCI.Rumour.Found' : 'NCI.Rumour.Nothing'));
     else if (result.ok && result.story) ui.notifications.info(L(!result.story.believed ? 'NCI.Story.NotBelieved' : result.story.waiting ? 'NCI.Story.BelievedWaiting' : 'NCI.Story.Believed', { die: result.story.die, target: result.story.target }));
     else if (result.ok && result.caseResult) ui.notifications.info(L(result.caseResult.success ? 'NCI.Regulator.WonNotice' : 'NCI.Regulator.LostNotice'));
