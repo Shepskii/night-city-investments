@@ -208,7 +208,8 @@ test('a shard taken in a real run is filled in as of then; jack-out settles the 
     assert.deepEqual(await BusinessService.watchLiveRuns({ id: 'sess1', architectureId: 'arch1', runner, failedNodeIds: [], runners: { u1: { runner, failedNodeIds: [] } } }), []);
     assert.deepEqual(await BusinessService.watchLiveRuns({ id: 'sess1', architectureId: 'arch1', runner, failedNodeIds: ['n2'], runners: { u1: { runner, failedNodeIds: ['n2'] } } }), []);
     assert.deepEqual(cass.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE).failed, ['n2'], 'the failed node is remembered');
-    const idle = { id: 'sess1', architectureId: 'arch1', status: 'idle', runner: { userId: null, actorUuid: null }, failedNodeIds: [], runners: {} };
+    // As saved: the runner lingers in `runners` (a flag update merges), but their player is an observer now.
+    const idle = { id: 'sess1', architectureId: 'arch1', status: 'idle', runner: { userId: null, actorUuid: null }, failedNodeIds: [], runners: { u1: { runner, failedNodeIds: ['n2'] } }, observers: ['u1'] };
     const [result] = await BusinessService.watchLiveRuns(idle);
     assert.equal(result.outcome, 'success');
     assert.equal(result.traced, true);

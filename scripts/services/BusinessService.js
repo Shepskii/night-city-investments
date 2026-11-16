@@ -2371,8 +2371,12 @@ class BusinessServiceImpl {
     const results = [];
     for (const actor of Array.from(game.actors ?? []).filter((a) => a.getFlag?.(MODULE_ID, FLAGS.NET_RUN_LIVE))) {
       const asked = actor.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
+      // The saved session merges into the one before, so a runner who has left can linger in `runners`; NET Architect
+      // moves their player to the observers, which a save replaces whole.
+      const gone = new Set(session?.observers ?? []);
+      const runners = Object.entries(session?.runners ?? {}).filter(([userId]) => !gone.has(userId)).map(([, r]) => r);
       const inRun = session && session.architectureId === asked.architectureId
-        ? [{ runner: session.runner, failedNodeIds: session.failedNodeIds }, ...Object.values(session.runners ?? {})].find((r) => r?.runner?.actorUuid === actor.uuid)
+        ? [{ runner: session.runner, failedNodeIds: session.failedNodeIds }, ...runners].find((r) => r?.runner?.actorUuid === actor.uuid)
         : null;
       if (inRun && (!asked.sessionId || asked.sessionId === session.id)) {
         const failed = [...new Set([...(asked.failed ?? []), ...(inRun.failedNodeIds ?? [])])];
