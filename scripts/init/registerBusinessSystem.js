@@ -67,6 +67,8 @@ export function registerBusinessSystem(initializer) {
   // Real NET runs on CPR NET Architect (X2a): its own GM client fills a taken shard, and follows and settles a run.
   initializer.register('ready', 49, 'NET Architect', () => {
     if (!NetArchitectAdapter.present()) return;
+    // Which targets have a map goes out with the job board; publish it again now this is set up.
+    if (isActiveGM()) JobService.publish().catch((error) => console.error('night-city-investments | publishing the job board failed', error));
     const here = () => game.user?.isGM && NetArchitectAdapter.isAuthority();
     Hooks.on('createItem', (item) => {
       if (!here() || !item?.parent || !item.flags?.[MODULE_ID]?.[FLAGS.EVIDENCE]?.live) return;

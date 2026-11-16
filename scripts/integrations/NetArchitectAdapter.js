@@ -30,9 +30,14 @@ export const NetArchitectAdapter = {
     return !!game.modules?.get(NET_ARCHITECT_ID)?.active;
   },
 
-  /** Whether real runs are on in this world. */
+  /** Whether real runs are on in this world: what players are shown. NET Architect's API may load after NCI's start. */
+  enabled() {
+    return this.present() && game.settings.get(MODULE_ID, SETTINGS.NET_ARCHITECT) === true;
+  },
+
+  /** Whether a real run can be started now: on, and NET Architect's API is there. */
   active() {
-    return this.present() && game.settings.get(MODULE_ID, SETTINGS.NET_ARCHITECT) === true && !!this.api();
+    return this.enabled() && !!this.api();
   },
 
   api() {

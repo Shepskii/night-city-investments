@@ -2127,7 +2127,7 @@ class BusinessServiceImpl {
       .map((c) => ({ ticker: c.ticker, name: c.name, cap: (pub[c.ticker]?.price ?? 0) * (c.sharesOutstanding ?? 0) }));
     const npc = this.enabled() ? BusinessRepository.all().filter((b) => b.status === 'open' && (b.npcRun || !playerHeld(b))) : [];
     // Whether a real run on NET Architect can be made on it (X2a): only the GM sees which map.
-    const on = NetArchitectAdapter.active();
+    const on = NetArchitectAdapter.enabled();
     const live = (target) => on && !!NetArchitectAdapter.linkOf(target);
     return {
       // Each with a Lawman's DV and a Netrunner's (`netDv`, X2a).
