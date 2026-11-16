@@ -1667,6 +1667,8 @@
       "Panel": {
         "Title": "Cover your tracks",
         "Intro": "People have noticed how you trade. You can try to make it go away, but each try takes a skill roll and costs money whether it works or not, and cannot be repeated for a while. A bribe that is refused makes things worse.",
+        "LawmanTitle": "The badge",
+        "LawmanIntro": "You carry a badge, and the market is full of people who'd rather you didn't look at them.",
         "Skill": "{skill} {total} against DV {dv}",
         "Cost": "{cost} eb",
         "Ready": "Ready",

@@ -593,6 +593,23 @@ test('the terminal shows the cover-your-tracks panel only to a warned player, wi
   assert.ok(t.includes(`frozen until day ${tick + 4}`), 'a frozen banner');
   assert.ok(t.includes(`will not take you back until day ${tick + 5}`), 'a broker ban banner');
 
+  // A Lawman sees the investigation before any warning, and only that (X2d).
+  const { SkillAdapter } = await import('../scripts/services/SkillAdapter.js');
+  const baseFor = SkillAdapter.baseFor;
+  SkillAdapter.baseFor = (actor, use) => (use.ability === 'Backup' ? { base: 4, name: 'Backup', parts: 'Backup 4' } : baseFor.call(SkillAdapter, actor, use));
+  try {
+    await PortfolioRepository.save(alice, { ...base, heatAware: false, frozenUntilTick: 0, brokerBans: { c_1: 0 } });
+    html = await view();
+    t = text(html);
+    assert.ok(t.includes('The badge') && t.includes('Open an investigation'), 'a Lawman sees the badge');
+    assert.equal(t.includes('Cover your tracks'), false, 'but nothing about their own heat');
+    assert.deepEqual(buttons(html).map((b) => b.id), ['inquiry']);
+    await PortfolioRepository.save(alice, { ...base, cash: 10000, heatAware: true, frozenUntilTick: 0, heatCooldowns: { mask: 0, books: 0, front: 0, bribe: 0 } });
+    assert.deepEqual(buttons(await view()).map((b) => b.id), ['mask', 'books', 'front', 'bribe', 'quash', 'inquiry'], 'once warned, the lot');
+  } finally {
+    SkillAdapter.baseFor = baseFor;
+  }
+
   env.store.set('heatConsequences', false);
   assert.equal((await view()).includes('Cover your tracks'), false, 'hidden when consequences are off');
 

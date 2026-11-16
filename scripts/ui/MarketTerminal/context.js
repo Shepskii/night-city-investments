@@ -52,8 +52,9 @@ export function heatContext(actor, portfolio, tick) {
       canUse: can.ok,
     };
   }) : [];
-  // A Lawman can call in a favour (X1).
-  if (show && SkillAdapter.baseFor(actor, ABILITIES.backup).base > 0) {
+  const lawman = on && !actor?.isSyndicate && SkillAdapter.baseFor(actor, ABILITIES.backup).base > 0;
+  // A Lawman can call in a favour (X1), once they know there is heat to bring down.
+  if (show && lawman) {
     const rules = BUSINESS_DEFAULTS.roles.quash;
     const wait = quashWait(actor);
     actions.push({
@@ -66,7 +67,10 @@ export function heatContext(actor, portfolio, tick) {
       status: wait > 0 ? L('NCI.Heat.Panel.ReadyIn', { n: wait }) : WealthAdapter.get(actor) < rules.cost ? L('NCI.Heat.Panel.TooPoorSheet') : L('NCI.Heat.Panel.Ready'),
       canUse: wait === 0 && WealthAdapter.get(actor) >= rules.cost,
     });
-    // And open an investigation into an NPC's business or a market corporation (X2d).
+  }
+  // Any Lawman can open an investigation into an NPC's business or a market corporation (X2d), warned
+  // or not: it has nothing to do with their own heat.
+  if (lawman) {
     const inquiry = BUSINESS_DEFAULTS.roles.inquiry;
     const inquiryLeft = inquiryWait(actor);
     const targets = inquiryTargets();
@@ -84,7 +88,10 @@ export function heatContext(actor, portfolio, tick) {
   }
 
   return {
-    show,
+    // An unwarned Lawman sees the panel with only the investigation, under its own heading.
+    show: show || lawman,
+    title: L(show ? 'NCI.Heat.Panel.Title' : 'NCI.Heat.Panel.LawmanTitle'),
+    intro: L(show ? 'NCI.Heat.Panel.Intro' : 'NCI.Heat.Panel.LawmanIntro'),
     actions,
     frozen: frozen ? L('NCI.Heat.Panel.Frozen', { until: Math.ceil(portfolio.frozenUntilTick - 1e-6) }) : '',
     banned: bans.length ? L('NCI.Heat.Panel.BrokerBan', { until: Math.ceil(Math.max(...bans) - 1e-6) }) : '',

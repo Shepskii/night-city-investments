@@ -138,7 +138,7 @@ A **Lawman** can also **Call in a favour** on the market window's heat panel to 
 
 ### Open an investigation (Lawmen)
 
-A Lawman can also turn the badge on others, from the same heat panel: **Open an investigation** into an NPC's business or a market corporation. It's a Backup roll, costs 500 eb from your own pocket whatever comes of it, and you can do it once a month.
+A Lawman can also turn the badge on others: **Open an investigation**, on the Portfolio tab of the market window whenever insider heat is in play (under **The badge** if nobody has warned you about your own trading yet), into an NPC's business or a market corporation. It's a Backup roll, costs 500 eb from your own pocket whatever comes of it, and you can do it once a month.
 
 - **The DV:** 15 for an NPC's business. A corporation is harder the bigger it is: 17, 19 or 21, shown beside its name.
 - **Evidence:** if anyone has published a story about the target in the last four weeks, it counts as evidence, +2 to your roll.
