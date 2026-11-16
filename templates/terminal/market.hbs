@@ -178,12 +178,8 @@
       <h3>{{localize "NCI.Syndicate.Found"}}</h3>
       <p class="nci-hint">{{localize "NCI.Syndicate.FoundHint"}}</p>
       <div class="nci-actions">
-        <input type="text" name="synName" maxlength="40" placeholder="{{localize 'NCI.Syndicate.NamePlaceholder'}}">
-        <button type="button" data-action="synFound"><i class="fas fa-people-group"></i> {{localize "NCI.Syndicate.FoundButton"}}</button>
+        <button type="button" data-action="synFound"><i class="fas fa-people-group"></i> {{localize "NCI.Syndicate.StartButton"}}</button>
       </div>
-      {{#if inviteOptions.length}}
-      <div class="nci-invites">{{localize "NCI.Syndicate.Invite"}}: {{#each inviteOptions}}<span class="nci-pick"><input type="checkbox" name="synInvite" value="{{id}}" aria-label="{{name}}"> {{{who}}}</span> {{/each}}</div>
-      {{/if}}
     </div>
     {{/with}}
     {{#with portfolio.syndicate}}
@@ -226,16 +222,21 @@
     {{#if portfolio.heat.show}}
     <h3>{{portfolio.heat.title}}</h3>
     <p class="nci-hint">{{portfolio.heat.intro}}</p>
-    <table class="nci-market"><tbody>
+    <ul class="nci-hint">{{#each portfolio.heat.actions}}<li><strong>{{name}}</strong>: {{desc}}</li>{{/each}}</ul>
+    <table class="nci-market nci-heatpanel">
+      <thead><tr><th>{{localize "NCI.Heat.Panel.Col.action"}}</th><th>{{localize "NCI.Heat.Panel.Col.roll"}}</th><th class="num">{{localize "NCI.Heat.Panel.Col.cost"}}</th><th>{{localize "NCI.Heat.Panel.Col.status"}}</th><th></th></tr></thead>
+      <tbody>
       {{#each portfolio.heat.actions}}
       <tr>
-        <td><strong>{{name}}</strong><div class="nci-muted">{{desc}}</div></td>
-        <td class="nci-muted">{{skill}}<br>{{cost}}</td>
+        <td><strong>{{name}}</strong></td>
+        <td class="nci-muted">{{skill}}</td>
+        <td class="num">{{cost}}</td>
         <td class="nci-muted">{{status}}</td>
-        <td class="nci-rowbtns"><button type="button" data-action="coverTracks" data-id="{{id}}" {{#unless canUse}}disabled{{/unless}}><i class="fas fa-user-secret"></i> {{localize "NCI.Heat.Panel.Try"}}</button></td>
+        <td class="nci-rowbtns"><button type="button" class="nci-labelled" data-action="coverTracks" data-id="{{id}}" {{#unless canUse}}disabled{{/unless}}><i class="fas {{icon}}"></i> {{button}}</button></td>
       </tr>
       {{/each}}
-    </tbody></table>
+      </tbody>
+    </table>
     {{/if}}
     {{/if}}
 

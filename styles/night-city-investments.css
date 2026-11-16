@@ -516,6 +516,13 @@
 .nci-app span.nci-who { display: inline-flex; align-items: center; box-sizing: border-box; height: 24px; padding: 0 8px; margin: 1px 0; vertical-align: middle;
   border: 1px dashed var(--nci-accent-dim); border-radius: 12px; color: var(--nci-person); font-size: 13px; font-weight: 600; font-style: normal; line-height: 22px; white-space: nowrap; }
 .nci-app .nci-pick { display: inline-flex; align-items: center; gap: 4px; margin-right: 10px; }
+/* Start a syndicate's window: the invitations sit in a row, not stacked as the form's other labels are. */
+.nci-app .nci-editor .nci-invites { display: flex; flex-wrap: wrap; gap: 6px 0; }
+.nci-app .nci-editor .nci-invites label.nci-pick { flex-direction: row; font-size: inherit; color: inherit; }
+.nci-app .nci-editor .nci-invites input[type="checkbox"] { margin: 0; }
+.nci-app .nci-editor fieldset { margin: 0 0 8px; }
+/* The heat panel: the action's name takes the room, the rest only what they need, as on the other tabs. */
+.nci-app .nci-heatpanel :is(th, td):not(:first-child) { width: 1%; white-space: nowrap; padding-left: 12px; }
 /* A post on the Staff tab that a character can be dragged onto. */
 .nci-app .nci-business .nci-gearrow { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .nci-app .nci-business .nci-gearrow img { width: 24px; height: 24px; border: none; }

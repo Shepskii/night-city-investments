@@ -26,6 +26,9 @@ import { L, money, whole, pct, trendClass } from '../format.js';
 
 const RANGES = [30, 90, 365];
 
+/** Heat panel actions with a button of their own: its icon (the label is `NCI.Heat.Panel.Button.<id>`). */
+const PANEL_BUTTONS = Object.freeze({ quash: 'fa-handshake', inquiry: 'fa-scale-balanced', netRun: 'fa-network-wired' });
+
 /**
  * The "cover your tracks" panel and the frozen-account notice. The panel only appears once the
  * character has been warned (`heatAware`), so nobody learns the feature exists, or what their
@@ -113,7 +116,12 @@ export function heatContext(actor, portfolio, tick) {
     show: show || lawman || netrunner,
     title: L(show ? 'NCI.Heat.Panel.Title' : `NCI.Heat.Panel.${roleTitle}Title`),
     intro: L(show ? 'NCI.Heat.Panel.Intro' : `NCI.Heat.Panel.${roleTitle}Intro`),
-    actions,
+    // Each button says what it does, where there is a better word than Try.
+    actions: actions.map((a) => ({
+      ...a,
+      button: L(PANEL_BUTTONS[a.id] ? `NCI.Heat.Panel.Button.${a.id}` : 'NCI.Heat.Panel.Try'),
+      icon: PANEL_BUTTONS[a.id] ?? 'fa-user-secret',
+    })),
     frozen: frozen ? L('NCI.Heat.Panel.Frozen', { until: Math.ceil(portfolio.frozenUntilTick - 1e-6) }) : '',
     banned: bans.length ? L('NCI.Heat.Panel.BrokerBan', { until: Math.ceil(Math.max(...bans) - 1e-6) }) : '',
   };

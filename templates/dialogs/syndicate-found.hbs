@@ -1,0 +1,16 @@
+<div class="nci-editor nci-found">
+  <p class="nci-hint">{{localize "NCI.Syndicate.FoundHint"}}</p>
+  <div class="nci-grid">
+    <label>{{localize "NCI.Syndicate.Name"}}<input type="text" name="synName" maxlength="40" placeholder="{{localize 'NCI.Syndicate.NamePlaceholder'}}" autofocus></label>
+  </div>
+  <fieldset>
+    <legend>{{localize "NCI.Syndicate.Invite"}}</legend>
+    {{#if invites.length}}
+    <div class="nci-invites">{{#each invites}}<label class="nci-pick"><input type="checkbox" name="synInvite" value="{{id}}"> {{{who}}}</label> {{/each}}</div>
+    {{else}}<p class="nci-hint">{{localize "NCI.Syndicate.InviteNone"}}</p>{{/if}}
+  </fieldset>
+  <footer class="nci-footer">
+    <button type="button" data-action="cancel"><i class="fas fa-xmark"></i> {{localize "NCI.Editor.Cancel"}}</button>
+    <button type="submit"><i class="fas fa-people-group"></i> {{localize "NCI.Syndicate.FoundButton"}}</button>
+  </footer>
+</div>

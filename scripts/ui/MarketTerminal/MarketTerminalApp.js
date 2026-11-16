@@ -35,6 +35,7 @@ import { StoryService } from '../../services/StoryService.js';
 import { SyndicateClient } from '../../services/SyndicateClient.js';
 import { accountFor, tradingAccounts, ownerOf } from '../accounts.js';
 import { syndicateContext, characterSyndicates } from './syndicateContext.js';
+import { SyndicateFoundApp } from './SyndicateFoundApp.js';
 
 const RANGES = [30, 90, 365];
 const HISTORY_ROWS = 10;
@@ -353,12 +354,10 @@ export class MarketTerminalApp extends BaseApplication {
     return target.closest('.nci-cashbox, .nci-actions, .nci-block')?.querySelector(`[name="${name}"]`) ?? null;
   }
 
-  static async _onSynFound(event, target) {
+  /** Start a syndicate: its name and invitations go in a window of their own. */
+  static _onSynFound() {
     if (!this.actor || this.actor.isSyndicate) return undefined;
-    const name = this._field(target, 'synName')?.value?.trim() ?? '';
-    if (name.length < 2) return ui.notifications.warn(L('NCI.Syndicate.Reason.bad-name'));
-    const invite = [...(target.closest('.nci-block')?.querySelectorAll('input[name="synInvite"]:checked') ?? [])].map((i) => i.value);
-    return SyndicateClient.submit(this.actor, 'found', { name, invite });
+    return SyndicateFoundApp.ask(this.actor.id);
   }
 
   static _onSynJoin(event, target) {

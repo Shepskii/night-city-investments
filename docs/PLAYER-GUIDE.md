@@ -97,7 +97,7 @@ A syndicate is a crew's shared brokerage account.
 
 **Founding and joining**
 
-- On the Brokerage tab, **Found a syndicate**, name it and invite other characters. Your GM may need to approve it before anyone pays in.
+- On the Brokerage page, press **Start a syndicate**: a window asks for its name and which other characters to invite. Your GM may need to approve it before anyone pays in.
 - Members **pay in** from their own brokerage balance and receive **units** at the syndicate's value per unit.
 - To leave, **redeem** units for their value, paid after the settlement delay.
 

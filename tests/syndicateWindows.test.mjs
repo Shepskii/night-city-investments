@@ -99,8 +99,16 @@ test('a character\'s Portfolio tab offers to start a syndicate and invite the ot
   const html = await portfolioTab(med.id);
   assertClean(html, 'character portfolio');
   assert.match(text(html), /Start a syndicate/);
-  assert.match(html, /name="synInvite" value="a_Fixer"/);
   assert.match(html, /data-action="synFound"/);
+  assert.doesNotMatch(html, /name="synInvite"/, 'the details are in a window of their own');
+  // Start a syndicate's window: a name, and the others to invite.
+  const { SyndicateFoundApp } = await import('../scripts/ui/MarketTerminal/SyndicateFoundApp.js');
+  const found = new SyndicateFoundApp({ actorId: med.id });
+  const dialog = await render('templates/dialogs/syndicate-found.hbs', await found._prepareContext());
+  assertClean(dialog, 'start a syndicate');
+  assert.match(dialog, /name="synName"/);
+  assert.match(dialog, /name="synInvite" value="a_Fixer"/);
+  assert.match(dialog, /type="submit"/);
   assert.match(html, /data-action="deposit"/, 'a character still has the wallet box');
   const on = async (sub) => {
     const app = new Apps.Terminal();

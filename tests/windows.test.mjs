@@ -604,6 +604,8 @@ test('the terminal shows the cover-your-tracks panel only to a warned player, wi
     assert.ok(t.includes('The badge') && t.includes('Open an investigation'), 'a Lawman sees the badge');
     assert.equal(t.includes('Cover your tracks'), false, 'but nothing about their own heat');
     assert.deepEqual(buttons(html).map((b) => b.id), ['inquiry']);
+    assert.match(html, /class="nci-labelled" data-action="coverTracks" data-id="inquiry"[^>]*>\s*<i class="fas fa-scale-balanced"><\/i> File a Case/, 'a sized button that says what it does');
+    assert.ok(html.indexOf('<li><strong>Open an investigation</strong>') < html.indexOf('nci-heatpanel'), 'its description above the table');
     await PortfolioRepository.save(alice, { ...base, cash: 10000, heatAware: true, frozenUntilTick: 0, heatCooldowns: { mask: 0, books: 0, front: 0, bribe: 0 } });
     assert.deepEqual(buttons(await view()).map((b) => b.id), ['mask', 'books', 'front', 'bribe', 'quash', 'inquiry'], 'once warned, the lot');
     // A Netrunner likewise sees a NET run (X2a).
