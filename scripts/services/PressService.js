@@ -290,6 +290,42 @@ export const PressService = {
     });
   },
 
+  /**
+   * A smear about a Lawman whose investigation went wrong (X2d), from whoever they went after: the corporation's
+   * own press, or a media company for an NPC's business. It waits for the GM as any drawn story does, if approval
+   * is on. Called from inside the business queue. Returns whether a story was made.
+   * @param {Actor} actor
+   * @param {{name: string, rank: number, factionId?: string}|null} paper
+   */
+  async smearInvestigator(actor, paper) {
+    if (!paper || !HeatService.enabled()) return false;
+    const press = structuredClone(MarketStore.getStories().press);
+    if (press.stories.some((s) => s.actorId === actor.id)) return false;
+    const day = BusinessService.day();
+    const background = this._background(actor);
+    const story = {
+      id: foundry.utils.randomID(12), actorId: actor.id, name: actor.name, day, status: 'held', story: 'smear', outlet: paper.name,
+      grudge: paper.name, rank: paper.rank, businessId: background.businessId, ...(paper.factionId ? { factionId: paper.factionId } : {}),
+    };
+    const approval = game.settings.get(MODULE_ID, SETTINGS.PRESS_APPROVAL) !== false;
+    press.stories.push(approval ? story : this._started(story, day));
+    press.lastDay[actor.id] = day;
+    if (!approval) await this._open(press.stories.at(-1));
+    await this._save(press);
+    return true;
+  },
+
+  /** Who prints a smear for a corporation, by ticker: its faction if it has one, or the company itself. A media company otherwise. */
+  investigatorPaper({ ticker = null, name = '', rng = Math.random } = {}) {
+    if (ticker) {
+      const faction = FactionRepository.list().find((f) => f.kind === 'corp' && f.ticker === ticker);
+      return faction ? { name: faction.name, rank: rules().rank.own, factionId: faction.id } : { name, rank: rules().rank.own };
+    }
+    const media = CompanyRepository.all().filter((c) => c.sector === 'media');
+    if (!media.length) return null;
+    return { name: media[Math.min(media.length - 1, Math.floor(rng() * media.length))].name, rank: rules().rank.media };
+  },
+
   /** Stories let run and not yet printed, which a Media may hear of. A held one may yet be spiked, so it is not news. */
   rumourSources() {
     const day = BusinessService.day();

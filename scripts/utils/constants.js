@@ -110,6 +110,7 @@ export const FLAGS = Object.freeze({
   /** When a character last looked into each hidden holding (B6d): layer ref -> game day, for the weekly limit. */
   INVESTIGATED: 'investigated',
   QUASHED: 'quashed',
+  INQUIRED: 'inquired',
   /** On actors. The jobs a character holds or is offered at player businesses (DESIGN §32). Written only by the GM. */
   JOBS: 'jobs',
   /** On the GM-only control journal: employers at market corporations (N4), by id. */

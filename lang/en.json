@@ -1363,6 +1363,7 @@
       "Offering": "{name} ({ticker}) offers {shares} new shares at {price} eb.",
       "CaseLost": "Regulators fine {name} ({ticker}) {fine} eb.",
       "Smeared": "Damaging stories about {name} ({ticker}) are doing the rounds.",
+      "Inquiry": "NCPD sources confirm an investigation into {name} ({ticker}). Investors are pulling back.",
       "BlackOps": "An unexplained incident hits {name} ({ticker}). Investors are nervous.",
       "Scandal": "Scandal at {name} ({ticker}): authorities are asking questions.",
       "StoryBy": "{media}: {headline}",
@@ -1691,6 +1692,23 @@
             "success": "Your friend makes it go away. Your heat is down, and any pending penalty is dropped.",
             "failure": "Your friend can't help this time.",
             "fumble": "The favour goes wrong, and more people are looking at you now."
+          }
+        },
+        "inquiry": {
+          "Name": "Open an investigation",
+          "Desc": "Backup, and the badge. Go after an NPC's business, which brings a regulator's case down on it, or a market corporation, whose price falls when the story gets out. It costs the same whatever comes of it, you can do it once a month, and a recent story about the target counts as evidence (+2). A fumble gets you a smear in the press and more heat.",
+          "Target": "Who to investigate",
+          "Npc": "NPCs' businesses",
+          "Corps": "Market corporations",
+          "Pick": "Choose a target",
+          "Dv": "DV {dv}",
+          "None": "There is nobody to investigate.",
+          "Result": {
+            "npc": "The case is with the regulators now. {name} has a regulator's case to answer.",
+            "corp": "The story is out: {name} drops about {percent}% when the market hears it. It won't forget who started it.",
+            "failure": "The investigation into {name} goes nowhere.",
+            "fumble": "The investigation into {name} blows up in your face. Expect your name in the press, and more heat.",
+            "evidence": "Your evidence helped."
           }
         },
         "mask": { "Name": "Mask the pattern", "Desc": "Run offsetting trades so the pattern is harder to read. Cheap, and you can do it often, but it only takes a little off." },
@@ -2266,7 +2284,8 @@
         "story": "a published story has drawn the regulators' attention",
         "shortcuts": "a shortcut went wrong, and someone noticed",
         "unmasked": "a large hidden holder was uncovered",
-        "gm": "a regulator has opened a file on it"
+        "gm": "a regulator has opened a file on it",
+        "inquiry": "a Lawman's investigation has turned up enough to look into"
       },
       "Notice": "Regulator's case: {why}. An officer must answer by {date}, or it counts as lost.",
       "Waiting": "A regulator's case went against the company. The market is deciding the penalty.",
@@ -4129,6 +4148,7 @@
         "not-at-company": "not at a chartered company",
         "not-lawman": "that takes the Lawman role's Backup",
         "quash-wait": "you have called in a favour too recently",
+        "inquiry-wait": "you have opened an investigation too recently",
         "backup-wait": "Backup has answered for this business too recently",
         "heat-off": "insider heat is switched off",
         "rumour-wait": "you have dug for rumours too recently",

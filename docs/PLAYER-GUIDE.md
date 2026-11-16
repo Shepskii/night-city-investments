@@ -136,6 +136,16 @@ Once warned, you can try to **cover your tracks** from the Brokerage tab. Each a
 
 A **Lawman** can also **Call in a favour** on the market window's heat panel to bring down their own heat.
 
+### Open an investigation (Lawmen)
+
+A Lawman can also turn the badge on others, from the same heat panel: **Open an investigation** into an NPC's business or a market corporation. It's a Backup roll, costs 500 eb from your own pocket whatever comes of it, and you can do it once a month.
+
+- **The DV:** 15 for an NPC's business. A corporation is harder the bigger it is: 17, 19 or 21, shown beside its name.
+- **Evidence:** if anyone has published a story about the target in the last four weeks, it counts as evidence, +2 to your roll.
+- **Against an NPC's business:** a pass hands the regulators enough for a case against it.
+- **Against a corporation:** a pass puts the investigation in the news, and its price falls a couple of days later: 2%, or 4% on a strong roll and 6% on an exceptional one. The corporation won't forget: any business you hold a stake in loses standing with it. You know the drop is coming, so trading on it draws insider heat.
+- **A fumble:** heat, and a smear about you in the press, from the corporation itself or, for an NPC's business, a media company. You can answer it as you would any story about you.
+
 ---
 
 # Part 2. Player Businesses

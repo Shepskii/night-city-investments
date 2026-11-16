@@ -29,6 +29,7 @@ import { investigate, withDiscoveries } from '../investigate.js';
 import { publishStory, digRumours } from '../publishStory.js';
 import { NcmAdapter } from '../../integrations/NcmAdapter.js';
 import { quashRoll } from '../quash.js';
+import { inquiryRoll } from '../inquiry.js';
 import { StoryService } from '../../services/StoryService.js';
 import { SyndicateClient } from '../../services/SyndicateClient.js';
 import { accountFor, tradingAccounts, ownerOf } from '../accounts.js';
@@ -337,6 +338,8 @@ export class MarketTerminalApp extends BaseApplication {
     if (!this.actor) return ui.notifications.warn(L('NCI.Errors.NoActor'));
     // A Lawman's favour has its own roll (X1).
     if (target.dataset.id === 'quash') return quashRoll(this.actor);
+    // As is a Lawman's investigation (X2d).
+    if (target.dataset.id === 'inquiry') return inquiryRoll(this.actor);
     await PortfolioClient.heatAction(this.actor, target.dataset.id);
   }
 

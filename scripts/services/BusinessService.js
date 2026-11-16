@@ -28,6 +28,7 @@ import {
   moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene, ABILITIES, backupWait, quashEffect, exposureBand, canRun,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
   STACKING_TYPES, offerContract, dropContract, writeContract, contractOf, takesContracts,
+  inquiryWait, inquiryDv, inquiryTarget, inquiryEffect, hasEvidence, STORY_RULES,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
 import { NcmAdapter } from '../integrations/NcmAdapter.js';
@@ -556,6 +557,8 @@ class BusinessServiceImpl {
     if (request.type === 'pressAnswer') return this._receipt(actor, request, await PressService.answer(actor, request));
     // A Lawman quashing their own heat (X1) has nothing to do with businesses either.
     if (request.type === 'quashRoll') return this._receipt(actor, request, await this._quash(actor, request));
+    // A Lawman's investigation (X2d): a market corporation needs no player businesses; an NPC's business is checked in it.
+    if (request.type === 'inquiryRoll') return this._receipt(actor, request, await this._inquire(actor, request));
     if (!this.enabled()) return this._receipt(actor, request, { ok: false, reason: 'disabled' });
     // Looking behind a hidden holding (B6d) reads only the GM's hidden state and changes no business.
     if (request.type === 'investigate') return this._receipt(actor, request, await this._investigate(actor, request));
@@ -1140,6 +1143,7 @@ class BusinessServiceImpl {
     if (out.story) result.story = out.story;
     if (out.rumour) result.rumour = out.rumour;
     if (out.quash) result.quash = out.quash;
+    if (out.inquiry) result.inquiry = out.inquiry;
     await actor.setFlag(MODULE_ID, FLAGS.BUSINESS_RECEIPTS, [{
       processed: [...r.processed, request.key].slice(-PROCESSED_CAP),
       results: [...r.results, result].slice(-RESULTS_CAP),
@@ -2104,6 +2108,88 @@ class BusinessServiceImpl {
     const effect = quashEffect(check.result.band);
     await HeatService.applyQuash(actor, request.key, effect);
     return { ok: true, quash: { outcome: effect.outcome } };
+  }
+
+  /**
+   * What a Lawman may investigate (X2d), as players may see it: NPCs' open businesses, and the market's listed
+   * corporations that aren't players', each with its DV. A corporation's DV goes by its size among them.
+   */
+  inquiryTargets() {
+    const pub = MarketStore.getPublic().companies ?? {};
+    const players = new Set(BusinessRepository.all().map((b) => b.company?.ticker).filter(Boolean));
+    const corps = CompanyRepository.all().filter((c) => c.status === 'active' && c.listed !== false && !players.has(c.ticker))
+      .map((c) => ({ ticker: c.ticker, name: c.name, cap: (pub[c.ticker]?.price ?? 0) * (c.sharesOutstanding ?? 0) }));
+    const npc = this.enabled() ? BusinessRepository.all().filter((b) => b.status === 'open' && (b.npcRun || !playerHeld(b))) : [];
+    return {
+      npc: npc.map((b) => ({ id: b.id, name: b.name, ticker: b.company?.ticker ?? null, dv: inquiryDv({ kind: 'npc' }) })).sort((a, b) => a.name.localeCompare(b.name)),
+      corps: corps.map((c) => ({ ticker: c.ticker, name: c.name, dv: inquiryDv({ kind: 'corp', ticker: c.ticker }, corps) })).sort((a, b) => a.name.localeCompare(b.name)),
+    };
+  }
+
+  /**
+   * A Lawman opens an investigation (X2d): Backup against the target's DV, less with evidence, for a fee whatever
+   * comes of it, once in a while. A pass opens a case on an NPC's business, or drops a corporation's price with a
+   * headline and costs the Lawman's businesses standing with it. A fumble draws heat, and a smear in the press.
+   */
+  async _inquire(actor, request) {
+    const rules = BUSINESS_DEFAULTS.roles.inquiry;
+    if (!(SkillAdapter.baseFor(actor, ABILITIES.backup).base > 0)) return { ok: false, reason: 'not-lawman' };
+    const day = this.day();
+    if (inquiryWait(actor.getFlag(MODULE_ID, FLAGS.INQUIRED), day) > 0) return { ok: false, reason: 'inquiry-wait' };
+    const wealth = WealthAdapter.get(actor);
+    if (wealth < rules.cost) return { ok: false, reason: 'insufficient-funds' };
+    const [kind, id] = String(request.target ?? '').split(':');
+    const targets = this.inquiryTargets();
+    const found = kind === 'b' ? targets.npc.find((t) => t.id === id) : kind === 'c' ? targets.corps.find((t) => t.ticker === id) : null;
+    if (!found) return { ok: false, reason: 'no-target' };
+    const target = kind === 'b' ? { kind: 'npc', id, name: found.name, ticker: found.ticker } : { kind: 'corp', ticker: id, name: found.name };
+    const evidence = hasEvidence(MarketStore.getStories().recent, target.ticker, day);
+    const check = await SkillAdapter.verifyLevers(actor, request, { dv: inquiryTarget(found.dv, evidence), use: ABILITIES.backup });
+    if (!check.ok) return check;
+    await WealthAdapter.set(actor, wealth - rules.cost, L('NCI.Heat.Action.inquiry.Name'));
+    await actor.setFlag(MODULE_ID, FLAGS.INQUIRED, day);
+    const effect = inquiryEffect(check.result.band, target);
+    if (effect.regCase) await this._inquiryCase(target.id);
+    if (effect.percent) await this._inquiryDrop(actor, target, effect, day);
+    if (effect.heat && HeatService.enabled()) await HeatService.setHeat(actor.id, HeatService.heatOf(actor.id) + effect.heat);
+    if (effect.story) {
+      const rng = createRng(`${this.seed()}:inquiry:${actor.id}:${day}`);
+      const paper = PressService.investigatorPaper(target.kind === 'corp' ? { ticker: target.ticker, name: target.name } : { rng: () => rng.next() });
+      await PressService.smearInvestigator(actor, paper);
+    }
+    return { ok: true, inquiry: { outcome: effect.outcome, kind: target.kind, name: target.name, evidence, percent: Math.abs(effect.percent) } };
+  }
+
+  /** A case on an NPC's business from an investigation (X2d). Nobody answers it, so it comes to the GM. */
+  async _inquiryCase(businessId) {
+    const stored = BusinessRepository.get(businessId);
+    if (!stored || stored.regCase) return;
+    const b = normalizeBusiness(structuredClone(stored));
+    if (!openCase(b, { reason: 'inquiry', day: this.day(), anyStage: true }).ok) return;
+    await BusinessRepository.save(b);
+    await this._mailCaseOpened(b);
+    Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+  }
+
+  /** A corporation under investigation (X2d): a headline, the price from a couple of days on, and standing with it. */
+  async _inquiryDrop(actor, target, effect, day) {
+    const key = `inquiry:${actor.id}:${day}`;
+    await NewsService.post({ headline: L('NCI.News.Inquiry', { name: target.name, ticker: target.ticker }), tone: 'down', companyIds: [target.ticker], source: 'story' });
+    await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
+      ...controls,
+      impacts: [...controls.impacts, makeImpact({
+        id: `imp_inquiry_${actor.id}_${day}`, target: { type: 'company', id: target.ticker }, amount: percentToAmount(effect.percent), onsetTick: now + STORY_RULES.delayDays,
+        permanent: 1, sourceKey: key, source: 'story', meta: { percent: effect.percent, actorId: actor.id, day },
+      })],
+    }));
+    // The Lawman knows the drop is coming: trading on it is insider dealing.
+    await HeatService.openWindow(
+      { sourceKey: key, companyId: target.ticker, outcome: 'failed', date: MarketClock.dateString(), delayDays: STORY_RULES.delayDays },
+      { runners: [actor.id] },
+    );
+    for (const b of BusinessRepository.all().filter((x) => x.status === 'open' && x.partners.some((p) => p.actorId === actor.id && p.status === 'active'))) {
+      await this._campaignStanding(b, target.ticker, effect.standing);
+    }
   }
 
   /** About a back room: every owner of a smaller business, but only the officers of a company, whose shareholders must not hear. */

@@ -19,6 +19,7 @@ import { TerminalAccess } from '../../services/TerminalAccess.js';
 import { SkillAdapter } from '../../services/SkillAdapter.js';
 import { WealthAdapter } from '../../services/WealthAdapter.js';
 import { quashWait } from '../quash.js';
+import { inquiryWait, inquiryTargets } from '../inquiry.js';
 import { sparkline, lineChart } from '../components/chart.js';
 import { L, money, whole, pct, trendClass } from '../format.js';
 
@@ -64,6 +65,21 @@ export function heatContext(actor, portfolio, tick) {
       // A favour comes out of the character's own pocket, not the brokerage account.
       status: wait > 0 ? L('NCI.Heat.Panel.ReadyIn', { n: wait }) : WealthAdapter.get(actor) < rules.cost ? L('NCI.Heat.Panel.TooPoorSheet') : L('NCI.Heat.Panel.Ready'),
       canUse: wait === 0 && WealthAdapter.get(actor) >= rules.cost,
+    });
+    // And open an investigation into an NPC's business or a market corporation (X2d).
+    const inquiry = BUSINESS_DEFAULTS.roles.inquiry;
+    const inquiryLeft = inquiryWait(actor);
+    const targets = inquiryTargets();
+    const anyone = targets.npc.length + targets.corps.length > 0;
+    const dvs = [...targets.npc, ...targets.corps].map((t) => t.dv);
+    actions.push({
+      id: 'inquiry',
+      name: L('NCI.Heat.Action.inquiry.Name'),
+      desc: L('NCI.Heat.Action.inquiry.Desc'),
+      skill: L('NCI.Heat.Panel.Skill', { skill: ABILITIES.backup.ability, total: SkillAdapter.rollBase(actor, ABILITIES.backup).base, dv: dvs.length ? `${Math.min(...dvs)}-${Math.max(...dvs)}` : '-' }),
+      cost: L('NCI.Heat.Panel.Cost', { cost: inquiry.cost.toLocaleString() }),
+      status: !anyone ? L('NCI.Heat.Action.inquiry.None') : inquiryLeft > 0 ? L('NCI.Heat.Panel.ReadyIn', { n: inquiryLeft }) : WealthAdapter.get(actor) < inquiry.cost ? L('NCI.Heat.Panel.TooPoorSheet') : L('NCI.Heat.Panel.Ready'),
+      canUse: anyone && inquiryLeft === 0 && WealthAdapter.get(actor) >= inquiry.cost,
     });
   }
 

@@ -31,9 +31,12 @@ export function regulatorTotal(exposure, rng, p = BUSINESS_DEFAULTS) {
   return r.base + 1 + Math.floor(rng() * 10) + (r.bonus[exposureBand(exposure, p)] ?? 0);
 }
 
-/** Open a case, if the company can have one and has none: a chartered or listed company, open. */
-export function openCase(b, { reason, day }, p = BUSINESS_DEFAULTS) {
-  if (b.stage !== 2 || b.status !== 'open') return fail('not-company');
+/**
+ * Open a case, if the company can have one and has none: a chartered or listed company, open. A Lawman's
+ * investigation (X2d) can open one on an NPC's business of any size (`anyStage`): nobody answers it, so it waits on the GM.
+ */
+export function openCase(b, { reason, day, anyStage = false }, p = BUSINESS_DEFAULTS) {
+  if ((b.stage !== 2 && !anyStage) || b.status !== 'open') return fail('not-company');
   if (b.regCase) return fail('case-open');
   b.regCase = { status: 'notice', reason, openedDay: day, endDay: day + p.regulator.notice };
   addLedger(b, { day, kind: 'caseOpened', amount: 0 }, p);

@@ -527,7 +527,7 @@ export function registerSettings() {
     scope: 'world',
     config: false,
     type: Object,
-    default: { companies: [], tried: {}, waiting: {} },
+    default: { companies: [], tried: {}, waiting: {}, inquiry: { npc: [], corps: [] } },
     onChange: () => Hooks.callAll(HOOKS.BUSINESSES_CHANGED, {}),
   });
   s.register(MODULE_ID, SETTINGS.DATE_FORMAT, {

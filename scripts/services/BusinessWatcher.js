@@ -46,6 +46,12 @@ export const BusinessWatcher = {
     else if (result.ok && result.investigation) ui.notifications.info(L(result.investigation.success ? 'NCI.Ownership.Found' : 'NCI.Ownership.NotFound'));
     // A case answered says how it went (R1).
     else if (result.ok && result.quash) ui.notifications.info(L(`NCI.Heat.Action.quash.Result.${result.quash.outcome}`));
+    // A Lawman's investigation (X2d) says what it did, and whether their evidence counted.
+    else if (result.ok && result.inquiry) {
+      const { outcome, kind, name, percent, evidence } = result.inquiry;
+      const said = L(`NCI.Heat.Action.inquiry.Result.${outcome === 'success' ? kind : outcome}`, { name, percent });
+      ui.notifications.info(evidence ? `${said} ${L('NCI.Heat.Action.inquiry.Result.evidence')}` : said);
+    }
     else if (result.ok && result.rumour) ui.notifications.info(L(result.rumour.found ? 'NCI.Rumour.Found' : 'NCI.Rumour.Nothing'));
     else if (result.ok && result.story) ui.notifications.info(L(!result.story.believed ? 'NCI.Story.NotBelieved' : result.story.waiting ? 'NCI.Story.BelievedWaiting' : 'NCI.Story.Believed', { die: result.story.die, target: result.story.target }));
     else if (result.ok && result.caseResult) ui.notifications.info(L(result.caseResult.success ? 'NCI.Regulator.WonNotice' : 'NCI.Regulator.LostNotice'));

@@ -655,12 +655,21 @@ export const BUSINESS_DEFAULTS = Object.freeze({
    * `shipment` eb by stage. A gig at the venue adds `takings` and `reputation`, times `venueScale` at the `venues`.
    * Backup answers a raid or a case once in `backup.days`. Quashing costs `cost` eb, once in `days`, and takes
    * `reduce` heat and any pending penalty; a fumble adds `fumble`.
+   * A Lawman's investigation (X2d) costs `cost` eb, once in `days`: Backup against `dv.npc` for an NPC's business, or
+   * for a market corporation `dv.corp` by its size among them (smallest third first). A story about the target in the
+   * last `evidenceDays` adds `evidence` to the roll. A pass against a corporation drops its price by `drop` percent by
+   * band and moves `standing` with it for the Lawman's businesses; a fumble adds `heat` and a smear about them.
    */
   roles: Object.freeze({
     supply: Object.freeze({ weeks: 4, maxCut: 0.1, cut: byBand([0, 0, 0.03, 0.05, 0.08, 0.1]), shipment: Object.freeze([200, 500, 1500]) }),
     venue: Object.freeze({ takings: byBand([-0.05, 0, 0.05, 0.1, 0.15, 0.2]), reputation: byBand([-2, 0, 1, 2, 3, 4]), venues: Object.freeze(['bar']), venueScale: 1.5 }),
     backup: Object.freeze({ days: 28 }),
     quash: Object.freeze({ dv: 17, cost: 1000, days: 28, reduce: 25, fumble: 15 }),
+    inquiry: Object.freeze({
+      cost: 500, days: 28, evidence: 2, evidenceDays: 28, standing: -15, heat: 10,
+      dv: Object.freeze({ npc: 15, corp: Object.freeze([17, 19, 21]) }),
+      drop: byBand([0, 0, 2, 2, 4, 6]),
+    }),
   }),
   /**
    * A back room (U1a). A worked week earns `share` of what the front's Capacity would take, by the week's work
