@@ -1759,6 +1759,12 @@ class BusinessServiceImpl {
       const outlet = story ? PressService._outlet(`${faction.kind === 'gang' ? 'g' : 'f'}:${faction.id}`) : null;
       if (outlet && runPress(b, handPress({ story, outlet }), day).ok) leaked = 'story';
     }
+    // The week's record was saved before its events ran, so the leak saves its own changes (the register, the story),
+    // with the standings as they stand now, which the events before it may have moved.
+    if (leaked !== 'nothing') {
+      b.standings = BusinessRepository.get(b.id)?.standings ?? b.standings;
+      await BusinessRepository.save(b);
+    }
     await this._mailHolders(b, L('NCI.Breach.LeakSubject', { name: b.name }), [L(`NCI.Breach.Leak.${leaked}`, { name: b.name, faction: faction?.name ?? '' })]);
     return leaked;
   }

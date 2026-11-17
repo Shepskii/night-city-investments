@@ -3376,7 +3376,7 @@
       "LeakSubject": "{name}: the breach",
       "Leak": {
         "unmasked": "Whoever was in {name}'s systems got the ledger, and the names behind it. NCPD Financial Crimes has it now too.",
-        "story": "Whoever was in {name}'s systems got the ledger. Expect to read about it: {faction} has a story coming next week.",
+        "story": "Whoever was in {name}'s systems got the ledger. Expect to read about it: {faction} has a story on the way.",
         "nothing": "Whoever was in {name}'s systems got the ledger, but there was nothing in it they could use."
       }
     },

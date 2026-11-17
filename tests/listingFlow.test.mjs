@@ -399,6 +399,8 @@ test('a breach not stopped leaks the ledger (X2a): the biggest hidden holder is 
   assert.equal(await S.BusinessService._breachLeak(next, 'corp_bio'), 'story');
   assert.equal(next.press.queued.story, 'money');
   assert.equal(next.press.queued.factionId, 'corp_bio');
+  // Saved by the leak itself: the week's record was saved before its events ran.
+  assert.equal(business().press?.queued?.story, 'money', 'the story is on the record');
 
   // Nothing true to tell: nothing leaks.
   const clean = E.normalizeBusiness(structuredClone(business()));
@@ -411,7 +413,7 @@ test('a breach not stopped leaks the ledger (X2a): the biggest hidden holder is 
   assert.equal(await S.BusinessService._breachLeak(clean, 'corp_bio'), 'nothing');
   assert.equal(clean.press?.queued ?? null, null);
   await S.MarketStore.setBusinessesHidden({ ...S.MarketStore.getBusinessesHidden(), bus_play: { ...S.MarketStore.getBusinessesHidden().bus_play, exposure: exposureNow ?? 0 } });
-  await S.BusinessRepository.save({ ...business(), masks: {}, regCase: null });
+  await S.BusinessRepository.save({ ...business(), masks: {}, regCase: null, press: null });
   await S.BusinessService._saveHidden({ business: business(), events: [] });
 });
 
