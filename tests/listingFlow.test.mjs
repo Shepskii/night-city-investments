@@ -378,7 +378,8 @@ test('a breach not stopped leaks the ledger (X2a): the biggest hidden holder is 
   await S.BusinessRepository.save(b);
   const hidden = S.MarketStore.getBusinessesHidden();
   await S.MarketStore.setBusinessesHidden({ ...hidden, bus_play: { ...(hidden.bus_play ?? {}), layers: { [alice.id]: [30] } } });
-  const cashBefore = portfolio(alice).cash;
+  // Her cash after the earlier tests rides on the drawn prices and can be nothing, so the fine is counted on her ledger.
+  const finesBefore = portfolio(alice).ledger.filter((e) => e.kind === 'concealmentFine').length;
 
   // Hidden: unmasked as NCPD would, fined, in the news, with a dip in the price.
   const copy = E.normalizeBusiness(structuredClone(business()));
@@ -386,7 +387,7 @@ test('a breach not stopped leaks the ledger (X2a): the biggest hidden holder is 
   await S.BusinessRepository.save(copy);
   await settle();
   assert.equal(business().masks[alice.id], undefined, 'unmasked');
-  assert.ok(portfolio(alice).cash < cashBefore, 'fined');
+  assert.equal(portfolio(alice).ledger.filter((e) => e.kind === 'concealmentFine').length, finesBefore + 1, 'fined');
   assert.ok(S.MarketStore.getControls().impacts.some((i) => i.source === 'unmasked' && i.sourceKey.startsWith('unmask:bus_play')));
   assert.equal(S.MarketStore.getBusinessesHidden().bus_play.layers?.[alice.id], undefined, 'its layers gone');
 
