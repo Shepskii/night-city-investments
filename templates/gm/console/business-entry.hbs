@@ -1,10 +1,12 @@
 {{!-- One business on the GM Console: its state, owners, staff and standing, and the GM's buttons. The Businesses and NPC Businesses tabs share it. --}}
-<div class="nci-gig nci-bizentry">
-  <div class="nci-bizhead">
-    <div class="nci-bizname">{{name}}{{#if npc}} <span class="nci-badge nci-npcbadge">{{localize "NCI.GMBusiness.Npc.Badge"}}</span>{{/if}}</div>
-    <div><strong>{{status}}</strong> <span class="nci-muted">&middot; {{archetype}}{{#if location}} &middot; {{location}}{{/if}}</span></div>
-    <div class="nci-actions"><button type="button" data-action="businessOpen" data-id="{{id}}"><i class="fas fa-store"></i> {{localize "NCI.GMBusiness.Open"}}</button></div>
-  </div>
+<details class="nci-gig nci-bizentry nci-fold" data-fold="b:{{id}}">
+  <summary class="nci-bizhead">
+    <span class="nci-bizname">{{name}}</span>
+    {{#if npc}}<span class="nci-badge nci-npcbadge">{{localize "NCI.GMBusiness.Npc.Badge"}}</span>{{else}}<span class="nci-badge nci-playerbadge">{{localize "NCI.GMConsole.Fold.PlayerBusiness"}}</span>{{/if}}
+    <span class="nci-foldline"><strong>{{status}}</strong> <span class="nci-muted">&middot; {{archetype}}{{#if location}} &middot; {{location}}{{/if}}</span></span>
+    {{#if needs.length}}<span class="nci-foldwaiting"><i class="fas fa-bell"></i> {{localize "NCI.GMConsole.Fold.Waiting" n=needs.length}}</span>{{/if}}
+  </summary>
+  <div class="nci-actions"><button type="button" data-action="businessOpen" data-id="{{id}}"><i class="fas fa-store"></i> {{localize "NCI.GMBusiness.Open"}}</button></div>
   {{#if needs.length}}
   <div class="nci-needsbox">
     <div class="nci-needs-title"><i class="fas fa-bell"></i> {{localize "NCI.GMBusiness.NeedsYou"}}</div>
@@ -96,4 +98,4 @@
     </div>
     {{/if}}
   </div>
-</div>
+</details>

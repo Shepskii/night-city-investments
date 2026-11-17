@@ -224,11 +224,13 @@ test('the GM Console Syndicates tab shows each syndicate, its account and its op
   const html = render('templates/gm/console.hbs', await app._prepareContext());
   assertClean(html, 'syndicates tab');
   const t = text(html);
-  assert.match(t, /Back Room Capital trading/i);
+  // Folded, a syndicate is one row: its name, a player badge, its status and members, and what waits on the GM.
+  assert.match(t, /Back Room Capital Player syndicate trading &middot; 2 member\(s\) 1 waiting for you/i);
+  assert.match(html, /<details class="nci-gig nci-bizentry nci-fold" data-fold="s:/);
   assert.match(html, /nci-bizname/, 'the name stands out');
   assert.match(t, /Medtech Officer [\d,]+ 66\.7%/);
   assert.match(t, /Fixer Member [\d,]+ 33\.3%/);
-  const entry = html.split('<div class="nci-gig">').find((x) => x.includes('syndicatePass'));
+  const entry = html.split('<details class="nci-gig').find((x) => x.includes('syndicatePass'));
   assert.ok(entry.lastIndexOf('</table>') < entry.indexOf('data-action='), 'the buttons are at the foot');
   assert.match(t, /Cash 9,000 eb · value 9,000 eb · 1\.00 eb a unit · officers' limit 5,000 eb/);
   assert.match(t, /Set the officers' limit to 8,000 eb an order/);

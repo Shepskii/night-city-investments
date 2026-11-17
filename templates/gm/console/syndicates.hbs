@@ -7,11 +7,13 @@
 <div class="nci-block">
   <h3>{{localize "NCI.GMSyndicate.Waiting"}}</h3>
   {{#each syndicates.pending}}
-  <div class="nci-gig">
-    <div class="nci-bizhead">
-      <div class="nci-bizname">{{name}}</div>
-      <div><strong>{{status}}</strong></div>
-    </div>
+  <details class="nci-gig nci-bizentry nci-fold" data-fold="s:{{id}}">
+    <summary class="nci-bizhead">
+      <span class="nci-bizname">{{name}}</span>
+      <span class="nci-badge nci-playerbadge">{{localize "NCI.GMConsole.Fold.PlayerSyndicate"}}</span>
+      <span class="nci-foldline"><strong>{{status}}</strong> <span class="nci-muted">&middot; {{kind}}</span></span>
+      <span class="nci-foldwaiting"><i class="fas fa-bell"></i> {{localize "NCI.GMConsole.Fold.Approval"}}</span>
+    </summary>
     {{#if members.length}}
     <table class="nci-market nci-owners">
       <thead><tr><th>{{localize "NCI.GMSyndicate.Member"}}</th><th>{{localize "NCI.GMSyndicate.Role"}}</th><th class="num">{{localize "NCI.GMBusiness.Units"}}</th><th class="num">{{localize "NCI.GMBusiness.Share"}}</th></tr></thead>
@@ -24,18 +26,20 @@
         <button type="button" data-action="syndicateReject" data-id="{{id}}"><i class="fas fa-xmark"></i> {{localize "NCI.GMSyndicate.Reject"}}</button>
       </div>
     </div>
-  </div>
+  </details>
   {{else}}<p class="nci-empty">{{localize "NCI.GMSyndicate.NoneWaiting"}}</p>{{/each}}
 </div>
 
 <div class="nci-block">
   <h3>{{localize "NCI.GMSyndicate.Active"}}</h3>
   {{#each syndicates.active}}
-  <div class="nci-gig">
-    <div class="nci-bizhead">
-      <div class="nci-bizname">{{name}}</div>
-      <div><strong>{{status}}</strong></div>
-    </div>
+  <details class="nci-gig nci-bizentry nci-fold" data-fold="s:{{id}}">
+    <summary class="nci-bizhead">
+      <span class="nci-bizname">{{name}}</span>
+      <span class="nci-badge nci-playerbadge">{{localize "NCI.GMConsole.Fold.PlayerSyndicate"}}</span>
+      <span class="nci-foldline"><strong>{{status}}</strong> <span class="nci-muted">&middot; {{kind}}</span></span>
+      {{#if waiting}}<span class="nci-foldwaiting"><i class="fas fa-bell"></i> {{localize "NCI.GMConsole.Fold.Waiting" n=waiting}}</span>{{/if}}
+    </summary>
     <div>{{money}}</div>
     <div class="nci-muted">{{holdings}}</div>
     {{#if heat}}<div class="nci-muted">{{heat}}</div>{{/if}}
@@ -59,7 +63,7 @@
         {{else}}<span class="nci-hint">{{localize "NCI.GMSyndicate.CloseLater"}}</span>{{/if}}
       </div>
     </div>
-  </div>
+  </details>
   {{else}}<p class="nci-empty">{{localize "NCI.GMSyndicate.NoneActive"}}</p>{{/each}}
 </div>
 

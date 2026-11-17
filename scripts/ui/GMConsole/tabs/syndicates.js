@@ -84,6 +84,9 @@ export function context() {
       heat: s.status === 'active' && HeatService.enabled() ? L('NCI.GMSyndicate.Heat', { heat: HeatService.heatOf(s.id).toFixed(1), tier: L(`NCI.Heat.Tier.${HeatService.tierOf(s.id)}`) }) : '',
       waitingRedemptions: s.redemptions.filter((r) => r.status === 'waiting').length,
       proposals: s.proposals.map((p) => ({ id: p.id, text: describeProposal(s, p) })),
+      // For the folded row: what kind of thing it is (its members), and how much is waiting on the GM.
+      kind: L('NCI.GMConsole.Fold.Members', { n: s.members.filter((m) => m.status === 'active').length }),
+      waiting: s.proposals.length + s.redemptions.filter((r) => r.status === 'waiting').length,
       liquid: isLiquid(portfolio, stakes),
     };
   });

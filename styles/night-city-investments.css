@@ -557,6 +557,16 @@
 .nci-app .nci-gig.nci-bizentry { margin: 26px 0; padding: 10px 12px; border-top: 3px solid var(--nci-accent); }
 .nci-app .nci-gig.nci-bizentry:first-of-type { margin-top: 8px; }
 .nci-app .nci-gmbuttons { border-top: 1px solid var(--nci-accent-dim); margin-top: 8px; padding-top: 2px; }
+/* Folded, a business or syndicate is one row: name, badge, status, kind and place, and what waits on the GM. */
+.nci-app details.nci-fold:not([open]) { margin: 8px 0; padding: 6px 12px; }
+.nci-app details.nci-fold > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; cursor: pointer; list-style: none; }
+.nci-app details.nci-fold > summary::-webkit-details-marker { display: none; }
+.nci-app details.nci-fold > summary::before { content: "\f054"; font-family: "Font Awesome 6 Pro", "Font Awesome 6 Free"; font-weight: 900; font-size: 0.8em; color: var(--nci-accent); width: 1em; transition: transform 0.15s; }
+.nci-app details.nci-fold[open] > summary::before { transform: rotate(90deg); }
+.nci-app details.nci-fold:not([open]) > summary { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+.nci-app details.nci-fold > summary .nci-badge { margin-left: 0; }
+.nci-app .nci-playerbadge { color: var(--nci-accent); border-color: var(--nci-accent); }
+.nci-app .nci-foldwaiting { color: var(--nci-warn); font-weight: bold; margin-left: auto; }
 .nci-app .nci-gmbuttons .nci-actions { margin: 6px 0; }
 
 /* A faction to aim this week's action at (F1b). */

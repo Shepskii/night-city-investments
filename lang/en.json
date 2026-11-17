@@ -1234,6 +1234,13 @@
       "OutboxFull": "You have too many requests waiting. Wait for the GM to process them."
     },
     "GMConsole": {
+      "Fold": {
+        "PlayerBusiness": "Player business",
+        "PlayerSyndicate": "Player syndicate",
+        "Members": "{n} member(s)",
+        "Waiting": "{n} waiting for you",
+        "Approval": "Waiting for approval"
+      },
       "Title": "Market GM Console",
       "Clock": "Market clock",
       "Date": "Market date",

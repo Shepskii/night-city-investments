@@ -142,6 +142,12 @@ export class GMConsoleApp extends BaseApplication {
   async _onRender(context, options) {
     await super._onRender(context, options);
     const root = this.element;
+    // A business's or syndicate's row stays open, or shut, as the GM left it while the console redraws.
+    this.folds ??= new Set();
+    for (const fold of root.querySelectorAll('details[data-fold]')) {
+      fold.open = this.folds.has(fold.dataset.fold);
+      fold.addEventListener('toggle', () => (fold.open ? this.folds.add(fold.dataset.fold) : this.folds.delete(fold.dataset.fold)));
+    }
     root.querySelector('[data-production-archetype]')?.addEventListener('change', (event) => {
       this.productionArchetype = event.target.value;
       this.render();

@@ -602,8 +602,12 @@ test('the Pending tab has a row for each decision waiting, and the tab buttons c
     assert.equal(tabButton(players, 'heat'), 'Heat 1');
     assert.equal(tabButton(await renderConsole('gigs'), 'gigs'), 'Gigs 3');
     // The decisions are at the top of the tab, and again in each business's Needs you strip, under Open and above its tables.
-    assert.ok(players.indexOf('nci-needs"') < players.indexOf('<div class="nci-gig nci-bizentry">'), 'Waiting for you comes first');
-    const entry = players.split('<div class="nci-gig nci-bizentry">').slice(1).find((x) => x.includes('businessRestructure'));
+    assert.ok(players.indexOf('nci-needs"') < players.indexOf('<details class="nci-gig nci-bizentry nci-fold"'), 'Waiting for you comes first');
+    const entry = players.split('<details class="nci-gig nci-bizentry nci-fold"').slice(1).find((x) => x.includes('businessRestructure'));
+    // Folded, the row says it is a player's and that something waits on the GM.
+    const summary = entry.slice(0, entry.indexOf('</summary>'));
+    assert.match(summary, /nci-playerbadge">Player business</);
+    assert.match(summary, /<span class="nci-foldwaiting"><i class="fas fa-bell"><\/i> \d+ waiting for you<\/span>/);
     assert.ok(entry.indexOf('data-action="businessOpen"') < entry.indexOf('nci-needsbox'), 'Open is at the top');
     const strip = entry.slice(entry.indexOf('nci-needsbox'), entry.indexOf('<div class="nci-gmstats">') > -1 ? entry.indexOf('<div class="nci-gmstats">') : undefined);
     for (const action of ['businessRestructure', 'businessCampaignApprove', 'businessStaffAnswer']) assert.match(strip, new RegExp(`data-action="${action}"`), `${action} needs the GM`);
@@ -1201,7 +1205,9 @@ test('NPC Businesses (Tools): a New NPC business button opening its own window, 
     await S.BusinessRepository.save({ ...b, status: 'open', npcRun: { ownerId: med.id, level: 'skilled', profile: 'steady', auto: true } });
     const npc = await renderConsole('npcBusinesses');
     assertClean(npc, 'an NPC business');
-    assert.match(npc, new RegExp(`${b.name} <span class="nci-badge nci-npcbadge">NPC business</span>`), "marked as an NPC's");
+    assert.match(npc, new RegExp(`<span class="nci-bizname">${b.name}</span>\\s*<span class="nci-badge nci-npcbadge">NPC business</span>`), "marked as an NPC's");
+    // Folded, it is one row: name, badge, status, type and place; the rest is inside.
+    assert.match(npc, /<summary class="nci-bizhead">[\s\S]*?<strong>open<\/strong> <span class="nci-muted">&middot; Ripperdoc clinic &middot; Watson<\/span>[\s\S]*?<\/summary>/);
     assert.match(npc, /name="npcRunProfile"/, 'how it is run');
     assert.doesNotMatch(await renderConsole('businesses'), new RegExp(`data-action="businessOpen" data-id="${b.id}"`));
     // A player's business stays on Businesses, with no mark.
@@ -1815,7 +1821,7 @@ test('GM fixes: Pending lists each row\'s type with no button to its tab, Exposu
     const console = await renderConsole('businesses');
     assertClean(console, 'businesses with REP and IP waiting');
     assert.ok(console.indexOf('data-action="businessRewardApply"') > console.indexOf('Waiting for you'));
-    const entry = console.split('<div class="nci-gig nci-bizentry">').slice(1).join('');
+    const entry = console.split('<details class="nci-gig nci-bizentry nci-fold"').slice(1).join('');
     assert.match(entry, /<strong>Medtech<\/strong>: A scene won at Back Room/, 'and in the strip, naming who it is for');
 
     await S.BusinessService.setExposure(b.id, 40);
