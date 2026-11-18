@@ -38,6 +38,7 @@ export const SKILLS = Object.freeze({
   persuasion: skill('Persuasion', 'cool'),
   photography: skill('Photography/Film', 'tech'),
   playInstrument: skill('Play Instrument', 'tech'),
+  stealth: skill('Stealth', 'dex'),
   streetwise: skill('Streetwise', 'cool'),
   tactics: skill('Tactics', 'int'),
   trading: skill('Trading', 'cool'),
@@ -153,7 +154,7 @@ export function mergeMapDistricts(defs, list) {
 }
 
 /** In display order. */
-export const ACTION_IDS = Object.freeze(['work', 'promote', 'source', 'fixUp', 'keepSafe', 'court', 'respects', 'campaign', 'supply', 'venue']);
+export const ACTION_IDS = Object.freeze(['work', 'promote', 'source', 'fixUp', 'keepSafe', 'court', 'respects', 'campaign', 'poach', 'sabotage', 'supply', 'venue']);
 
 /**
  * The weekly actions (DESIGN §27.0; `court` and `respects`, F1b). `skills` roll the action itself (`work` uses the
@@ -171,6 +172,9 @@ export const ACTIONS = Object.freeze({
   supply: Object.freeze({ skills: [], abilities: [A.moto], help: [S.driveLand, S.trading], roleOnly: true }),
   venue: Object.freeze({ skills: [], abilities: [A.charismaticImpact], help: [S.playInstrument, S.persuasion], roleOnly: true }),
   campaign: Object.freeze({ skills: [S.composition, S.persuasion, S.librarySearch], abilities: [A.interface], help: [S.humanPerception, S.streetwise] }),
+  // Aimed at an NPC company (X2b): hire one of its employees away, or hurt its week.
+  poach: Object.freeze({ skills: [S.persuasion, S.bribery], abilities: [], help: [S.humanPerception, S.conversation] }),
+  sabotage: Object.freeze({ skills: [S.stealth, S.basicTech], abilities: [], help: [S.electronics, S.streetwise] }),
   roomWork: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.humanPerception] }),
   launder: Object.freeze({ skills: [], abilities: [], help: [S.business, S.librarySearch] }),
   payOff: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.persuasion] }),
@@ -185,7 +189,7 @@ export const ACTIONS = Object.freeze({
 });
 
 /** A chartered company's five actions (DESIGN §27.4, §31): they replace the shop actions at stage 2. */
-export const COMPANY_ACTION_IDS = Object.freeze(['contracts', 'books', 'relations', 'permits', 'shortcuts', 'campaign', 'supply', 'venue', 'dumping', 'bribeRegulator', 'blackOps']);
+export const COMPANY_ACTION_IDS = Object.freeze(['contracts', 'books', 'relations', 'permits', 'shortcuts', 'campaign', 'poach', 'sabotage', 'supply', 'venue', 'dumping', 'bribeRegulator', 'blackOps']);
 
 /** Each company action's skill, its alternatives at DV +2, the role abilities that fit, and its help. */
 export const COMPANY_ACTIONS = Object.freeze({
@@ -208,6 +212,9 @@ export const COMPANY_ACTIONS = Object.freeze({
   supply: Object.freeze({ skills: [], abilities: [A.moto], help: [S.driveLand, S.trading], roleOnly: true }),
   venue: Object.freeze({ skills: [], abilities: [A.charismaticImpact], help: [S.playInstrument, S.persuasion], roleOnly: true }),
   campaign: Object.freeze({ skills: [S.composition, S.persuasion, S.librarySearch], abilities: [A.interface], help: [S.humanPerception, S.streetwise] }),
+  // Aimed at an NPC company (X2b): hire one of its employees away, or hurt its week.
+  poach: Object.freeze({ skills: [S.persuasion, S.bribery], abilities: [], help: [S.humanPerception, S.conversation] }),
+  sabotage: Object.freeze({ skills: [S.stealth, S.basicTech], abilities: [], help: [S.electronics, S.streetwise] }),
   roomWork: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.humanPerception] }),
   launder: Object.freeze({ skills: [], abilities: [], help: [S.business, S.librarySearch] }),
   payOff: Object.freeze({ skills: [], abilities: [], help: [S.streetwise, S.persuasion] }),
@@ -493,6 +500,20 @@ export const BUSINESS_DEFAULTS = Object.freeze({
    * A profile's actions are first choice first, as far as the stage's slots go. At its Reputation `target`, what wins
    * Reputation gives way to `fill`. The week's profit leaves as the owner's draw, as far as cash stays above `reserveWeeks` of the week's upkeep and wages.
    */
+  /**
+   * Moves against NPC rivals (X2b, DESIGN §36.20). Poaching is Persuasion or Bribery against `base` plus a point for
+   * each `perLoyalty` of the employee's loyalty; a pass hires them at their wage plus `raise`; a failure makes them
+   * `loyaltyUp` more loyal where they are; a fumble costs `fumbleStanding` with the rival's faction, if it has one.
+   * Sabotage is Stealth or Basic Tech against the rival's stage DV plus its security; a pass cuts its next takings by
+   * `cut` (`narrowCut` on a narrow pass) and its Reputation by `reputation`, and dips a listed rival's price by
+   * `listedDip` percent; it brings `exposure` here whatever the roll, `fumbleExposure` more and `fumbleStanding` on a
+   * fumble. An aggressive NPC company proposes a move in `chance` of its weeks; the GM has `lapseDays` to approve it.
+   */
+  rivals: Object.freeze({
+    poach: Object.freeze({ base: 10, perLoyalty: 10, raise: 0.1, loyaltyUp: 5, fumbleStanding: -10 }),
+    sabotage: Object.freeze({ cut: 0.2, narrowCut: 0.1, reputation: -3, listedDip: -1, exposure: 5, fumbleExposure: 5, fumbleStanding: -15 }),
+    aggressive: Object.freeze({ chance: 0.1, lapseDays: 7 }),
+  }),
   npc: Object.freeze({
     levels: Object.freeze({ green: 9, skilled: 12, expert: 15, master: 17 }),
     profiles: Object.freeze({

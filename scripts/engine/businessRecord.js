@@ -136,6 +136,8 @@ export function normalizeBusiness(raw) {
     press: b.press ?? null,
     /** A breach the GM started in a busy week (X2a), for the next: `{kind: 'breach', factionId, factionName, byHand}`. */
     breachQueued: b.breachQueued ?? null,
+    /** An NPC company's move the GM made in a busy week (X2b), for the next: a poaching or a sabotage, from the rival. */
+    rivalQueued: b.rivalQueued ?? null,
     /** Owned and run by an NPC (N1): `{ ownerId, level, profile, auto }`. */
     npcRun: b.npcRun ?? null,
     /** The job board (N2): applications waiting for the GM, and the day each character last tried. */

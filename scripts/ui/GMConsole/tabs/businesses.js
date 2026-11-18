@@ -5,7 +5,7 @@
  */
 
 import { DistrictService } from '../../../services/DistrictService.js';
-import { BUSINESS_DEFAULTS, kindProfile, sceneCandidate, holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty, debtsOf, solvency, standingBand, turfFactions } from '../../../engine/index.js';
+import { BUSINESS_DEFAULTS, kindProfile, sceneCandidate, holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty, debtsOf, solvency, standingBand, turfFactions, isRival, npcStaff, RIVAL_MOVES } from '../../../engine/index.js';
 import { BusinessService, sceneHook } from '../../../services/BusinessService.js';
 import { JobService } from '../../../services/JobService.js';
 import { FactionRepository } from '../../../data/FactionRepository.js';
@@ -52,6 +52,29 @@ async function onBreach(event, target) {
   if (!out.ok) return report(out);
   ui.notifications.info(L(out.business?.breachQueued ? 'NCI.Breach.GMNext' : 'NCI.Breach.GMNow', { name: out.business?.name ?? '' }));
   return this.render();
+}
+
+/** What the GM hears after an NPC company's move (X2b), or why it couldn't be made. */
+function rivalReport(out, name) {
+  if (out.ok) ui.notifications.info(L(out.when === 'next' ? 'NCI.Rival.GMNext' : 'NCI.Rival.GMNow', { name }));
+  else ui.notifications.warn(L('NCI.Business.Refused', { reason: L(`NCI.Business.Reason.${out.reason}`) }));
+  return out.ok;
+}
+
+/** An NPC company's move against a player business (X2b), from the box's pick. */
+async function onRivalMove(event, target) {
+  const box = target.closest('.nci-actions');
+  const out = await BusinessService.runRivalMove(target.dataset.id, box?.querySelector('[name="rivalId"]')?.value, box?.querySelector('[name="rivalMove"]')?.value);
+  if (rivalReport(out, out.business?.name ?? '')) this.render();
+}
+
+/** An aggressive NPC company's proposed move, carried out or dropped (X2b). */
+async function onRivalAnswer(event, target) {
+  const yes = target.dataset.yes === 'true';
+  const out = await BusinessService.answerRivalMove(target.dataset.id, yes);
+  if (!yes) report(out);
+  else rivalReport(out, out.target ?? '');
+  this.render();
 }
 
 async function onCaseOpen(event, target) {
@@ -195,6 +218,7 @@ async function onNpcSave(event, target) {
   const box = target.closest('.nci-gig');
   report(await BusinessService.setNpcRun(target.dataset.id, {
     profile: box?.querySelector('[name="npcRunProfile"]')?.value, level: box?.querySelector('[name="npcRunLevel"]')?.value, auto: box?.querySelector('[name="npcRunAuto"]')?.checked,
+    aggressive: box?.querySelector('[name="npcRunAggressive"]')?.checked,
   }));
 }
 
@@ -233,6 +257,8 @@ export const actions = {
   businessRestructure: onRestructure,
   businessCaseOpen: onCaseOpen,
   businessBreach: onBreach,
+  businessRivalMove: onRivalMove,
+  businessRivalAnswer: onRivalAnswer,
   businessCaseDrop: onCaseDrop,
   businessCaseFine: onCaseFine,
   businessWindUp: onWindUp,
@@ -311,6 +337,7 @@ export function context() {
   const needs = { players: businessNeeds('businesses'), npc: businessNeeds('npcBusinesses') };
   // In a business's own strip its name goes without saying; a person's (an award, an applicant) doesn't.
   const needsOf = (b) => [...needs.players, ...needs.npc].filter((n) => n.businessId === b.id).map((n) => ({ ...n, who: n.item !== b.name ? n.item : '' }));
+  const rivals = BusinessService.snapshot().map(({ business: r }) => r).filter(isRival).sort((x, y) => x.name.localeCompare(y.name));
   const rows = BusinessService.snapshot().map(({ business: b, hidden }) => {
     const units = totalUnits(b);
     return {
@@ -324,6 +351,7 @@ export function context() {
       npc: b.npcRun ? {
         label: L(b.npcRun.auto ? 'NCI.GMBusiness.Npc.Runs' : 'NCI.GMBusiness.Npc.Held', { name: game.actors.get(b.npcRun.ownerId)?.name ?? '?' }),
         auto: b.npcRun.auto,
+        aggressive: !!b.npcRun.aggressive,
         levels: npcOptions('Level', BUSINESS_DEFAULTS.npc.levels, b.npcRun.level),
         profiles: npcOptions('Profile', BUSINESS_DEFAULTS.npc.profiles, b.npcRun.profile),
       } : null,
@@ -418,6 +446,9 @@ export function context() {
       factionOptions: b.status === 'open' ? factionOptions : [],
       // A breach (X2a) is a move against a player's business, by a corporation or a gang.
       breachOptions: b.status === 'open' && !b.npcRun ? factions.filter((f) => f.kind === 'corp' || f.kind === 'gang').map((f) => ({ value: f.id, label: f.name })) : [],
+      // An NPC company's move against it (X2b): a poaching only with someone to poach.
+      rivalOptions: b.status === 'open' && !b.npcRun ? rivals.map((r) => ({ value: r.id, label: r.name })) : [],
+      rivalMoves: RIVAL_MOVES.filter((m) => m !== 'poach' || npcStaff(b).some((s) => s.source !== 'team')).map((m) => ({ value: m, label: L(`NCI.Rival.Move.${m}`) })),
       factionTerms: b.status === 'open' ? factionTerms(b) : '',
       applicants: (b.candidates ?? []).length ? L('NCI.GMBusiness.Applicants', {
         list: b.candidates.map((c) => L('NCI.GMBusiness.ApplicantOne', {

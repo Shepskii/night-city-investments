@@ -21,6 +21,7 @@
     <label class="nci-inline">{{localize "NCI.GMBusiness.Npc.ProfileLabel"}} <select name="npcRunProfile">{{#each npc.profiles}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
     <label class="nci-inline">{{localize "NCI.GMBusiness.Npc.OwnerLevel"}} <select name="npcRunLevel">{{#each npc.levels}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
     <label class="nci-inline"><input type="checkbox" name="npcRunAuto" {{#if npc.auto}}checked{{/if}}> {{localize "NCI.GMBusiness.Npc.Auto"}}</label>
+    <label class="nci-inline" title="{{localize 'NCI.Rival.AggressiveHint'}}"><input type="checkbox" name="npcRunAggressive" {{#if npc.aggressive}}checked{{/if}}> {{localize "NCI.Rival.Aggressive"}}</label>
     <button type="button" data-action="businessNpcSave" data-id="{{id}}"><i class="fas fa-floppy-disk"></i> {{localize "NCI.GMBusiness.Npc.Save"}}</button>
   </div>
   {{/if}}
@@ -79,6 +80,13 @@
     <div class="nci-actions">
       <select name="breachFaction" title="{{localize 'NCI.Breach.GMHint'}}">{{#each breachOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
       <button type="button" data-action="businessBreach" data-id="{{id}}" title="{{localize 'NCI.Breach.GMHint'}}"><i class="fas fa-user-secret"></i> {{localize "NCI.Breach.GMRun"}}</button>
+    </div>
+    {{/if}}
+    {{#if rivalOptions.length}}
+    <div class="nci-actions">
+      <select name="rivalId" title="{{localize 'NCI.Rival.GMHint'}}">{{#each rivalOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+      <select name="rivalMove">{{#each rivalMoves}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+      <button type="button" data-action="businessRivalMove" data-id="{{id}}" title="{{localize 'NCI.Rival.GMHint'}}"><i class="fas fa-chess-knight"></i> {{localize "NCI.Rival.GMRun"}}</button>
     </div>
     {{/if}}
     {{#if isOpen}}{{#if leavers.length}}

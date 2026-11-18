@@ -22,7 +22,7 @@ const PROFILE_ACTION_IDS = Object.values(PROFILE_ACTIONS);
 /** Whether this action works the room for the week: earns, and can draw trouble the week after. */
 const WORK_ACTIONS = Object.freeze(['roomWork', 'bigNight']);
 /** A company's crime (U1c), which a world's underworld setting hides. */
-export const CRIME_ACTIONS = Object.freeze(['dumping', 'bribeRegulator', 'blackOps', 'fence']);
+export const CRIME_ACTIONS = Object.freeze(['dumping', 'bribeRegulator', 'blackOps', 'fence', 'sabotage']);
 /** What only those running a company should see of its crime: slots, and ledger lines, which others see in plain words. */
 export const SECRET_ACTIONS = Object.freeze([...ROOM_ACTIONS, ...CRIME_ACTIONS, 'lieLow']);
 export const SECRET_LEDGER = Object.freeze(['laundered', 'dirtyTaken', 'raidFine', 'blackOps', 'regulatorBribe', 'illegalMaterials', 'fenced']);

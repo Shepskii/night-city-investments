@@ -37,6 +37,7 @@ import { actorLink } from '../actorLink.js';
 import { isCharacter, eventName } from '../../utils/helpers.js';
 import { withDiscoveries } from '../investigate.js';
 import { escapeHtml } from '../../utils/text.js';
+import { boardRivals } from '../rivals.js';
 
 const DAY_MS = 86_400_000;
 const LEDGER_ROWS = 15;
@@ -682,6 +683,7 @@ function weekContext(business, actor, canAct) {
     if (id === 'campaign') return campaignAim(business);
     if (id === 'blackOps') return campaignAim(business, BUSINESS_DEFAULTS.crime.blackOpsCost);
     if (id === 'dealGang') return dealAim(business, factions);
+    if (id === 'poach' || id === 'sabotage') return rivalAim(business, id);
     const aim = BUSINESS_DEFAULTS.standing.aims[id];
     if (!aim) return null;
     const options = factions.filter((f) => aim.kinds.includes(f.kind)).map((f) => ({ value: f.id, label: f.name }));
@@ -697,7 +699,7 @@ function weekContext(business, actor, canAct) {
     daysText: canAct ? daysLine(business, actor) : '',
     // A chartered company has the five company actions; a smaller business the shop actions.
     // Crime is hidden from those not running a company (U1).
-    actions: [...actionIdsFor(business.stage), ...(hasWorkshop(business) ? ['produce'] : []), ...(openRoom(business) ? roomActionsFor(business) : []), ...(makesThings(business) && (business.stage >= 2 || openRoom(business)) ? ['fence'] : [])].filter((id) => !(business.stage >= 2 && !runs && (SECRET_ACTIONS.includes(id) || (id === 'produce' && business.production?.line?.illegal)))).filter((id) => !(['campaign', 'blackOps', 'dealGang'].includes(id) || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).filter((id) => !CRIME_ACTIONS.includes(id) || underworldOn(business) || (id === 'fence' && hasIllegalStock(business))).filter((id) => id !== 'dealGang' || !business.backRoom?.deal).map((id) => {
+    actions: [...actionIdsFor(business.stage), ...(hasWorkshop(business) ? ['produce'] : []), ...(openRoom(business) ? roomActionsFor(business) : []), ...(makesThings(business) && (business.stage >= 2 || openRoom(business)) ? ['fence'] : [])].filter((id) => !(business.stage >= 2 && !runs && (SECRET_ACTIONS.includes(id) || (id === 'produce' && business.production?.line?.illegal)))).filter((id) => taken.has(id) || !(['campaign', 'blackOps', 'dealGang', 'poach', 'sabotage'].includes(id) || BUSINESS_DEFAULTS.standing.aims[id]?.required) || aimOf(id)).filter((id) => roleCanDo(business, actor, id)).filter((id) => !CRIME_ACTIONS.includes(id) || underworldOn(business) || (id === 'fence' && hasIllegalStock(business))).filter((id) => id !== 'dealGang' || !business.backRoom?.deal).map((id) => {
       const slot = taken.get(id);
       const bonus = period.bonuses.some((b) => b.action === id && !b.used);
       return {
@@ -803,6 +805,18 @@ function supplyNote(business) {
 function campaignAim(business, cost = BUSINESS_DEFAULTS.campaign.cost) {
   const options = CompanyRepository.all().filter((c) => c.ticker !== business.company?.ticker).map((c) => ({ value: c.ticker, label: c.name }));
   return options.length ? { required: true, options, gift: L('NCI.Business.CampaignCost', { cost: whole(cost) }) } : null;
+}
+
+/**
+ * The NPC companies to move against (X2b), from the job board: for a poaching each of their employees who may be
+ * hired away, with the DV; for a sabotage each company, with its DV.
+ */
+function rivalAim(business, id) {
+  const rivals = boardRivals(business.id);
+  const options = id === 'poach'
+    ? rivals.flatMap((r) => r.staff.map((s) => ({ value: `${r.id}:${s.id}`, label: L('NCI.Rival.PoachOption', { name: s.name, post: L(`NCI.Staff.Post.${s.post}`), rival: r.name, dv: s.dv }) })))
+    : rivals.map((r) => ({ value: r.id, label: L('NCI.Rival.SabotageOption', { rival: r.name, dv: r.dv }) }));
+  return options.length ? { required: true, options, gift: L(`NCI.Rival.${id === 'poach' ? 'PoachNote' : 'SabotageNote'}`, { exposure: BUSINESS_DEFAULTS.rivals.sabotage.exposure }) } : null;
 }
 
 /** The gangs on the turf that would talk: neutral or better (U1c). */

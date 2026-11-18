@@ -642,6 +642,22 @@
           "strong": "A great night: takings and Reputation up well.",
           "exceptional": "They'll talk about this one: takings and Reputation up a long way."
         },
+        "poach": {
+          "fumble": "They say no, and tell their boss who asked: their owner knows it was you.",
+          "failure": "They say no, and stay where they are, more loyal than before.",
+          "narrow": "They come over, for 10% more than they were paid.",
+          "solid": "They come over, for 10% more than they were paid.",
+          "strong": "They come over, for 10% more than they were paid.",
+          "exceptional": "They come over, for 10% more than they were paid."
+        },
+        "sabotage": {
+          "fumble": "It's botched, and they know who it was: twice the Exposure here, and standing falls with their backers.",
+          "failure": "Nothing comes of it, but the Exposure here stands.",
+          "narrow": "A little damage: their next takings fall 10%, and their Reputation dips.",
+          "solid": "Their next takings fall 20%, and their Reputation dips.",
+          "strong": "Their next takings fall 20%, and their Reputation dips.",
+          "exceptional": "Their next takings fall 20%, and their Reputation dips."
+        },
         "campaign": {
           "fumble": "You get caught: nothing reaches the market, standing with them falls, and it leaves a trail.",
           "failure": "Nobody picks it up. The money is gone.",
@@ -3100,6 +3116,7 @@
         "case": "Regulator's case",
         "campaign": "Campaign",
         "backRoom": "Back room",
+        "rivalMove": "NPC rival",
         "scene": "Big event",
         "sceneOpen": "Big event",
         "story": "Media story",
@@ -3129,6 +3146,7 @@
         "case": "Regulator's case lost: approve the penalty or drop the case",
         "campaign": "A campaign against {name}: let it run or stop it",
         "backRoom": "A back room, {kind}: let it open or turn it down",
+        "rivalMove": "Wants to move against {target}: {move}. Make the move or drop it",
         "scene": "{event}: run it as a scene, or leave it as a roll",
         "sceneOpen": "{event}: say how the scene went",
         "story": "A story about {name}: let it run or spike it",
@@ -3275,6 +3293,8 @@
       "RoomApprove": "Let the back room open",
       "RoomReject": "Turn it down",
       "CampaignApprove": "Let the campaign run",
+      "RivalApprove": "Make the move",
+      "RivalDecline": "Drop it",
       "PressApprove": "Let it run",
       "PressSpike": "Spike it",
       "ContractOffer": "Offer it",
@@ -3375,6 +3395,32 @@
       "talkingShop": { "Name": "Talking shop", "Hint": "{name} has been talking about this place at their other job.", "IfNot": "If nobody finds out what was said, the other business learns how this one stands. Caught well, you learn about them instead." }
     },
     "Weekday": { "0": "Sunday", "1": "Monday", "2": "Tuesday", "3": "Wednesday", "4": "Thursday", "5": "Friday", "6": "Saturday" },
+    "Rival": {
+      "PoachOption": "{name} ({post}) at {rival}, DV {dv}",
+      "SabotageOption": "{rival}, DV {dv}",
+      "PoachNote": "There has to be room for them here.",
+      "SabotageNote": "Exposure +{exposure} here whatever the roll.",
+      "Move": { "poach": "Poach their best hand", "sabotage": "Sabotage", "story": "Plant a story" },
+      "GMRun": "Make a move",
+      "GMHint": "An NPC company moves against this business: poaching its best-paid employee or sabotage as this week's event (next week's if it has one), or a story in a media company's paper (the truth if there is any).",
+      "GMNow": "The move is this week's at {name}.",
+      "GMNext": "The move will come next week at {name}.",
+      "Aggressive": "Aggressive",
+      "AggressiveHint": "Now and then it wants to move against a player business near it or in its trade: you approve each move on Pending.",
+      "GMNoteTitle": "A move against {rival}",
+      "GMNote": {
+        "poach": {
+          "pass": "{business} ({actor}) poached {staff} from {rival}.",
+          "fail": "{business} ({actor}) tried to poach {staff} from {rival}, who said no.",
+          "fumble": "{business} ({actor}) tried to poach {staff} from {rival}, and {rival} knows it. You may want it to answer with a move."
+        },
+        "sabotage": {
+          "pass": "{business} ({actor}) sabotaged {rival}: its next takings will be down.",
+          "fail": "{business} ({actor}) tried to sabotage {rival}, and got nowhere.",
+          "fumble": "{business} ({actor}) botched a sabotage of {rival}, and {rival} knows who it was. You may want it to answer with a move."
+        }
+      }
+    },
     "Breach": {
       "GMRun": "Start a breach",
       "GMHint": "A corporation or gang breaches this business's systems: this week's event if it has none yet, or next week's. Lost, the ledger leaks: the biggest hidden holder is unmasked, or the breacher's press runs the truth next week (money trouble or crime).",
@@ -3671,6 +3717,8 @@
         "supply": { "Name": "Supply contract", "Hint": "Moto, and a Nomad's contacts on the roads: running costs down by up to 10% for four weeks. A fumble loses the shipment." },
         "venue": { "Name": "Gig at the venue", "Hint": "Charismatic Impact: this week's takings and Reputation up, most of all at a bar or club." },
         "campaign": { "Name": "Run a campaign", "Hint": "A smear (Composition or Persuasion) or a leak (Library Search or Interface) against a listed company: its share price falls a little. One a month." },
+        "poach": { "Name": "Poach an employee", "Hint": "Persuasion or Bribery against how loyal they are: one of an NPC company's staff comes to work here, for 10% more than they were paid." },
+        "sabotage": { "Name": "Sabotage a rival", "Hint": "Stealth or Basic Tech against an NPC company's DV, more with its security: its next takings fall by up to 20% and its Reputation dips. It brings Exposure here whatever happens." },
         "contracts": { "Name": "Chase contracts", "Hint": "Business (Persuasion or Trading at DV +2), Teamwork, Operator or Maker: sets the week's takings, and Reputation up a little." },
         "books": { "Name": "Tighten the books", "Hint": "Accounting (Business at DV +2) or Moto: the Cost base down." },
         "relations": { "Name": "Investor relations", "Hint": "Trading (Persuasion or Wardrobe & Style at DV +2), Credibility or Charismatic Impact: Reputation up." },
@@ -4243,6 +4291,11 @@
         "netrun-no-live": "that target has no NET Architect map to run on",
         "netrun-busy": "another NET run is going on; wait for it to end",
         "breach-queued": "a breach is already waiting for next week",
+        "rival-queued": "a rival's move is already waiting for next week",
+        "no-staff": "there is nobody there to poach",
+        "bad-move": "choose a move",
+        "not-player": "that is an NPC's business",
+        "no-move": "there is no move waiting",
         "breach-no-faction": "choose a corporation or gang",
         "not-netrunner": "that takes the Netrunner role's Interface",
         "backup-wait": "Backup has answered for this business too recently",
@@ -4602,6 +4655,8 @@
         "talked": "{name} let slip how things stand here, at {rival}.",
         "caughtTalking": "{name} was caught talking about this place at {rival}.",
         "heardTalk": "{name}, who also works at {rival}, let slip how things stand there.",
+        "poachedHere": "{name} left {rival} to work here.",
+        "sabotaged": "Someone sabotaged the place this week.",
         "gainedFullTime": "{name} left {rival} to work here full time.",
         "vested": "{name}'s granted shares vested: they are a holder now.",
         "teamLeft": "{name} left with their Exec.",

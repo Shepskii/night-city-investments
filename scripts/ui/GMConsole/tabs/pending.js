@@ -100,6 +100,9 @@ function businessRows() {
         ],
         buttons: [act('businessContractOffer', 'ContractOffer', yes, { reward: c.id }), act('businessContractDrop', 'ContractDrop', no, { reward: c.id })],
       }))),
+      // An aggressive NPC company's move, for the GM to make or drop (X2b).
+      b.npcRun?.move && need('rivalMove', { target: b.npcRun.move.targetName, move: L(`NCI.Rival.Move.${b.npcRun.move.kind}`) },
+        act('businessRivalAnswer', 'RivalApprove', yes, { yes: 'true' }), act('businessRivalAnswer', 'RivalDecline', no, { yes: 'false' })),
       b.backRoom?.status === 'pending' && need('backRoom', { kind: L(`NCI.BackRoom.Kind.${b.backRoom.kind}`) }, act('businessRoomApprove', 'RoomApprove', yes), act('businessRoomReject', 'RoomReject', no)),
       sceneCandidate(b) && !b.npcRun?.auto && need('scene', { event: L(`NCI.Event.${b.period.event.kind}.Name`) }, act('businessSceneRun', 'SceneRun', 'fa-masks-theater')),
       b.scene && need('sceneOpen', { event: L(`NCI.Event.${b.scene.event.kind}.Name`) }, act('businessSceneWon', 'SceneWon', yes), act('businessSceneLost', 'SceneLost', no), act('businessSceneRoll', 'SceneRoll', 'fa-dice-d10')),

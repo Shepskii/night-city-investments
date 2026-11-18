@@ -33,6 +33,7 @@ import { workShift } from '../workShift.js';
 import { pickerContext, startContext, businessContext, usableActors, jobsContext, termKey, roomEventName } from './context.js';
 import { pendingRows } from './pending.js';
 import { CrewToolsAdapter } from '../../integrations/CrewToolsAdapter.js';
+import { rivalRequest } from '../rivals.js';
 
 /** The folders along the top, and the tabs in each. */
 const FOLDERS = Object.freeze({
@@ -569,7 +570,9 @@ export class BusinessApp extends BaseApplication {
     // Aimed at a faction (F1b): the pick in the action's own row.
     const aimed = target.closest('tr')?.querySelector('[name="aimFaction"]')?.value;
     // A campaign's pick is a company (F1c).
-    const aim = aimed ? { [action === 'campaign' || action === 'blackOps' ? 'targetTicker' : 'factionId']: aimed } : {};
+    // A move against an NPC company is its id, and for a poaching the employee (X2b).
+    const rival = action === 'poach' || action === 'sabotage';
+    const aim = !aimed ? {} : rival ? rivalRequest(action, aimed, this.business?.id) : { [action === 'campaign' || action === 'blackOps' ? 'targetTicker' : 'factionId']: aimed };
     this._roll({ type: 'action', action, ...aim }, `${this.business?.name ?? ''}: ${L(`NCI.Business.Action.${action}.Name`)}`);
   }
 

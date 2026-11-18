@@ -28,6 +28,7 @@ import {
   moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene, ABILITIES, backupWait, quashEffect, exposureBand, canRun,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
   STACKING_TYPES, offerContract, dropContract, writeContract, contractOf, takesContracts,
+  RIVAL_ACTIONS, isRival, rivalView, publicRival, rivalEvent, queueRivalEvent, drawRivalMove, poachHire, moveLoyalty, npcStaff,
   inquiryWait, inquiryDv, inquiryTarget, inquiryEffect, hasEvidence, pressTruths, handPress, runBreach, netRunWait, netRunDv, netRunEffect, liveRunOutcome, evidenceWeight, RUMOUR_LEVELS, STORY_RULES,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
@@ -48,6 +49,7 @@ import { SkillAdapter } from './SkillAdapter.js';
 import { CrewToolsAdapter } from '../integrations/CrewToolsAdapter.js';
 import { NetArchitectAdapter } from '../integrations/NetArchitectAdapter.js';
 import { REWARDS, rewardRunners, rewardChange, rewardMatters } from '../engine/businessRewards.js';
+import { addLedger } from '../engine/businessRecord.js';
 import { WealthAdapter } from './WealthAdapter.js';
 import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors, investorContacts, staffActors, jobsOf, isNpcActor } from './BusinessClient.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
@@ -605,6 +607,12 @@ class BusinessServiceImpl {
       request = { ...request, targetId: target.id };
     }
 
+    // An action aimed at an NPC company (X2b) is checked against its true record, never the window's copy.
+    if (request.type === 'action' && RIVAL_ACTIONS.includes(request.action)) {
+      const rival = BusinessRepository.get(String(request.targetId ?? ''));
+      request = { ...request, rival: isRival(rival) ? rivalView(rival) : null };
+    }
+
     // With Crew Tools, no weekly days: only what this request's spend, found in the character's log, pays for (B7b). An NPC keeps the week's.
     const params = CrewToolsAdapter.gmParams(actor);
     if (business && request.downtime && CrewToolsAdapter.appliesTo(actor)) {
@@ -743,6 +751,7 @@ class BusinessServiceImpl {
     await this._payslips(out);
     await this._livingCosts(out);
     await this._twoJobs(out);
+    await this._rivalEvents(out).catch((error) => log.warn('Could not carry out a move against a rival', error));
     await this._scheduleListing(out.business);
     await this._capitalEvents(out);
     await this._insolvencyEvents(out);
@@ -1047,8 +1056,168 @@ class BusinessServiceImpl {
         await BusinessRepository.save(normalizeBusiness({ ...here, intel: [...(here.intel ?? []), report(other, null)].slice(-cap) }));
       } else if (e.kind === 'gainedFullTime') {
         await BusinessRepository.save(normalizeBusiness({ ...other, pendingNotes: [...(other.pendingNotes ?? []), { kind: 'gainedFullTime', name: e.staffName, rival: here.name }] }));
+      } else if (e.kind === 'poachedTo' && e.staff) {
+        // An NPC company's poaching won (X2b): they work there now, at the raise, with their traits.
+        const copy = normalizeBusiness(structuredClone(other));
+        poachHire(copy, e.staff, day, here.id);
+        copy.pendingNotes = [...(copy.pendingNotes ?? []), { kind: 'poachedHere', name: e.staffName, rival: here.name }];
+        await BusinessRepository.save(copy);
+        await this._moveTrait(here.id, other.id, e.staff);
+        await JobService.publish();
       }
     }
+  }
+
+  /** An employee's hidden trait goes with them to another business (X2b). */
+  async _moveTrait(fromId, toId, staff) {
+    const hidden = MarketStore.getBusinessesHidden();
+    const key = staff.candidateId ?? staff.id;
+    const trait = hidden[fromId]?.traits?.[key];
+    if (!trait) return;
+    const from = { ...(hidden[fromId] ?? {}), traits: { ...(hidden[fromId]?.traits ?? {}) } };
+    delete from.traits[key];
+    const to = { exposure: 0, ...(hidden[toId] ?? {}), traits: { ...(hidden[toId]?.traits ?? {}), [key]: trait } };
+    await MarketStore.setBusinessesHidden({ ...hidden, [fromId]: from, [toId]: to });
+  }
+
+  /** A whispered note to the GMs. */
+  _tellGM(title, text) {
+    return ChatMessage.create({
+      content: `<p><strong>${escapeHtml(title)}</strong></p><p>${escapeHtml(text)}</p>`,
+      whisper: (ChatMessage.getWhisperRecipients?.('GM') ?? []).map((u) => u.id),
+    });
+  }
+
+  /**
+   * A player business's move against an NPC company (X2b), carried out on the rival's record: a poached employee
+   * leaves it, or grows more loyal to it when the offer failed; a sabotage cuts its next takings and its Reputation,
+   * and dips a listed rival's price. A fumble costs standing with the rival's faction, if it has one. The GM hears of
+   * every move, to answer it if they like.
+   */
+  async _rivalEvents(out) {
+    const R = BUSINESS_DEFAULTS.rivals;
+    const b = out.business;
+    for (const e of (out.events ?? []).filter((x) => x.type === 'rivalMove')) {
+      const stored = BusinessRepository.get(e.rivalId);
+      if (!stored) continue;
+      const rival = normalizeBusiness(structuredClone(stored));
+      const day = this.day();
+      const actor = game.actors.get(e.actorId)?.name ?? '';
+      if (e.move === 'poach') {
+        const staff = (rival.staff ?? []).find((s) => s.id === e.staffId);
+        if (e.success && staff) {
+          rival.staff = rival.staff.filter((s) => s !== staff);
+          addLedger(rival, { day, kind: 'poached', amount: 0, staffName: staff.name }, BUSINESS_DEFAULTS);
+          rival.pendingNotes = [...(rival.pendingNotes ?? []), { kind: 'poached', name: staff.name }];
+          await this._moveTrait(rival.id, b.id, staff);
+        } else if (staff) {
+          moveLoyalty(staff, R.poach.loyaltyUp, this.traitsOf(rival.id));
+        }
+      } else if (e.success) {
+        rival.boost = Math.max(-BUSINESS_DEFAULTS.gigs.boostCap, (rival.boost ?? 0) - e.cut);
+        rival.state.reputation = Math.max(0, Math.min(100, rival.state.reputation + R.sabotage.reputation));
+        rival.pendingNotes = [...(rival.pendingNotes ?? []), { kind: 'sabotaged', name: b.name }];
+        // A listed rival's price feels it from the next day.
+        if (isListed(rival)) {
+          const key = `sabotage:${rival.id}:${b.id}:${day}`;
+          await TickService.updateControls((controls, { tick: now }) => (controls.impacts.some((i) => i.sourceKey === key) ? controls : {
+            ...controls,
+            impacts: [...controls.impacts, makeImpact({
+              id: `imp_sabotage_${rival.id}_${day}`, target: { type: 'company', id: rival.company.ticker }, amount: percentToAmount(R.sabotage.listedDip), onsetTick: now + 1,
+              permanent: 1, sourceKey: key, source: 'sabotage', meta: { businessId: rival.id },
+            })],
+          }));
+        }
+      }
+      await BusinessRepository.save(rival);
+      if (e.band === 'fumble' && rival.company?.ticker) await this._campaignStanding(b, rival.company.ticker, e.move === 'poach' ? R.poach.fumbleStanding : R.sabotage.fumbleStanding);
+      const outcome = e.band === 'fumble' ? 'fumble' : e.success ? 'pass' : 'fail';
+      await this._tellGM(L('NCI.Rival.GMNoteTitle', { name: rival.name }), L(`NCI.Rival.GMNote.${e.move}.${outcome}`, { actor, business: b.name, rival: rival.name, staff: e.staffName ?? '' }));
+    }
+    if ((out.events ?? []).some((x) => x.type === 'rivalMove')) await JobService.publish();
+  }
+
+  /** NPC companies a player business may move against (X2b), as players see them on the job board. */
+  rivalTargets() {
+    if (!this.enabled()) return [];
+    return BusinessRepository.all().filter(isRival).map((b) => publicRival(b)).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /**
+   * GM only: an NPC company's move against a player business (X2b). A poaching of its best hand or a sabotage is the
+   * week's event (next week's if this one has its event), from the rival; a story runs in a media company's paper,
+   * the truth if there is any, a smear if not.
+   * @returns {Promise<{ok: boolean, when?: 'now'|'next', reason?: string}>}
+   */
+  async runRivalMove(id, rivalId, kind) {
+    const rival = BusinessRepository.get(rivalId);
+    if (!isRival(rival)) return { ok: false, reason: 'bad-target' };
+    if (kind === 'story') {
+      const media = CompanyRepository.all().filter((c) => c.sector === 'media' && c.status !== 'delisted');
+      const paper = media.length ? PressService._outlet(`m:${media[Math.floor(Math.random() * media.length)].ticker}`) : null;
+      if (!paper) return { ok: false, reason: 'press-no-outlet' };
+      let when = null;
+      const out = await this._gm(id, (b) => {
+        if (b.npcRun) return { ok: false, reason: 'not-player' };
+        const copy = normalizeBusiness(structuredClone(b));
+        const exposure = MarketStore.getBusinessesHidden()[b.id]?.exposure ?? 0;
+        const truths = pressTruths(copy, { exposure, underworld: this.underworldOn() });
+        const done = runPress(copy, handPress({ story: truths[0] ?? 'smear', outlet: paper }), this.day());
+        when = done.when;
+        return done.ok ? { ok: true, business: copy, wealth: {}, events: [] } : done;
+      });
+      return out.ok ? { ...out, when } : out;
+    }
+    let when = null;
+    const out = await this._gm(id, (b) => {
+      const copy = normalizeBusiness(structuredClone(b));
+      const made = rivalEvent(copy, rival, kind);
+      if (!made.ok) return made;
+      const done = queueRivalEvent(copy, made.event);
+      when = done.when;
+      return done.ok ? { ok: true, business: copy, wealth: {}, events: [] } : done;
+    });
+    return out.ok ? { ...out, when } : out;
+  }
+
+  /**
+   * Aggressive NPC companies (X2b): each new week, now and then one proposes a move against a player business, held
+   * for the GM on Pending; one the GM leaves too long lapses.
+   */
+  async _rivalMoves() {
+    const day = this.day();
+    const R = BUSINESS_DEFAULTS.rivals.aggressive;
+    const targets = BusinessRepository.all().filter((t) => t.status === 'open' && !t.npcRun && t.period)
+      .map((t) => ({ id: t.id, name: t.name, district: t.district ?? null, archetype: t.archetype, staff: npcStaff(t).filter((s) => s.source !== 'team').length }));
+    for (const stored of BusinessRepository.all().filter((b) => isRival(b) && b.npcRun.aggressive && b.period)) {
+      const b = normalizeBusiness(structuredClone(stored));
+      const run = b.npcRun;
+      if (run.move && day > run.move.day + R.lapseDays) {
+        b.npcRun = { ...run, move: null };
+        await BusinessRepository.save(b);
+        continue;
+      }
+      if (run.move || run.moveWeek === b.period.index) continue;
+      const drawn = drawRivalMove(b, targets, createRng(this.seed(), 'rival-move', b.id, b.period.index));
+      b.npcRun = { ...run, moveWeek: b.period.index, move: drawn ? { ...drawn, day } : null };
+      await BusinessRepository.save(b);
+      if (drawn) Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+    }
+  }
+
+  /** GM only: carry out an aggressive NPC company's proposed move, or drop it (X2b). */
+  async answerRivalMove(rivalId, yes) {
+    const rival = BusinessRepository.get(rivalId);
+    const move = rival?.npcRun?.move;
+    if (!move) return { ok: false, reason: 'no-move' };
+    const out = yes ? await this.runRivalMove(move.targetId, rivalId, move.kind) : { ok: true };
+    if (!out.ok && out.reason !== 'rival-queued' && out.reason !== 'press-queued' && out.reason !== 'not-open') return out;
+    const cleared = await this._gm(rivalId, (b) => {
+      const copy = normalizeBusiness(structuredClone(b));
+      copy.npcRun = { ...copy.npcRun, move: null };
+      return { ok: true, business: copy, wealth: {}, events: [] };
+    });
+    return out.ok ? { ...out, target: move.targetName } : (cleared.ok ? out : cleared);
   }
 
   /** Take contributed items off the sheets they came from, and give back those a refund returns. */
@@ -1198,6 +1367,8 @@ class BusinessServiceImpl {
       await this._layerFees();
       await this._concealment();
       await this._lapseCases();
+      // Aggressive NPC companies propose their moves (X2b).
+      await this._rivalMoves().catch((error) => log.warn('Could not draw a rival move', error));
       // Market corporations' jobs close their weeks too (N4).
       await EmployerService.onTick();
       await JobService.publish();

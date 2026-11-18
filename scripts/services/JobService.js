@@ -33,6 +33,8 @@ export const JobService = {
       waiting: Object.fromEntries(all.flatMap((b) => (b.applications ?? []).map((a) => [key(b, a.actorId), a.post]))),
       // What a Lawman may investigate (X2d): NPCs' businesses are known on the street, as are the market's corporations.
       inquiry: BusinessService.inquiryTargets(),
+      // NPC companies to move against (X2b): their DVs and who may be poached.
+      rivals: BusinessService.rivalTargets(),
     };
     if (JSON.stringify(board) !== JSON.stringify(game.settings.get(MODULE_ID, SETTINGS.JOB_BOARD))) await game.settings.set(MODULE_ID, SETTINGS.JOB_BOARD, board);
   },

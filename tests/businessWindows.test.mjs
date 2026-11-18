@@ -726,6 +726,72 @@ test('aiming at a faction: the Work tab offers the pick and the gift, the action
   }
 });
 
+test('X2b in the windows: Poach and Sabotage offer the board\'s rivals with their DVs; a poaching rolled from the window hires; the GM\'s Make a move, Aggressive, and a held move on Pending', async () => {
+  const { MarketStore } = await import('../scripts/data/MarketStore.js');
+  const { JobService } = await import('../scripts/services/JobService.js');
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  const hiddenBefore = MarketStore.getBusinessesHidden();
+  const rivalId = 'bus_rival_win';
+  try {
+    const mine = { ...b, status: 'open', stage: 0, company: null, charter: null, listing: null, takeover: null, administration: null, regCase: null, officers: [], district: 'ocz', till: 5000, standings: {}, proposals: [], staff: [], backRoom: null, period: { ...b.period, slots: [], bonuses: [], helpers: [], event: null } };
+    await S.BusinessRepository.save(mine);
+    // With no NPC company, neither action shows.
+    await JobService.publish();
+    assert.doesNotMatch(text(await renderBusiness(windowFor(med, 'week'))), /Poach an employee|Sabotage a rival/);
+
+    await S.BusinessRepository.save({
+      ...structuredClone(mine), id: rivalId, name: 'Kabuki Chrome', partners: [], npcRun: { ownerId: fix.id, level: 'skilled', profile: 'steady', auto: true },
+      staff: [{ id: 'stf_rook', actorId: null, name: 'Rook', source: 'recruit', post: 'floor', bases: { 'skill:Paramedic': 12 }, pct: 1, wage: 200, status: 'active', owed: 0, loyalty: 64, hiredDay: 1 }],
+    });
+    await JobService.publish();
+    const week = await renderBusiness(windowFor(med, 'week'));
+    assertClean(week, 'rival actions');
+    assert.match(text(week), /Poach an employee/);
+    assert.match(week, /<option value="bus_rival_win:stf_rook">Rook \(Floor\) at Kabuki Chrome, DV 16<\/option>/);
+    // Sabotage is crime: on the Back Room tab, with the campaigns.
+    const shady = await renderBusiness(windowFor(med, 'backRoom'));
+    assertClean(shady, 'sabotage');
+    assert.match(shady, /<option value="bus_rival_win">Kabuki Chrome, DV \d+<\/option>/);
+    assert.match(text(shady), /Exposure \+5 here whatever the roll/);
+
+    // Rolled from the window, checked on the GM's side against the true record.
+    dice = [10];
+    const { rivalRequest } = await import('../scripts/ui/rivals.js');
+    const current = S.BusinessRepository.get(mine.id);
+    const request = { type: 'action', businessId: current.id, action: 'poach', ...rivalRequest('poach', `${rivalId}:stf_rook`, current.id) };
+    const dialog = new Apps.Roll({ actorId: med.id, businessId: current.id, request, rollTitle: 'Poach' });
+    const roll = render('templates/dialogs/roll.hbs', await dialog._prepareContext());
+    assertClean(roll, 'poach roll dialog');
+    assert.match(text(roll), /DV 16/);
+    await S.BusinessClient.roll(med, current, { ...request, rival: { ...request.rival, staff: [{ ...request.rival.staff[0], dv: 2 }] }, use: { kind: 'skill', skill: 'Persuasion', stat: 'cool' } }, { title: 'Poach' });
+    await S.BusinessService.processActor(med);
+    const after = S.BusinessRepository.get(mine.id);
+    assert.equal(after.period.slots.at(-1)?.dv, 16, 'the true DV, not what the request said');
+    assert.ok(after.staff.some((s) => s.name === 'Rook'), JSON.stringify(after.period.slots.at(-1)));
+    assert.ok(!S.BusinessRepository.get(rivalId).staff.some((s) => s.name === 'Rook'), 'gone from the rival');
+    assert.match(text(await renderBusiness(windowFor(med, 'week'))), /Aimed at Kabuki Chrome/);
+
+    // The GM's side: Make a move on the player's business, Aggressive on the NPC's, and a held move on Pending.
+    const players = await renderConsole('businesses');
+    assertClean(players, 'make a move');
+    assert.match(players, /name="rivalId"[\s\S]*?<option value="bus_rival_win">Kabuki Chrome<\/option>/);
+    assert.match(players, /data-action="businessRivalMove"/);
+    await S.BusinessRepository.save({ ...S.BusinessRepository.get(rivalId), npcRun: { ...S.BusinessRepository.get(rivalId).npcRun, aggressive: true, move: { targetId: mine.id, targetName: mine.name, kind: 'sabotage', day: S.BusinessService.day() } } });
+    const npc = await renderConsole('npcBusinesses');
+    assertClean(npc, 'aggressive');
+    assert.match(npc, /name="npcRunAggressive" checked/);
+    assert.match(text(npc), new RegExp(`Wants to move against ${mine.name}: Sabotage`));
+    assert.match(npc, /data-action="businessRivalAnswer" data-id="bus_rival_win" data-yes="true"/);
+    assert.match(text(await renderConsole('pending')), /NPC rival/);
+  } finally {
+    await S.BusinessRepository.save({ ...S.BusinessRepository.get(rivalId), status: 'closed' });
+    await S.BusinessRepository.save(saved);
+    await MarketStore.setBusinessesHidden(hiddenBefore);
+    await JobService.publish();
+  }
+});
+
 test('the console\'s tabs are in groups: a group goes to its last open tab, and every tab renders under one', async () => {
   const app = new Apps.GMConsole();
   app.render = () => {};

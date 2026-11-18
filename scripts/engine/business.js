@@ -75,6 +75,7 @@ import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout, breachDv
 import { eventOrigin } from './eventMail.js';
 import { drawPress, placePress, lapsePress, printPress, pressFallout, startHandPress, keepAwayCut } from './businessPress.js';
 import { npcWeek, npcDraw } from './businessNpc.js';
+import { RIVAL_ACTIONS, rivalCheck, poachHire, rivalOutcome } from './businessRivals.js';
 import { shiftLift, payShiftBonuses, shiftWeek } from './businessJobs.js';
 import { createRng } from './rng.js';
 import { charterSector, cleanTicker } from './businessCharter.js';
@@ -342,6 +343,9 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     // A gang deals only at neutral or better (U1c).
     if (request.action === 'dealGang' && (!request.factionId || dealCut(b.standings?.[request.factionId] ?? 'neutral', p) == null)) return fail('gang-refuses');
     if (request.action === 'bribeRegulator' && b.till < p.crime.bribeCost) return fail('no-funds');
+    // Aimed at an NPC company (X2b): its DV, or its employee's.
+    const rival = RIVAL_ACTIONS.includes(request.action) ? rivalCheck(b, request, p) : null;
+    if (rival && !rival.ok) return rival;
     const bonusAvailable = b.period.bonuses.some((x) => x.action === request.action && !x.used);
     // The back room's actions need it open, and its kind says how it is worked (U1a).
     const room = ROOM_ACTIONS.includes(request.action) ? roomCheck(b, request.action, p, day) : null;
@@ -355,7 +359,7 @@ export function rollSpec(b, request, actorId, { day, operatorRank = 0, params: p
     }
     // A role's own action takes that role: no hired help (X1).
     const allowHire = !actionFor(b.stage, request.action).roleOnly;
-    return allowed(room?.uses ?? actionUses(request.action, arch, b.stage), use, { dv: run?.dv ?? stageDv(b.stage, p), allowHire, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p, b, traits });
+    return allowed(room?.uses ?? actionUses(request.action, arch, b.stage), use, { dv: run?.dv ?? rival?.dv ?? stageDv(b.stage, p), allowHire, bonusAvailable, extraAvailable, funds: b.till, operatorRank, p, b, traits });
   }
 
   if (request.type === 'assist') {
@@ -631,6 +635,8 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       // A gang on the turf (U1c).
       const gang = dealing ? (ctx.factions ?? []).find((f) => f.id === request.factionId && f.kind === 'gang' && f.districts?.includes(b.district)) : null;
       if (dealing && !gang) return fail('bad-faction');
+      const rival = RIVAL_ACTIONS.includes(request.action) ? rivalCheck(b, request, p) : null;
+      if (rival && !rival.ok) return rival;
       spendFor('roll');
       const r = check.result;
       if (r.bonus) {
@@ -643,6 +649,7 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
         ...(aim ? { factionId: aim.faction.id, factionName: aim.faction.name } : {}),
         ...(target ? { factionName: target.name } : {}),
         ...(gang ? { factionId: gang.id, factionName: gang.name } : {}),
+        ...(rival ? { factionName: request.rival.name, rivalId: request.targetId } : {}),
       });
       out.events.push({ type: 'roll', action: request.action, band: r.band, exposure: r.exposure });
       if (aim) {
@@ -657,6 +664,14 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       if (request.action === 'blackOps') out.events.push(...runBlackOps(b, { ticker: target.ticker, name: target.name, band: r.band, actorId: actor.id, day, approval: ctx.campaignApproval !== false }, p));
       if (request.action === 'supply') runSupply(b, { band: r.band, day }, p);
       if (request.action === 'venue') runVenue(b, { band: r.band }, p);
+      if (rival) {
+        // Hired away at once; the rival loses them when the GM's service hears (X2b).
+        if (request.action === 'poach' && r.success) {
+          const hired = poachHire(b, rival.staff, day, request.targetId, p);
+          addLedger(b, { day, kind: 'hired', amount: 0, staffName: hired.name }, p);
+        }
+        out.events.push(rivalOutcome(request, { band: r.band, staff: rival.staff, actorId: actor.id }, p));
+      }
       if (target && request.action === 'campaign') {
         out.events.push(...runCampaign(b, { ticker: target.ticker, name: target.name, useKey: useKey(request.use), band: r.band, actorId: actor.id, day, approval: ctx.campaignApproval !== false }, p));
       }
@@ -1359,7 +1374,7 @@ export function setNpcRun(business, change, p = BUSINESS_DEFAULTS) {
   if (!b.npcRun) return fail('not-npc');
   if (change.level != null && p.npc.levels[change.level] == null) return fail('bad-level');
   if (change.profile != null && !p.npc.profiles[change.profile]) return fail('bad-profile');
-  b.npcRun = { ...b.npcRun, ...(change.level != null ? { level: change.level } : {}), ...(change.profile != null ? { profile: change.profile } : {}), ...(change.auto != null ? { auto: !!change.auto } : {}) };
+  b.npcRun = { ...b.npcRun, ...(change.level != null ? { level: change.level } : {}), ...(change.profile != null ? { profile: change.profile } : {}), ...(change.auto != null ? { auto: !!change.auto } : {}), ...(change.aggressive != null ? { aggressive: !!change.aggressive, ...(change.aggressive ? {} : { move: null }) } : {}) };
   return { ok: true, business: b };
 }
 
@@ -1829,7 +1844,10 @@ function startPeriod(b, index, startDay, weekday, seed, p, traits = null, relati
   // Then a breach the GM started in a busy week (X2a).
   const breach = !queued && !b.collectors && !b.grudge ? b.breachQueued ?? null : null;
   if (breach) b.breachQueued = null;
-  const event = queued ?? breach ?? roomBust(b, seed, p, relations, traits) ?? drawPress(b, seed, p, relations) ?? hostileAct(b, seed, p, relations) ?? roomEvent(b, seed, p, relations) ?? drawEvent(b, seed, p, traits, relations);
+  // An NPC company's move the GM made in a busy week (X2b), after any breach.
+  const rival = !queued && !breach && !b.collectors && !b.grudge ? b.rivalQueued ?? null : null;
+  if (rival) b.rivalQueued = null;
+  const event = queued ?? breach ?? rival ?? roomBust(b, seed, p, relations, traits) ?? drawPress(b, seed, p, relations) ?? hostileAct(b, seed, p, relations) ?? roomEvent(b, seed, p, relations) ?? drawEvent(b, seed, p, traits, relations);
   if (b.collectors) {
     // A missed payment to a fixer: the collectors come in place of whatever else the week held.
     b.period.event = { kind: 'collectors' };

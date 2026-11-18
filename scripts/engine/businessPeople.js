@@ -131,6 +131,8 @@ export function settleStaffEvent(b, takings, slots, { traits = null, seed = 'nci
       b.staff = b.staff.filter((s) => s !== target);
       addLedger(b, { day, kind: 'poached', amount: 0, staffName: target.name }, p);
       note('poached', target);
+      // An NPC company's poaching (X2b): they join it, which the GM's service carries out there.
+      if (event.rivalBusiness) out.cross = { kind: 'poachedTo', to: event.rivalBusiness.id, staffName: target.name, staff: structuredClone(target) };
       return out;
     }
     case 'doubleBooked':
