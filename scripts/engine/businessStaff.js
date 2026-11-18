@@ -96,7 +96,7 @@ export function markElsewhere(b, others, p = BUSINESS_DEFAULTS) {
 }
 
 /** Loyalty to start with: more for pay above the going rate, less below it. */
-export const startLoyalty = (pct, p = BUSINESS_DEFAULTS) => Math.round(p.staff.loyalty.start + ((pct - 1) / 0.1) * p.staff.loyalty.perTen);
+export const startLoyalty = (pct, p = BUSINESS_DEFAULTS) => Math.max(0, Math.min(100, Math.round(p.staff.loyalty.start + ((pct - 1) / 0.1) * p.staff.loyalty.perTen)));
 
 export const devoted = (staff, p = BUSINESS_DEFAULTS) => hasLoyalty(staff) && (staff.loyalty ?? 0) >= p.staff.loyalty.devoted;
 

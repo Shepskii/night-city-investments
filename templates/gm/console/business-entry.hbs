@@ -87,6 +87,7 @@
       <select name="rivalId" title="{{localize 'NCI.Rival.GMHint'}}">{{#each rivalOptions}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
       <select name="rivalMove">{{#each rivalMoves}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
       <button type="button" data-action="businessRivalMove" data-id="{{id}}" title="{{localize 'NCI.Rival.GMHint'}}"><i class="fas fa-chess-knight"></i> {{localize "NCI.Rival.GMRun"}}</button>
+      {{#if rivalNoPoach}}<span class="nci-muted">{{rivalNoPoach}}</span>{{/if}}
     </div>
     {{/if}}
     {{#if isOpen}}{{#if leavers.length}}

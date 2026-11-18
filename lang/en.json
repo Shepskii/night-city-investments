@@ -3402,12 +3402,13 @@
       "SabotageNote": "Exposure +{exposure} here whatever the roll.",
       "Move": { "poach": "Poach their best hand", "sabotage": "Sabotage", "story": "Plant a story" },
       "GMRun": "Make a move",
-      "GMHint": "An NPC company moves against this business: poaching its best-paid employee or sabotage as this week's event (next week's if it has one), or a story in a media company's paper (the truth if there is any).",
+      "GMHint": "An NPC company moves against this business: poaching its best-paid employee short of devoted or sabotage as this week's event (next week's if it has one), or a story in a media company's paper (the truth if there is any).",
       "GMNow": "The move is this week's at {name}.",
       "GMNext": "The move will come next week at {name}.",
       "Aggressive": "Aggressive",
       "AggressiveHint": "Now and then it wants to move against a player business near it or in its trade: you approve each move on Pending.",
       "GMNoteTitle": "A move against {rival}",
+      "AllDevoted": "No poaching: everyone there is devoted, and would turn it down.",
       "GMNote": {
         "poach": {
           "pass": "{business} ({actor}) poached {staff} from {rival}.",
@@ -4293,6 +4294,7 @@
         "breach-queued": "a breach is already waiting for next week",
         "rival-queued": "a rival's move is already waiting for next week",
         "no-staff": "there is nobody there to poach",
+        "all-devoted": "everyone there is devoted, and would turn a poaching down",
         "bad-move": "choose a move",
         "not-player": "that is an NPC's business",
         "no-move": "there is no move waiting",

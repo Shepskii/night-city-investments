@@ -5,7 +5,7 @@
  */
 
 import { DistrictService } from '../../../services/DistrictService.js';
-import { BUSINESS_DEFAULTS, kindProfile, sceneCandidate, holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty, debtsOf, solvency, standingBand, turfFactions, isRival, npcStaff, RIVAL_MOVES } from '../../../engine/index.js';
+import { BUSINESS_DEFAULTS, kindProfile, sceneCandidate, holders, totalUnits, bookValue, fundingShortfall, ARCHETYPES, traitOf, hasLoyalty, debtsOf, solvency, standingBand, turfFactions, isRival, npcStaff, poachTargets, RIVAL_MOVES } from '../../../engine/index.js';
 import { BusinessService, sceneHook } from '../../../services/BusinessService.js';
 import { JobService } from '../../../services/JobService.js';
 import { FactionRepository } from '../../../data/FactionRepository.js';
@@ -446,9 +446,10 @@ export function context() {
       factionOptions: b.status === 'open' ? factionOptions : [],
       // A breach (X2a) is a move against a player's business, by a corporation or a gang.
       breachOptions: b.status === 'open' && !b.npcRun ? factions.filter((f) => f.kind === 'corp' || f.kind === 'gang').map((f) => ({ value: f.id, label: f.name })) : [],
-      // An NPC company's move against it (X2b): a poaching only with someone to poach.
+      // An NPC company's move against it (X2b): a poaching only with someone short of devoted to poach, and why not.
       rivalOptions: b.status === 'open' && !b.npcRun ? rivals.map((r) => ({ value: r.id, label: r.name })) : [],
-      rivalMoves: RIVAL_MOVES.filter((m) => m !== 'poach' || npcStaff(b).some((s) => s.source !== 'team')).map((m) => ({ value: m, label: L(`NCI.Rival.Move.${m}`) })),
+      rivalMoves: RIVAL_MOVES.filter((m) => m !== 'poach' || poachTargets(b).length).map((m) => ({ value: m, label: L(`NCI.Rival.Move.${m}`) })),
+      rivalNoPoach: !poachTargets(b).length && npcStaff(b).some((s) => s.source !== 'team') ? L('NCI.Rival.AllDevoted') : '',
       factionTerms: b.status === 'open' ? factionTerms(b) : '',
       applicants: (b.candidates ?? []).length ? L('NCI.GMBusiness.Applicants', {
         list: b.candidates.map((c) => L('NCI.GMBusiness.ApplicantOne', {

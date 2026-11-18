@@ -28,7 +28,7 @@ import {
   moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene, ABILITIES, backupWait, quashEffect, exposureBand, canRun,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
   STACKING_TYPES, offerContract, dropContract, writeContract, contractOf, takesContracts,
-  RIVAL_ACTIONS, isRival, rivalView, publicRival, rivalEvent, queueRivalEvent, drawRivalMove, poachHire, moveLoyalty, npcStaff,
+  RIVAL_ACTIONS, isRival, rivalView, publicRival, rivalEvent, poachTargets, queueRivalEvent, drawRivalMove, poachHire, moveLoyalty, npcStaff,
   inquiryWait, inquiryDv, inquiryTarget, inquiryEffect, hasEvidence, pressTruths, handPress, runBreach, netRunWait, netRunDv, netRunEffect, liveRunOutcome, evidenceWeight, RUMOUR_LEVELS, STORY_RULES,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
@@ -1188,7 +1188,7 @@ class BusinessServiceImpl {
     const day = this.day();
     const R = BUSINESS_DEFAULTS.rivals.aggressive;
     const targets = BusinessRepository.all().filter((t) => t.status === 'open' && !t.npcRun && t.period)
-      .map((t) => ({ id: t.id, name: t.name, district: t.district ?? null, archetype: t.archetype, staff: npcStaff(t).filter((s) => s.source !== 'team').length }));
+      .map((t) => ({ id: t.id, name: t.name, district: t.district ?? null, archetype: t.archetype, staff: poachTargets(t).length }));
     for (const stored of BusinessRepository.all().filter((b) => isRival(b) && b.npcRun.aggressive && b.period)) {
       const b = normalizeBusiness(structuredClone(stored));
       const run = b.npcRun;

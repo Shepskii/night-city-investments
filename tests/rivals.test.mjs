@@ -154,6 +154,17 @@ test('X2b the GM\'s moves: a poaching of the best-paid hand or a sabotage, from 
   assert.equal(E.queueRivalEvent(b, sabotage.event).reason, 'rival-queued');
   assert.equal(E.normalizeBusiness(structuredClone(b)).rivalQueued.kind, 'sabotage', 'kept on the record');
   assert.equal(E.rivalEvent(shop(), r, 'poach').reason, 'no-staff');
+  // The best-paid hand short of devoted: a devoted one would shrug it off (seen live, 2026-11-18).
+  const loyal = shop();
+  loyal.staff = [
+    { id: 'stf_d', actorId: null, name: 'Dev', source: 'recruit', post: 'floor', bases: {}, pct: 1.7, wage: 215, status: 'active', owed: 0, loyalty: 82, hiredDay: 1 },
+    { id: 'stf_t', actorId: null, name: 'Tyg', source: 'recruit', post: 'security', bases: {}, pct: 1, wage: 117, status: 'active', owed: 0, loyalty: 72, hiredDay: 1 },
+  ];
+  assert.deepEqual(E.poachTargets(loyal).map((s) => s.id), ['stf_t']);
+  assert.equal(E.rivalEvent(loyal, r, 'poach').event.staffId, 'stf_t');
+  assert.equal(E.rivalEvent(loyal, r, 'poach', 'stf_d').reason, 'all-devoted', 'not even when named');
+  loyal.staff[1].loyalty = 75;
+  assert.equal(E.rivalEvent(loyal, r, 'poach').reason, 'all-devoted');
 
   // Lost, the employee goes to the rival.
   const settled = E.settleStaffEvent(b, 1000, [], {});

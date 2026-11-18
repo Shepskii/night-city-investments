@@ -33,6 +33,14 @@ export const sabotageDv = (rival, p = BUSINESS_DEFAULTS) => stageDv(rival.stage,
 const poachable = (b) => npcStaff(b).filter((s) => s.source !== 'team');
 
 /**
+ * Who an NPC company's move may poach from a player business: its NPC employees short of devoted (a devoted one
+ * shrugs a poaching off, so the move would come to nothing), best-paid first.
+ */
+export function poachTargets(b, p = BUSINESS_DEFAULTS) {
+  return poachable(b).filter((s) => (s.loyalty ?? 0) < p.staff.loyalty.devoted).sort((x, y) => (y.wage ?? 0) - (x.wage ?? 0));
+}
+
+/**
  * A rival as the GM's service hands it to the engine: its whole staff entries, to hire from. A player's window gets
  * `publicRival` instead, and the service puts this one on the request in its place before anything is checked.
  */
@@ -112,19 +120,19 @@ export function rivalOutcome(request, { band, staff = null, actorId }, p = BUSIN
 
 /**
  * The event an NPC company's move makes at a player business (the GM's, or an aggressive company's): a poaching of
- * its best hand, a sabotage, each from the rival. A story goes through the press instead (`runPress`).
+ * its best-paid hand short of devoted (`poachTargets`), a sabotage, each from the rival. A story goes through the press instead (`runPress`).
  * @returns {{ok: boolean, event?: object, reason?: string}}
  */
-export function rivalEvent(b, rival, kind, staffId = null) {
+export function rivalEvent(b, rival, kind, staffId = null, p = BUSINESS_DEFAULTS) {
   if (b.status !== 'open' || !b.period) return fail('not-open');
   if (b.npcRun) return fail('not-player');
   if (!isRival(rival) || rival.id === b.id) return fail('bad-target');
   const from = { factionName: rival.name, rivalBusiness: { id: rival.id, name: rival.name }, byHand: true };
   if (kind === 'sabotage') return { ok: true, event: { kind: 'sabotage', ...from } };
   if (kind !== 'poach') return fail('bad-move');
-  const staff = npcStaff(b).filter((s) => s.source !== 'team');
-  const target = staffId ? staff.find((s) => s.id === staffId) : [...staff].sort((x, y) => (y.wage ?? 0) - (x.wage ?? 0))[0];
-  if (!target) return fail('no-staff');
+  const staff = poachTargets(b, p);
+  const target = staffId ? staff.find((s) => s.id === staffId) : staff[0];
+  if (!target) return fail(poachable(b).length ? 'all-devoted' : 'no-staff');
   return { ok: true, event: { kind: 'poaching', staffId: target.id, ...from } };
 }
 

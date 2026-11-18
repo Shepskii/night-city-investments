@@ -777,6 +777,19 @@ test('X2b in the windows: Poach and Sabotage offer the board\'s rivals with thei
     assertClean(players, 'make a move');
     assert.match(players, /name="rivalId"[\s\S]*?<option value="bus_rival_win">Kabuki Chrome<\/option>/);
     assert.match(players, /data-action="businessRivalMove"/);
+    // Everyone devoted: no poaching offered, and the GM is told why.
+    const kept = S.BusinessRepository.get(mine.id);
+    await S.BusinessRepository.save({ ...kept, staff: kept.staff.map((s) => (s.loyalty == null ? s : { ...s, loyalty: 80 })) });
+    const devoted = await renderConsole('businesses');
+    assert.match(text(devoted), /No poaching: everyone there is devoted/);
+    const entry = devoted.slice(devoted.indexOf(`data-fold="b:${mine.id}"`)).split('</details>')[0];
+    assert.match(entry, /name="rivalMove"><option value="sabotage">/, 'sabotage first: no poaching');
+    assert.ok(kept.staff.every((s) => s.loyalty == null || s.loyalty <= 100), 'a poached hire\'s loyalty tops out at 100');
+    await S.BusinessRepository.save({ ...kept, staff: kept.staff.map((s) => (s.loyalty == null ? s : { ...s, loyalty: 50 })) });
+    const open = await renderConsole('businesses');
+    assert.match(open.slice(open.indexOf(`data-fold="b:${mine.id}"`)).split('</details>')[0], /name="rivalMove"><option value="poach">/, 'short of devoted, poaching is offered');
+    assert.doesNotMatch(text(open), /No poaching: everyone there is devoted/);
+    await S.BusinessRepository.save(kept);
     await S.BusinessRepository.save({ ...S.BusinessRepository.get(rivalId), npcRun: { ...S.BusinessRepository.get(rivalId).npcRun, aggressive: true, move: { targetId: mine.id, targetName: mine.name, kind: 'sabotage', day: S.BusinessService.day() } } });
     const npc = await renderConsole('npcBusinesses');
     assertClean(npc, 'aggressive');
