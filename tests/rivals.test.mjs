@@ -259,3 +259,14 @@ test('X2b on the GM\'s side: the rival loses a poached hand or its takings, the 
   await BusinessRepository.save({ ...BusinessRepository.get(r.id), status: 'closed' });
   await BusinessRepository.save({ ...BusinessRepository.get(mine.id), status: 'closed' });
 });
+
+test('X2b a poaching by an NPC company: the employee\'s mail names it (seen live, 2026-11-19)', async () => {
+  const { PeopleMail } = await import('../scripts/services/PeopleMail.js');
+  const staff = { id: 'stf_tyg', actorId: null, name: 'Tyg', source: 'recruit', post: 'security', loyalty: 60 };
+  const b = { id: 'b1', name: 'Splice Clinic' };
+  const named = PeopleMail.staffEvent(b, { kind: 'poaching', staffId: 'stf_tyg', rivalBusiness: { id: 'r1', name: 'Kabuki Chrome' }, factionName: 'Kabuki Chrome' }, staff);
+  assert.match(named.paragraphs.join(' '), /Kabuki Chrome/);
+  assert.doesNotMatch(named.paragraphs.join(' '), /\{other\}/);
+  const plain = PeopleMail.staffEvent(b, { kind: 'poaching', staffId: 'stf_tyg' }, staff);
+  assert.doesNotMatch(plain.paragraphs.join(' '), /Kabuki Chrome|\{other\}/, 'any other poaching is as it was');
+});

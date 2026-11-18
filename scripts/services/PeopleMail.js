@@ -25,13 +25,14 @@ export const PeopleMail = {
     return personalityOf(staff.id, sheetPersonality(staff.actorId));
   },
 
-  /** A staff event, from the employee, by their mood. */
+  /** A staff event, from the employee, by their mood. A poaching by an NPC company names it (X2b). */
   staffEvent(b, event, staff) {
     if (!staff) return null;
+    const rival = event.kind === 'poaching' ? event.rivalBusiness?.name : null;
     return peopleMail({
-      frames: STAFF_FRAMES, lines: STAFF_LINES, personality: this.personalityOf(staff), kind: event.kind,
+      frames: STAFF_FRAMES, lines: STAFF_LINES, personality: this.personalityOf(staff), kind: rival ? 'poachingRival' : event.kind,
       tone: moodOf(loyaltyBand(staff.loyalty ?? 50)),
-      data: { name: b.name, staff: staff.name, other: event.rival?.name ?? staff.elsewhere?.name ?? '' },
+      data: { name: b.name, staff: staff.name, other: rival ?? event.rival?.name ?? staff.elsewhere?.name ?? '' },
     });
   },
 

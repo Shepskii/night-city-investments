@@ -69,6 +69,24 @@ export const STAFF_LINES = Object.freeze({
       "I'm probably leaving. Unless you make it worth my while.",
     ],
   },
+  // An NPC company's poaching (X2b): the same, naming who made the offer ({other}).
+  poachingRival: {
+    devoted: [
+      "{other} has offered me a better job. I don't want to leave {name}, but I thought you should know.",
+      "I've had an offer from {other}. I'd rather stay. Can we talk?",
+      "{other} wants me. Honestly, I'd stay for a reason.",
+    ],
+    content: [
+      '{other} has offered me a better job. Thought you should know before I decide.',
+      'Got an offer from {other}. Thinking about it.',
+      '{other} is trying to hire me away from {name}. Just saying.',
+    ],
+    sullen: [
+      '{other} made me a better offer. Give me one reason to stay at {name}.',
+      '{other} actually values me. Might take their offer.',
+      "I'm probably going to {other}. Unless you make it worth my while.",
+    ],
+  },
   accident: {
     devoted: [
       "I got hurt on the job at {name}. I'm okay, mostly. I'll be back as soon as I can.",

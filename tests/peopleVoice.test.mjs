@@ -49,7 +49,7 @@ test('everyone has their lines: every Personality a frame, every moment three mo
     assert.ok(STAFF_FRAMES[p]?.greetings?.length && STAFF_FRAMES[p]?.signoffs?.length, `staff ${p}`);
     assert.ok(OWNER_FRAMES[p]?.greetings?.length && OWNER_FRAMES[p]?.signoffs?.length, `owner ${p}`);
   }
-  for (const kind of ['sickDay', 'payDispute', 'poaching', 'accident', 'doubleBooked', 'fullTimeOffer', 'asks']) {
+  for (const kind of ['sickDay', 'payDispute', 'poaching', 'poachingRival', 'accident', 'doubleBooked', 'fullTimeOffer', 'asks']) {
     for (const mood of ['devoted', 'content', 'sullen']) assert.ok(STAFF_LINES[kind]?.[mood]?.length >= 3, `${kind}.${mood}`);
   }
   for (const kind of ['quit', 'walked', 'unpaid', 'poached']) assert.ok(STAFF_LINES[kind]?.lines?.length >= 3, kind);
