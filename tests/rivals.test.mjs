@@ -110,6 +110,7 @@ test('X2b poaching: the employee\'s DV, room needed here; a pass hires them at 1
   assert.equal(hired.status, 'active');
   assert.ok(hired.wage >= 220, `paid 10% more (${hired.wage})`);
   assert.equal(hired.poachedFrom.businessId, r.id);
+  assert.deepEqual(E.normalizeBusiness(won.business).staff.find((s) => s.name === 'Rook').poachedFrom, hired.poachedFrom, 'kept when the record is saved');
   assert.equal(won.business.period.slots.at(-1).factionName, 'Kabuki Chrome', 'the slot says who it was aimed at');
   const ev = won.events.find((e) => e.type === 'rivalMove');
   assert.deepEqual([ev.move, ev.rivalId, ev.staffId, ev.success], ['poach', r.id, 'stf_rook', true]);
@@ -202,6 +203,7 @@ test('X2b on the GM\'s side: the rival loses a poached hand or its takings, the 
   assert.equal(MarketStore.getBusinessesHidden()[mine.id]?.traits?.stf_rook, 'looseLips', 'the trait went with them');
   assert.equal(MarketStore.getBusinessesHidden()[r.id].traits.stf_rook, undefined);
   assert.ok(chats.length > said && chats.at(-1).whisper, 'the GM hears, in a whisper');
+  assert.match(chats.at(-1).content, /NCI\.Rival\.GMNoteTitle \{&quot;rival&quot;:/, 'the title names the rival as its string expects');
 
   // A failed one: more loyal where they are.
   const vexBefore = after.staff.find((s) => s.id === 'stf_vex').loyalty;

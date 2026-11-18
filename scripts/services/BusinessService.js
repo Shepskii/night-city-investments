@@ -1132,7 +1132,7 @@ class BusinessServiceImpl {
       await BusinessRepository.save(rival);
       if (e.band === 'fumble' && rival.company?.ticker) await this._campaignStanding(b, rival.company.ticker, e.move === 'poach' ? R.poach.fumbleStanding : R.sabotage.fumbleStanding);
       const outcome = e.band === 'fumble' ? 'fumble' : e.success ? 'pass' : 'fail';
-      await this._tellGM(L('NCI.Rival.GMNoteTitle', { name: rival.name }), L(`NCI.Rival.GMNote.${e.move}.${outcome}`, { actor, business: b.name, rival: rival.name, staff: e.staffName ?? '' }));
+      await this._tellGM(L('NCI.Rival.GMNoteTitle', { rival: rival.name }), L(`NCI.Rival.GMNote.${e.move}.${outcome}`, { actor, business: b.name, rival: rival.name, staff: e.staffName ?? '' }));
     }
     if ((out.events ?? []).some((x) => x.type === 'rivalMove')) await JobService.publish();
   }
