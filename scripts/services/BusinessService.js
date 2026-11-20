@@ -1481,10 +1481,11 @@ class BusinessServiceImpl {
     return investorNpcs().filter((e) => !e.reason).map((e) => ({ ref: e.id, name: e.name }));
   }
 
-  /** The Messenger contact an investor writes from: its own, or its NPC's. */
+  /** The id of the Messenger contact an investor writes from: its own, or its NPC's. Mail takes the id, not the entry. */
   _investorContact(ref) {
     const id = String(ref ?? '');
-    return id.startsWith('contact:') ? NcmAdapter.contact(id.slice('contact:'.length)) : NcmAdapter.contactForActor(id);
+    const contact = id.startsWith('contact:') ? NcmAdapter.contact(id.slice('contact:'.length)) : NcmAdapter.contactForActor(id);
+    return contact?.id ?? null;
   }
 
   /** What a character or syndicate has to spend from their sheet or account. */
