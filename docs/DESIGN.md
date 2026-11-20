@@ -295,7 +295,7 @@ Order: `{ id, assetType, assetId, side, qty, type: market|limit|stop, limit?, ex
 - **Validation (GM executor):** brokerage balance covers the cost plus fees, enough shares, company status and halt, minimum order, daily limit, broker allows the asset class.
 - **Fees:** `flat + bps`, set by broker tier. Optional capital-gains tax, applied on sell from the lot P&L. Fees are charged to the brokerage balance.
 - **Settlement:** an optional T+N delay before sale proceeds become available in the balance (a good roleplay hook).
-- **Stretch (not v1):** short selling, margin and margin calls, options.
+- **Not planned (the user's decision, 2026-11-20):** short selling, margin and margin calls, options. These will not be added.
 
 ## 7. Dividends
 
@@ -2746,4 +2746,3 @@ A story about a character also costs the business they run with the worst standi
 | G1 | **Done (v0.26.0), see §36.18.** Gangs in the press: street papers at rank 3, the existing kinds, tips to Vice, turf warnings and good word |
 | C1 | **Done (v0.27.0), see §36.19.** Market contracts for production: drawn monthly by sector and standing, GM approval, an advance, delivery and penalties |
 | X2 | **Part done (v0.28.0), see §36.20.** X2d Lawman investigations, X2a players' NET runs (quick, and real on NET Architect) and the breach, X2b moves against NPC companies. Still planned: X2c deals with NPC investors |
-| Later | Short selling and margin, options |
