@@ -2,7 +2,7 @@
   <h3>{{localize "NCI.Pending.Title"}}</h3>
   <p class="nci-hint">{{localize "NCI.Pending.Intro"}}</p>
   {{#if pendingRows.length}}
-  <table class="nci-market nci-pending">
+  <table class="nci-market nci-pending nci-pendingtable">
     <thead><tr><th>{{localize "NCI.Pending.Type"}}</th><th>{{localize "NCI.Pending.Item"}}</th><th>{{localize "NCI.Pending.Needed"}}</th><th>{{localize "NCI.Pending.Action"}}</th></tr></thead>
     <tbody>
       {{#each pendingRows}}

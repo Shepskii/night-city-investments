@@ -559,6 +559,25 @@
 /* A number box on a decision's row (a fine, REP, IP, a count) stays small, so the row keeps to one line beside its buttons. */
 .nci-app .nci-pending .nci-actions label.nci-inline input[type="number"] { width: 90px !important; }
 .nci-app .nci-pending .nci-actions button, .nci-app .nci-pending label.nci-inline { white-space: nowrap; }
+/* A decision's fields and buttons are one wrapping line, except on a Pending table. */
+.nci-app .nci-actions .nci-fieldset, .nci-app .nci-actions .nci-buttonset { display: contents; }
+/* A Pending table: fixed columns, every row at least two lines high, its fields above its buttons, all one size. */
+.nci-app .nci-pendingtable { table-layout: fixed; width: 100%; }
+.nci-app .nci-pendingtable th:nth-child(1) { width: 12%; }
+.nci-app .nci-pendingtable th:nth-child(2) { width: 14%; }
+.nci-app .nci-pendingtable th:nth-child(3) { width: 32%; }
+.nci-app .nci-pendingtable th:nth-child(4) { width: 42%; }
+.nci-app .nci-pendingtable tbody tr { height: 90px; }
+.nci-app .nci-pendingtable tbody td { padding-top: 6px; padding-bottom: 6px; vertical-align: middle; overflow-wrap: anywhere; }
+.nci-app .nci-pendingtable .nci-rowactions { width: auto; }
+.nci-app .nci-pendingtable .nci-actions { flex-direction: column; align-items: flex-start; gap: 3px; margin: 0; }
+.nci-app .nci-pendingtable .nci-actions .nci-fieldset, .nci-app .nci-pendingtable .nci-actions .nci-buttonset { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.nci-app .nci-pendingtable .nci-actions .nci-buttonset { gap: 4px 6px; }
+.nci-app .nci-pendingtable .nci-actions button { height: 26px; line-height: 24px; flex: none; }
+/* A field's label sits above its box, so a row's fields keep to one line. */
+.nci-app .nci-pendingtable .nci-actions label.nci-inline { flex-direction: column; align-items: flex-start; gap: 1px; font-size: 11px; line-height: 1.2; }
+.nci-app .nci-pendingtable .nci-actions label.nci-inline input[type="number"], .nci-app .nci-pendingtable .nci-actions input.nci-days { width: 72px !important; height: 26px; }
+.nci-app .nci-pendingtable .nci-actions select { height: 26px; max-width: 200px; }
 
 /* A business's entry on the GM Console: its name first, and the GM's buttons at the foot. */
 .nci-app .nci-bizhead { border-bottom: 1px solid var(--nci-accent-dim); padding-bottom: 6px; margin-bottom: 6px; }
@@ -702,3 +721,7 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .nci-app :is(h1, h2, h
 /* A headline to edit needs the room to read it. */
 .nci-app .nci-pending label.nci-inline:has(input[name$="Headline"]) { flex: 1 1 100%; display: flex; flex-direction: row; align-items: center; gap: 8px; }
 .nci-app .nci-pending label.nci-inline input[name$="Headline"] { flex: 1; min-width: 0; width: auto !important; max-width: none !important; }
+/* A headline on a Pending table runs the cell's width, its label above it. */
+.nci-app .nci-pendingtable .nci-actions .nci-fieldset:has(input[name$="Headline"]) { width: 100%; }
+.nci-app .nci-pendingtable label.nci-inline:has(input[name$="Headline"]) { flex-direction: column; align-items: stretch; gap: 1px; }
+.nci-app .nci-pendingtable label.nci-inline input[name$="Headline"] { flex: none; width: 100% !important; }
