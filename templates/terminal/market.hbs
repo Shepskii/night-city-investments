@@ -254,7 +254,7 @@
       <thead><tr>
         <th>{{localize "NCI.Terminal.Ticker"}}</th>
         <th class="num">{{localize "NCI.Portfolio.Qty"}}</th>
-        <th class="num">{{localize "NCI.Portfolio.AvgCost"}}</th>
+        <th class="num" title="{{localize 'NCI.Portfolio.PaidHead'}}">{{localize "NCI.Portfolio.Paid"}}</th>
         <th class="num">{{localize "NCI.Terminal.Price"}}</th>
         <th class="num">{{localize "NCI.Portfolio.Value"}}</th>
         <th class="num">{{localize "NCI.Portfolio.Weight"}}</th>
@@ -267,11 +267,11 @@
         <tr{{#if canOpen}} data-action="openAsset" data-id="{{id}}" class="nci-row" title="{{localize 'NCI.Terminal.OpenAsset'}}"{{/if}}>
           <td><strong>{{ticker}}</strong> <span class="nci-muted">{{name}}</span></td>
           <td class="num">{{qty}}</td>
-          <td class="num">{{avgCost}}</td>
+          <td class="num" title="{{costHint}}">{{avgPaid}}</td>
           <td class="num">{{price}}</td>
           <td class="num">{{value}}</td>
           <td class="num nci-muted">{{weight}}</td>
-          <td class="num {{cls}}">{{pnl}} <span class="nci-muted">({{pnlPct}})</span></td>
+          <td class="num {{cls}}">{{pnl}} <span class="nci-muted">({{pnlPct}})</span>{{#if split}}<br><span class="nci-muted nci-pnlsplit">{{split}}</span>{{/if}}</td>
           <td>
             {{#if hasDividend}}
             <button type="button" data-action="drip" data-id="{{id}}" data-enabled="{{drip}}" class="{{#if drip}}active{{/if}}" title="{{localize 'NCI.Portfolio.ReinvestHint'}}">{{#if drip}}{{localize "NCI.Portfolio.On"}}{{else}}{{localize "NCI.Portfolio.Off"}}{{/if}}</button>

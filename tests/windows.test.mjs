@@ -407,6 +407,10 @@ test('settling sales, fund income and redemption, the editor fields and the move
   assert.ok(/Sale of ARA: [\d,]+ eb\s+&mdash;\s+spendable in 2 day\(s\)/.test(t), `the line is listed: ${t.slice(t.indexOf('Sale of'), t.indexOf('Sale of') + 80)}`);
   assert.ok(html.includes('name="moverPct"') && html.includes('data-notify="movers"'));
   assert.ok(t.includes('Big movers in your holdings'));
+  // A holding shows what was paid a share before fees, and its P&L split into the price's move and the fees.
+  assert.match(html, /title="The average price paid a share, before broker fees\.">Paid<\/th>/);
+  assert.match(html, /title="[\d.,]+ a share with fees \([\d,]+ eb in fees in all\)\.">[\d.,]+<\/td>/);
+  assert.match(t, /[+-]?[\d,]+ price, -[\d,]+ fees/, 'the fees paid show apart');
 
   const trade = new Apps.Trade({ actorId: alice.id, assetId: 'ARA', side: 'sell' });
   html = render('templates/dialogs/trade.hbs', await trade._prepareContext());

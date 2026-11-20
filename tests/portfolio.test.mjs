@@ -252,3 +252,19 @@ test('trimPortfolio keeps history bounded but never drops open orders', () => {
   assert.equal(t.processed.length, PROCESSED_CAP);
   assert.equal(t.results.length, RESULT_CAP);
 });
+
+test('a lot bought before lots kept their fee takes it from its order; others paid none', () => {
+  const p = normalizePortfolio({
+    cash: 0,
+    lots: [
+      { id: 'lot_o_old', assetType: 'stock', assetId: 'N54', qty: 10, unitCost: 52.2, acquiredTick: 1, drip: false },
+      { id: 'lot_div_N54_x', assetType: 'stock', assetId: 'N54', qty: 1, unitCost: 36, acquiredTick: 2, drip: true },
+    ],
+    orders: [{ id: 'o_old', side: 'buy', assetId: 'N54', qty: 10, status: 'filled', fillPrice: 39.14, fees: 131 }],
+  });
+  assert.equal(p.lots[0].feePerUnit, 13.1);
+  assert.equal(p.lots[1].feePerUnit, undefined);
+  const pos = valuePortfolio(p, { N54: 36.21 }).positions[0];
+  assert.equal(pos.fees, 131);
+  assert.equal(pos.priceChange - pos.fees, pos.unrealized);
+});

@@ -30,7 +30,7 @@ You work from two windows, both opened from the scene controls:
 - **Portfolio folder:** pick your character at the top. It has four tabs.
   - **Overview:** your balances, holdings, private stakes, total value and a chart of your profit and loss.
   - **Brokerage:** paying in and taking out, your broker and direct trading, founding a syndicate and takeover bids.
-  - **Investments:** your positions, syndicates and private stakes.
+  - **Investments:** your positions, syndicates and private stakes. **Paid** is the average price you paid a share, before fees (hover it for the cost with fees). Your P&L counts the fees you paid to buy, so under it you see the split: what the price's move has made or lost, and the fees. A broker's flat fee on a small order can outweigh a rising price for some time.
   - **Ledger:** open and recent orders, your account ledger and requesting a statement.
 - **Settings folder:** your price alerts and how you are notified.
 

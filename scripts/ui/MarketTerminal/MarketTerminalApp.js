@@ -655,7 +655,10 @@ export class MarketTerminalApp extends BaseApplication {
       ticker: tickerOf(pos.assetId),
       name: byId.get(pos.assetId)?.name ?? '',
       qty: pos.qty,
-      avgCost: money(pos.avgCost),
+      // What was paid a share before fees, and the P&L split into the price's move and the fees (the user's choice).
+      avgPaid: money(pos.avgPaid),
+      costHint: L('NCI.Portfolio.PaidHint', { cost: money(pos.avgCost), fees: whole(pos.fees) }),
+      split: pos.fees > 0 ? L('NCI.Portfolio.PnLSplit', { move: signed(pos.priceChange), fees: whole(pos.fees) }) : '',
       price: money(pos.price),
       value: whole(pos.value),
       pnl: signed(pos.unrealized),

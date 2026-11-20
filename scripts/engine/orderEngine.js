@@ -132,6 +132,8 @@ export function executeFill({ portfolio, order, price, fees = 0, tick, lotId = n
       assetId: order.assetId,
       qty: order.qty,
       unitCost: Math.round((total / order.qty) * 10000) / 10000,
+      // The fee's share of unitCost, so a holding can show what was paid and what the broker took apart.
+      feePerUnit: Math.round(((fees || 0) / order.qty) * 10000) / 10000,
       acquiredTick: tick,
       drip: false,
     };
@@ -166,17 +168,25 @@ export function executeFill({ portfolio, order, price, fees = 0, tick, lotId = n
   };
 }
 
-/** Average cost, market value and unrealised P&L for one asset. */
+/**
+ * Average cost, market value and unrealised P&L for one asset. Cost includes the fees paid to buy; `fees` is that
+ * part, `avgPaid` the price per share before them, and `priceChange` the P&L from the price alone (unrealized =
+ * priceChange - fees).
+ */
 export function positionSummary(lots, assetId, price) {
   const mine = lots.filter((l) => l.assetId === assetId);
   const qty = mine.reduce((s, l) => s + l.qty, 0);
   const cost = mine.reduce((s, l) => s + l.qty * l.unitCost, 0);
+  const fees = mine.reduce((s, l) => s + l.qty * (l.feePerUnit ?? 0), 0);
   const value = round(qty * price);
   return {
     qty,
     avgCost: qty ? cost / qty : 0,
+    avgPaid: qty ? (cost - fees) / qty : 0,
     cost: round(cost),
+    fees: round(fees),
     value,
     unrealized: round(value - cost),
+    priceChange: round(value - cost) + round(fees),
   };
 }

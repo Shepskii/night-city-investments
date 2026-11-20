@@ -60,6 +60,20 @@ export const emptyPortfolio = () => ({
   stats: { realized: 0, dividends: 0 },
 });
 
+/**
+ * A lot bought before lots kept their fee (`feePerUnit`) takes it from the order that filled it (`lot_<order id>`),
+ * while that order is still in the history; any other lot (a dividend reinvested, an IPO allotment, a takeover) paid none.
+ */
+function withFees(lots, orders) {
+  if (lots.every((l) => l.feePerUnit != null)) return lots;
+  const byLot = new Map(orders.filter((o) => o.status === 'filled' && o.side === 'buy' && o.qty > 0).map((o) => [`lot_${o.id}`, o]));
+  return lots.map((l) => {
+    if (l.feePerUnit != null) return l;
+    const o = byLot.get(l.id);
+    return o ? { ...l, feePerUnit: Math.round(((o.fees ?? 0) / o.qty) * 10000) / 10000 } : l;
+  });
+}
+
 /** Fill in any missing fields of a stored portfolio. Does not mutate the input. */
 export function normalizePortfolio(p) {
   const base = emptyPortfolio();
@@ -67,7 +81,7 @@ export function normalizePortfolio(p) {
   return {
     ...base,
     ...p,
-    lots: p.lots ?? [],
+    lots: withFees(p.lots ?? [], p.orders ?? []),
     orders: p.orders ?? [],
     ledger: p.ledger ?? [],
     processed: p.processed ?? [],

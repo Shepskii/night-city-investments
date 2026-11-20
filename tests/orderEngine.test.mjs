@@ -85,3 +85,15 @@ test('position summary', () => {
   assert.equal(s.value, 1200);
   assert.equal(s.unrealized, 200);
 });
+
+test("position summary splits the P&L into the price's move and the fees (seen live, 2026-11-20)", () => {
+  // As on Splice's CON in Carbon and Chrome: 5 at 47.49 with a 129 eb fee, now 52.15.
+  const p = executeFill({ portfolio: { ...empty(), cash: 1000 }, order: { ...buy(), assetId: 'CON', qty: 5 }, price: 47.49, fees: 129, tick: 1 }).portfolio;
+  const s = positionSummary(p.lots, 'CON', 52.15);
+  assert.equal(s.avgCost, 73.2, 'the cost a share counts the fees');
+  assert.equal(s.avgPaid, 47.4, 'what was paid before them (237 eb gross)');
+  assert.equal(s.fees, 129);
+  assert.equal(s.unrealized, -105);
+  assert.equal(s.priceChange, 24, 'the price is up; the fees are what made it a loss');
+  assert.equal(s.priceChange - s.fees, s.unrealized);
+});

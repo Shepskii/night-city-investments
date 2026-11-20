@@ -66,7 +66,7 @@ export function splitPortfolio(portfolio, assetId, ratio, tick = 0) {
 
   const before = p.lots.filter((l) => l.assetId === assetId).reduce((s, l) => s + l.qty, 0);
   const lots = p.lots.map((l) => (l.assetId === assetId
-    ? { ...l, qty: l.qty * ratio, unitCost: round4(l.unitCost / ratio) }
+    ? { ...l, qty: l.qty * ratio, unitCost: round4(l.unitCost / ratio), ...(l.feePerUnit != null ? { feePerUnit: round4(l.feePerUnit / ratio) } : {}) }
     : l));
   const orders = p.orders.map((o) => (o.status === OPEN && o.assetId === assetId
     ? { ...o, qty: o.qty * ratio, limit: o.limit === null || o.limit === undefined ? o.limit : round2(o.limit / ratio) }
