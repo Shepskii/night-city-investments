@@ -1522,7 +1522,7 @@ class BusinessServiceImpl {
     const from = this._investorContact(deal.investor.ref);
     const data = {
       name: b.name, investor: deal.investor.name, units: Number(deal.units).toLocaleString(), price: Number(deal.price).toFixed(2),
-      amount: Math.round(deal.amount).toLocaleString(), date: deal.expires != null ? this._dayText(deal.expires) : '',
+      amount: Math.round(deal.amount).toLocaleString(), date: deal.expires != null ? this._dayText(deal.expires) : '', seller: deal.sellerName ?? '',
     };
     const subject = L(`NCI.NpcDeal.Mail.${deal.kind}.subject`, data);
     const lines = [L(`NCI.NpcDeal.Mail.${deal.kind}.${kind}`, data)];

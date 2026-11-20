@@ -3449,7 +3449,7 @@
           "subject": "Your stake in {name}",
           "offer": "I'd like your stake in {name}: all {units} units, at {price} eb each, {amount} eb to you. You'd be out, with the money, and I'd hold them quietly.",
           "footer": "Answer it on the Partners tab, until {date}.",
-          "taken": "The stake is mine, {units} units, and the money has gone to its seller. I'll be a quiet partner."
+          "taken": "I've bought {seller}'s stake in {name}, {units} units, and the money has gone to them. They're out, and I'll be a quiet partner."
         }
       },
       "Bid": {
