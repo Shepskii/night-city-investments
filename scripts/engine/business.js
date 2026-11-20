@@ -24,6 +24,9 @@
  *   { key, type: 'setHeir', businessId, heirId }
  *   { key, type: 'leave', businessId }                           offer your stake to the others
  *   { key, type: 'buyout', businessId, sellerId }
+ *   { key, type: 'npcBid', businessId, sellerId, units, price }   offer for an NPC holder's units (X2c)
+ *   { key, type: 'npcCounter', businessId, bidId, yes }           take or leave the GM's counter
+ *   { key, type: 'npcStake', businessId, yes }                    answer an investor's offer for your whole stake
  *   { key, type: 'proposeClose', businessId }
  *   { key, type: 'setLine', businessId, uuid, qty }              what the workshop makes (P1a); no uuid stops it
  *   { key, type: 'buyStock', businessId, uuid, count }           buy stock for your own sheet (P1b)
@@ -69,6 +72,7 @@
  */
 
 import { drawContract, signContract, endOffer, contractsWeek, stockToContract } from './businessContracts.js';
+import { drawNpcDeal, enactNpcDeal, endNpcDeal, answerNpcStake, placeBid, answerCounter, lapseNpcDeals } from './businessNpcDeals.js';
 import { fenceCheck, fenceWeek, makesThings, buyStock, clearStock, consignStock, handOffer, handStock, produceCheck, productionWeek, salesWeek, setLine, takeBackStock } from './businessProduction.js';
 import { approachOf, dvOf, HIRE_TIERS } from './rolls.js';
 import { drawEvent, eventUses, settleEvent, hostileAct, factionFallout, breachDv } from './businessEvents.js';
@@ -138,6 +142,8 @@ export const BUSINESS_REQUESTS = Object.freeze([
   'recruitRoll', 'acceptJob', 'declineJob', 'quitJob', 'vetRoll', 'bonus', 'train', 'refuseRaise', 'movePost', 'rejectApplicant', 'askStaff', 'cancelAsk', 'addTeam', 'teamCare',
   'rightsTake', 'sellBack', 'issueRoll', 'buybackRoll', 'bid', 'tender', 'defenceRoll', 'hideRoll', 'dropLayer',
   'setLine', 'buyStock', 'consign', 'takeBack', 'contractStock',
+  // Deals with NPC investors (X2c): an offer for an NPC holder's units, taking the GM's counter, answering for a stake.
+  'npcBid', 'npcCounter', 'npcStake',
 ]);
 
 /** Item types that are not things a business can own. */
@@ -194,6 +200,8 @@ export const PROPOSAL_RULES = Object.freeze({
   gangDeal: 'majority', endGangDeal: 'majority',
   // A corporation's order for the workshop (C1): a spending decision.
   contract: 'majority',
+  // An NPC investor's offer of new units (X2c): money in, like an investor.
+  npcDeal: 'majority',
 });
 
 // ── What a roll needs ────────────────────────────────────────────────────────
@@ -763,6 +771,28 @@ export function applyBusinessRequest({ business, request, actor, day, check = nu
       pay(actor.id, -price);
       pay(seller.actorId, price);
       log('buyout', 0, { price, sellerId: seller.actorId });
+      break;
+    }
+    // Deals with NPC investors (X2c).
+    case 'npcBid': {
+      const done = placeBid(b, actor, request, day);
+      if (!done.ok) return done;
+      out.events.push({ type: 'bidPlaced', bidId: done.bid.id });
+      break;
+    }
+    case 'npcCounter': {
+      const done = answerCounter(b, actor, String(request.bidId ?? ''), request.yes === true, day, p);
+      if (!done.ok) return done;
+      if (done.amount) pay(actor.id, -done.amount);
+      out.events.push({ type: done.amount ? 'bidSettled' : 'bidWithdrawn', bidId: done.bid.id, buyerId: actor.id });
+      break;
+    }
+    case 'npcStake': {
+      const deal = b.npcDeal;
+      const done = answerNpcStake(b, actor.id, request.yes === true, day, p);
+      if (!done.ok) return done;
+      if (done.amount) pay(actor.id, done.amount);
+      out.events.push({ type: done.amount ? 'npcStakeSold' : 'npcDealDeclined', deal });
       break;
     }
     case 'propose':
@@ -1589,6 +1619,11 @@ function settleProposals(b, day, out, p, ctx = {}) {
       out.events.push({ type: 'proposalFailed', kind: proposal.kind });
       // A corporation's offer turned down (C1).
       if (proposal.kind === 'contract' && endOffer(b, proposal.terms?.contractId, 'declined')) out.events.push({ type: 'contractDeclined', contractId: proposal.terms.contractId });
+      // An NPC investor's offer turned down (X2c).
+      if (proposal.kind === 'npcDeal') {
+        const ended = endNpcDeal(b, proposal.terms?.dealId);
+        if (ended) out.events.push({ type: 'npcDealDeclined', deal: ended });
+      }
       continue;
     }
     out.events.push({ type: 'proposalPassed', kind: proposal.kind });
@@ -1664,6 +1699,11 @@ function enact(b, proposal, day, p, ctx, out) {
     }
     case 'handStock':
       return handStock(b, proposal.terms, day, out, p);
+    case 'npcDeal': {
+      const done = enactNpcDeal(b, day, p);
+      if (done.ok) out.events.push({ type: 'npcDealTaken', deal: done.deal });
+      return done;
+    }
     case 'contract': {
       const signed = signContract(b, proposal.terms.contractId, day, p);
       if (signed.ok) out.events.push({ type: 'contractSigned', contractId: signed.contract.id });
@@ -1781,6 +1821,13 @@ export function advanceBusiness(business, day, { weekday = 1, growthRate = 1, ac
     out.events.push(...lapsed.map((x) => ({ type: 'proposalLapsed', kind: x.kind })));
     // A corporation's offer nobody voted through in time (C1).
     for (const x of lapsed.filter((y) => y.kind === 'contract')) if (endOffer(b, x.terms?.contractId, 'lapsed')) out.events.push({ type: 'contractLapsed', contractId: x.terms.contractId });
+    for (const x of lapsed.filter((y) => y.kind === 'npcDeal')) if (endNpcDeal(b, x.terms?.dealId)) out.events.push({ type: 'npcDealLapsed', dealId: x.terms.dealId });
+    changed = true;
+  }
+  // An investor's offer for a stake, or the GM's counter to a player's offer, out of time (X2c).
+  const dealsLapsed = lapseNpcDeals(b, day);
+  if (dealsLapsed.length) {
+    out.events.push(...dealsLapsed);
     changed = true;
   }
 
@@ -2022,6 +2069,9 @@ function closePeriod(b, { growthRate, weekday, seed = 'nci', traits = {}, relati
   // A corporation may offer the workshop an order, for the GM to look at first (C1).
   const drawn = monthEnd ? drawContract(b, relations?.contracts, seed, b.period.endDay, p) : null;
   if (drawn) out.events.push({ type: 'contractDrawn', contractId: drawn.id });
+  // An NPC investor may offer to buy in, for the GM to look at first (X2c): after enough profitable weeks in a row.
+  const dealt = monthEnd ? drawNpcDeal(b, relations?.investors, [profit, ...b.digests.slice().reverse().map((d) => d.profit)], seed, b.period.endDay, p) : null;
+  if (dealt) out.events.push({ type: 'npcDealDrawn', dealId: dealt.id });
   const monthProfit = profit + b.digests.slice(-(p.report.weeks - 1)).reduce((a, d) => a + d.profit, 0);
   const unanswered = !!event && !EVENTS[event.kind]?.good && event.outcome === 'unanswered';
   const people = loyaltyWeek(b, { monthEnd, monthProfit, unanswered, traits, seed, day: b.period.endDay }, p);

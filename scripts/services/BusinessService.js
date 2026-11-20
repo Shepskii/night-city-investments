@@ -28,7 +28,7 @@ import {
   moveStanding, driftStanding, standingBands, gigStanding, targetShare, factionEffects, percentToAmount, startScene, sceneToRoll, settleScene, ABILITIES, backupWait, quashEffect, exposureBand, canRun,
   caseOf, caseChance, regulatorTotal, openCase, caseAnswerCheck, caseBribe, payCaseBribe, winCase, loseCase, applyCaseLoss, dropCase, caseTrigger,
   STACKING_TYPES, offerContract, dropContract, writeContract, contractOf, takesContracts,
-  RIVAL_ACTIONS, isRival, rivalView, publicRival, rivalEvent, poachTargets, queueRivalEvent, drawRivalMove, poachHire, moveLoyalty, npcStaff,
+  RIVAL_ACTIONS, isRival, rivalView, publicRival, rivalEvent, poachTargets, offerNpcDeal, dropNpcDeal, answerBid, bidOf, blockCheck, placeBlock, closeBlock, queueRivalEvent, drawRivalMove, poachHire, moveLoyalty, npcStaff,
   inquiryWait, inquiryDv, inquiryTarget, inquiryEffect, hasEvidence, pressTruths, handPress, runBreach, netRunWait, netRunDv, netRunEffect, liveRunOutcome, evidenceWeight, RUMOUR_LEVELS, STORY_RULES,
 } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SETTINGS, HOOKS } from '../utils/constants.js';
@@ -51,7 +51,7 @@ import { NetArchitectAdapter } from '../integrations/NetArchitectAdapter.js';
 import { REWARDS, rewardRunners, rewardChange, rewardMatters } from '../engine/businessRewards.js';
 import { addLedger } from '../engine/businessRecord.js';
 import { WealthAdapter } from './WealthAdapter.js';
-import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors, investorContacts, staffActors, jobsOf, isNpcActor } from './BusinessClient.js';
+import { receiptsOf, pendingBusinessRequests, operatorRankOf, investorActors, investorContacts, investorNpcs, staffActors, jobsOf, isNpcActor } from './BusinessClient.js';
 import { SyndicateRepository } from '../data/SyndicateRepository.js';
 import { SyndicateCash } from './SyndicateCash.js';
 import { ContactService } from './ContactService.js';
@@ -580,6 +580,8 @@ class BusinessServiceImpl {
     if (!as.ok) return this._receipt(actor, request, as);
     // Only a player's character, or a syndicate, founds a business here; an NPC's company is made on the GM Console.
     if (request.type === 'found' && !as.syndicate && !actor.hasPlayerOwner) return this._receipt(actor, request, { ok: false, reason: 'npc-founder' });
+    // A block of a listed company's public shares (X2c): named by ticker, as anyone knows it, and paid from the brokerage.
+    if (request.type === 'blockOffer' || request.type === 'blockCounter') return this._receipt(actor, request, await this._block(as.partner, request));
     // A takeover bid names its target by ticker, as the bidder knows it; they cannot read its record (B6b).
     if (request.type === 'bid' && !request.businessId) {
       const ticker = String(request.ticker ?? '').trim().toUpperCase();
@@ -759,6 +761,7 @@ class BusinessServiceImpl {
     await this._standingWeek(out);
     await this._factionEvents(out);
     await this._contractEvents(out).catch((error) => log.warn('Could not send a contract mail', error));
+    await this._npcDealEvents(out).catch((error) => log.warn('Could not send an investor mail', error));
     await this._regulatorEvents(out);
     await this._publishRegister(out.business);
     await this._afterReports(out);
@@ -1353,6 +1356,8 @@ class BusinessServiceImpl {
           exposure: hiddenEntry?.exposure ?? 0,
           press: this._pressRelations(business, factions, hiddenEntry),
           contracts: this._contractRelations(business, factions, hiddenEntry),
+          // Who might offer to buy in at a month's close (X2c).
+          investors: this._investorRelations(business),
           living: Object.fromEntries((business.covered ?? []).map((id) => [id, this.livingCostOf(id)])),
           // A shift at any of a character's jobs excuses the week at the others (N3, N4).
           shiftDays: JobService.shiftDays(),
@@ -1466,6 +1471,194 @@ class BusinessServiceImpl {
     });
     if (done.ok) await this._mailContract(done.business, contractOf(done.business, contractId), 'offer').catch((error) => log.warn('Could not mail a contract', error));
     return done;
+  }
+
+  // ── Deals with NPC investors (X2c) ─────────────────────────────────────────
+
+  /** The investor contacts an NPC buy-in may come from: `{ref, name}`, an NPC's actor id or `contact:<id>`. */
+  _investorRelations(business) {
+    if (business.npcRun || business.npcDeal) return [];
+    return investorNpcs().filter((e) => !e.reason).map((e) => ({ ref: e.id, name: e.name }));
+  }
+
+  /** The Messenger contact an investor writes from: its own, or its NPC's. */
+  _investorContact(ref) {
+    const id = String(ref ?? '');
+    return id.startsWith('contact:') ? NcmAdapter.contact(id.slice('contact:'.length)) : NcmAdapter.contactForActor(id);
+  }
+
+  /** What a character or syndicate has to spend from their sheet or account. */
+  _accountWealth(id) {
+    if (SyndicateCash.isSyndicate(id)) return SyndicateCash.available(id);
+    const actor = game.actors.get(id);
+    return actor ? WealthAdapter.get(actor) : 0;
+  }
+
+  /** The GM offers an investor's drawn deal, with any changes: units, the price each, or another investor. */
+  async offerNpcDeal(id, edits = {}) {
+    const investor = edits.investor ? investorNpcs().find((e) => e.id === edits.investor && !e.reason) : null;
+    const done = await this._gm(id, (stored) => {
+      const copy = normalizeBusiness(structuredClone(stored));
+      const offered = offerNpcDeal(copy, { ...edits, investor: investor ? { ref: investor.id, name: investor.name } : null }, this.day());
+      return offered.ok ? { ok: true, business: copy, wealth: {}, events: [] } : offered;
+    });
+    if (done.ok) await this._mailNpcDeal(done.business, 'offer').catch((error) => log.warn('Could not send an investor mail', error));
+    return done;
+  }
+
+  /** The GM drops an investor's drawn deal: nobody hears of it. */
+  dropNpcDeal(id) {
+    return this._gm(id, (stored) => {
+      const copy = normalizeBusiness(structuredClone(stored));
+      const dropped = dropNpcDeal(copy);
+      return dropped.ok ? { ok: true, business: copy, wealth: {}, events: [] } : dropped;
+    });
+  }
+
+  /** An investor's mail about its deal: the offer to the partners (new units) or to the holder (a stake), or the deal done. */
+  async _mailNpcDeal(b, kind, deal = b?.npcDeal) {
+    if (!b || !deal || b.npcRun) return;
+    const from = this._investorContact(deal.investor.ref);
+    const data = {
+      name: b.name, investor: deal.investor.name, units: Number(deal.units).toLocaleString(), price: Number(deal.price).toFixed(2),
+      amount: Math.round(deal.amount).toLocaleString(), date: deal.expires != null ? this._dayText(deal.expires) : '',
+    };
+    const subject = L(`NCI.NpcDeal.Mail.${deal.kind}.subject`, data);
+    const lines = [L(`NCI.NpcDeal.Mail.${deal.kind}.${kind}`, data)];
+    const opts = { ...(from ? { from } : {}), footer: kind === 'offer' ? L(`NCI.NpcDeal.Mail.${deal.kind}.footer`, data) : '' };
+    if (deal.kind === 'stake' && kind === 'offer') return this._mailAccount(deal.sellerId, subject, lines, opts);
+    return this._mailHolders(b, subject, lines, opts);
+  }
+
+  /** What became of investors' deals this week, or of an answer: the investor's mail when one is done. */
+  async _npcDealEvents(out) {
+    const b = out.business;
+    for (const e of out.events ?? []) {
+      if (e.type === 'npcDealTaken' || e.type === 'npcStakeSold') await this._mailNpcDeal(b, 'taken', e.deal);
+      // A counter on a block that ran out: the buyer's copy follows.
+      if (e.type === 'bidLapsed' && isListed(b)) await this._mirrorBlocks(e.buyerId);
+    }
+  }
+
+  /**
+   * The GM answers a player's offer for an NPC holder's units, or for a listed block: 'accept', 'decline', or 'counter'
+   * at `price` each. An unlisted one is paid from the buyer's sheet or account, a block from their brokerage.
+   */
+  async answerBid(id, bidId, answer, price = null) {
+    if (!isActiveGM()) return { ok: false, reason: 'not-gm' };
+    const stored = BusinessRepository.get(id);
+    const before = stored ? bidOf(normalizeBusiness(structuredClone(stored)), bidId) : null;
+    if (!before) return { ok: false, reason: 'no-bid' };
+    if (before.listed && answer === 'accept') {
+      return this._queue.run(async () => {
+        const b = normalizeBusiness(structuredClone(BusinessRepository.get(id)));
+        return this._buyBlock(b, bidOf(b, bidId));
+      });
+    }
+    const out = await this._gm(id, (s) => {
+      const copy = normalizeBusiness(structuredClone(s));
+      const done = answerBid(copy, bidId, { answer, price, wealth: this._accountWealth(before.buyerId) }, this.day());
+      if (!done.ok) return done;
+      return { ok: true, business: copy, wealth: done.amount ? { [before.buyerId]: -done.amount } : {}, events: [] };
+    });
+    if (out.ok && before.listed) await this._mirrorBlocks(before.buyerId);
+    if (out.ok) await this._mailBid(out.business, { ...before, ...(answer === 'counter' ? { price: Number(price) } : {}) }, answer).catch((error) => log.warn('Could not send an offer mail', error));
+    return out;
+  }
+
+  /** The buyer is told what the GM said to their offer: from the Exchange for a block, from the business otherwise. */
+  async _mailBid(b, bid, answer) {
+    const data = {
+      name: b.name, ticker: b.company?.ticker ?? '', units: Number(bid.units).toLocaleString(), price: Number(bid.price).toFixed(2),
+      amount: Math.round(bid.units * bid.price).toLocaleString(), seller: bid.sellerName || L('NCI.NpcDeal.Receivers'),
+    };
+    const kind = bid.listed ? 'block' : 'units';
+    const from = bid.listed ? await Promise.resolve(ContactService.exchange()).catch(() => null) : await Promise.resolve(ContactService.business(b)).catch(() => null);
+    await this._mailAccount(bid.buyerId, L(`NCI.NpcDeal.Bid.${kind}.subject`, data), [L(`NCI.NpcDeal.Bid.${kind}.${answer}`, data)], { ...(from ? { from } : {}) });
+  }
+
+  /**
+   * A buyer's block offers, mirrored onto their portfolio, which they can read (they can't read the company's record):
+   * `[{id, ticker, name, units, price, status, expires}]`.
+   */
+  async _mirrorBlocks(buyerId) {
+    const account = game.actors.get(buyerId) ?? SyndicateRepository.account(buyerId);
+    if (!account) return;
+    const mine = BusinessRepository.all().filter((t) => isListed(t)).flatMap((t) => (t.npcBids ?? []).filter((x) => x.listed && x.buyerId === buyerId)
+      .map((x) => ({ id: x.id, ticker: t.company?.ticker ?? '', name: t.name, units: x.units, price: x.price, status: x.status, ...(x.expires != null ? { expires: x.expires } : {}) })));
+    await PortfolioService.transformActor(account, (pf) => (JSON.stringify(pf.blockOffers ?? []) === JSON.stringify(mine)
+      ? { portfolio: pf, changed: false } : { portfolio: { ...pf, blockOffers: mine }, changed: true }));
+  }
+
+  /**
+   * A block offer, or the buyer's answer to the GM's counter (X2c). Within the request queue: the company's record,
+   * the market price and the buyer's brokerage cash are read here.
+   */
+  async _block(buyer, request) {
+    const ticker = String(request.ticker ?? '').trim().toUpperCase();
+    const stored = BusinessRepository.all().find((t) => isListed(t) && t.company?.ticker === ticker);
+    if (!stored) return { ok: false, reason: 'no-target' };
+    const b = normalizeBusiness(structuredClone(stored));
+    this._syncHolders(b);
+    const day = this.day();
+    if (request.type === 'blockCounter') {
+      const bid = bidOf(b, String(request.bidId ?? ''));
+      if (bid?.status !== 'countered' || bid.buyerId !== buyer.id || !bid.listed) return { ok: false, reason: 'no-bid' };
+      if (request.yes === true) return this._buyBlock(b, bid);
+      b.npcBids = b.npcBids.filter((x) => x !== bid);
+      await BusinessRepository.save(b);
+      Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+      await this._mirrorBlocks(buyer.id);
+      return { ok: true };
+    }
+    const account = game.actors.get(buyer.id) ?? SyndicateRepository.account(buyer.id);
+    if (!account) return { ok: false, reason: 'no-account' };
+    const portfolio = PortfolioRepository.get(account);
+    const cash = portfolio.cash - committedCash(portfolio.orders);
+    const marketPrice = MarketStore.getPublic().companies?.[ticker]?.price ?? 0;
+    const can = blockCheck(b, buyer.id, { units: request.units, price: request.price, marketPrice, cash, day });
+    if (!can.ok) return can;
+    placeBlock(b, buyer, request, can, day);
+    await BusinessRepository.save(b);
+    Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+    await this._mirrorBlocks(buyer.id);
+    return { ok: true };
+  }
+
+  /**
+   * A block changes hands (within the GM's queue): the price from the buyer's brokerage, the shares into their portfolio
+   * at that price with no fee, and the market's holding follows them. The money goes to the market, as any purchase's.
+   */
+  async _buyBlock(b, bid) {
+    if (!bid?.listed) return { ok: false, reason: 'no-bid' };
+    const ticker = b.company?.ticker;
+    const account = game.actors.get(bid.buyerId) ?? SyndicateRepository.account(bid.buyerId);
+    if (!ticker || !account) return { ok: false, reason: 'no-account' };
+    this._syncHolders(b);
+    if (bid.units > (b.partners.find((x) => x.market)?.units ?? 0)) return { ok: false, reason: 'block-size' };
+    const amount = Math.round(bid.units * bid.price);
+    const tick = timeOf(MarketStore.getPublic());
+    const done = await PortfolioService.transformActor(account, (p) => {
+      if (p.cash - committedCash(p.orders) < amount) return { portfolio: p, changed: false, paid: false };
+      return {
+        portfolio: {
+          ...p,
+          cash: p.cash - amount,
+          lots: [...p.lots, { id: `lot_block_${bid.id}`, assetType: 'stock', assetId: ticker, qty: bid.units, unitCost: bid.price, feePerUnit: 0, acquiredTick: tick, drip: false }],
+          ledger: [...p.ledger, { ts: tick, kind: 'buy', assetId: ticker, qty: bid.units, amount: -amount, ref: bid.id }],
+        },
+        changed: true,
+        paid: true,
+      };
+    });
+    if (!done?.paid) return { ok: false, reason: 'insufficient-funds' };
+    closeBlock(b, bid.id, this.day(), amount);
+    this._syncHolders(b);
+    await BusinessRepository.save(b);
+    Hooks.callAll(HOOKS.BUSINESSES_CHANGED, { businessId: b.id });
+    await this._mirrorBlocks(bid.buyerId);
+    await this._mailBid(b, bid, 'accept').catch((error) => log.warn('Could not send an offer mail', error));
+    return { ok: true, business: b };
   }
 
   /** A contract's mail to those running the business, from the buyer (C1). */

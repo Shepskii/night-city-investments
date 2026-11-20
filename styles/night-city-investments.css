@@ -177,6 +177,13 @@
 /* A holding's P&L split into the price's move and the fees, under the total. */
 .nci-app .nci-pnlsplit { white-space: nowrap; }
 
+/* Deals with NPC investors (X2c): an offer for an NPC holder's units on the cap table, and an investor's offer to answer. */
+.nci-app .nci-offerform { display: flex; gap: 4px; align-items: center; justify-content: flex-end; margin-top: 4px; }
+.nci-app .nci-callout { border-left: 3px solid var(--nci-accent); background: var(--nci-accent-bg); padding: 6px 10px; margin: 8px 0; }
+.nci-app .nci-callout p { margin: 0 0 6px; }
+.nci-app ul.nci-list { margin: 4px 0; padding-left: 18px; }
+.nci-app ul.nci-list li { margin: 2px 0; }
+
 .nci-up { color: var(--nci-up); }
 .nci-down { color: var(--nci-down); }
 .nci-flat { color: var(--nci-subtle); }

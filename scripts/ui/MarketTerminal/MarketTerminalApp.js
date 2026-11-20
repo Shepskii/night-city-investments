@@ -61,6 +61,8 @@ export class MarketTerminalApp extends BaseApplication {
     actions: {
       applyJob: MarketTerminalApp._onApplyJob,
       makeBid: MarketTerminalApp._onMakeBid,
+      makeBlock: MarketTerminalApp._onMakeBlock,
+      blockCounter: MarketTerminalApp._onBlockCounter,
       investigate: MarketTerminalApp._onInvestigate,
       publishStory: MarketTerminalApp._onPublishStory,
       digRumours: MarketTerminalApp._onDigRumours,
@@ -299,6 +301,26 @@ export class MarketTerminalApp extends BaseApplication {
     });
     if (!ok) return undefined;
     return BusinessClient.submit(this.actor, 'bid', { ticker, price, shares });
+  }
+
+  /**
+   * An offer for a block of a player company's public shares (X2c), named by its ticker: off the market, at least 10%
+   * over its price, at most 5% of the company. The GM answers; the money comes from the brokerage balance.
+   */
+  static async _onMakeBlock() {
+    if (!this.actor) return ui.notifications.warn(L('NCI.Errors.NoActor'));
+    const field = (name) => this.element.querySelector(`[name="${name}"]`)?.value ?? '';
+    const ticker = String(field('blockTicker')).trim().toUpperCase();
+    const price = Math.round(Number(field('blockPrice')) * 100) / 100;
+    const units = Math.floor(Number(field('blockShares')));
+    if (!ticker || !(price > 0) || !(units >= 1)) return ui.notifications.warn(L('NCI.NpcDeal.OfferIncomplete'));
+    return BusinessClient.submit(this.actor, 'blockOffer', { ticker, price, units });
+  }
+
+  /** Take or leave the GM's counter to a block offer (X2c). */
+  static _onBlockCounter(event, target) {
+    if (!this.actor) return undefined;
+    return BusinessClient.submit(this.actor, 'blockCounter', { ticker: target.dataset.ticker, bidId: target.dataset.id, yes: target.dataset.yes === 'true' });
   }
 
   /** Look behind a hidden holder on a listed company's register (B6d), as the picked character. */
@@ -739,6 +761,11 @@ export class MarketTerminalApp extends BaseApplication {
       stakes: stakes.map((s) => ({ ...s, value: whole(s.value) })),
       // A takeover bid for a player company (B6b), when player businesses are on.
       canBid: game.settings.get(MODULE_ID, 'businessesEnabled') !== false,
+      // Offers for blocks of player companies' public shares, mirrored here by the GM (X2c).
+      blockOffers: (p.blockOffers ?? []).map((x) => ({
+        id: x.id, ticker: x.ticker, countered: x.status === 'countered',
+        text: L(`NCI.NpcDeal.MineBlock.${x.status}`, { ticker: x.ticker, units: whole(x.units), price: Number(x.price).toFixed(2), amount: whole(Math.round(x.units * x.price)), date: x.expires != null ? MarketClock.displayDate(x.expires * 86400000) : '' }),
+      })),
       stakesValue: stakes.length ? whole(stakesValue) : '',
       unrealized: signed(v.unrealized),
       unrealizedCls: trendClass(v.unrealized),

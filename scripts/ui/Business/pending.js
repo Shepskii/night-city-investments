@@ -45,6 +45,15 @@ function businessRows(business, account) {
       act('vote', 'NCI.Business.VoteNo', 'fa-xmark', { id: p.id, yes: 'false' }),
     ])),
     regCase?.canAnswer && row('overview', regCase.text, [act('answerCase', 'NCI.Regulator.Answer', 'fa-scale-balanced')]),
+    // An investor's offer for the whole stake, and the GM's counters to offers for NPC holders' units (X2c).
+    partners?.npcStake?.canAnswer && row('partners', partners.npcStake.text, [
+      act('npcStake', 'NCI.NpcDeal.Sell', 'fa-handshake', { yes: 'true' }),
+      act('npcStake', 'NCI.NpcDeal.Keep', 'fa-xmark', { yes: 'false' }),
+    ]),
+    ...(partners?.myBids ?? []).filter((x) => x.countered).map((x) => row('partners', x.text, [
+      act('npcCounter', 'NCI.NpcDeal.TakeCounter', 'fa-check', { id: x.id, yes: 'true' }),
+      act('npcCounter', 'NCI.NpcDeal.LeaveCounter', 'fa-xmark', { id: x.id, yes: 'false' }),
+    ])),
     takeover?.canTender && row('partners', takeover.text, [act('tender', 'NCI.Takeover.Tender', 'fa-handshake')], [number('tenderQty', 'NCI.Takeover.TenderQty', takeover.tendered, { min: 0, max: takeover.most, step: 1 })]),
     takeover?.canDefend && row('partners', need('defend'), [act('defenceRoll', 'NCI.Takeover.Defend', 'fa-shield-halved')]),
     capital?.rights?.canTake && row('partners', capital.rights.mine, [act('takeRights', 'NCI.Capital.Take', 'fa-file-signature')], [number('rightsQty', 'NCI.Capital.Shares', capital.rights.left, { min: 1, max: capital.rights.left, step: 1 })]),

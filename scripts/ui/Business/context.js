@@ -18,6 +18,7 @@ import {
   sectorMultiple, floatOptions, PROSPECTUS_PARTS, prospectusCheck, payoutRatio,
   capitalOf, issueOptions, rightsLeft, tenderRoom, capitalRollCheck, defenceCheck, takeoverPremium, sellableQty, debtsOf, solvency,
   masksOf, outerMask, layerCheck, layerFees, holdingValue, concealedHolders, caseAnswerCheck, turfFactions,
+  npcSellers, bidsOf, isListed,
 } from '../../engine/index.js';
 import { PortfolioRepository } from '../../data/PortfolioRepository.js';
 import { MarketStore } from '../../data/MarketStore.js';
@@ -1748,7 +1749,29 @@ function partnersContext(business, actor) {
         && !business.proposals.some((x) => x.kind === 'elect'),
       canDismiss: business.stage >= 2 && canAct && open && officersOf(business).includes(p.actorId) && officersOf(business).length > 1
         && !business.proposals.some((x) => x.kind === 'dismiss'),
-    })).map((row) => (row.masked ? { ...row, put: '', gear: '', heir: '', officer: '', leaving: '', kind: '', title: '', canTitle: false, canElect: false, canDismiss: false } : row)),
+      // An offer for an NPC holder's units (X2c): an investor's or the receivers', in a business not listed.
+      canOffer: open && canAct && !!me?.voting && me.status === 'active' && !isListed(business) && npcSellers(business).some((x) => x.actorId === p.actorId)
+        && !bidsOf(business).some((x) => x.buyerId === actor?.id && x.sellerId === p.actorId),
+      offerUnits: p.units,
+      offerPrice: value > 0 ? (Math.round(value * 100) / 100).toFixed(2) : '',
+    })).map((row) => (row.masked ? { ...row, put: '', gear: '', heir: '', officer: '', leaving: '', kind: '', title: '', canTitle: false, canElect: false, canDismiss: false, canOffer: false } : row)),
+    // This account's offers for NPC holders' units, and the GM's counters to take or leave (X2c).
+    myBids: bidsOf(business).filter((x) => !x.listed && x.buyerId === actor?.id).map((x) => ({
+      id: x.id,
+      text: L(`NCI.NpcDeal.Mine.${x.status}`, {
+        units: whole(x.units), seller: x.sellerName || L('NCI.NpcDeal.Receivers'), price: Number(x.price).toFixed(2), amount: whole(Math.round(x.units * x.price)),
+        date: x.expires != null ? dayText(x.expires) : '',
+      }),
+      countered: x.status === 'countered' && canAct,
+    })),
+    // An investor's offer for this account's whole stake (X2c), theirs alone to answer.
+    npcStake: business.npcDeal?.status === 'offered' && business.npcDeal.kind === 'stake' && business.npcDeal.sellerId === actor?.id ? {
+      text: L('NCI.NpcDeal.StakeOffer', {
+        investor: business.npcDeal.investor.name, units: whole(business.npcDeal.units), price: Number(business.npcDeal.price).toFixed(2),
+        amount: whole(Math.round((me?.units ?? business.npcDeal.units) * business.npcDeal.price)), date: dayText(business.npcDeal.expires),
+      }),
+      canAnswer: canAct,
+    } : null,
     unitValue: units > 0 ? LT(business, 'NCI.Business.UnitValue', { value: value.toFixed(2) }) : '',
     isCompany: business.stage >= 2,
     agreement: [
@@ -1785,6 +1808,11 @@ function partnersContext(business, actor) {
         cost: proposal.terms?.cost != null ? whole(proposal.terms.cost) : '',
         // A corporation's order (C1).
         ...(proposal.kind === 'contract' ? contractWords(contractOf(business, proposal.terms?.contractId)) : {}),
+        // An NPC investor's offer of new units (X2c).
+        ...(proposal.kind === 'npcDeal' && business.npcDeal ? {
+          investor: business.npcDeal.investor.name, units: whole(business.npcDeal.units), price: Number(business.npcDeal.price).toFixed(2), amount: whole(Math.round(business.npcDeal.amount)),
+          pct: totalUnits(business) > 0 ? Math.round((business.npcDeal.units / (totalUnits(business) + business.npcDeal.units)) * 100) : '',
+        } : {}),
       }),
       rule: LT(business, `NCI.Business.Rule.${PROPOSAL_RULES[proposal.kind]}`, { date: dayText(proposal.expires ?? proposal.day) }),
       // Each voter, linked to their character, and how they voted.

@@ -411,6 +411,14 @@ test('settling sales, fund income and redemption, the editor fields and the move
   assert.match(html, /title="The average price paid a share, before broker fees\.">Paid<\/th>/);
   assert.match(html, /title="[\d.,]+ a share with fees \([\d,]+ eb in fees in all\)\.">[\d.,]+<\/td>/);
   assert.match(t, /[+-]?[\d,]+ price, -[\d,]+ fees/, 'the fees paid show apart');
+  // A block of a player company's public shares (X2c): the form, and the buyer's offers as the GM mirrors them.
+  assert.match(html, /data-action="makeBlock"/);
+  await S.PortfolioRepository.save(alice, { ...S.PortfolioRepository.get(alice), blockOffers: [{ id: 'blk_w', ticker: 'BRC', name: 'Back Room', units: 20, price: 12.5, status: 'countered', expires: 20010 }] });
+  html = await accountPages(app, render);
+  assertClean(html, 'block offers');
+  assert.match(text(html), /BRC: the Exchange will sell 20 shares at 12\.50 eb each \(250 eb\), until/);
+  assert.match(html, /data-action="blockCounter" data-ticker="BRC" data-id="blk_w" data-yes="true"/);
+  await S.PortfolioRepository.save(alice, { ...S.PortfolioRepository.get(alice), blockOffers: [] });
 
   const trade = new Apps.Trade({ actorId: alice.id, assetId: 'ARA', side: 'sell' });
   html = render('templates/dialogs/trade.hbs', await trade._prepareContext());

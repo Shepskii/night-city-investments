@@ -2408,3 +2408,53 @@ test('a back room\'s own trouble: in its kind\'s words to those running the room
     await S.BusinessRepository.save(saved);
   }
 });
+
+test('X2c in the windows: an investor\'s offer on Pending and to the partners, a stake to its holder, an offer for an NPC\'s units and the GM\'s counter', async () => {
+  const b = S.BusinessRepository.all()[0];
+  const saved = structuredClone(b);
+  try {
+    const inv = { actorId: 'npc:inv1', actorRef: 'inv1', npc: true, name: 'Mira Sato', status: 'active', cash: 1000, gear: [], units: 500, voting: false, heirId: null, leavingSince: null };
+    const base = { ...b, status: 'open', stage: 0, company: null, charter: null, listing: null, takeover: null, administration: null, regCase: null, proposals: [], npcBids: [], period: { index: 1, startDay: 1, endDay: 8, ...b.period, slots: [], bonuses: [], helpers: [], event: null }, partners: [...b.partners.filter((p) => !p.npc), inv] };
+    // Drawn, waiting for the GM: the terms to change, Offer it or Drop it.
+    await S.BusinessRepository.save({ ...base, npcDeal: { id: 'nd_win', status: 'held', kind: 'units', investor: { ref: 'inv1', name: 'Mira Sato' }, units: 300, price: 2.5, amount: 750, drawnDay: 1 } });
+    const pending = await renderConsole('pending');
+    assertClean(pending, 'investor on Pending');
+    assert.match(text(pending), /Mira Sato would buy 300 new units at 2\.50 eb each, 750 eb in all/);
+    assert.match(pending, /name="dealUnits"/);
+    assert.match(pending, /data-action="businessNpcDealOffer"/);
+    // Offered: the partners' vote, in the investor's words.
+    assert.equal((await S.BusinessService.offerNpcDeal(b.id, {})).ok, true);
+    const vote = await renderBusiness(windowFor(med, 'partners'));
+    assertClean(vote, 'investor vote');
+    assert.match(text(vote), /Mira Sato offers to buy in: 300 new units at 2\.50 eb each, 750 eb in all, for about \d+% of the business/);
+
+    // A stake: the holder's to answer, on the Partners tab and on Pending.
+    await S.BusinessRepository.save({ ...base, npcDeal: { id: 'nd_win2', status: 'offered', kind: 'stake', investor: { ref: 'inv1', name: 'Mira Sato' }, units: 100, price: 3, amount: 300, sellerId: med.id, sellerName: 'Medtech', expires: 99999 } });
+    const stake = await renderBusiness(windowFor(med, 'partners'));
+    assertClean(stake, 'stake offer');
+    assert.match(text(stake), /Mira Sato offers to buy your whole stake/);
+    assert.match(stake, /data-action="npcStake" data-yes="true"/);
+    assert.doesNotMatch(await renderBusiness(windowFor(fix, 'partners')), /data-action="npcStake"/, 'nobody else');
+    assert.match(text(await renderBusiness(windowFor(med, 'pending'))), /Mira Sato offers to buy your whole stake/);
+
+    // An offer for the investor's units, from the cap table; the GM's counter, to take or leave.
+    await S.BusinessRepository.save({ ...base, npcDeal: null });
+    const table = await renderBusiness(windowFor(med, 'partners'));
+    assertClean(table, 'offer form');
+    assert.match(table, /data-action="npcBid" data-id="npc:inv1"/);
+    assert.doesNotMatch(table, new RegExp(`data-action="npcBid" data-id="${med.id}"`), 'only beside an NPC holder');
+    await S.BusinessRepository.save({ ...base, npcBids: [{ id: 'bid_win', status: 'held', buyerId: med.id, buyerName: 'Medtech', sellerId: 'npc:inv1', sellerName: 'Mira Sato', units: 100, price: 2, day: 1 }] });
+    const gm = await renderConsole('pending');
+    assertClean(gm, 'offer on Pending');
+    assert.match(text(gm), /Medtech offers Mira Sato 2\.00 eb each for 100 units, 200 eb in all/);
+    assert.match(gm, /data-action="businessBidAnswer"[^>]*data-yes="counter"/);
+    assert.equal((await S.BusinessService.answerBid(b.id, 'bid_win', 'counter', 2.4)).ok, true);
+    const counter = await renderBusiness(windowFor(med, 'partners'));
+    assertClean(counter, 'counter');
+    assert.match(text(counter), /Mira Sato will sell 100 units at 2\.40 eb each \(240 eb\)/);
+    assert.match(counter, /data-action="npcCounter" data-id="bid_win" data-yes="true"/);
+    assert.match(text(await renderBusiness(windowFor(med, 'pending'))), /Mira Sato will sell 100 units/);
+  } finally {
+    await S.BusinessRepository.save(saved);
+  }
+});

@@ -129,6 +129,24 @@ async function onContractOffer(event, target) {
   report(await BusinessService.offerContract(target.dataset.id, target.dataset.reward, { count: read('contractCount'), unit: read('contractUnit'), weeks: read('contractWeeks') }));
 }
 
+/** An NPC investor's drawn deal (X2c): offered with the row's units and price, or dropped. */
+async function onNpcDealOffer(event, target) {
+  const box = target.closest('tr, .nci-gig');
+  const read = (name) => box?.querySelector(`[name="${name}"]`)?.value ?? '';
+  report(await BusinessService.offerNpcDeal(target.dataset.id, { units: read('dealUnits'), price: read('dealPrice'), investor: read('dealInvestor') }));
+}
+
+async function onNpcDealDrop(event, target) {
+  report(await BusinessService.dropNpcDeal(target.dataset.id));
+}
+
+/** A player's offer for an NPC's units or a listed block (X2c): accepted, countered at the row's price, or declined. */
+async function onBidAnswer(event, target) {
+  const box = target.closest('tr, .nci-gig');
+  const price = box?.querySelector('[name="bidCounter"]')?.value ?? '';
+  report(await BusinessService.answerBid(target.dataset.id, target.dataset.reward, target.dataset.yes, price));
+}
+
 async function onContractDrop(event, target) {
   report(await BusinessService.dropContract(target.dataset.id, target.dataset.reward));
 }
@@ -283,6 +301,9 @@ export const actions = {
   businessPressSpike: onPressSpike,
   businessContractOffer: onContractOffer,
   businessContractDrop: onContractDrop,
+  businessNpcDealOffer: onNpcDealOffer,
+  businessNpcDealDrop: onNpcDealDrop,
+  businessBidAnswer: onBidAnswer,
   businessRoomApprove: onRoomApprove,
   businessRoomReject: onRoomReject,
   businessSceneRun: onSceneRun,

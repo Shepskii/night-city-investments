@@ -231,6 +231,11 @@ export function normalizeBusiness(raw) {
     stockQueries: b.stockQueries ?? [],
     // Market contracts (C1): drawn and waiting for the GM, offered, open, and the last few finished.
     contracts: b.contracts ?? [],
+    // Deals with NPC investors (X2c): an investor's offer, players' offers for NPC holders' units or a listed block,
+    // and when each buyer last offered for a block.
+    npcDeal: b.npcDeal ?? null,
+    npcBids: b.npcBids ?? [],
+    blockDays: b.blockDays ?? {},
     // Standing with factions (F1a): the band for each faction met. The number is in the GM's hidden state.
     standings: b.standings ?? {},
     // Hidden ownership (B6d): each holder's layers, innermost first; their strengths are GM-only.

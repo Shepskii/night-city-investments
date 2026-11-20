@@ -171,6 +171,21 @@
         <button type="button" data-action="makeBid"><i class="fas fa-crosshairs"></i> {{localize "NCI.Takeover.Bid"}}</button>
       </div>
     </div>
+    <div class="nci-block nci-form">
+      <h3>{{localize "NCI.NpcDeal.BlockHeading"}}</h3>
+      <p class="nci-hint">{{localize "NCI.NpcDeal.BlockHint"}}</p>
+      <div class="nci-hirerow">
+        <label>{{localize "NCI.Takeover.Ticker"}} <input type="text" name="blockTicker" maxlength="5" class="nci-days"></label>
+        <label>{{localize "NCI.Takeover.Shares"}} <input type="number" name="blockShares" min="1" step="1" class="nci-days"></label>
+        <label>{{localize "NCI.Takeover.Price"}} <input type="number" name="blockPrice" min="0.01" step="0.01" class="nci-days"></label>
+        <button type="button" data-action="makeBlock"><i class="fas fa-cubes"></i> {{localize "NCI.NpcDeal.BlockOffer"}}</button>
+      </div>
+      {{#if portfolio.blockOffers.length}}
+      <ul class="nci-list">
+        {{#each portfolio.blockOffers}}<li>{{text}}{{#if countered}} <button type="button" class="nci-labelled" data-action="blockCounter" data-ticker="{{ticker}}" data-id="{{id}}" data-yes="true"><i class="fas fa-check"></i> {{localize "NCI.NpcDeal.TakeCounter"}}</button><button type="button" class="nci-labelled" data-action="blockCounter" data-ticker="{{ticker}}" data-id="{{id}}" data-yes="false"><i class="fas fa-xmark"></i> {{localize "NCI.NpcDeal.LeaveCounter"}}</button>{{/if}}</li>{{/each}}
+      </ul>
+      {{/if}}
+    </div>
     {{/if}}
 
     {{#with portfolio.syndicates}}

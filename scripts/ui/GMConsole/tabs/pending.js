@@ -18,7 +18,7 @@ import { context as gigContext } from './gigs.js';
 import { StoryService } from '../../../services/StoryService.js';
 import { PressService } from '../../../services/PressService.js';
 import { JobService } from '../../../services/JobService.js';
-import { isNpcActor } from '../../../services/BusinessClient.js';
+import { isNpcActor, investorNpcs } from '../../../services/BusinessClient.js';
 
 /** `controls`, built only when the tab is drawn, gives a row's `{fields, buttons}`; the counts on the tab buttons need none. */
 const row = (tab, item, need, params, controls) => ({ tab, type: L(`NCI.Pending.Kind.${need}`), item, needed: L(`NCI.Pending.Need.${need}`, params), controls });
@@ -99,6 +99,32 @@ function businessRows() {
           numberField('contractWeeks', L('NCI.Contract.Weeks'), c.weeks, { min: 1, max: 12, step: 1 }),
         ],
         buttons: [act('businessContractOffer', 'ContractOffer', yes, { reward: c.id }), act('businessContractDrop', 'ContractDrop', no, { reward: c.id })],
+      }))),
+      // An NPC investor's offer to buy in (X2c): the GM offers it, changing the terms if they like, or drops it.
+      b.npcDeal?.status === 'held' && row(home, b.name, b.npcDeal.kind === 'stake' ? 'npcDealStake' : 'npcDealUnits', {
+        investor: b.npcDeal.investor.name, units: b.npcDeal.units.toLocaleString(), price: b.npcDeal.price.toFixed(2), amount: Math.round(b.npcDeal.amount).toLocaleString(), seller: b.npcDeal.sellerName ?? '',
+      }, () => ({
+        fields: [
+          // Another investor contact may make it instead.
+          { isSelect: true, name: 'dealInvestor', options: [
+            { value: b.npcDeal.investor.ref, label: b.npcDeal.investor.name, selected: true },
+            ...investorNpcs().filter((e) => !e.reason && e.id !== b.npcDeal.investor.ref).map((e) => ({ value: e.id, label: e.name })),
+          ] },
+          ...(b.npcDeal.kind === 'units' ? [numberField('dealUnits', L('NCI.NpcDeal.Units'), b.npcDeal.units, { min: 1, step: 1 })] : []),
+          numberField('dealPrice', L('NCI.NpcDeal.Price'), b.npcDeal.price, { min: 0.01, step: 0.01 }),
+        ],
+        buttons: [act('businessNpcDealOffer', 'NpcDealOffer', yes), act('businessNpcDealDrop', 'NpcDealDrop', no)],
+      })),
+      // A player's offer for an NPC holder's units, or for a block of a listed company's public shares (X2c).
+      ...(b.npcBids ?? []).filter((x) => x.status === 'held').map((x) => row(home, b.name, x.listed ? 'block' : 'npcBid', {
+        buyer: x.buyerName, units: x.units.toLocaleString(), price: x.price.toFixed(2), amount: Math.round(x.units * x.price).toLocaleString(), seller: x.sellerName || L('NCI.NpcDeal.Receivers'), ticker: b.company?.ticker ?? '',
+      }, () => ({
+        fields: [numberField('bidCounter', L('NCI.NpcDeal.Counter'), x.price, { min: 0.01, step: 0.01 })],
+        buttons: [
+          act('businessBidAnswer', 'BidAccept', yes, { reward: x.id, yes: 'accept' }),
+          act('businessBidAnswer', 'BidCounter', 'fa-arrows-rotate', { reward: x.id, yes: 'counter' }),
+          act('businessBidAnswer', 'BidDecline', no, { reward: x.id, yes: 'decline' }),
+        ],
       }))),
       // An aggressive NPC company's move, for the GM to make or drop (X2b).
       b.npcRun?.move && need('rivalMove', { target: b.npcRun.move.targetName, move: L(`NCI.Rival.Move.${b.npcRun.move.kind}`) },

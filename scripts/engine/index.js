@@ -54,6 +54,7 @@ export * from './businessRoles.js';
 export * from './businessInquiry.js';
 export * from './netRun.js';
 export * from './businessRivals.js';
+export * from './businessNpcDeals.js';
 export * from './businessFronts.js';
 export * from './businessProduction.js';
 export * from './businessContracts.js';

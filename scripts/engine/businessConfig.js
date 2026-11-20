@@ -1229,6 +1229,24 @@ export const BUSINESS_DEFAULTS = Object.freeze({
     }),
   }),
   /**
+   * Deals with NPC investors (X2c, the user's choices, 2026-11-20). At a month's close an unlisted player business with
+   * `profitWeeks` profitable weeks in a row has `chance` of an offer from an investor contact: new units worth `share` of
+   * the business after them, at book value plus up to `repPremium` with good Reputation, or one partner's whole stake at
+   * `stakePremium` over book value. The GM holds it first; offered, it lapses after `offerDays`. Players' offers for an
+   * NPC holder's units, or for a block of a listed company's public shares (`block`: at least `minPremium` over the
+   * market, at most `maxShare` of the shares, once in `everyDays` for each buyer), wait for the GM; a counter lapses after
+   * `offerDays`.
+   */
+  npcDeals: Object.freeze({
+    profitWeeks: 4,
+    chance: 0.15,
+    share: Object.freeze([0.1, 0.2]),
+    repPremium: 0.2,
+    stakePremium: 0.15,
+    offerDays: 7,
+    block: Object.freeze({ minPremium: 0.1, maxShare: 0.05, everyDays: 7 }),
+  }),
+  /**
    * Gigs run for a player's own business (DESIGN §27.5) change its business, not a share price:
    * Reputation at once, and next week's takings. The size follows the reward (a reward of `reward`
    * eb is size 1, within `size`), and each gig for the business in the last `windowDays` weakens the

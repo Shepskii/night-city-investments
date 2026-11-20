@@ -93,6 +93,9 @@ export class BusinessApp extends BaseApplication {
       setTitle: BusinessApp._onSetTitle,
       leave: BusinessApp._onLeave,
       buyout: BusinessApp._onBuyout,
+      npcBid: BusinessApp._onNpcBid,
+      npcCounter: BusinessApp._onNpcCounter,
+      npcStake: BusinessApp._onNpcStake,
       proposeClose: BusinessApp._onProposeClose,
       vote: BusinessApp._onVote,
       proposeProject: BusinessApp._onProposeProject,
@@ -608,6 +611,27 @@ export class BusinessApp extends BaseApplication {
 
   static _onBuyout(event, target) {
     return this._send('buyout', { sellerId: target.dataset.id });
+  }
+
+  /** An offer for an NPC holder's units (X2c): how many and the price each, from the row's fields. The GM answers. */
+  static _onNpcBid(event, target) {
+    const box = target.closest('[data-offer-form]');
+    const units = Math.floor(Number(box?.querySelector('[name="offerUnits"]')?.value));
+    const price = Math.round(Number(box?.querySelector('[name="offerPrice"]')?.value) * 100) / 100;
+    if (!(units >= 1) || !(price > 0)) return ui.notifications.warn(L('NCI.NpcDeal.OfferIncomplete'));
+    return this._send('npcBid', { sellerId: target.dataset.id, units, price });
+  }
+
+  /** Take or leave the GM's counter to an offer (X2c). */
+  static _onNpcCounter(event, target) {
+    return this._send('npcCounter', { bidId: target.dataset.id, yes: target.dataset.yes === 'true' });
+  }
+
+  /** Sell, or keep, your whole stake for an investor's offer (X2c). */
+  static async _onNpcStake(event, target) {
+    const yes = target.dataset.yes === 'true';
+    if (yes && !(await this._confirm('NCI.NpcDeal.SellConfirm'))) return null;
+    return this._send('npcStake', { yes });
   }
 
   static async _onProposeClose() {
