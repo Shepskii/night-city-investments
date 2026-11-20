@@ -6,7 +6,7 @@
     <thead><tr><th>{{localize "NCI.Pending.Type"}}</th><th>{{localize "NCI.Pending.Item"}}</th><th>{{localize "NCI.Pending.Needed"}}</th><th>{{localize "NCI.Pending.Action"}}</th></tr></thead>
     <tbody>
       {{#each rows}}
-      <tr><td>{{type}}</td><td>{{item}}</td><td class="nci-muted">{{needed}}</td><td class="nci-rowactions">{{> "modules/night-city-investments/templates/gm/console/pending-controls.hbs"}}</td></tr>
+      <tr><td>{{type}}{{#if seenText}}<div class="nci-stamp">{{seenText}}</div>{{/if}}</td><td>{{item}}</td><td class="nci-muted">{{needed}}</td><td class="nci-rowactions">{{> "modules/night-city-investments/templates/gm/console/pending-controls.hbs"}}</td></tr>
       {{/each}}
     </tbody>
   </table>

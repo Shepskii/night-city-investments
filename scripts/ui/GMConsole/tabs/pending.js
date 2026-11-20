@@ -19,14 +19,21 @@ import { StoryService } from '../../../services/StoryService.js';
 import { PressService } from '../../../services/PressService.js';
 import { JobService } from '../../../services/JobService.js';
 import { isNpcActor, investorNpcs } from '../../../services/BusinessClient.js';
+import { stampRows } from '../pendingStamps.js';
+import { HOOKS } from '../../../utils/constants.js';
+import { isActiveGM } from '../../../utils/helpers.js';
 
-/** `controls`, built only when the tab is drawn, gives a row's `{fields, buttons}`; the counts on the tab buttons need none. */
-const row = (tab, item, need, params, controls) => ({ tab, type: L(`NCI.Pending.Kind.${need}`), item, needed: L(`NCI.Pending.Need.${need}`, params), controls });
+/**
+ * `controls`, built only when the tab is drawn, gives a row's `{fields, buttons}`; the counts on the tab buttons need none.
+ * `kind` and `id` (the item's own, where a business may have several of a kind) name the row for its stamp.
+ */
+const row = (tab, item, need, params, controls, id = null) => ({ tab, kind: need, id, type: L(`NCI.Pending.Kind.${need}`), item, needed: L(`NCI.Pending.Need.${need}`, params), controls });
 
 const button = (action, label, icon, id, extra = {}) => ({ action, label: L(label), icon, id, ...extra });
 const yes = 'fa-check';
 const no = 'fa-xmark';
 const numberField = (name, label, value, extra = {}) => ({ type: 'number', name, label, value, ...extra });
+const withId = (id, r) => ({ ...r, id });
 const useTarget = (gig) => (gig?.confirmTarget ? [{ isCheck: true, name: 'gigUseTarget', label: L('NCI.Gig.ConfirmTarget') }] : []);
 
 const GIG_CONTROLS = {
@@ -52,7 +59,7 @@ const GIG_CONTROLS = {
   }),
 };
 
-const gigRows = () => MarketStore.getGigs().pending.map((p) => row('gigs', p.title || p.client || '—', p.kind, undefined, ({ gigs }) => GIG_CONTROLS[p.kind](p.id, gigs.get(p.id))));
+const gigRows = () => MarketStore.getGigs().pending.map((p) => row('gigs', p.title || p.client || '—', p.kind, undefined, ({ gigs }) => GIG_CONTROLS[p.kind](p.id, gigs.get(p.id)), p.id));
 
 const heatRows = () => HeatService.snapshot().penalties.filter((p) => p.status === 'pending')
   .map((p) => row('heat', p.name, 'penalty', { penalty: penaltyText(p) }, ({ penalties }) => {
@@ -63,7 +70,7 @@ const heatRows = () => HeatService.snapshot().penalties.filter((p) => p.status =
         : numberField('penaltyDays', penalty?.daysLabel, penalty?.days, { min: 0, max: 30, step: 1 })],
       buttons: [button('heatApprove', 'NCI.Heat.Approve', yes, p.id), button('heatDismiss', 'NCI.Heat.Dismiss', no, p.id)],
     };
-  }));
+  }, p.id));
 
 function businessRows() {
   return BusinessService.snapshot().filter(({ business: b }) => b.status !== 'closed').flatMap(({ business: b }) => {
@@ -99,7 +106,7 @@ function businessRows() {
           numberField('contractWeeks', L('NCI.Contract.Weeks'), c.weeks, { min: 1, max: 12, step: 1 }),
         ],
         buttons: [act('businessContractOffer', 'ContractOffer', yes, { reward: c.id }), act('businessContractDrop', 'ContractDrop', no, { reward: c.id })],
-      }))),
+      }), c.id)),
       // An NPC investor's offer to buy in (X2c): the GM offers it, changing the terms if they like, or drops it.
       b.npcDeal?.status === 'held' && row(home, b.name, b.npcDeal.kind === 'stake' ? 'npcDealStake' : 'npcDealUnits', {
         investor: b.npcDeal.investor.name, units: b.npcDeal.units.toLocaleString(), price: b.npcDeal.price.toFixed(2), amount: Math.round(b.npcDeal.amount).toLocaleString(), seller: b.npcDeal.sellerName ?? '',
@@ -125,20 +132,20 @@ function businessRows() {
           act('businessBidAnswer', 'BidCounter', 'fa-arrows-rotate', { reward: x.id, yes: 'counter' }),
           act('businessBidAnswer', 'BidDecline', no, { reward: x.id, yes: 'decline' }),
         ],
-      }))),
+      }), x.id)),
       // An aggressive NPC company's move, for the GM to make or drop (X2b).
       b.npcRun?.move && need('rivalMove', { target: b.npcRun.move.targetName, move: L(`NCI.Rival.Move.${b.npcRun.move.kind}`) },
         act('businessRivalAnswer', 'RivalApprove', yes, { yes: 'true' }), act('businessRivalAnswer', 'RivalDecline', no, { yes: 'false' })),
       b.backRoom?.status === 'pending' && need('backRoom', { kind: L(`NCI.BackRoom.Kind.${b.backRoom.kind}`) }, act('businessRoomApprove', 'RoomApprove', yes), act('businessRoomReject', 'RoomReject', no)),
       sceneCandidate(b) && !b.npcRun?.auto && need('scene', { event: L(`NCI.Event.${b.period.event.kind}.Name`) }, act('businessSceneRun', 'SceneRun', 'fa-masks-theater')),
       b.scene && need('sceneOpen', { event: L(`NCI.Event.${b.scene.event.kind}.Name`) }, act('businessSceneWon', 'SceneWon', yes), act('businessSceneLost', 'SceneLost', no), act('businessSceneRoll', 'SceneRoll', 'fa-dice-d10')),
-      ...(b.stockQueries ?? []).map((q) => need('stockMoved', { count: q.count, name: q.name },
+      ...(b.stockQueries ?? []).map((q) => withId(q.id, need('stockMoved', { count: q.count, name: q.name },
         act('businessStockSettle', 'StockSold', 'fa-cash-register', { reward: q.id, yes: 'sold' }),
         act('businessStockSettle', 'StockGiven', 'fa-hand-holding', { reward: q.id, yes: 'given' }),
-        act('businessStockSettle', 'StockLost', no, { reward: q.id, yes: 'lost' }))),
+        act('businessStockSettle', 'StockLost', no, { reward: q.id, yes: 'lost' })))),
       ...(b.staff ?? []).filter((s) => s.status === 'offered' && s.source === 'npc')
-        .map((s) => need('offer', { name: s.name, post: L(`NCI.Staff.Post.${s.post}`) },
-          act('businessStaffAnswer', 'StaffAccept', 'fa-handshake', { staff: s.id, yes: 'true' }), act('businessStaffAnswer', 'StaffDecline', no, { staff: s.id, yes: 'false' }))),
+        .map((s) => withId(s.id, need('offer', { name: s.name, post: L(`NCI.Staff.Post.${s.post}`) },
+          act('businessStaffAnswer', 'StaffAccept', 'fa-handshake', { staff: s.id, yes: 'true' }), act('businessStaffAnswer', 'StaffDecline', no, { staff: s.id, yes: 'false' })))),
       // An NPC invited to invest: the GM answers, on the terms the partners agreed. An older invitation is under the
       // NPC's own actor id.
       ...b.partners.filter((x) => x.status === 'invited' && x.offer && (x.npc || isNpcActor(game.actors.get(x.actorId))))
@@ -147,7 +154,7 @@ function businessRows() {
             act('businessNpcPartner', 'NpcAccept', 'fa-handshake', { staff: x.actorId, yes: 'true' }),
             act('businessNpcPartner', 'NpcDecline', no, { staff: x.actorId, yes: 'false' }),
           ],
-        }))),
+        }), x.actorId)),
       // An NPC invited to found it: the GM answers, and says what it puts in (DESIGN §36.16).
       ...b.partners.filter((x) => x.npc && x.status === 'invited' && !x.offer).map((x) => row(home, b.name, 'npcPartner', { name: x.name }, () => ({
         fields: [numberField('npcCash', L('NCI.GMBusiness.NpcPuts'), 0, { min: 0, step: 100 })],
@@ -155,7 +162,7 @@ function businessRows() {
           act('businessNpcPartner', 'NpcAccept', 'fa-handshake', { staff: x.actorId, yes: 'true' }),
           act('businessNpcPartner', 'NpcDecline', no, { staff: x.actorId, yes: 'false' }),
         ],
-      }))),
+      }), x.actorId)),
     ].filter(Boolean).map((r) => ({ ...r, businessId: b.id }));
   });
 }
@@ -178,36 +185,36 @@ export function rewardRow(businessName, businessId, r) {
 // A wound-up business's suggestions still wait, though it is closed.
 const rewardRows = () => BusinessService.snapshot().flatMap(({ business: b, hidden }) => (hidden.rewards ?? []).map((r) => {
   const { item, needed, controls } = rewardRow(b.name, b.id, r);
-  return { tab: b.npcRun ? 'npcBusinesses' : 'businesses', businessId: b.id, type: L('NCI.Pending.Kind.reward'), item, needed, controls };
+  return { tab: b.npcRun ? 'npcBusinesses' : 'businesses', businessId: b.id, kind: 'reward', id: r.id, type: L('NCI.Pending.Kind.reward'), item, needed, controls };
 }));
 
 const syndicateRows = () => SyndicateRepository.all().filter((s) => s.status === 'pending').map((s) => row('syndicates', s.name, 'syndicate', undefined, () => ({
   buttons: [button('syndicateApprove', 'NCI.GMSyndicate.Approve', yes, s.id), button('syndicateReject', 'NCI.GMSyndicate.Reject', no, s.id)],
-})));
+}), s.id));
 
 const storyRows = () => StoryService.pending().map((s) => row('events', s.media, 'story', { name: s.name }, () => ({
   buttons: [button('storyApprove', 'NCI.Story.Approve', yes, s.id), button('storyReject', 'NCI.Story.Reject', no, s.id)],
-})));
+}), s.id));
 
 const pressRows = () => PressService.held().map((s) => row('events', s.name, 'pressCharacter', { outlet: s.outlet, story: L(`NCI.Press.Story.${s.story}`), why: L(`NCI.Press.Why.${s.story === 'smear' ? 'smearCharacter' : s.story}`) }, () => ({
   fields: [{ type: 'text', name: 'pressHeadline', label: L('NCI.GMBusiness.PressHeadline'), value: L(`NCI.Press.Headline.${s.story}`, { name: s.story === 'hidden' ? s.stake.name : s.name, outlet: s.outlet }) }],
   buttons: [button('pressCharacterApprove', 'NCI.GMBusiness.PressApprove', yes, s.id), button('pressCharacterSpike', 'NCI.GMBusiness.PressSpike', no, s.id)],
-})));
+}), s.id));
 
 const jobTab = (b) => (isEmployerId(b.id) ? 'jobMarket' : b.npcRun ? 'npcBusinesses' : 'businesses');
 const jobRows = () => JobService.waiting().map(({ business: b, application: a }) => ({ ...row(jobTab(b), a.name, 'jobApplication', { name: b.name, post: L(`NCI.Staff.Post.${a.post}`), band: L(`NCI.Roll.Band.${a.band}`) }, () => ({
   buttons: [button('businessJobAnswer', 'NCI.Jobs.Hire', yes, b.id, { reward: a.id, yes: 'true' }), button('businessJobAnswer', 'NCI.Jobs.TurnDown', no, b.id, { reward: a.id, yes: 'false' })],
-})), businessId: b.id }));
+}), a.id), businessId: b.id }));
 
 const promotionRows = () => JobService.promotions().map(({ business: b, staff: s, raised }) => ({ ...row(jobTab(b), s.name, 'promotion', { name: b.name, post: L(`NCI.Staff.Post.${s.post}`), wage: s.wage, raised }, () => ({
   buttons: [button('businessPromote', 'NCI.Jobs.Promote', yes, b.id, { reward: s.id, yes: 'true' }), button('businessPromote', 'NCI.Jobs.NotNow', no, b.id, { reward: s.id, yes: 'false' })],
-})), businessId: b.id }));
+}), s.id), businessId: b.id }));
 
 const rows = () => [...storyRows(), ...pressRows(), ...jobRows(), ...promotionRows(), ...businessRows(), ...rewardRows(), ...syndicateRows(), ...heatRows(), ...gigRows()];
 
 /** How many decisions wait on each tab, and in all under `pending`. */
 export function waiting() {
-  const all = rows();
+  const all = stampRows(rows(), { prune: true });
   const counts = { pending: all.length };
   for (const { tab } of all) counts[tab] = (counts[tab] ?? 0) + 1;
   return counts;
@@ -218,14 +225,14 @@ export function waiting() {
  * tab's own Waiting for you section and for each business's Needs you strip.
  */
 export function businessNeeds(tab) {
-  const all = [...jobRows(), ...promotionRows(), ...businessRows(), ...rewardRows()].filter((r) => r.tab === tab);
+  const all = stampRows([...jobRows(), ...promotionRows(), ...businessRows(), ...rewardRows()].filter((r) => r.tab === tab));
   return all.map(({ controls, ...r }) => ({ ...r, fields: [], buttons: [], ...controls?.({}) }));
 }
 
 export const actions = {};
 
 export function context() {
-  const all = rows();
+  const all = stampRows(rows(), { prune: true });
   // What the gig and penalty fields start from, as their own tabs show them.
   const byId = (list) => new Map(list.map((x) => [x.id, x]));
   const { gig } = all.some((r) => r.tab === 'gigs') ? gigContext() : { gig: { needsMapping: [], review: [], businessGigs: [] } };
@@ -241,4 +248,25 @@ export function context() {
       ...controls?.(made),
     })),
   };
+}
+
+/**
+ * The active GM's client stamps each decision when it first waits, though the console is shut: on any change that
+ * might bring one. Once, at ready.
+ */
+export function watchPending() {
+  if (!isActiveGM()) return;
+  let timer = null;
+  const check = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      try {
+        stampRows(rows(), { prune: true });
+      } catch {
+        // A service not ready yet: the next change stamps it.
+      }
+    }, 500);
+  };
+  for (const hook of [HOOKS.MARKET_UPDATED, HOOKS.COMPANIES_CHANGED, HOOKS.GIGS_CHANGED, HOOKS.HEAT_CHANGED, HOOKS.BUSINESSES_CHANGED, HOOKS.SYNDICATES_CHANGED]) Hooks.on(hook, check);
+  check();
 }

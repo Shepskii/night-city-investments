@@ -11,7 +11,7 @@
   <div class="nci-needsbox">
     <div class="nci-needs-title"><i class="fas fa-bell"></i> {{localize "NCI.GMBusiness.NeedsYou"}}</div>
     <table class="nci-market nci-pending"><tbody>
-      {{#each needs}}<tr><td>{{type}}</td><td class="nci-muted">{{#if who}}<strong>{{who}}</strong>: {{/if}}{{needed}}</td><td class="nci-rowactions">{{> "modules/night-city-investments/templates/gm/console/pending-controls.hbs"}}</td></tr>{{/each}}
+      {{#each needs}}<tr><td>{{type}}{{#if seenText}}<div class="nci-stamp">{{seenText}}</div>{{/if}}</td><td class="nci-muted">{{#if who}}<strong>{{who}}</strong>: {{/if}}{{needed}}</td><td class="nci-rowactions">{{> "modules/night-city-investments/templates/gm/console/pending-controls.hbs"}}</td></tr>{{/each}}
     </tbody></table>
   </div>
   {{/if}}

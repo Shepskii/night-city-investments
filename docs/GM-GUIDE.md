@@ -41,7 +41,7 @@ A tab shows how many decisions are waiting on it as a small number beside its na
 
 ## Pending
 
-One list of everything waiting for you, across every tab, each row with its type: a new business, a charter, a gig, a heat penalty, a story, a corporation's order for a workshop, suggested REP and IP. Fields and buttons on the row let you act from there. What each decision means is under its tab below. The Businesses and NPC Businesses tabs repeat their own decisions at the top, under **Waiting for you**, and again in a highlighted **Needs you** strip at the top of each business's box.
+One list of everything waiting for you, across every tab, each row with its type: a new business, a charter, a gig, a heat penalty, a story, a corporation's order for a workshop, suggested REP and IP. Fields and buttons on the row let you act from there. What each decision means is under its tab below. The Businesses and NPC Businesses tabs repeat their own decisions at the top, under **Waiting for you**, and again in a highlighted **Needs you** strip at the top of each business's box. Under each row's type is the game date and time it first waited.
 
 On the Businesses, NPC Businesses and Syndicates tabs each business or syndicate is a folded row: its name, a Player or NPC badge, its status, its type and place (a syndicate's members), and how many things wait on you, or that it's waiting for approval. Click the row to open it and see everything below. The console keeps the rows you opened open while you work, until you close the console.
 

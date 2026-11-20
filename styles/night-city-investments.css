@@ -725,3 +725,5 @@ html.nci-theme-pvt:is([data-pvt-base], .pvt-custom-theme) .nci-app :is(h1, h2, h
 .nci-app .nci-pendingtable .nci-actions .nci-fieldset:has(input[name$="Headline"]) { width: 100%; }
 .nci-app .nci-pendingtable label.nci-inline:has(input[name$="Headline"]) { flex-direction: column; align-items: stretch; gap: 1px; }
 .nci-app .nci-pendingtable label.nci-inline input[name$="Headline"] { flex: none; width: 100% !important; }
+/* When a decision first waited, under its type on Pending and Waiting for you. */
+.nci-app .nci-stamp { font-size: 10px; color: var(--nci-label); opacity: 0.8; margin-top: 2px; white-space: nowrap; }

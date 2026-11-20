@@ -39,6 +39,8 @@ export const SETTINGS = Object.freeze({
   BROKER_DEFS: 'brokerDefs',
   FACTION_DEFS: 'factionDefs',
   DISTRICT_DEFS: 'districtDefs',
+  /** When each decision on the GM's Pending first waited: { rowKey: ms on the game's clock }. */
+  PENDING_SEEN: 'pendingSeen',
   ROOM_EVENTS: 'roomEventFrequency',
   PRESS_FREQUENCY: 'pressFrequency',
   CONTRACTS: 'contractFrequency',

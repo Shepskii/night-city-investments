@@ -7,7 +7,7 @@
     <tbody>
       {{#each pendingRows}}
       <tr class="nci-row" data-action="switchTab" data-tab="{{tab}}">
-        <td>{{type}}</td>
+        <td>{{type}}{{#if seenText}}<div class="nci-stamp">{{seenText}}</div>{{/if}}</td>
         <td>{{item}}</td>
         <td class="nci-muted">{{needed}}</td>
         <td class="nci-rowactions">

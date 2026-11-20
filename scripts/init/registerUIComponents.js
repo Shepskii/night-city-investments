@@ -7,6 +7,7 @@ import { MODULE_ID, SETTINGS } from '../utils/constants.js';
 import { log, isGM } from '../utils/helpers.js';
 import { MarketTerminalApp } from '../ui/MarketTerminal/MarketTerminalApp.js';
 import { GMConsoleApp } from '../ui/GMConsole/GMConsoleApp.js';
+import { watchPending } from '../ui/GMConsole/tabs/pending.js';
 import { BusinessApp } from '../ui/Business/BusinessApp.js';
 import { MarketTicker } from '../ui/MarketTicker.js';
 import { addMarketControls } from '../ui/sceneControls.js';
@@ -60,6 +61,8 @@ export function registerUIComponents(initializer) {
       return GMConsoleApp.open();
     };
     MarketTicker.start();
+    // The GM's Pending rows are stamped as they come, the console open or not.
+    watchPending();
 
     // Mirror NCM's namespace so macros can use game.nightcity.investments.open().
     game.nightcity ??= {};

@@ -268,6 +268,14 @@ export function registerSettings() {
     },
   });
 
+  // When each decision on the GM's Pending first waited (pendingStamps.js).
+  s.register(MODULE_ID, SETTINGS.PENDING_SEEN, {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {},
+  });
+
   s.register(MODULE_ID, SETTINGS.BROKER_DEFS, {
     scope: 'world',
     config: false,
