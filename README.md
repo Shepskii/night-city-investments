@@ -61,7 +61,7 @@ Or unzip a release into `Data/modules/night-city-investments`. Then enable **Nig
 ### Player businesses
 - **Start small.** Found one of ten kinds of business (a ripperdoc clinic, a garage, a bar, a gun shop...) in a Night City district, with partners, eddies and gear from your sheet.
 - **A weekly loop.** Each week you choose actions and make skill rolls, with Careful, Standard or Bold approaches, Luck, help and hired professionals. Then come the takings, upkeep and events, and partners draw their share of the profit.
-- **Grow it.** Projects improve the premises. Loans and investors bring in money. Registration, a charter, then a company with officers and monthly reports.
+- **Grow it.** Projects improve the premises. Loans and investors bring in money, and NPC investors may offer to buy in, or buy a partner out. Registration, a charter, then a company with officers and monthly reports.
 - **Employees.** Hire player characters, NPCs or recruits into roles, and pay them weekly. NPC staff have loyalty, hidden traits, training, share grants and their own events.
 - **Go public.** List the company on the market through an IPO. Shares then sit in portfolios, reports move the price, and dividends follow a payout ratio the shareholders vote. A daily liquidity cap and a delisting review keep it honest.
 - **Corporate play.** Issue new shares, buy shares back, bid for another company with a tender offer, survive (or not) administration when debts outgrow assets, hide behind nominees and shell companies while rivals dig, and answer to regulators when shortcuts leave a trail.
