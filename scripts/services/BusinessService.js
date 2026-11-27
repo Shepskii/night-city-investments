@@ -2785,8 +2785,9 @@ class BusinessServiceImpl {
     const actor = await this._runActor(actorUuid);
     if (!actor || !(SkillAdapter.baseFor(actor, ABILITIES.interface).base > 0)) return;
     this._expectedRuns.delete(actorUuid);
+    // A runner the GM adds back into a run starts it again, with the same session: counted once, and nobody is told.
     const asked = actor.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
-    if (asked?.sessionId === sessionId) return;
+    if (asked?.sessionId === sessionId || actor.getFlag(MODULE_ID, FLAGS.NET_RUN_SESSION) === sessionId) return;
     const day = this.day();
     if (netRunWait(actor.getFlag(MODULE_ID, FLAGS.NET_RUN), day) > 0) {
       await this._tellRunner(actor, L('NCI.NetRunLive.NotCounted', { actor: actor.name, name: target.name }), [userId]);
@@ -2794,6 +2795,7 @@ class BusinessServiceImpl {
     }
     if (asked) await actor.unsetFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
     await actor.setFlag(MODULE_ID, FLAGS.NET_RUN, day);
+    await actor.setFlag(MODULE_ID, FLAGS.NET_RUN_SESSION, sessionId);
     await actor.setFlag(MODULE_ID, FLAGS.NET_RUN_LIVE, { target, architectureId, day, sessionId, failed: [], compromised: [] });
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, {});
     await this._attachLiveShard(target, architectureId);

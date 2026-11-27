@@ -308,6 +308,7 @@ async function onTheFork(body, { modules = { fork: true }, api = {} } = {}) {
   env.store.set('heatEnabled', true);
   await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN);
   await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
+  await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN_SESSION);
   await HeatService.setHeat(cass.id, 10);
   try {
     await body({ BusinessService, HeatService, MODULE_ID, FLAGS, gm1, gm2, asGm: (u) => { game.user = u; } });
@@ -322,6 +323,7 @@ async function onTheFork(body, { modules = { fork: true }, api = {} } = {}) {
     env.store.set('heatEnabled', false);
     await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN);
     await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
+    await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN_SESSION);
   }
 }
 
@@ -432,6 +434,21 @@ test('on the fork, with several GMs connected only the authority GM counts and s
     assert.equal(HeatService.heatOf(cass.id), 10 + E.BUSINESS_DEFAULTS.roles.netRun.heat, 'traced once');
     assert.equal(whispersSince(n).length, 1, 'one result');
     assert.ok(!whispersSince(n0).some((c) => /NotCounted/.test(c.content)), 'the repeat start is not whispered as not counting');
+  });
+});
+
+test('on the fork, a runner the GM adds back into a run they were settled from is not counted again, nor told it won\'t count', async () => {
+  await onTheFork(async ({ BusinessService, MODULE_ID, FLAGS }) => {
+    await BusinessService.onLiveRunStarted(started());
+    const day = cass.getFlag(MODULE_ID, FLAGS.NET_RUN);
+    await BusinessService.onLiveRunnerLeft({ sessionId: 'fs1', actorUuid: cass.uuid, userId: 'u1', failedNodeIds: [], compromisedNodeIds: [], itemsTaken: [] });
+    assert.equal(cass.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE), undefined, 'settled');
+    const n = chats.length;
+    // The GM adds Cass back: the fork fires runStarted again, with the same session.
+    await BusinessService.onLiveRunStarted(started());
+    assert.equal(cass.getFlag(MODULE_ID, FLAGS.NET_RUN), day, 'the week as it was');
+    assert.equal(cass.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE), undefined, 'not followed again');
+    assert.equal(whispersSince(n).length, 0, 'nobody is told anything');
   });
 });
 
