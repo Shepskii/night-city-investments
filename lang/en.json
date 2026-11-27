@@ -3507,6 +3507,7 @@
       }
     },
     "NetRunLive": {
+      "ModuleTitle": "NET Architect",
       "HasMap": "[map]",
       "Choose": "{name} has a NET architecture to run. Jack in for real (free, and the data shard you bring out counts for more as evidence), or make the quick roll?",
       "Real": "Jack in for real",

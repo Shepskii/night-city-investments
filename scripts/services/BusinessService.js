@@ -47,7 +47,7 @@ import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
 import { SkillAdapter } from './SkillAdapter.js';
 import { CrewToolsAdapter } from '../integrations/CrewToolsAdapter.js';
-import { NetArchitectAdapter, shardNode, targetKey } from '../integrations/NetArchitectAdapter.js';
+import { NetArchitectAdapter, targetKey } from '../integrations/NetArchitectAdapter.js';
 import { REWARDS, rewardRunners, rewardChange, rewardMatters } from '../engine/businessRewards.js';
 import { addLedger } from '../engine/businessRecord.js';
 import { WealthAdapter } from './WealthAdapter.js';
@@ -2813,7 +2813,7 @@ class BusinessServiceImpl {
    */
   async _attachLiveShard(target, architectureId) {
     await NetArchitectAdapter.load();
-    const node = shardNode(NetArchitectAdapter.nodesOf(architectureId), NetArchitectAdapter.nodeOf(target));
+    const node = NetArchitectAdapter.shardNodeFor(target, architectureId);
     if (!node) return this._tellGm(L('NCI.NetRunLive.NoShardNode', { name: target.name }));
     const made = await this.makeLiveShard(targetKey(target));
     if (!made.ok) return this._tellGm(L('NCI.NetRunLive.ShardNotAttached', { name: target.name, reason: shardReasonText(made.reason) }));
