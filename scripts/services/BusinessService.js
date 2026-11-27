@@ -2840,12 +2840,19 @@ class BusinessServiceImpl {
     return this._settleLive(actor, { ...asked, failed: [...failedNodeIds], compromised: [...compromisedNodeIds] }, taken);
   }
 
-  /** The fork's `runEnded`: anyone NCI still follows in that run (a `runnerLeft` missed) is settled with what was kept. */
+  /**
+   * The fork's `runEnded`: anyone NCI still follows in that run (a `runnerLeft` missed) is settled, with the nodes they
+   * failed and the run's compromised nodes from the fork's session if it is still there. If not, with what was kept,
+   * which knows neither, so they can't be traced; that is logged.
+   */
   async onLiveRunEnded({ sessionId } = {}) {
     if (!NetArchitectAdapter.follows() || !sessionId) return [];
     const results = [];
     for (const actor of Array.from(game.actors ?? []).filter((a) => a.getFlag?.(MODULE_ID, FLAGS.NET_RUN_LIVE)?.sessionId === sessionId)) {
-      results.push(await this._settleLive(actor, actor.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE)));
+      const asked = actor.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
+      const seen = NetArchitectAdapter.runnerInSession(sessionId, actor.uuid);
+      if (!seen) console.warn(`night-city-investments | NET run ${sessionId} ended without ${actor.name} leaving it, and its session is gone; settled without failed or compromised nodes`);
+      results.push(await this._settleLive(actor, seen ? { ...asked, ...seen } : asked));
     }
     return results;
   }

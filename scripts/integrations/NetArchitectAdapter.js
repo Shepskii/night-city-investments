@@ -176,6 +176,25 @@ export const NetArchitectAdapter = {
     return cache;
   },
 
+  /**
+   * What the fork's live session says of one runner, while that session is still the active one: the nodes they failed
+   * and the run's compromised nodes, as `runnerLeft` would give them; or null when the session is gone or another.
+   */
+  runnerInSession(sessionId, actorUuid) {
+    let session = null;
+    try {
+      session = this.api()?.getActiveSession?.() ?? null;
+    } catch {
+      return null;
+    }
+    if (!session || session.id !== sessionId) return null;
+    // Sessions from before several runners keep the one runner's state at the top.
+    const records = session.runners ? Object.values(session.runners) : [session];
+    const record = records.find((r) => r?.runner?.actorUuid === actorUuid);
+    if (!record) return null;
+    return { failed: [...(record.failedNodeIds ?? [])], compromised: [...(session.compromisedNodeIds ?? [])] };
+  },
+
   /** Start a run on the authority GM's client; throws with the NET module's own message if it refuses. */
   start(architectureId, actor, userId) {
     return this.api().startNetrun(architectureId, actor.uuid, { userId: userId ?? undefined, actions: 0 });

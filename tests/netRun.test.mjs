@@ -452,6 +452,45 @@ test('on the fork, a runner the GM adds back into a run they were settled from i
   });
 });
 
+test("on the fork, a run that ends with a runner NCI missed leaving settles them from the fork's session if it is still there, else from what was kept, with a warning", async () => {
+  let session = null;
+  const api = { getActiveSession: () => session };
+  await onTheFork(async ({ BusinessService, HeatService, MODULE_ID, FLAGS }) => {
+    // The session is still there: Cass failed a node on the way, so she is traced.
+    await BusinessService.onLiveRunStarted(started());
+    session = { id: 'fs1', compromisedNodeIds: [], runners: { u1: { runner: { actorUuid: cass.uuid, userId: 'u1' }, failedNodeIds: ['n2'] } } };
+    const [traced] = await BusinessService.onLiveRunEnded({ sessionId: 'fs1' });
+    assert.equal(traced.traced, true, 'traced from the session');
+    assert.equal(HeatService.heatOf(cass.id), 10 + E.BUSINESS_DEFAULTS.roles.netRun.heat);
+    assert.equal(cass.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE), undefined, 'settled');
+
+    // A node compromised in the run traces her too.
+    await HeatService.setHeat(cass.id, 10);
+    await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN);
+    await BusinessService.onLiveRunStarted(started({ sessionId: 'fs2' }));
+    session = { id: 'fs2', compromisedNodeIds: ['n3'], runners: { u1: { runner: { actorUuid: cass.uuid, userId: 'u1' }, failedNodeIds: [] } } };
+    assert.equal((await BusinessService.onLiveRunEnded({ sessionId: 'fs2' }))[0].traced, true, 'traced by a compromised node');
+
+    // Gone (or another run's): settled with what was kept, and a warning.
+    await HeatService.setHeat(cass.id, 10);
+    await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN);
+    await BusinessService.onLiveRunStarted(started({ sessionId: 'fs3' }));
+    session = { id: 'other', compromisedNodeIds: ['n3'], runners: {} };
+    const warn = console.warn;
+    const warned = [];
+    console.warn = (...args) => warned.push(args.join(' '));
+    try {
+      const [plain] = await BusinessService.onLiveRunEnded({ sessionId: 'fs3' });
+      assert.equal(plain.traced, false);
+    } finally {
+      console.warn = warn;
+    }
+    assert.equal(HeatService.heatOf(cass.id), 10);
+    assert.equal(warned.length, 1, 'a warning');
+    assert.match(warned[0], /fs3/);
+  }, { api });
+});
+
 test("on the fork, a run asked for on the heat panel is confirmed by the GM, started through the API, and counted by the fork's hook, once", async () => {
   const { SETTINGS } = await import('../scripts/utils/constants.js');
   const starts = [];
