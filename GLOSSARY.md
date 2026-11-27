@@ -13,7 +13,7 @@ A NET run settled by a single Interface roll against the target's DV, for a fee,
 _Avoid_: Simple run, roll run
 
 **Real run**:
-A NET run played out on a NET module's architecture that the GM has linked to the target; free, but it uses the week's NET run.
+A NET run played out on a NET module's architecture that the GM has linked to the target; free, but it uses the week's NET run. On NET Architect (NCI Edition), any run on a linked architecture is the runner's real run, however it was started, if their NET run for the week is free; if not, it doesn't count for NCI.
 _Avoid_: Live run, full run
 
 **NET module**:
