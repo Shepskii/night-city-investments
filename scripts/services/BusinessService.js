@@ -2827,10 +2827,14 @@ class BusinessServiceImpl {
     return undefined;
   }
 
+  /** A NET run's line in chat, whispered to these user ids, from the NET. */
+  _whisperRun(text, userIds) {
+    return ChatMessage.create({ content: `<p>${escapeHtml(text)}</p>`, whisper: [...new Set(userIds.filter(Boolean))], speaker: { alias: L('NCI.Heat.Action.netRun.Shard.from') } });
+  }
+
   /** A line to the GMs only, in chat. */
   _tellGm(text) {
-    const gms = Array.from(game.users ?? []).filter((u) => u.isGM).map((u) => u.id);
-    return ChatMessage.create({ content: `<p>${escapeHtml(text)}</p>`, whisper: gms, speaker: { alias: L('NCI.Heat.Action.netRun.Shard.from') } });
+    return this._whisperRun(text, Array.from(game.users ?? []).filter((u) => u.isGM).map((u) => u.id));
   }
 
   /**
@@ -2865,13 +2869,15 @@ class BusinessServiceImpl {
 
   /** A line to the runner's players, and the GM, in chat; and to any other users named (the runner's player). */
   _tellRunner(actor, text, also = []) {
-    const owners = [...new Set([...Array.from(game.users ?? []).filter((u) => u.isGM || actor.testUserPermission?.(u, 'OWNER')).map((u) => u.id), ...also.filter(Boolean)])];
-    return ChatMessage.create({ content: `<p>${escapeHtml(text)}</p>`, whisper: owners, speaker: { alias: L('NCI.Heat.Action.netRun.Shard.from') } });
+    const owners = Array.from(game.users ?? []).filter((u) => u.isGM || actor.testUserPermission?.(u, 'OWNER')).map((u) => u.id);
+    return this._whisperRun(text, [...owners, ...also]);
   }
 
   /**
-   * GM only: a data shard for a target, as a world Item to attach to a node in NET Architect's editor. Players can see
-   * it (NET Architect lets a runner take only what they can see). Whoever takes it gets it filled in as of then.
+   * GM only: a data shard for a target, as a world Item: on the original NET Architect, made from the NET runs tab for
+   * the GM to attach to a node in its editor; on the fork, made at a counted run's start and attached by NCI
+   * (`_attachLiveShard`). Players can see it (the NET module lets a runner take only what they can see). Whoever takes
+   * it gets it filled in as of then. Refused with a reason (`not-gm`, `no-target`, `not-made`).
    */
   async makeLiveShard(key) {
     if (!game.user.isGM) return { ok: false, reason: 'not-gm' };
