@@ -39,6 +39,27 @@ export const targetKey = (target) => ((target.kind ? target.kind === 'npc' : !!t
 
 let cache = null;
 
+/**
+ * The links as stored: a target key to its architecture id, or, on the fork with a node chosen for the data shard,
+ * `{ architectureId, nodeId }`. Links made before nodes could be chosen are plain ids, and still work.
+ */
+const storedLinks = () => ({ ...(game.settings.get(MODULE_ID, SETTINGS.NET_ARCH_LINKS) ?? {}) });
+const linkedArchitecture = (value) => (typeof value === 'string' ? value : value?.architectureId ?? null) || null;
+
+/** The node types a data shard goes on when the GM hasn't chosen one, in the order tried. */
+export const SHARD_NODE_TYPES = Object.freeze(['objective', 'file', 'data']);
+
+/** The node a target's data shard goes on: the one the GM chose, if the architecture still has it, else the first of SHARD_NODE_TYPES; or null. */
+export function shardNode(nodes, chosenId = null) {
+  const chosen = chosenId ? nodes.find((n) => n.id === chosenId) : null;
+  if (chosen) return chosen;
+  for (const type of SHARD_NODE_TYPES) {
+    const found = nodes.find((n) => n.type === type);
+    if (found) return found;
+  }
+  return null;
+}
+
 export const NetArchitectAdapter = {
   /** Whether a NET module is here at all: either edition. */
   present() {
@@ -90,11 +111,17 @@ export const NetArchitectAdapter = {
 
   /** The links the GM has made, target key to architecture id. */
   links() {
-    return { ...(game.settings.get(MODULE_ID, SETTINGS.NET_ARCH_LINKS) ?? {}) };
+    return Object.fromEntries(Object.entries(storedLinks()).map(([key, value]) => [key, linkedArchitecture(value)]).filter(([, id]) => id));
   },
 
   linkOf(target) {
     return this.links()[targetKey(target)] ?? null;
+  },
+
+  /** The node the GM chose to hold a target's data shard on the fork, or null for the default (see `shardNode`). */
+  nodeOf(target) {
+    const value = storedLinks()[targetKey(target)];
+    return (value && typeof value === 'object' && value.nodeId) || null;
   },
 
   /** The keys of the targets linked to an architecture, in the order the GM linked them. */
@@ -108,10 +135,10 @@ export const NetArchitectAdapter = {
     return this.enabled() && this.onFork() && !!game.user?.isGM && this.isAuthority();
   },
 
-  /** GM only: link a target to an architecture, or unlink it with an empty id. */
-  async link(key, architectureId) {
-    const links = this.links();
-    if (architectureId) links[key] = architectureId;
+  /** GM only: link a target to an architecture, with the node for its data shard if chosen, or unlink it with an empty id. */
+  async link(key, architectureId, nodeId = null) {
+    const links = storedLinks();
+    if (architectureId) links[key] = nodeId ? { architectureId, nodeId } : architectureId;
     else delete links[key];
     await game.settings.set(MODULE_ID, SETTINGS.NET_ARCH_LINKS, links);
   },
@@ -119,6 +146,11 @@ export const NetArchitectAdapter = {
   /** The architectures known so far (GM only), from the last `load`. */
   architectures() {
     return cache ?? [];
+  },
+
+  /** An architecture's nodes, in the order they are saved, from the last `load`. */
+  nodesOf(architectureId) {
+    return this.architectures().find((a) => a.id === architectureId)?.nodes ?? [];
   },
 
   /** GM only: read the architectures from the NET module's world compendium. */
@@ -132,7 +164,10 @@ export const NetArchitectAdapter = {
     try {
       const docs = await pack.getDocuments();
       cache = docs.map((doc) => doc.getFlag(id, 'architecture')).filter((a) => a?.id)
-        .map((a) => ({ id: a.id, name: a.name || a.id }))
+        .map((a) => ({
+          id: a.id, name: a.name || a.id,
+          nodes: (Array.isArray(a.nodes) ? a.nodes : []).filter((n) => n?.id).map((n) => ({ id: n.id, type: n.type ?? 'custom', name: n.name || n.type || n.id })),
+        }))
         .sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
       console.warn('night-city-investments | could not read NET Architect architectures', error);
@@ -144,6 +179,11 @@ export const NetArchitectAdapter = {
   /** Start a run on the authority GM's client; throws with the NET module's own message if it refuses. */
   start(architectureId, actor, userId) {
     return this.api().startNetrun(architectureId, actor.uuid, { userId: userId ?? undefined, actions: 0 });
+  },
+
+  /** GM authority only, during a run: attach an Item to a node in the fork's live run, as the runner sees it if `visible`. */
+  addRunItem(nodeId, itemUuid, { visible = false } = {}) {
+    return this.api().addRunItem(nodeId, itemUuid, { visible });
   },
 
   /** Whether an item came out of this session: the NET module marks a taken item `lootClaim` "<session>:<node>:<attachment>". */

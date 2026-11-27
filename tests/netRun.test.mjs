@@ -9,6 +9,7 @@ const { chats } = installFakeChat();
 
 let S;
 let E;
+let items;
 
 before(async () => {
   const load = (p) => import(p);
@@ -24,7 +25,8 @@ before(async () => {
     HeatService: (await load('../scripts/services/HeatService.js')).HeatService,
   };
   E = await load('../scripts/engine/index.js');
-  (await load('./helpers/fakeItems.mjs')).installFakeItems().prepare(cass);
+  items = (await load('./helpers/fakeItems.mjs')).installFakeItems();
+  items.prepare(cass);
   const { ModuleInitializer } = await load('../scripts/core/ModuleInitializer.js');
   const init = new ModuleInitializer();
   (await load('../scripts/init/registerMarketSystem.js')).registerMarketSystem(init);
@@ -507,4 +509,176 @@ test('on the original NET Architect, a heat panel run is counted at its start an
   } finally {
     globalThis.foundry.applications = applications;
   }
+});
+
+// ── The fork's data shard, made and attached by NCI (ticket 12) ──────────────
+
+/** Nodes of the architecture arch1, as the fork's editor saves them. */
+const NODES = [
+  { id: 'n1', type: 'access', name: 'Front door' },
+  { id: 'n2', type: 'password', name: 'Gate' },
+  { id: 'n3', type: 'data', name: 'Ledgers' },
+  { id: 'n4', type: 'file', name: 'Mail' },
+  { id: 'n5', type: 'objective', name: 'Core' },
+  { id: 'n6', type: 'objective', name: 'Vault' },
+];
+
+/**
+ * On the fork, with arch1 in its world compendium and its `addRunItem` recording what it is given; the shards NCI makes
+ * are world Items. `body` gets what was attached, and the fork's API.
+ */
+async function withFork(body, { nodes = NODES, addRunItem, modules = { fork: true } } = {}) {
+  const attached = [];
+  const api = {
+    getActiveSession: () => null,
+    addRunItem: addRunItem ?? (async (nodeId, itemUuid, options) => { attached.push({ nodeId, itemUuid, visible: options?.visible }); return `att${attached.length}`; }),
+  };
+  const doc = { getFlag: (scope, key) => (scope === FORK && key === 'architecture' ? { id: 'arch1', name: 'Noodle net', nodes } : undefined) };
+  const packs = game.packs;
+  const Item = globalThis.Item;
+  game.packs = { get: (id) => (id === `world.${FORK}` ? { getDocuments: async () => [doc] } : undefined) };
+  globalThis.Item = { createDocuments: async (list) => list.map((data) => items.library(data)) };
+  try {
+    await onTheFork((ctx) => body({ ...ctx, attached, api }), { api, modules });
+  } finally {
+    game.packs = packs;
+    globalThis.Item = Item;
+  }
+}
+
+test("on the fork, a counted run gets the target's data shard on the node the GM chose, visible to the runner", async () => {
+  await withFork(async ({ BusinessService, MODULE_ID, FLAGS, attached }) => {
+    const { NetArchitectAdapter } = await import('../scripts/integrations/NetArchitectAdapter.js');
+    await NetArchitectAdapter.link('b:bus_npcshop', 'arch1', 'n4');
+    await BusinessService.onLiveRunStarted(started());
+    assert.equal(attached.length, 1, 'one shard');
+    const [{ nodeId, itemUuid, visible }] = attached;
+    assert.equal(nodeId, 'n4');
+    assert.equal(visible, true);
+    const shard = await fromUuid(itemUuid);
+    assert.equal(shard.name, 'NCI.NetRunLive.ShardName {"name":"Nina Noodles"}');
+    assert.deepEqual(shard.flags[MODULE_ID][FLAGS.EVIDENCE], { live: true, kind: 'npc', ticker: null, businessId: 'bus_npcshop', name: 'Nina Noodles', used: false });
+  });
+});
+
+test('on the fork, with no node chosen (or one the architecture no longer has) the shard goes on the first objective node, then file, then data', async () => {
+  const runWith = async (nodes, link) => {
+    let nodeId = null;
+    await withFork(async ({ BusinessService, attached }) => {
+      if (link) env.store.set('netArchitectLinks', { 'b:bus_npcshop': link });
+      await BusinessService.onLiveRunStarted(started());
+      assert.equal(attached.length, 1);
+      nodeId = attached[0].nodeId;
+    }, { nodes });
+    return nodeId;
+  };
+  assert.equal(await runWith(NODES), 'n5', 'an old link, a plain architecture id: the first objective node');
+  assert.equal(await runWith(NODES, { architectureId: 'arch1', nodeId: 'gone' }), 'n5', 'the chosen node was deleted');
+  assert.equal(await runWith(NODES.filter((n) => n.type !== 'objective')), 'n4', 'then a file node');
+  assert.equal(await runWith(NODES.filter((n) => n.type !== 'objective' && n.type !== 'file')), 'n3', 'then a data node');
+});
+
+test('on the fork, with no node to hold the data the run still counts, without a shard, and the GM is told; so too if the fork refuses it', async () => {
+  await withFork(async ({ BusinessService, MODULE_ID, FLAGS, attached }) => {
+    const n = chats.length;
+    await BusinessService.onLiveRunStarted(started());
+    assert.equal(cass.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE)?.sessionId, 'fs1', 'counted');
+    assert.equal(attached.length, 0, 'no shard');
+    const [told] = whispersSince(n);
+    assert.match(told.content, /NoShardNode/);
+    assert.deepEqual(told.whisper, ['gm1', 'gm2'], 'to the GMs only');
+  }, { nodes: NODES.filter((n) => ['access', 'password'].includes(n.type)) });
+
+  await withFork(async ({ BusinessService, MODULE_ID, FLAGS }) => {
+    const n = chats.length;
+    await BusinessService.onLiveRunStarted(started());
+    assert.equal(cass.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE)?.sessionId, 'fs1', 'counted');
+    const [told] = whispersSince(n);
+    assert.match(told.content, /ShardNotAttached/);
+    assert.match(told.content, /No active NETRUN/);
+    assert.deepEqual(told.whisper, ['gm1', 'gm2']);
+  }, { addRunItem: async () => { throw new Error('No active NETRUN.'); } });
+});
+
+test("on the fork, a run NCI doesn't count gets no shard", async () => {
+  await withFork(async ({ BusinessService, MODULE_ID, FLAGS, attached }) => {
+    await cass.setFlag(MODULE_ID, FLAGS.NET_RUN, BusinessService.day() - 1);
+    await BusinessService.onLiveRunStarted(started());
+    assert.equal(attached.length, 0, 'the week was used');
+    await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN);
+    await BusinessService.onLiveRunStarted(started({ architectureId: 'arch-unlinked' }));
+    await BusinessService.onLiveRunStarted(started({ actorUuid: `Actor.${alice.id}` }));
+    assert.equal(attached.length, 0, 'unlinked, or no Netrunner');
+  });
+});
+
+test('on the fork, the shard NCI attached is filled in when taken, counts as a real run\'s evidence, and settles the run as a pass', async () => {
+  await withFork(async ({ BusinessService, HeatService, MODULE_ID, FLAGS, attached }) => {
+    const { StoryService } = S;
+    const messenger = StoryService.toMessenger;
+    const sent = [];
+    StoryService.toMessenger = async (item, info) => { sent.push(info); };
+    try {
+      await BusinessService.onLiveRunStarted(started());
+      const source = await fromUuid(attached[0].itemUuid);
+      // The fork copies the attached Item onto the runner's actor, flags and all, marking where it came from.
+      const data = source.toObject();
+      delete data._id;
+      data.flags[FORK] = { lootClaim: `fs1:${attached[0].nodeId}:att1` };
+      const [taken] = await cass.createEmbeddedDocuments('Item', [data]);
+      taken.update = async function (d) {
+        for (const [path, value] of Object.entries(d)) {
+          const keys = path.split('.');
+          let at = this;
+          for (const k of keys.slice(0, -1)) at = (at[k] ??= {});
+          at[keys.at(-1)] = value;
+        }
+      };
+      await BusinessService.fillLiveShard(taken);
+      const flag = taken.flags[MODULE_ID][FLAGS.EVIDENCE];
+      assert.equal(flag.live, false, 'filled in');
+      assert.equal(flag.bonus, E.BUSINESS_DEFAULTS.roles.netRun.liveEvidence, "a real run's weight");
+      assert.match(flag.note, /Nina 100%/, 'the ledger as of now');
+      assert.equal(sent.length, 1, 'shown in Messenger');
+      assert.ok(StoryService.evidenceFor(cass, { ticker: null, businessId: 'bus_npcshop' }).includes(taken), 'evidence about the target');
+
+      const n = chats.length;
+      const [result] = [await BusinessService.onLiveRunnerLeft({
+        sessionId: 'fs1', actorUuid: cass.uuid, userId: 'u1', failedNodeIds: [], compromisedNodeIds: [],
+        itemsTaken: [{ nodeId: attached[0].nodeId, attachmentId: 'att1', sourceUuid: source.uuid, itemUuid: taken.uuid }],
+      })];
+      assert.equal(result.outcome, 'success');
+      assert.equal(result.traced, false);
+      assert.equal(HeatService.heatOf(cass.id), 10);
+      assert.ok(whispersSince(n).some((c) => /Result\.success /.test(c.content)));
+      await cass.deleteEmbeddedDocuments('Item', [taken.id]);
+    } finally {
+      StoryService.toMessenger = messenger;
+    }
+  });
+});
+
+test("the GM Console's NET runs tab: on the fork, a linked target offers its architecture's nodes for the data and no manual shard; on the original, the manual shard", async () => {
+  const { context } = await import('../scripts/ui/GMConsole/tabs/netRuns.js');
+  const { NetArchitectAdapter } = await import('../scripts/integrations/NetArchitectAdapter.js');
+  const rowOf = () => context({ render() {} }).netRuns.rows.find((r) => r.key === 'b:bus_npcshop');
+  await withFork(async () => {
+    await NetArchitectAdapter.link('b:bus_npcshop', 'arch1', 'n4');
+    await NetArchitectAdapter.load();
+    const row = rowOf();
+    assert.equal(row.manualShard, false);
+    assert.deepEqual(row.nodes.map((o) => o.value), ['', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6'], 'the default, then each node');
+    assert.equal(row.nodes.find((o) => o.selected).value, 'n4', 'the chosen node');
+    assert.match(row.nodes[4].label, /Mail/);
+    await NetArchitectAdapter.link('b:bus_npcshop', 'arch1');
+    assert.equal(rowOf().nodes.find((o) => o.selected).value, '', 'no node chosen: the default');
+    const other = context({ render() {} }).netRuns.rows.find((r) => r.key !== 'b:bus_npcshop');
+    assert.equal(other.nodes.length, 0, 'an unlinked target has none');
+  });
+  await withFork(async () => {
+    await NetArchitectAdapter.load();
+    const row = rowOf();
+    assert.equal(row.manualShard, true);
+    assert.equal(row.nodes.length, 0);
+  }, { modules: { original: true } });
 });
