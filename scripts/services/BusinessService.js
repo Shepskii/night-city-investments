@@ -76,6 +76,10 @@ const WEALTH_REASON = 'Night City Investments: business';
 /** What an employee writes about as the week closes: asking for a raise, and the ways of leaving (M3 step 3). */
 const STAFF_NOTE_KINDS = Object.freeze(['asks', 'quit', 'walked', 'unpaid', 'poached']);
 
+/** Why NCI couldn't make a data shard (`makeLiveShard`), in words for the GM: the reasons it gives, else a generic one. */
+const SHARD_REASONS = Object.freeze(['not-gm', 'no-target', 'not-made']);
+const shardReasonText = (reason) => L(`NCI.NetRunLive.ShardReason.${SHARD_REASONS.includes(reason) ? reason : 'unknown'}`);
+
 class BusinessServiceImpl {
   constructor() {
     this._queue = new SerialQueue('Business service task');
@@ -2812,12 +2816,13 @@ class BusinessServiceImpl {
     const node = shardNode(NetArchitectAdapter.nodesOf(architectureId), NetArchitectAdapter.nodeOf(target));
     if (!node) return this._tellGm(L('NCI.NetRunLive.NoShardNode', { name: target.name }));
     const made = await this.makeLiveShard(targetKey(target));
-    if (!made.ok) return this._tellGm(L('NCI.NetRunLive.ShardNotAttached', { name: target.name, reason: made.reason }));
+    if (!made.ok) return this._tellGm(L('NCI.NetRunLive.ShardNotAttached', { name: target.name, reason: shardReasonText(made.reason) }));
     try {
       await NetArchitectAdapter.addRunItem(node.id, made.item.uuid, { visible: true });
     } catch (error) {
       await made.item.delete?.();
-      return this._tellGm(L('NCI.NetRunLive.ShardNotAttached', { name: target.name, reason: error.message }));
+      // The fork refuses in words of its own.
+      return this._tellGm(L('NCI.NetRunLive.ShardNotAttached', { name: target.name, reason: error?.message || shardReasonText(null) }));
     }
     return undefined;
   }
@@ -2882,7 +2887,7 @@ class BusinessServiceImpl {
       system: { description: { value: `<p>${escapeHtml(L('NCI.NetRunLive.ShardBlank', { name: target.name }))}</p>` } },
       flags: { [MODULE_ID]: { [FLAGS.EVIDENCE]: { live: true, kind: target.kind, ticker: target.ticker ?? null, businessId: target.kind === 'npc' ? target.id : null, name: target.name, used: false } } },
     }]);
-    return { ok: !!item, item };
+    return item ? { ok: true, item } : { ok: false, reason: 'not-made' };
   }
 
   /** A data shard taken in a run (createItem on the actor): fill it in as of now, with a real run's weight. */

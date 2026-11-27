@@ -3523,6 +3523,12 @@
       "ShardBlank": "Data about {name}. Whoever takes it in a NET run gets it filled in with what is true then.",
       "NoShardNode": "This NET run on {name} counts, but it has no data shard: its architecture has no objective, file or data node, and no node was chosen for the data on NCI's NET runs tab.",
       "ShardNotAttached": "This NET run on {name} counts, but its data shard couldn't be attached: {reason}",
+      "ShardReason": {
+        "not-gm": "only a GM can make a data shard",
+        "no-target": "its target can't be found any more",
+        "not-made": "the world didn't create the shard's Item",
+        "unknown": "something went wrong making it"
+      },
       "Result": {
         "success": "You're out of {name}'s system with the data shard.",
         "successTraced": "You're out of {name}'s system with the data shard, but they traced you on the way. Expect more heat.",

@@ -671,6 +671,33 @@ test('on the fork, with no node to hold the data the run still counts, without a
   }, { addRunItem: async () => { throw new Error('No active NETRUN.'); } });
 });
 
+test("on the fork, when NCI can't make the shard the GM is told why in words, never a code", async () => {
+  await withFork(async ({ BusinessService, attached }) => {
+    const n = chats.length;
+    // The world refuses the Item.
+    globalThis.Item = { createDocuments: async () => [] };
+    await BusinessService.onLiveRunStarted(started());
+    assert.equal(attached.length, 0);
+    const [told] = whispersSince(n);
+    assert.match(told.content, /ShardNotAttached/);
+    assert.match(told.content, /NetRunLive\.ShardReason\.not-made/);
+    assert.doesNotMatch(told.content, /undefined/);
+  });
+  await withFork(async ({ BusinessService }) => {
+    const make = BusinessService.makeLiveShard;
+    BusinessService.makeLiveShard = async () => ({ ok: false, reason: 'something-new' });
+    try {
+      const n = chats.length;
+      await BusinessService.onLiveRunStarted(started());
+      const [told] = whispersSince(n);
+      assert.match(told.content, /NetRunLive\.ShardReason\.unknown/, 'a reason it has no words for: the generic one');
+      assert.doesNotMatch(told.content, /something-new/);
+    } finally {
+      BusinessService.makeLiveShard = make;
+    }
+  });
+});
+
 test("on the fork, a run NCI doesn't count gets no shard", async () => {
   await withFork(async ({ BusinessService, MODULE_ID, FLAGS, attached }) => {
     await cass.setFlag(MODULE_ID, FLAGS.NET_RUN, BusinessService.day() - 1);
