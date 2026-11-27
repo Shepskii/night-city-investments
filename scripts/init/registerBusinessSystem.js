@@ -70,14 +70,16 @@ export function registerBusinessSystem(initializer) {
     // Which targets have a map goes out with the job board; publish it again now this is set up.
     if (isActiveGM()) JobService.publish().catch((error) => console.error('night-city-investments | publishing the job board failed', error));
     const here = () => game.user?.isGM && NetArchitectAdapter.isAuthority();
+    // Each in the business queue, one at a time; a failure is logged, not thrown into the hook.
+    const queued = (task, what) => BusinessService._queue.run(task).catch((error) => console.error(`night-city-investments | ${what} failed`, error));
     Hooks.on('createItem', (item) => {
       if (!here() || !item?.parent || !item.flags?.[MODULE_ID]?.[FLAGS.EVIDENCE]?.live) return;
-      BusinessService._queue.run(() => BusinessService.fillLiveShard(item)).catch((error) => console.error('night-city-investments | filling a data shard failed', error));
+      queued(() => BusinessService.fillLiveShard(item), 'filling a data shard');
     });
     // On NET Architect (NCI Edition), its run hooks say when each runner starts and leaves, wherever the run began.
     // Every client hears them; the handlers act only on the authority GM's.
     if (NetArchitectAdapter.onFork()) {
-      const follow = (hook, handler) => Hooks.on(hook, (payload) => BusinessService._queue.run(() => BusinessService[handler](payload)).catch((error) => console.error('night-city-investments | following a NET run failed', error)));
+      const follow = (hook, handler) => Hooks.on(hook, (payload) => queued(() => BusinessService[handler](payload), 'following a NET run'));
       follow(FORK_HOOKS.runStarted, 'onLiveRunStarted');
       follow(FORK_HOOKS.runnerLeft, 'onLiveRunnerLeft');
       follow(FORK_HOOKS.runEnded, 'onLiveRunEnded');
@@ -85,7 +87,7 @@ export function registerBusinessSystem(initializer) {
     }
     // NET Architect keeps its session as a flag on a journal entry in its own compendium; every save says how a run
     // stands, and its end saves null. A player's jack-out has no hook of its own.
-    const watch = (session) => BusinessService._queue.run(() => BusinessService.watchLiveRuns(session)).catch((error) => console.error('night-city-investments | following a NET run failed', error));
+    const watch = (session) => queued(() => BusinessService.watchLiveRuns(session), 'following a NET run');
     Hooks.on('updateJournalEntry', (doc, changes) => {
       if (!here() || doc.pack !== `world.${NET_ARCHITECT_ID}` || !foundry.utils.hasProperty(changes, `flags.${NET_ARCHITECT_ID}.session`)) return;
       watch(doc.getFlag(NET_ARCHITECT_ID, 'session') ?? null);
