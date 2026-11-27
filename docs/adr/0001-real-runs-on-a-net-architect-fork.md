@@ -4,7 +4,7 @@ status: accepted
 
 # Real runs use a fork of NET Architect, not NET Architecture
 
-Real NET runs play out on NET Architect, or on our fork of it, NET Architect (NCI Edition) (`cpr-net-architect-nc`), and not on NET Architecture (`cpr-net-architecture`), even though NET Architecture is the NET module the table now prefers for netrunning in general. NET Architecture has no API, no saved session and no items on its floors. NCI could neither start a run there nor read its result, and would have to guess both from its chat cards and the runner's token. NET Architect has all three, but its upstream has gone quiet with a known bug unanswered. Under MIT we can fork it to fix that bug, add NET scenes like NET Architecture's, add jack in at Scene Tools access points, and add the hooks NCI needs.
+Real NET runs play out on NET Architect, or on our fork of it, NET Architect (NCI Edition) (`cpr-net-architect-nci-edition`), and not on NET Architecture (`cpr-net-architecture`), even though NET Architecture is the NET module the table now prefers for netrunning in general. NET Architecture has no API, no saved session and no items on its floors. NCI could neither start a run there nor read its result, and would have to guess both from its chat cards and the runner's token. NET Architect has all three, but its upstream has gone quiet with a known bug unanswered. Under MIT we can fork it to fix that bug, add NET scenes like NET Architecture's, add jack in at Scene Tools access points, and add the hooks NCI needs.
 
 ## Considered options
 
