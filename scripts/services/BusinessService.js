@@ -2776,7 +2776,9 @@ class BusinessServiceImpl {
    */
   async onLiveRunStarted({ sessionId, architectureId, actorUuid, userId } = {}) {
     if (!NetArchitectAdapter.follows() || !sessionId) return;
+    // The heat panel's ask is for this start only, whether it counts or not.
     const expected = this._expectedRuns.get(actorUuid);
+    this._expectedRuns.delete(actorUuid);
     const keys = NetArchitectAdapter.targetsOn(architectureId);
     // The heat panel's target when it asked for this one, else the first target linked to the architecture.
     const key = expected?.architectureId === architectureId && keys.includes(targetKey(expected.target)) ? targetKey(expected.target) : keys[0];
@@ -2784,7 +2786,6 @@ class BusinessServiceImpl {
     if (!target) return;
     const actor = await this._runActor(actorUuid);
     if (!actor || !(SkillAdapter.baseFor(actor, ABILITIES.interface).base > 0)) return;
-    this._expectedRuns.delete(actorUuid);
     // A runner the GM adds back into a run starts it again, with the same session: counted once, and nobody is told.
     const asked = actor.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
     if (asked?.sessionId === sessionId || actor.getFlag(MODULE_ID, FLAGS.NET_RUN_SESSION) === sessionId) return;

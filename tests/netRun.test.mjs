@@ -530,6 +530,21 @@ test("on the fork, a run asked for on the heat panel is confirmed by the GM, sta
   }
 });
 
+test("on the fork, the heat panel's target is forgotten once the runner's run starts, even a run NCI doesn't count", async () => {
+  const { SETTINGS } = await import('../scripts/utils/constants.js');
+  await onTheFork(async ({ BusinessService, MODULE_ID, FLAGS }) => {
+    const corp = BusinessService.inquiryTargets().corps[0];
+    const npc = BusinessService._runTarget('b:bus_npcshop');
+    // The panel asked for Nina Noodles on arch1, but the run that started was on an architecture linked to nothing.
+    BusinessService._expectedRuns.set(cass.uuid, { target: npc, architectureId: 'arch1' });
+    await BusinessService.onLiveRunStarted(started({ architectureId: 'arch-unlinked' }));
+    // Later Cass jacks in at an access point on arch1, where the corporation is linked first: it counts against that.
+    env.store.set(SETTINGS.NET_ARCH_LINKS, { [`c:${corp.ticker}`]: 'arch1', 'b:bus_npcshop': 'arch1' });
+    await BusinessService.onLiveRunStarted(started({ sessionId: 'fs2' }));
+    assert.equal(cass.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE)?.target.ticker, corp.ticker, 'the first linked target, not the old ask');
+  });
+});
+
 test('on the original NET Architect, a heat panel run is counted at its start and settled from the saved session, as before; fork hooks change nothing', async () => {
   let session = null;
   const api = {
