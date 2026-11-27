@@ -70,6 +70,7 @@ export function context(app) {
   const maps = NetArchitectAdapter.architectures();
   const links = NetArchitectAdapter.links();
   const fork = NetArchitectAdapter.onFork();
+  const moduleTitle = NetArchitectAdapter.title();
   const { npc, corps } = BusinessService.inquiryTargets();
   const row = (t, kind) => {
     const target = { ...t, kind };
@@ -97,8 +98,9 @@ export function context(app) {
     netRuns: {
       present: NetArchitectAdapter.present(),
       on: game.settings.get(MODULE_ID, SETTINGS.NET_ARCHITECT) === true,
-      hint: L(NetArchitectAdapter.onFork() ? 'NCI.NetRunLive.TabHintFork' : 'NCI.NetRunLive.TabHint', { module: NetArchitectAdapter.title() }),
-      noMaps: maps.length === 0 ? L('NCI.NetRunLive.NoMaps', { module: NetArchitectAdapter.title() }) : '',
+      hint: L(fork ? 'NCI.NetRunLive.TabHintFork' : 'NCI.NetRunLive.TabHint', { module: moduleTitle }),
+      noMaps: maps.length === 0,
+      noMapsText: L('NCI.NetRunLive.NoMaps', { module: moduleTitle }),
       fork,
       rows: [...npc.map((t) => row(t, 'npc')), ...corps.map((t) => row(t, 'corp'))],
     },
