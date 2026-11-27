@@ -1,8 +1,8 @@
 {{#with netRuns}}
 <div class="nci-block">
-  <p class="nci-hint">{{localize "NCI.NetRunLive.TabHint"}}</p>
+  <p class="nci-hint">{{hint}}</p>
   {{#unless on}}<p class="nci-warn">{{localize "NCI.NetRunLive.Off"}}</p>{{/unless}}
-  {{#if noMaps}}<p class="nci-warn">{{localize "NCI.NetRunLive.NoMaps"}}</p>{{/if}}
+  {{#if noMaps}}<p class="nci-warn">{{noMaps}}</p>{{/if}}
   <div class="nci-actions"><button type="button" data-action="netReload"><i class="fas fa-rotate"></i> {{localize "NCI.NetRunLive.Reload"}}</button></div>
   <table class="nci-market">
     <thead><tr><th>{{localize "NCI.NetRunLive.Col.target"}}</th><th>{{localize "NCI.NetRunLive.Col.kind"}}</th><th class="num">{{localize "NCI.NetRunLive.Col.dv"}}</th><th>{{localize "NCI.NetRunLive.Col.map"}}</th><th></th></tr></thead>

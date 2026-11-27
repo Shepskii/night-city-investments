@@ -47,7 +47,7 @@ import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
 import { SkillAdapter } from './SkillAdapter.js';
 import { CrewToolsAdapter } from '../integrations/CrewToolsAdapter.js';
-import { NetArchitectAdapter } from '../integrations/NetArchitectAdapter.js';
+import { NetArchitectAdapter, targetKey } from '../integrations/NetArchitectAdapter.js';
 import { REWARDS, rewardRunners, rewardChange, rewardMatters } from '../engine/businessRewards.js';
 import { addLedger } from '../engine/businessRecord.js';
 import { WealthAdapter } from './WealthAdapter.js';
@@ -79,6 +79,8 @@ const STAFF_NOTE_KINDS = Object.freeze(['asks', 'quit', 'walked', 'unpaid', 'poa
 class BusinessServiceImpl {
   constructor() {
     this._queue = new SerialQueue('Business service task');
+    /** Runs the heat panel is starting on the fork, by runner actor uuid: their target, for the run's `runStarted`. */
+    this._expectedRuns = new Map();
   }
 
   enabled() {
@@ -2683,7 +2685,7 @@ class BusinessServiceImpl {
     return lines;
   }
 
-  // ── A real NET run on CPR NET Architect (X2a) ─────────────────────────────────
+  // ── A real NET run on the NET module (X2a): NET Architect, or its NCI Edition ───
 
   /** A target as a NET run names it ('b:<id>' or 'c:<ticker>'), from the published list, or null. */
   _runTarget(value) {
@@ -2696,7 +2698,7 @@ class BusinessServiceImpl {
 
   /**
    * A Netrunner asks for a real run on the target's map. Checked here; the GM is then asked, outside the queue, and the
-   * run starts on NET Architect if they say yes. Nothing is spent until it starts, and then only the week's run.
+   * run starts on the NET module if they say yes. Nothing is spent until it starts, and then only the week's run.
    */
   async _netRunLive(actor, request) {
     if (!(SkillAdapter.baseFor(actor, ABILITIES.interface).base > 0)) return { ok: false, reason: 'not-netrunner' };
@@ -2712,7 +2714,10 @@ class BusinessServiceImpl {
     return { ok: true, netRun: { outcome: 'asked', kind: target.kind, name: target.name } };
   }
 
-  /** The GM says whether to start the run now; started, the week's run is spent and the run is remembered for jack-out. */
+  /**
+   * The GM says whether to start the run now. Started on the original, the week's run is spent and the run is remembered
+   * for jack-out; on the fork, the fork's hooks do both.
+   */
   async _offerLiveRun(actor, target, architectureId, userId) {
     await NetArchitectAdapter.load();
     const architecture = NetArchitectAdapter.architectures().find((a) => a.id === architectureId);
@@ -2723,15 +2728,20 @@ class BusinessServiceImpl {
     });
     if (!yes) return this._tellRunner(actor, L('NCI.NetRunLive.Refused', { name: target.name }));
     if (!NetArchitectAdapter.isAuthority()) {
-      ui.notifications.warn(L('NCI.NetRunLive.NotAuthority'));
+      ui.notifications.warn(L('NCI.NetRunLive.NotAuthority', { module: NetArchitectAdapter.title() }));
       return this._tellRunner(actor, L('NCI.NetRunLive.Failed', { name: target.name }));
     }
+    // On the fork, its runStarted hook counts the run, as it does any other; this says which target it was asked for.
+    const fork = NetArchitectAdapter.onFork();
+    if (fork) this._expectedRuns.set(actor.uuid, { target, architectureId });
     try {
       await NetArchitectAdapter.start(architectureId, actor, userId);
     } catch (error) {
+      if (fork) this._expectedRuns.delete(actor.uuid);
       ui.notifications.error(error.message);
       return this._tellRunner(actor, L('NCI.NetRunLive.Failed', { name: target.name }));
     }
+    if (fork) return undefined;
     await actor.setFlag(MODULE_ID, FLAGS.NET_RUN, this.day());
     let sessionId = null;
     try {
@@ -2744,9 +2754,76 @@ class BusinessServiceImpl {
     return undefined;
   }
 
-  /** A line to the runner's players, and the GM, in chat. */
-  _tellRunner(actor, text) {
-    const owners = Array.from(game.users ?? []).filter((u) => u.isGM || actor.testUserPermission?.(u, 'OWNER')).map((u) => u.id);
+  // ── Following a run on NET Architect (NCI Edition) (ticket 11) ────────────────
+
+  /** The Actor a run hook names, from the world's actors or by uuid. */
+  async _runActor(actorUuid) {
+    if (!actorUuid) return null;
+    const found = Array.from(game.actors ?? []).find((a) => a.uuid === actorUuid);
+    if (found) return found;
+    try {
+      const doc = await fromUuid(actorUuid);
+      return doc?.documentName === 'Actor' ? doc : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * The fork's `runStarted`, once for each runner: a run on an architecture linked to a target, by a Netrunner, is their
+   * real run if the week's NET run is free; if not, NCI tells them and the GM it won't count, and leaves it alone.
+   * However the run was started: at an access point, from the fork's manager, or from NCI's heat panel.
+   */
+  async onLiveRunStarted({ sessionId, architectureId, actorUuid, userId } = {}) {
+    if (!NetArchitectAdapter.follows() || !sessionId) return;
+    const expected = this._expectedRuns.get(actorUuid);
+    const keys = NetArchitectAdapter.targetsOn(architectureId);
+    // The heat panel's target when it asked for this one, else the first target linked to the architecture.
+    const key = expected?.architectureId === architectureId && keys.includes(targetKey(expected.target)) ? targetKey(expected.target) : keys[0];
+    const target = key ? this._runTarget(key) : null;
+    if (!target) return;
+    const actor = await this._runActor(actorUuid);
+    if (!actor || !(SkillAdapter.baseFor(actor, ABILITIES.interface).base > 0)) return;
+    this._expectedRuns.delete(actorUuid);
+    const asked = actor.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
+    if (asked?.sessionId === sessionId) return;
+    const day = this.day();
+    if (netRunWait(actor.getFlag(MODULE_ID, FLAGS.NET_RUN), day) > 0) {
+      await this._tellRunner(actor, L('NCI.NetRunLive.NotCounted', { actor: actor.name, name: target.name }), [userId]);
+      return;
+    }
+    if (asked) await actor.unsetFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
+    await actor.setFlag(MODULE_ID, FLAGS.NET_RUN, day);
+    await actor.setFlag(MODULE_ID, FLAGS.NET_RUN_LIVE, { target, architectureId, day, sessionId, failed: [], compromised: [] });
+    Hooks.callAll(HOOKS.BUSINESSES_CHANGED, {});
+  }
+
+  /**
+   * The fork's `runnerLeft`, once for each runner: their run is settled with what the hook says of it, the nodes they
+   * failed, the run's compromised nodes and the items they took. Only a run NCI counted, and only once.
+   */
+  async onLiveRunnerLeft({ sessionId, actorUuid, failedNodeIds = [], compromisedNodeIds = [], itemsTaken = [] } = {}) {
+    if (!NetArchitectAdapter.follows() || !sessionId) return null;
+    const actor = await this._runActor(actorUuid);
+    const asked = actor?.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
+    if (!asked || asked.sessionId !== sessionId) return null;
+    const taken = new Set(itemsTaken.map((t) => t?.itemUuid).filter(Boolean));
+    return this._settleLive(actor, { ...asked, failed: [...failedNodeIds], compromised: [...compromisedNodeIds] }, taken);
+  }
+
+  /** The fork's `runEnded`: anyone NCI still follows in that run (a `runnerLeft` missed) is settled with what was kept. */
+  async onLiveRunEnded({ sessionId } = {}) {
+    if (!NetArchitectAdapter.follows() || !sessionId) return [];
+    const results = [];
+    for (const actor of Array.from(game.actors ?? []).filter((a) => a.getFlag?.(MODULE_ID, FLAGS.NET_RUN_LIVE)?.sessionId === sessionId)) {
+      results.push(await this._settleLive(actor, actor.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE)));
+    }
+    return results;
+  }
+
+  /** A line to the runner's players, and the GM, in chat; and to any other users named (the runner's player). */
+  _tellRunner(actor, text, also = []) {
+    const owners = [...new Set([...Array.from(game.users ?? []).filter((u) => u.isGM || actor.testUserPermission?.(u, 'OWNER')).map((u) => u.id), ...also.filter(Boolean)])];
     return ChatMessage.create({ content: `<p>${escapeHtml(text)}</p>`, whisper: owners, speaker: { alias: L('NCI.Heat.Action.netRun.Shard.from') } });
   }
 
@@ -2822,14 +2899,17 @@ class BusinessServiceImpl {
   }
 
   /**
-   * A run NCI was asked for is over for its runner: a pass if the shard about the target came out with them, traced if
-   * any node was failed or compromised on the way.
+   * A run NCI was asked for, or counted on the fork, is over for its runner: a pass if the shard about the target came
+   * out with them, traced if any node was failed or compromised on the way. `taken`: on the fork, the uuids of the items
+   * the runner took, from its hook.
    */
-  async _settleLive(actor, asked) {
+  async _settleLive(actor, asked, taken = null) {
     await actor.unsetFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
     const { target } = asked;
     const about = { ticker: target.ticker ?? null, businessId: target.kind === 'npc' ? target.id : null };
-    const shard = [...(actor.items ?? [])].some((item) => NetArchitectAdapter.takenIn(item, asked.sessionId) && StoryService.evidenceFor(actor, about).includes(item));
+    // What came out of the run: the items the fork's hook names, or those marked with this session's claim.
+    const cameOut = (item) => (taken ? taken.has(item.uuid) : NetArchitectAdapter.takenIn(item, asked.sessionId));
+    const shard = [...(actor.items ?? [])].some((item) => cameOut(item) && StoryService.evidenceFor(actor, about).includes(item));
     const result = liveRunOutcome({ shard, failed: asked.failed?.length ?? 0, compromised: asked.compromised?.length ?? 0 });
     if (result.heat && HeatService.enabled()) await HeatService.setHeat(actor.id, HeatService.heatOf(actor.id) + result.heat);
     if (result.standing && target.ticker) {

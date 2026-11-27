@@ -182,7 +182,7 @@ export class GMConsoleApp extends BaseApplication {
         active: g === group,
       })),
       // A group of one has no second row.
-      // NET runs only with NET Architect there (X2a).
+      // NET runs only with a NET module there: NET Architect or its NCI Edition (X2a).
       subTabs: GROUPS[group].length > 1 ? GROUPS[group].filter((t) => t !== 'netRuns' || NetArchitectAdapter.present()).map((t) => tabs.find((x) => x.id === t)) : [],
       activeGM: game.user.id === game.users.activeGM?.id,
     };

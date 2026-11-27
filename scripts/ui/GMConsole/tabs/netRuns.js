@@ -1,6 +1,6 @@
 /**
- * GM Console NET runs tab (the Tools group): which NET Architect architecture each target runs on, and data shards to
- * attach to its nodes (X2a, DESIGN §36.20). Shown only with CPR NET Architect active.
+ * GM Console NET runs tab (the Tools group): which architecture in the NET module each target runs on, and data shards
+ * to attach to its nodes (X2a, DESIGN §36.20). Shown only with a NET module active: NET Architect or its NCI Edition.
  * @file scripts/ui/GMConsole/tabs/netRuns.js
  * @description Action handlers run with `this` set to the console window.
  */
@@ -26,7 +26,7 @@ async function onLink(event, target) {
 async function onShard(event, target) {
   const out = await BusinessService.makeLiveShard(target.dataset.key);
   if (!out.ok) return ui.notifications.warn(L('NCI.GMConsole.ActionFailed'));
-  ui.notifications.info(L('NCI.NetRunLive.ShardMade', { name: out.item.name }));
+  ui.notifications.info(L('NCI.NetRunLive.ShardMade', { name: out.item.name, module: NetArchitectAdapter.title() }));
   return out.item.sheet?.render(true);
 }
 
@@ -38,7 +38,7 @@ async function onReload() {
 export const actions = { netLink: onLink, netShard: onShard, netReload: onReload };
 
 export function context(app) {
-  // The architectures come from NET Architect's compendium, read once and again on Reload.
+  // The architectures come from the NET module's compendium, read once and again on Reload.
   if (!loading && NetArchitectAdapter.present()) {
     loading = NetArchitectAdapter.load().then(() => app.render());
   }
@@ -59,7 +59,8 @@ export function context(app) {
     netRuns: {
       present: NetArchitectAdapter.present(),
       on: game.settings.get(MODULE_ID, SETTINGS.NET_ARCHITECT) === true,
-      noMaps: maps.length === 0,
+      hint: L(NetArchitectAdapter.onFork() ? 'NCI.NetRunLive.TabHintFork' : 'NCI.NetRunLive.TabHint', { module: NetArchitectAdapter.title() }),
+      noMaps: maps.length === 0 ? L('NCI.NetRunLive.NoMaps', { module: NetArchitectAdapter.title() }) : '',
       rows: [...npc.map((t) => row(t, 'npc')), ...corps.map((t) => row(t, 'corp'))],
     },
   };

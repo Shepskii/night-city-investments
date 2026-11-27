@@ -1,18 +1,33 @@
 /**
- * NET Architect adapter: a NET run played out for real (X2a, DESIGN §36.20).
+ * NET module adapter: a NET run played out for real (X2a, DESIGN §36.20; ADR 0001).
  * @file scripts/integrations/NetArchitectAdapter.js
- * @description With CPR NET Architect active and the world setting on, the GM links a target (an NPC's business or a
- *              market corporation) to one of their architectures, and a Netrunner can choose a real run on it over the
- *              quick roll. NET Architect is another author's module: this file is the only place NCI touches it, through
- *              its public API (`startNetrun`, `getActiveSession`), its hooks (`cprNetArchitectJackOut`) and the
- *              architectures in its world compendium, read as its own manager lists them. Nothing here changes it.
- *              A taken item keeps its flags (NET Architect copies them), so a data shard made here and attached to a
- *              node becomes the runner's evidence; Foundry's createItem hook says when.
+ * @description The NET module is CPR NET Architect, or our fork of it, NET Architect (NCI Edition), whichever is active,
+ *              the fork when both are. With it active and the world setting on, the GM links a target (an NPC's
+ *              business or a market corporation) to one of its architectures, and a real run on it counts as the
+ *              runner's NET run. This file is the only place NCI touches either module, through its public API
+ *              (`startNetrun`, `getActiveSession`), its hooks and the architectures in its world compendium, read as
+ *              its own manager lists them. Nothing here changes it. On the original, NCI follows a run it started by
+ *              watching the saved session; on the fork, it follows any run through the fork's run hooks (FORK_HOOKS).
+ *              A taken item keeps its flags (both copy them), so a data shard made here and attached to a node
+ *              becomes the runner's evidence; Foundry's createItem hook says when.
  */
 
 import { MODULE_ID, SETTINGS } from '../utils/constants.js';
 
+/** The original CPR NET Architect. */
 export const NET_ARCHITECT_ID = 'cpr-net-architect';
+/** Our fork, NET Architect (NCI Edition): preferred when both are active. */
+export const NET_ARCHITECT_NCI_ID = 'cpr-net-architect-nci-edition';
+
+/** The fork's run hooks, fired on every client from the authority GM's saved session (its README, "For module authors"). */
+export const FORK_HOOKS = Object.freeze({
+  runStarted: 'cprNetArchitectNci.runStarted',
+  runnerLeft: 'cprNetArchitectNci.runnerLeft',
+  runEnded: 'cprNetArchitectNci.runEnded',
+  itemTaken: 'cprNetArchitectNci.itemTaken',
+});
+
+const isActive = (id) => !!game.modules?.get(id)?.active;
 
 /** The GM whose client NET Architect runs on: the lowest id among connected GMs, as NET Architect has it. */
 export function authorityOf(users) {
@@ -25,9 +40,24 @@ export const targetKey = (target) => ((target.kind ? target.kind === 'npc' : !!t
 let cache = null;
 
 export const NetArchitectAdapter = {
-  /** Whether NET Architect is here at all. */
+  /** Whether a NET module is here at all: either edition. */
   present() {
-    return !!game.modules?.get(NET_ARCHITECT_ID)?.active;
+    return isActive(NET_ARCHITECT_NCI_ID) || isActive(NET_ARCHITECT_ID);
+  },
+
+  /** Whether the NET module in use is the fork, which has run hooks. */
+  onFork() {
+    return isActive(NET_ARCHITECT_NCI_ID);
+  },
+
+  /** The id of the NET module in use: the fork if it's active, else the original (active or not). */
+  moduleId() {
+    return this.onFork() ? NET_ARCHITECT_NCI_ID : NET_ARCHITECT_ID;
+  },
+
+  /** The NET module's own title, to name it to the GM. */
+  title() {
+    return game.modules?.get(this.moduleId())?.title ?? 'NET Architect';
   },
 
   /** Whether real runs are on in this world: what players are shown. NET Architect's API may load after NCI's start. */
@@ -41,10 +71,10 @@ export const NetArchitectAdapter = {
   },
 
   api() {
-    return game.modules?.get(NET_ARCHITECT_ID)?.api ?? null;
+    return game.modules?.get(this.moduleId())?.api ?? null;
   },
 
-  /** Whether this client is the one NET Architect starts runs from. */
+  /** Whether this client is the one the NET module starts runs from. */
   isAuthority() {
     return authorityOf(game.users)?.id === game.user?.id;
   },
@@ -67,6 +97,17 @@ export const NetArchitectAdapter = {
     return this.links()[targetKey(target)] ?? null;
   },
 
+  /** The keys of the targets linked to an architecture, in the order the GM linked them. */
+  targetsOn(architectureId) {
+    if (!architectureId) return [];
+    return Object.entries(this.links()).filter(([, id]) => id === architectureId).map(([key]) => key);
+  },
+
+  /** Whether this client follows the fork's runs for NCI: real runs on, on the fork, and the authority GM, so one settles. */
+  follows() {
+    return this.enabled() && this.onFork() && !!game.user?.isGM && this.isAuthority();
+  },
+
   /** GM only: link a target to an architecture, or unlink it with an empty id. */
   async link(key, architectureId) {
     const links = this.links();
@@ -80,16 +121,17 @@ export const NetArchitectAdapter = {
     return cache ?? [];
   },
 
-  /** GM only: read the architectures from NET Architect's world compendium. */
+  /** GM only: read the architectures from the NET module's world compendium. */
   async load() {
-    const pack = game.packs?.get(`world.${NET_ARCHITECT_ID}`);
+    const id = this.moduleId();
+    const pack = game.packs?.get(`world.${id}`);
     if (!game.user?.isGM || !pack) {
       cache = [];
       return cache;
     }
     try {
       const docs = await pack.getDocuments();
-      cache = docs.map((doc) => doc.getFlag(NET_ARCHITECT_ID, 'architecture')).filter((a) => a?.id)
+      cache = docs.map((doc) => doc.getFlag(id, 'architecture')).filter((a) => a?.id)
         .map((a) => ({ id: a.id, name: a.name || a.id }))
         .sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
@@ -99,14 +141,14 @@ export const NetArchitectAdapter = {
     return cache;
   },
 
-  /** Start a run on the authority GM's client; throws with NET Architect's own message if it refuses. */
+  /** Start a run on the authority GM's client; throws with the NET module's own message if it refuses. */
   start(architectureId, actor, userId) {
     return this.api().startNetrun(architectureId, actor.uuid, { userId: userId ?? undefined, actions: 0 });
   },
 
-  /** Whether an item came out of this session: NET Architect marks a taken item `lootClaim` "<session>:<node>:<attachment>". */
+  /** Whether an item came out of this session: the NET module marks a taken item `lootClaim` "<session>:<node>:<attachment>". */
   takenIn(item, sessionId) {
-    const claim = item?.flags?.[NET_ARCHITECT_ID]?.lootClaim;
+    const claim = item?.flags?.[this.moduleId()]?.lootClaim;
     return typeof claim === 'string' && claim.startsWith(`${sessionId}:`);
   },
 };
