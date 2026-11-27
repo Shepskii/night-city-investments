@@ -47,7 +47,7 @@ import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
 import { SkillAdapter } from './SkillAdapter.js';
 import { CrewToolsAdapter } from '../integrations/CrewToolsAdapter.js';
-import { NetArchitectAdapter, targetKey } from '../integrations/NetArchitectAdapter.js';
+import { NetArchitectAdapter, shardNode, targetKey } from '../integrations/NetArchitectAdapter.js';
 import { REWARDS, rewardRunners, rewardChange, rewardMatters } from '../engine/businessRewards.js';
 import { addLedger } from '../engine/businessRecord.js';
 import { WealthAdapter } from './WealthAdapter.js';
@@ -2796,6 +2796,33 @@ class BusinessServiceImpl {
     await actor.setFlag(MODULE_ID, FLAGS.NET_RUN, day);
     await actor.setFlag(MODULE_ID, FLAGS.NET_RUN_LIVE, { target, architectureId, day, sessionId, failed: [], compromised: [] });
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, {});
+    await this._attachLiveShard(target, architectureId);
+  }
+
+  /**
+   * A run NCI counted on the fork gets the target's data shard, made now and attached to the live run, visible to the
+   * runner: on the node the GM chose for the target, else the first objective, file or data node. With no such node,
+   * or if the fork refuses, the GM is told; the run still counts, without a shard.
+   */
+  async _attachLiveShard(target, architectureId) {
+    await NetArchitectAdapter.load();
+    const node = shardNode(NetArchitectAdapter.nodesOf(architectureId), NetArchitectAdapter.nodeOf(target));
+    if (!node) return this._tellGm(L('NCI.NetRunLive.NoShardNode', { name: target.name }));
+    const made = await this.makeLiveShard(targetKey(target));
+    if (!made.ok) return this._tellGm(L('NCI.NetRunLive.ShardNotAttached', { name: target.name, reason: made.reason }));
+    try {
+      await NetArchitectAdapter.addRunItem(node.id, made.item.uuid, { visible: true });
+    } catch (error) {
+      await made.item.delete?.();
+      return this._tellGm(L('NCI.NetRunLive.ShardNotAttached', { name: target.name, reason: error.message }));
+    }
+    return undefined;
+  }
+
+  /** A line to the GMs only, in chat. */
+  _tellGm(text) {
+    const gms = Array.from(game.users ?? []).filter((u) => u.isGM).map((u) => u.id);
+    return ChatMessage.create({ content: `<p>${escapeHtml(text)}</p>`, whisper: gms, speaker: { alias: L('NCI.Heat.Action.netRun.Shard.from') } });
   }
 
   /**
