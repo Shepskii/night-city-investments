@@ -2,7 +2,7 @@
 <div class="nci-block">
   <p class="nci-hint">{{hint}}</p>
   {{#unless on}}<p class="nci-warn">{{localize "NCI.NetRunLive.Off"}}</p>{{/unless}}
-  {{#if noMaps}}<p class="nci-warn">{{noMaps}}</p>{{/if}}
+  {{#if noMaps}}<p class="nci-warn">{{noMapsText}}</p>{{/if}}
   <div class="nci-actions"><button type="button" data-action="netReload"><i class="fas fa-rotate"></i> {{localize "NCI.NetRunLive.Reload"}}</button></div>
   <table class="nci-market">
     <thead><tr><th>{{localize "NCI.NetRunLive.Col.target"}}</th><th>{{localize "NCI.NetRunLive.Col.kind"}}</th><th class="num">{{localize "NCI.NetRunLive.Col.dv"}}</th><th>{{localize "NCI.NetRunLive.Col.map"}}</th>{{#if fork}}<th>{{localize "NCI.NetRunLive.Col.node"}}</th>{{/if}}<th></th></tr></thead>
@@ -12,7 +12,7 @@
         <td><strong>{{name}}</strong>{{#if missing}} <span class="nci-warn">{{localize "NCI.NetRunLive.Missing"}}</span>{{/if}}</td>
         <td class="nci-muted">{{kind}}</td>
         <td class="num">{{dv}}</td>
-        <td><select name="netArch">{{#each options}}<option value="{{value}}"{{#if selected}} selected{{/if}}>{{label}}</option>{{/each}}</select></td>
+        <td><select name="netArch" data-key="{{key}}">{{#each options}}<option value="{{value}}"{{#if selected}} selected{{/if}}>{{label}}</option>{{/each}}</select></td>
         {{#if ../fork}}<td>{{#if nodes.length}}<select name="netNode">{{#each nodes}}<option value="{{value}}"{{#if selected}} selected{{/if}}>{{label}}</option>{{/each}}</select>{{/if}}</td>{{/if}}
         <td class="nci-rowbtns">
           <button type="button" class="nci-labelled" data-action="netLink" data-key="{{key}}"><i class="fas fa-link"></i> {{localize "NCI.NetRunLive.Save"}}</button>

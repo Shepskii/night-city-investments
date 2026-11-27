@@ -117,6 +117,8 @@ export const FLAGS = Object.freeze({
   INQUIRED: 'inquired',
   NET_RUN: 'netRun',
   NET_RUN_LIVE: 'netRunLive',
+  /** On actors. The fork session NCI last counted as the actor's NET run, so a runner added back into it isn't counted again. */
+  NET_RUN_SESSION: 'netRunSession',
   /** On actors. The jobs a character holds or is offered at player businesses (DESIGN §32). Written only by the GM. */
   JOBS: 'jobs',
   /** On the GM-only control journal: employers at market corporations (N4), by id. */

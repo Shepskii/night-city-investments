@@ -308,6 +308,7 @@ async function onTheFork(body, { modules = { fork: true }, api = {} } = {}) {
   env.store.set('heatEnabled', true);
   await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN);
   await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
+  await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN_SESSION);
   await HeatService.setHeat(cass.id, 10);
   try {
     await body({ BusinessService, HeatService, MODULE_ID, FLAGS, gm1, gm2, asGm: (u) => { game.user = u; } });
@@ -322,6 +323,7 @@ async function onTheFork(body, { modules = { fork: true }, api = {} } = {}) {
     env.store.set('heatEnabled', false);
     await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN);
     await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
+    await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN_SESSION);
   }
 }
 
@@ -435,6 +437,60 @@ test('on the fork, with several GMs connected only the authority GM counts and s
   });
 });
 
+test('on the fork, a runner the GM adds back into a run they were settled from is not counted again, nor told it won\'t count', async () => {
+  await onTheFork(async ({ BusinessService, MODULE_ID, FLAGS }) => {
+    await BusinessService.onLiveRunStarted(started());
+    const day = cass.getFlag(MODULE_ID, FLAGS.NET_RUN);
+    await BusinessService.onLiveRunnerLeft({ sessionId: 'fs1', actorUuid: cass.uuid, userId: 'u1', failedNodeIds: [], compromisedNodeIds: [], itemsTaken: [] });
+    assert.equal(cass.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE), undefined, 'settled');
+    const n = chats.length;
+    // The GM adds Cass back: the fork fires runStarted again, with the same session.
+    await BusinessService.onLiveRunStarted(started());
+    assert.equal(cass.getFlag(MODULE_ID, FLAGS.NET_RUN), day, 'the week as it was');
+    assert.equal(cass.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE), undefined, 'not followed again');
+    assert.equal(whispersSince(n).length, 0, 'nobody is told anything');
+  });
+});
+
+test("on the fork, a run that ends with a runner NCI missed leaving settles them from the fork's session if it is still there, else from what was kept, with a warning", async () => {
+  let session = null;
+  const api = { getActiveSession: () => session };
+  await onTheFork(async ({ BusinessService, HeatService, MODULE_ID, FLAGS }) => {
+    // The session is still there: Cass failed a node on the way, so she is traced.
+    await BusinessService.onLiveRunStarted(started());
+    session = { id: 'fs1', compromisedNodeIds: [], runners: { u1: { runner: { actorUuid: cass.uuid, userId: 'u1' }, failedNodeIds: ['n2'] } } };
+    const [traced] = await BusinessService.onLiveRunEnded({ sessionId: 'fs1' });
+    assert.equal(traced.traced, true, 'traced from the session');
+    assert.equal(HeatService.heatOf(cass.id), 10 + E.BUSINESS_DEFAULTS.roles.netRun.heat);
+    assert.equal(cass.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE), undefined, 'settled');
+
+    // A node compromised in the run traces her too.
+    await HeatService.setHeat(cass.id, 10);
+    await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN);
+    await BusinessService.onLiveRunStarted(started({ sessionId: 'fs2' }));
+    session = { id: 'fs2', compromisedNodeIds: ['n3'], runners: { u1: { runner: { actorUuid: cass.uuid, userId: 'u1' }, failedNodeIds: [] } } };
+    assert.equal((await BusinessService.onLiveRunEnded({ sessionId: 'fs2' }))[0].traced, true, 'traced by a compromised node');
+
+    // Gone (or another run's): settled with what was kept, and a warning.
+    await HeatService.setHeat(cass.id, 10);
+    await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN);
+    await BusinessService.onLiveRunStarted(started({ sessionId: 'fs3' }));
+    session = { id: 'other', compromisedNodeIds: ['n3'], runners: {} };
+    const warn = console.warn;
+    const warned = [];
+    console.warn = (...args) => warned.push(args.join(' '));
+    try {
+      const [plain] = await BusinessService.onLiveRunEnded({ sessionId: 'fs3' });
+      assert.equal(plain.traced, false);
+    } finally {
+      console.warn = warn;
+    }
+    assert.equal(HeatService.heatOf(cass.id), 10);
+    assert.equal(warned.length, 1, 'a warning');
+    assert.match(warned[0], /fs3/);
+  }, { api });
+});
+
 test("on the fork, a run asked for on the heat panel is confirmed by the GM, started through the API, and counted by the fork's hook, once", async () => {
   const { SETTINGS } = await import('../scripts/utils/constants.js');
   const starts = [];
@@ -472,6 +528,21 @@ test("on the fork, a run asked for on the heat panel is confirmed by the GM, sta
   } finally {
     globalThis.foundry.applications = applications;
   }
+});
+
+test("on the fork, the heat panel's target is forgotten once the runner's run starts, even a run NCI doesn't count", async () => {
+  const { SETTINGS } = await import('../scripts/utils/constants.js');
+  await onTheFork(async ({ BusinessService, MODULE_ID, FLAGS }) => {
+    const corp = BusinessService.inquiryTargets().corps[0];
+    const npc = BusinessService._runTarget('b:bus_npcshop');
+    // The panel asked for Nina Noodles on arch1, but the run that started was on an architecture linked to nothing.
+    BusinessService._expectedRuns.set(cass.uuid, { target: npc, architectureId: 'arch1' });
+    await BusinessService.onLiveRunStarted(started({ architectureId: 'arch-unlinked' }));
+    // Later Cass jacks in at an access point on arch1, where the corporation is linked first: it counts against that.
+    env.store.set(SETTINGS.NET_ARCH_LINKS, { [`c:${corp.ticker}`]: 'arch1', 'b:bus_npcshop': 'arch1' });
+    await BusinessService.onLiveRunStarted(started({ sessionId: 'fs2' }));
+    assert.equal(cass.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE)?.target.ticker, corp.ticker, 'the first linked target, not the old ask');
+  });
 });
 
 test('on the original NET Architect, a heat panel run is counted at its start and settled from the saved session, as before; fork hooks change nothing', async () => {
@@ -600,6 +671,33 @@ test('on the fork, with no node to hold the data the run still counts, without a
   }, { addRunItem: async () => { throw new Error('No active NETRUN.'); } });
 });
 
+test("on the fork, when NCI can't make the shard the GM is told why in words, never a code", async () => {
+  await withFork(async ({ BusinessService, attached }) => {
+    const n = chats.length;
+    // The world refuses the Item.
+    globalThis.Item = { createDocuments: async () => [] };
+    await BusinessService.onLiveRunStarted(started());
+    assert.equal(attached.length, 0);
+    const [told] = whispersSince(n);
+    assert.match(told.content, /ShardNotAttached/);
+    assert.match(told.content, /NetRunLive\.ShardReason\.not-made/);
+    assert.doesNotMatch(told.content, /undefined/);
+  });
+  await withFork(async ({ BusinessService }) => {
+    const make = BusinessService.makeLiveShard;
+    BusinessService.makeLiveShard = async () => ({ ok: false, reason: 'something-new' });
+    try {
+      const n = chats.length;
+      await BusinessService.onLiveRunStarted(started());
+      const [told] = whispersSince(n);
+      assert.match(told.content, /NetRunLive\.ShardReason\.unknown/, 'a reason it has no words for: the generic one');
+      assert.doesNotMatch(told.content, /something-new/);
+    } finally {
+      BusinessService.makeLiveShard = make;
+    }
+  });
+});
+
 test("on the fork, a run NCI doesn't count gets no shard", async () => {
   await withFork(async ({ BusinessService, MODULE_ID, FLAGS, attached }) => {
     await cass.setFlag(MODULE_ID, FLAGS.NET_RUN, BusinessService.day() - 1);
@@ -659,7 +757,7 @@ test('on the fork, the shard NCI attached is filled in when taken, counts as a r
 });
 
 test("the GM Console's NET runs tab: on the fork, a linked target offers its architecture's nodes for the data and no manual shard; on the original, the manual shard", async () => {
-  const { context } = await import('../scripts/ui/GMConsole/tabs/netRuns.js');
+  const { context, pickArchitecture } = await import('../scripts/ui/GMConsole/tabs/netRuns.js');
   const { NetArchitectAdapter } = await import('../scripts/integrations/NetArchitectAdapter.js');
   const rowOf = () => context({ render() {} }).netRuns.rows.find((r) => r.key === 'b:bus_npcshop');
   await withFork(async () => {
@@ -674,6 +772,20 @@ test("the GM Console's NET runs tab: on the fork, a linked target offers its arc
     assert.equal(rowOf().nodes.find((o) => o.selected).value, '', 'no node chosen: the default');
     const other = context({ render() {} }).netRuns.rows.find((r) => r.key !== 'b:bus_npcshop');
     assert.equal(other.nodes.length, 0, 'an unlinked target has none');
+  });
+  await withFork(async () => {
+    await NetArchitectAdapter.load();
+    await NetArchitectAdapter.link('b:bus_npcshop', '');
+    // Choosing an architecture for an unlinked target offers its nodes at once, before Save.
+    const app = { render() {} };
+    pickArchitecture(app, 'b:bus_npcshop', 'arch1');
+    const row = context(app).netRuns.rows.find((r) => r.key === 'b:bus_npcshop');
+    assert.equal(row.options.find((o) => o.selected).value, 'arch1', 'the architecture chosen');
+    assert.deepEqual(row.nodes.map((o) => o.value), ['', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6'], "its nodes, before it's saved");
+    assert.equal(row.nodes.find((o) => o.selected).value, '', 'the default');
+    assert.equal(row.linked, false, 'not linked until saved');
+    pickArchitecture(app, 'b:bus_npcshop', '');
+    assert.equal(context(app).netRuns.rows.find((r) => r.key === 'b:bus_npcshop').nodes.length, 0, 'no architecture, no nodes');
   });
   await withFork(async () => {
     await NetArchitectAdapter.load();

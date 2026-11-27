@@ -13,18 +13,21 @@
  */
 
 import { MODULE_ID, SETTINGS } from '../utils/constants.js';
+import { L } from '../utils/helpers.js';
 
 /** The original CPR NET Architect. */
 export const NET_ARCHITECT_ID = 'cpr-net-architect';
 /** Our fork, NET Architect (NCI Edition): preferred when both are active. */
 export const NET_ARCHITECT_NCI_ID = 'cpr-net-architect-nci-edition';
 
-/** The fork's run hooks, fired on every client from the authority GM's saved session (its README, "For module authors"). */
+/**
+ * The fork's run hooks NCI follows, fired on every client from the authority GM's saved session (its README, "For module
+ * authors"). Its `itemTaken` isn't needed: a taken shard is filled on Foundry's createItem.
+ */
 export const FORK_HOOKS = Object.freeze({
   runStarted: 'cprNetArchitectNci.runStarted',
   runnerLeft: 'cprNetArchitectNci.runnerLeft',
   runEnded: 'cprNetArchitectNci.runEnded',
-  itemTaken: 'cprNetArchitectNci.itemTaken',
 });
 
 const isActive = (id) => !!game.modules?.get(id)?.active;
@@ -44,13 +47,16 @@ let cache = null;
  * `{ architectureId, nodeId }`. Links made before nodes could be chosen are plain ids, and still work.
  */
 const storedLinks = () => ({ ...(game.settings.get(MODULE_ID, SETTINGS.NET_ARCH_LINKS) ?? {}) });
-const linkedArchitecture = (value) => (typeof value === 'string' ? value : value?.architectureId ?? null) || null;
+/** A stored link read: its architecture id and chosen node, each null if there is none. */
+const parseLink = (value) => (typeof value === 'string'
+  ? { architectureId: value || null, nodeId: null }
+  : { architectureId: value?.architectureId || null, nodeId: value?.nodeId || null });
 
 /** The node types a data shard goes on when the GM hasn't chosen one, in the order tried. */
-export const SHARD_NODE_TYPES = Object.freeze(['objective', 'file', 'data']);
+const SHARD_NODE_TYPES = Object.freeze(['objective', 'file', 'data']);
 
 /** The node a target's data shard goes on: the one the GM chose, if the architecture still has it, else the first of SHARD_NODE_TYPES; or null. */
-export function shardNode(nodes, chosenId = null) {
+function shardNode(nodes, chosenId = null) {
   const chosen = chosenId ? nodes.find((n) => n.id === chosenId) : null;
   if (chosen) return chosen;
   for (const type of SHARD_NODE_TYPES) {
@@ -78,7 +84,7 @@ export const NetArchitectAdapter = {
 
   /** The NET module's own title, to name it to the GM. */
   title() {
-    return game.modules?.get(this.moduleId())?.title ?? 'NET Architect';
+    return game.modules?.get(this.moduleId())?.title ?? L('NCI.NetRunLive.ModuleTitle');
   },
 
   /** Whether real runs are on in this world: what players are shown. NET Architect's API may load after NCI's start. */
@@ -111,17 +117,16 @@ export const NetArchitectAdapter = {
 
   /** The links the GM has made, target key to architecture id. */
   links() {
-    return Object.fromEntries(Object.entries(storedLinks()).map(([key, value]) => [key, linkedArchitecture(value)]).filter(([, id]) => id));
+    return Object.fromEntries(Object.entries(storedLinks()).map(([key, value]) => [key, parseLink(value).architectureId]).filter(([, id]) => id));
   },
 
   linkOf(target) {
     return this.links()[targetKey(target)] ?? null;
   },
 
-  /** The node the GM chose to hold a target's data shard on the fork, or null for the default (see `shardNode`). */
+  /** The node the GM chose to hold a target's data shard on the fork, or null for the default (see `shardNodeFor`). */
   nodeOf(target) {
-    const value = storedLinks()[targetKey(target)];
-    return (value && typeof value === 'object' && value.nodeId) || null;
+    return parseLink(storedLinks()[targetKey(target)]).nodeId;
   },
 
   /** The keys of the targets linked to an architecture, in the order the GM linked them. */
@@ -153,6 +158,14 @@ export const NetArchitectAdapter = {
     return this.architectures().find((a) => a.id === architectureId)?.nodes ?? [];
   },
 
+  /**
+   * The node a target's data shard goes on in an architecture, from the last `load`: the one the GM chose, if the
+   * architecture still has it, else its first objective, then file, then data node; or null.
+   */
+  shardNodeFor(target, architectureId) {
+    return shardNode(this.nodesOf(architectureId), this.nodeOf(target));
+  },
+
   /** GM only: read the architectures from the NET module's world compendium. */
   async load() {
     const id = this.moduleId();
@@ -174,6 +187,25 @@ export const NetArchitectAdapter = {
       cache = [];
     }
     return cache;
+  },
+
+  /**
+   * What the fork's live session says of one runner, while that session is still the active one: the nodes they failed
+   * and the run's compromised nodes, as `runnerLeft` would give them; or null when the session is gone or another.
+   */
+  runnerInSession(sessionId, actorUuid) {
+    let session = null;
+    try {
+      session = this.api()?.getActiveSession?.() ?? null;
+    } catch {
+      return null;
+    }
+    if (!session || session.id !== sessionId) return null;
+    // Sessions from before several runners keep the one runner's state at the top.
+    const records = session.runners ? Object.values(session.runners) : [session];
+    const record = records.find((r) => r?.runner?.actorUuid === actorUuid);
+    if (!record) return null;
+    return { failed: [...(record.failedNodeIds ?? [])], compromised: [...(session.compromisedNodeIds ?? [])] };
   },
 
   /** Start a run on the authority GM's client; throws with the NET module's own message if it refuses. */

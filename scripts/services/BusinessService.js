@@ -47,7 +47,7 @@ import { MarketStore } from '../data/MarketStore.js';
 import { MarketClock } from './MarketClockService.js';
 import { SkillAdapter } from './SkillAdapter.js';
 import { CrewToolsAdapter } from '../integrations/CrewToolsAdapter.js';
-import { NetArchitectAdapter, shardNode, targetKey } from '../integrations/NetArchitectAdapter.js';
+import { NetArchitectAdapter, targetKey } from '../integrations/NetArchitectAdapter.js';
 import { REWARDS, rewardRunners, rewardChange, rewardMatters } from '../engine/businessRewards.js';
 import { addLedger } from '../engine/businessRecord.js';
 import { WealthAdapter } from './WealthAdapter.js';
@@ -75,6 +75,10 @@ const WEALTH_REASON = 'Night City Investments: business';
 
 /** What an employee writes about as the week closes: asking for a raise, and the ways of leaving (M3 step 3). */
 const STAFF_NOTE_KINDS = Object.freeze(['asks', 'quit', 'walked', 'unpaid', 'poached']);
+
+/** Why NCI couldn't make a data shard (`makeLiveShard`), in words for the GM: the reasons it gives, else a generic one. */
+const SHARD_REASONS = Object.freeze(['not-gm', 'no-target', 'not-made']);
+const shardReasonText = (reason) => L(`NCI.NetRunLive.ShardReason.${SHARD_REASONS.includes(reason) ? reason : 'unknown'}`);
 
 class BusinessServiceImpl {
   constructor() {
@@ -2776,7 +2780,9 @@ class BusinessServiceImpl {
    */
   async onLiveRunStarted({ sessionId, architectureId, actorUuid, userId } = {}) {
     if (!NetArchitectAdapter.follows() || !sessionId) return;
+    // The heat panel's ask is for this start only, whether it counts or not.
     const expected = this._expectedRuns.get(actorUuid);
+    this._expectedRuns.delete(actorUuid);
     const keys = NetArchitectAdapter.targetsOn(architectureId);
     // The heat panel's target when it asked for this one, else the first target linked to the architecture.
     const key = expected?.architectureId === architectureId && keys.includes(targetKey(expected.target)) ? targetKey(expected.target) : keys[0];
@@ -2784,9 +2790,9 @@ class BusinessServiceImpl {
     if (!target) return;
     const actor = await this._runActor(actorUuid);
     if (!actor || !(SkillAdapter.baseFor(actor, ABILITIES.interface).base > 0)) return;
-    this._expectedRuns.delete(actorUuid);
+    // A runner the GM adds back into a run starts it again, with the same session: counted once, and nobody is told.
     const asked = actor.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
-    if (asked?.sessionId === sessionId) return;
+    if (asked?.sessionId === sessionId || actor.getFlag(MODULE_ID, FLAGS.NET_RUN_SESSION) === sessionId) return;
     const day = this.day();
     if (netRunWait(actor.getFlag(MODULE_ID, FLAGS.NET_RUN), day) > 0) {
       await this._tellRunner(actor, L('NCI.NetRunLive.NotCounted', { actor: actor.name, name: target.name }), [userId]);
@@ -2794,6 +2800,7 @@ class BusinessServiceImpl {
     }
     if (asked) await actor.unsetFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
     await actor.setFlag(MODULE_ID, FLAGS.NET_RUN, day);
+    await actor.setFlag(MODULE_ID, FLAGS.NET_RUN_SESSION, sessionId);
     await actor.setFlag(MODULE_ID, FLAGS.NET_RUN_LIVE, { target, architectureId, day, sessionId, failed: [], compromised: [] });
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, {});
     await this._attachLiveShard(target, architectureId);
@@ -2806,23 +2813,28 @@ class BusinessServiceImpl {
    */
   async _attachLiveShard(target, architectureId) {
     await NetArchitectAdapter.load();
-    const node = shardNode(NetArchitectAdapter.nodesOf(architectureId), NetArchitectAdapter.nodeOf(target));
+    const node = NetArchitectAdapter.shardNodeFor(target, architectureId);
     if (!node) return this._tellGm(L('NCI.NetRunLive.NoShardNode', { name: target.name }));
     const made = await this.makeLiveShard(targetKey(target));
-    if (!made.ok) return this._tellGm(L('NCI.NetRunLive.ShardNotAttached', { name: target.name, reason: made.reason }));
+    if (!made.ok) return this._tellGm(L('NCI.NetRunLive.ShardNotAttached', { name: target.name, reason: shardReasonText(made.reason) }));
     try {
       await NetArchitectAdapter.addRunItem(node.id, made.item.uuid, { visible: true });
     } catch (error) {
       await made.item.delete?.();
-      return this._tellGm(L('NCI.NetRunLive.ShardNotAttached', { name: target.name, reason: error.message }));
+      // The fork refuses in words of its own.
+      return this._tellGm(L('NCI.NetRunLive.ShardNotAttached', { name: target.name, reason: error?.message || shardReasonText(null) }));
     }
     return undefined;
   }
 
+  /** A NET run's line in chat, whispered to these user ids, from the NET. */
+  _whisperRun(text, userIds) {
+    return ChatMessage.create({ content: `<p>${escapeHtml(text)}</p>`, whisper: [...new Set(userIds.filter(Boolean))], speaker: { alias: L('NCI.Heat.Action.netRun.Shard.from') } });
+  }
+
   /** A line to the GMs only, in chat. */
   _tellGm(text) {
-    const gms = Array.from(game.users ?? []).filter((u) => u.isGM).map((u) => u.id);
-    return ChatMessage.create({ content: `<p>${escapeHtml(text)}</p>`, whisper: gms, speaker: { alias: L('NCI.Heat.Action.netRun.Shard.from') } });
+    return this._whisperRun(text, Array.from(game.users ?? []).filter((u) => u.isGM).map((u) => u.id));
   }
 
   /**
@@ -2838,25 +2850,34 @@ class BusinessServiceImpl {
     return this._settleLive(actor, { ...asked, failed: [...failedNodeIds], compromised: [...compromisedNodeIds] }, taken);
   }
 
-  /** The fork's `runEnded`: anyone NCI still follows in that run (a `runnerLeft` missed) is settled with what was kept. */
+  /**
+   * The fork's `runEnded`: anyone NCI still follows in that run (a `runnerLeft` missed) is settled, with the nodes they
+   * failed and the run's compromised nodes from the fork's session if it is still there. If not, with what was kept,
+   * which knows neither, so they can't be traced; that is logged.
+   */
   async onLiveRunEnded({ sessionId } = {}) {
     if (!NetArchitectAdapter.follows() || !sessionId) return [];
     const results = [];
     for (const actor of Array.from(game.actors ?? []).filter((a) => a.getFlag?.(MODULE_ID, FLAGS.NET_RUN_LIVE)?.sessionId === sessionId)) {
-      results.push(await this._settleLive(actor, actor.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE)));
+      const asked = actor.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
+      const seen = NetArchitectAdapter.runnerInSession(sessionId, actor.uuid);
+      if (!seen) console.warn(`night-city-investments | NET run ${sessionId} ended without ${actor.name} leaving it, and its session is gone; settled without failed or compromised nodes`);
+      results.push(await this._settleLive(actor, seen ? { ...asked, ...seen } : asked));
     }
     return results;
   }
 
   /** A line to the runner's players, and the GM, in chat; and to any other users named (the runner's player). */
   _tellRunner(actor, text, also = []) {
-    const owners = [...new Set([...Array.from(game.users ?? []).filter((u) => u.isGM || actor.testUserPermission?.(u, 'OWNER')).map((u) => u.id), ...also.filter(Boolean)])];
-    return ChatMessage.create({ content: `<p>${escapeHtml(text)}</p>`, whisper: owners, speaker: { alias: L('NCI.Heat.Action.netRun.Shard.from') } });
+    const owners = Array.from(game.users ?? []).filter((u) => u.isGM || actor.testUserPermission?.(u, 'OWNER')).map((u) => u.id);
+    return this._whisperRun(text, [...owners, ...also]);
   }
 
   /**
-   * GM only: a data shard for a target, as a world Item to attach to a node in NET Architect's editor. Players can see
-   * it (NET Architect lets a runner take only what they can see). Whoever takes it gets it filled in as of then.
+   * GM only: a data shard for a target, as a world Item: on the original NET Architect, made from the NET runs tab for
+   * the GM to attach to a node in its editor; on the fork, made at a counted run's start and attached by NCI
+   * (`_attachLiveShard`). Players can see it (the NET module lets a runner take only what they can see). Whoever takes
+   * it gets it filled in as of then. Refused with a reason (`not-gm`, `no-target`, `not-made`).
    */
   async makeLiveShard(key) {
     if (!game.user.isGM) return { ok: false, reason: 'not-gm' };
@@ -2872,7 +2893,7 @@ class BusinessServiceImpl {
       system: { description: { value: `<p>${escapeHtml(L('NCI.NetRunLive.ShardBlank', { name: target.name }))}</p>` } },
       flags: { [MODULE_ID]: { [FLAGS.EVIDENCE]: { live: true, kind: target.kind, ticker: target.ticker ?? null, businessId: target.kind === 'npc' ? target.id : null, name: target.name, used: false } } },
     }]);
-    return { ok: !!item, item };
+    return item ? { ok: true, item } : { ok: false, reason: 'not-made' };
   }
 
   /** A data shard taken in a run (createItem on the actor): fill it in as of now, with a real run's weight. */
