@@ -18,6 +18,7 @@ Optional:
 - [Simple Calendar](<https://github.com/vigoren/foundryvtt-simple-calendar>), for the in-world clock the market ticks on
 - [Pneuma's Crew Tools](<https://github.com/GMPneuma/PneumaCrewTools>), for linking downtime to business actions
 - [Pneuma's Visual Tools](<https://github.com/GMPneuma/PneumaVisualTools>), for visual themes
+- [NET Architect (NCI Edition)](<https://github.com/Shepskii/cpr-net-architect-nci-edition>), for real NET runs a Netrunner jacks into from an access point or the heat panel (the original CPR NET Architect works too)
 
 ## Installation
 
