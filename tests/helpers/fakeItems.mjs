@@ -18,8 +18,9 @@ export function installFakeItems() {
       parent,
       getFlag(scope, key) { return this.flags?.[scope]?.[key]; },
       async setFlag(scope, key, value) { (this.flags ??= {})[scope] = { ...this.flags[scope], [key]: value }; },
+      async delete() { registry.delete(this.uuid); },
       toObject() {
-        const { id: _i, uuid: _u, documentName: _d, parent: _p, toObject: _t, getFlag: _g, setFlag: _s, ...rest } = this;
+        const { id: _i, uuid: _u, documentName: _d, parent: _p, toObject: _t, getFlag: _g, setFlag: _s, delete: _x, ...rest } = this;
         return structuredClone({ ...rest, _id: this.id });
       },
     };

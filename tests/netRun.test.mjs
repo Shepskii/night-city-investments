@@ -749,10 +749,22 @@ test('on the fork, the shard NCI attached is filled in when taken, counts as a r
       assert.equal(result.traced, false);
       assert.equal(HeatService.heatOf(cass.id), 10);
       assert.ok(whispersSince(n).some((c) => /Result\.success /.test(c.content)));
+      assert.equal(await fromUuid(source.uuid), null, "the source shard leaves the Items directory once the run settles; the runner keeps their copy");
+      assert.ok(await fromUuid(taken.uuid), "the runner's copy stays");
       await cass.deleteEmbeddedDocuments('Item', [taken.id]);
     } finally {
       StoryService.toMessenger = messenger;
     }
+  });
+});
+
+test('on the fork, a shard nobody took is deleted from the Items directory when the run settles', async () => {
+  await withFork(async ({ BusinessService, attached }) => {
+    await BusinessService.onLiveRunStarted(started());
+    const sourceUuid = attached[0].itemUuid;
+    assert.ok(await fromUuid(sourceUuid), 'made at the start');
+    await BusinessService.onLiveRunnerLeft({ sessionId: 'fs1', actorUuid: cass.uuid, userId: 'u1', failedNodeIds: [], compromisedNodeIds: [], itemsTaken: [] });
+    assert.equal(await fromUuid(sourceUuid), null, 'gone once settled');
   });
 });
 

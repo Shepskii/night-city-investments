@@ -2803,28 +2803,37 @@ class BusinessServiceImpl {
     await actor.setFlag(MODULE_ID, FLAGS.NET_RUN_SESSION, sessionId);
     await actor.setFlag(MODULE_ID, FLAGS.NET_RUN_LIVE, { target, architectureId, day, sessionId, failed: [], compromised: [] });
     Hooks.callAll(HOOKS.BUSINESSES_CHANGED, {});
-    await this._attachLiveShard(target, architectureId);
+    const shardUuid = await this._attachLiveShard(target, architectureId);
+    // Kept so the source shard can leave the Items directory when the run settles.
+    if (shardUuid) await actor.setFlag(MODULE_ID, FLAGS.NET_RUN_LIVE, { shardUuid });
   }
 
   /**
    * A run NCI counted on the fork gets the target's data shard, made now and attached to the live run, visible to the
    * runner: on the node the GM chose for the target, else the first objective, file or data node. With no such node,
-   * or if the fork refuses, the GM is told; the run still counts, without a shard.
+   * or if the fork refuses, the GM is told; the run still counts, without a shard. Returns the shard's uuid, or null.
    */
   async _attachLiveShard(target, architectureId) {
     await NetArchitectAdapter.load();
     const node = NetArchitectAdapter.shardNodeFor(target, architectureId);
-    if (!node) return this._tellGm(L('NCI.NetRunLive.NoShardNode', { name: target.name }));
+    if (!node) {
+      await this._tellGm(L('NCI.NetRunLive.NoShardNode', { name: target.name }));
+      return null;
+    }
     const made = await this.makeLiveShard(targetKey(target));
-    if (!made.ok) return this._tellGm(L('NCI.NetRunLive.ShardNotAttached', { name: target.name, reason: shardReasonText(made.reason) }));
+    if (!made.ok) {
+      await this._tellGm(L('NCI.NetRunLive.ShardNotAttached', { name: target.name, reason: shardReasonText(made.reason) }));
+      return null;
+    }
     try {
       await NetArchitectAdapter.addRunItem(node.id, made.item.uuid, { visible: true });
     } catch (error) {
       await made.item.delete?.();
       // The fork refuses in words of its own.
-      return this._tellGm(L('NCI.NetRunLive.ShardNotAttached', { name: target.name, reason: error?.message || shardReasonText(null) }));
+      await this._tellGm(L('NCI.NetRunLive.ShardNotAttached', { name: target.name, reason: error?.message || shardReasonText(null) }));
+      return null;
     }
-    return undefined;
+    return made.item.uuid;
   }
 
   /** A NET run's line in chat, whispered to these user ids, from the NET. */
@@ -2966,7 +2975,20 @@ class BusinessServiceImpl {
       }
     }
     await this._tellRunner(actor, L(`NCI.NetRunLive.Result.${result.outcome}${result.traced ? 'Traced' : ''}`, { name: target.name }));
+    // The source shard NCI made for this run on the fork is done with: the runner, if they took it, has their own copy.
+    // Shards the GM made by hand for the original NET Architect carry no uuid here and are left alone.
+    if (asked.shardUuid) await this._dropShardSource(asked.shardUuid);
     return result;
+  }
+
+  /** Delete a source shard from the Items directory, if it is still there; a failure is only logged. */
+  async _dropShardSource(uuid) {
+    try {
+      const item = await fromUuid(uuid);
+      if (item && !item.parent) await item.delete();
+    } catch (error) {
+      console.warn(`night-city-investments | could not delete the source data shard ${uuid}`, error);
+    }
   }
 
   /** A case on an NPC's business from an investigation (X2d). Nobody answers it, so it comes to the GM. */
