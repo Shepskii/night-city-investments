@@ -757,7 +757,7 @@ test('on the fork, the shard NCI attached is filled in when taken, counts as a r
 });
 
 test("the GM Console's NET runs tab: on the fork, a linked target offers its architecture's nodes for the data and no manual shard; on the original, the manual shard", async () => {
-  const { context } = await import('../scripts/ui/GMConsole/tabs/netRuns.js');
+  const { context, pickArchitecture } = await import('../scripts/ui/GMConsole/tabs/netRuns.js');
   const { NetArchitectAdapter } = await import('../scripts/integrations/NetArchitectAdapter.js');
   const rowOf = () => context({ render() {} }).netRuns.rows.find((r) => r.key === 'b:bus_npcshop');
   await withFork(async () => {
@@ -772,6 +772,20 @@ test("the GM Console's NET runs tab: on the fork, a linked target offers its arc
     assert.equal(rowOf().nodes.find((o) => o.selected).value, '', 'no node chosen: the default');
     const other = context({ render() {} }).netRuns.rows.find((r) => r.key !== 'b:bus_npcshop');
     assert.equal(other.nodes.length, 0, 'an unlinked target has none');
+  });
+  await withFork(async () => {
+    await NetArchitectAdapter.load();
+    await NetArchitectAdapter.link('b:bus_npcshop', '');
+    // Choosing an architecture for an unlinked target offers its nodes at once, before Save.
+    const app = { render() {} };
+    pickArchitecture(app, 'b:bus_npcshop', 'arch1');
+    const row = context(app).netRuns.rows.find((r) => r.key === 'b:bus_npcshop');
+    assert.equal(row.options.find((o) => o.selected).value, 'arch1', 'the architecture chosen');
+    assert.deepEqual(row.nodes.map((o) => o.value), ['', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6'], "its nodes, before it's saved");
+    assert.equal(row.nodes.find((o) => o.selected).value, '', 'the default');
+    assert.equal(row.linked, false, 'not linked until saved');
+    pickArchitecture(app, 'b:bus_npcshop', '');
+    assert.equal(context(app).netRuns.rows.find((r) => r.key === 'b:bus_npcshop').nodes.length, 0, 'no architecture, no nodes');
   });
   await withFork(async () => {
     await NetArchitectAdapter.load();

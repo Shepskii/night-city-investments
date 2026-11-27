@@ -157,6 +157,8 @@ export class GMConsoleApp extends BaseApplication {
       this.contractBusiness = event.target.value;
       this.render();
     });
+    // A tab's own listeners for what aren't clicks.
+    TABS[this.tab]?.onRender?.(this, root);
     root.querySelector('[data-production-drop]')?.addEventListener('drop', (event) => {
       event.preventDefault();
       try {
