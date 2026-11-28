@@ -32,8 +32,20 @@ export const FORK_HOOKS = Object.freeze({
 
 const isActive = (id) => !!game.modules?.get(id)?.active;
 
-/** The GM whose client NET Architect runs on: the lowest id among connected GMs, as NET Architect has it. */
-export function authorityOf(users) {
+/** The first fork version whose authority is Foundry's active GM, `game.users.activeGM`. */
+const FORK_ACTIVE_GM_VERSION = [1, 1, 0];
+
+/** Whether a version string such as "1.1.0" is at least `min`, part by part. */
+function atLeast(version, min) {
+  const parts = String(version ?? '').split('.').map((p) => parseInt(p, 10) || 0);
+  for (let i = 0; i < min.length; i++) {
+    if ((parts[i] ?? 0) !== min[i]) return (parts[i] ?? 0) > min[i];
+  }
+  return true;
+}
+
+/** The lowest id among connected GMs: the original NET Architect's authority, and older forks'. */
+function lowestIdGM(users) {
   return [...users].filter((u) => u.isGM && u.active).sort((a, b) => a.id.localeCompare(b.id))[0] ?? null;
 }
 
@@ -101,9 +113,23 @@ export const NetArchitectAdapter = {
     return game.modules?.get(this.moduleId())?.api ?? null;
   },
 
+  /**
+   * The GM whose client the NET module runs on, as that module has it, or null. The fork from 1.1.0: Foundry's active
+   * GM (a full GM before an Assistant GM), the lowest id only when Foundry gives no answer. The original, and older
+   * forks: the lowest id among connected GMs.
+   */
+  authority() {
+    if (this.onFork() && atLeast(game.modules?.get(NET_ARCHITECT_NCI_ID)?.version, FORK_ACTIVE_GM_VERSION)) {
+      const gm = game.users?.activeGM;
+      if (gm !== undefined) return gm ?? null;
+    }
+    return lowestIdGM(game.users ?? []);
+  },
+
   /** Whether this client is the one the NET module starts runs from. */
   isAuthority() {
-    return authorityOf(game.users)?.id === game.user?.id;
+    const gm = this.authority();
+    return !!gm && gm.id === game.user?.id;
   },
 
   /** Whether a run is going on now: NET Architect has one at a time. */

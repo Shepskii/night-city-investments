@@ -248,11 +248,11 @@ test('a shard taken in a real run is filled in as of then; jack-out settles the 
 const FORK = 'cpr-net-architect-nci-edition';
 const ORIGINAL = 'cpr-net-architect';
 
-/** Which NET modules are active, each with this API, until the returned undo. */
-function useModules({ fork = false, original = false, api = {} } = {}) {
+/** Which NET modules are active, each with this API, until the returned undo. The fork is 1.1.0 unless `forkVersion` says. */
+function useModules({ fork = false, forkVersion = '1.1.0', original = false, api = {} } = {}) {
   const get = game.modules.get;
   game.modules.get = (id) => {
-    if (id === FORK) return fork ? { active: true, title: 'NET Architect (NCI Edition)', api } : undefined;
+    if (id === FORK) return fork ? { active: true, title: 'NET Architect (NCI Edition)', version: forkVersion, api } : undefined;
     if (id === ORIGINAL) return original ? { active: true, title: 'NET Architect', api } : undefined;
     return get(id);
   };
@@ -435,6 +435,94 @@ test('on the fork, with several GMs connected only the authority GM counts and s
     assert.equal(whispersSince(n).length, 1, 'one result');
     assert.ok(!whispersSince(n0).some((c) => /NotCounted/.test(c.content)), 'the repeat start is not whispered as not counting');
   });
+});
+
+/**
+ * The GMs connected for `body`: an Assistant GM agm, whose id sorts before the full GM gm1's, and gm1, Foundry's
+ * active GM (`activeGM`: a full GM before an Assistant GM). `activeGM` is left off to stand for Foundry giving none.
+ */
+async function withAssistantGM(gm1, body, options = {}) {
+  const agm = { id: 'agm', name: 'Ada (Assistant GM)', isGM: true, active: true };
+  const users = [agm, gm1, { id: 'u1', isGM: false, active: true }];
+  const activeGM = 'activeGM' in options ? options.activeGM : gm1;
+  if (activeGM !== undefined) users.activeGM = activeGM;
+  game.users = users;
+  await body(agm);
+}
+
+/** Who counts a fork run: [whether the Assistant GM counted it, whether the full GM did], each starting afresh. */
+async function whoCounts(BusinessService, MODULE_ID, FLAGS, agm, gm1, asGm) {
+  const counted = [];
+  for (const gm of [agm, gm1]) {
+    await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN);
+    await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN_LIVE);
+    await cass.unsetFlag(MODULE_ID, FLAGS.NET_RUN_SESSION);
+    asGm(gm);
+    await BusinessService.onLiveRunStarted(started({ sessionId: `fs-${gm.id}` }));
+    counted.push(!!cass.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE));
+  }
+  return counted;
+}
+
+test("on the fork 1.1.0 or later, with an Assistant GM of lower id online, Foundry's active GM counts and settles the run, as the fork has it", async () => {
+  await onTheFork(async ({ BusinessService, HeatService, MODULE_ID, FLAGS, gm1, asGm }) => {
+    await withAssistantGM(gm1, async (agm) => {
+      assert.deepEqual(await whoCounts(BusinessService, MODULE_ID, FLAGS, agm, gm1, asGm), [false, true], 'the full GM counts it, not the Assistant GM');
+      const left = { sessionId: 'fs-gm1', actorUuid: `Actor.${cass.id}`, userId: 'u1', failedNodeIds: ['n2'], compromisedNodeIds: [], itemsTaken: [] };
+      asGm(agm);
+      await BusinessService.onLiveRunnerLeft(left);
+      assert.ok(cass.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE), 'not settled by the Assistant GM');
+      asGm(gm1);
+      await BusinessService.onLiveRunnerLeft(left);
+      assert.equal(cass.getFlag(MODULE_ID, FLAGS.NET_RUN_LIVE), undefined, 'settled by the full GM');
+      assert.equal(HeatService.heatOf(cass.id), 10 + E.BUSINESS_DEFAULTS.roles.netRun.heat, 'traced once');
+    });
+  });
+});
+
+test('on the fork, the lowest-id connected GM counts the run where Foundry names no active GM, and nobody does where it says there is none', async () => {
+  await onTheFork(async ({ BusinessService, MODULE_ID, FLAGS, gm1, asGm }) => {
+    await withAssistantGM(gm1, async (agm) => {
+      assert.deepEqual(await whoCounts(BusinessService, MODULE_ID, FLAGS, agm, gm1, asGm), [true, false], 'the lowest id, without activeGM');
+    }, { activeGM: undefined });
+    await withAssistantGM(gm1, async (agm) => {
+      assert.deepEqual(await whoCounts(BusinessService, MODULE_ID, FLAGS, agm, gm1, asGm), [false, false], 'nobody, with activeGM null');
+    }, { activeGM: null });
+  });
+});
+
+test('on a fork before 1.1.0, the lowest-id connected GM counts the run, as that fork has it, even with a full GM active', async () => {
+  await onTheFork(async ({ BusinessService, MODULE_ID, FLAGS, gm1, asGm }) => {
+    await withAssistantGM(gm1, async (agm) => {
+      assert.deepEqual(await whoCounts(BusinessService, MODULE_ID, FLAGS, agm, gm1, asGm), [true, false]);
+    });
+  }, { modules: { fork: true, forkVersion: '1.0.0' } });
+});
+
+test("on the original NET Architect, a heat panel run starts only from the lowest-id connected GM's client, even with a full GM active", async () => {
+  const starts = [];
+  const api = { getActiveSession: () => null, startNetrun: async (architectureId) => { starts.push(architectureId); } };
+  const applications = globalThis.foundry.applications;
+  globalThis.foundry.applications = { api: { DialogV2: { confirm: async () => true } } };
+  try {
+    await onTheFork(async ({ BusinessService, MODULE_ID, FLAGS, gm1, asGm }) => {
+      await withAssistantGM(gm1, async (agm) => {
+        const n = env.notices.length;
+        asGm(gm1);
+        await BusinessService._netRunLive(cass, { target: 'b:bus_npcshop', userId: 'u1' });
+        await settle();
+        assert.deepEqual(starts, [], 'not from the full GM');
+        assert.ok(env.notices.slice(n).some(([kind, text]) => kind === 'warn' && /NotAuthority/.test(text) && text.includes('Ada (Assistant GM)')), 'the full GM is told which GM to start it from');
+        asGm(agm);
+        await BusinessService._netRunLive(cass, { target: 'b:bus_npcshop', userId: 'u1' });
+        await settle();
+        assert.deepEqual(starts, ['arch1'], 'from the Assistant GM, the lowest id');
+        assert.equal(cass.getFlag(MODULE_ID, FLAGS.NET_RUN), BusinessService.day());
+      });
+    }, { modules: { original: true }, api });
+  } finally {
+    globalThis.foundry.applications = applications;
+  }
 });
 
 test('on the fork, a runner the GM adds back into a run they were settled from is not counted again, nor told it won\'t count', async () => {

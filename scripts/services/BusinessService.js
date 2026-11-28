@@ -2732,7 +2732,7 @@ class BusinessServiceImpl {
     });
     if (!yes) return this._tellRunner(actor, L('NCI.NetRunLive.Refused', { name: target.name }));
     if (!NetArchitectAdapter.isAuthority()) {
-      ui.notifications.warn(L('NCI.NetRunLive.NotAuthority', { module: NetArchitectAdapter.title() }));
+      ui.notifications.warn(L('NCI.NetRunLive.NotAuthority', { module: NetArchitectAdapter.title(), gm: NetArchitectAdapter.authority()?.name ?? L('NCI.NetRunLive.AuthorityGM') }));
       return this._tellRunner(actor, L('NCI.NetRunLive.Failed', { name: target.name }));
     }
     // On the fork, its runStarted hook counts the run, as it does any other; this says which target it was asked for.
