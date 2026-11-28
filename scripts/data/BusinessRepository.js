@@ -13,6 +13,7 @@ import { normalizeBusiness, shareOf, bookValue } from '../engine/index.js';
 import { MODULE_ID, FLAGS, BUSINESS_FOLDER_NAME } from '../utils/constants.js';
 import { SyndicateRepository } from './SyndicateRepository.js';
 import { unwrap } from '../utils/helpers.js';
+import { journalRecordCache } from './journalRecordCache.js';
 
 const LEVELS = () => CONST.DOCUMENT_OWNERSHIP_LEVELS;
 
@@ -32,16 +33,14 @@ export const BusinessRepository = {
     return game.journal.filter((j) => j.getFlag(MODULE_ID, FLAGS.BUSINESS) && (game.user.isGM || j.testUserPermission?.(game.user, 'OBSERVER') !== false));
   },
 
-  /** Every business this client can read, newest first. */
+  /** Every business this client can read, newest first. Copies, from the cache. */
   all() {
-    return this.journals()
-      .map((j) => normalizeBusiness(foundry.utils.deepClone(unwrap(j.getFlag(MODULE_ID, FLAGS.BUSINESS)))))
-      .filter((b) => b.id)
-      .sort((a, b) => b.createdDay - a.createdDay || a.name.localeCompare(b.name));
+    return cache.all();
   },
 
+  /** One business, or null. A copy, from the cache. */
   get(id) {
-    return this.all().find((b) => b.id === id) ?? null;
+    return cache.get(id);
   },
 
   journalOf(id) {
@@ -110,6 +109,14 @@ export const BusinessRepository = {
   /** Create or replace a business record. GM only. */
   async save(business) {
     if (!game.user.isGM) return false;
+    try {
+      return await this._write(business);
+    } finally {
+      cache.clear();
+    }
+  },
+
+  async _write(business) {
     const journal = this.journalOf(business.id);
     const ownership = this.ownershipFor(business);
     if (!journal) {
@@ -140,7 +147,18 @@ export const BusinessRepository = {
     if (!game.user.isGM) return false;
     const journal = this.journalOf(id);
     if (!journal) return false;
-    await journal.delete();
+    try {
+      await journal.delete();
+    } finally {
+      cache.clear();
+    }
     return true;
   },
 };
+
+/** Every business this client can read, read afresh from the journals: what the cache holds. */
+const cache = journalRecordCache(FLAGS.BUSINESS, () =>
+  BusinessRepository.journals()
+    .map((j) => normalizeBusiness(foundry.utils.deepClone(unwrap(j.getFlag(MODULE_ID, FLAGS.BUSINESS)))))
+    .filter((b) => b.id)
+    .sort((a, b) => b.createdDay - a.createdDay || a.name.localeCompare(b.name)));

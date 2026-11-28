@@ -53,9 +53,24 @@ export function installFakeFoundry({ actors: actorSpecs = [], now = Date.UTC(204
     _changed() {}
   }
 
+  // As in Foundry, every write to a journal calls its hook, with the change, once the journal holds it.
   class FakeJournal extends FakeDoc {
     constructor(data) { super(data); this.id = `j${FakeJournal.n++}`; }
-    async delete() { game.journal.splice(game.journal.indexOf(this), 1); }
+    async update(d) {
+      const { flags, ...rest } = d;
+      Object.assign(this, rest);
+      if (flags) merge(this.flags, structuredClone(flags));
+      callAll('updateJournalEntry', this, structuredClone(d), {}, game.user?.id);
+    }
+    async unsetFlag(scope, key) {
+      delete this.flags[scope]?.[key];
+      callAll('updateJournalEntry', this, { flags: { [scope]: { [`-=${key}`]: null } } }, {}, game.user?.id);
+    }
+    _changed(changes) { callAll('updateJournalEntry', this, structuredClone(changes), {}, game.user?.id); }
+    async delete() {
+      game.journal.splice(game.journal.indexOf(this), 1);
+      callAll('deleteJournalEntry', this, {}, game.user?.id);
+    }
   }
   FakeJournal.n = 1;
 
@@ -86,7 +101,14 @@ export function installFakeFoundry({ actors: actorSpecs = [], now = Date.UTC(204
   };
   globalThis.ui = { notifications: { warn: (m) => notices.push(['warn', m]), info: (m) => notices.push(['info', m]) } };
   globalThis.Folder = { create: async (d) => ({ id: 'f1', ...d }) };
-  globalThis.JournalEntry = { create: async (d) => { const j = new FakeJournal(d); game.journal.push(j); return j; } };
+  globalThis.JournalEntry = {
+    create: async (d) => {
+      const j = new FakeJournal(d);
+      game.journal.push(j);
+      callAll('createJournalEntry', j, {}, game.user?.id);
+      return j;
+    },
+  };
   globalThis.foundry = {
     utils: {
       deepClone: (v) => structuredClone(v),

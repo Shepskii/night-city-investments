@@ -12,6 +12,7 @@
 import { normalizeSyndicate, normalizePortfolio, seenBy, activeMembers } from '../engine/index.js';
 import { MODULE_ID, FLAGS, SYNDICATE_FOLDER_NAME } from '../utils/constants.js';
 import { unwrap } from '../utils/helpers.js';
+import { journalRecordCache } from './journalRecordCache.js';
 
 const LEVELS = () => CONST.DOCUMENT_OWNERSHIP_LEVELS;
 const recordOf = (journal) => unwrap(journal?.getFlag(MODULE_ID, FLAGS.SYNDICATE));
@@ -22,16 +23,14 @@ export const SyndicateRepository = {
     return game.journal.filter((j) => recordOf(j) && (game.user.isGM || j.testUserPermission?.(game.user, 'OBSERVER') !== false));
   },
 
-  /** Every syndicate this client can read, newest first. */
+  /** Every syndicate this client can read, newest first. Copies, from the cache. */
   all() {
-    return this.journals()
-      .map((j) => normalizeSyndicate(foundry.utils.deepClone(recordOf(j))))
-      .filter((s) => s.id)
-      .sort((a, b) => b.createdDay - a.createdDay || a.name.localeCompare(b.name));
+    return cache.all();
   },
 
+  /** One syndicate, or null. A copy, from the cache. */
   get(id) {
-    return this.all().find((s) => s.id === id) ?? null;
+    return cache.get(id);
   },
 
   /** The journal holding a syndicate. It stands in for an actor wherever a portfolio is read. */
@@ -106,6 +105,14 @@ export const SyndicateRepository = {
    */
   async save(syndicate, portfolio = null) {
     if (!game.user.isGM) return false;
+    try {
+      return await this._write(syndicate, portfolio);
+    } finally {
+      cache.clear();
+    }
+  },
+
+  async _write(syndicate, portfolio) {
     const journal = this.journalOf(syndicate.id);
     const ownership = this.ownershipFor(syndicate);
     const flags = { [FLAGS.SYNDICATE]: [syndicate], ...(portfolio ? { [FLAGS.PORTFOLIO]: [portfolio] } : {}) };
@@ -131,7 +138,18 @@ export const SyndicateRepository = {
     if (!game.user.isGM) return false;
     const journal = this.journalOf(id);
     if (!journal) return false;
-    await journal.delete();
+    try {
+      await journal.delete();
+    } finally {
+      cache.clear();
+    }
     return true;
   },
 };
+
+/** Every syndicate this client can read, read afresh from the journals: what the cache holds. */
+const cache = journalRecordCache(FLAGS.SYNDICATE, () =>
+  SyndicateRepository.journals()
+    .map((j) => normalizeSyndicate(foundry.utils.deepClone(recordOf(j))))
+    .filter((s) => s.id)
+    .sort((a, b) => b.createdDay - a.createdDay || a.name.localeCompare(b.name)));
