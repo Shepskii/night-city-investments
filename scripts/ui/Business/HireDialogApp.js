@@ -11,6 +11,7 @@
 
 import { partnerOf, postOpen } from '../../engine/index.js';
 import { MODULE_ID, HOOKS } from '../../utils/constants.js';
+import { textEditor } from '../../utils/helpers.js';
 import { BusinessRepository } from '../../data/BusinessRepository.js';
 import { BusinessClient, staffActors } from '../../services/BusinessClient.js';
 import { accountFor } from '../accounts.js';
@@ -104,7 +105,7 @@ export class HireDialogApp extends BaseApplication {
     const business = this.business;
     const account = this.account;
     if (!business || !account || account.isSyndicate) return null;
-    const data = TextEditor.getDragEventData(event);
+    const data = textEditor().getDragEventData(event);
     if (data?.type !== 'Actor' || !data.uuid) return ui.notifications.warn(L('NCI.Staff.DropActorOnly'));
     const actor = await fromUuid(data.uuid);
     if (!actor) return ui.notifications.warn(L('NCI.Staff.DropActorOnly'));
@@ -133,7 +134,7 @@ export class HireDialogApp extends BaseApplication {
     const business = this.business;
     const account = this.account;
     if (!business || !account || (account.isSyndicate && !account.isOfficer)) return null;
-    const data = TextEditor.getDragEventData(event);
+    const data = textEditor().getDragEventData(event);
     if (data?.type !== 'Actor' || !data.uuid) return ui.notifications.warn(L('NCI.Staff.DropActorOnly'));
     const actor = await fromUuid(data.uuid);
     if (!actor) return ui.notifications.warn(L('NCI.Staff.DropActorOnly'));

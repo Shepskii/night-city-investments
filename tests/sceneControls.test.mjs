@@ -39,3 +39,46 @@ test('without a Token Controls group nothing is added and it reports that', () =
   assert.equal(addMarketControls(c, tools()), false);
   assert.deepEqual(c[0].tools, []);
 });
+
+// Foundry v13 passes a record of groups, the Token Controls under `tokens`, with each group's
+// tools a record keyed by name; a button's handler is `onChange` and its place is `order`.
+const v13Controls = () => ({
+  tokens: { name: 'tokens', tools: { select: { name: 'select', order: 0 }, ncm: { name: 'ncm', order: 1 } } },
+  'night-city-messenger': { name: 'night-city-messenger', tools: { 'ncm-inbox': { name: 'ncm-inbox', order: 0 } } },
+});
+const v13Names = (group) => Object.values(group.tools).sort((a, b) => a.order - b.order).map((t) => t.name);
+
+test('on v13 the market tools are added to the tokens group, keyed by name, after the existing tools', () => {
+  const c = v13Controls();
+  assert.equal(addMarketControls(c, tools()), true);
+  assert.deepEqual(v13Names(c.tokens), ['select', 'ncm', 'nci-terminal', 'nci-gm-console']);
+  assert.equal(c.tokens.tools['nci-terminal'].name, 'nci-terminal');
+  assert.deepEqual(Object.keys(c), ['tokens', 'night-city-messenger'], 'no group is created');
+  assert.deepEqual(v13Names(c['night-city-messenger']), ['ncm-inbox'], 'and other groups are untouched');
+});
+
+test("on v13 a button's click handler is its onChange, not the deprecated onClick", () => {
+  const c = v13Controls();
+  const opened = [];
+  addMarketControls(c, [{ name: 'nci-terminal', button: true, onClick: () => opened.push('terminal') }]);
+  const tool = c.tokens.tools['nci-terminal'];
+  assert.equal(tool.onClick, undefined);
+  assert.equal(tool.button, true);
+  tool.onChange({}, true);
+  assert.deepEqual(opened, ['terminal']);
+});
+
+test('on v13 calling it twice does not duplicate tools or move them', () => {
+  const c = v13Controls();
+  addMarketControls(c, tools());
+  addMarketControls(c, tools());
+  assert.deepEqual(v13Names(c.tokens), ['select', 'ncm', 'nci-terminal', 'nci-gm-console']);
+  assert.equal(Object.keys(c.tokens.tools).length, 4);
+});
+
+test('on v13 without a tokens group nothing is added and it reports that', () => {
+  const c = { 'night-city-messenger': { name: 'night-city-messenger', tools: {} } };
+  assert.equal(addMarketControls(c, tools()), false);
+  assert.deepEqual(c['night-city-messenger'].tools, {});
+  assert.equal(addMarketControls(undefined, tools()), false, 'nor with nothing at all');
+});

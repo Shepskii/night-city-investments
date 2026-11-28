@@ -14,8 +14,8 @@ import { addMarketControls } from '../ui/sceneControls.js';
 
 export function registerUIComponents(initializer) {
   initializer.register('init', 20, 'Scene controls', () => {
-    // Foundry v12 form: the controls array, with each group's tools as an array. The market
-    // buttons go in the Token Controls group.
+    // The market buttons go in the Token Controls group: v12's controls array or v13's record,
+    // whichever Foundry passes (addMarketControls handles both).
     Hooks.on('getSceneControlButtons', (controls) => {
       const tools = [
         {
