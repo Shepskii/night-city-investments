@@ -8,7 +8,7 @@
 
 import { ProductionCatalog } from '../../data/ProductionCatalog.js';
 import { BUSINESS_DEFAULTS, itemGear, partnerOf, limitLeft, canRun } from '../../engine/index.js';
-import { isCharacter } from '../../utils/helpers.js';
+import { isCharacter, textEditor } from '../../utils/helpers.js';
 
 /** Whether this account may start a business from the window: a player's character, or a syndicate (its officers are players'). */
 export const canFound = (actor) => !!actor && (!!actor.isSyndicate || !!actor.hasPlayerOwner);
@@ -332,7 +332,7 @@ export class BusinessApp extends BaseApplication {
   /** A character dragged from the Actors directory: a player's is invited as usual, and an NPC's goes to the GM to answer. */
   async _onDropInvite(event) {
     event.preventDefault();
-    const data = TextEditor.getDragEventData(event);
+    const data = textEditor().getDragEventData(event);
     const actor = data?.type === 'Actor' && data.uuid ? await fromUuid(data.uuid) : null;
     const known = actor && game.actors.get(actor.id) === actor;
     const pc = known && isCharacter(actor) && actor.hasPlayerOwner;
@@ -366,7 +366,7 @@ export class BusinessApp extends BaseApplication {
   async _onDropGear(event, form) {
     event.preventDefault();
     if (!GEAR_FORMS.includes(form) || !this.actor) return;
-    const data = TextEditor.getDragEventData(event);
+    const data = textEditor().getDragEventData(event);
     if (data?.type !== 'Item' || !data.uuid) return ui.notifications.warn(L('NCI.Business.Reason.bad-item'));
     const item = await fromUuid(data.uuid);
     if (!item) return ui.notifications.warn(L('NCI.Business.Reason.item-missing'));

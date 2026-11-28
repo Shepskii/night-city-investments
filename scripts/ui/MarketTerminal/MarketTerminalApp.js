@@ -7,6 +7,7 @@ import {
   quote, getSeries, rangeStats, equalWeightIndex, valuePortfolio, latestNews, OPEN, timeOf,
 } from '../../engine/index.js';
 import { MODULE_ID, HOOKS, SETTINGS } from '../../utils/constants.js';
+import { textEditor } from '../../utils/helpers.js';
 import { applyJob, jobBoardRows } from '../applyJob.js';
 import { CompanyRepository } from '../../data/CompanyRepository.js';
 import { FundRepository } from '../../data/FundRepository.js';
@@ -612,7 +613,7 @@ export class MarketTerminalApp extends BaseApplication {
       watched: watched.has(c.id),
       chart: lineChart(series),
       ranges: RANGES.map((r) => ({ value: r, label: L('NCI.Terminal.Days', { n: r }), active: r === this.range })),
-      lore: c.lore ? await TextEditor.enrichHTML(c.lore, { async: true }) : '',
+      lore: c.lore ? await textEditor().enrichHTML(c.lore, { async: true }) : '',
     };
   }
 

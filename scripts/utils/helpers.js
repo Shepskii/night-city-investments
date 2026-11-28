@@ -36,6 +36,12 @@ export const isItemPile = (actor) => !!actor?.flags?.['item-piles']?.data?.enabl
 /** A character actor that is a person: not an Item Piles pile made from a character. */
 export const isCharacter = (actor) => actor?.type === 'character' && !isItemPile(actor);
 
+/**
+ * Foundry's TextEditor: v13's namespaced one (whose global logs a deprecation warning), else v12's global.
+ * @returns {typeof TextEditor}
+ */
+export const textEditor = () => globalThis.foundry?.applications?.ux?.TextEditor?.implementation ?? globalThis.TextEditor;
+
 export function isGM() {
   return game.user?.isGM ?? false;
 }
