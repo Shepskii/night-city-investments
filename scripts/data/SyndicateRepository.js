@@ -105,11 +105,7 @@ export const SyndicateRepository = {
    */
   async save(syndicate, portfolio = null) {
     if (!game.user.isGM) return false;
-    try {
-      return await this._write(syndicate, portfolio);
-    } finally {
-      cache.clear();
-    }
+    return cache.write(() => this._write(syndicate, portfolio));
   },
 
   async _write(syndicate, portfolio) {
@@ -138,18 +134,10 @@ export const SyndicateRepository = {
     if (!game.user.isGM) return false;
     const journal = this.journalOf(id);
     if (!journal) return false;
-    try {
-      await journal.delete();
-    } finally {
-      cache.clear();
-    }
+    await cache.write(() => journal.delete());
     return true;
   },
 };
 
-/** Every syndicate this client can read, read afresh from the journals: what the cache holds. */
-const cache = journalRecordCache(FLAGS.SYNDICATE, () =>
-  SyndicateRepository.journals()
-    .map((j) => normalizeSyndicate(foundry.utils.deepClone(recordOf(j))))
-    .filter((s) => s.id)
-    .sort((a, b) => b.createdDay - a.createdDay || a.name.localeCompare(b.name)));
+/** Every syndicate this client can read, newest first: what the cache holds. */
+const cache = journalRecordCache(FLAGS.SYNDICATE, { journals: () => SyndicateRepository.journals(), normalize: normalizeSyndicate });

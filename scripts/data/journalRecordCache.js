@@ -11,16 +11,24 @@
  */
 
 import { MODULE_ID } from '../utils/constants.js';
+import { unwrap } from '../utils/helpers.js';
 
 const JOURNAL_HOOKS = ['createJournalEntry', 'updateJournalEntry', 'deleteJournalEntry'];
 
 /**
- * @param {string} flag - the module flag that marks the repository's journals
- * @param {() => object[]} read - every record this client can read, normalised and in order, each with an `id`
- * @returns {{ all: () => object[], get: (id: string) => object|null, clear: () => void }}
+ * @param {string} flag - the module flag that holds each journal's record, in the one-write wrapped form
+ * @param {{ journals: () => object[], normalize: (record: object) => object }} source - the journals this client may
+ *   read, and how a record read from one is normalised. Records without an `id` are left out; the rest are kept
+ *   newest first (`createdDay`), then by name.
+ * @returns {{ all: () => object[], get: (id: string) => object|null, write: (fn: () => Promise<any>) => Promise<any> }}
  */
-export function journalRecordCache(flag, read) {
+export function journalRecordCache(flag, { journals, normalize }) {
   let cached = null;
+
+  const read = () => journals()
+    .map((j) => normalize(foundry.utils.deepClone(unwrap(j.getFlag(MODULE_ID, flag)))))
+    .filter((record) => record.id)
+    .sort((a, b) => b.createdDay - a.createdDay || a.name.localeCompare(b.name));
 
   const clear = () => {
     cached = null;
@@ -57,6 +65,13 @@ export function journalRecordCache(flag, read) {
       const record = current().byId.get(id);
       return record ? foundry.utils.deepClone(record) : null;
     },
-    clear,
+    /** Run a write to the repository's journals, then clear the cache, whether the write worked or not. */
+    write: async (fn) => {
+      try {
+        return await fn();
+      } finally {
+        clear();
+      }
+    },
   };
 }

@@ -109,11 +109,7 @@ export const BusinessRepository = {
   /** Create or replace a business record. GM only. */
   async save(business) {
     if (!game.user.isGM) return false;
-    try {
-      return await this._write(business);
-    } finally {
-      cache.clear();
-    }
+    return cache.write(() => this._write(business));
   },
 
   async _write(business) {
@@ -147,18 +143,10 @@ export const BusinessRepository = {
     if (!game.user.isGM) return false;
     const journal = this.journalOf(id);
     if (!journal) return false;
-    try {
-      await journal.delete();
-    } finally {
-      cache.clear();
-    }
+    await cache.write(() => journal.delete());
     return true;
   },
 };
 
-/** Every business this client can read, read afresh from the journals: what the cache holds. */
-const cache = journalRecordCache(FLAGS.BUSINESS, () =>
-  BusinessRepository.journals()
-    .map((j) => normalizeBusiness(foundry.utils.deepClone(unwrap(j.getFlag(MODULE_ID, FLAGS.BUSINESS)))))
-    .filter((b) => b.id)
-    .sort((a, b) => b.createdDay - a.createdDay || a.name.localeCompare(b.name)));
+/** Every business this client can read, newest first: what the cache holds. */
+const cache = journalRecordCache(FLAGS.BUSINESS, { journals: () => BusinessRepository.journals(), normalize: normalizeBusiness });
