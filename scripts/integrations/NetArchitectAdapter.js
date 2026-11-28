@@ -33,16 +33,10 @@ export const FORK_HOOKS = Object.freeze({
 const isActive = (id) => !!game.modules?.get(id)?.active;
 
 /** The first fork version whose authority is Foundry's active GM, `game.users.activeGM`. */
-const FORK_ACTIVE_GM_VERSION = [1, 1, 0];
+const FORK_ACTIVE_GM_VERSION = '1.1.0';
 
-/** Whether a version string such as "1.1.0" is at least `min`, part by part. */
-function atLeast(version, min) {
-  const parts = String(version ?? '').split('.').map((p) => parseInt(p, 10) || 0);
-  for (let i = 0; i < min.length; i++) {
-    if ((parts[i] ?? 0) !== min[i]) return (parts[i] ?? 0) > min[i];
-  }
-  return true;
-}
+/** Whether the fork at this version takes its authority from `game.users.activeGM`: 1.1.0 or later. */
+const forkUsesActiveGM = (version) => !!version && !foundry.utils.isNewerVersion(FORK_ACTIVE_GM_VERSION, version);
 
 /** The lowest id among connected GMs: the original NET Architect's authority, and older forks'. */
 function lowestIdGM(users) {
@@ -119,9 +113,13 @@ export const NetArchitectAdapter = {
    * forks: the lowest id among connected GMs.
    */
   authority() {
-    if (this.onFork() && atLeast(game.modules?.get(NET_ARCHITECT_NCI_ID)?.version, FORK_ACTIVE_GM_VERSION)) {
+    if (this.onFork() && forkUsesActiveGM(game.modules?.get(NET_ARCHITECT_NCI_ID)?.version)) {
       const gm = game.users?.activeGM;
-      if (gm !== undefined) return gm ?? null;
+      // Foundry says no GM is connected: there is no authority.
+      if (gm === null) return null;
+      // Foundry names the active GM: it is the authority.
+      if (gm !== undefined) return gm;
+      // No activeGM on game.users: the lowest id, below.
     }
     return lowestIdGM(game.users ?? []);
   },

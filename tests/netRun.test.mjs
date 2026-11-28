@@ -499,6 +499,16 @@ test('on a fork before 1.1.0, the lowest-id connected GM counts the run, as that
   }, { modules: { fork: true, forkVersion: '1.0.0' } });
 });
 
+test("on forks later than 1.1.0, Foundry's active GM counts the run; on 1.0.9, the lowest-id connected GM", async () => {
+  for (const [forkVersion, counts] of [['1.10.0', [false, true]], ['2.0.0', [false, true]], ['1.0.9', [true, false]]]) {
+    await onTheFork(async ({ BusinessService, MODULE_ID, FLAGS, gm1, asGm }) => {
+      await withAssistantGM(gm1, async (agm) => {
+        assert.deepEqual(await whoCounts(BusinessService, MODULE_ID, FLAGS, agm, gm1, asGm), counts, forkVersion);
+      });
+    }, { modules: { fork: true, forkVersion } });
+  }
+});
+
 test("on the original NET Architect, a heat panel run starts only from the lowest-id connected GM's client, even with a full GM active", async () => {
   const starts = [];
   const api = { getActiveSession: () => null, startNetrun: async (architectureId) => { starts.push(architectureId); } };

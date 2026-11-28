@@ -11,6 +11,24 @@ function merge(target, source) {
   return target;
 }
 
+/** foundry.utils.isNewerVersion as Foundry has it (v12 and v13): whether v1 is strictly newer than v0, part by part. */
+function isNewerVersion(v1, v0) {
+  if (typeof v1 === 'number' && typeof v0 === 'number') return v1 > v0;
+  const isNumeric = (p) => p !== '' && Number.isFinite(Number(p));
+  const v1Parts = String(v1).split('.');
+  const v0Parts = String(v0).split('.');
+  for (const [i, p1] of v1Parts.entries()) {
+    const p0 = v0Parts[i];
+    if (p0 === undefined) return true;
+    if (isNumeric(p0) && isNumeric(p1)) {
+      if (p1 !== p0) return Number(p1) > Number(p0);
+    }
+    if (p1 !== p0) return p1 > p0;
+  }
+  if (v0Parts.length > v1Parts.length) return false;
+  return v1Parts.join('.') !== v0Parts.join('.');
+}
+
 export function installFakeFoundry({ actors: actorSpecs = [], now = Date.UTC(2045, 2, 15, 12) } = {}) {
   const store = new Map();
   const handlers = new Map();
@@ -114,6 +132,7 @@ export function installFakeFoundry({ actors: actorSpecs = [], now = Date.UTC(204
       deepClone: (v) => structuredClone(v),
       randomID: () => Math.random().toString(36).slice(2, 18),
       hasProperty: (obj, path) => path.split('.').reduce((o, k) => (o && k in o ? o[k] : undefined), obj) !== undefined,
+      isNewerVersion,
     },
   };
   globalThis.game = {
